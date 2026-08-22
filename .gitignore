@@ -22,3 +22,6 @@ __pycache__/
 *.gb
 *.gbc
 rom_data.h
+
+# Ignore downloaded ROM folders to prevent committing copyrighted assets
+firmware/03_emulator/tobu.gb/

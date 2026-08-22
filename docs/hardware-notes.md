@@ -90,30 +90,32 @@ won't show a COM port reliably otherwise.
 
 ---
 
-## Milestone 3 (planned): Peanut-GB emulator core
+## Milestone 3 (Complete): Peanut-GB emulator core
 
 - Using [Peanut-GB](https://github.com/deltabeard/Peanut-GB)
-  (deltabeard) — real, MIT-licensed, single C99 header. Not writing
-  emulator internals from scratch.
+  (deltabeard) — real, MIT-licensed, single C99 header.
 
 - `ENABLE_SOUND 0` is an explicitly supported configuration (no audio
   hardware on this build).
 
-- **Real API:**
-  ```cpp
-  gb_init(&gb, rom_read, cart_ram_read, cart_ram_write, error_cb, &priv);
-  gb_init_lcd(&gb, lcd_draw_line);
-  gb_run_frame(&gb);
-  ```
+- **Joypad Mapping:** The `gb.direct.joypad_bits` union is deprecated.
+  Instead, we build a `uint8_t` and assign it to `gb.direct.joypad`.
+  The byte is active-low (`0xFF` = all released). When a button is pressed,
+  clear the corresponding bit using `~JOYPAD_*` masks.
 
-- Joypad state lives in
-  `gb.direct.joypad_bits.{up,down,left,right,a,b,start,select}` and is
-  **active-low** — this matches `digitalRead()` directly since buttons
-  use `INPUT_PULLUP` (pressed = LOW), no inversion needed.
+- **Display Scaling & Endianness:** GB native resolution is 160×144. 
+  We implemented a fast nearest-neighbor 1.5x scale to 240x216 in `display_emu.cpp`.
+  For raw `SPI.writeBytes` performance, colors must be pre-swapped from 
+  RGB565 big-endian to little-endian (e.g. `0x9DE1` becomes `0xE19D`).
 
-- GB native resolution is **160×144**. First test renders centered,
-  unscaled, on the 240×320 display (no stretching) to rule out scaling
-  bugs before adding that complexity.
+- **Frame Pacing & FreeRTOS Watchdog:** `delay()` rounds up to the next
+  1ms FreeRTOS tick, which causes pacing bias. We use a pure `micros()`
+  spin-wait to hit 16742 µs per frame (59.73 FPS), but internally call
+  `yield()` every 1ms to feed the FreeRTOS watchdog.
+
+- **Performance:** Arduino's default `-Os` (size) optimization makes Peanut-GB 
+  run very slowly. We force `-O3` via `#pragma GCC optimize ("O3")` at the top 
+  of `emulator.cpp` and `display_emu.cpp` to achieve full speed.
 
 - **ROM legality:** never embed/commit a copyrighted commercial ROM
   (Pokemon, Mario, etc). Using freely-licensed homebrew only (e.g.

@@ -17,7 +17,7 @@ ROMs. Documenting the whole build: wiring, debugging, and firmware.
 - [x] Milestone 1: Display + button bring-up, with live visual
       feedback on-screen
 - [ ] Milestone 2: microSD card integration
-- [ ] Milestone 3: Game Boy emulator core (Peanut-GB) running a
+- [x] Milestone 3: Game Boy emulator core (Peanut-GB) running a
       homebrew ROM
 
 ## Repo structure
@@ -34,7 +34,7 @@ docs/
 Each milestone's firmware is modular:
 - `config.h` - single source of truth for all pin wiring
 - `buttons.h/.cpp` - button reading, debouncing-free polled state
-- `display_ui.h/.cpp` - all screen drawing for that milestone
+- `display_emu.h/.cpp` - all screen drawing for that milestone
 - the `.ino` file only wires modules together in `setup()`/`loop()`
 
 ## Building
