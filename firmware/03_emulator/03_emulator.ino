@@ -7,10 +7,9 @@
 void setup() {
   Serial.begin(115200);
   
-  // Wait for the USB CDC Serial Monitor to connect so we don't miss output.
-  // Note: On ESP32-S3 Native USB, this pauses until the monitor is opened!
-  while (!Serial) delay(10);
-  delay(100);
+  // Wait 3 seconds to let Serial connect. We removed while(!Serial) because it will hang 
+  // forever if you are plugged into the UART port instead of the Native USB port!
+  delay(3000);
 
   Serial.println("\n\n--- BOOTING ---");
 
