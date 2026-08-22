@@ -21,7 +21,7 @@ __pycache__/
 # derived from them (large, regenerable, not source code).
 *.gb
 *.gbc
-rom_data.h
+rom_data*.h
 
 # Ignore downloaded ROM folders to prevent committing copyrighted assets
 firmware/03_emulator/tobu.gb/

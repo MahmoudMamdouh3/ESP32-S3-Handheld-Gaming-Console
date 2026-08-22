@@ -5,6 +5,7 @@
 #include <Adafruit_ST7789.h>
 #include <cstring>
 
+#include "peanut_gb_config.h"
 #define PEANUT_GB_HEADER_ONLY
 #include "peanut_gb.h"
 

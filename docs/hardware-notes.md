@@ -54,6 +54,13 @@ hard way.
 
 ---
 
+### 4. ROM Legality
+
+- `tobu_tobu_girl.gb` (Tobu Tobu Girl) is an open-source homebrew game licensed under MIT and CC-BY by Tangram Games. It's safe to redistribute for testing.
+- `cpu_instrs.gb` is a widely used Game Boy CPU-correctness diagnostic ROM commonly attributed to Shay Green ("blargg"). No formal license file has been located for it; it is commonly redistributed by the GB homebrew/emulator-development community for non-commercial testing purposes. This project uses it only as a local development/test aid and does not redistribute it as part of any built firmware image (see .gitignore).
+
+---
+
 ## SD card module needs 5V, not 3.3V
 
 The cheap SD breakout module (VCC/GND/MISO/MOSI/SCK/CS, 6-pin) has an
@@ -98,10 +105,11 @@ won't show a COM port reliably otherwise.
 - `ENABLE_SOUND 0` is an explicitly supported configuration (no audio
   hardware on this build).
 
-- **Joypad Mapping:** The `gb.direct.joypad_bits` union is deprecated.
-  Instead, we build a `uint8_t` and assign it to `gb.direct.joypad`.
-  The byte is active-low (`0xFF` = all released). When a button is pressed,
-  clear the corresponding bit using `~JOYPAD_*` masks.
+### 3. Peanut-GB Library Customizations
+
+- The `peanut_gb.h` library has been slightly modified for integration:
+  - **Joypad Input:** The `gb.direct.joypad_bits` struct no longer exists in this library version. Input is now a flat `uint8_t` byte (`gb.direct.joypad`).
+  - **Memory Endianness:** We rely on Adafruit_GFX's native SPI `writeBytes()` rather than `pushColors()` because it provides massive speed improvements, avoiding byte-by-byte iteration. We pre-swap our color palette array bytes instead.
 
 - **Display Scaling & Endianness:** GB native resolution is 160×144. 
   We implemented a fast nearest-neighbor 1.5x scale to 240x216 in `display_emu.cpp`.

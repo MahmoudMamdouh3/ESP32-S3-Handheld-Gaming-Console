@@ -8,9 +8,7 @@
 #endif
 #include "display_emu.h"
 
-// Peanut-GB configuration
-#define ENABLE_SOUND 0
-#define ENABLE_LCD 1
+#include "peanut_gb_config.h"
 
 // Implement standard types for Peanut-GB
 #include <stdint.h>
@@ -21,23 +19,41 @@
 
 namespace {
   struct gb_s gb;
+  
+  // 32KB (4 banks) covers every real-world licensed Game Boy cartridge's MBC1 RAM configuration.
+  // Peanut-GB's own num_ram_banks table technically permits RAM-size header code 0x04 -> 16 banks / 128KB,
+  // but that code is not used by any known real cartridge; this buffer intentionally does not cover it.
+  static uint8_t cart_ram[32768];
+
   uint8_t gb_rom_read(struct gb_s *gb, const uint_fast32_t addr) {
     if (addr >= rom_data_len) return 0xFF; // Bounds check
     return rom_data[addr]; // Direct access, ESP32 doesn't need PROGMEM
   }
   
   uint8_t gb_cart_ram_read(struct gb_s *gb, const uint_fast32_t addr) {
-    // TODO: Cart RAM is fully stubbed. Progress/Saves will NOT persist
-    // between reboots until SD card support is implemented.
-    return 0xFF;
+    if (addr >= sizeof(cart_ram)) {
+      static bool warned = false;
+      if (!warned) { Serial.println("WARNING: Cart RAM read overflow!"); warned = true; }
+      return 0xFF;
+    }
+    return cart_ram[addr];
   }
   
   void gb_cart_ram_write(struct gb_s *gb, const uint_fast32_t addr, const uint8_t val) {
-    // TODO: Cart RAM is fully stubbed. 
+    if (addr >= sizeof(cart_ram)) {
+      static bool warned = false;
+      if (!warned) { Serial.println("WARNING: Cart RAM write overflow!"); warned = true; }
+      return;
+    }
+    cart_ram[addr] = val;
   }
   
   void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16_t val) {
     Serial.printf("Peanut-GB Error: %d at PC 0x%04X\n", gb_err, val);
+    Serial.flush();
+    // PGB_UNREACHABLE() requires this callback to never return for fatal errors.
+    // We use esp_restart() for a deterministic, clean reset rather than entering undefined behavior.
+    esp_restart();
   }
 }
 
