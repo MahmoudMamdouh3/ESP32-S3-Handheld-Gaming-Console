@@ -1,11 +1,5 @@
 #include "emulator.h"
 #include "buttons.h"
-#include "config.h"
-#if USE_TEST_ROM
-#include "rom_data_test.h"
-#else
-#include "rom_data.h"
-#endif
 #include "display_emu.h"
 
 #include "peanut_gb_config.h"
@@ -20,14 +14,17 @@
 namespace {
   struct gb_s gb;
   
+  const uint8_t* current_rom_data = nullptr;
+  size_t current_rom_len = 0;
+  
   // 32KB (4 banks) covers every real-world licensed Game Boy cartridge's MBC1 RAM configuration.
   // Peanut-GB's own num_ram_banks table technically permits RAM-size header code 0x04 -> 16 banks / 128KB,
   // but that code is not used by any known real cartridge; this buffer intentionally does not cover it.
   static uint8_t cart_ram[32768];
 
   uint8_t gb_rom_read(struct gb_s *gb, const uint_fast32_t addr) {
-    if (addr >= rom_data_len) return 0xFF; // Bounds check
-    return rom_data[addr]; // Direct access, ESP32 doesn't need PROGMEM
+    if (addr >= current_rom_len) return 0xFF; // Bounds check
+    return current_rom_data[addr]; // Direct access, ESP32 doesn't need PROGMEM
   }
   
   uint8_t gb_cart_ram_read(struct gb_s *gb, const uint_fast32_t addr) {
@@ -57,12 +54,16 @@ namespace {
   }
 }
 
-bool Emulator::begin() {
-  Serial.println("Initializing Peanut-GB...");
-  Serial.printf("ROM loaded: %u bytes\n", rom_data_len);
+bool Emulator::begin(const uint8_t* rom_data, size_t rom_len) {
+  current_rom_data = rom_data;
+  current_rom_len = rom_len;
   
-  // Init context
-  enum gb_init_error_e ret = gb_init(&gb, &gb_rom_read, &gb_cart_ram_read, &gb_cart_ram_write, &gb_error, nullptr);
+  Serial.println("Initializing Peanut-GB...");
+  Serial.printf("ROM loaded: %u bytes\n", rom_len);
+  
+  // Initialize Peanut-GB
+  enum gb_init_error_e ret = gb_init(&gb, &gb_rom_read, &gb_cart_ram_read, &gb_cart_ram_write,
+                                     &gb_error, nullptr);
   
   if (ret != GB_INIT_NO_ERROR) {
     Serial.printf("gb_init() failed: %d\n", ret);

@@ -59,3 +59,31 @@ void DisplayEmu::drawScanline(struct gb_s *gb, const uint8_t pixels[160], const 
   SPI.writeBytes((const uint8_t*)rowBuffer, 240 * rows_to_draw * 2);
   tft.endWrite();
 }
+
+void DisplayEmu::drawMenu(const char** titles, int count, int selectedIndex) {
+  tft.fillScreen(ST77XX_BLACK);
+  
+  // Title
+  tft.setTextSize(2);
+  tft.setTextColor(ST77XX_GREEN);
+  tft.setCursor(10, 10);
+  tft.println("BMO Gameboy");
+  tft.drawFastHLine(10, 30, 220, ST77XX_GREEN);
+
+  // List of games
+  tft.setTextSize(2);
+  for (int i = 0; i < count; i++) {
+    int y = 50 + (i * 30);
+    
+    if (i == selectedIndex) {
+      tft.setTextColor(ST77XX_YELLOW);
+      tft.setCursor(10, y);
+      tft.print("> ");
+    } else {
+      tft.setTextColor(ST77XX_WHITE);
+      tft.setCursor(10, y);
+      tft.print("  ");
+    }
+    tft.println(titles[i]);
+  }
+}

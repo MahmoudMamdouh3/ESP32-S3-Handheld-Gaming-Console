@@ -1,7 +1,6 @@
 #pragma once
 
-// 0 = Boot the real game (rom_data.h), 1 = Boot the test ROM (rom_data_test.h)
-#define USE_TEST_ROM 0
+
 // -----------------------------------------------------------------------
 // config.h - Central pin/hardware configuration.
 //

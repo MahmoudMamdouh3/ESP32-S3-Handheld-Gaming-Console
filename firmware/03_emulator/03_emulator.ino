@@ -2,7 +2,30 @@
 #include "buttons.h"
 #include "emulator.h"
 #include "display_emu.h"
+#include "rom_data.h"
+#include "rom_data_test.h"
 #include <SPI.h>
+
+struct Game {
+  const char* title;
+  const uint8_t* data;
+  size_t length;
+};
+
+Game games[] = {
+  {"Tobu Tobu Girl", tobu_tobu_girl_rom, tobu_tobu_girl_rom_len},
+  {"Blargg CPU Tests", cpu_instrs_rom, cpu_instrs_rom_len}
+};
+const int NUM_GAMES = 2;
+
+enum SystemState {
+  STATE_MENU,
+  STATE_EMULATOR
+};
+
+SystemState currentState = STATE_MENU;
+int selectedGameIndex = 0;
+bool redrawMenu = true;
 
 void setup() {
   Serial.begin(115200);
@@ -12,8 +35,7 @@ void setup() {
   delay(3000);
 
   Serial.println("\n\n--- BOOTING ---");
-
-  Serial.println("Milestone 3: Game Boy Emulator Core");
+  Serial.println("Milestone 4: Game Selection UI");
 
   // Critical: initialize shared SPI bus first
   // TODO(Milestone 2): Update to SPI.begin(TFT_SCK, SD_MISO, TFT_MOSI, TFT_CS) when SD card is added
@@ -22,12 +44,8 @@ void setup() {
   // Initialize hardware modules
   Buttons::begin();
   DisplayEmu::begin();
-
-  // Initialize the emulator
-  if (!Emulator::begin()) {
-    Serial.println("Failed to start emulator. Check errors.");
-    while (1) delay(100);
-  }
+  
+  // Do NOT start the emulator yet. We start in the menu.
 }
 
 unsigned long lastTime = 0;
@@ -36,54 +54,93 @@ int droppedFrames = 0;
 int totalDroppedFramesThisSecond = 0;
 
 void loop() {
-  unsigned long frameStart = micros();
+  if (currentState == STATE_MENU) {
+    // 1. Check for redraw
+    if (redrawMenu) {
+      const char* titles[NUM_GAMES];
+      for (int i = 0; i < NUM_GAMES; i++) {
+        titles[i] = games[i].title;
+      }
+      DisplayEmu::drawMenu(titles, NUM_GAMES, selectedGameIndex);
+      redrawMenu = false;
+    }
 
-  // 1. Read hardware buttons
-  // Relies on the ~16.7ms frame cadence for de facto debounce — see buttons.h
-  Buttons::update();
+    // 2. Read inputs
+    Buttons::update();
 
-  // 2. Map buttons to emulator joypad
-  Emulator::updateJoypad();
-
-  // 3. Run exactly one frame
-  Emulator::runFrame();
-
-  // 4. Throttling to ~59.73 Hz (16742 microseconds per frame)
-  // Hybrid approach for battery life: sleep for the bulk of the time,
-  // then spin-wait for the final ~2ms to guarantee sub-millisecond precision
-  // without FreeRTOS tick rounding bias.
-  unsigned long elapsed = micros() - frameStart;
-  if (elapsed < 16742) {
-    unsigned long wait = 16742 - elapsed;
-    if (wait > 2000) {
-      delay((wait - 2000) / 1000); // Sleep and power-gate core
+    if (Buttons::get(Buttons::UP).pressed && Buttons::get(Buttons::UP).changed) {
+      selectedGameIndex--;
+      if (selectedGameIndex < 0) selectedGameIndex = NUM_GAMES - 1;
+      redrawMenu = true;
     }
     
-    // Spin-wait the remainder
-    unsigned long lastYield = micros();
-    while (micros() - frameStart < 16742) {
-      if (micros() - lastYield >= 1000) {
-        yield(); // Watchdog safety
-        lastYield = micros();
-      }
+    if (Buttons::get(Buttons::DOWN).pressed && Buttons::get(Buttons::DOWN).changed) {
+      selectedGameIndex++;
+      if (selectedGameIndex >= NUM_GAMES) selectedGameIndex = 0;
+      redrawMenu = true;
     }
-  } else {
-    // Frame took longer than budget
-    droppedFrames++;
-    totalDroppedFramesThisSecond++;
-  }
 
-  // 5. Calculate FPS
-  frames++;
-  unsigned long now = millis();
-  if (now - lastTime >= 1000) {
-    if (totalDroppedFramesThisSecond > 0) {
-      Serial.printf("FPS: %d (Dropped frames this sec: %d, Total dropped: %d)\n", frames, totalDroppedFramesThisSecond, droppedFrames);
-    } else {
-      Serial.printf("FPS: %d\n", frames);
+    if (Buttons::get(Buttons::A).pressed && Buttons::get(Buttons::A).changed) {
+      // Boot the selected game!
+      if (!Emulator::begin(games[selectedGameIndex].data, games[selectedGameIndex].length)) {
+        Serial.println("Failed to start emulator. Check errors.");
+        while (1) delay(100);
+      }
+      currentState = STATE_EMULATOR;
     }
-    frames = 0;
-    totalDroppedFramesThisSecond = 0;
-    lastTime = now;
+
+    delay(16); // ~60fps UI poll rate
+    
+  } else if (currentState == STATE_EMULATOR) {
+    unsigned long frameStart = micros();
+
+    // 1. Read hardware buttons
+    // Relies on the ~16.7ms frame cadence for de facto debounce — see buttons.h
+    Buttons::update();
+
+    // 2. Map buttons to emulator joypad
+    Emulator::updateJoypad();
+
+    // 3. Run exactly one frame
+    Emulator::runFrame();
+
+    // 4. Throttling to ~59.73 Hz (16742 microseconds per frame)
+    // Hybrid approach for battery life: sleep for the bulk of the time,
+    // then spin-wait for the final ~2ms to guarantee sub-millisecond precision
+    // without FreeRTOS tick rounding bias.
+    unsigned long elapsed = micros() - frameStart;
+    if (elapsed < 16742) {
+      unsigned long wait = 16742 - elapsed;
+      if (wait > 2000) {
+        delay((wait - 2000) / 1000); // Sleep and power-gate core
+      }
+      
+      // Spin-wait the remainder
+      unsigned long lastYield = micros();
+      while (micros() - frameStart < 16742) {
+        if (micros() - lastYield >= 1000) {
+          yield(); // Watchdog safety
+          lastYield = micros();
+        }
+      }
+    } else {
+      // Frame took longer than budget
+      droppedFrames++;
+      totalDroppedFramesThisSecond++;
+    }
+
+    // 5. Calculate FPS
+    frames++;
+    unsigned long now = millis();
+    if (now - lastTime >= 1000) {
+      if (totalDroppedFramesThisSecond > 0) {
+        Serial.printf("FPS: %d (Dropped frames this sec: %d, Total dropped: %d)\n", frames, totalDroppedFramesThisSecond, droppedFrames);
+      } else {
+        Serial.printf("FPS: %d\n", frames);
+      }
+      frames = 0;
+      totalDroppedFramesThisSecond = 0;
+      lastTime = now;
+    }
   }
 }
