@@ -25,3 +25,6 @@ rom_data*.h
 
 # Ignore downloaded ROM folders to prevent committing copyrighted assets
 firmware/03_emulator/tobu.gb/
+
+rom_*.h
+cover_*.h

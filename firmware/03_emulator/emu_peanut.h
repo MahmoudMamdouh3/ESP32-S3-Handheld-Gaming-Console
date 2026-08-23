@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 
-namespace Emulator {
+namespace PeanutEmu {
   // Call once in setup() with the selected ROM data and length.
   // Returns true on success, false on failure (e.g. invalid ROM header).
   bool begin(const uint8_t* rom_data, size_t rom_len);

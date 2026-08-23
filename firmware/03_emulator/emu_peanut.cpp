@@ -1,4 +1,4 @@
-#include "emulator.h"
+#include "emu_peanut.h"
 #include "buttons.h"
 #include "display_emu.h"
 
@@ -8,8 +8,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-// Include the library
-#include "peanut_gb.h"
+// Include the library inside a namespace to avoid ODR violations with Walnut-CGB
+namespace PGB {
+  #include "peanut_gb.h"
+}
+using namespace PGB;
 
 namespace {
   struct gb_s gb;
@@ -48,13 +51,36 @@ namespace {
   void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16_t val) {
     Serial.printf("Peanut-GB Error: %d at PC 0x%04X\n", gb_err, val);
     Serial.flush();
-    // PGB_UNREACHABLE() requires this callback to never return for fatal errors.
-    // We use esp_restart() for a deterministic, clean reset rather than entering undefined behavior.
     esp_restart();
+  }
+
+  void lcd_draw_line(struct gb_s *gb, const uint8_t pixels[160], const uint_fast8_t line) {
+    static uint16_t rowBuffer[480];
+    
+    for (int x = 0; x < 240; x++) {
+      int src_x = (x * 2) / 3;
+      uint8_t color_idx = pixels[src_x] & 0x03; 
+      uint16_t color = DisplayEmu::CLASSIC_PALETTE[color_idx];
+      uint16_t native = (color >> 8) | (color << 8); // Un-swap SPI endianness
+      uint16_t r = (native >> 11) & 0x1F;
+      uint16_t g = (native >> 5) & 0x3F;
+      uint16_t b = native & 0x1F;
+      uint16_t bgr = (b << 11) | (g << 5) | r;
+      rowBuffer[x] = (bgr >> 8) | (bgr << 8); // Re-swap for SPI
+    }
+
+    int out_y = (line * 3) / 2;
+    int rows_to_draw = (line % 2 == 1) ? 2 : 1;
+
+    if (rows_to_draw == 2) {
+      memcpy(&rowBuffer[240], &rowBuffer[0], 240 * 2);
+    }
+
+    DisplayEmu::pushPixels(out_y, rowBuffer, rows_to_draw);
   }
 }
 
-bool Emulator::begin(const uint8_t* rom_data, size_t rom_len) {
+bool PeanutEmu::begin(const uint8_t* rom_data, size_t rom_len) {
   current_rom_data = rom_data;
   current_rom_len = rom_len;
   
@@ -71,13 +97,13 @@ bool Emulator::begin(const uint8_t* rom_data, size_t rom_len) {
   }
   
   // Connect the LCD callback
-  gb_init_lcd(&gb, &DisplayEmu::drawScanline);
+  gb_init_lcd(&gb, &lcd_draw_line);
   
   Serial.println("Peanut-GB initialized.");
   return true;
 }
 
-void Emulator::updateJoypad() {
+void PeanutEmu::updateJoypad() {
   // Peanut-GB bits: 0 = pressed, 1 = released
   // Our button state: pressed = true, released = false
   // Since we want 0 for pressed, we invert the pressed state using !
@@ -97,6 +123,6 @@ void Emulator::updateJoypad() {
   gb.direct.joypad = joypad;
 }
 
-void Emulator::runFrame() {
+void PeanutEmu::runFrame() {
   gb_run_frame(&gb);
 }

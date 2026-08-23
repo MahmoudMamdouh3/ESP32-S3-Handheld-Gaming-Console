@@ -105,7 +105,12 @@ won't show a COM port reliably otherwise.
 - `ENABLE_SOUND 0` is an explicitly supported configuration (no audio
   hardware on this build).
 
-### 3. Peanut-GB Library Customizations
+### 3. Display and UI Rendering
+
+- **SPI Performance:** We rely on Adafruit_GFX's native SPI `writeBytes()` rather than `pushColors()` because it provides massive speed improvements, avoiding byte-by-byte iteration. We pre-swap our color palette array bytes instead.
+- **Cover Art:** The Game Selection Menu uses `Adafruit_GFX::drawRGBBitmap()` to render 100x100 RGB565 cover images from flash memory. Images are generated via Python and the bytes are statically swapped ahead of time to avoid runtime endianness overhead.
+
+### 4. Peanut-GB Library Customizations
 
 - The `peanut_gb.h` library has been slightly modified for integration:
   - **Joypad Input:** The `gb.direct.joypad_bits` struct no longer exists in this library version. Input is now a flat `uint8_t` byte (`gb.direct.joypad`).

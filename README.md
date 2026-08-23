@@ -17,7 +17,8 @@ ROMs. Documenting the whole build: wiring, debugging, and firmware.
 - [x] Milestone 1: Display + button bring-up, with live visual
       feedback on-screen
 - [ ] Milestone 2: microSD card integration
-- [x] **Milestone 3: Game Boy Emulator Core** - Implement Peanut-GB library, map display output to 240x216, map button inputs to GB joypad bits. *(Note: Currently uses a compiled-in ROM array. Dynamic ROM loading from SD card is pending Milestone 2).*
+- [x] **Milestone 3: Game Boy Emulator Core** - Implement Peanut-GB library, map display output to 240x216, map button inputs to GB joypad bits.
+- [x] **Milestone 4: Game Selection UI** - D-Pad navigable boot menu with RGB565 cover art rendering, dynamically loading multiple compiled-in ROMs. *(Note: Dynamic ROM loading from SD card is pending Milestone 2).*
 
 ## Repo structure
 
