@@ -1,37 +1,43 @@
-#pragma GCC optimize ("O3")
+#pragma GCC optimize("O3,unroll-loops")
 #include "emu_peanut.h"
 #include "buttons.h"
 #include "display_emu.h"
+#include <string.h>
+#include <Arduino.h>
 
 #include "peanut_gb_config.h"
 
-// Implement standard types for Peanut-GB
 #include <stdint.h>
 #include <stdlib.h>
 
-// Include the library inside a namespace to avoid ODR violations with Walnut-CGB
 namespace PGB {
   #include "peanut_gb.h"
 }
 using namespace PGB;
 
 namespace {
-  struct gb_s gb;
+  // E3: Align the emulator state struct to the ESP32-S3 D-cache line
+  // size (32 bytes). Prevents cache thrashing on hot registers.
+  static struct gb_s __attribute__((aligned(32))) gb;
   
   const uint8_t* current_rom_data = nullptr;
   size_t current_rom_len = 0;
   
-  // 32KB (4 banks) covers every real-world licensed Game Boy cartridge's MBC1 RAM configuration.
-  // Peanut-GB's own num_ram_banks table technically permits RAM-size header code 0x04 -> 16 banks / 128KB,
-  // but that code is not used by any known real cartridge; this buffer intentionally does not cover it.
+  // 32KB covers every real-world licensed Game Boy cartridge MBC1 RAM.
   static uint8_t cart_ram[32768];
 
-  uint8_t gb_rom_read(struct gb_s *gb, const uint_fast32_t addr) {
-    if (addr >= current_rom_len) return 0xFF; // Bounds check
-    return current_rom_data[addr]; // Direct access, ESP32 doesn't need PROGMEM
+  // N5: Module-level, 4-byte aligned — avoids BSS contention with gb_s data.
+  static uint16_t __attribute__((aligned(4))) rowBuffer[480];
+
+  // N1: IRAM_ATTR — these callbacks are invoked ~280K times per frame by the
+  // emulator core; zero-wait-state IRAM placement eliminates I-cache stalls.
+
+  IRAM_ATTR uint8_t gb_rom_read(struct gb_s *gb, const uint_fast32_t addr) {
+    if (addr >= current_rom_len) return 0xFF;
+    return current_rom_data[addr];
   }
   
-  uint8_t gb_cart_ram_read(struct gb_s *gb, const uint_fast32_t addr) {
+  IRAM_ATTR uint8_t gb_cart_ram_read(struct gb_s *gb, const uint_fast32_t addr) {
     if (addr >= sizeof(cart_ram)) {
       static bool warned = false;
       if (!warned) { Serial.println("WARNING: Cart RAM read overflow!"); warned = true; }
@@ -40,7 +46,7 @@ namespace {
     return cart_ram[addr];
   }
   
-  void gb_cart_ram_write(struct gb_s *gb, const uint_fast32_t addr, const uint8_t val) {
+  IRAM_ATTR void gb_cart_ram_write(struct gb_s *gb, const uint_fast32_t addr, const uint8_t val) {
     if (addr >= sizeof(cart_ram)) {
       static bool warned = false;
       if (!warned) { Serial.println("WARNING: Cart RAM write overflow!"); warned = true; }
@@ -55,76 +61,77 @@ namespace {
     esp_restart();
   }
 
-  void lcd_draw_line(struct gb_s *gb, const uint8_t pixels[160], const uint_fast8_t line) {
-    static uint16_t rowBuffer[480]; // Max possible width
-    static uint8_t scale_map[240];
-    static bool map_init = false;
-    
-    if (!map_init) {
-      for (int i = 0; i < 240; i++) scale_map[i] = (i * 2) / 3;
-      map_init = true;
-    }
-    
-    for (int x = 0; x < 240; x++) {
-      int src_x = scale_map[x];
-      uint8_t color_idx = pixels[src_x] & 0x03; 
-      rowBuffer[x] = DisplayEmu::CLASSIC_PALETTE[color_idx];
+  // N1: lcd_draw_line in IRAM — called 144×/frame.
+  IRAM_ATTR void lcd_draw_line(struct gb_s *gb, const uint8_t pixels[160], const uint_fast8_t line) {
+    // E1: Process 4 source pixels per iteration → 6 output pixels.
+    // This perfectly aligns to three 32-bit memory stores (12 bytes),
+    // eliminating unaligned store penalties on the Xtensa LX7 CPU.
+    uint32_t* out32 = (uint32_t*)rowBuffer;
+    for (int g = 0; g < 40; g++) {
+      uint16_t pA = DisplayEmu::CLASSIC_PALETTE[pixels[g * 4]     & 0x03];
+      uint16_t pB = DisplayEmu::CLASSIC_PALETTE[pixels[g * 4 + 1] & 0x03];
+      uint16_t pC = DisplayEmu::CLASSIC_PALETTE[pixels[g * 4 + 2] & 0x03];
+      uint16_t pD = DisplayEmu::CLASSIC_PALETTE[pixels[g * 4 + 3] & 0x03];
+      
+      out32[0] = (uint32_t)pA | ((uint32_t)pA << 16);
+      out32[1] = (uint32_t)pB | ((uint32_t)pC << 16);
+      out32[2] = (uint32_t)pC | ((uint32_t)pD << 16);
+      
+      out32 += 3;
     }
 
-    int out_y = (line * 3) / 2;
+    // N3: No setAddrWindow per line — startFrame() set it once for 240×216.
     int rows_to_draw = (line % 2 == 1) ? 2 : 1;
-
     if (rows_to_draw == 2) {
       memcpy(&rowBuffer[240], &rowBuffer[0], 240 * 2);
     }
-
-    DisplayEmu::pushPixels(out_y, rowBuffer, rows_to_draw);
+    DisplayEmu::streamPixelRow(rowBuffer, 240 * rows_to_draw);
   }
 }
 
 bool PeanutEmu::begin(const uint8_t* rom_data, size_t rom_len) {
   current_rom_data = rom_data;
   current_rom_len = rom_len;
-  
+
+  // Clear cart RAM to prevent save-data bleed between games.
+  memset(cart_ram, 0, sizeof(cart_ram));
+
   Serial.println("Initializing Peanut-GB...");
   Serial.printf("ROM loaded: %u bytes\n", rom_len);
   
-  // Initialize Peanut-GB
   enum gb_init_error_e ret = gb_init(&gb, &gb_rom_read, &gb_cart_ram_read, &gb_cart_ram_write,
                                      &gb_error, nullptr);
-  
   if (ret != GB_INIT_NO_ERROR) {
     Serial.printf("gb_init() failed: %d\n", ret);
     return false;
   }
   
-  // Connect the LCD callback
   gb_init_lcd(&gb, &lcd_draw_line);
+
+  // Reset joypad so no button fires on the first emulator frame.
+  gb.direct.joypad = 0xFF;
   
   Serial.println("Peanut-GB initialized.");
   return true;
 }
 
 void PeanutEmu::updateJoypad() {
-  // Peanut-GB bits: 0 = pressed, 1 = released
-  // Our button state: pressed = true, released = false
-  // Since we want 0 for pressed, we invert the pressed state using !
-  
-  uint8_t joypad = 0xFF; // All released
-  
-  if (Buttons::get(Buttons::UP).pressed) joypad &= ~JOYPAD_UP;
-  if (Buttons::get(Buttons::DOWN).pressed) joypad &= ~JOYPAD_DOWN;
-  if (Buttons::get(Buttons::LEFT).pressed) joypad &= ~JOYPAD_LEFT;
-  if (Buttons::get(Buttons::RIGHT).pressed) joypad &= ~JOYPAD_RIGHT;
-  
-  if (Buttons::get(Buttons::A).pressed) joypad &= ~JOYPAD_A;
-  if (Buttons::get(Buttons::B).pressed) joypad &= ~JOYPAD_B;
-  if (Buttons::get(Buttons::START).pressed) joypad &= ~JOYPAD_START;
-  if (Buttons::get(Buttons::SELECT).pressed) joypad &= ~JOYPAD_SELECT;
-
-  gb.direct.joypad = joypad;
+  // NB2: Single branchless bitmask — replaces 8 conditional read-modify-write ops.
+  gb.direct.joypad =
+      (Buttons::get(Buttons::UP).pressed     ? 0x00u : 0x40u) |
+      (Buttons::get(Buttons::DOWN).pressed   ? 0x00u : 0x80u) |
+      (Buttons::get(Buttons::LEFT).pressed   ? 0x00u : 0x20u) |
+      (Buttons::get(Buttons::RIGHT).pressed  ? 0x00u : 0x10u) |
+      (Buttons::get(Buttons::A).pressed      ? 0x00u : 0x01u) |
+      (Buttons::get(Buttons::B).pressed      ? 0x00u : 0x02u) |
+      (Buttons::get(Buttons::START).pressed  ? 0x00u : 0x08u) |
+      (Buttons::get(Buttons::SELECT).pressed ? 0x00u : 0x04u);
 }
 
 void PeanutEmu::runFrame() {
+  // startFrame holds SPI bus open and sets address window once for the
+  // entire 240×216 frame (N1 + N3).
+  DisplayEmu::startFrame();
   gb_run_frame(&gb);
+  DisplayEmu::endFrame();
 }

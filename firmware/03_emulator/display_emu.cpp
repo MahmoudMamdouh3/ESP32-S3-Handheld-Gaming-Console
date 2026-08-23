@@ -19,6 +19,17 @@ namespace {
   // Center it both horizontally and vertically.
   const int OFFSET_X = (320 - 240) / 2; // 40
   const int OFFSET_Y = (240 - 216) / 2; // 12
+
+  // Helper: measure the pixel width of a string with the currently active font
+  // using Adafruit GFX's getTextBounds(), then return the X cursor that
+  // horizontally centers it within a display of 'displayWidth' pixels.
+  int centeredX(const char* str, int displayWidth) {
+    int16_t x1, y1;
+    uint16_t w, h;
+    tft.getTextBounds(str, 0, 0, &x1, &y1, &w, &h);
+    int cx = (displayWidth - (int)w) / 2 - x1;
+    return (cx < 0) ? 2 : cx;
+  }
 }
 
 // Classic Game Boy "Pea-Soup Green" palette in BGR565 (Little-Endian swapped)
@@ -41,11 +52,57 @@ void DisplayEmu::clearScreen() {
   tft.fillScreen(ST77XX_BLACK);
 }
 
+// ---------------------------------------------------------------------------
+// N3 — Single setAddrWindow per frame
+// ---------------------------------------------------------------------------
+// startFrame() asserts the SPI CS and issues ONE setAddrWindow for the entire
+// 240×216 Game Boy viewport. All subsequent streamPixelRow() calls just send
+// raw pixel bytes — no DC toggle, no command bytes, no CS glitch.
+//
+// This reduces setAddrWindow calls from 144/frame → 1/frame.
+//
+// Protocol:
+//   DisplayEmu::startFrame();
+//   // lcd_draw_line fires 144×, each calling streamPixelRow()
+//   gb_run_frame(...);
+//   DisplayEmu::endFrame();
+// ---------------------------------------------------------------------------
+
+void DisplayEmu::startFrame() {
+  tft.startWrite();
+  // Set the address window to exactly the Game Boy's scaled output region.
+  // 240 pixels wide × 216 pixels tall, positioned at (OFFSET_X, OFFSET_Y).
+  // The ST7789 will auto-advance its write pointer after each pixel pair,
+  // so all 144 scanlines can stream contiguously.
+  tft.setAddrWindow(OFFSET_X, OFFSET_Y, 240, 216);
+}
+
+void DisplayEmu::endFrame() {
+  tft.endWrite();
+}
+
+// streamPixelRow: bare pixel data push — MUST be called inside startFrame/endFrame.
+// pixelCount is the number of uint16_t pixels (240 for a single row, 480 for a
+// doubled row). No setAddrWindow, no CS assert/deassert.
+void DisplayEmu::streamPixelRow(const uint16_t* buf, int pixelCount) {
+  SPI.writeBytes((const uint8_t*)buf, pixelCount * 2);
+}
+
+// ---------------------------------------------------------------------------
+// Legacy per-scanline push — used for occasional cover-art or menu blits
+// where no startFrame/endFrame context exists.
+// ---------------------------------------------------------------------------
 void DisplayEmu::pushPixels(int yOffset, const uint16_t* rowBuffer, int rowsToDraw) {
   tft.startWrite();
   tft.setAddrWindow(OFFSET_X, OFFSET_Y + yOffset, 240, rowsToDraw);
   SPI.writeBytes((const uint8_t*)rowBuffer, 240 * rowsToDraw * 2);
   tft.endWrite();
+}
+
+// pushPixelsRaw: used inside a caller-managed startWrite/endWrite block.
+void DisplayEmu::pushPixelsRaw(int yOffset, const uint16_t* rowBuffer, int rowsToDraw) {
+  tft.setAddrWindow(OFFSET_X, OFFSET_Y + yOffset, 240, rowsToDraw);
+  SPI.writeBytes((const uint8_t*)rowBuffer, 240 * rowsToDraw * 2);
 }
 
 
@@ -64,47 +121,47 @@ void DisplayEmu::drawEmulatorSelectMenu(int selectedIndex) {
 
   // Draw Console Graphics
   if (selectedIndex == 0) { // GBC
-    tft.fillRect(110, 60, 100, 100, 0xFFFF); // White
-    tft.fillRect(120, 70, 80, 20, 0xF800); // Red
-    tft.fillRect(120, 90, 80, 20, 0x07E0); // Green
-    tft.fillRect(120, 110, 80, 20, 0x001F); // Blue
+    tft.fillRect(110, 60, 100, 100, 0xFFFF);
+    tft.fillRect(120, 70, 80, 20, 0xF800);
+    tft.fillRect(120, 90, 80, 20, 0x07E0);
+    tft.fillRect(120, 110, 80, 20, 0x001F);
   } else if (selectedIndex == 1) { // GB
-    tft.fillRect(110, 60, 100, 100, 0xCE79); // Grey
-    tft.fillRect(120, 70, 80, 20, 0x4208); // Dark Grey
-    tft.fillRect(120, 90, 80, 20, 0x8410); // Mid Grey
-    tft.fillRect(120, 110, 80, 20, 0xC618); // Light Grey
+    tft.fillRect(110, 60, 100, 100, 0xCE79);
+    tft.fillRect(120, 70, 80, 20, 0x4208);
+    tft.fillRect(120, 90, 80, 20, 0x8410);
+    tft.fillRect(120, 110, 80, 20, 0xC618);
   } else if (selectedIndex == 2) { // NES
-    tft.fillRect(110, 60, 100, 100, 0x8410); // Darker Grey
-    tft.fillRect(120, 130, 80, 15, 0xF800); // Red stripe at bottom
-    tft.fillRect(140, 75, 40, 40, 0x0000); // Black cartridge label
+    tft.fillRect(110, 60, 100, 100, 0x8410);
+    tft.fillRect(120, 130, 80, 15, 0xF800);
+    tft.fillRect(140, 75, 40, 40, 0x0000);
   } else if (selectedIndex == 3) { // SNES
-    tft.fillRect(110, 60, 100, 100, 0xAD75); // Light Grey
-    tft.fillRect(110, 60, 100, 20, 0x4208); // Dark grey top
-    tft.fillCircle(160, 110, 25, 0x61B7); // Purple circle
+    tft.fillRect(110, 60, 100, 100, 0xAD75);
+    tft.fillRect(110, 60, 100, 20, 0x4208);
+    tft.fillCircle(160, 110, 25, 0x61B7);
   } else if (selectedIndex == 4) { // GBA
-    tft.fillRect(110, 70, 100, 80, 0x301A); // Dark Purple
-    tft.fillRoundRect(120, 80, 80, 40, 5, 0xFFFF); // White label
+    tft.fillRect(110, 70, 100, 80, 0x301A);
+    tft.fillRoundRect(120, 80, 80, 40, 5, 0xFFFF);
   } else { // Sega Genesis
-    tft.fillRect(110, 60, 100, 100, 0x0000); // Black
+    tft.fillRect(110, 60, 100, 100, 0x0000);
     tft.fillRect(120, 90, 80, 40, 0x0000);
-    tft.drawRect(120, 90, 80, 40, 0xF800); // Red outline label
+    tft.drawRect(120, 90, 80, 40, 0xF800);
   }
-  tft.drawRect(108, 58, 104, 104, 0x11E9); // Border
-  tft.drawRect(109, 59, 102, 102, 0x11E9); // Thicker Border
+  tft.drawRect(108, 58, 104, 104, 0x11E9);
+  tft.drawRect(109, 59, 102, 102, 0x11E9);
 
   // Arrows
   tft.setFont(&FreeSans12pt7b);
   tft.setTextSize(1);
-  tft.setTextColor(0xFD84); // Yellow arrows
+  tft.setTextColor(0xFD84);
   tft.setCursor(50, 115);
   tft.print("<");
   tft.setCursor(250, 115);
   tft.print(">");
 
-  // Console Name
+  // Console Name — accurate centering via getTextBounds()
   tft.setFont(&FreeSans9pt7b);
   tft.setTextSize(1);
-  tft.setTextColor(0x11E9); // Dark blue text
+  tft.setTextColor(0x11E9);
   
   const char* consoleNames[] = {
     "Game Boy Color",
@@ -116,11 +173,19 @@ void DisplayEmu::drawEmulatorSelectMenu(int selectedIndex) {
   };
   
   const char* name = consoleNames[selectedIndex];
-  int textWidth = strlen(name) * 11;
-  int curX = (320 - textWidth) / 2;
-  if (curX < 0) curX = 0;
-  tft.setCursor(curX, 190);
+  tft.setCursor(centeredX(name, 320), 190);
   tft.print(name);
+
+  // READY / COMING SOON badge (indices 0 & 1 are fully implemented)
+  bool isReady = (selectedIndex == 0 || selectedIndex == 1);
+  tft.setFont();
+  tft.setTextSize(1);
+  tft.setTextColor(isReady ? 0x07E0 : 0xF800);
+  const char* badge = isReady ? "[ READY ]" : "[ COMING SOON ]";
+  int16_t bx1, by1; uint16_t bw, bh;
+  tft.getTextBounds(badge, 0, 0, &bx1, &by1, &bw, &bh);
+  tft.setCursor((320 - bw) / 2, 208);
+  tft.print(badge);
 }
 
 void DisplayEmu::showSDCardWarning() {
@@ -135,45 +200,36 @@ void DisplayEmu::showSDCardWarning() {
 }
 
 void DisplayEmu::drawMenu(const char** titles, int count, int selectedIndex, const uint16_t* selectedCover, bool useColorEmulator) {
-  tft.fillScreen(0x5E36); // BMO Teal background
-  tft.fillRect(0, 0, 320, 30, 0x11E9); // Dark blue top bar
+  tft.fillScreen(0x5E36);
+  tft.fillRect(0, 0, 320, 30, 0x11E9);
   
-  // Title
   tft.setFont(&FreeSans12pt7b);
   tft.setTextSize(1);
-  tft.setTextColor(0xFD84); // Yellow text on dark blue
+  tft.setTextColor(0xFD84);
   tft.setCursor(80, 22);
   tft.print("BMO GAMEBOY");
 
-  // Cover Art centered
   if (selectedCover) {
     tft.drawRGBBitmap(110, 50, selectedCover, 100, 100);
-    tft.drawRect(108, 48, 104, 104, 0x11E9); // Dark Blue border
-    tft.drawRect(109, 49, 102, 102, 0x11E9); // Thicker border
+    tft.drawRect(108, 48, 104, 104, 0x11E9);
+    tft.drawRect(109, 49, 102, 102, 0x11E9);
   }
 
-  // Arrows
   tft.setFont(&FreeSans12pt7b);
   tft.setTextSize(1);
-  tft.setTextColor(0xFD84); // Yellow arrows
+  tft.setTextColor(0xFD84);
   tft.setCursor(50, 105);
   tft.print("<");
   tft.setCursor(250, 105);
   tft.print(">");
 
-  // Game Title
   tft.setFont(&FreeSans9pt7b);
   tft.setTextSize(1);
   tft.setTextColor(0x11E9);
-  int titleWidth = strlen(titles[selectedIndex]) * 10;
-  // If title is too long, we just do our best
-  int cursorX = (320 - titleWidth) / 2;
-  if (cursorX < 0) cursorX = 5;
-  tft.setCursor(cursorX, 185);
+  tft.setCursor(centeredX(titles[selectedIndex], 320), 185);
   tft.print(titles[selectedIndex]);
 
-  // Progress indicator and core
-  tft.setFont(); // Reset to default 5x7 font for small footer text
+  tft.setFont();
   tft.setTextSize(1);
   tft.setTextColor(0x11E9);
   
@@ -182,7 +238,7 @@ void DisplayEmu::drawMenu(const char** titles, int count, int selectedIndex, con
   tft.setCursor(10, 225);
   tft.print(progress);
 
-  tft.setTextColor(useColorEmulator ? 0xFD84 : 0x11E9); // Highlight if Color is active
+  tft.setTextColor(useColorEmulator ? 0xFD84 : 0x11E9);
   tft.setCursor(240, 225);
   tft.print(useColorEmulator ? "Walnut-CGB" : "Peanut-GB");
 }

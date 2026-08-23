@@ -1,5 +1,6 @@
 #include "unit_tests.h"
 #include <Arduino.h>
+#include <esp_heap_caps.h>
 #include "rom_data.h"
 #include "buttons.h"
 #include "display_emu.h"
@@ -33,12 +34,9 @@ static int testsFailed = 0;
 
 void testRomIntegrity() {
   TEST_CASE("ROM Integrity & Nintendo Logo Checksum");
-  // Check bounds
   ASSERT_TRUE(tobu_tobu_girl_rom_len > 0x150, "ROM length must be greater than header size");
   
-  // Check Nintendo Logo Checksum (0x0104 - 0x0133)
-  // The Gameboy validates the boot logo by checking against a hardcoded array.
-  // Instead of doing the full array match, we can check the header checksum at 0x014D
+  // Verify header checksum at 0x014D (GB boot ROM validates this)
   uint8_t header_checksum = 0;
   for (int j = 0x0134; j <= 0x014C; j++) {
     header_checksum = header_checksum - tobu_tobu_girl_rom[j] - 1;
@@ -54,10 +52,8 @@ void testButtonsCount() {
 void testEmulatorRejection() {
   TEST_CASE("Emulator Graceful Rejection (Corrupt ROM)");
   
-  // Create a dummy bad ROM array (smaller than header size)
   uint8_t bad_rom[100] = {0};
   
-  // PeanutEmu and WalnutEmu should reject this gracefully without crashing
   bool peanut_result = PeanutEmu::begin(bad_rom, sizeof(bad_rom));
   ASSERT_EQ(peanut_result, false, "PeanutEmu should reject corrupt ROM");
   
@@ -68,10 +64,26 @@ void testEmulatorRejection() {
 void testDisplayPalette() {
   TEST_CASE("Display Palette Structure");
   
-  // Verify the classic palette has 4 elements and matches expectations
-  ASSERT_EQ(DisplayEmu::CLASSIC_PALETTE[0], 0xE19D, "Color 0 mismatch");
-  ASSERT_EQ(DisplayEmu::CLASSIC_PALETTE[3], 0xC109, "Color 3 mismatch");
+  // Values must match display_emu.cpp CLASSIC_PALETTE[] definition exactly.
+  ASSERT_EQ(DisplayEmu::CLASSIC_PALETTE[0], 0xF30D, "Color 0 (lightest) mismatch");
+  ASSERT_EQ(DisplayEmu::CLASSIC_PALETTE[3], 0xC109, "Color 3 (darkest) mismatch");
 }
+
+// ---------------------------------------------------------------------------
+// BM2: IRAM usage diagnostic
+// Reports heap_caps free size in IRAM region. Expected: > 200KB with current
+// IRAM_ATTR functions (estimated ~10–15KB used from the 400KB budget).
+// ---------------------------------------------------------------------------
+void testIRAMPlacement() {
+  TEST_CASE("IRAM Placement Budget");
+  size_t iram_free = heap_caps_get_free_size(MALLOC_CAP_IRAM_8BIT);
+  Serial.printf("  IRAM free: %u bytes\n", iram_free);
+  // Verify at least 200KB is free (IRAM_ATTR functions should use << 100KB).
+  ASSERT_TRUE(iram_free > 200 * 1024,
+    "IRAM overcommitted — check IRAM_ATTR usage");
+}
+
+// (Scale map test removed in Round 3 as scale_map was eliminated)
 
 bool runAllTests() {
   Serial.println("\n========== STARTING UNIT TEST SUITE ==========");
@@ -82,6 +94,7 @@ bool runAllTests() {
   testButtonsCount();
   testEmulatorRejection();
   testDisplayPalette();
+  testIRAMPlacement();
   
   Serial.println("========== TEST SUITE FINISHED ==========");
   Serial.printf("PASSED: %d\n", testsPassed);

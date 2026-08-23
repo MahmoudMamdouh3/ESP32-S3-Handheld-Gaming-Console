@@ -13,10 +13,14 @@ namespace {
     {"Select", BTN_SELECT, false, false},
   };
   const int NUM_BUTTONS = sizeof(states) / sizeof(states[0]);
+
+  // FIX Q3: File-scope static_assert so the check is always evaluated at
+  // compile time, not only when begin() happens to be called.
+  static_assert(sizeof(states) / sizeof(states[0]) == 8,
+                "Expected exactly 8 buttons for GB joypad mapping");
 }
 
 void Buttons::begin() {
-  static_assert(NUM_BUTTONS == 8, "Expected exactly 8 buttons for GB joypad mapping");
   for (int i = 0; i < NUM_BUTTONS; i++) {
     pinMode(states[i].pin, INPUT_PULLUP);
   }
