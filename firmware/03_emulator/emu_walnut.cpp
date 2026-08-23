@@ -1,3 +1,4 @@
+#pragma GCC optimize ("O3")
 #include "emu_walnut.h"
 #include "buttons.h"
 #include "display_emu.h"
@@ -6,6 +7,7 @@
 #define ENABLE_LCD 1
 #define ENABLE_SOUND 0
 #define WALNUT_FULL_GBC_SUPPORT 1
+#define WALNUT_GB_RGB565_BIGENDIAN 1
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -59,19 +61,26 @@ namespace {
 
   void lcd_draw_line(struct gb_s *gb, const uint8_t *pixels, const uint_fast8_t line) {
     static uint16_t rowBuffer[480];
+    static uint8_t scale_map[240];
+    static bool map_init = false;
+    
+    if (!map_init) {
+      for (int i = 0; i < 240; i++) scale_map[i] = (i * 2) / 3;
+      map_init = true;
+    }
     
     for (int x = 0; x < 240; x++) {
-      int src_x = (x * 2) / 3;
+      int src_x = scale_map[x];
       uint16_t color;
       
       if (gb->cgb.cgbMode) {
         color = gb->cgb.fixPalette[pixels[src_x]];
       } else {
         // GBC automatically colorizes monochrome DMG games!
-        // We define 3 distinct palettes (swapped RGB565 for SPI)
-        static const uint16_t PAL_BG[4]   = { 0xFFFF, 0xBF68, 0x1000, 0x0000 }; // White, Light Blue, Dark Blue, Black
-        static const uint16_t PAL_OBJ0[4] = { 0xFFFF, 0x00F8, 0x0080, 0x0000 }; // White, Red, Dark Red, Black
-        static const uint16_t PAL_OBJ1[4] = { 0xFFFF, 0xE007, 0xE003, 0x0000 }; // White, Green, Dark Green, Black
+        // We define 3 distinct palettes (swapped BGR565 for SPI)
+        static const uint16_t PAL_BG[4]   = { 0xFFFF, 0x8CF5, 0x0080, 0x0000 }; // White, Light Blue, Dark Blue, Black
+        static const uint16_t PAL_OBJ0[4] = { 0xFFFF, 0x1F00, 0x1000, 0x0000 }; // White, Red, Dark Red, Black
+        static const uint16_t PAL_OBJ1[4] = { 0xFFFF, 0x0700, 0x0300, 0x0000 }; // White, Green, Dark Green, Black
         
         uint8_t pixel_val = pixels[src_x];
         uint8_t color_idx = pixel_val & 0x03;
@@ -82,13 +91,7 @@ namespace {
         else color = PAL_BG[color_idx];
       }
       
-      // Fix RGB vs BGR and endianness for the ST7789 display
-      uint16_t native = (color >> 8) | (color << 8); // Un-swap SPI endianness
-      uint16_t r = (native >> 11) & 0x1F;
-      uint16_t g = (native >> 5) & 0x3F;
-      uint16_t b = native & 0x1F;
-      uint16_t bgr = (b << 11) | (g << 5) | r;
-      rowBuffer[x] = (bgr >> 8) | (bgr << 8); // Re-swap for SPI
+      rowBuffer[x] = color;
     }
     
     int out_y = (line * 3) / 2;

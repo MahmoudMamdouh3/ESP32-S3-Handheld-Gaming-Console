@@ -2,6 +2,7 @@
 *.hex
 *.elf
 *.bin
+*.o
 build/
 
 # Editor

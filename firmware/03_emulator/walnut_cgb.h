@@ -77,7 +77,9 @@
 // Uses alignment aware read/writes with an 8-bit fallback (16-bit alignment implemented for read path only in this version)
 #define WALNUT_GB_16BIT_ALIGNED 1
 #define WALNUT_GB_32BIT_ALIGNED 1
+#ifndef WALNUT_GB_RGB565_BIGENDIAN
 #define WALNUT_GB_RGB565_BIGENDIAN 0
+#endif
 uint8_t __gb_read(struct gb_s *gb, uint16_t addr);
 void __gb_write(struct gb_s *gb, uint_fast16_t addr, uint8_t val);
 void __gb_write16(struct gb_s *gb, uint_fast16_t addr, uint16_t val);
@@ -484,7 +486,8 @@ static inline uint16_t bgr555_to_rgb565BE_accurate(uint16_t c)
 
 	g = (g << 1) | (g >> 4);                // 5 → 6-bit expansion
 
-	uint16_t tempRGB565 = (r << 11) | (g << 5) | b;
+	// HARDWARE FIX: Physical ST7789 displays are BGR. Build BGR565 instead of RGB565.
+	uint16_t tempRGB565 = (b << 11) | (g << 5) | r;
     	return (tempRGB565 << 8) | (tempRGB565 >> 8); // swap bytes
 }
 

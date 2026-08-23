@@ -185,9 +185,6 @@ void loop() {
       PeanutEmu::runFrame();
     }
     
-    // Blast the 103KB framebuffer to the screen in one SPI transaction
-    DisplayEmu::renderFrame();
-
     // 4. Throttling to ~59.73 Hz (16742 microseconds per frame)
     // then spin-wait for the final ~2ms to guarantee sub-millisecond precision
     // without FreeRTOS tick rounding bias.
@@ -198,7 +195,7 @@ void loop() {
         delay((wait - 2000) / 1000); // Sleep and power-gate core
       }
       
-      // Spin-wait the remainder
+      // Spin-wait the remainder ONLY if we are actually early
       unsigned long lastYield = micros();
       while (micros() - frameStart < 16742) {
         if (micros() - lastYield >= 1000) {

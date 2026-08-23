@@ -19,20 +19,20 @@ namespace {
   // Center it both horizontally and vertically.
   const int OFFSET_X = (320 - 240) / 2; // 40
   const int OFFSET_Y = (240 - 216) / 2; // 12
-  
-  // 103KB Framebuffer in BSS to prevent SPI transaction lag
-  uint16_t gameFrameBuffer[240 * 216];
 }
 
+// Classic Game Boy "Pea-Soup Green" palette in BGR565 (Little-Endian swapped)
+// Pre-swapped for BGR physical displays
 const uint16_t DisplayEmu::CLASSIC_PALETTE[4] = {
-  0xE19D, // Swapped 0x9DE1
-  0x618D, // Swapped 0x8D61
-  0x0633, // Swapped 0x3306
-  0xC109  // Swapped 0x09C1
+  0xF30D, 
+  0x710D, 
+  0x0633, 
+  0xC109  
 };
 
 void DisplayEmu::begin() {
   tft.init(TFT_WIDTH, TFT_HEIGHT);
+  tft.setSPISpeed(80000000); // 80 MHz SPI clock for max framerate
   tft.setRotation(3); // Flipped Landscape mode (270 degrees)
   tft.fillScreen(ST77XX_BLACK);
 }
@@ -42,21 +42,13 @@ void DisplayEmu::clearScreen() {
 }
 
 void DisplayEmu::pushPixels(int yOffset, const uint16_t* rowBuffer, int rowsToDraw) {
-  // Instead of doing a blocking SPI transfer for every single line, 
-  // we just copy it into our fast RAM framebuffer!
-  if (yOffset >= 0 && yOffset + rowsToDraw <= 216) {
-    memcpy(&gameFrameBuffer[yOffset * 240], rowBuffer, 240 * rowsToDraw * 2);
-  }
-}
-
-void DisplayEmu::renderFrame() {
-  // Send the entire 103KB frame in a single massive SPI burst.
-  // This completely eliminates the SPI transaction overhead.
   tft.startWrite();
-  tft.setAddrWindow(OFFSET_X, OFFSET_Y, 240, 216);
-  SPI.writeBytes((const uint8_t*)gameFrameBuffer, 240 * 216 * 2);
+  tft.setAddrWindow(OFFSET_X, OFFSET_Y + yOffset, 240, rowsToDraw);
+  SPI.writeBytes((const uint8_t*)rowBuffer, 240 * rowsToDraw * 2);
   tft.endWrite();
 }
+
+
 
 void DisplayEmu::drawEmulatorSelectMenu(int selectedIndex) {
   tft.fillScreen(0x5E36); // BMO Teal background

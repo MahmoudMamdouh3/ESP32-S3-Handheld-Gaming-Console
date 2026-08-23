@@ -1,3 +1,4 @@
+#pragma GCC optimize ("O3")
 #include "emu_peanut.h"
 #include "buttons.h"
 #include "display_emu.h"
@@ -55,18 +56,19 @@ namespace {
   }
 
   void lcd_draw_line(struct gb_s *gb, const uint8_t pixels[160], const uint_fast8_t line) {
-    static uint16_t rowBuffer[480];
+    static uint16_t rowBuffer[480]; // Max possible width
+    static uint8_t scale_map[240];
+    static bool map_init = false;
+    
+    if (!map_init) {
+      for (int i = 0; i < 240; i++) scale_map[i] = (i * 2) / 3;
+      map_init = true;
+    }
     
     for (int x = 0; x < 240; x++) {
-      int src_x = (x * 2) / 3;
+      int src_x = scale_map[x];
       uint8_t color_idx = pixels[src_x] & 0x03; 
-      uint16_t color = DisplayEmu::CLASSIC_PALETTE[color_idx];
-      uint16_t native = (color >> 8) | (color << 8); // Un-swap SPI endianness
-      uint16_t r = (native >> 11) & 0x1F;
-      uint16_t g = (native >> 5) & 0x3F;
-      uint16_t b = native & 0x1F;
-      uint16_t bgr = (b << 11) | (g << 5) | r;
-      rowBuffer[x] = (bgr >> 8) | (bgr << 8); // Re-swap for SPI
+      rowBuffer[x] = DisplayEmu::CLASSIC_PALETTE[color_idx];
     }
 
     int out_y = (line * 3) / 2;

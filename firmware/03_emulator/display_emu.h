@@ -16,8 +16,7 @@ namespace DisplayEmu {
   // Draw an array of RGB565 pixels directly to the TFT.
   void pushPixels(int yOffset, const uint16_t* rowBuffer, int rowsToDraw);
 
-  // Render the entire framebuffer to the display (Call once per frame)
-  void renderFrame();
+
 
   // Classic Game Boy "Pea-Soup Green" palette in RGB565 (Little-Endian swapped)
   extern const uint16_t CLASSIC_PALETTE[4];
