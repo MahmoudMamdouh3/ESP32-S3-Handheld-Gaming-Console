@@ -7,8 +7,27 @@
 #include <cstdio>
 #include <Fonts/FreeSans9pt7b.h>
 #include <Fonts/FreeSans12pt7b.h>
+#include <math.h>
 
 // No emulator headers should be included here to prevent ODR violations
+#include <esp_heap_caps.h>
+
+class PSRAMCanvas : public GFXcanvas16 {
+public:
+  PSRAMCanvas(uint16_t w, uint16_t h) : GFXcanvas16(w, h, false) {
+    buffer = (uint16_t*)heap_caps_malloc(w * h * 2, MALLOC_CAP_SPIRAM);
+  }
+  ~PSRAMCanvas() {
+    if (buffer) {
+      heap_caps_free(buffer);
+      buffer = nullptr;
+    }
+  }
+};
+
+static PSRAMCanvas* menuCanvas = nullptr;
+static float currentScrollPos = 0.0f;
+static uint32_t lastFrameTime = 0;
 
 
 namespace {
@@ -119,6 +138,40 @@ void DisplayEmu::streamNESFrame(const uint8_t* nes_framebuffer) {
 }
 
 // ---------------------------------------------------------------------------
+// DOOM Rendering
+// ---------------------------------------------------------------------------
+struct color {
+    uint32_t b:8;
+    uint32_t g:8;
+    uint32_t r:8;
+    uint32_t a:8;
+};
+extern "C" struct color colors[256];
+
+void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
+  // Screen is 320x240, DOOM is 320x200
+  // So we center DOOM on Y (offset = 20)
+  tft.startWrite();
+  tft.setAddrWindow(0, 20, 320, 200);
+
+  // We have enough RAM to do 1 line at a time
+  uint16_t lineBuf[320];
+
+  for (int y = 0; y < 200; y++) {
+    for (int x = 0; x < 320; x++) {
+      int idx = cmap[y * 320 + x];
+      struct color c = colors[idx];
+      uint16_t p = ((c.r & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.b >> 3);
+      // Byte swap for SPI DMA
+      lineBuf[x] = (p >> 8) | (p << 8);
+    }
+    SPI.writeBytes((const uint8_t*)lineBuf, 320 * 2);
+  }
+  
+  tft.endWrite();
+}
+
+// ---------------------------------------------------------------------------
 // Legacy per-scanline push — used for occasional cover-art or menu blits
 // where no startFrame/endFrame context exists.
 // ---------------------------------------------------------------------------
@@ -135,87 +188,90 @@ void DisplayEmu::pushPixelsRaw(int yOffset, const uint16_t* rowBuffer, int rowsT
   SPI.writeBytes((const uint8_t*)rowBuffer, 240 * rowsToDraw * 2);
 }
 
-
-
-void DisplayEmu::drawEmulatorSelectMenu(int selectedIndex) {
-  tft.fillScreen(0x5E36); // BMO Teal background
-  tft.fillRect(0, 0, 320, 30, 0x11E9); // Dark blue top bar
-  
-  // Title
-  tft.setFont(&FreeSans12pt7b);
-  tft.setTextSize(1);
-  tft.setTextColor(0xFD84); // Yellow text on dark blue
-  
-  tft.setCursor(65, 22);
-  tft.print("SELECT CONSOLE");
-
-  // Draw Console Graphics
-  if (selectedIndex == 0) { // GBC
-    tft.fillRect(110, 60, 100, 100, 0xFFFF);
-    tft.fillRect(120, 70, 80, 20, 0xF800);
-    tft.fillRect(120, 90, 80, 20, 0x07E0);
-    tft.fillRect(120, 110, 80, 20, 0x001F);
-  } else if (selectedIndex == 1) { // GB
-    tft.fillRect(110, 60, 100, 100, 0xCE79);
-    tft.fillRect(120, 70, 80, 20, 0x4208);
-    tft.fillRect(120, 90, 80, 20, 0x8410);
-    tft.fillRect(120, 110, 80, 20, 0xC618);
-  } else if (selectedIndex == 2) { // NES
-    tft.fillRect(110, 60, 100, 100, 0x8410);
-    tft.fillRect(120, 130, 80, 15, 0xF800);
-    tft.fillRect(140, 75, 40, 40, 0x0000);
-  } else if (selectedIndex == 3) { // SNES
-    tft.fillRect(110, 60, 100, 100, 0xAD75);
-    tft.fillRect(110, 60, 100, 20, 0x4208);
-    tft.fillCircle(160, 110, 25, 0x61B7);
-  } else if (selectedIndex == 4) { // GBA
-    tft.fillRect(110, 70, 100, 80, 0x301A);
-    tft.fillRoundRect(120, 80, 80, 40, 5, 0xFFFF);
-  } else { // Sega Genesis
-    tft.fillRect(110, 60, 100, 100, 0x0000);
-    tft.fillRect(120, 90, 80, 40, 0x0000);
-    tft.drawRect(120, 90, 80, 40, 0xF800);
+void DisplayEmu::initMenuUI() {
+  if (!menuCanvas) {
+    menuCanvas = new PSRAMCanvas(320, 240);
   }
-  tft.drawRect(108, 58, 104, 104, 0x11E9);
-  tft.drawRect(109, 59, 102, 102, 0x11E9);
+}
 
-  // Arrows
-  tft.setFont(&FreeSans12pt7b);
-  tft.setTextSize(1);
-  tft.setTextColor(0xFD84);
-  tft.setCursor(50, 115);
-  tft.print("<");
-  tft.setCursor(250, 115);
-  tft.print(">");
+void DisplayEmu::cleanupMenuUI() {
+  if (menuCanvas) {
+    delete menuCanvas;
+    menuCanvas = nullptr;
+  }
+}
 
-  // Console Name — accurate centering via getTextBounds()
-  tft.setFont(&FreeSans9pt7b);
-  tft.setTextSize(1);
-  tft.setTextColor(0x11E9);
+void DisplayEmu::drawMenuFrame(const char** titles, int count, int selectedIndex, bool useColorEmulator) {
+  if (!menuCanvas) return;
   
-  const char* consoleNames[] = {
-    "Game Boy Color (1998)",
-    "Game Boy (1989)",
-    "Nintendo NES (1983)",
-    "Super Nintendo (1990)",
-    "Game Boy Advance (2001)",
-    "Sega Genesis (1989)"
-  };
-  
-  const char* name = consoleNames[selectedIndex];
-  tft.setCursor(centeredX(name, 320), 190);
-  tft.print(name);
+  uint32_t now = millis();
+  float dt = (now - lastFrameTime) / 1000.0f;
+  if (dt > 0.1f) dt = 0.1f;
+  lastFrameTime = now;
 
-  // READY / COMING SOON badge (indices 0 & 1 are fully implemented)
-  bool isReady = (selectedIndex == 0 || selectedIndex == 1);
-  tft.setFont();
-  tft.setTextSize(1);
-  tft.setTextColor(isReady ? 0x07E0 : 0xF800);
-  const char* badge = isReady ? "[ READY ]" : "[ COMING SOON ]";
-  int16_t bx1, by1; uint16_t bw, bh;
-  tft.getTextBounds(badge, 0, 0, &bx1, &by1, &bw, &bh);
-  tft.setCursor((320 - bw) / 2, 208);
-  tft.print(badge);
+  // Smooth lerp scrolling
+  float targetScroll = (float)selectedIndex;
+  currentScrollPos += (targetScroll - currentScrollPos) * 10.0f * dt;
+
+  // Animated background (moving grid)
+  menuCanvas->fillScreen(0x18C3); // Dark background
+  int gridOffset = (now / 20) % 20;
+  for (int x = gridOffset; x < 320; x += 20) {
+    menuCanvas->drawFastVLine(x, 0, 240, 0x2104);
+  }
+  for (int y = gridOffset; y < 240; y += 20) {
+    menuCanvas->drawFastHLine(0, y, 320, 0x2104);
+  }
+
+  // Draw header
+  menuCanvas->fillRect(0, 0, 320, 35, 0x0000);
+  menuCanvas->setFont(&FreeSans12pt7b);
+  menuCanvas->setTextSize(1);
+  menuCanvas->setTextColor(0xFD84); // Yellow text
+  menuCanvas->setCursor(80, 25);
+  menuCanvas->print("BMO GAMEBOY");
+
+  // Pulsing selector
+  int pulse = (sin(now / 150.0f) + 1.0f) * 15.0f;
+  uint16_t pulseColor = tft.color565(100 + pulse*5, 200 + pulse, 100 + pulse*5);
+
+  // Draw items
+  menuCanvas->setFont(&FreeSans9pt7b);
+  
+  for (int i = 0; i < count; i++) {
+    float yPos = 120 + (i - currentScrollPos) * 40;
+    
+    // Only draw if on screen
+    if (yPos > -20 && yPos < 260) {
+      bool isSelected = (i == selectedIndex);
+      
+      if (isSelected) {
+        menuCanvas->fillRoundRect(20, yPos - 15, 280, 30, 8, pulseColor);
+        menuCanvas->drawRoundRect(20, yPos - 15, 280, 30, 8, 0xFFFF);
+        menuCanvas->setTextColor(0x0000);
+      } else {
+        menuCanvas->setTextColor(0xFFFF);
+      }
+      
+      menuCanvas->setCursor(35, yPos + 6);
+      menuCanvas->print(titles[i]);
+    }
+  }
+
+  // Draw footer
+  menuCanvas->fillRect(0, 210, 320, 30, 0x0000);
+  menuCanvas->setTextColor(0xFFFF);
+  menuCanvas->setFont();
+  char progress[32];
+  sprintf(progress, "Item %d / %d", selectedIndex + 1, count);
+  menuCanvas->setCursor(10, 220);
+  menuCanvas->print(progress);
+
+  // Push to screen via SPI
+  tft.startWrite();
+  tft.setAddrWindow(0, 0, 320, 240);
+  SPI.writeBytes((const uint8_t*)menuCanvas->getBuffer(), 320 * 240 * 2);
+  tft.endWrite();
 }
 
 void DisplayEmu::showSDCardWarning() {
@@ -227,48 +283,4 @@ void DisplayEmu::showSDCardWarning() {
   tft.print("SD CARD REQUIRED");
   tft.setCursor(55, 135);
   tft.print("FOR THIS CONSOLE");
-}
-
-void DisplayEmu::drawMenu(const char** titles, int count, int selectedIndex, const uint16_t* selectedCover, bool useColorEmulator) {
-  tft.fillScreen(0x5E36);
-  tft.fillRect(0, 0, 320, 30, 0x11E9);
-  
-  tft.setFont(&FreeSans12pt7b);
-  tft.setTextSize(1);
-  tft.setTextColor(0xFD84);
-  tft.setCursor(80, 22);
-  tft.print("BMO GAMEBOY");
-
-  if (selectedCover) {
-    tft.drawRGBBitmap(110, 50, selectedCover, 100, 100);
-    tft.drawRect(108, 48, 104, 104, 0x11E9);
-    tft.drawRect(109, 49, 102, 102, 0x11E9);
-  }
-
-  tft.setFont(&FreeSans12pt7b);
-  tft.setTextSize(1);
-  tft.setTextColor(0xFD84);
-  tft.setCursor(50, 105);
-  tft.print("<");
-  tft.setCursor(250, 105);
-  tft.print(">");
-
-  tft.setFont(&FreeSans9pt7b);
-  tft.setTextSize(1);
-  tft.setTextColor(0x11E9);
-  tft.setCursor(centeredX(titles[selectedIndex], 320), 185);
-  tft.print(titles[selectedIndex]);
-
-  tft.setFont();
-  tft.setTextSize(1);
-  tft.setTextColor(0x11E9);
-  
-  char progress[16];
-  sprintf(progress, "Game %d of %d", selectedIndex + 1, count);
-  tft.setCursor(10, 225);
-  tft.print(progress);
-
-  tft.setTextColor(useColorEmulator ? 0xFD84 : 0x11E9);
-  tft.setCursor(240, 225);
-  tft.print(useColorEmulator ? "Walnut-CGB" : "Peanut-GB");
 }

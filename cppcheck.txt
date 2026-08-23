@@ -279,3 +279,100 @@ firmware\03_emulator\emu_walnut.cpp:76:51: note: Parameter 'gb' can be declared 
   IRAM_ATTR uint8_t gb_cart_ram_read(struct gb_s *gb, const uint_fast32_t addr) {
                                                   ^
 Checking firmware\03_emulator\emu_walnut.cpp: WALNUT_GB_16_BIT...
+Checking firmware\03_emulator\emu_walnut.cpp: WALNUT_GB_16_BIT_DISABLED...
+Checking firmware\03_emulator\emu_walnut.cpp: WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED3...
+Checking firmware\03_emulator\emu_walnut.cpp: WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED_DISABLED...
+Checking firmware\03_emulator\emu_walnut.cpp: WALNUT_GB_HIGH_LCD_ACCURACY=0...
+Checking firmware\03_emulator\emu_walnut.cpp: WALNUT_GB_SAFE_DUALFETCH_OPCODES_DISABLED...
+Checking firmware\03_emulator\emu_walnut.cpp: WGB_LIKELY...
+Checking firmware\03_emulator\emu_walnut.cpp: WGB_UNLIKELY...
+firmware\03_emulator\walnut_cgb.h:5160:10: error: syntax error [syntaxError]
+   while(WGB_UNLIKELY(gb->counter.rtc_count >= RTC_CYCLES))
+         ^
+Checking firmware\03_emulator\emu_walnut.cpp: WGB_UNREACHABLE...
+firmware\03_emulator\walnut_cgb.h:1047:5: error: syntax error [syntaxError]
+    WGB_UNREACHABLE();
+    ^
+Checking firmware\03_emulator\emu_walnut.cpp: WGB_UNREACHABLE;_MSC_VER...
+Checking firmware\03_emulator\emu_walnut.cpp: _MSC_VER;_M_AMD64;_M_IX86_FP;_M_X64...
+4/5 files checked 84% done
+Checking firmware\03_emulator\unit_tests.cpp ...
+firmware\03_emulator\unit_tests.cpp:2:0: information: Include file: <Arduino.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <Arduino.h>
+^
+firmware\03_emulator\unit_tests.cpp:3:0: information: Include file: <esp_heap_caps.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <esp_heap_caps.h>
+^
+firmware\03_emulator\rom_data.h:4:0: information: Include file: <pgmspace.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <pgmspace.h>
+^
+Checking firmware\03_emulator\unit_tests.cpp: ESP32;ESP8266...
+firmware\03_emulator\rom_data.h:9:42: error: There is an unknown macro here somewhere. Configuration is required. If PROGMEM is a macro then please configure it. [unknownMacro]
+const unsigned char tobu_tobu_girl_rom[] PROGMEM = {
+                                         ^
+5/5 files checked 100% done
+firmware\03_emulator\buttons.cpp:34:0: style: The function 'update' is never used. [unusedFunction]
+void Buttons::update() {
+^
+firmware\03_emulator\buttons.cpp:62:0: style: The function 'get' is never used. [unusedFunction]
+const ButtonState &Buttons::get(int index) {
+^
+firmware\03_emulator\display_emu.cpp:51:0: style: The function 'clearScreen' is never used. [unusedFunction]
+  0xFFFF, 0x3FA7, 0xDFBD, 0xDFDD, 0xDFFD, 0x38FD, 0x96F6, 0x15FF,
+^
+firmware\03_emulator\display_emu.cpp:95:0: style: The function 'pushPixels' is never used. [unusedFunction]
+// streamPixelRow: bare pixel data push â?" MUST be called inside startFrame/endFrame.
+^
+firmware\03_emulator\display_emu.cpp:103:0: style: The function 'pushPixelsRaw' is never used. [unusedFunction]
+// NES Rendering
+^
+firmware\03_emulator\display_emu.cpp:110:0: style: The function 'drawEmulatorSelectMenu' is never used. [unusedFunction]
+  for (int y = 0; y < 240; y++) {
+^
+firmware\03_emulator\display_emu.cpp:191:0: style: The function 'showSDCardWarning' is never used. [unusedFunction]
+    tft.fillRect(120, 110, 80, 20, 0x001F);
+^
+firmware\03_emulator\display_emu.cpp:202:0: style: The function 'drawMenu' is never used. [unusedFunction]
+    tft.fillRect(110, 60, 100, 100, 0xAD75);
+^
+firmware\03_emulator\emu_peanut.cpp:125:0: style: The function 'updateJoypad' is never used. [unusedFunction]
+void PeanutEmu::updateJoypad() {
+^
+firmware\03_emulator\emu_peanut.cpp:130:0: style: The function 'runFrame' is never used. [unusedFunction]
+void PeanutEmu::runFrame() {
+^
+firmware\03_emulator\peanut_gb.h:3539:0: style: The function 'gb_get_save_size_s' is never used. [unusedFunction]
+int gb_get_save_size_s(struct gb_s *gb, size_t *ram_size)
+^
+firmware\03_emulator\peanut_gb.h:3567:0: style: The function 'gb_get_save_size' is never used. [unusedFunction]
+uint_fast32_t gb_get_save_size(struct gb_s *gb)
+^
+firmware\03_emulator\peanut_gb.h:3590:0: style: The function 'gb_init_serial' is never used. [unusedFunction]
+void gb_init_serial(struct gb_s *gb,
+^
+firmware\03_emulator\peanut_gb.h:3599:0: style: The function 'gb_colour_hash' is never used. [unusedFunction]
+uint8_t gb_colour_hash(struct gb_s *gb)
+^
+firmware\03_emulator\peanut_gb.h:3800:0: style: The function 'gb_get_rom_name' is never used. [unusedFunction]
+const char* gb_get_rom_name(struct gb_s* gb, char *title_str)
+^
+firmware\03_emulator\peanut_gb.h:3844:0: style: The function 'gb_set_bootrom' is never used. [unusedFunction]
+void gb_set_bootrom(struct gb_s *gb,
+^
+firmware\03_emulator\peanut_gb.h:3854:0: style: The function 'gb_tick_rtc' is never used. [unusedFunction]
+void gb_tick_rtc(struct gb_s *gb)
+^
+firmware\03_emulator\peanut_gb.h:3860:0: style: The function 'gb_set_rtc' is never used. [unusedFunction]
+void gb_set_rtc(struct gb_s *gb, const struct tm * const time)
+^
+firmware\03_emulator\unit_tests.cpp:109:0: style: The function 'runAllTests' is never used. [unusedFunction]
+bool runAllTests() {
+^
+firmware\03_emulator\walnut_cgb.h:494:0: style: The function 'bgr555_to_rgb565_accurate' is never used. [unusedFunction]
+static inline uint16_t bgr555_to_rgb565_accurate(uint16_t c)
+^
+firmware\03_emulator\walnut_cgb.h:505:0: style: The function 'bgr555_to_rgb565_fast' is never used. [unusedFunction]
+static inline uint16_t bgr555_to_rgb565_fast(uint16_t c)
+^
+nofile:0:0: information: Active checkers: There was critical errors (use --checkers-report=<filename> to see details) [checkersReport]
+

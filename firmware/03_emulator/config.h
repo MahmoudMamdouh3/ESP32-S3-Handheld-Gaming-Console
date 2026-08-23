@@ -23,6 +23,11 @@
 #define TFT_WIDTH  240
 #define TFT_HEIGHT 320
 
+// ---------- SD Card Module (shares SPI bus with display) ----------
+// SCK and MOSI are shared with the display (GPIO 12 and 11).
+#define SD_MISO    15
+#define SD_CS      13
+
 // ---------- Buttons (Game Boy layout) ----------
 // Each button: one leg -> GPIO, other leg -> GND.
 // Internal pull-ups used (INPUT_PULLUP), so a press reads LOW.

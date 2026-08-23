@@ -1,7 +1,7 @@
 #include "unit_tests.h"
 #include <Arduino.h>
 #include <esp_heap_caps.h>
-#include "rom_data.h"
+#include "../../assets/legacy_headers/rom_data.h"
 #include "buttons.h"
 #include "display_emu.h"
 #include "emu_peanut.h"

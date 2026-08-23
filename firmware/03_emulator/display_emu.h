@@ -11,8 +11,9 @@ namespace DisplayEmu {
   // Menu drawing functions
   void drawEmulatorSelectMenu(int selectedIndex);
   void showSDCardWarning();
-  void drawMenu(const char** titles, int count, int selectedIndex,
-                const uint16_t* selectedCover, bool useColorEmulator);
+  void initMenuUI();
+  void drawMenuFrame(const char** titles, int count, int selectedIndex, bool useColorEmulator);
+  void cleanupMenuUI();
 
   // ---------------------------------------------------------------------------
   // Pixel push API
@@ -28,6 +29,9 @@ namespace DisplayEmu {
   // Starts an SPI transaction and streams exactly 240 lines of NES video (256x240)
   // scaled/cropped to the 240x216 centered display window.
   void streamNESFrame(const uint8_t* nes_framebuffer);
+
+  // Starts an SPI transaction and streams 320x200 DOOM pixels.
+  void streamDoomFrame(const uint8_t* cmap);
 
   // pushPixels: full self-contained transaction (startWrite + setAddrWindow +
   // writeBytes + endWrite). Use for cover art or any one-off blit.

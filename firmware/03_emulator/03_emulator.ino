@@ -2,43 +2,27 @@
 #include "emu_peanut.h"
 #include "emu_walnut.h"
 #include "emu_nes.h"
+#include "emu_doom.h"
 #include "unit_tests.h"
 #include "buttons.h"
 #include "display_emu.h"
-#include "rom_supermariobrosdeluxe.h"
-#include "cover_supermariobrosdeluxe.h"
-#include "rom_legendofzeldatheoracleofseasons.h"
-#include "cover_legendofzeldatheoracleofseasons.h"
+#include "sd_card.h"
 #include <SPI.h>
 #include <rom/ets_sys.h>      // N7: ets_delay_us for tight hardware-timer spin
 #include <esp_heap_caps.h>    // BM2: IRAM usage reporting
 
-struct Game {
-  const char* title;
-  const uint8_t* data;
-  size_t length;
-  const uint16_t* cover;
-};
-
-Game games[] = {
-  {"Super Mario Bros. Deluxe", rom_supermariobrosdeluxe, rom_supermariobrosdeluxe_len, cover_supermariobrosdeluxe},
-  {"Zelda: Oracle of Seasons", rom_legendofzeldatheoracleofseasons, rom_legendofzeldatheoracleofseasons_len, cover_legendofzeldatheoracleofseasons}
-};
-
-// Q2: Derived at compile time — stays in sync if the game table grows.
-static constexpr int NUM_GAMES = (int)(sizeof(games) / sizeof(games[0]));
-
 enum SystemState {
-  STATE_EMULATOR_SELECT,
   STATE_MENU,
   STATE_EMULATOR
 };
 
-SystemState currentState = STATE_EMULATOR_SELECT;
-int selectedEmulatorIndex = 0; // 0 = Walnut-CGB, 1 = Peanut-GB
+SystemState currentState = STATE_MENU;
+int selectedEmulatorIndex = 0; // Legacy unused var, kept for compat
 int selectedGameIndex = 0;
-bool redrawMenu = true;
 bool useColorEmulator = true;
+
+// Pointer to dynamically loaded ROM buffer in PSRAM
+uint8_t* currentRomBuffer = nullptr;
 
 // P3: Timestamp-based debounce — non-blocking replacement for delay(200).
 static const unsigned long DEBOUNCE_MS = 200;
@@ -102,6 +86,12 @@ void setup() {
 
   Buttons::begin();
   DisplayEmu::begin();
+  
+  if (!SDCard::begin()) {
+    Serial.println("Failed to mount SD card!");
+  } else {
+    Serial.printf("SD Card mounted. Found %d ROMs.\n", SDCard::getRomCount());
+  }
 
   // BM2: Report IRAM free size so we can verify IRAM_ATTR budget usage.
   Serial.printf("IRAM free: %u bytes\n",
@@ -113,56 +103,9 @@ void setup() {
 }
 
 void loop() {
-  if (currentState == STATE_EMULATOR_SELECT) {
-    Buttons::update();
-    const auto& btnLeft = Buttons::get(Buttons::LEFT);
-    const auto& btnRight = Buttons::get(Buttons::RIGHT);
-    const auto& btnA = Buttons::get(Buttons::A);
-    bool left  = btnLeft.pressed  && btnLeft.changed;
-    bool right = btnRight.pressed && btnRight.changed;
-    bool a     = btnA.pressed     && btnA.changed;
-
-    if (redrawMenu) {
-      DisplayEmu::drawEmulatorSelectMenu(selectedEmulatorIndex);
-      redrawMenu = false;
-    }
-
-    if (canPress()) {
-      if (left) {
-        selectedEmulatorIndex = (selectedEmulatorIndex - 1 + 6) % 6;
-        redrawMenu = true;
-        lastButtonMs = millis();
-      }
-      if (right) {
-        selectedEmulatorIndex = (selectedEmulatorIndex + 1) % 6;
-        redrawMenu = true;
-        lastButtonMs = millis();
-      }
-      if (a) {
-        if (selectedEmulatorIndex == 0 || selectedEmulatorIndex == 1) {
-          useColorEmulator = (selectedEmulatorIndex == 0);
-          currentState = STATE_MENU;
-          redrawMenu = true;
-        } else if (selectedEmulatorIndex == 2) {
-          // NES: We don't have a game selection menu for NES yet.
-          // Booting with a tiny dummy ROM header to initialize the core safely.
-          static const uint8_t dummy_nes[16] = {'N','E','S',0x1a,0,0,0,0,0,0,0,0,0,0,0,0};
-          DisplayEmu::clearScreen();
-          NesEmu::begin(dummy_nes, sizeof(dummy_nes));
-          resetFrameStats();
-          currentState = STATE_EMULATOR;
-        } else {
-          DisplayEmu::showSDCardWarning();
-          delay(2000);
-          redrawMenu = true;
-        }
-        lastButtonMs = millis();
-      }
-    }
+  if (currentState == STATE_MENU) {
+    DisplayEmu::initMenuUI();
     
-    delay(16);
-
-  } else if (currentState == STATE_MENU) {
     Buttons::update();
     const auto& btnLeft = Buttons::get(Buttons::LEFT);
     const auto& btnRight = Buttons::get(Buttons::RIGHT);
@@ -172,54 +115,91 @@ void loop() {
     bool right  = btnRight.pressed  && btnRight.changed;
     bool a      = btnA.pressed      && btnA.changed;
     bool select = btnSelect.pressed && btnSelect.changed;
+    
+    int numRoms = SDCard::getRomCount();
 
-    if (redrawMenu) {
-      // Q1: Build titles array inline — no redundant global gameTitles[].
-      const char* titles[NUM_GAMES];
-      for (int i = 0; i < NUM_GAMES; i++) titles[i] = games[i].title;
-      DisplayEmu::drawMenu(titles, NUM_GAMES, selectedGameIndex,
-                           games[selectedGameIndex].cover, useColorEmulator);
-      redrawMenu = false;
-    }
-
-    if (canPress()) {
+    if (canPress() && numRoms > 0) {
       if (left) {
-        selectedGameIndex = (selectedGameIndex - 1 + NUM_GAMES) % NUM_GAMES;
-        redrawMenu = true;
+        selectedGameIndex = (selectedGameIndex - 1 + numRoms) % numRoms;
         lastButtonMs = millis();
       }
       if (right) {
-        selectedGameIndex = (selectedGameIndex + 1) % NUM_GAMES;
-        redrawMenu = true;
+        selectedGameIndex = (selectedGameIndex + 1) % numRoms;
         lastButtonMs = millis();
       }
       if (select) {
         useColorEmulator = !useColorEmulator;
-        redrawMenu = true;
         lastButtonMs = millis();
       }
       if (a) {
+        // Prepare to launch emulator
+        DisplayEmu::cleanupMenuUI();
         DisplayEmu::clearScreen();
         
+        const RomFile* selectedRom = SDCard::getRomInfo(selectedGameIndex);
+        size_t romSize = 0;
+        uint8_t* romData = SDCard::loadRom(selectedRom->filename, &romSize);
+        
+        if (!romData) {
+          Serial.println("Failed to load ROM from SD card.");
+          DisplayEmu::showSDCardWarning();
+          delay(2000);
+          currentState = STATE_MENU;
+          return;
+        }
+
         bool success = false;
-        if (useColorEmulator) {
-          success = WalnutEmu::begin(games[selectedGameIndex].data, games[selectedGameIndex].length);
+        
+        // Boot appropriate emulator core based on file extension
+        if (selectedRom->type == ROM_WAD) {
+          // DOOM handles its own PSRAM loading via standard C file I/O
+          char wadPath[64];
+          snprintf(wadPath, sizeof(wadPath), "/sd/%s", selectedRom->filename);
+          success = DoomEmu::begin(wadPath);
+          selectedEmulatorIndex = 3;
+          // We don't need romData for DOOM
+          if (romData) {
+            SDCard::freeRom(romData);
+            romData = nullptr;
+          }
+        } else if (selectedRom->type == ROM_NES) {
+          success = NesEmu::begin(romData, romSize);
+          selectedEmulatorIndex = 2; 
+        } else if (selectedRom->type == ROM_GBC || (selectedRom->type == ROM_GB && useColorEmulator)) {
+          success = WalnutEmu::begin(romData, romSize);
+          selectedEmulatorIndex = 0;
         } else {
-          success = PeanutEmu::begin(games[selectedGameIndex].data, games[selectedGameIndex].length);
+          success = PeanutEmu::begin(romData, romSize);
+          selectedEmulatorIndex = 1;
         }
         
         if (!success) {
           Serial.println("Failed to start emulator. Check errors.");
+          SDCard::freeRom(romData); // Free PSRAM on failure
           while (1) delay(100);
         }
+        
+        currentRomBuffer = romData; // Track it globally so we can free it later
+
         resetFrameStats();
         currentState = STATE_EMULATOR;
         lastButtonMs = millis();
       }
     }
-
-    delay(16);
     
+    // 60FPS Draw Loop
+    if (numRoms == 0) {
+      const char* empty_msg[] = {"No ROMs found on SD card."};
+      DisplayEmu::drawMenuFrame(empty_msg, 1, 0, false);
+    } else {
+      const char* titles[100];
+      for (int i = 0; i < numRoms; i++) titles[i] = SDCard::getRomInfo(i)->filename;
+      DisplayEmu::drawMenuFrame(titles, numRoms, selectedGameIndex, useColorEmulator);
+    }
+    
+    // ~60 FPS delay (16ms)
+    delay(16);
+
   } else if (currentState == STATE_EMULATOR) {
     unsigned long frameStart = micros();
 
@@ -230,21 +210,28 @@ void loop() {
     // Return to menu: SELECT + UP
     if (select && up) {
       if (selectedEmulatorIndex == 2) {
-        currentState = STATE_EMULATOR_SELECT;
         NesEmu::destroy();
-      } else {
-        currentState = STATE_MENU;
+      } else if (selectedEmulatorIndex == 3) {
+        DoomEmu::destroy();
       }
-      redrawMenu = true;
+      
+      if (currentRomBuffer) {
+        SDCard::freeRom(currentRomBuffer);
+        currentRomBuffer = nullptr;
+      }
+
+      currentState = STATE_MENU;
       lastButtonMs = millis();
       delay(300);
       return;
     }
 
-    if (selectedEmulatorIndex == 2) {
+    if (selectedEmulatorIndex == 3) {
+      DoomEmu::runFrame();
+    } else if (selectedEmulatorIndex == 2) {
       NesEmu::updateJoypad();
       NesEmu::runFrame();
-    } else if (useColorEmulator) {
+    } else if (selectedEmulatorIndex == 0) {
       WalnutEmu::updateJoypad();
       WalnutEmu::runFrame();
     } else {
