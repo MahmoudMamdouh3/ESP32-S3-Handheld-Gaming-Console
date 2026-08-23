@@ -40,14 +40,19 @@ namespace {
   //   color_idx = pixel_val & 0x03
   // Avoids 2 conditional branches per pixel (34,560 branches saved per frame).
   // Values are byte-swapped BGR565 for the physical ST7789 display.
-  static const uint16_t DMG_ON_GBC_PAL[12] = {
+  // Padded to 16 entries to prevent OOB access if pal_type hits 3.
+  static const uint16_t DMG_ON_GBC_PAL[16] = {
     // OBJ0 (pal_type 0): White, Red, Dark Red, Black
     0xFFFF, 0x1F00, 0x1000, 0x0000,
     // OBJ1 (pal_type 1): White, Green, Dark Green, Black
     0xFFFF, 0x0700, 0x0300, 0x0000,
     // BG   (pal_type 2): White, Light Blue, Dark Blue, Black
     0xFFFF, 0x8CF5, 0x0080, 0x0000,
+    // UNUSED (pal_type 3): Fallback to black
+    0x0000, 0x0000, 0x0000, 0x0000,
   };
+
+  static uint16_t DMG_ON_GBC_PAL_256[256];
 
   // N1: IRAM_ATTR keeps these callback functions in zero-wait-state internal
   // SRAM. They are called ~280,000 times per frame by the emulator core and
@@ -60,15 +65,12 @@ namespace {
 
   IRAM_ATTR uint16_t gb_rom_read16(struct gb_s *gb, const uint_fast32_t addr) {
     if (addr + 2 > current_rom_len) return 0xFFFF;
-    return current_rom_data[addr] | ((uint16_t)current_rom_data[addr + 1] << 8);
+    return *(const uint16_t*)(&current_rom_data[addr]);
   }
 
   IRAM_ATTR uint32_t gb_rom_read32(struct gb_s *gb, const uint_fast32_t addr) {
     if (addr + 4 > current_rom_len) return 0xFFFFFFFF;
-    return (uint32_t)current_rom_data[addr]        |
-           ((uint32_t)current_rom_data[addr + 1] << 8)  |
-           ((uint32_t)current_rom_data[addr + 2] << 16) |
-           ((uint32_t)current_rom_data[addr + 3] << 24);
+    return *(const uint32_t*)(&current_rom_data[addr]);
   }
   
   IRAM_ATTR uint8_t gb_cart_ram_read(struct gb_s *gb, const uint_fast32_t addr) {
@@ -131,16 +133,12 @@ namespace {
       uint32_t* out32 = (uint32_t*)rowBuffer;
       
       for (int g = 0; g < 40; g++) {
-        uint8_t iA = pixels[g * 4];
-        uint8_t iB = pixels[g * 4 + 1];
-        uint8_t iC = pixels[g * 4 + 2];
-        uint8_t iD = pixels[g * 4 + 3];
-        
-        // Index: (pal_type << 2) | color_idx
-        uint16_t pA = DMG_ON_GBC_PAL[(((iA >> 4) & 0x03) << 2) | (iA & 0x03)];
-        uint16_t pB = DMG_ON_GBC_PAL[(((iB >> 4) & 0x03) << 2) | (iB & 0x03)];
-        uint16_t pC = DMG_ON_GBC_PAL[(((iC >> 4) & 0x03) << 2) | (iC & 0x03)];
-        uint16_t pD = DMG_ON_GBC_PAL[(((iD >> 4) & 0x03) << 2) | (iD & 0x03)];
+        // DMG-on-GBC colorisation: use 256-entry lookup to completely avoid
+        // shift and mask operations per pixel.
+        uint16_t pA = DMG_ON_GBC_PAL_256[pixels[g * 4]];
+        uint16_t pB = DMG_ON_GBC_PAL_256[pixels[g * 4 + 1]];
+        uint16_t pC = DMG_ON_GBC_PAL_256[pixels[g * 4 + 2]];
+        uint16_t pD = DMG_ON_GBC_PAL_256[pixels[g * 4 + 3]];
         
         out32[0] = (uint32_t)pA | ((uint32_t)pA << 16);
         out32[1] = (uint32_t)pB | ((uint32_t)pC << 16);
@@ -164,6 +162,11 @@ bool WalnutEmu::begin(const uint8_t* rom_data, size_t rom_len) {
   current_rom_data = rom_data;
   current_rom_len = rom_len;
 
+  // Populate the 256-entry DMG-on-GBC palette lookup table
+  for (int i = 0; i < 256; i++) {
+    DMG_ON_GBC_PAL_256[i] = DMG_ON_GBC_PAL[(((i >> 4) & 0x03) << 2) | (i & 0x03)];
+  }
+
   // Clear cart RAM so previous game's save data cannot bleed into the next.
   memset(cart_ram, 0, sizeof(cart_ram));
   
@@ -185,25 +188,8 @@ bool WalnutEmu::begin(const uint8_t* rom_data, size_t rom_len) {
 }
 
 void WalnutEmu::updateJoypad() {
-  bool up     = Buttons::get(Buttons::UP).pressed;
-  bool down   = Buttons::get(Buttons::DOWN).pressed;
-  bool left   = Buttons::get(Buttons::LEFT).pressed;
-  bool right  = Buttons::get(Buttons::RIGHT).pressed;
-  bool a      = Buttons::get(Buttons::A).pressed;
-  bool b      = Buttons::get(Buttons::B).pressed;
-  bool start  = Buttons::get(Buttons::START).pressed;
-  bool select = Buttons::get(Buttons::SELECT).pressed;
-
-  // NB2: Single branchless bitmask — replaces 8 conditional read-modify-write ops.
-  gb.direct.joypad =
-      (up     ? 0x00u : 0x40u) |
-      (down   ? 0x00u : 0x80u) |
-      (left   ? 0x00u : 0x20u) |
-      (right  ? 0x00u : 0x10u) |
-      (a      ? 0x00u : 0x01u) |
-      (b      ? 0x00u : 0x02u) |
-      (start  ? 0x00u : 0x08u) |
-      (select ? 0x00u : 0x04u);
+  // NB2: Single branchless bitmask direct copy - zero function call overhead.
+  gb.direct.joypad = Buttons::gb_joypad_state;
 }
 
 void WalnutEmu::runFrame() {

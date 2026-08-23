@@ -1,0 +1,281 @@
+Checking firmware\03_emulator\buttons.cpp ...
+firmware\03_emulator\buttons.h:10:0: information: Include file: <Arduino.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <Arduino.h>
+^
+firmware\03_emulator\buttons.cpp:3:0: information: Include file: "soc/gpio_reg.h" not found. [missingInclude]
+#include "soc/gpio_reg.h"
+^
+1/5 files checked 7% done
+Checking firmware\03_emulator\display_emu.cpp ...
+firmware\03_emulator\display_emu.h:2:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+firmware\03_emulator\display_emu.cpp:4:0: information: Include file: <SPI.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <SPI.h>
+^
+firmware\03_emulator\display_emu.cpp:5:0: information: Include file: <Adafruit_ST7789.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <Adafruit_ST7789.h>
+^
+firmware\03_emulator\display_emu.cpp:6:0: information: Include file: <cstring> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstring>
+^
+firmware\03_emulator\display_emu.cpp:7:0: information: Include file: <cstdio> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstdio>
+^
+firmware\03_emulator\display_emu.cpp:8:0: information: Include file: <Fonts/FreeSans9pt7b.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <Fonts/FreeSans9pt7b.h>
+^
+firmware\03_emulator\display_emu.cpp:9:0: information: Include file: <Fonts/FreeSans12pt7b.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <Fonts/FreeSans12pt7b.h>
+^
+firmware\03_emulator\display_emu.cpp:88:19: style: C-style pointer casting [cstyleCast]
+  SPI.writeBytes((const uint8_t*)buf, pixelCount * 2);
+                  ^
+firmware\03_emulator\display_emu.cpp:98:19: style: C-style pointer casting [cstyleCast]
+  SPI.writeBytes((const uint8_t*)rowBuffer, 240 * rowsToDraw * 2);
+                  ^
+firmware\03_emulator\display_emu.cpp:105:19: style: C-style pointer casting [cstyleCast]
+  SPI.writeBytes((const uint8_t*)rowBuffer, 240 * rowsToDraw * 2);
+                  ^
+2/5 files checked 38% done
+Checking firmware\03_emulator\emu_peanut.cpp ...
+firmware\03_emulator\emu_peanut.cpp:0:0: information: Too many #ifdef configurations - cppcheck only checks 12 of 13 configurations. Use --force to check all configurations. [toomanyconfigs]
+
+^
+firmware\03_emulator\emu_peanut.h:3:0: information: Include file: <Arduino.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <Arduino.h>
+^
+firmware\03_emulator\emu_peanut.cpp:5:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+firmware\03_emulator\emu_peanut.cpp:6:0: information: Include file: <Arduino.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <Arduino.h>
+^
+firmware\03_emulator\emu_peanut.cpp:10:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+firmware\03_emulator\emu_peanut.cpp:11:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+firmware\03_emulator\peanut_gb.h:44:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h> /* Required for abort */
+^
+firmware\03_emulator\peanut_gb.h:45:0: information: Include file: <stdbool.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdbool.h> /* Required for bool types */
+^
+firmware\03_emulator\peanut_gb.h:46:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h> /* Required for int types */
+^
+firmware\03_emulator\peanut_gb.h:47:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h> /* Required for memset */
+^
+firmware\03_emulator\peanut_gb.h:48:0: information: Include file: <time.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <time.h> /* Required for tm struct */
+^
+Checking firmware\03_emulator\emu_peanut.cpp: PEANUT_GB_IS_LITTLE_ENDIAN...
+firmware\03_emulator\emu_peanut.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+firmware\03_emulator\peanut_gb.h:875:46: warning: Either the condition 'addr<=0xFF3F' is redundant or the array 'ortab[48]' is accessed at index 63, which is out of bounds. [arrayIndexOutOfBoundsCond]
+   return gb->hram_io[addr - IO_ADDR] | ortab[addr - IO_ADDR];
+                                             ^
+firmware\03_emulator\peanut_gb.h:860:32: note: Assuming that condition 'addr<=0xFF3F' is not redundant
+  if((addr >= 0xFF10) && (addr <= 0xFF3F))
+                               ^
+firmware\03_emulator\peanut_gb.h:875:46: note: Array index out of bounds
+   return gb->hram_io[addr - IO_ADDR] | ortab[addr - IO_ADDR];
+                                             ^
+firmware\03_emulator\peanut_gb.h:2482:21: style: Condition 'serial_cycles<halt_cycles' is always true [knownConditionTrueFalse]
+   if(serial_cycles < halt_cycles)
+                    ^
+firmware\03_emulator\peanut_gb.h:2479:38: note: Assignment 'serial_cycles=4096-gb->counter.serial_count', assigned value is less than 4097
+   int serial_cycles = SERIAL_CYCLES -
+                                     ^
+firmware\03_emulator\peanut_gb.h:2472:30: note: Assignment 'halt_cycles=9223372036854775807', assigned value is 9223372036854775807
+  int_fast16_t halt_cycles = INT_FAST16_MAX;
+                             ^
+firmware\03_emulator\peanut_gb.h:2482:21: note: Condition 'serial_cycles<halt_cycles' is always true
+   if(serial_cycles < halt_cycles)
+                    ^
+firmware\03_emulator\emu_peanut.cpp:71:23: style: C-style pointer casting [cstyleCast]
+    uint32_t* out32 = (uint32_t*)rowBuffer;
+                      ^
+firmware\03_emulator\emu_peanut.cpp:37:46: style: Parameter 'gb' can be declared as pointer to const. However it seems that 'gb_rom_read' is a callback function, if 'gb' is declared with const you might also need to cast function pointer(s). [constParameterCallback]
+  IRAM_ATTR uint8_t gb_rom_read(struct gb_s *gb, const uint_fast32_t addr) {
+                                             ^
+firmware\03_emulator\emu_peanut.cpp:109:44: note: You might need to cast the function pointer here
+  enum gb_init_error_e ret = gb_init(&gb, &gb_rom_read, &gb_cart_ram_read, &gb_cart_ram_write,
+                                           ^
+firmware\03_emulator\emu_peanut.cpp:37:46: note: Parameter 'gb' can be declared as pointer to const
+  IRAM_ATTR uint8_t gb_rom_read(struct gb_s *gb, const uint_fast32_t addr) {
+                                             ^
+Checking firmware\03_emulator\emu_peanut.cpp: PEANUT_GB_IS_LITTLE_ENDIAN;_WIN32...
+Checking firmware\03_emulator\emu_peanut.cpp: PEANUT_GB_IS_LITTLE_ENDIAN;__BYTE_ORDER__...
+3/5 files checked 55% done
+Checking firmware\03_emulator\emu_walnut.cpp ...
+firmware\03_emulator\emu_walnut.cpp:0:0: information: Too many #ifdef configurations - cppcheck only checks 12 of 17 configurations. Use --force to check all configurations. [toomanyconfigs]
+
+^
+firmware\03_emulator\emu_walnut.h:3:0: information: Include file: <Arduino.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <Arduino.h>
+^
+firmware\03_emulator\emu_walnut.cpp:5:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+firmware\03_emulator\emu_walnut.cpp:6:0: information: Include file: <Arduino.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <Arduino.h>
+^
+firmware\03_emulator\emu_walnut.cpp:14:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+firmware\03_emulator\emu_walnut.cpp:15:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+firmware\03_emulator\walnut_cgb.h:51:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h> /* Required for abort */
+^
+firmware\03_emulator\walnut_cgb.h:52:0: information: Include file: <stdbool.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdbool.h> /* Required for bool types */
+^
+firmware\03_emulator\walnut_cgb.h:53:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h> /* Required for int types */
+^
+firmware\03_emulator\walnut_cgb.h:54:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h> /* Required for memset */
+^
+firmware\03_emulator\walnut_cgb.h:55:0: information: Include file: <time.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <time.h> /* Required for tm struct */
+^
+firmware\03_emulator\walnut_cgb.h:3188:1: information: Limiting ValueFlow analysis in function '__gb_step_cpu' since it is too complex. Please specify --check-level=exhaustive to perform full analysis. [checkLevelNormal]
+{
+^
+firmware\03_emulator\emu_walnut.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+firmware\03_emulator\walnut_cgb.h:1617:46: warning: Either the condition 'addr<=0xFF3F' is redundant or the array 'ortab[48]' is accessed at index 63, which is out of bounds. [arrayIndexOutOfBoundsCond]
+   return gb->hram_io[addr - IO_ADDR] | ortab[addr - IO_ADDR];
+                                             ^
+firmware\03_emulator\walnut_cgb.h:1602:32: note: Assuming that condition 'addr<=0xFF3F' is not redundant
+  if((addr >= 0xFF10) && (addr <= 0xFF3F))
+                               ^
+firmware\03_emulator\walnut_cgb.h:1617:46: note: Array index out of bounds
+   return gb->hram_io[addr - IO_ADDR] | ortab[addr - IO_ADDR];
+                                             ^
+firmware\03_emulator\walnut_cgb.h:8676:21: style: Condition 'serial_cycles<halt_cycles' is always true [knownConditionTrueFalse]
+   if(serial_cycles < halt_cycles)
+                    ^
+firmware\03_emulator\walnut_cgb.h:8673:38: note: Assignment 'serial_cycles=4096-gb->counter.serial_count', assigned value is less than 4097
+   int serial_cycles = SERIAL_CYCLES -
+                                     ^
+firmware\03_emulator\walnut_cgb.h:8666:30: note: Assignment 'halt_cycles=9223372036854775807', assigned value is 9223372036854775807
+  int_fast16_t halt_cycles = INT_FAST16_MAX;
+                             ^
+firmware\03_emulator\walnut_cgb.h:8676:21: note: Condition 'serial_cycles<halt_cycles' is always true
+   if(serial_cycles < halt_cycles)
+                    ^
+firmware\03_emulator\walnut_cgb.h:962:29: style: C-style pointer casting [cstyleCast]
+                    return *(uint16_t *)vram_base;
+                            ^
+firmware\03_emulator\walnut_cgb.h:1003:25: style: C-style pointer casting [cstyleCast]
+                return *(uint16_t *)wram_ptr;
+                        ^
+firmware\03_emulator\walnut_cgb.h:1013:25: style: C-style pointer casting [cstyleCast]
+                return *(uint16_t *)echo_ptr;
+                        ^
+firmware\03_emulator\walnut_cgb.h:1024:29: style: C-style pointer casting [cstyleCast]
+                    return *(uint16_t *)oam_ptr;
+                            ^
+firmware\03_emulator\walnut_cgb.h:1242:25: style: C-style pointer casting [cstyleCast]
+                return *(uint32_t *)p;
+                        ^
+firmware\03_emulator\walnut_cgb.h:1297:29: style: C-style pointer casting [cstyleCast]
+                    return *(uint32_t *)p;
+                            ^
+firmware\03_emulator\walnut_cgb.h:1306:25: style: C-style pointer casting [cstyleCast]
+                return *(uint32_t *)p;
+                        ^
+firmware\03_emulator\walnut_cgb.h:1318:25: style: C-style pointer casting [cstyleCast]
+                return *(uint32_t *)p;
+                        ^
+firmware\03_emulator\walnut_cgb.h:1331:29: style: C-style pointer casting [cstyleCast]
+                    return *(uint32_t *)p;
+                            ^
+firmware\03_emulator\walnut_cgb.h:1350:29: style: C-style pointer casting [cstyleCast]
+                    return *(uint32_t *)p;
+                            ^
+firmware\03_emulator\walnut_cgb.h:2032:7: style: C-style pointer casting [cstyleCast]
+     *(uint32_t *)(oam + i) = v;
+      ^
+firmware\03_emulator\walnut_cgb.h:2314:14: style: C-style pointer casting [cstyleCast]
+            *(uint32_t *)dst = val;
+             ^
+firmware\03_emulator\walnut_cgb.h:2391:15: style: C-style pointer casting [cstyleCast]
+            *((uint16_t *)(gb->vram + (addr - gb->cgb.vramBankOffset))) = val;
+              ^
+firmware\03_emulator\walnut_cgb.h:2415:15: style: C-style pointer casting [cstyleCast]
+            *((uint16_t *)(gb->wram + (addr - gb->cgb.wramBankOffset))) = val;
+              ^
+firmware\03_emulator\walnut_cgb.h:2423:15: style: C-style pointer casting [cstyleCast]
+            *((uint16_t *)(gb->wram + (addr - ECHO_ADDR))) = val;
+              ^
+firmware\03_emulator\walnut_cgb.h:2430:19: style: C-style pointer casting [cstyleCast]
+                *((uint16_t *)(gb->wram + (addr - 0x2000 - gb->cgb.wramBankOffset))) = val;
+                  ^
+firmware\03_emulator\emu_walnut.cpp:68:14: style: C-style pointer casting [cstyleCast]
+    return *(const uint16_t*)(&current_rom_data[addr]);
+             ^
+firmware\03_emulator\emu_walnut.cpp:73:14: style: C-style pointer casting [cstyleCast]
+    return *(const uint32_t*)(&current_rom_data[addr]);
+             ^
+firmware\03_emulator\emu_walnut.cpp:109:25: style: C-style pointer casting [cstyleCast]
+      uint32_t* out32 = (uint32_t*)rowBuffer;
+                        ^
+firmware\03_emulator\emu_walnut.cpp:133:25: style: C-style pointer casting [cstyleCast]
+      uint32_t* out32 = (uint32_t*)rowBuffer;
+                        ^
+firmware\03_emulator\walnut_cgb.h:2435:18: style: inconclusive: Found duplicate branches for 'if' and 'else'. [duplicateBranch]
+            else if(addr < UNUSED_ADDR || (addr >= HRAM_ADDR && addr < INTR_EN_ADDR))
+                 ^
+firmware\03_emulator\walnut_cgb.h:2441:13: note: Found duplicate branches for 'if' and 'else'.
+            else
+            ^
+firmware\03_emulator\walnut_cgb.h:2435:18: note: Found duplicate branches for 'if' and 'else'.
+            else if(addr < UNUSED_ADDR || (addr >= HRAM_ADDR && addr < INTR_EN_ADDR))
+                 ^
+firmware\03_emulator\emu_walnut.cpp:61:46: style: Parameter 'gb' can be declared as pointer to const. However it seems that 'gb_rom_read' is a callback function, if 'gb' is declared with const you might also need to cast function pointer(s). [constParameterCallback]
+  IRAM_ATTR uint8_t gb_rom_read(struct gb_s *gb, const uint_fast32_t addr) {
+                                             ^
+firmware\03_emulator\emu_walnut.cpp:174:5: note: You might need to cast the function pointer here
+    gb_rom_read, gb_rom_read16, gb_rom_read32,
+    ^
+firmware\03_emulator\emu_walnut.cpp:61:46: note: Parameter 'gb' can be declared as pointer to const
+  IRAM_ATTR uint8_t gb_rom_read(struct gb_s *gb, const uint_fast32_t addr) {
+                                             ^
+firmware\03_emulator\emu_walnut.cpp:66:49: style: Parameter 'gb' can be declared as pointer to const. However it seems that 'gb_rom_read16' is a callback function, if 'gb' is declared with const you might also need to cast function pointer(s). [constParameterCallback]
+  IRAM_ATTR uint16_t gb_rom_read16(struct gb_s *gb, const uint_fast32_t addr) {
+                                                ^
+firmware\03_emulator\emu_walnut.cpp:174:18: note: You might need to cast the function pointer here
+    gb_rom_read, gb_rom_read16, gb_rom_read32,
+                 ^
+firmware\03_emulator\emu_walnut.cpp:66:49: note: Parameter 'gb' can be declared as pointer to const
+  IRAM_ATTR uint16_t gb_rom_read16(struct gb_s *gb, const uint_fast32_t addr) {
+                                                ^
+firmware\03_emulator\emu_walnut.cpp:71:49: style: Parameter 'gb' can be declared as pointer to const. However it seems that 'gb_rom_read32' is a callback function, if 'gb' is declared with const you might also need to cast function pointer(s). [constParameterCallback]
+  IRAM_ATTR uint32_t gb_rom_read32(struct gb_s *gb, const uint_fast32_t addr) {
+                                                ^
+firmware\03_emulator\emu_walnut.cpp:174:33: note: You might need to cast the function pointer here
+    gb_rom_read, gb_rom_read16, gb_rom_read32,
+                                ^
+firmware\03_emulator\emu_walnut.cpp:71:49: note: Parameter 'gb' can be declared as pointer to const
+  IRAM_ATTR uint32_t gb_rom_read32(struct gb_s *gb, const uint_fast32_t addr) {
+                                                ^
+firmware\03_emulator\emu_walnut.cpp:76:51: style: Parameter 'gb' can be declared as pointer to const. However it seems that 'gb_cart_ram_read' is a callback function, if 'gb' is declared with const you might also need to cast function pointer(s). [constParameterCallback]
+  IRAM_ATTR uint8_t gb_cart_ram_read(struct gb_s *gb, const uint_fast32_t addr) {
+                                                  ^
+firmware\03_emulator\emu_walnut.cpp:175:5: note: You might need to cast the function pointer here
+    gb_cart_ram_read, gb_cart_ram_write,
+    ^
+firmware\03_emulator\emu_walnut.cpp:76:51: note: Parameter 'gb' can be declared as pointer to const
+  IRAM_ATTR uint8_t gb_cart_ram_read(struct gb_s *gb, const uint_fast32_t addr) {
+                                                  ^
+Checking firmware\03_emulator\emu_walnut.cpp: WALNUT_GB_16_BIT...

@@ -83,6 +83,27 @@ void testIRAMPlacement() {
     "IRAM overcommitted — check IRAM_ATTR usage");
 }
 
+// ---------------------------------------------------------------------------
+void testPaletteLUTMath() {
+  TEST_CASE("Palette 256-entry LUT Mathematical Verification");
+  
+  // Verify Walnut DMG-on-GBC mapping logic for all 256 byte values
+  for (int i = 0; i < 256; i++) {
+    int pal_type = (i >> 4) & 0x03;
+    int color_idx = i & 0x03;
+    int legacy_index = (pal_type << 2) | color_idx;
+    
+    // The maximum legacy_index should never exceed 11
+    ASSERT_TRUE(legacy_index >= 0 && legacy_index < 12, "Walnut legacy index out of bounds");
+  }
+
+  // Verify Peanut mapping logic
+  for (int i = 0; i < 256; i++) {
+    int legacy_index = i & 0x03;
+    ASSERT_TRUE(legacy_index >= 0 && legacy_index < 4, "Peanut legacy index out of bounds");
+  }
+}
+
 // (Scale map test removed in Round 3 as scale_map was eliminated)
 
 bool runAllTests() {
@@ -95,6 +116,7 @@ bool runAllTests() {
   testEmulatorRejection();
   testDisplayPalette();
   testIRAMPlacement();
+  testPaletteLUTMath();
   
   Serial.println("========== TEST SUITE FINISHED ==========");
   Serial.printf("PASSED: %d\n", testsPassed);

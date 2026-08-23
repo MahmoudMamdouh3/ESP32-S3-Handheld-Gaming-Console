@@ -21,6 +21,9 @@ namespace Buttons {
   // it has to match the states[] initializer order in buttons.cpp.
   enum Index : int { UP = 0, DOWN, LEFT, RIGHT, A, B, START, SELECT };
 
+  // Fast Game Boy-compatible bitmask for zero-wait state polling
+  extern uint8_t gb_joypad_state;
+
   // Call once in setup(). Configures all button pins as INPUT_PULLUP.
   void begin();
 

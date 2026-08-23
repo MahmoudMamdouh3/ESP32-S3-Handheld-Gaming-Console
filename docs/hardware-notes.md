@@ -122,13 +122,24 @@ won't show a COM port reliably otherwise.
   RGB565 big-endian to little-endian (e.g. `0x9DE1` becomes `0xE19D`).
 
 - **Frame Pacing & FreeRTOS Watchdog:** `delay()` rounds up to the next
-  1ms FreeRTOS tick, which causes pacing bias. We use a pure `micros()`
-  spin-wait to hit 16742 µs per frame (59.73 FPS), but internally call
-  `yield()` every 1ms to feed the FreeRTOS watchdog.
+  1ms FreeRTOS tick, which causes pacing bias. We use `delay()` for the bulk 
+  sleep to yield to FreeRTOS, followed by `ets_delay_us()` for a hardware-timer 
+  spin on the sub-ms remainder to hit 16742 µs per frame without burning CPU.
 
-- **Performance:** Arduino's default `-Os` (size) optimization makes Peanut-GB 
-  run very slowly. We force `-O3` via `#pragma GCC optimize ("O3")` at the top 
-  of `emulator.cpp` and `display_emu.cpp` to achieve full speed.
+- **Performance:** Arduino's default `-Os` (size) optimization makes emulators 
+  run very slowly. We force `-O3,unroll-loops` via `#pragma GCC optimize` at the top 
+  of `emulator.cpp` and `display_emu.cpp` to achieve full speed. We also use 
+  zero-wait state polling for buttons via a `gb_joypad_state` static bitmask to 
+  eliminate function call overhead in the emulator hot loop.
+  
+- **Cache Alignment:** We strictly align emulator state structs to the ESP32-S3's 
+  32-byte D-cache line boundaries (`__attribute__((aligned(32)))`) to prevent 
+  cache thrashing during hot register reads.
+
+### 5. Firmware Compilation & Toolchain Constraints
+
+- **Static Constraints & Partitions:** The default `arduino-cli` ESP32-S3 compilation profile allocates a 1.2MB `app0` partition. Because our emulator core along with bundled assets currently exceeds 2.5MB, compilation will fail at the linking stage with "text section exceeds available space". 
+- **Fix:** You must compile the firmware using the `PartitionScheme=custom` (or `huge_app`), along with `PSRAM=opi` and `FlashSize=16M` configurations to correctly map the N16R8 hardware limits. This allows the compiler to successfully map the `.rodata` bounds to the 16MB flash.
 
 - **ROM legality:** never embed/commit a copyrighted commercial ROM
   (Pokemon, Mario, etc). Using freely-licensed homebrew only (e.g.

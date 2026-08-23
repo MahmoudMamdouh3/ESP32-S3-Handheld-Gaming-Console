@@ -29,6 +29,8 @@ namespace {
   // N5: Module-level, 4-byte aligned — avoids BSS contention with gb_s data.
   static uint16_t __attribute__((aligned(4))) rowBuffer[480];
 
+  static uint16_t PAL_256[256];
+
   // N1: IRAM_ATTR — these callbacks are invoked ~280K times per frame by the
   // emulator core; zero-wait-state IRAM placement eliminates I-cache stalls.
 
@@ -68,10 +70,10 @@ namespace {
     // eliminating unaligned store penalties on the Xtensa LX7 CPU.
     uint32_t* out32 = (uint32_t*)rowBuffer;
     for (int g = 0; g < 40; g++) {
-      uint16_t pA = DisplayEmu::CLASSIC_PALETTE[pixels[g * 4]     & 0x03];
-      uint16_t pB = DisplayEmu::CLASSIC_PALETTE[pixels[g * 4 + 1] & 0x03];
-      uint16_t pC = DisplayEmu::CLASSIC_PALETTE[pixels[g * 4 + 2] & 0x03];
-      uint16_t pD = DisplayEmu::CLASSIC_PALETTE[pixels[g * 4 + 3] & 0x03];
+      uint16_t pA = PAL_256[pixels[g * 4]];
+      uint16_t pB = PAL_256[pixels[g * 4 + 1]];
+      uint16_t pC = PAL_256[pixels[g * 4 + 2]];
+      uint16_t pD = PAL_256[pixels[g * 4 + 3]];
       
       out32[0] = (uint32_t)pA | ((uint32_t)pA << 16);
       out32[1] = (uint32_t)pB | ((uint32_t)pC << 16);
@@ -92,6 +94,11 @@ namespace {
 bool PeanutEmu::begin(const uint8_t* rom_data, size_t rom_len) {
   current_rom_data = rom_data;
   current_rom_len = rom_len;
+
+  // Precompute O(1) 256-entry palette lookup table to save bitwise ops in hot loop
+  for (int i = 0; i < 256; i++) {
+    PAL_256[i] = DisplayEmu::CLASSIC_PALETTE[i & 0x03];
+  }
 
   // Clear cart RAM to prevent save-data bleed between games.
   memset(cart_ram, 0, sizeof(cart_ram));
@@ -116,16 +123,8 @@ bool PeanutEmu::begin(const uint8_t* rom_data, size_t rom_len) {
 }
 
 void PeanutEmu::updateJoypad() {
-  // NB2: Single branchless bitmask — replaces 8 conditional read-modify-write ops.
-  gb.direct.joypad =
-      (Buttons::get(Buttons::UP).pressed     ? 0x00u : 0x40u) |
-      (Buttons::get(Buttons::DOWN).pressed   ? 0x00u : 0x80u) |
-      (Buttons::get(Buttons::LEFT).pressed   ? 0x00u : 0x20u) |
-      (Buttons::get(Buttons::RIGHT).pressed  ? 0x00u : 0x10u) |
-      (Buttons::get(Buttons::A).pressed      ? 0x00u : 0x01u) |
-      (Buttons::get(Buttons::B).pressed      ? 0x00u : 0x02u) |
-      (Buttons::get(Buttons::START).pressed  ? 0x00u : 0x08u) |
-      (Buttons::get(Buttons::SELECT).pressed ? 0x00u : 0x04u);
+  // NB2: Single branchless bitmask direct copy - zero function call overhead.
+  gb.direct.joypad = Buttons::gb_joypad_state;
 }
 
 void PeanutEmu::runFrame() {

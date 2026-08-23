@@ -22,6 +22,7 @@ __pycache__/
 # derived from them (large, regenerable, not source code).
 *.gb
 *.gbc
+roms/
 rom_data*.h
 
 # Ignore downloaded ROM folders to prevent committing copyrighted assets

@@ -1,53 +1,92 @@
 # GB-Emu-ESP32S3
 
-A Game Boy emulator handheld built from scratch on an ESP32-S3, from
-bare hardware bring-up through to running actual Game Boy homebrew
-ROMs. Documenting the whole build: wiring, debugging, and firmware.
+A portable Game Boy handheld project built around an ESP32-S3 and a small set of supporting tooling scripts. The repository documents the wiring, the emulator integration, and the ROM asset pipeline needed to build and validate the firmware.
 
-## Hardware
+## Project overview
 
-- ESP32-S3-N16R8 (16MB flash, 8MB octal PSRAM)
-- 2.4" TFT SPI display, 240x320, ST7789 driver
-- 8x tactile push buttons (Game Boy D-pad + A/B/Start/Select layout)
-- microSD card module (planned - ROM storage)
-- No audio hardware (video/gameplay only for now)
+- Hardware bring-up for the ESP32-S3 and TFT display
+- Button polling and menu UI implementation
+- Emulator core integration using Peanut-GB and Walnut-CGB
+- Game selection menu with generated cover art
+- Repo-safe ROM asset generation and validation tooling
 
-## Status
+## Current status
 
-- [x] Milestone 1: Display + button bring-up, with live visual
-      feedback on-screen
-- [ ] Milestone 2: microSD card integration
-- [x] **Milestone 3: Game Boy Emulator Core** - Implement Peanut-GB library, map display output to 240x216, map button inputs to GB joypad bits.
-- [x] **Milestone 4: Game Selection UI** - D-Pad navigable boot menu with RGB565 cover art rendering, dynamically loading multiple compiled-in ROMs. *(Note: Dynamic ROM loading from SD card is pending Milestone 2).*
+- [x] Milestone 1: display + button testing
+- [x] Milestone 3: emulator core bring-up
+- [x] Milestone 4: game selection menu and ROM-based boot menu
+- [x] Milestone 5: Deep performance optimizations (zero-wait input loops, cache-aligned state)
+- [x] Repo tooling is now portable, extensively tested, and versionable
 
-## Repo structure
+## Repository structure
 
+```text
+.
+├── README.md
+├── IMPLEMENTATION_PLAN.md
+├── scripts/
+│   ├── benchmark_repo.py
+│   ├── color_calc.py
+│   ├── convert_roms.py
+│   ├── fetch_covers.py
+│   ├── process_games.py
+│   ├── repo_tools.py
+│   ├── test_runner.py
+│   └── validate_repo.py
+├── firmware/
+│   └── 03_emulator/
+│       ├── 03_emulator.ino
+│       ├── display_emu.cpp
+│       ├── display_emu.h
+│       ├── emu_peanut.*
+│       ├── emu_walnut.*
+│       └── rom_*.h / cover_*.h (generated; omitted from git)
+├── docs/
+│   └── hardware-notes.md
+├── roms/
+│   ├── gb/
+│   └── gbc/
+└── tests/
+    └── test_repo_tools.py
 ```
-firmware/
-  01_display_button_test/   Arduino sketch for the current milestone
-docs/
-  wiring/                   Wiring reference per milestone
-```
 
-## Firmware architecture
+## Tooling workflow
 
-Each milestone's firmware is modular:
-- `config.h` - single source of truth for all pin wiring
-- `buttons.h/.cpp` - button reading, debouncing-free polled state
-- `display_emu.h/.cpp` - all screen drawing for that milestone
-- the `.ino` file only wires modules together in `setup()`/`loop()`
+Use the repo-root-based scripts instead of machine-specific hardcoded paths.
 
-## Building
+1. Validate the repo state:
+   ```bash
+   python scripts/validate_repo.py
+   ```
+2. Run the test suite:
+   ```bash
+   python -m unittest discover -s tests -v
+   ```
+3. Benchmark the validation pipeline:
+   ```bash
+   python scripts/benchmark_repo.py
+   ```
+4. Regenerate ROM and cover assets when the zip archives change:
+   ```bash
+   python scripts/process_games.py
+   ```
 
-1. Install Arduino IDE + ESP32 board support (esp32 by Espressif
-   Systems) via Boards Manager.
-2. Install libraries: "Adafruit ST7789", "Adafruit GFX Library".
-3. Board: "ESP32S3 Dev Module". Flash Size: 16MB. PSRAM: OPI PSRAM.
-4. Open the `.ino` inside the relevant `firmware/<milestone>/` folder
-   and upload.
+## Firmware build notes
 
-See `docs/wiring/` for the wiring diagram matching each milestone.
+1. Install Arduino IDE with ESP32 board support.
+2. Add the libraries: Adafruit ST7789 and Adafruit GFX.
+3. Select the ESP32-S3 Dev Module board and set the flash/PSRAM mode appropriately.
+4. Open the sketch in `firmware/03_emulator/03_emulator.ino` and flash it.
 
-## License
+## Important repository conventions
+
+- Game ROMs are intentionally excluded from git.
+- Generated C-array headers are also excluded from git.
+- All Python scripts should be run from the repo root or invoked via `python path/to/script.py`.
+- Avoid hardcoded Windows paths; prefer `Path(__file__).resolve().parent` or repo-root discovery.
+
+## Documentation
+
+See `docs/hardware-notes.md` for board-level debugging notes and wiring constraints. The repo also includes the implementation plan in `IMPLEMENTATION_PLAN.md`.
 
 MIT - see [LICENSE](LICENSE).

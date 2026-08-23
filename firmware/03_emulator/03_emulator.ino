@@ -114,9 +114,12 @@ void setup() {
 void loop() {
   if (currentState == STATE_EMULATOR_SELECT) {
     Buttons::update();
-    bool left  = Buttons::get(Buttons::LEFT).pressed  && Buttons::get(Buttons::LEFT).changed;
-    bool right = Buttons::get(Buttons::RIGHT).pressed && Buttons::get(Buttons::RIGHT).changed;
-    bool a     = Buttons::get(Buttons::A).pressed     && Buttons::get(Buttons::A).changed;
+    const auto& btnLeft = Buttons::get(Buttons::LEFT);
+    const auto& btnRight = Buttons::get(Buttons::RIGHT);
+    const auto& btnA = Buttons::get(Buttons::A);
+    bool left  = btnLeft.pressed  && btnLeft.changed;
+    bool right = btnRight.pressed && btnRight.changed;
+    bool a     = btnA.pressed     && btnA.changed;
 
     if (redrawMenu) {
       DisplayEmu::drawEmulatorSelectMenu(selectedEmulatorIndex);
@@ -152,10 +155,14 @@ void loop() {
 
   } else if (currentState == STATE_MENU) {
     Buttons::update();
-    bool left   = Buttons::get(Buttons::LEFT).pressed   && Buttons::get(Buttons::LEFT).changed;
-    bool right  = Buttons::get(Buttons::RIGHT).pressed  && Buttons::get(Buttons::RIGHT).changed;
-    bool a      = Buttons::get(Buttons::A).pressed      && Buttons::get(Buttons::A).changed;
-    bool select = Buttons::get(Buttons::SELECT).pressed && Buttons::get(Buttons::SELECT).changed;
+    const auto& btnLeft = Buttons::get(Buttons::LEFT);
+    const auto& btnRight = Buttons::get(Buttons::RIGHT);
+    const auto& btnA = Buttons::get(Buttons::A);
+    const auto& btnSelect = Buttons::get(Buttons::SELECT);
+    bool left   = btnLeft.pressed   && btnLeft.changed;
+    bool right  = btnRight.pressed  && btnRight.changed;
+    bool a      = btnA.pressed      && btnA.changed;
+    bool select = btnSelect.pressed && btnSelect.changed;
 
     if (redrawMenu) {
       // Q1: Build titles array inline — no redundant global gameTitles[].

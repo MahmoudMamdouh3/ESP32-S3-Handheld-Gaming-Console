@@ -1,5 +1,6 @@
 #include "buttons.h"
 #include "config.h"
+#include "soc/gpio_reg.h"
 
 namespace {
   ButtonState states[] = {
@@ -20,6 +21,10 @@ namespace {
                 "Expected exactly 8 buttons for GB joypad mapping");
 }
 
+namespace Buttons {
+  uint8_t gb_joypad_state = 0xFF;
+}
+
 void Buttons::begin() {
   for (int i = 0; i < NUM_BUTTONS; i++) {
     pinMode(states[i].pin, INPUT_PULLUP);
@@ -27,11 +32,27 @@ void Buttons::begin() {
 }
 
 void Buttons::update() {
+  // Read all GPIO pins 0-31 in a single CPU cycle.
+  // All button pins are guaranteed to be < 32 in config.h.
+  uint32_t gpio_in = REG_READ(GPIO_IN_REG);
+
+  uint8_t joypad = 0xFF;
   for (int i = 0; i < NUM_BUTTONS; i++) {
-    bool nowPressed = (digitalRead(states[i].pin) == LOW);
+    bool nowPressed = ((gpio_in & (1UL << states[i].pin)) == 0);
     states[i].changed = (nowPressed != states[i].pressed);
     states[i].pressed = nowPressed;
   }
+  
+  if (states[UP].pressed)     joypad &= ~0x40u;
+  if (states[DOWN].pressed)   joypad &= ~0x80u;
+  if (states[LEFT].pressed)   joypad &= ~0x20u;
+  if (states[RIGHT].pressed)  joypad &= ~0x10u;
+  if (states[A].pressed)      joypad &= ~0x01u;
+  if (states[B].pressed)      joypad &= ~0x02u;
+  if (states[START].pressed)  joypad &= ~0x08u;
+  if (states[SELECT].pressed) joypad &= ~0x04u;
+  
+  Buttons::gb_joypad_state = joypad;
 }
 
 int Buttons::count() {
