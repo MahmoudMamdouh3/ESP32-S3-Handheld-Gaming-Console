@@ -18,6 +18,17 @@ namespace DisplayEmu {
   // Pixel push API
   // ---------------------------------------------------------------------------
 
+  // NES 64-color palette in BGR565 (byte-swapped for SPI)
+  extern const uint16_t NES_PALETTE[64];
+
+  // Starts an SPI transaction and streams exactly 144 lines of Game Boy video
+  // scaled 1.5x via nearest-neighbor to the 240x216 centered display window.
+  void streamFrame(const uint8_t* gb_framebuffer, uint16_t* palette);
+
+  // Starts an SPI transaction and streams exactly 240 lines of NES video (256x240)
+  // scaled/cropped to the 240x216 centered display window.
+  void streamNESFrame(const uint8_t* nes_framebuffer);
+
   // pushPixels: full self-contained transaction (startWrite + setAddrWindow +
   // writeBytes + endWrite). Use for cover art or any one-off blit.
   void pushPixels(int yOffset, const uint16_t* rowBuffer, int rowsToDraw);

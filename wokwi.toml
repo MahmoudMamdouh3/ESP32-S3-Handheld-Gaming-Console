@@ -1,4 +1,3 @@
 [wokwi]
 version = 1
-firmware = "build/03_emulator.ino.bin"
 elf = "build/03_emulator.ino.elf"

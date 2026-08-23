@@ -1,6 +1,7 @@
 #include "config.h"
 #include "emu_peanut.h"
 #include "emu_walnut.h"
+#include "emu_nes.h"
 #include "unit_tests.h"
 #include "buttons.h"
 #include "display_emu.h"
@@ -142,6 +143,14 @@ void loop() {
           useColorEmulator = (selectedEmulatorIndex == 0);
           currentState = STATE_MENU;
           redrawMenu = true;
+        } else if (selectedEmulatorIndex == 2) {
+          // NES: We don't have a game selection menu for NES yet.
+          // Booting with a tiny dummy ROM header to initialize the core safely.
+          static const uint8_t dummy_nes[16] = {'N','E','S',0x1a,0,0,0,0,0,0,0,0,0,0,0,0};
+          DisplayEmu::clearScreen();
+          NesEmu::begin(dummy_nes, sizeof(dummy_nes));
+          resetFrameStats();
+          currentState = STATE_EMULATOR;
         } else {
           DisplayEmu::showSDCardWarning();
           delay(2000);
@@ -220,14 +229,22 @@ void loop() {
 
     // Return to menu: SELECT + UP
     if (select && up) {
-      currentState = STATE_MENU;
+      if (selectedEmulatorIndex == 2) {
+        currentState = STATE_EMULATOR_SELECT;
+        NesEmu::destroy();
+      } else {
+        currentState = STATE_MENU;
+      }
       redrawMenu = true;
       lastButtonMs = millis();
       delay(300);
       return;
     }
 
-    if (useColorEmulator) {
+    if (selectedEmulatorIndex == 2) {
+      NesEmu::updateJoypad();
+      NesEmu::runFrame();
+    } else if (useColorEmulator) {
       WalnutEmu::updateJoypad();
       WalnutEmu::runFrame();
     } else {

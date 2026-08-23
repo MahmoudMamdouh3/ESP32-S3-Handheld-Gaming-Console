@@ -33,12 +33,23 @@ namespace {
 }
 
 // Classic Game Boy "Pea-Soup Green" palette in BGR565 (Little-Endian swapped)
-// Pre-swapped for BGR physical displays
+// Pre-swapping means we can use SPI.writeBytes() instead of slower SPI.write16().
 const uint16_t DisplayEmu::CLASSIC_PALETTE[4] = {
   0xF30D, 
   0x710D, 
   0x0633, 
   0xC109  
+};
+
+const uint16_t DisplayEmu::NES_PALETTE[64] = {
+  0x2C63, 0x5101, 0x9410, 0x1438, 0x0F58, 0x0868, 0x2068, 0xE050,
+  0xA031, 0x400A, 0x8002, 0x6102, 0x0902, 0x0000, 0x0000, 0x0000,
+  0x75AD, 0xFB12, 0x1F42, 0x3F71, 0xD9A0, 0xEFB0, 0x84B1, 0x609A,
+  0x606B, 0x203C, 0x800C, 0x6604, 0xF103, 0x0000, 0x0000, 0x0000,
+  0xFFFF, 0x9F65, 0x9F94, 0xBFC3, 0x5FF3, 0x79FB, 0x0EFC, 0xE4EC,
+  0xE0BD, 0xC08E, 0x265F, 0x1047, 0x7B4E, 0x694A, 0x0000, 0x0000,
+  0xFFFF, 0x3FA7, 0xDFBD, 0xDFDD, 0xDFFD, 0x38FD, 0x96F6, 0x15FF,
+  0xCFFE, 0xCFDF, 0xD7BF, 0xDBBF, 0xFF07, 0xDFFE, 0x0000, 0x0000,
 };
 
 void DisplayEmu::begin() {
@@ -86,6 +97,25 @@ void DisplayEmu::endFrame() {
 // doubled row). No setAddrWindow, no CS assert/deassert.
 void DisplayEmu::streamPixelRow(const uint16_t* buf, int pixelCount) {
   SPI.writeBytes((const uint8_t*)buf, pixelCount * 2);
+}
+
+// ---------------------------------------------------------------------------
+// NES Rendering
+// ---------------------------------------------------------------------------
+void DisplayEmu::streamNESFrame(const uint8_t* nes_framebuffer) {
+  tft.startWrite();
+  tft.setAddrWindow(32, 0, 256, 240); // Center 256x240 on 320x240 display
+  
+  uint16_t row_buf[256];
+  for (int y = 0; y < 240; y++) {
+    for (int x = 0; x < 256; x++) {
+      uint8_t color_ix = nes_framebuffer[(y * 256) + x];
+      row_buf[x] = NES_PALETTE[color_ix & 0x3f];
+    }
+    SPI.writeBytes((const uint8_t*)row_buf, 256 * 2);
+  }
+  
+  tft.endWrite();
 }
 
 // ---------------------------------------------------------------------------
@@ -164,12 +194,12 @@ void DisplayEmu::drawEmulatorSelectMenu(int selectedIndex) {
   tft.setTextColor(0x11E9);
   
   const char* consoleNames[] = {
-    "Game Boy Color",
-    "Game Boy",
-    "Nintendo (NES)",
-    "Super Nintendo",
-    "Game Boy Advance",
-    "Sega Genesis"
+    "Game Boy Color (1998)",
+    "Game Boy (1989)",
+    "Nintendo NES (1983)",
+    "Super Nintendo (1990)",
+    "Game Boy Advance (2001)",
+    "Sega Genesis (1989)"
   };
   
   const char* name = consoleNames[selectedIndex];
