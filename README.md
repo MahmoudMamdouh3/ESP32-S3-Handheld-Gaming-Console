@@ -37,16 +37,21 @@ A portable Game Boy handheld project built around an ESP32-S3 and a small set of
 ├── firmware/
 │   ├── 01_display_button_test/
 │   ├── 02_sd_card_test/
-│   └── 03_emulator/
-│       ├── 03_emulator.ino
-│       ├── display_emu.cpp
-│       ├── emu_peanut.cpp (Game Boy)
-│       ├── emu_walnut.cpp (Game Boy Color)
-│       ├── emu_nes.cpp (NES)
-│       ├── emu_doom.cpp (DOOM)
-│       ├── sd_card.cpp
-│       └── src/
-│           └── doom/ (doomgeneric engine source)
+│   ├── 03_emulator/
+│   │   ├── 03_emulator.ino
+│   │   ├── agnes.c (NES Core)
+│   │   ├── buttons.cpp
+│   │   ├── config.h
+│   │   ├── display_emu.cpp
+│   │   ├── emu_peanut.cpp (Game Boy)
+│   │   ├── emu_walnut.cpp (Game Boy Color)
+│   │   ├── emu_nes.cpp (NES Wrapper)
+│   │   ├── emu_doom.cpp (DOOM Wrapper)
+│   │   ├── sd_card.cpp
+│   │   ├── unit_tests.cpp
+│   │   └── src/
+│   │       └── doom/ (doomgeneric engine source)
+│   └── 04_unit_tests/
 ├── docs/
 │   └── hardware-notes.md
 └── tests/
@@ -78,12 +83,21 @@ Use the repo-root-based scripts instead of machine-specific hardcoded paths.
 
 1. Install Arduino IDE with ESP32 board support.
 2. Add the libraries: Adafruit ST7789 and Adafruit GFX.
-3. Select the ESP32-S3 Dev Module board and set the flash/PSRAM mode appropriately.
+3. Select **ESP32S3 Dev Module** with **16 MB flash**, **Custom** partition scheme,
+   and **OPI PSRAM**. The supplied `firmware/03_emulator/partitions.csv` reserves
+   an 8 MB application partition; the default 4 MB board profile is too small.
 4. Open the sketch in `firmware/03_emulator/03_emulator.ino` and flash it.
+
+Equivalent Arduino CLI build:
+
+```bash
+arduino-cli compile --fqbn "esp32:esp32:esp32s3:FlashSize=16M,PartitionScheme=custom,PSRAM=opi" firmware/03_emulator
+```
 
 ## Important repository conventions
 
 - Game ROMs are dynamically loaded from the SD Card and are intentionally excluded from git.
+  (Note: Some tested ROMs like Mario Deluxe and Zelda Ages can be "baked" directly into flash via C-headers if desired).
 - The DOOM engine uses dynamic `heap_caps_malloc(..., MALLOC_CAP_SPIRAM)` to load rendering tables into PSRAM, bypassing internal DRAM limits.
 - All Python scripts should be run from the repo root or invoked via `python path/to/script.py`.
 
