@@ -17,7 +17,7 @@
 // -----------------------------------------------------------------------------
 // HARDWARE FEATURE FLAGS (See project-rules.md)
 // -----------------------------------------------------------------------------
-#define FEATURE_SD_CARD 0
+#define FEATURE_SD_CARD 1
 #define FEATURE_AUDIO 0
 #define FEATURE_BATTERY_MONITOR 0
 

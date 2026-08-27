@@ -52,13 +52,10 @@ hard way.
 
 ## 3. SD card module needs 5V, not 3.3V
 
-The cheap SD breakout module (VCC/GND/MISO/MOSI/SCK/CS, 6-pin) has an
-onboard regulator + resistor-based level shifter designed assuming **5V
-input**, even though the card itself runs at 3.3V. Powering VCC from
-3.3V leaves the regulator without enough headroom and the level shifters
-undersupplied. **Wire SD module VCC to 5Vin, not 3V3.** Logic lines
-(SCK/MOSI/MISO/CS) stay on the ESP32's 3.3V logic regardless — the
-module handles the level shift.
+The standard blue SD breakout module (VCC/GND/MISO/MOSI/SCK/CS, 6-pin) has an onboard regulator + logic level shifter designed assuming **5V input**. Powering VCC from 3.3V leaves the regulator without enough headroom, causing the SD card to crash during reads/writes. 
+
+**Wire SD module VCC to 5V (VBUS), not 3.3V.** 
+However, note the **MISO 5V Risk**: By powering the module with 5V, its logic-level shifter will send a 5V signal back to the ESP32's `MISO` (GPIO 15) pin. While ESP32-S3 pins are generally 5V-tolerant in practice for digital logic, this is technically out of spec. For a permanent build, use a native 3.3V MicroSD module without voltage regulators or level shifters.
 
 ---
 
