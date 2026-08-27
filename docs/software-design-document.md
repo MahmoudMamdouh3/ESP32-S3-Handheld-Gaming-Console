@@ -36,9 +36,15 @@ The architecture dynamically boots one of four emulator cores based on the ROM e
 
 ## 7. Storage and File System (VFS)
 - **Shared SPI:** The SD Card breakout shares the `SCK` and `MOSI` pins with the TFT display. To prevent initialization collisions, the firmware explicitly claims the SPI bus before calling `SD.begin()`.
+- **Integrity Testing:** An automatic startup self-test validates SD card write/read integrity to detect SPI bus collisions or faulty hardware early.
 - **Dual ROM Loading:** The system scans the SD card for compatible ROMs. If no SD card is present, it elegantly falls back to initializing any ROMs "baked" directly into the flash memory via C headers (e.g. `mario_deluxe.h`).
+- **Persistent Save States:** Instead of hammering the SD card with high-frequency save-state writes, the system delegates persistent saving to an I2C FM24C FRAM module. This guarantees near-infinite write endurance and protects the SD FAT filesystem from wear.
 
-## 8. Development Tooling Pipeline
+## 8. Power and Audio Subsystems
+- **MAX98357A I2S DAC:** Digital audio synthesis from the emulator cores is pushed to a 4x512-byte DMA ring buffer. This naturally frame-paces the emulators (avoiding busy wait timers) and utilizes the internal ESP32 I2S hardware peripheral.
+- **Battery Management:** To operate as a true handheld, a LiPo battery is managed via a TP4056 module. The firmware reads battery voltage via an internal ADC (GPIO 1), smoothing it with a moving average. To prevent catastrophic deep-discharge of the LiPo cell, the system forcefully triggers `esp_deep_sleep_start()` if voltage drops below a critical threshold (3.3V).
+
+## 9. Development Tooling Pipeline
 An extensive suite of Python scripts (`scripts/`) ensures reproducible firmware assets:
 - **`process_games.py`:** Parses `.zip` ROM archives, extracts binaries, and generates correctly formatted C headers with `PROGMEM` guards. It also generates static 100x100 RGB565 UI cover assets using Pillow.
 - **`validate_repo.py`:** Validates python syntax across all tooling scripts and verifies the Nintendo logo header checksum (0x014D) within the ROMs to ensure data integrity before compilation.
