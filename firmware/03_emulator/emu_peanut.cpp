@@ -4,6 +4,7 @@
 #include "display_emu.h"
 #include <string.h>
 #include <Arduino.h>
+#include <esp_heap_caps.h>
 
 #include "peanut_gb_config.h"
 
@@ -16,6 +17,14 @@ namespace PGB {
 using namespace PGB;
 
 namespace {
+  // Stub audio callbacks (requires an external APU library like minigb_apu to synthesize the sound)
+  extern "C" uint8_t audio_read(const uint16_t addr) {
+    return 0xFF;
+  }
+  extern "C" void audio_write(const uint16_t addr, const uint8_t val) {
+    // Pass registers to APU
+  }
+  
   // E3: Align the emulator state struct to the ESP32-S3 D-cache line
   // size (32 bytes). Prevents cache thrashing on hot registers.
   static struct gb_s __attribute__((aligned(32))) gb;
@@ -23,8 +32,11 @@ namespace {
   const uint8_t* current_rom_data = nullptr;
   size_t current_rom_len = 0;
   
-  // 32KB covers every real-world licensed Game Boy cartridge MBC1 RAM.
-  static uint8_t cart_ram[32768];
+  // Keep cartridge save RAM out of scarce internal DRAM.  128 KB covers the
+  // larger MBC5/CGB save configurations; PSRAM latency is acceptable here
+  // because cartridge-RAM access is far less frequent than CPU registers.
+  static constexpr size_t CART_RAM_SIZE = 128 * 1024;
+  static uint8_t* cart_ram = nullptr;
 
   // N5: Module-level, 4-byte aligned — avoids BSS contention with gb_s data.
   static uint16_t __attribute__((aligned(4))) rowBuffer[480];
@@ -40,7 +52,7 @@ namespace {
   }
   
   IRAM_ATTR uint8_t gb_cart_ram_read(struct gb_s *gb, const uint_fast32_t addr) {
-    if (addr >= sizeof(cart_ram)) {
+    if (!cart_ram || addr >= CART_RAM_SIZE) {
       static bool warned = false;
       if (!warned) { Serial.println("WARNING: Cart RAM read overflow!"); warned = true; }
       return 0xFF;
@@ -49,7 +61,7 @@ namespace {
   }
   
   IRAM_ATTR void gb_cart_ram_write(struct gb_s *gb, const uint_fast32_t addr, const uint8_t val) {
-    if (addr >= sizeof(cart_ram)) {
+    if (!cart_ram || addr >= CART_RAM_SIZE) {
       static bool warned = false;
       if (!warned) { Serial.println("WARNING: Cart RAM write overflow!"); warned = true; }
       return;
@@ -83,7 +95,10 @@ namespace {
     }
 
     // N3: No setAddrWindow per line — startFrame() set it once for 240×216.
-    int rows_to_draw = (line % 2 == 1) ? 2 : 1;
+    // Exact 3:2 nearest-neighbour scale. Horizontally, A B C D becomes
+    // A A B C C D; duplicating the even source rows gives the identical
+    // top-left anchored mapping vertically (0,0,1,2,2,3,...).
+    const int rows_to_draw = (line & 1u) ? 1 : 2;
     if (rows_to_draw == 2) {
       memcpy(&rowBuffer[240], &rowBuffer[0], 240 * 2);
     }
@@ -100,8 +115,16 @@ bool PeanutEmu::begin(const uint8_t* rom_data, size_t rom_len) {
     PAL_256[i] = DisplayEmu::CLASSIC_PALETTE[i & 0x03];
   }
 
+  if (!cart_ram) {
+    cart_ram = (uint8_t*)heap_caps_malloc(CART_RAM_SIZE, MALLOC_CAP_SPIRAM);
+    if (!cart_ram) {
+      Serial.println("Peanut-GB: unable to allocate PSRAM cartridge RAM.");
+      return false;
+    }
+  }
+
   // Clear cart RAM to prevent save-data bleed between games.
-  memset(cart_ram, 0, sizeof(cart_ram));
+  memset(cart_ram, 0, CART_RAM_SIZE);
 
   Serial.println("Initializing Peanut-GB...");
   Serial.printf("ROM loaded: %u bytes\n", rom_len);

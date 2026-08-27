@@ -4,10 +4,11 @@
 #include "display_emu.h"
 #include <string.h>
 #include <Arduino.h>
+#include <esp_heap_caps.h>
 
 // Define Walnut-CGB configurations
 #define ENABLE_LCD 1
-#define ENABLE_SOUND 0
+#define ENABLE_SOUND 1
 #define WALNUT_FULL_GBC_SUPPORT 1
 #define WALNUT_GB_RGB565_BIGENDIAN 1
 
@@ -20,6 +21,14 @@ namespace WGB {
 using namespace WGB;
 
 namespace {
+  // Stub audio callbacks (requires an external APU library to synthesize the sound)
+  extern "C" uint8_t audio_read(const uint16_t addr) {
+    return 0xFF;
+  }
+  extern "C" void audio_write(const uint16_t addr, const uint8_t val) {
+    // Pass registers to APU
+  }
+
   // E3: Align the massive emulator state struct to the ESP32-S3 D-cache line
   // size (32 bytes). Prevents the hot cpu_reg struct from straddling two
   // cache lines, which causes a 2x penalty on every register access.
@@ -28,7 +37,10 @@ namespace {
   const uint8_t* current_rom_data = nullptr;
   size_t current_rom_len = 0;
   
-  static uint8_t cart_ram[32768];
+  // Place the larger CGB-capable save RAM in PSRAM so both compiled emulator
+  // cores do not consume internal DRAM while inactive.
+  static constexpr size_t CART_RAM_SIZE = 128 * 1024;
+  static uint8_t* cart_ram = nullptr;
 
   // N5: Module-level, 4-byte aligned, outside the function so it doesn't
   // compete in the BSS region with the hot gb_s struct (~50KB).
@@ -74,12 +86,12 @@ namespace {
   }
   
   IRAM_ATTR uint8_t gb_cart_ram_read(struct gb_s *gb, const uint_fast32_t addr) {
-    if (addr >= sizeof(cart_ram)) return 0xFF;
+    if (!cart_ram || addr >= CART_RAM_SIZE) return 0xFF;
     return cart_ram[addr];
   }
   
   IRAM_ATTR void gb_cart_ram_write(struct gb_s *gb, const uint_fast32_t addr, const uint8_t val) {
-    if (addr >= sizeof(cart_ram)) return;
+    if (!cart_ram || addr >= CART_RAM_SIZE) return;
     cart_ram[addr] = val;
   }
   
@@ -149,8 +161,9 @@ namespace {
     }
     
     // N3: stream directly — address window is set once per frame in startFrame().
-    // rows_to_draw: even lines → 1 row, odd lines → 2 rows (1.5× scaling).
-    int rows_to_draw = (line % 2 == 1) ? 2 : 1;
+    // Exact 3:2 nearest-neighbour scale.  Match the horizontal phase
+    // (A B C D -> A A B C C D) by duplicating even source rows.
+    const int rows_to_draw = (line & 1u) ? 1 : 2;
     if (rows_to_draw == 2) {
       memcpy(&rowBuffer[240], &rowBuffer[0], 240 * 2);
     }
@@ -167,8 +180,16 @@ bool WalnutEmu::begin(const uint8_t* rom_data, size_t rom_len) {
     DMG_ON_GBC_PAL_256[i] = DMG_ON_GBC_PAL[(((i >> 4) & 0x03) << 2) | (i & 0x03)];
   }
 
+  if (!cart_ram) {
+    cart_ram = (uint8_t*)heap_caps_malloc(CART_RAM_SIZE, MALLOC_CAP_SPIRAM);
+    if (!cart_ram) {
+      Serial.println("Walnut-CGB: unable to allocate PSRAM cartridge RAM.");
+      return false;
+    }
+  }
+
   // Clear cart RAM so previous game's save data cannot bleed into the next.
-  memset(cart_ram, 0, sizeof(cart_ram));
+  memset(cart_ram, 0, CART_RAM_SIZE);
   
   enum gb_init_error_e ret = gb_init(&gb,
     gb_rom_read, gb_rom_read16, gb_rom_read32,

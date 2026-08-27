@@ -104,7 +104,34 @@ void testPaletteLUTMath() {
   }
 }
 
-// (Scale map test removed in Round 3 as scale_map was eliminated)
+// ---------------------------------------------------------------------------
+void testSPISDCondention() {
+  TEST_CASE("SPI Bus Contention (SD vs Display) Stress Test");
+  
+  // This simulates the DOOM engine's streaming behavior: attempting to rapidly
+  // alternate between SD card reads and Display writes.
+  if (!SDCard::isMounted()) {
+    Serial.println("  [SKIP] No SD card mounted for contention test.");
+    return;
+  }
+  
+  unsigned long start = micros();
+  // Perform 100 fast dummy reads intermixed with pushing random pixels
+  uint16_t dummyPixel = 0xFFFF;
+  for (int i = 0; i < 100; i++) {
+    size_t dummySize = 0;
+    uint8_t* dump = SDCard::loadRom("nonexistent_dummy.rom", &dummySize);
+    DisplayEmu::pushPixelsRaw(0, &dummyPixel, 1);
+    if (dump) SDCard::freeRom(dump);
+  }
+  unsigned long elapsed = micros() - start;
+  
+  // We expect this rapid bus swapping to take less than 50ms for 100 cycles
+  // if the hardware CS pins are toggling properly and there is no bus locking.
+  ASSERT_TRUE(elapsed < 50000, "SPI Bus contention took too long, possible hardware collision or mutex stall");
+}
+
+// ---------------------------------------------------------------------------
 
 bool runAllTests() {
   Serial.println("\n========== STARTING UNIT TEST SUITE ==========");
@@ -117,6 +144,7 @@ bool runAllTests() {
   testDisplayPalette();
   testIRAMPlacement();
   testPaletteLUTMath();
+  testSPISDCondention();
   
   Serial.println("========== TEST SUITE FINISHED ==========");
   Serial.printf("PASSED: %d\n", testsPassed);

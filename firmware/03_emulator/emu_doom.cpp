@@ -119,7 +119,16 @@ void runFrame() {
   updateDoomKey(KEY_LEFTARROW, Buttons::get(Buttons::LEFT).pressed);
   updateDoomKey(KEY_RIGHTARROW, Buttons::get(Buttons::RIGHT).pressed);
 
+  // Profile DOOM tick latency (this encompasses all internal SD fread()s).
+  // DOOM frames target ~28ms (35Hz). If the tick takes >40ms, SD card reads
+  // are likely stalling the SPI bus.
+  unsigned long startTick = millis();
   doomgeneric_Tick();
+  unsigned long elapsedTick = millis() - startTick;
+  
+  if (elapsedTick > 40) {
+    Serial.printf("DOOM latency spike detected: %lu ms\n", elapsedTick);
+  }
 }
 
 void destroy() {
