@@ -1,7 +1,9 @@
 #include "sd_card.h"
 #include "config.h"
+#if FEATURE_SD_CARD
 #include <SD.h>
 #include <SPI.h>
+#endif
 #include <esp_heap_caps.h>
 #include <string.h>
 #include "mario_deluxe.h"
@@ -37,6 +39,7 @@ bool SDCard::begin() {
   numRoms++;
 
   // Use explicit "/sd" mount point so standard C functions (fopen) can access it
+#if FEATURE_SD_CARD
   if (!SD.begin(SD_CS, SPI, 4000000, "/sd")) {
     mounted = false;
     // Do not reset numRoms to 0, because we have baked ROMs!
@@ -44,6 +47,9 @@ bool SDCard::begin() {
   }
   mounted = true;
   scanRoms();
+#else
+  mounted = false;
+#endif
   return true;
 }
 
@@ -52,6 +58,7 @@ bool SDCard::isMounted() {
 }
 
 void SDCard::scanRoms() {
+#if FEATURE_SD_CARD
   // Do not reset numRoms to 0, we already added baked ROMs!
   File root = SD.open("/");
   if (!root || !root.isDirectory()) return;
@@ -73,6 +80,7 @@ void SDCard::scanRoms() {
     entry.close();
   }
   root.close();
+#endif
 }
 
 int SDCard::getRomCount() {
@@ -98,6 +106,7 @@ uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
     return (uint8_t*)zelda_ages_rom;
   }
 
+#if FEATURE_SD_CARD
   File file = SD.open(String("/") + filename, FILE_READ);
   if (!file) return nullptr;
 
@@ -132,6 +141,9 @@ uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
     return nullptr;
   }
   return buffer;
+#else
+  return nullptr;
+#endif
 }
 
 void SDCard::freeRom(uint8_t* buffer) {

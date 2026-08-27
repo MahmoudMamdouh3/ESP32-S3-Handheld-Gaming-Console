@@ -21,13 +21,17 @@ namespace WGB {
 using namespace WGB;
 
 namespace {
-  // Stub audio callbacks (requires an external APU library to synthesize the sound)
+#if FEATURE_AUDIO
   extern "C" uint8_t audio_read(const uint16_t addr) {
-    return 0xFF;
+    return 0; // Replace with actual APU read
   }
   extern "C" void audio_write(const uint16_t addr, const uint8_t val) {
-    // Pass registers to APU
+    // Replace with actual APU write / I2S push
   }
+#else
+  extern "C" uint8_t audio_read(const uint16_t addr) { return 0; }
+  extern "C" void audio_write(const uint16_t addr, const uint8_t val) {}
+#endif
 
   // E3: Align the massive emulator state struct to the ESP32-S3 D-cache line
   // size (32 bytes). Prevents the hot cpu_reg struct from straddling two

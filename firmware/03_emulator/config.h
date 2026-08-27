@@ -14,6 +14,13 @@
 // pins (affect boot mode) and are avoided for buttons.
 // -----------------------------------------------------------------------
 
+// -----------------------------------------------------------------------------
+// HARDWARE FEATURE FLAGS (See project-rules.md)
+// -----------------------------------------------------------------------------
+#define FEATURE_SD_CARD 0
+#define FEATURE_AUDIO 0
+#define FEATURE_BATTERY_MONITOR 0
+
 // ---------- Display: ST7789, 2.4", 240x320, SPI ----------
 #define TFT_SCK    12
 #define TFT_MOSI   11

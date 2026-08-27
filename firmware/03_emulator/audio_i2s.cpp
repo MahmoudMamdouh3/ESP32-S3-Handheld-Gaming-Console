@@ -1,5 +1,7 @@
 #include "audio_i2s.h"
 #include "config.h"
+
+#if FEATURE_AUDIO
 #include <Arduino.h>
 #include <driver/i2s.h>
 
@@ -53,3 +55,9 @@ void pushSample(int16_t left, int16_t right) {
 }
 
 }
+#else
+namespace AudioI2S {
+    bool begin() { return true; }
+    void pushSample(int16_t left, int16_t right) {}
+}
+#endif

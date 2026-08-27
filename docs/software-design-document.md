@@ -2,6 +2,11 @@
 **Project:** GB-Emu-ESP32S3
 **Platform:** ESP32-S3 (N16R8)
 
+> [!WARNING]
+> **ASPIRATIONAL ARCHITECTURE ONLY**
+> This document describes the intended final software architecture. **It does not represent the current physical hardware state.** The project currently relies purely on USB-C power (no battery) and baked-in flash memory (no SD card, no audio).
+> **For the strict ground-truth on current hardware capabilities, you MUST read `project-rules.md` at the root of the repository.**
+
 ## 1. Introduction
 This document outlines the software architecture, design decisions, and implementation details of the GB-Emu-ESP32S3 project. The project is a highly optimized, portable, multi-platform handheld gaming system utilizing the ESP32-S3 microcontroller. It supports Game Boy, Game Boy Color, NES, and DOOM.
 

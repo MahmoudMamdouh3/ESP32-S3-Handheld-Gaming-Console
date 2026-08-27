@@ -15,13 +15,11 @@ namespace {
 }
 
 namespace Battery {
-
+#if FEATURE_BATTERY_MONITOR
 void begin() {
 #ifdef BATTERY_ADC_PIN
     analogReadResolution(12);
-    // ADC1 pins can be safely read even with Wi-Fi on
     pinMode(BATTERY_ADC_PIN, INPUT);
-    // Perform an initial read
     lastVoltage = getVoltage();
 #endif
 }
@@ -33,15 +31,14 @@ float getVoltage() {
     float batVoltage = adcVoltage * ((BATTERY_R1 + BATTERY_R2) / BATTERY_R2);
     return batVoltage;
 #else
-    return 4.2f; // Return full if not configured
+    return 4.2f;
 #endif
 }
 
 int getPercentage() {
     float v = lastVoltage;
     if (v >= 4.15f) return 100;
-    if (v <= 3.3f) return 0; // Cutoff for safe shutdown
-    // Simple linear interpolation between 3.3V (0%) and 4.15V (100%)
+    if (v <= 3.3f) return 0;
     int pct = (int)(((v - 3.3f) / (4.15f - 3.3f)) * 100.0f);
     return (pct < 0) ? 0 : ((pct > 100) ? 100 : pct);
 }
@@ -49,23 +46,25 @@ int getPercentage() {
 void safeShutdown() {
     Serial.println("BATTERY CRITICAL! Halting to prevent deep discharge...");
     Serial.flush();
-    // Do not attempt to unmount SD to avoid hanging; just sleep
     esp_deep_sleep_start();
 }
 
 void update() {
     unsigned long now = millis();
-    if (now - lastReadMs >= 5000) { // Check every 5 seconds
+    if (now - lastReadMs >= 5000) {
         float v = getVoltage();
-        // Exponential moving average to smooth out load spikes
         lastVoltage = (lastVoltage * 0.8f) + (v * 0.2f);
-        
-        if (lastVoltage < 3.2f) { // Hard cutoff slightly below 0% mapping
+        if (lastVoltage < 3.2f) {
             safeShutdown();
         }
-        
         lastReadMs = now;
     }
 }
-
+#else
+void begin() {}
+float getVoltage() { return 4.2f; }
+int getPercentage() { return 100; }
+void safeShutdown() {}
+void update() {}
+#endif
 }

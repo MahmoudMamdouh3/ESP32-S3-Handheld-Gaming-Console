@@ -105,6 +105,7 @@ void setup() {
 
   Serial.println("\n\n--- BOOTING ---");
   Serial.println("Milestone 4: Game Selection UI");
+  Serial.printf("Features: SD=%d, Audio=%d, Battery=%d\n", FEATURE_SD_CARD, FEATURE_AUDIO, FEATURE_BATTERY_MONITOR);
 
   // Initialize shared SPI bus before any device uses it.
   SPI.begin(TFT_SCK, SD_MISO, TFT_MOSI);
