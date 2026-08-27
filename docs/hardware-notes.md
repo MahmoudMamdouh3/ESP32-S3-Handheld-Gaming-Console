@@ -101,11 +101,20 @@ won't show a COM port reliably otherwise.
 To move away from bench/USB power and make the device a true handheld:
 - **LiPo + TP4056:** Use a 3.7V Lithium Polymer battery connected to a TP4056 charge/protection module. 
 - **Physical Switch:** Wire a physical SPST slide switch on the positive output (`OUT+`) of the TP4056 *before* it reaches the ESP32 `Vin` or 5V rail. This ensures the battery can be fully disconnected from the load when powered off, preventing deep discharge.
+- **Battery Sensing (GPIO1):** The battery voltage is divided (via a 100k/100k resistor divider) and read on `GPIO 1` using the ESP32's internal ADC. The firmware uses this reading to display a battery icon in the UI and forcefully trigger `esp_deep_sleep_start()` to prevent LiPo damage when voltage drops too low.
 - **Power Budget:** The ST7789 backlight, Octal PSRAM, and ESP32-S3 CPU running at 240MHz can draw significant current (often >250mA total). Ensure your battery is sized appropriately (e.g., 1000mAh+ for a few hours of gameplay) and that the wiring gauge can handle the current without unacceptable voltage drops.
 
 ---
 
-## 7. Multi-Emulator Architecture & Optimizations
+## 7. Audio Subsystem (I2S)
+
+- **MAX98357A I2S DAC:** The system uses I2S to stream digital audio to a MAX98357A class-D amplifier.
+- **Pin Map:** `BCLK=38`, `LRC(WS)=39`, `DOUT=40`.
+- **DMA Ring Buffer:** Audio is buffered into 4x512-byte DMA buffers. This blocks the emulator loop minimally when writing samples, naturally syncing the execution speed to 44.1kHz audio without requiring busy-wait timers.
+
+---
+
+## 8. Multi-Emulator Architecture & Optimizations
 
 The system now hosts four engines:
 - **Peanut-GB** (Game Boy)

@@ -4,6 +4,8 @@
 #include <SPI.h>
 #include <esp_heap_caps.h>
 #include <string.h>
+#include "mario_deluxe.h"
+#include "zelda_ages.h"
 
 namespace {
   bool mounted = false;
@@ -23,10 +25,21 @@ namespace {
 }
 
 bool SDCard::begin() {
+  numRoms = 0;
+
+  // Always add baked ROMs first!
+  strncpy(romList[numRoms].filename, "Super Mario Bros Deluxe (Baked).gbc", 63);
+  romList[numRoms].type = ROM_GBC;
+  numRoms++;
+
+  strncpy(romList[numRoms].filename, "Legend of Zelda Ages (Baked).gbc", 63);
+  romList[numRoms].type = ROM_GBC;
+  numRoms++;
+
   // Use explicit "/sd" mount point so standard C functions (fopen) can access it
   if (!SD.begin(SD_CS, SPI, 4000000, "/sd")) {
     mounted = false;
-    numRoms = 0;
+    // Do not reset numRoms to 0, because we have baked ROMs!
     return false;
   }
   mounted = true;
@@ -39,7 +52,7 @@ bool SDCard::isMounted() {
 }
 
 void SDCard::scanRoms() {
-  numRoms = 0;
+  // Do not reset numRoms to 0, we already added baked ROMs!
   File root = SD.open("/");
   if (!root || !root.isDirectory()) return;
 
@@ -72,10 +85,27 @@ const RomFile* SDCard::getRomInfo(int index) {
 }
 
 uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
+  if (!filename || !outSize) return nullptr;
+  *outSize = 0;
+
+  // Check for baked ROMs first
+  if (strcmp(filename, "Super Mario Bros Deluxe (Baked).gbc") == 0) {
+    *outSize = mario_deluxe_rom_size;
+    return (uint8_t*)mario_deluxe_rom;
+  }
+  if (strcmp(filename, "Legend of Zelda Ages (Baked).gbc") == 0) {
+    *outSize = zelda_ages_rom_size;
+    return (uint8_t*)zelda_ages_rom;
+  }
+
   File file = SD.open(String("/") + filename, FILE_READ);
   if (!file) return nullptr;
 
   size_t size = file.size();
+  if (size == 0) {
+    file.close();
+    return nullptr;
+  }
   *outSize = size;
 
   // Allocate strictly in PSRAM (external SPI RAM) since ROMs are up to 4MB
@@ -94,11 +124,22 @@ uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
   }
   
   file.close();
+  if (bytesRead != size) {
+    // Never hand a truncated ROM to an emulator: it can fail much later with
+    // a misleading crash or an out-of-bounds bank read.
+    heap_caps_free(buffer);
+    *outSize = 0;
+    return nullptr;
+  }
   return buffer;
 }
 
 void SDCard::freeRom(uint8_t* buffer) {
   if (buffer) {
+    // DO NOT free baked ROM pointers residing in Flash .rodata
+    if (buffer == mario_deluxe_rom || buffer == zelda_ages_rom) {
+      return;
+    }
     heap_caps_free(buffer);
   }
 }

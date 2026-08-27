@@ -7690,9 +7690,21 @@ enum gb_init_error_e gb_init(struct gb_s *gb,
 			return GB_INIT_CARTRIDGE_UNSUPPORTED;
 	}
 
-	gb->num_rom_banks_mask = num_rom_banks_mask[gb_rom_read(gb, bank_count_location)] - 1;
-	gb->cart_ram = cart_ram[gb_rom_read(gb, mbc_location)];
-	gb->num_ram_banks = num_ram_banks[gb_rom_read(gb, ram_size_location)];
+	/* Reject invalid size header codes before indexing the fixed lookup tables.
+	 * A ROM can have a valid header checksum while still carrying unsupported
+	 * size bytes; without these checks it could read beyond the tables. */
+	{
+		const uint8_t rom_size_code = gb_rom_read(gb, bank_count_location);
+		const uint8_t ram_size_code = gb_rom_read(gb, ram_size_location);
+
+		if(rom_size_code >= sizeof(num_rom_banks_mask) / sizeof(num_rom_banks_mask[0]) ||
+			ram_size_code >= sizeof(num_ram_banks) / sizeof(num_ram_banks[0]))
+			return GB_INIT_CARTRIDGE_UNSUPPORTED;
+
+		gb->num_rom_banks_mask = num_rom_banks_mask[rom_size_code] - 1;
+		gb->cart_ram = cart_ram[gb_rom_read(gb, mbc_location)];
+		gb->num_ram_banks = num_ram_banks[ram_size_code];
+	}
 
 	/* If the ROM says that it support RAM, but has 0 RAM banks, then
 	 * disable RAM reads from the cartridge. */

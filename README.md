@@ -10,13 +10,15 @@ A portable Game Boy handheld project built around an ESP32-S3 and a small set of
 - Game selection menu dynamically loading ROMs from SD Card
 - Custom ESP32-S3 memory mapping to run heavy engines completely in PSRAM
 
-## Current status
+## Current Status / Milestones
 
-- [x] Milestone 1: display + button testing
-- [x] Milestone 2: SD card SPI interface bring-up
-- [x] Milestone 3: emulator core bring-up (Peanut-GB, Walnut-CGB, Agnes NES, DOOM)
-- [x] Milestone 4: SD Card game selection menu
-- [x] Milestone 5: Deep performance optimizations (zero-wait input loops, cache-aligned state, dynamic PSRAM allocation for BSS tables)
+- [x] **Milestone 1:** ILI9341/ST7789 display bring-up, button test. (Wired and verified)
+- [x] **Milestone 2:** SD Card module via shared SPI. Read/Write integrity self-test implemented and verified. (Wired and verified)
+- [x] **Milestone 3:** Peanut-GB / Walnut-CGB integration (Emulator core + Display rendering)
+- [x] **Milestone 4:** Multi-platform architecture (Game Boy, GBC, NES via Agnes, DOOM via doomgeneric).
+- [x] **Milestone 5:** Game Selection UI (Read ROMs from SD card, dynamically boot emulator)
+- [x] **Milestone 6:** I2S Audio Subsystem (MAX98357A I2S DAC integration, DMA ring buffers). *Software verified, physical DAC pending integration.*
+- [x] **Milestone 7:** Portable Handheld Conversion (LiPo + TP4056 + battery sensing on GPIO1). *Software verified, battery hardware pending integration.*
 - [x] Repo tooling is now portable, extensively tested, and versionable
 
 ## Repository structure

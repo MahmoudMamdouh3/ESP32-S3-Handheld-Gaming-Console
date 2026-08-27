@@ -61,6 +61,46 @@ namespace {
     // List root directory
     scanRootFiles();
 
+    // ----------------------------------------------------
+    // SD Card Write Integrity Self-Test
+    // ----------------------------------------------------
+    Serial.println("Running SD Card Write Integrity Test...");
+    const char* testPath = "/test_integrity.dat";
+    if (SD.exists(testPath)) {
+      SD.remove(testPath);
+    }
+    
+    File testFile = SD.open(testPath, FILE_WRITE);
+    if (!testFile) {
+      Serial.println("  [FAIL] Could not open test file for writing.");
+    } else {
+      const char* payload = "BMO Gameboy SD Integrity Payload";
+      size_t payloadLen = strlen(payload);
+      size_t written = testFile.write((const uint8_t*)payload, payloadLen);
+      testFile.close();
+      
+      if (written != payloadLen) {
+        Serial.println("  [FAIL] Partial write occurred.");
+      } else {
+        File readFile = SD.open(testPath, FILE_READ);
+        if (!readFile) {
+          Serial.println("  [FAIL] Could not open test file for reading.");
+        } else {
+          char readBuffer[64] = {0};
+          size_t bytesRead = readFile.read((uint8_t*)readBuffer, payloadLen);
+          readFile.close();
+          
+          if (bytesRead != payloadLen || strncmp(payload, readBuffer, payloadLen) != 0) {
+            Serial.println("  [FAIL] Read-back data did not match written payload.");
+          } else {
+            Serial.println("  [PASS] Write/Read integrity verified successfully!");
+          }
+        }
+      }
+      SD.remove(testPath);
+    }
+    // ----------------------------------------------------
+
     return true;
   }
 }

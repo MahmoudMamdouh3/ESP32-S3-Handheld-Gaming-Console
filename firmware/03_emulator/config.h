@@ -41,10 +41,9 @@
 #define BTN_SELECT 21
 
 // ---------- Audio: I2S DAC (e.g. MAX98357A) ----------
-#define I2S_BCLK   40
-#define I2S_LRC    41
-#define I2S_DIN    42
+#define I2S_BCLK   38
+#define I2S_LRC    39
+#define I2S_DIN    40
 
-// ---------- Save States: I2C FRAM (e.g. FM24C) ----------
-#define I2C_SDA    38
-#define I2C_SCL    39
+// ---------- Battery Management ----------
+#define BATTERY_ADC_PIN 1

@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include "sd_card.h"
 
 namespace DisplayEmu {
   // Initialize the display. MUST be called after SPI.begin().
@@ -8,11 +9,13 @@ namespace DisplayEmu {
   // Clear the screen to black before launching a game.
   void clearScreen();
 
-  // Menu drawing functions
-  void drawEmulatorSelectMenu(int selectedIndex);
+  // Menu drawing functions.  The menu has its own pixel-format conversion so
+  // it remains correct without changing any emulator palette or frame stream.
   void showSDCardWarning();
   void initMenuUI();
-  void drawMenuFrame(const char** titles, int count, int selectedIndex, bool useColorEmulator);
+  void drawConsoleSelectMenu(int selectedIndex, const int gameCounts[4], bool sdMounted);
+  void drawGameSelectMenu(const RomFile* const* games, int count, int selectedIndex,
+                          RomType console, bool sdMounted);
   void cleanupMenuUI();
 
   // ---------------------------------------------------------------------------

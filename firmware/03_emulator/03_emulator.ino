@@ -5,21 +5,28 @@
 #include "emu_doom.h"
 #include "unit_tests.h"
 #include "buttons.h"
-#include "display_emu.h"
 #include "sd_card.h"
+#include "battery.h"
+#include "display_emu.h"
 #include <SPI.h>
 #include <rom/ets_sys.h>      // N7: ets_delay_us for tight hardware-timer spin
 #include <esp_heap_caps.h>    // BM2: IRAM usage reporting
 
 enum SystemState {
-  STATE_MENU,
+  STATE_CONSOLE_MENU,
+  STATE_GAME_MENU,
   STATE_EMULATOR
 };
 
-SystemState currentState = STATE_MENU;
-int selectedEmulatorIndex = 0; // Legacy unused var, kept for compat
+SystemState currentState = STATE_CONSOLE_MENU;
+int selectedConsoleIndex = 0;
+int selectedEmulatorIndex = 0;
 int selectedGameIndex = 0;
-bool useColorEmulator = true;
+static int visibleRomIndexes[100];
+static int visibleGameCount = 0;
+
+static const RomType CONSOLES[] = {ROM_GB, ROM_GBC, ROM_NES, ROM_WAD};
+static const int CONSOLE_COUNT = sizeof(CONSOLES) / sizeof(CONSOLES[0]);
 
 // Pointer to dynamically loaded ROM buffer in PSRAM
 uint8_t* currentRomBuffer = nullptr;
@@ -55,6 +62,33 @@ static void resetFrameStats() {
   frameTimeSum   = 0;
   frameTimeCount = 0;
 }
+
+static int countGamesForConsole(RomType type) {
+  int count = 0;
+  for (int i = 0; i < SDCard::getRomCount(); ++i) {
+    const RomFile* game = SDCard::getRomInfo(i);
+    if (game && game->type == type) ++count;
+  }
+  return count;
+}
+
+static void rebuildVisibleGames() {
+  visibleGameCount = 0;
+  const RomType selectedType = CONSOLES[selectedConsoleIndex];
+  for (int i = 0; i < SDCard::getRomCount() && visibleGameCount < 100; ++i) {
+    const RomFile* game = SDCard::getRomInfo(i);
+    if (game && game->type == selectedType) {
+      visibleRomIndexes[visibleGameCount++] = i;
+    }
+  }
+  if (visibleGameCount == 0) selectedGameIndex = 0;
+  else if (selectedGameIndex >= visibleGameCount) selectedGameIndex = visibleGameCount - 1;
+}
+
+static const RomFile* selectedGame() {
+  if (selectedGameIndex < 0 || selectedGameIndex >= visibleGameCount) return nullptr;
+  return SDCard::getRomInfo(visibleRomIndexes[selectedGameIndex]);
+}
 // ---------------------------------------------------------------------------
 
 // These must be declared before setup() so NB5 can set lastTime = millis().
@@ -73,7 +107,7 @@ void setup() {
   Serial.println("Milestone 4: Game Selection UI");
 
   // Initialize shared SPI bus before any device uses it.
-  SPI.begin(TFT_SCK, -1, TFT_MOSI);
+  SPI.begin(TFT_SCK, SD_MISO, TFT_MOSI);
 
   // --- UNIT TEST RUNNER ---
   // #define ENABLE_UNIT_TESTS
@@ -86,6 +120,7 @@ void setup() {
 
   Buttons::begin();
   DisplayEmu::begin();
+  Battery::begin();
   
   if (!SDCard::begin()) {
     Serial.println("Failed to mount SD card!");
@@ -103,48 +138,90 @@ void setup() {
 }
 
 void loop() {
-  if (currentState == STATE_MENU) {
+  Battery::update();
+  
+  if (currentState == STATE_CONSOLE_MENU) {
+    const unsigned long menuFrameStart = millis();
     DisplayEmu::initMenuUI();
     
     Buttons::update();
     const auto& btnLeft = Buttons::get(Buttons::LEFT);
     const auto& btnRight = Buttons::get(Buttons::RIGHT);
     const auto& btnA = Buttons::get(Buttons::A);
-    const auto& btnSelect = Buttons::get(Buttons::SELECT);
     bool left   = btnLeft.pressed   && btnLeft.changed;
     bool right  = btnRight.pressed  && btnRight.changed;
     bool a      = btnA.pressed      && btnA.changed;
-    bool select = btnSelect.pressed && btnSelect.changed;
-    
-    int numRoms = SDCard::getRomCount();
 
-    if (canPress() && numRoms > 0) {
+    if (canPress()) {
       if (left) {
-        selectedGameIndex = (selectedGameIndex - 1 + numRoms) % numRoms;
+        selectedConsoleIndex = (selectedConsoleIndex - 1 + CONSOLE_COUNT) % CONSOLE_COUNT;
         lastButtonMs = millis();
       }
       if (right) {
-        selectedGameIndex = (selectedGameIndex + 1) % numRoms;
-        lastButtonMs = millis();
-      }
-      if (select) {
-        useColorEmulator = !useColorEmulator;
+        selectedConsoleIndex = (selectedConsoleIndex + 1) % CONSOLE_COUNT;
         lastButtonMs = millis();
       }
       if (a) {
-        // Prepare to launch emulator
+        selectedGameIndex = 0;
+        rebuildVisibleGames();
+        currentState = STATE_GAME_MENU;
+        lastButtonMs = millis();
+      }
+    }
+
+    int counts[CONSOLE_COUNT];
+    for (int i = 0; i < CONSOLE_COUNT; ++i) counts[i] = countGamesForConsole(CONSOLES[i]);
+    DisplayEmu::drawConsoleSelectMenu(selectedConsoleIndex, counts, SDCard::isMounted());
+    // The full-screen SPI blit already consumes most of a 16.7 ms frame.
+    // Only sleep for the remaining budget; an unconditional delay(16) here
+    // previously limited the menu to roughly 30 FPS.
+    const unsigned long menuElapsed = millis() - menuFrameStart;
+    if (menuElapsed < 16) delay(16 - menuElapsed);
+
+  } else if (currentState == STATE_GAME_MENU) {
+    const unsigned long menuFrameStart = millis();
+    DisplayEmu::initMenuUI();
+    Buttons::update();
+    bool left = Buttons::get(Buttons::LEFT).pressed && Buttons::get(Buttons::LEFT).changed;
+    bool right = Buttons::get(Buttons::RIGHT).pressed && Buttons::get(Buttons::RIGHT).changed;
+    bool a = Buttons::get(Buttons::A).pressed && Buttons::get(Buttons::A).changed;
+    bool b = Buttons::get(Buttons::B).pressed && Buttons::get(Buttons::B).changed;
+
+    rebuildVisibleGames();
+    if (canPress()) {
+      if (left && visibleGameCount > 0) {
+        selectedGameIndex = (selectedGameIndex - 1 + visibleGameCount) % visibleGameCount;
+        lastButtonMs = millis();
+      }
+      if (right && visibleGameCount > 0) {
+        selectedGameIndex = (selectedGameIndex + 1) % visibleGameCount;
+        lastButtonMs = millis();
+      }
+      if (b) {
+        currentState = STATE_CONSOLE_MENU;
+        lastButtonMs = millis();
+      } else if (a && visibleGameCount > 0) {
+        const RomFile* selectedRom = selectedGame();
+        if (!selectedRom) {
+          currentState = STATE_CONSOLE_MENU;
+          return;
+        }
+
         DisplayEmu::cleanupMenuUI();
         DisplayEmu::clearScreen();
-        
-        const RomFile* selectedRom = SDCard::getRomInfo(selectedGameIndex);
         size_t romSize = 0;
-        uint8_t* romData = SDCard::loadRom(selectedRom->filename, &romSize);
+        // Doom reads its WAD directly from the SD VFS. Loading a second full
+        // copy into PSRAM wastes memory and can prevent the engine from
+        // reserving the large working heap it needs.
+        uint8_t* romData = selectedRom->type == ROM_WAD
+                         ? nullptr
+                         : SDCard::loadRom(selectedRom->filename, &romSize);
         
-        if (!romData) {
+        if (selectedRom->type != ROM_WAD && !romData) {
           Serial.println("Failed to load ROM from SD card.");
           DisplayEmu::showSDCardWarning();
           delay(2000);
-          currentState = STATE_MENU;
+          currentState = STATE_GAME_MENU;
           return;
         }
 
@@ -153,19 +230,14 @@ void loop() {
         // Boot appropriate emulator core based on file extension
         if (selectedRom->type == ROM_WAD) {
           // DOOM handles its own PSRAM loading via standard C file I/O
-          char wadPath[64];
+          char wadPath[sizeof(selectedRom->filename) + 5]; // "/sd/" + name + NUL
           snprintf(wadPath, sizeof(wadPath), "/sd/%s", selectedRom->filename);
           success = DoomEmu::begin(wadPath);
           selectedEmulatorIndex = 3;
-          // We don't need romData for DOOM
-          if (romData) {
-            SDCard::freeRom(romData);
-            romData = nullptr;
-          }
         } else if (selectedRom->type == ROM_NES) {
           success = NesEmu::begin(romData, romSize);
           selectedEmulatorIndex = 2; 
-        } else if (selectedRom->type == ROM_GBC || (selectedRom->type == ROM_GB && useColorEmulator)) {
+        } else if (selectedRom->type == ROM_GBC) {
           success = WalnutEmu::begin(romData, romSize);
           selectedEmulatorIndex = 0;
         } else {
@@ -175,8 +247,11 @@ void loop() {
         
         if (!success) {
           Serial.println("Failed to start emulator. Check errors.");
-          SDCard::freeRom(romData); // Free PSRAM on failure
-          while (1) delay(100);
+          SDCard::freeRom(romData);
+          currentRomBuffer = nullptr;
+          currentState = STATE_GAME_MENU;
+          lastButtonMs = millis();
+          return;
         }
         
         currentRomBuffer = romData; // Track it globally so we can free it later
@@ -187,18 +262,14 @@ void loop() {
       }
     }
     
-    // 60FPS Draw Loop
-    if (numRoms == 0) {
-      const char* empty_msg[] = {"No ROMs found on SD card."};
-      DisplayEmu::drawMenuFrame(empty_msg, 1, 0, false);
-    } else {
-      const char* titles[100];
-      for (int i = 0; i < numRoms; i++) titles[i] = SDCard::getRomInfo(i)->filename;
-      DisplayEmu::drawMenuFrame(titles, numRoms, selectedGameIndex, useColorEmulator);
+    const RomFile* visibleGames[100];
+    for (int i = 0; i < visibleGameCount; ++i) {
+      visibleGames[i] = SDCard::getRomInfo(visibleRomIndexes[i]);
     }
-    
-    // ~60 FPS delay (16ms)
-    delay(16);
+    DisplayEmu::drawGameSelectMenu(visibleGames, visibleGameCount, selectedGameIndex,
+                                   CONSOLES[selectedConsoleIndex], SDCard::isMounted());
+    const unsigned long menuElapsed = millis() - menuFrameStart;
+    if (menuElapsed < 16) delay(16 - menuElapsed);
 
   } else if (currentState == STATE_EMULATOR) {
     unsigned long frameStart = micros();
@@ -220,7 +291,7 @@ void loop() {
         currentRomBuffer = nullptr;
       }
 
-      currentState = STATE_MENU;
+      currentState = STATE_CONSOLE_MENU;
       lastButtonMs = millis();
       delay(300);
       return;

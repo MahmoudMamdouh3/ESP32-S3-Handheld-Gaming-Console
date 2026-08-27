@@ -5,9 +5,9 @@
 #include <Adafruit_ST7789.h>
 #include <cstring>
 #include <cstdio>
+#include <new>
 #include <Fonts/FreeSans9pt7b.h>
 #include <Fonts/FreeSans12pt7b.h>
-#include <math.h>
 
 // No emulator headers should be included here to prevent ODR violations
 #include <esp_heap_caps.h>
@@ -26,8 +26,6 @@ public:
 };
 
 static PSRAMCanvas* menuCanvas = nullptr;
-static float currentScrollPos = 0.0f;
-static uint32_t lastFrameTime = 0;
 
 
 namespace {
@@ -45,9 +43,111 @@ namespace {
   int centeredX(const char* str, int displayWidth) {
     int16_t x1, y1;
     uint16_t w, h;
-    tft.getTextBounds(str, 0, 0, &x1, &y1, &w, &h);
+    // Menu text lives on menuCanvas, whose active font can differ from tft.
+    menuCanvas->getTextBounds(str, 0, 0, &x1, &y1, &w, &h);
     int cx = (displayWidth - (int)w) / 2 - x1;
     return (cx < 0) ? 2 : cx;
+  }
+
+  // The display is intentionally in BGR mode for the emulators.  UI pixels
+  // are stored in a little-endian GFXcanvas and sent with writeBytes(), so
+  // they need BOTH conversions here: RGB -> BGR and host -> wire byte order.
+  constexpr uint16_t swapBytes(uint16_t value) {
+    return (uint16_t)((value << 8) | (value >> 8));
+  }
+
+  constexpr uint16_t uiColor(uint8_t r, uint8_t g, uint8_t b) {
+    const uint16_t bgr565 = ((uint16_t)(b & 0xF8) << 8)
+                          | ((uint16_t)(g & 0xFC) << 3)
+                          | ((uint16_t)r >> 3);
+    return swapBytes(bgr565);
+  }
+
+  constexpr uint16_t panelColor(uint8_t r, uint8_t g, uint8_t b) {
+    return ((uint16_t)(b & 0xF8) << 8)
+         | ((uint16_t)(g & 0xFC) << 3)
+         | ((uint16_t)r >> 3);
+  }
+
+  constexpr uint16_t UI_TEAL = uiColor(83, 198, 181);
+  constexpr uint16_t UI_DEEP_TEAL = uiColor(22, 72, 72);
+  constexpr uint16_t UI_YELLOW = uiColor(255, 210, 66);
+  constexpr uint16_t UI_WHITE = uiColor(245, 248, 245);
+  constexpr uint16_t UI_MUTED = uiColor(163, 202, 195);
+  constexpr uint16_t UI_BLACK = uiColor(5, 12, 14);
+
+  const char* consoleName(RomType type) {
+    switch (type) {
+      case ROM_GB:  return "GAME BOY";
+      case ROM_GBC: return "GAME BOY COLOR";
+      case ROM_NES: return "NES";
+      case ROM_WAD: return "DOOM";
+      default:      return "GAMES";
+    }
+  }
+
+  const char* consoleYear(RomType type) {
+    switch (type) {
+      case ROM_GB:  return "1989";
+      case ROM_GBC: return "1998";
+      case ROM_NES: return "1983";
+      case ROM_WAD: return "1993";
+      default:      return "";
+    }
+  }
+
+  const char* consoleBadge(RomType type) {
+    switch (type) {
+      case ROM_GB:  return "GB";
+      case ROM_GBC: return "GBC";
+      case ROM_NES: return "NES";
+      case ROM_WAD: return "DOOM";
+      default:      return "GAME";
+    }
+  }
+
+  void drawCentered(const char* text, int y, uint16_t color) {
+    menuCanvas->setCursor(centeredX(text, 320), y);
+    menuCanvas->setTextColor(color);
+    menuCanvas->print(text);
+  }
+
+  void drawFittedCentered(const char* source, int y, int maxWidth, uint16_t color) {
+    char fitted[64];
+    snprintf(fitted, sizeof(fitted), "%s", source ? source : "Unknown game");
+    int16_t x1, y1;
+    uint16_t width, height;
+    menuCanvas->getTextBounds(fitted, 0, 0, &x1, &y1, &width, &height);
+    while (width > maxWidth && strlen(fitted) > 4) {
+      size_t length = strlen(fitted);
+      fitted[length - 4] = '.';
+      fitted[length - 3] = '.';
+      fitted[length - 2] = '.';
+      fitted[length - 1] = '\0';
+      menuCanvas->getTextBounds(fitted, 0, 0, &x1, &y1, &width, &height);
+    }
+    drawCentered(fitted, y, color);
+  }
+
+  void gameTitle(const char* filename, char* output, size_t outputSize) {
+    snprintf(output, outputSize, "%s", filename ? filename : "Unknown game");
+    char* extension = strrchr(output, '.');
+    if (extension) *extension = '\0';
+    const char* baked = strstr(output, " (Baked)");
+    if (baked) output[baked - output] = '\0';
+  }
+
+  void drawFooter(const char* text) {
+    menuCanvas->fillRect(0, 212, 320, 28, UI_BLACK);
+    menuCanvas->setFont();
+    drawFittedCentered(text, 230, 300, UI_MUTED);
+  }
+
+  void writeMenuCanvas() {
+    tft.startWrite();
+    tft.setAddrWindow(0, 0, 320, 240);
+    SPI.writeBytes((const uint8_t*)menuCanvas->getBuffer(), 320 * 240 * 2);
+    tft.endWrite();
   }
 }
 
@@ -75,6 +175,20 @@ void DisplayEmu::begin() {
   tft.init(TFT_WIDTH, TFT_HEIGHT);
   tft.setSPISpeed(80000000); // 80 MHz SPI clock for max framerate
   tft.setRotation(3); // Flipped Landscape mode (270 degrees)
+
+  // FIX: Some ST7789 panels are configured for BGR instead of RGB by default,
+  // causing colors to look swapped (e.g., Mario looks blue, sky looks orange).
+  // We manually flip the RGB/BGR bit (0x08) in the MADCTL register (0x36)
+  // to correct the color order across the entire system.
+  SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
+  digitalWrite(TFT_DC, LOW);
+  digitalWrite(TFT_CS, LOW);
+  SPI.transfer(0x36); // MADCTL command
+  digitalWrite(TFT_DC, HIGH);
+  SPI.transfer(0xA0 | 0x08); // Rotation 3 (0xA0) | BGR bit (0x08) = 0xA8
+  digitalWrite(TFT_CS, HIGH);
+  SPI.endTransaction();
+
   tft.fillScreen(ST77XX_BLACK);
 }
 
@@ -154,16 +268,23 @@ void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
   tft.startWrite();
   tft.setAddrWindow(0, 20, 320, 200);
 
-  // We have enough RAM to do 1 line at a time
+  // Convert the 256-entry palette once per frame, rather than redoing RGB565
+  // packing and byte swapping for all 64,000 pixels.  Doom can change its
+  // palette for damage/pickup effects, so rebuilding this tiny table per frame
+  // is both correct and dramatically cheaper than assuming it is static.
+  static uint16_t doomPalette[256];
+  for (int i = 0; i < 256; ++i) {
+    const struct color c = colors[i];
+    const uint16_t p = ((c.r & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.b >> 3);
+    doomPalette[i] = (p >> 8) | (p << 8);
+  }
+
+  // We have enough RAM to do 1 line at a time.
   uint16_t lineBuf[320];
 
   for (int y = 0; y < 200; y++) {
     for (int x = 0; x < 320; x++) {
-      int idx = cmap[y * 320 + x];
-      struct color c = colors[idx];
-      uint16_t p = ((c.r & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.b >> 3);
-      // Byte swap for SPI DMA
-      lineBuf[x] = (p >> 8) | (p << 8);
+      lineBuf[x] = doomPalette[cmap[y * 320 + x]];
     }
     SPI.writeBytes((const uint8_t*)lineBuf, 320 * 2);
   }
@@ -190,7 +311,14 @@ void DisplayEmu::pushPixelsRaw(int yOffset, const uint16_t* rowBuffer, int rowsT
 
 void DisplayEmu::initMenuUI() {
   if (!menuCanvas) {
-    menuCanvas = new PSRAMCanvas(320, 240);
+    PSRAMCanvas* canvas = new (std::nothrow) PSRAMCanvas(320, 240);
+    // GFXcanvas16 does not throw on an allocation failure.  Keep the menu in
+    // a safe no-op state instead of dereferencing a null framebuffer.
+    if (!canvas || !canvas->getBuffer()) {
+      delete canvas;
+      return;
+    }
+    menuCanvas = canvas;
   }
 }
 
@@ -201,84 +329,100 @@ void DisplayEmu::cleanupMenuUI() {
   }
 }
 
-void DisplayEmu::drawMenuFrame(const char** titles, int count, int selectedIndex, bool useColorEmulator) {
+void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int gameCounts[4], bool sdMounted) {
   if (!menuCanvas) return;
-  
-  uint32_t now = millis();
-  float dt = (now - lastFrameTime) / 1000.0f;
-  if (dt > 0.1f) dt = 0.1f;
-  lastFrameTime = now;
+  const RomType consoles[4] = {ROM_GB, ROM_GBC, ROM_NES, ROM_WAD};
+  if (selectedIndex < 0 || selectedIndex >= 4) selectedIndex = 0;
 
-  // Smooth lerp scrolling
-  float targetScroll = (float)selectedIndex;
-  currentScrollPos += (targetScroll - currentScrollPos) * 10.0f * dt;
-
-  // Animated background (moving grid)
-  menuCanvas->fillScreen(0x18C3); // Dark background
-  int gridOffset = (now / 20) % 20;
-  for (int x = gridOffset; x < 320; x += 20) {
-    menuCanvas->drawFastVLine(x, 0, 240, 0x2104);
-  }
-  for (int y = gridOffset; y < 240; y += 20) {
-    menuCanvas->drawFastHLine(0, y, 320, 0x2104);
-  }
-
-  // Draw header
-  menuCanvas->fillRect(0, 0, 320, 35, 0x0000);
+  menuCanvas->fillScreen(UI_TEAL);
+  menuCanvas->fillRect(0, 0, 320, 42, UI_BLACK);
   menuCanvas->setFont(&FreeSans12pt7b);
-  menuCanvas->setTextSize(1);
-  menuCanvas->setTextColor(0xFD84); // Yellow text
-  menuCanvas->setCursor(80, 25);
-  menuCanvas->print("BMO GAMEBOY");
-
-  // Pulsing selector
-  int pulse = (sin(now / 150.0f) + 1.0f) * 15.0f;
-  uint16_t pulseColor = tft.color565(100 + pulse*5, 200 + pulse, 100 + pulse*5);
-
-  // Draw items
+  drawCentered("BMO GAMEBOY", 29, UI_YELLOW);
   menuCanvas->setFont(&FreeSans9pt7b);
-  
-  for (int i = 0; i < count; i++) {
-    float yPos = 120 + (i - currentScrollPos) * 40;
-    
-    // Only draw if on screen
-    if (yPos > -20 && yPos < 260) {
-      bool isSelected = (i == selectedIndex);
-      
-      if (isSelected) {
-        menuCanvas->fillRoundRect(20, yPos - 15, 280, 30, 8, pulseColor);
-        menuCanvas->drawRoundRect(20, yPos - 15, 280, 30, 8, 0xFFFF);
-        menuCanvas->setTextColor(0x0000);
-      } else {
-        menuCanvas->setTextColor(0xFFFF);
-      }
-      
-      menuCanvas->setCursor(35, yPos + 6);
-      menuCanvas->print(titles[i]);
-    }
+
+  for (int i = 0; i < 4; ++i) {
+    const int y = 53 + i * 39;
+    const bool selected = i == selectedIndex;
+    const bool available = gameCounts[i] > 0;
+    if (selected) menuCanvas->fillRoundRect(14, y, 292, 33, 7, UI_DEEP_TEAL);
+    menuCanvas->drawRoundRect(14, y, 292, 33, 7, selected ? UI_YELLOW : UI_MUTED);
+    menuCanvas->setCursor(27, y + 22);
+    menuCanvas->setTextColor(available ? (selected ? UI_YELLOW : UI_WHITE) : UI_MUTED);
+    menuCanvas->print(consoleName(consoles[i]));
+    menuCanvas->setFont();
+    char detail[24];
+    snprintf(detail, sizeof(detail), "%s  |  %d game%s", consoleYear(consoles[i]),
+             gameCounts[i], gameCounts[i] == 1 ? "" : "s");
+    menuCanvas->setCursor(170, y + 20);
+    menuCanvas->print(detail);
+    menuCanvas->setFont(&FreeSans9pt7b);
+  }
+  drawFooter(sdMounted ? "LEFT / RIGHT: CHOOSE     A: OPEN" :
+                         "BUILT-IN GAMES ONLY - SD CARD NOT FOUND");
+  writeMenuCanvas();
+}
+
+void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int selectedIndex, RomType console, bool sdMounted) {
+  // Battery status block
+  #include "battery.h"
+  tft.fillRect(200, 290, 36, 16, ST77XX_BLACK);
+  int pct = Battery::getPercentage();
+  tft.drawRect(200, 295, 30, 10, ST77XX_WHITE);
+  tft.fillRect(230, 298, 2, 4, ST77XX_WHITE);
+  if (pct > 0) {
+    uint16_t color = (pct > 20) ? ST77XX_GREEN : ST77XX_RED;
+    int fillW = (int)((pct / 100.0f) * 26);
+    tft.fillRect(202, 297, fillW, 6, color);
+  }
+  if (!menuCanvas) return;
+  if (count < 0) count = 0;
+  if (count > 0 && (selectedIndex < 0 || selectedIndex >= count)) selectedIndex = 0;
+
+  menuCanvas->fillScreen(UI_TEAL);
+  menuCanvas->fillRect(0, 0, 320, 42, UI_BLACK);
+  menuCanvas->setFont(&FreeSans9pt7b);
+  char heading[40];
+  snprintf(heading, sizeof(heading), "%s LIBRARY", consoleName(console));
+  drawCentered(heading, 28, UI_YELLOW);
+
+  if (count == 0) {
+    menuCanvas->setFont(&FreeSans12pt7b);
+    drawCentered("NO GAMES", 112, UI_WHITE);
+    menuCanvas->setFont(&FreeSans9pt7b);
+    drawCentered(sdMounted ? "Add compatible ROMs to the SD card." :
+                            "Insert an SD card to add more games.", 145, UI_DEEP_TEAL);
+    drawFooter("B: BACK");
+    writeMenuCanvas();
+    return;
   }
 
-  // Draw footer
-  menuCanvas->fillRect(0, 210, 320, 30, 0x0000);
-  menuCanvas->setTextColor(0xFFFF);
-  menuCanvas->setFont();
-  char progress[32];
-  sprintf(progress, "Item %d / %d", selectedIndex + 1, count);
-  menuCanvas->setCursor(10, 220);
-  menuCanvas->print(progress);
+  const RomFile* game = games[selectedIndex];
+  char title[64];
+  gameTitle(game ? game->filename : nullptr, title, sizeof(title));
 
-  // Push to screen via SPI
-  tft.startWrite();
-  tft.setAddrWindow(0, 0, 320, 240);
-  SPI.writeBytes((const uint8_t*)menuCanvas->getBuffer(), 320 * 240 * 2);
-  tft.endWrite();
+  // A deliberately generic cover card: it gives every ROM a polished, safe
+  // presentation without pretending that arbitrary files have cover art.
+  menuCanvas->fillRoundRect(81, 54, 158, 112, 12, UI_DEEP_TEAL);
+  menuCanvas->drawRoundRect(81, 54, 158, 112, 12, UI_YELLOW);
+  menuCanvas->fillRect(102, 73, 116, 51, UI_BLACK);
+  menuCanvas->drawRoundRect(112, 137, 96, 17, 8, UI_BLACK);
+  menuCanvas->setFont(&FreeSans12pt7b);
+  drawCentered(consoleBadge(console), 106, UI_YELLOW);
+  menuCanvas->setFont(&FreeSans9pt7b);
+  drawFittedCentered(title, 185, 282, UI_WHITE);
+  menuCanvas->setFont();
+  char position[28];
+  snprintf(position, sizeof(position), "%d / %d", selectedIndex + 1, count);
+  drawCentered(position, 204, UI_DEEP_TEAL);
+  drawFooter("LEFT / RIGHT: BROWSE     A: PLAY     B: BACK");
+  writeMenuCanvas();
 }
 
 void DisplayEmu::showSDCardWarning() {
-  tft.fillRect(40, 80, 240, 80, 0x11E9);
-  tft.drawRect(42, 82, 236, 76, 0xFD84);
+  tft.fillRect(40, 80, 240, 80, panelColor(22, 72, 72));
+  tft.drawRect(42, 82, 236, 76, panelColor(255, 210, 66));
   tft.setFont(&FreeSans9pt7b);
-  tft.setTextColor(0xFD84);
+  tft.setTextColor(panelColor(255, 210, 66));
   tft.setCursor(55, 115);
   tft.print("SD CARD REQUIRED");
   tft.setCursor(55, 135);
