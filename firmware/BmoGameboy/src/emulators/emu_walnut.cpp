@@ -81,12 +81,14 @@ namespace {
     return current_rom_data[addr];
   }
 
+  // BMO-PATCH: Replaced unsafe unaligned pointer casts with byte-wise little-endian reconstruction
   IRAM_ATTR uint16_t gb_rom_read16(struct gb_s *gb, const uint_fast32_t addr) {
     if (addr + 2 > current_rom_len) return 0xFFFF;
     return (uint16_t)current_rom_data[addr] | 
           ((uint16_t)current_rom_data[addr + 1] << 8);
   }
 
+  // BMO-PATCH: Replaced unsafe unaligned pointer casts with byte-wise little-endian reconstruction
   IRAM_ATTR uint32_t gb_rom_read32(struct gb_s *gb, const uint_fast32_t addr) {
     if (addr + 4 > current_rom_len) return 0xFFFFFFFF;
     return (uint32_t)current_rom_data[addr] | 

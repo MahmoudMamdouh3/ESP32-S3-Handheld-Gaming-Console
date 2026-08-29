@@ -64,6 +64,7 @@
 #define WALNUT_GB_SAFE_DUALFETCH_MBC  0
 // WALNUT_GB_16_BIT_OPS_DUALFETCH when true enables 16-bit operation for opcodes with 16-bit reads for the first half of the dual fetch chain
 // currently breaks compatibility with some games, 16-bit opcode optimization needs revisions. The 3 tiers here are used to isolate misbehaving opcodes more quickly when debugging.
+// BMO-PATCH: Fixed typo _OPS_OPS and _DISABLED to correctly enable 16-bit fast paths
 #define WALNUT_GB_16_BIT_OPS_DUALFETCH 1
 #define WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED2 0
 #define WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED 0
