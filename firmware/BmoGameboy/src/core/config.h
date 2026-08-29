@@ -58,3 +58,52 @@
 // ---------- I2C / FRAM (Planned/Optional) ----------
 #define I2C_SDA    43
 #define I2C_SCL    44
+
+// -----------------------------------------------------------------------------
+// LOGGING & DIAGNOSTICS (See .agents/rules/16_logging_and_diagnostics.md)
+// -----------------------------------------------------------------------------
+#define LOG_LEVEL_NONE  0
+#define LOG_LEVEL_ERROR 1
+#define LOG_LEVEL_WARN  2
+#define LOG_LEVEL_INFO  3
+#define LOG_LEVEL_DEBUG 4
+
+#ifndef LOG_LEVEL
+#define LOG_LEVEL LOG_LEVEL_INFO
+#endif
+
+// ERROR
+#if LOG_LEVEL >= LOG_LEVEL_ERROR
+  #define LOG_ERROR(fmt, ...) Serial.printf("[ERROR] " fmt "\n", ##__VA_ARGS__)
+  #define LOG_ERROR_STR(str)  Serial.println("[ERROR] " str)
+#else
+  #define LOG_ERROR(fmt, ...) do {} while(0)
+  #define LOG_ERROR_STR(str)  do {} while(0)
+#endif
+
+// WARN
+#if LOG_LEVEL >= LOG_LEVEL_WARN
+  #define LOG_WARN(fmt, ...) Serial.printf("[WARN] " fmt "\n", ##__VA_ARGS__)
+  #define LOG_WARN_STR(str)  Serial.println("[WARN] " str)
+#else
+  #define LOG_WARN(fmt, ...) do {} while(0)
+  #define LOG_WARN_STR(str)  do {} while(0)
+#endif
+
+// INFO
+#if LOG_LEVEL >= LOG_LEVEL_INFO
+  #define LOG_INFO(fmt, ...) Serial.printf("[INFO] " fmt "\n", ##__VA_ARGS__)
+  #define LOG_INFO_STR(str)  Serial.println("[INFO] " str)
+#else
+  #define LOG_INFO(fmt, ...) do {} while(0)
+  #define LOG_INFO_STR(str)  do {} while(0)
+#endif
+
+// DEBUG
+#if LOG_LEVEL >= LOG_LEVEL_DEBUG
+  #define LOG_DEBUG(fmt, ...) Serial.printf("[DEBUG] " fmt "\n", ##__VA_ARGS__)
+  #define LOG_DEBUG_STR(str)  Serial.println("[DEBUG] " str)
+#else
+  #define LOG_DEBUG(fmt, ...) do {} while(0)
+  #define LOG_DEBUG_STR(str)  do {} while(0)
+#endif
