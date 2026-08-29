@@ -93,7 +93,8 @@ int main(int argc, char **argv) {
     printf("Running test %s...\n", argv[1]);
     
     // Blargg's CPU tests output continuously to serial, then eventually print "Passed" or "Failed"
-    for (int i = 0; i < 2000; i++) {
+    // Increased frame budget to 8000 frames (approx 140 million cycles) to allow test 10 and 11 to complete.
+    for (int i = 0; i < 8000; i++) {
         gb_run_frame(&gb);
     }
     
