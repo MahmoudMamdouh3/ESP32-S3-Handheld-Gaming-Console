@@ -1,5 +1,5 @@
 #include "emu_nes.h"
-#include "agnes.h"
+#include "../vendor/agnes/agnes.h"
 #include "display_emu.h"
 #include "buttons.h"
 #include <Arduino.h>

@@ -7,7 +7,7 @@
 #include <Arduino.h>
 #include <esp_heap_caps.h>
 
-#include "peanut_gb_config.h"
+#include "../vendor/peanut_gb/peanut_gb_config.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -25,7 +25,7 @@
 #endif
 
 namespace PGB {
-  #include "peanut_gb.h"
+  #include "../vendor/peanut_gb/peanut_gb.h"
 }
 using namespace PGB;
 

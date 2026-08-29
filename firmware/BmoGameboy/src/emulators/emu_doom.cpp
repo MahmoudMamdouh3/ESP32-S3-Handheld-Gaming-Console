@@ -3,8 +3,8 @@
 #include "buttons.h"
 
 extern "C" {
-#include "src/doom/doomgeneric.h"
-#include "src/doom/doomkeys.h"
+#include "../vendor/doom/src/doomgeneric.h"
+#include "../vendor/doom/src/doomkeys.h"
 }
 
 #include <Arduino.h>

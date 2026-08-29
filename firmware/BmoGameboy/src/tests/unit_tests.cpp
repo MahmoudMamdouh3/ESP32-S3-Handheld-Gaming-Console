@@ -1,7 +1,9 @@
 #include "unit_tests.h"
 #include <Arduino.h>
 #include <esp_heap_caps.h>
-#include "../../assets/legacy_headers/rom_data.h"
+// rom_data.h lives at repo-root/assets/legacy_headers/rom_data.h
+// Relative path from firmware/BmoGameboy/src/tests/ to repo root is ../../../../
+#include "../../../../assets/legacy_headers/rom_data.h"
 #include "buttons.h"
 #include "display_emu.h"
 #include "emu_peanut.h"

@@ -29,7 +29,7 @@
 #endif
 
 namespace WGB {
-  #include "walnut_cgb.h"
+  #include "../vendor/walnut_cgb/walnut_cgb.h"
 }
 using namespace WGB;
 
