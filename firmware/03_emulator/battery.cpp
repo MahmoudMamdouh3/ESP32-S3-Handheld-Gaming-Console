@@ -1,5 +1,6 @@
 #include "battery.h"
 #include "config.h"
+#include "bmo_face.h"
 #include <Arduino.h>
 
 // Calibration values for the voltage divider (to be finalized on real hardware)
@@ -46,6 +47,8 @@ int getPercentage() {
 void safeShutdown() {
     Serial.println("BATTERY CRITICAL! Halting to prevent deep discharge...");
     Serial.flush();
+    BmoFace::setExpression(BmoFace::SHUTDOWN);
+    BmoFace::draw(); // Force draw immediately before sleep
     esp_deep_sleep_start();
 }
 
@@ -54,6 +57,12 @@ void update() {
     if (now - lastReadMs >= 5000) {
         float v = getVoltage();
         lastVoltage = (lastVoltage * 0.8f) + (v * 0.2f);
+        
+        int pct = getPercentage();
+        if (pct < 20 && lastVoltage >= 3.2f) {
+            BmoFace::setExpression(BmoFace::LOW_BATTERY);
+        }
+        
         if (lastVoltage < 3.2f) {
             safeShutdown();
         }

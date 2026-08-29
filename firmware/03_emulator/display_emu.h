@@ -44,6 +44,16 @@ namespace DisplayEmu {
   // Issues setAddrWindow then writeBytes.
   void pushPixelsRaw(int yOffset, const uint16_t* rowBuffer, int rowsToDraw);
 
+  // pushPixelsFullScreen: blits a full 320x240 frame (e.g. for BMO face)
+  void pushPixelsFullScreen(const uint16_t* buffer);
+
+  // pushPixelsAt: self-contained transaction that blits a w×h region from
+  // 'buf' at display position (x, y).  Same semantics as pushPixels but
+  // unrestricted — not tied to the Game Boy OFFSET_X/Y viewport window.
+  // Used by BmoFace to place the mascot face anywhere on the 320×240 display.
+  void pushPixelsAt(int x, int y, int w, int h, const uint16_t* buf);
+
+
   // ---------------------------------------------------------------------------
   // High-performance frame rendering (N3)
   // ---------------------------------------------------------------------------

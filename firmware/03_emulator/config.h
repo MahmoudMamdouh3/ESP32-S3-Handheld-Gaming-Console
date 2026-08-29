@@ -54,3 +54,7 @@
 
 // ---------- Battery Management ----------
 #define BATTERY_ADC_PIN 1
+
+// ---------- I2C / FRAM (Planned/Optional) ----------
+#define I2C_SDA    43
+#define I2C_SCL    44

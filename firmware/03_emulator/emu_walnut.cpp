@@ -2,6 +2,7 @@
 #include "emu_walnut.h"
 #include "buttons.h"
 #include "display_emu.h"
+#include "bmo_face.h"
 #include <string.h>
 #include <Arduino.h>
 #include <esp_heap_caps.h>
@@ -15,24 +16,25 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#if FEATURE_AUDIO
+  extern "C" __attribute__((weak)) uint8_t audio_read(const uint16_t addr) {
+    return 0; // Replace with actual APU read if minigb_apu is integrated
+  }
+  extern "C" __attribute__((weak)) void audio_write(const uint16_t addr, const uint8_t val) {
+    // Replace with actual APU write / I2S push
+  }
+#else
+  extern "C" __attribute__((weak)) uint8_t audio_read(const uint16_t addr) { return 0; }
+  extern "C" __attribute__((weak)) void audio_write(const uint16_t addr, const uint8_t val) {}
+#endif
+
 namespace WGB {
   #include "walnut_cgb.h"
 }
 using namespace WGB;
 
 namespace {
-#if FEATURE_AUDIO
-  extern "C" uint8_t audio_read(const uint16_t addr) {
-    return 0; // Replace with actual APU read
-  }
-  extern "C" void audio_write(const uint16_t addr, const uint8_t val) {
-    // Replace with actual APU write / I2S push
-  }
-#else
-  extern "C" uint8_t audio_read(const uint16_t addr) { return 0; }
-  extern "C" void audio_write(const uint16_t addr, const uint8_t val) {}
-#endif
-
+  // Stub audio callbacks moved above
   // E3: Align the massive emulator state struct to the ESP32-S3 D-cache line
   // size (32 bytes). Prevents the hot cpu_reg struct from straddling two
   // cache lines, which causes a 2x penalty on every register access.
@@ -61,7 +63,7 @@ namespace {
     // OBJ0 (pal_type 0): White, Red, Dark Red, Black
     0xFFFF, 0x1F00, 0x1000, 0x0000,
     // OBJ1 (pal_type 1): White, Green, Dark Green, Black
-    0xFFFF, 0x0700, 0x0300, 0x0000,
+    0xFFFF, 0xE007, 0xE003, 0x0000,
     // BG   (pal_type 2): White, Light Blue, Dark Blue, Black
     0xFFFF, 0x8CF5, 0x0080, 0x0000,
     // UNUSED (pal_type 3): Fallback to black
@@ -102,6 +104,8 @@ namespace {
   void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16_t val) {
     Serial.printf("Walnut-CGB Error: %d at PC 0x%04X\n", gb_err, val);
     Serial.flush();
+    BmoFace::setExpression(BmoFace::ERROR);
+    BmoFace::draw(); // Force draw immediately before restart
     esp_restart();
   }
 
@@ -223,4 +227,11 @@ void WalnutEmu::runFrame() {
   DisplayEmu::startFrame();
   gb_run_frame_dualfetch(&gb);
   DisplayEmu::endFrame();
+}
+
+void WalnutEmu::destroy() {
+  if (cart_ram) {
+    free(cart_ram);
+    cart_ram = nullptr;
+  }
 }

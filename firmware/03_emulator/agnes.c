@@ -33,6 +33,7 @@ THE SOFTWARE.
 #endif /* _MSC_VER */
 
 #include "agnes.h"
+#include <esp_heap_caps.h>
 
 //-----------------------------------------------------------------------------
 // Headers
@@ -240,7 +241,7 @@ typedef struct controller {
 } controller_t;
 
 /*********************************** AGNES ***********************************/
-typedef struct agnes {
+typedef struct __attribute__((aligned(32))) agnes {
     cpu_t cpu;
     ppu_t ppu;
     uint8_t ram[2 * 1024];
@@ -444,6 +445,8 @@ AGNES_INTERNAL void mapper4_pa12_rising_edge(mapper4_t *mapper);
 //FILE_START:agnes.c
 #include <stdlib.h>
 #include <string.h>
+#include <esp_heap_caps.h>
+#include <esp_attr.h>
 
 #ifndef AGNES_AMALGAMATED
 #include "agnes.h"
@@ -479,7 +482,7 @@ typedef struct {
     uint8_t zeros[5];
 } ines_header_t;
 
-typedef struct agnes_state {
+typedef struct __attribute__((aligned(32))) agnes_state {
     agnes_t agnes;
 } agnes_state_t;
 
@@ -505,7 +508,7 @@ static agnes_color_t g_colors[64] = {
 };
 
 agnes_t* agnes_make(void) {
-    agnes_t *agnes = (agnes_t*)malloc(sizeof(*agnes));
+    agnes_t *agnes = (agnes_t*)heap_caps_aligned_alloc(32, sizeof(*agnes), MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
     if (!agnes) {
         return NULL;
     }
@@ -601,7 +604,7 @@ bool agnes_restore_state(agnes_t *agnes, const agnes_state_t *state) {
     return true;
 }
 
-bool agnes_tick(agnes_t *agnes, bool *out_new_frame) {
+IRAM_ATTR bool agnes_tick(agnes_t *agnes, bool *out_new_frame) {
     int cpu_cycles = cpu_tick(&agnes->cpu);
     if (cpu_cycles == 0) {
         return false;
@@ -615,7 +618,7 @@ bool agnes_tick(agnes_t *agnes, bool *out_new_frame) {
     return true;
 }
 
-bool agnes_next_frame(agnes_t *agnes) {
+IRAM_ATTR bool agnes_next_frame(agnes_t *agnes) {
     while (true) {
         bool new_frame = false;
         bool ok = agnes_tick(agnes, &new_frame);
@@ -640,7 +643,7 @@ const uint8_t* agnes_get_screen_buffer(const agnes_t *agnes) {
 }
 
 void agnes_destroy(agnes_t *agnes) {
-    free(agnes);
+    heap_caps_free(agnes);
 }
 
 static uint8_t get_input_byte(const agnes_input_t* input) {
@@ -782,7 +785,7 @@ void cpu_set_dma_stall(cpu_t *cpu) {
     cpu->stall = (cpu->cycles & 0x1) ? 514 : 513;
 }
 
-void cpu_write8(cpu_t *cpu, uint16_t addr, uint8_t val) {
+IRAM_ATTR void cpu_write8(cpu_t *cpu, uint16_t addr, uint8_t val) {
     agnes_t *agnes = cpu->agnes;
 
     if (addr < 0x2000) {
@@ -806,7 +809,7 @@ void cpu_write8(cpu_t *cpu, uint16_t addr, uint8_t val) {
     }
 }
 
-uint8_t cpu_read8(cpu_t *cpu, uint16_t addr) {
+IRAM_ATTR uint8_t cpu_read8(cpu_t *cpu, uint16_t addr) {
     agnes_t *agnes = cpu->agnes;
 
     uint8_t res = 0;
@@ -1280,7 +1283,7 @@ static uint16_t get_sprite_color_addr(ppu_t *ppu, int *out_sprite_ix, bool *out_
     return 0;
 }
 
-uint8_t ppu_read_register(ppu_t *ppu, uint16_t addr) {
+IRAM_ATTR uint8_t ppu_read_register(ppu_t *ppu, uint16_t addr) {
     switch (addr) {
         case 0x2002: { // PPUSTATUS
             uint8_t res = 0;
@@ -1401,7 +1404,7 @@ static void set_pixel_color_ix(ppu_t *ppu, int x, int y, uint8_t color_ix) {
     ppu->screen_buffer[ix] = color_ix;
 }
 
-static uint8_t ppu_read8(ppu_t *ppu, uint16_t addr) {
+static IRAM_ATTR uint8_t ppu_read8(ppu_t *ppu, uint16_t addr) {
     addr = addr & 0x3fff;
     uint8_t res = 0;
     if (addr >= 0x3f00) { // $3F00 - $3FFF, palette reads are most common

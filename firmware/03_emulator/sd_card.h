@@ -29,4 +29,5 @@ public:
   // Returns pointer to PSRAM buffer (must be free'd via freeRom) or nullptr on failure.
   static uint8_t* loadRom(const char* filename, size_t* outSize);
   static void freeRom(uint8_t* buffer);
+  
 };

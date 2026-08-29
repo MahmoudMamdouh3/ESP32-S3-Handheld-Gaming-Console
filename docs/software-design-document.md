@@ -1,5 +1,5 @@
 # Software Design Document (SDD)
-**Project:** GB-Emu-ESP32S3
+**Project:** BMO-Handheld-Gaming-Console
 **Platform:** ESP32-S3 (N16R8)
 
 > [!WARNING]
@@ -8,7 +8,7 @@
 > **For the strict ground-truth on current hardware capabilities, you MUST read `project-rules.md` at the root of the repository.**
 
 ## 1. Introduction
-This document outlines the software architecture, design decisions, and implementation details of the GB-Emu-ESP32S3 project. The project is a highly optimized, portable, multi-platform handheld gaming system utilizing the ESP32-S3 microcontroller. It supports Game Boy, Game Boy Color, NES, and DOOM.
+This document outlines the software architecture, design decisions, and implementation details of the BMO-Handheld-Gaming-Console project. The project is a highly optimized, portable, multi-platform handheld gaming system utilizing the ESP32-S3 microcontroller. It supports Game Boy, Game Boy Color, NES, and DOOM.
 
 ## 2. System Architecture
 The firmware is built using the Arduino IDE/CLI core for ESP32. The system employs a state machine to manage the lifecycle between the Main Menu, the Game Selection UI, and active emulator instances.
@@ -53,3 +53,8 @@ The architecture dynamically boots one of four emulator cores based on the ROM e
 An extensive suite of Python scripts (`scripts/`) ensures reproducible firmware assets:
 - **`process_games.py`:** Parses `.zip` ROM archives, extracts binaries, and generates correctly formatted C headers with `PROGMEM` guards. It also generates static 100x100 RGB565 UI cover assets using Pillow.
 - **`validate_repo.py`:** Validates python syntax across all tooling scripts and verifies the Nintendo logo header checksum (0x014D) within the ROMs to ensure data integrity before compilation.
+
+## 10. User Interface & BMO Mascot Face
+- **Dynamic State Machine:** A non-blocking UI state machine (`BmoFace` module) provides an animated BMO face overlay during non-gameplay states (menus, boot, crash, charging, low battery). 
+- **Animation Timing:** Blinking and state timeouts (e.g., brief `HAPPY` face before emulator launch) are driven strictly by `millis()` delta-checks inside the main `loop()`, ensuring zero interference with hardware timers.
+- **Memory Efficiency:** The 320x240 RGB565 face arrays are directly pushed to the display via a specialized full-screen SPI blit `pushPixelsFullScreen()`, minimizing memory footprint and CPU overhead.

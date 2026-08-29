@@ -12,4 +12,5 @@ namespace PeanutEmu {
 
   // Run one frame of the emulator (approx 16.7ms of game time).
   void runFrame();
+  void destroy();
 }

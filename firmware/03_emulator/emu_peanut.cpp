@@ -2,6 +2,7 @@
 #include "emu_peanut.h"
 #include "buttons.h"
 #include "display_emu.h"
+#include "bmo_face.h"
 #include <string.h>
 #include <Arduino.h>
 #include <esp_heap_caps.h>
@@ -11,24 +12,25 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#if FEATURE_AUDIO
+  extern "C" __attribute__((weak)) uint8_t audio_read(const uint16_t addr) {
+    return 0; // Replace with actual APU read if minigb_apu is integrated
+  }
+  extern "C" __attribute__((weak)) void audio_write(const uint16_t addr, const uint8_t val) {
+    // Replace with actual APU write / I2S push
+  }
+#else
+  extern "C" __attribute__((weak)) uint8_t audio_read(const uint16_t addr) { return 0; }
+  extern "C" __attribute__((weak)) void audio_write(const uint16_t addr, const uint8_t val) {}
+#endif
+
 namespace PGB {
   #include "peanut_gb.h"
 }
 using namespace PGB;
 
 namespace {
-  // Stub audio callbacks (requires an external APU library like minigb_apu to synthesize the sound)
-#if FEATURE_AUDIO
-  extern "C" uint8_t audio_read(const uint16_t addr) {
-    return 0; // Replace with actual APU read if minigb_apu is integrated
-  }
-  extern "C" void audio_write(const uint16_t addr, const uint8_t val) {
-    // Replace with actual APU write / I2S push
-  }
-#else
-  extern "C" uint8_t audio_read(const uint16_t addr) { return 0; }
-  extern "C" void audio_write(const uint16_t addr, const uint8_t val) {}
-#endif
+  // Stub audio callbacks moved above
   
   // E3: Align the emulator state struct to the ESP32-S3 D-cache line
   // size (32 bytes). Prevents cache thrashing on hot registers.
@@ -77,6 +79,8 @@ namespace {
   void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16_t val) {
     Serial.printf("Peanut-GB Error: %d at PC 0x%04X\n", gb_err, val);
     Serial.flush();
+    BmoFace::setExpression(BmoFace::ERROR);
+    BmoFace::draw(); // Force draw immediately before restart
     esp_restart();
   }
 
@@ -161,4 +165,11 @@ void PeanutEmu::runFrame() {
   DisplayEmu::startFrame();
   gb_run_frame(&gb);
   DisplayEmu::endFrame();
+}
+
+void PeanutEmu::destroy() {
+  if (cart_ram) {
+    free(cart_ram);
+    cart_ram = nullptr;
+  }
 }

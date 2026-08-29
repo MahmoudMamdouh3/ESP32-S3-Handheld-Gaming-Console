@@ -1,6 +1,7 @@
 #pragma GCC optimize ("O3")
 #include "display_emu.h"
 #include "config.h"
+#include "battery.h"
 #include <SPI.h>
 #include <Adafruit_ST7789.h>
 #include <cstring>
@@ -309,6 +310,22 @@ void DisplayEmu::pushPixelsRaw(int yOffset, const uint16_t* rowBuffer, int rowsT
   SPI.writeBytes((const uint8_t*)rowBuffer, 240 * rowsToDraw * 2);
 }
 
+void DisplayEmu::pushPixelsFullScreen(const uint16_t* buffer) {
+  tft.startWrite();
+  tft.setAddrWindow(0, 0, 320, 240);
+  SPI.writeBytes((const uint8_t*)buffer, 320 * 240 * 2);
+  tft.endWrite();
+}
+
+// pushPixelsAt: unrestricted single-region blit at any (x, y) on the full
+// 320×240 display.  Self-contained SPI transaction (startWrite/endWrite).
+void DisplayEmu::pushPixelsAt(int x, int y, int w, int h, const uint16_t* buf) {
+  tft.startWrite();
+  tft.setAddrWindow(x, y, w, h);
+  SPI.writeBytes((const uint8_t*)buf, (uint32_t)w * h * 2);
+  tft.endWrite();
+}
+
 void DisplayEmu::initMenuUI() {
   if (!menuCanvas) {
     PSRAMCanvas* canvas = new (std::nothrow) PSRAMCanvas(320, 240);
@@ -363,23 +380,26 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int gameCounts[4
 }
 
 void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int selectedIndex, RomType console, bool sdMounted) {
-  // Battery status block
-  #include "battery.h"
-  tft.fillRect(200, 290, 36, 16, ST77XX_BLACK);
-  int pct = Battery::getPercentage();
-  tft.drawRect(200, 295, 30, 10, ST77XX_WHITE);
-  tft.fillRect(230, 298, 2, 4, ST77XX_WHITE);
-  if (pct > 0) {
-    uint16_t color = (pct > 20) ? ST77XX_GREEN : ST77XX_RED;
-    int fillW = (int)((pct / 100.0f) * 26);
-    tft.fillRect(202, 297, fillW, 6, color);
-  }
   if (!menuCanvas) return;
   if (count < 0) count = 0;
   if (count > 0 && (selectedIndex < 0 || selectedIndex >= count)) selectedIndex = 0;
 
   menuCanvas->fillScreen(UI_TEAL);
   menuCanvas->fillRect(0, 0, 320, 42, UI_BLACK);
+  
+  // Battery status block (Top right header)
+#if FEATURE_BATTERY_MONITOR
+  menuCanvas->fillRect(275, 13, 36, 16, UI_BLACK);
+  int pct = Battery::getPercentage();
+  menuCanvas->drawRect(275, 16, 30, 10, UI_WHITE);
+  menuCanvas->fillRect(305, 19, 2, 4, UI_WHITE);
+  if (pct > 0) {
+    uint16_t color = (pct > 20) ? uiColor(0, 255, 0) : uiColor(255, 0, 0);
+    int fillW = (int)((pct / 100.0f) * 26);
+    menuCanvas->fillRect(277, 18, fillW, 6, color);
+  }
+#endif
+
   menuCanvas->setFont(&FreeSans9pt7b);
   char heading[40];
   snprintf(heading, sizeof(heading), "%s LIBRARY", consoleName(console));
@@ -426,5 +446,7 @@ void DisplayEmu::showSDCardWarning() {
   tft.setCursor(55, 115);
   tft.print("SD CARD REQUIRED");
   tft.setCursor(55, 135);
-  tft.print("FOR THIS CONSOLE");
+    tft.print("FOR THIS CONSOLE");
 }
+
+

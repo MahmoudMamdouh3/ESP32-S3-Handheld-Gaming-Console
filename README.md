@@ -1,4 +1,4 @@
-# GB-Emu-ESP32S3
+# BMO-Handheld-Gaming-Console
 
 A portable Game Boy handheld project built around an ESP32-S3 and a small set of supporting tooling scripts. The repository documents the wiring, the emulator integration, and the ROM asset pipeline needed to build and validate the firmware.
 
@@ -6,6 +6,7 @@ A portable Game Boy handheld project built around an ESP32-S3 and a small set of
 
 - Hardware bring-up for the ESP32-S3 and TFT display
 - Button polling and menu UI implementation
+- BMO Mascot Face non-blocking UI state machine for interactive animations (idle blinking, game launch, charging, low battery, and system crash)
 - Multi-emulator architecture: Peanut-GB (Game Boy), Walnut-CGB (Game Boy Color), Agnes (NES), and DOOM (doomgeneric)
 - Game selection menu dynamically loading ROMs from SD Card
 - Custom ESP32-S3 memory mapping to run heavy engines completely in PSRAM
@@ -19,8 +20,9 @@ A portable Game Boy handheld project built around an ESP32-S3 and a small set of
 - [x] **Milestone 3:** Peanut-GB / Walnut-CGB integration (Code Exists, Tested on Real Hardware without SD)
 - [x] **Milestone 4:** Multi-platform architecture (Code Exists, Tested on Real Hardware without SD)
 - [x] **Milestone 5:** Game Selection UI (Code Exists, Tested on Real Hardware without SD)
-- [ ] **Milestone 6:** I2S Audio Subsystem MAX98357A I2S DAC. (Code Exists. Hardware Pending / Not Tested)
-- [ ] **Milestone 7:** Portable Handheld Conversion LiPo + TP4056 + battery sensing on GPIO1. (Code Exists. Hardware Pending / Not Tested)
+- [x] **Milestone 6:** BMO Mascot Face Integration (Code Exists, Tested on Real Hardware)
+- [ ] **Milestone 7:** I2S Audio Subsystem MAX98357A I2S DAC. (Code Exists. Hardware Pending / Not Tested)
+- [ ] **Milestone 8:** Portable Handheld Conversion LiPo + TP4056 + battery sensing on GPIO1. (Code Exists. Hardware Pending / Not Tested)
 - [x] Repo tooling is now portable, extensively tested, and versionable
 
 ## Repository structure
@@ -43,7 +45,9 @@ A portable Game Boy handheld project built around an ESP32-S3 and a small set of
 │   ├── 02_sd_card_test/
 │   ├── 03_emulator/
 │   │   ├── 03_emulator.ino
-│   │   ├── agnes.c (NES Core)
+│   │   ├── bmo_assets.h
+│   │   ├── bmo_face.cpp
+│   │   ├── bmo_face.h
 │   │   ├── buttons.cpp
 │   │   ├── config.h
 │   │   ├── display_emu.cpp
@@ -95,7 +99,7 @@ Use the repo-root-based scripts instead of machine-specific hardcoded paths.
 Equivalent Arduino CLI build:
 
 ```bash
-arduino-cli compile --fqbn "esp32:esp32:esp32s3:FlashSize=16M,PartitionScheme=custom,PSRAM=opi" firmware/03_emulator
+arduino-cli compile --fqbn "esp32:esp32:esp32s3:FlashSize=16M,PartitionScheme=custom,PSRAM=opi,FlashMode=opi" firmware/03_emulator
 ```
 
 ## Important repository conventions
@@ -108,5 +112,9 @@ arduino-cli compile --fqbn "esp32:esp32:esp32s3:FlashSize=16M,PartitionScheme=cu
 ## Documentation
 
 See `docs/hardware-notes.md` for board-level debugging notes and wiring constraints. The repo also includes the implementation plan in `IMPLEMENTATION_PLAN.md`.
+
+## Recent Bug Fixes
+- **Display UI & Battery**: Fixed an issue where the battery indicator rendered off-screen on the 320x240 landscape display. Moved to the menu header. Fixed BGR color discrepancy for the low-battery indicator caused by MADCTL configuration (`0xA0 | 0x08`).
+- **Walnut Emulator Core**: Corrected a byte-swapping bug in `DMG_ON_GBC_PAL` where OBJ1 green values (`0x0700`, `0x0300`) were incorrectly assigned and appeared dark red on the BGR hardware. Changed to proper byte-swapped BGR565 values (`0xE007`, `0xE003`).
 
 MIT - see [LICENSE](LICENSE).

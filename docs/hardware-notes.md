@@ -52,10 +52,12 @@ hard way.
 
 ## 3. SD card module needs 5V, not 3.3V
 
-The standard blue SD breakout module (VCC/GND/MISO/MOSI/SCK/CS, 6-pin) has an onboard regulator + logic level shifter designed assuming **5V input**. Powering VCC from 3.3V leaves the regulator without enough headroom, causing the SD card to crash during reads/writes. 
+The standard blue SD breakout module (VCC/GND/MISO/MOSI/SCK/CS, 6-pin) has an onboard regulator + logic level shifter designed assuming **5V input**. Powering VCC from 3.3V leaves the regulator without enough headroom, causing the SD card to fail to mount.
 
-**Wire SD module VCC to 5V (VBUS), not 3.3V.** 
-However, note the **MISO 5V Risk**: By powering the module with 5V, its logic-level shifter will send a 5V signal back to the ESP32's `MISO` (GPIO 15) pin. While ESP32-S3 pins are generally 5V-tolerant in practice for digital logic, this is technically out of spec. For a permanent build, use a native 3.3V MicroSD module without voltage regulators or level shifters.
+**Wire SD module VCC to 5V (VBUS).** 
+However, note the **MISO 5V Back-Powering Risk**: By powering the module with 5V, its logic-level shifter outputs a 5V signal back to the ESP32's `MISO` (GPIO 15) pin. The ESP32's internal clamping diodes dump this excess voltage onto the 3.3V power rail, instantly spiking it to ~4.4V. This overvoltage causes the internal Flash/PSRAM memory chips to instantly crash, resulting in a fatal boot loop (`entry 0x403c88b8` panic).
+
+**Hardware Fix:** Either use a proper 3.3V-native MicroSD breakout, wire a 10k current-limiting resistor on the MISO line, or solder header pins to the 3.3V SD slot on the back of the generic red ST7789 display PCB instead of using the blue module.
 
 ---
 
@@ -95,6 +97,10 @@ won't show a COM port reliably otherwise.
 
 ## 6. Power & Battery Management (Handheld Conversion)
 
+> [!WARNING]
+> **Optional Feature (Disabled by Default)**
+> The LiPo battery and TP4056 hardware modifications described below are for advanced handheld conversions only. They are NOT part of the baseline hardware spec. The `FEATURE_BATTERY_MONITOR` flag in `config.h` defaults to `0` and MUST be kept at `0` unless you have explicitly wired this conversion, otherwise the board will enter a fatal boot-loop.
+
 To move away from bench/USB power and make the device a true handheld:
 - **LiPo + TP4056:** Use a 3.7V Lithium Polymer battery connected to a TP4056 charge/protection module. 
 - **Physical Switch:** Wire a physical SPST slide switch on the positive output (`OUT+`) of the TP4056 *before* it reaches the ESP32 `Vin` or 5V rail. This ensures the battery can be fully disconnected from the load when powered off, preventing deep discharge.
@@ -104,6 +110,10 @@ To move away from bench/USB power and make the device a true handheld:
 ---
 
 ## 7. Audio Subsystem (I2S)
+
+> [!WARNING]
+> **Optional Feature (Disabled by Default)**
+> The MAX98357A I2S DAC is not part of the baseline hardware spec. The `FEATURE_AUDIO` flag in `config.h` defaults to `0` and should remain disabled unless you have wired this specific amplifier.
 
 - **MAX98357A I2S DAC:** The system uses I2S to stream digital audio to a MAX98357A class-D amplifier.
 - **Pin Map:** `BCLK=38`, `LRC(WS)=39`, `DOUT=40`.
@@ -152,8 +162,10 @@ The system now hosts four engines:
 
 ## 9. Firmware Compilation & ROM Legality
 
+- **OPI Flash Mode Crash (CRITICAL):** N16R8 boards typically use Octal SPI for BOTH their PSRAM and their internal Flash. If the Arduino IDE is set to `Flash Mode: QIO`, the bootloader loads the app, but the app configures the flash cache incorrectly, resulting in an immediate `E (504) esp_core_dump_flash: No core dump partition found!` boot loop panic. **Flash Mode must be set to `OPI 80MHz`.**
+
 - **Static Constraints & Partitions:** The default `arduino-cli` ESP32-S3 compilation profile allocates a 1.2MB `app0` partition. Because our emulator cores along with bundled assets currently exceeds 2.5MB, compilation will fail at the linking stage with "text section exceeds available space". 
-- **Fix:** You must compile the firmware using the `PartitionScheme=custom` (or `huge_app`), along with `PSRAM=opi` and `FlashSize=16M` configurations to correctly map the N16R8 hardware limits. This allows the compiler to successfully map the `.rodata` bounds to the 16MB flash.
+- **Fix:** You must compile the firmware using the `PartitionScheme=custom` (or `huge_app`), along with `PSRAM=opi` and `FlashMode=OPI` configurations to correctly map the N16R8 hardware limits.
 
 - **Baked ROM Limits (3MB Default Partition):** Baking multiple ~1MB ROMs (like Mario Deluxe and Zelda) via C headers can quickly exceed limits, resulting in compilation errors. The solution is correctly configuring the 16MB partition scheme in Arduino IDE, or simply relying on the SD card to load ROMs dynamically.
 

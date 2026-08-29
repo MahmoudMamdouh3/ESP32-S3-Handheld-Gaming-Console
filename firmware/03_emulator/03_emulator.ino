@@ -8,6 +8,7 @@
 #include "sd_card.h"
 #include "battery.h"
 #include "display_emu.h"
+#include "bmo_face.h"
 #include <SPI.h>
 #include <rom/ets_sys.h>      // N7: ets_delay_us for tight hardware-timer spin
 #include <esp_heap_caps.h>    // BM2: IRAM usage reporting
@@ -108,10 +109,8 @@ void setup() {
   Serial.printf("Features: SD=%d, Audio=%d, Battery=%d\n", FEATURE_SD_CARD, FEATURE_AUDIO, FEATURE_BATTERY_MONITOR);
 
   // Initialize shared SPI bus before any device uses it.
-  SPI.begin(TFT_SCK, SD_MISO, TFT_MOSI);
+  SPI.begin(TFT_SCK, SD_MISO, TFT_MOSI, -1);
 
-  // --- UNIT TEST RUNNER ---
-  // #define ENABLE_UNIT_TESTS
   #ifdef ENABLE_UNIT_TESTS
     Serial.println("Booting into Test Mode...");
     bool all_passed = runAllTests();
@@ -122,6 +121,12 @@ void setup() {
   Buttons::begin();
   DisplayEmu::begin();
   Battery::begin();
+
+  // Boot splash: show the mascot face before SD scan so the user sees
+  // something while the (potentially slow) SD enumeration runs.
+  BmoFace::begin();
+  BmoFace::setExpression(BmoFace::IDLE);
+  BmoFace::draw(); // full-screen centered boot face
   
   if (!SDCard::begin()) {
     Serial.println("Failed to mount SD card!");
@@ -136,10 +141,13 @@ void setup() {
   // NB5: Set lastTime to NOW so the first FPS window is valid (not skewed
   // by the 3-second boot delay above).
   lastTime = millis();
+
+  // Expression already set to IDLE above; update() will handle blinking.
 }
 
 void loop() {
   Battery::update();
+  BmoFace::update();
   
   if (currentState == STATE_CONSOLE_MENU) {
     const unsigned long menuFrameStart = millis();
@@ -152,6 +160,7 @@ void loop() {
     bool left   = btnLeft.pressed   && btnLeft.changed;
     bool right  = btnRight.pressed  && btnRight.changed;
     bool a      = btnA.pressed      && btnA.changed;
+    bool select = Buttons::get(Buttons::SELECT).pressed && Buttons::get(Buttons::SELECT).changed;
 
     if (canPress()) {
       if (left) {
@@ -166,6 +175,7 @@ void loop() {
         selectedGameIndex = 0;
         rebuildVisibleGames();
         currentState = STATE_GAME_MENU;
+        BmoFace::setExpression(BmoFace::IDLE);
         lastButtonMs = millis();
       }
     }
@@ -173,6 +183,13 @@ void loop() {
     int counts[CONSOLE_COUNT];
     for (int i = 0; i < CONSOLE_COUNT; ++i) counts[i] = countGamesForConsole(CONSOLES[i]);
     DisplayEmu::drawConsoleSelectMenu(selectedConsoleIndex, counts, SDCard::isMounted());
+
+    // Blit the animated mascot face into the top-left corner if it has
+    // changed since the last draw.  The isDirty() guard keeps this free
+    // when nothing animated (no blink, no expression change).
+    if (BmoFace::isDirty())
+      BmoFace::draw(FACE_MENU_X, FACE_MENU_Y, FACE_MENU_SIZE);
+
     // The full-screen SPI blit already consumes most of a 16.7 ms frame.
     // Only sleep for the remaining budget; an unconditional delay(16) here
     // previously limited the menu to roughly 30 FPS.
@@ -200,11 +217,13 @@ void loop() {
       }
       if (b) {
         currentState = STATE_CONSOLE_MENU;
+        BmoFace::setExpression(BmoFace::IDLE);
         lastButtonMs = millis();
       } else if (a && visibleGameCount > 0) {
         const RomFile* selectedRom = selectedGame();
         if (!selectedRom) {
           currentState = STATE_CONSOLE_MENU;
+          BmoFace::setExpression(BmoFace::IDLE);
           return;
         }
 
@@ -231,7 +250,7 @@ void loop() {
         // Boot appropriate emulator core based on file extension
         if (selectedRom->type == ROM_WAD) {
           // DOOM handles its own PSRAM loading via standard C file I/O
-          char wadPath[sizeof(selectedRom->filename) + 5]; // "/sd/" + name + NUL
+          static char wadPath[64]; // "/sd/" + name + NUL
           snprintf(wadPath, sizeof(wadPath), "/sd/%s", selectedRom->filename);
           success = DoomEmu::begin(wadPath);
           selectedEmulatorIndex = 3;
@@ -251,6 +270,7 @@ void loop() {
           SDCard::freeRom(romData);
           currentRomBuffer = nullptr;
           currentState = STATE_GAME_MENU;
+          BmoFace::setExpression(BmoFace::IDLE);
           lastButtonMs = millis();
           return;
         }
@@ -259,6 +279,11 @@ void loop() {
 
         resetFrameStats();
         currentState = STATE_EMULATOR;
+        // Show a brief HAPPY expression as a "game launching" beat before
+        // gameplay starts.  draw() is called once here; update()/draw() are
+        // NOT called during STATE_EMULATOR so the face never appears in-game.
+        BmoFace::setExpression(BmoFace::HAPPY);
+        BmoFace::draw(); // one-shot launch celebration; large centered blit
         lastButtonMs = millis();
       }
     }
@@ -269,6 +294,11 @@ void loop() {
     }
     DisplayEmu::drawGameSelectMenu(visibleGames, visibleGameCount, selectedGameIndex,
                                    CONSOLES[selectedConsoleIndex], SDCard::isMounted());
+
+    // Blit the mascot face into the top-left corner of the game list menu.
+    if (BmoFace::isDirty())
+      BmoFace::draw(FACE_MENU_X, FACE_MENU_Y, FACE_MENU_SIZE);
+
     const unsigned long menuElapsed = millis() - menuFrameStart;
     if (menuElapsed < 16) delay(16 - menuElapsed);
 
@@ -293,6 +323,7 @@ void loop() {
       }
 
       currentState = STATE_CONSOLE_MENU;
+      BmoFace::setExpression(BmoFace::IDLE);
       lastButtonMs = millis();
       delay(300);
       return;
