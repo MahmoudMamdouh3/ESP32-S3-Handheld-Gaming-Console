@@ -21,6 +21,9 @@ static uint8_t* rom_data = NULL;
 static size_t rom_len = 0;
 static uint8_t cart_ram[128 * 1024];
 static struct gb_s gb;
+static char serial_buf[512];
+static int serial_buf_idx = 0;
+static bool test_passed = false;
 
 uint8_t gb_rom_read(struct gb_s *gb, const uint_fast32_t addr) {
     if (addr >= rom_len) return 0xFF;
@@ -59,6 +62,13 @@ void lcd_draw_line(struct gb_s *gb, const uint8_t *pixels, const uint_fast8_t li
 void serial_tx(struct gb_s *gb, const uint8_t val) {
     putchar(val);
     fflush(stdout);
+    if (serial_buf_idx < sizeof(serial_buf) - 1) {
+        serial_buf[serial_buf_idx++] = val;
+        serial_buf[serial_buf_idx] = '\0';
+    }
+    if (strstr(serial_buf, "Passed all tests") != NULL) {
+        test_passed = true;
+    }
 }
 
 int main(int argc, char **argv) {
@@ -96,6 +106,15 @@ int main(int argc, char **argv) {
     // Increased frame budget to 8000 frames (approx 140 million cycles) to allow test 10 and 11 to complete.
     for (int i = 0; i < 8000; i++) {
         gb_run_frame(&gb);
+        if (test_passed) {
+            break;
+        }
+    }
+    
+    if (!test_passed) {
+        printf("\nTIMEOUT: budget exceeded before suite completion\n");
+        free(rom_data);
+        return 1;
     }
     
     printf("\nTest finished.\n");
