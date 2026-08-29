@@ -15,7 +15,7 @@
 // -----------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
-// HARDWARE FEATURE FLAGS (See project-rules.md)
+// HARDWARE FEATURE FLAGS (See .agents/rules/01_hardware.md)
 // -----------------------------------------------------------------------------
 #define FEATURE_SD_CARD 1
 #define FEATURE_AUDIO 0
