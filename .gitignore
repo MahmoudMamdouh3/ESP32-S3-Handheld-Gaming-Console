@@ -29,3 +29,5 @@ rom_data*.h
 
 rom_*.h
 cover_*.h
+
+tools/zig/
