@@ -104,17 +104,17 @@ void setup() {
   // Wait 3 seconds for Serial to connect (avoids hang on UART port).
   delay(3000);
 
-  Serial.println("\n\n--- BOOTING ---");
-  Serial.println("Milestone 4: Game Selection UI");
-  Serial.printf("Features: SD=%d, Audio=%d, Battery=%d\n", FEATURE_SD_CARD, FEATURE_AUDIO, FEATURE_BATTERY_MONITOR);
+  LOG_INFO_STR("\n\n--- BOOTING ---");
+  LOG_INFO_STR("Milestone 4: Game Selection UI");
+  LOG_INFO("Features: SD=%d, Audio=%d, Battery=%d", FEATURE_SD_CARD, FEATURE_AUDIO, FEATURE_BATTERY_MONITOR);
 
   // Initialize shared SPI bus before any device uses it.
   SPI.begin(TFT_SCK, SD_MISO, TFT_MOSI, -1);
 
   #ifdef ENABLE_UNIT_TESTS
-    Serial.println("Booting into Test Mode...");
+    LOG_INFO_STR("Booting into Test Mode...");
     bool all_passed = runAllTests();
-    Serial.println(all_passed ? "TESTS SUCCESS" : "TESTS FAILED");
+    LOG_INFO_STR(all_passed ? "TESTS SUCCESS" : "TESTS FAILED");
     while(1) delay(100);
   #endif
 
@@ -129,13 +129,13 @@ void setup() {
   BmoFace::draw(); // full-screen centered boot face
   
   if (!SDCard::begin()) {
-    Serial.println("Failed to mount SD card!");
+    LOG_ERROR_STR("Failed to mount SD card!");
   } else {
-    Serial.printf("SD Card mounted. Found %d ROMs.\n", SDCard::getRomCount());
+    LOG_INFO("SD Card mounted. Found %d ROMs.", SDCard::getRomCount());
   }
 
   // BM2: Report IRAM free size so we can verify IRAM_ATTR budget usage.
-  Serial.printf("IRAM free: %u bytes\n",
+  LOG_INFO("IRAM free: %u bytes",
                 heap_caps_get_free_size(MALLOC_CAP_IRAM_8BIT));
 
   // NB5: Set lastTime to NOW so the first FPS window is valid (not skewed
@@ -238,7 +238,7 @@ void loop() {
                          : SDCard::loadRom(selectedRom->filename, &romSize);
         
         if (selectedRom->type != ROM_WAD && !romData) {
-          Serial.println("Failed to load ROM from SD card.");
+          LOG_ERROR_STR("Failed to load ROM from SD card.");
           DisplayEmu::showSDCardWarning();
           delay(2000);
           currentState = STATE_GAME_MENU;
@@ -266,7 +266,7 @@ void loop() {
         }
         
         if (!success) {
-          Serial.println("Failed to start emulator. Check errors.");
+          LOG_ERROR_STR("Failed to start emulator. Check errors.");
           SDCard::freeRom(romData);
           currentRomBuffer = nullptr;
           currentState = STATE_GAME_MENU;
@@ -375,11 +375,11 @@ void loop() {
     if (now - lastTime >= 1000) {
       unsigned long avg = (frameTimeCount > 0) ? frameTimeSum / frameTimeCount : 0;
       if (totalDroppedFramesThisSecond > 0) {
-        Serial.printf("FPS: %d | Frame: avg=%luus min=%luus max=%luus | Dropped: %d (total %d)\n",
+        LOG_INFO("FPS: %d | Frame: avg=%luus min=%luus max=%luus | Dropped: %d (total %d)",
                       frames, avg, frameTimeMin, frameTimeMax,
                       totalDroppedFramesThisSecond, droppedFrames);
       } else {
-        Serial.printf("FPS: %d | Frame: avg=%luus min=%luus max=%luus\n",
+        LOG_INFO("FPS: %d | Frame: avg=%luus min=%luus max=%luus",
                       frames, avg, frameTimeMin, frameTimeMax);
       }
       frames = 0;

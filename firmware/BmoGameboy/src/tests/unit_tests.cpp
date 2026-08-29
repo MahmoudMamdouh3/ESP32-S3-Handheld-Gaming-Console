@@ -17,7 +17,7 @@ static int testsFailed = 0;
   if (condition) { \
     testsPassed++; \
   } else { \
-    Serial.printf("[FAIL] %s:%d: %s\n", __FUNCTION__, __LINE__, msg); \
+    LOG_ERROR("%s:%d: %s", __FUNCTION__, __LINE__, msg); \
     testsFailed++; \
   }
 
@@ -25,12 +25,12 @@ static int testsFailed = 0;
   if ((actual) == (expected)) { \
     testsPassed++; \
   } else { \
-    Serial.printf("[FAIL] %s:%d: Expected %d, got %d. %s\n", __FUNCTION__, __LINE__, (int)(expected), (int)(actual), msg); \
+    LOG_ERROR("%s:%d: Expected %d, got %d. %s", __FUNCTION__, __LINE__, (int)(expected), (int)(actual), msg); \
     testsFailed++; \
   }
 
 #define TEST_CASE(name) \
-  Serial.printf("--- Running Test: %s ---\n", name);
+  LOG_INFO("--- Running Test: %s ---", name);
 
 // --- Component Tests ---
 
@@ -79,7 +79,7 @@ void testDisplayPalette() {
 void testIRAMPlacement() {
   TEST_CASE("IRAM Placement Budget");
   size_t iram_free = heap_caps_get_free_size(MALLOC_CAP_IRAM_8BIT);
-  Serial.printf("  IRAM free: %u bytes\n", iram_free);
+  LOG_INFO("  IRAM free: %u bytes", iram_free);
   // Verify at least 200KB is free (IRAM_ATTR functions should use << 100KB).
   ASSERT_TRUE(iram_free > 200 * 1024,
     "IRAM overcommitted — check IRAM_ATTR usage");
@@ -113,7 +113,7 @@ void testSPISDCondention() {
   // This simulates the DOOM engine's streaming behavior: attempting to rapidly
   // alternate between SD card reads and Display writes.
   if (!SDCard::isMounted()) {
-    Serial.println("  [SKIP] No SD card mounted for contention test.");
+    LOG_INFO_STR("  [SKIP] No SD card mounted for contention test.");
     return;
   }
   
@@ -136,7 +136,7 @@ void testSPISDCondention() {
 // ---------------------------------------------------------------------------
 
 bool runAllTests() {
-  Serial.println("\n========== STARTING UNIT TEST SUITE ==========");
+  LOG_INFO_STR("\n========== STARTING UNIT TEST SUITE ==========");
   testsPassed = 0;
   testsFailed = 0;
   
@@ -148,9 +148,9 @@ bool runAllTests() {
   testPaletteLUTMath();
   testSPISDCondention();
   
-  Serial.println("========== TEST SUITE FINISHED ==========");
-  Serial.printf("PASSED: %d\n", testsPassed);
-  Serial.printf("FAILED: %d\n", testsFailed);
+  LOG_INFO_STR("========== TEST SUITE FINISHED ==========");
+  LOG_INFO("PASSED: %d", testsPassed);
+  LOG_INFO("FAILED: %d", testsFailed);
   
   return (testsFailed == 0);
 }

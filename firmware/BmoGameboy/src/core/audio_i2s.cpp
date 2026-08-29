@@ -32,13 +32,13 @@ bool begin() {
 
     esp_err_t err = i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL);
     if (err != ESP_OK) {
-        Serial.printf("Failed to install I2S driver: %d\n", err);
+        LOG_ERROR("Failed to install I2S driver: %d", err);
         return false;
     }
 
     err = i2s_set_pin(I2S_PORT, &pin_config);
     if (err != ESP_OK) {
-        Serial.printf("Failed to set I2S pins: %d\n", err);
+        LOG_ERROR("Failed to set I2S pins: %d", err);
         return false;
     }
 

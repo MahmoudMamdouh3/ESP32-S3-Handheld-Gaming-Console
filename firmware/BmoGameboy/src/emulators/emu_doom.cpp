@@ -17,7 +17,7 @@ extern "C" {
     void* Doom_MallocPSRAM(size_t size) {
         void* ptr = heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
         if (!ptr) {
-            Serial.printf("Failed to allocate %d bytes in PSRAM for DOOM!\n", (int)size);
+            LOG_ERROR("Failed to allocate %d bytes in PSRAM for DOOM!", (int)size);
         }
         return ptr;
     }
@@ -126,7 +126,7 @@ void runFrame() {
   unsigned long elapsedTick = millis() - startTick;
   
   if (elapsedTick > 40) {
-    Serial.printf("DOOM latency spike detected: %lu ms\n", elapsedTick);
+    LOG_WARN("DOOM latency spike detected: %lu ms", elapsedTick);
   }
 }
 

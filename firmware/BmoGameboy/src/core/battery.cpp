@@ -45,7 +45,7 @@ int getPercentage() {
 }
 
 void safeShutdown() {
-    Serial.println("BATTERY CRITICAL! Halting to prevent deep discharge...");
+    LOG_ERROR_STR("BATTERY CRITICAL! Halting to prevent deep discharge...");
     Serial.flush();
     BmoFace::setExpression(BmoFace::SHUTDOWN);
     BmoFace::draw(); // Force draw immediately before sleep

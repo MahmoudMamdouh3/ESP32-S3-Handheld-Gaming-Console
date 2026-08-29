@@ -343,7 +343,7 @@ static void blitFace(int x, int y, int size) {
 
   static bool warnedSlow = false;
   if (!warnedSlow && renderUs > 5000) {
-    Serial.printf("[BmoFace] WARNING: SDF render took %lu us (>5ms threshold)\n", renderUs);
+    LOG_WARN("[BmoFace] WARNING: SDF render took %lu us (>5ms threshold)", renderUs);
     warnedSlow = true;
   }
 

@@ -108,7 +108,7 @@ namespace {
   }
   
   void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16_t val) {
-    Serial.printf("Walnut-CGB Error: %d at PC 0x%04X\n", gb_err, val);
+    LOG_ERROR("Walnut-CGB Error: %d at PC 0x%04X", gb_err, val);
     Serial.flush();
     BmoFace::setExpression(BmoFace::ERROR);
     BmoFace::draw(); // Force draw immediately before restart
@@ -197,7 +197,7 @@ bool WalnutEmu::begin(const uint8_t* rom_data, size_t rom_len) {
   if (!cart_ram) {
     cart_ram = (uint8_t*)heap_caps_malloc(CART_RAM_SIZE, MALLOC_CAP_SPIRAM);
     if (!cart_ram) {
-      Serial.println("Walnut-CGB: unable to allocate PSRAM cartridge RAM.");
+      LOG_ERROR_STR("Walnut-CGB: unable to allocate PSRAM cartridge RAM.");
       return false;
     }
   }
@@ -210,7 +210,7 @@ bool WalnutEmu::begin(const uint8_t* rom_data, size_t rom_len) {
     gb_cart_ram_read, gb_cart_ram_write,
     gb_error, nullptr);
   if (ret != GB_INIT_NO_ERROR) {
-    Serial.printf("Walnut-CGB init error: %d\n", ret);
+    LOG_ERROR("Walnut-CGB init error: %d", ret);
     return false;
   }
   

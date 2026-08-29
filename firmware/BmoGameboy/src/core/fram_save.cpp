@@ -10,18 +10,18 @@ namespace FramSave {
 bool begin() {
     // Initialize I2C bus with the pins defined in config.h
     if (!Wire.begin(I2C_SDA, I2C_SCL, 400000)) {
-        Serial.println("Failed to initialize I2C bus for FRAM.");
+        LOG_ERROR_STR("Failed to initialize I2C bus for FRAM.");
         return false;
     }
     
     // Ping the FRAM module to see if it responds
     Wire.beginTransmission(FRAM_I2C_ADDRESS);
     if (Wire.endTransmission() != 0) {
-        Serial.println("FRAM module not detected at 0x50!");
+        LOG_ERROR_STR("FRAM module not detected at 0x50!");
         return false;
     }
     
-    Serial.println("FRAM module initialized successfully.");
+    LOG_INFO_STR("FRAM module initialized successfully.");
     return true;
 }
 

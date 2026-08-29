@@ -61,7 +61,7 @@ namespace {
   IRAM_ATTR uint8_t gb_cart_ram_read(struct gb_s *gb, const uint_fast32_t addr) {
     if (!cart_ram || addr >= CART_RAM_SIZE) {
       static bool warned = false;
-      if (!warned) { Serial.println("WARNING: Cart RAM read overflow!"); warned = true; }
+      if (!warned) { LOG_WARN_STR("WARNING: Cart RAM read overflow!"); warned = true; }
       return 0xFF;
     }
     return cart_ram[addr];
@@ -70,14 +70,14 @@ namespace {
   IRAM_ATTR void gb_cart_ram_write(struct gb_s *gb, const uint_fast32_t addr, const uint8_t val) {
     if (!cart_ram || addr >= CART_RAM_SIZE) {
       static bool warned = false;
-      if (!warned) { Serial.println("WARNING: Cart RAM write overflow!"); warned = true; }
+      if (!warned) { LOG_WARN_STR("WARNING: Cart RAM write overflow!"); warned = true; }
       return;
     }
     cart_ram[addr] = val;
   }
   
   void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16_t val) {
-    Serial.printf("Peanut-GB Error: %d at PC 0x%04X\n", gb_err, val);
+    LOG_ERROR("Peanut-GB Error: %d at PC 0x%04X", gb_err, val);
     Serial.flush();
     BmoFace::setExpression(BmoFace::ERROR);
     BmoFace::draw(); // Force draw immediately before restart
@@ -127,7 +127,7 @@ bool PeanutEmu::begin(const uint8_t* rom_data, size_t rom_len) {
   if (!cart_ram) {
     cart_ram = (uint8_t*)heap_caps_malloc(CART_RAM_SIZE, MALLOC_CAP_SPIRAM);
     if (!cart_ram) {
-      Serial.println("Peanut-GB: unable to allocate PSRAM cartridge RAM.");
+      LOG_ERROR_STR("Peanut-GB: unable to allocate PSRAM cartridge RAM.");
       return false;
     }
   }
@@ -135,13 +135,13 @@ bool PeanutEmu::begin(const uint8_t* rom_data, size_t rom_len) {
   // Clear cart RAM to prevent save-data bleed between games.
   memset(cart_ram, 0, CART_RAM_SIZE);
 
-  Serial.println("Initializing Peanut-GB...");
-  Serial.printf("ROM loaded: %u bytes\n", rom_len);
+  LOG_INFO_STR("Initializing Peanut-GB...");
+  LOG_INFO("ROM loaded: %u bytes", rom_len);
   
   enum gb_init_error_e ret = gb_init(&gb, &gb_rom_read, &gb_cart_ram_read, &gb_cart_ram_write,
                                      &gb_error, nullptr);
   if (ret != GB_INIT_NO_ERROR) {
-    Serial.printf("gb_init() failed: %d\n", ret);
+    LOG_ERROR("gb_init() failed: %d", ret);
     return false;
   }
   
@@ -150,7 +150,7 @@ bool PeanutEmu::begin(const uint8_t* rom_data, size_t rom_len) {
   // Reset joypad so no button fires on the first emulator frame.
   gb.direct.joypad = 0xFF;
   
-  Serial.println("Peanut-GB initialized.");
+  LOG_INFO_STR("Peanut-GB initialized.");
   return true;
 }
 
