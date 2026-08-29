@@ -85,16 +85,6 @@ won't show a COM port reliably otherwise.
 
 ---
 
-## 5. USB ports (boards with two USB-C connectors)
-
-Boards with both a "UART/COM" port and a "USB/OTG" port: use the
-**UART/COM** one for flashing — it goes through a dedicated USB-to-serial
-chip and is more reliable. The native USB/OTG port works too but needs
-"USB CDC On Boot" enabled in Arduino IDE for Serial Monitor output, and
-won't show a COM port reliably otherwise.
-
----
-
 ## 6. Power & Battery Management (Handheld Conversion)
 
 > [!WARNING]
@@ -146,21 +136,21 @@ The system now hosts four engines:
 
 ---
 
-## 7. Display Color Quirks & ST7789
+## 9. Display Color Quirks & ST7789
 
 - **RGB vs BGR swapped colors:** Some generic ST7789 TFT panels are natively configured for BGR color order, while libraries like `Adafruit_ST7789` assume RGB. This results in Red and Blue channels being swapped (e.g., Mario's red overalls become blue, sky blue becomes orange). 
 - **The Hardware Fix:** Instead of wasting CPU cycles trying to byte-swap the colors in software for every emulator and UI element, this can be solved instantly at initialization by manually sending an SPI command to toggle the BGR bit (`0x08`) in the `MADCTL` register (`0x36`).
 
 ---
 
-## 8. UI Rendering Performance
+## 10. UI Rendering Performance
 
 - **Avoid Heavy GFX Drawing Loops:** Drawing complex or large amounts of basic geometry (like an animated background grid of `drawFastVLine` and `drawFastHLine`) in a 60FPS loop using standard GFX functions introduces massive CPU and SPI overhead. 
 - **Optimization:** Keep menus visually simple. Removing the animated background grid and replacing solid filled shapes (`fillRoundRect`) with simple outlines (`drawRoundRect`) for the selected menu item drastically improved menu responsiveness and framerate.
 
 ---
 
-## 9. Firmware Compilation & ROM Legality
+## 11. Firmware Compilation & ROM Legality
 
 - **OPI Flash Mode Crash (CRITICAL):** N16R8 boards typically use Octal SPI for BOTH their PSRAM and their internal Flash. If the Arduino IDE is set to `Flash Mode: QIO`, the bootloader loads the app, but the app configures the flash cache incorrectly, resulting in an immediate `E (504) esp_core_dump_flash: No core dump partition found!` boot loop panic. **Flash Mode must be set to `OPI 80MHz`.**
 

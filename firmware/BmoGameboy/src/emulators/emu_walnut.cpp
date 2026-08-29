@@ -83,12 +83,16 @@ namespace {
 
   IRAM_ATTR uint16_t gb_rom_read16(struct gb_s *gb, const uint_fast32_t addr) {
     if (addr + 2 > current_rom_len) return 0xFFFF;
-    return *(const uint16_t*)(&current_rom_data[addr]);
+    return (uint16_t)current_rom_data[addr] | 
+          ((uint16_t)current_rom_data[addr + 1] << 8);
   }
 
   IRAM_ATTR uint32_t gb_rom_read32(struct gb_s *gb, const uint_fast32_t addr) {
     if (addr + 4 > current_rom_len) return 0xFFFFFFFF;
-    return *(const uint32_t*)(&current_rom_data[addr]);
+    return (uint32_t)current_rom_data[addr] | 
+          ((uint32_t)current_rom_data[addr + 1] << 8) | 
+          ((uint32_t)current_rom_data[addr + 2] << 16) | 
+          ((uint32_t)current_rom_data[addr + 3] << 24);
   }
   
   IRAM_ATTR uint8_t gb_cart_ram_read(struct gb_s *gb, const uint_fast32_t addr) {
