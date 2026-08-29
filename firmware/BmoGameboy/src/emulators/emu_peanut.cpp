@@ -1,8 +1,8 @@
 #pragma GCC optimize("O3,unroll-loops")
 #include "emu_peanut.h"
-#include "buttons.h"
-#include "display_emu.h"
-#include "bmo_face.h"
+#include "../core/buttons.h"
+#include "../core/display_emu.h"
+#include "../core/bmo_face.h"
 #include <string.h>
 #include <Arduino.h>
 #include <esp_heap_caps.h>

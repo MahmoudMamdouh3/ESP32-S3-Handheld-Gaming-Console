@@ -1,7 +1,7 @@
 #include "emu_nes.h"
 #include "../vendor/agnes/agnes.h"
-#include "display_emu.h"
-#include "buttons.h"
+#include "../core/display_emu.h"
+#include "../core/buttons.h"
 #include <Arduino.h>
 
 static agnes_t* agnes_ctx = nullptr;

@@ -1,8 +1,8 @@
 #pragma GCC optimize("O3,unroll-loops")
 #include "emu_walnut.h"
-#include "buttons.h"
-#include "display_emu.h"
-#include "bmo_face.h"
+#include "../core/buttons.h"
+#include "../core/display_emu.h"
+#include "../core/bmo_face.h"
 #include <string.h>
 #include <Arduino.h>
 #include <esp_heap_caps.h>
@@ -29,7 +29,7 @@
 #endif
 
 namespace WGB {
-  #include "../vendor/walnut_cgb/walnut_cgb.h"
+  #include "../engine/walnut_cgb/walnut_cgb.h"
 }
 using namespace WGB;
 

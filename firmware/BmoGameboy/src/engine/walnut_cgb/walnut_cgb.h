@@ -64,12 +64,12 @@
 #define WALNUT_GB_SAFE_DUALFETCH_MBC  0
 // WALNUT_GB_16_BIT_OPS_DUALFETCH when true enables 16-bit operation for opcodes with 16-bit reads for the first half of the dual fetch chain
 // currently breaks compatibility with some games, 16-bit opcode optimization needs revisions. The 3 tiers here are used to isolate misbehaving opcodes more quickly when debugging.
-#define WALNUT_GB_16_BIT_OPS_DUALFETCH 0
+#define WALNUT_GB_16_BIT_OPS_DUALFETCH 1
 #define WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED2 0
 #define WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED 0
 // WALNUT_GB_16_BIT_OPS when true enables 16-bit operation for opcodes with 16-bit reads(from stack, immedate 16-bit operands, etc) in the second half of the chained execution.
 // Like the above, this can break compatibility with some games and is disabled by default.
-#define WALNUT_GB_16_BIT_OPS 0
+#define WALNUT_GB_16_BIT_OPS 1
 // WALNUT_GB_16BIT_DMA uses 16-bit(and 32-bit) dma transfers rather than byte-by-byte, only one mode can be used at a time. The gb_read_32bit function is used for the 32-bit DMA, otherwise that function will not be called
 //  **Note:** The current implementation of 16-bit DMA is limited to systems that do not have aliasing or alignment restrictions when writing data (e.g., ESP32-S3). On some platforms, you may need to compile with `-fno-strict-aliasing` to avoid issues with pointer aliasing.
 #define WALNUT_GB_16BIT_DMA 0
@@ -3279,7 +3279,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0x01: /* LD BC, imm */
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH
     gb->cpu_reg.bc.bytes.c = (uint8_t)(oppair >> 8); // C was already partially loaded in oppair
     oppair = __gb_read16(gb, gb->cpu_reg.pc.reg + 1); // Read 16-bit immediate starting from PC+1    
     gb->cpu_reg.bc.bytes.b = (uint8_t)(oppair);// Store lower byte of immediate into B
@@ -3331,7 +3331,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 		break;
 	case 0x08: /* LD (imm), SP */
 	{		
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH
 		uint8_t l = (uint8_t)(oppair >> 8);
 		gb->cpu_reg.pc.reg++;
     oppair = __gb_read16(gb, gb->cpu_reg.pc.reg++);
@@ -3409,7 +3409,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0x11: /* LD DE, imm */
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH
     gb->cpu_reg.de.bytes.e = (uint8_t)(oppair >> 8);
 	  gb->cpu_reg.pc.reg++;
 		oppair = __gb_read16(gb, gb->cpu_reg.pc.reg++);
@@ -3531,7 +3531,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0x21: /* LD HL, imm */
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH
 		gb->cpu_reg.hl.bytes.l =(uint8_t)(oppair >> 8);
 		gb->cpu_reg.pc.reg++;
 		oppair = __gb_read16(gb, gb->cpu_reg.pc.reg++);
@@ -3678,7 +3678,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0x31: /* LD SP, imm */
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH
 		gb->cpu_reg.sp.bytes.p = (uint8_t)(oppair >> 8);
 		gb->cpu_reg.pc.reg ++;
     oppair = __gb_read16(gb, gb->cpu_reg.pc.reg++);
@@ -4529,7 +4529,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 	case 0xC0: /* RET NZ */
 		if(!gb->cpu_reg.f.f_bits.z)
 		{
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH_DISABLED3
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED
         gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.sp.reg);
         gb->cpu_reg.sp.reg += 2;
 #else
@@ -4542,7 +4542,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0xC1: /* POP BC */
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH_DISABLED3
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED
     gb->cpu_reg.bc.reg = __gb_read16(gb, gb->cpu_reg.sp.reg);
     gb->cpu_reg.sp.reg += 2;
 #else
@@ -4581,7 +4581,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 	case 0xC4: /* CALL NZ imm */
 		if(!gb->cpu_reg.f.f_bits.z)
 		{
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH_DISABLED3
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED
         uint8_t c, p;
         c = (uint8_t)(oppair >> 8);        // upper byte of immediate
         gb->cpu_reg.pc.reg++;              // advance to low byte
@@ -4610,7 +4610,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0xC5: /* PUSH BC */
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH_DISABLED3
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED
 		gb->cpu_reg.sp.reg-=2;
 		__gb_write16(gb, gb->cpu_reg.sp.reg, gb->cpu_reg.bc.reg);
 #else
@@ -4639,7 +4639,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 	case 0xC8: /* RET Z */
 		if(gb->cpu_reg.f.f_bits.z)
 		{
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH_DISABLED2
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED
         // Optional 16-bit path
         gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.sp.reg);
         gb->cpu_reg.sp.reg += 2;
@@ -4656,7 +4656,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 
 	case 0xC9: /* RET */
 	{
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH_DISABLED2
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED
     gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.sp.reg);
     gb->cpu_reg.sp.reg += 2;
 #else
@@ -4737,7 +4737,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 	case 0xD0: /* RET NC */
     if (!gb->cpu_reg.f.f_bits.c)
     {
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH_DISABLED
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED
         gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.sp.reg);
         gb->cpu_reg.sp.reg += 2; // advance SP past the popped PC
 #else
@@ -4750,7 +4750,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0xD1: /* POP DE */
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH_DISABLED
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED
     gb->cpu_reg.de.reg = __gb_read16(gb, gb->cpu_reg.sp.reg);
     gb->cpu_reg.sp.reg += 2;
 #else
@@ -4763,7 +4763,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 	case 0xD2: /* JP NC, imm */
 		if(!gb->cpu_reg.f.f_bits.c)
 		{
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH_DISABLED
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED
         gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.pc.reg);
 #else
         uint8_t c = __gb_read(gb, gb->cpu_reg.pc.reg++);
@@ -4784,7 +4784,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
         uint8_t c =(uint8_t)(oppair >> 8);
 				gb->cpu_reg.pc.reg++;
         uint8_t p = __gb_read(gb, gb->cpu_reg.pc.reg++);
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH_DISABLED
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED
 				gb->cpu_reg.sp.reg-=2;
 				__gb_write16(gb, gb->cpu_reg.sp.reg, gb->cpu_reg.pc.reg);
 #else
@@ -4801,7 +4801,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0xD5: /* PUSH DE */
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH_DISABLED
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED
 		gb->cpu_reg.sp.reg-=2;
 		__gb_write16(gb, gb->cpu_reg.sp.reg, gb->cpu_reg.de.reg);
 #else
@@ -4836,7 +4836,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 	case 0xD8: /* RET C */
 		if(gb->cpu_reg.f.f_bits.c)
 		{
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH_DISABLED
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED
         gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.sp.reg);
         gb->cpu_reg.sp.reg += 2; // advance SP past the popped PC
 #else
@@ -4853,7 +4853,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 
 	case 0xD9: /* RETI */
 	{
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH_DISABLED
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED
     gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.sp.reg);
     gb->cpu_reg.sp.reg += 2; // advance SP past the popped PC
 #else
@@ -4886,7 +4886,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
         uint8_t c = (uint8_t)(oppair >> 8);
 				gb->cpu_reg.pc.reg++;
         uint8_t p = __gb_read(gb, gb->cpu_reg.pc.reg++);
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH_DISABLED
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED
 				gb->cpu_reg.sp.reg-=2;
 				__gb_write16(gb, gb->cpu_reg.sp.reg, gb->cpu_reg.pc.reg);
 #else
@@ -4925,7 +4925,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0xE1: /* POP HL */
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH_DISABLED_DISABLED 
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED 
     gb->cpu_reg.hl.reg = __gb_read16(gb, gb->cpu_reg.sp.reg);
     gb->cpu_reg.sp.reg += 2; // advance SP past the popped value
 #else
@@ -4945,7 +4945,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0xE5: /* PUSH HL */
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH_DISABLED
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED
 		gb->cpu_reg.sp.reg-=2;
 		__gb_write16(gb, gb->cpu_reg.sp.reg, gb->cpu_reg.hl.reg);
 #else
@@ -4990,7 +4990,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 
 	case 0xEA: /* LD (imm), A */
 	{
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH_DISABLED
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED
     uint8_t l = (uint8_t)(oppair >> 8);
 		gb->cpu_reg.pc.reg++;
 		oppair = __gb_read16(gb, gb->cpu_reg.pc.reg++);
@@ -5096,7 +5096,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 
 	case 0xFA: /* LD A, (imm) */
 	{
-#if WALNUT_GB_16_BIT_OPS_OPS_DUALFETCH_DISABLED
+#if WALNUT_GB_16_BIT_OPS_DUALFETCH_DISABLED
     uint8_t l = (uint8_t)(oppair >> 8); // we dont increment pc because a interrupt might change it an invalidate this byte, we increment if no interrupt between 1st and 2nd opcode handlers
 		gb->cpu_reg.pc.reg++;
 		oppair = __gb_read16(gb, gb->cpu_reg.pc.reg++);
@@ -5526,7 +5526,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0x01: /* LD BC, imm */
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
     gb->cpu_reg.bc.reg = __gb_read16(gb, gb->cpu_reg.pc.reg);
     gb->cpu_reg.pc.reg += 2;
 #else
@@ -5562,7 +5562,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 
 	case 0x08: /* LD (imm), SP */
 	{
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
     uint16_t addr = __gb_read16(gb, gb->cpu_reg.pc.reg);
     gb->cpu_reg.pc.reg += 2;
     __gb_write16(gb, addr, gb->cpu_reg.sp.reg);
@@ -5625,7 +5625,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0x11: /* LD DE, imm */
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
     gb->cpu_reg.de.reg = __gb_read16(gb, gb->cpu_reg.pc.reg);
     gb->cpu_reg.pc.reg += 2;
 #else
@@ -5723,7 +5723,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0x21: /* LD HL, imm */
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
     gb->cpu_reg.hl.reg = __gb_read16(gb, gb->cpu_reg.pc.reg);
     gb->cpu_reg.pc.reg += 2;
 #else
@@ -5845,7 +5845,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0x31: /* LD SP, imm */
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
     gb->cpu_reg.sp.reg = __gb_read16(gb, gb->cpu_reg.pc.reg);
     gb->cpu_reg.pc.reg += 2;
 #else
@@ -6513,7 +6513,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 	case 0xC0: /* RET NZ */
 		if(!gb->cpu_reg.f.f_bits.z)
 		{
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
         gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.sp.reg);
         gb->cpu_reg.sp.reg += 2;
 #else
@@ -6526,7 +6526,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0xC1: /* POP BC */
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
     gb->cpu_reg.bc.reg = __gb_read16(gb, gb->cpu_reg.sp.reg);
     gb->cpu_reg.sp.reg += 2;
 #else
@@ -6538,7 +6538,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 	case 0xC2: /* JP NZ, imm */
 		if(!gb->cpu_reg.f.f_bits.z)
 		{
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
         gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.pc.reg);
 #else
         uint8_t c = __gb_read(gb, gb->cpu_reg.pc.reg++);
@@ -6554,7 +6554,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0xC3: /* JP imm */
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
     gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.pc.reg);
 #else
 {
@@ -6569,7 +6569,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 	case 0xC4: /* CALL NZ imm */
 		if(!gb->cpu_reg.f.f_bits.z)
 		{
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
 			uint16_t addr = __gb_read16(gb, gb->cpu_reg.pc.reg);
 			gb->cpu_reg.pc.reg += 2;
       gb->cpu_reg.sp.reg -= 2;
@@ -6612,7 +6612,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 	case 0xC8: /* RET Z */
 		if(gb->cpu_reg.f.f_bits.z)
 		{
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
         // Optional 16-bit path if stack is aligned
         gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.sp.reg);
         gb->cpu_reg.sp.reg += 2;
@@ -6626,7 +6626,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 
 	case 0xC9: /* RET */
 	{
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
     gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.sp.reg);
     gb->cpu_reg.sp.reg += 2;
 #else
@@ -6639,7 +6639,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 	case 0xCA: /* JP Z, imm */
 		if(gb->cpu_reg.f.f_bits.z)
 		{
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
         gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.pc.reg); // no need to advance pc because of jump
 #else
         uint8_t c = __gb_read(gb, gb->cpu_reg.pc.reg++);
@@ -6661,7 +6661,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 	case 0xCC: /* CALL Z, imm */
 		if(gb->cpu_reg.f.f_bits.z)
 		{
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
         uint16_t addr = __gb_read16(gb, gb->cpu_reg.pc.reg);
         gb->cpu_reg.pc.reg += 2; // advance past immediate
 
@@ -6686,7 +6686,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0xCD: /* CALL imm */
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
 {
     uint16_t addr = __gb_read16(gb, gb->cpu_reg.pc.reg);
     gb->cpu_reg.pc.reg += 2; // advance past immediate
@@ -6723,7 +6723,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 
     if (!gb->cpu_reg.f.f_bits.c)
     {
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
         gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.sp.reg);
         gb->cpu_reg.sp.reg += 2; // advance SP past the popped PC
 #else
@@ -6736,7 +6736,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 		break;
 
 	case 0xD1: /* POP DE */
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
     gb->cpu_reg.de.reg = __gb_read16(gb, gb->cpu_reg.sp.reg);
     gb->cpu_reg.sp.reg += 2;
 #else
@@ -6748,7 +6748,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 	case 0xD2: /* JP NC, imm */
 		if(!gb->cpu_reg.f.f_bits.c)
 		{
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
         gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.pc.reg); // jump so no need to advance pc
 #else
         uint8_t c = __gb_read(gb, gb->cpu_reg.pc.reg++);
@@ -6766,7 +6766,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 	case 0xD4: /* CALL NC, imm */
 		if(!gb->cpu_reg.f.f_bits.c)
 		{
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
         uint16_t addr = __gb_read16(gb, gb->cpu_reg.pc.reg);
         gb->cpu_reg.pc.reg += 2; // advance PC past immediate
 				gb->cpu_reg.sp.reg-=2;
@@ -6789,7 +6789,7 @@ static inline void __gb_step_cpu(struct gb_s *gb)
 
 	case 0xD5: /* PUSH DE */
 	// this was revised but working backwards from this 16-bit op to find the one thats broken
-#if WALNUT_GB_16_BIT_OPS_OPS
+#if WALNUT_GB_16_BIT_OPS
 		gb->cpu_reg.sp.reg-=2;
 		__gb_write16(gb,gb->cpu_reg.sp.reg,gb->cpu_reg.de.reg);
 #else

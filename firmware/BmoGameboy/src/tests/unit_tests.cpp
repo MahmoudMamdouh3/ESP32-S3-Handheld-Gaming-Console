@@ -3,11 +3,11 @@
 #include <esp_heap_caps.h>
 // rom_data.h lives at repo-root/assets/legacy_headers/rom_data.h
 // Relative path from firmware/BmoGameboy/src/tests/ to repo root is ../../../../
-#include "../../../../assets/legacy_headers/rom_data.h"
-#include "buttons.h"
-#include "display_emu.h"
-#include "emu_peanut.h"
-#include "emu_walnut.h"
+#include "../assets/rom_data.h"
+#include "../core/buttons.h"
+#include "../core/display_emu.h"
+#include "../emulators/emu_peanut.h"
+#include "../emulators/emu_walnut.h"
 
 // --- Custom Testing Framework Macros ---
 static int testsPassed = 0;

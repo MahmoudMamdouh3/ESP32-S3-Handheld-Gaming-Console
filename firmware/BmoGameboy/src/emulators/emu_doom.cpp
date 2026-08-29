@@ -1,6 +1,6 @@
 #include "emu_doom.h"
-#include "display_emu.h"
-#include "buttons.h"
+#include "../core/display_emu.h"
+#include "../core/buttons.h"
 
 extern "C" {
 #include "../vendor/doom/src/doomgeneric.h"

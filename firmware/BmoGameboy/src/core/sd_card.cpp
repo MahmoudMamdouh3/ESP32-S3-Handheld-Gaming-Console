@@ -6,8 +6,8 @@
 #endif
 #include <esp_heap_caps.h>
 #include <string.h>
-#include "mario_deluxe.h"
-#include "zelda_ages.h"
+#include "../assets/roms/mario_deluxe.h"
+#include "../assets/roms/zelda_ages.h"
 
 namespace {
   bool mounted = false;
