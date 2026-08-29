@@ -100,9 +100,8 @@ bool begin(const char* wadPath) {
 }
 
 void runFrame() {
-  // Update button state
-  Buttons::update();
-  
+  // Update button state (handled globally in BmoGameboy.ino loop)
+
   // Map Gameboy buttons to Doom keys
   // A = Fire (CTRL)
   // B = Use/Open (SPACE)
