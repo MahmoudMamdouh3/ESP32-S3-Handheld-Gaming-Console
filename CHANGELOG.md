@@ -17,6 +17,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **AI Guardian CI Validator**: Expanded [`scripts/validate_repo.py`](file:///e:/BMO%20Gameboy/scripts/validate_repo.py) into a multi-phase CI validator checking Python syntax, ROM checksums, firmware safety guardrails, and ruleset integrity.
 - **Unit Test Expansion**: Added automated unit tests in [`tests/test_repo_tools.py`](file:///e:/BMO%20Gameboy/tests/test_repo_tools.py) covering all validation guardrails.
 
+### Fixed
+- **BmoFace Mascot Rendering & Visibility**: Fixed missing/flickering mascot face across console and game selection menus. Overwriting of the top-left face by `DisplayEmu::writeMenuCanvas()` when `isDirty()` was false is resolved by drawing the face persistently on every menu frame while caching `faceBuf` to avoid redundant SDF recomputations. Added a 1000ms boot splash hold in `setup()` and a 400ms celebratory hold with immediate return on game launch in `BmoGameboy.ino`.
+
 ### Changed
 - **Ruleset Version**: Bumped ruleset to Version 4 across [`.agents/rules/README.md`](file:///e:/BMO%20Gameboy/.agents/rules/README.md) and [`AGENTS.md`](file:///e:/BMO%20Gameboy/AGENTS.md).
 - **Quick-Start Primer**: Updated [`31_quick_start_primer.md`](file:///e:/BMO%20Gameboy/.agents/rules/31_quick_start_primer.md) with new rule pointers and CI validation workflows.

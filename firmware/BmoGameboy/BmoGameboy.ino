@@ -127,6 +127,7 @@ void setup() {
   BmoFace::begin();
   BmoFace::setExpression(BmoFace::IDLE);
   BmoFace::draw(); // full-screen centered boot face
+  delay(1000);     // Boot splash display hold
   
   if (!SDCard::begin()) {
     LOG_ERROR_STR("Failed to mount SD card!");
@@ -138,8 +139,7 @@ void setup() {
   LOG_INFO("IRAM free: %u bytes",
                 heap_caps_get_free_size(MALLOC_CAP_IRAM_8BIT));
 
-  // NB5: Set lastTime to NOW so the first FPS window is valid (not skewed
-  // by the 3-second boot delay above).
+  // Set lastTime to NOW so the first FPS window is valid
   lastTime = millis();
 
   // Expression already set to IDLE above; update() will handle blinking.
@@ -184,11 +184,9 @@ void loop() {
     for (int i = 0; i < CONSOLE_COUNT; ++i) counts[i] = countGamesForConsole(CONSOLES[i]);
     DisplayEmu::drawConsoleSelectMenu(selectedConsoleIndex, counts, SDCard::isMounted());
 
-    // Blit the animated mascot face into the top-left corner if it has
-    // changed since the last draw.  The isDirty() guard keeps this free
-    // when nothing animated (no blink, no expression change).
-    if (BmoFace::isDirty())
-      BmoFace::draw(FACE_MENU_X, FACE_MENU_Y, FACE_MENU_SIZE);
+    // Blit the mascot face into the top-left corner on top of the menu canvas.
+    // blitFace() internally caches faceBuf and recomputes SDF only when dirty (~0.4ms blit).
+    BmoFace::draw(FACE_MENU_X, FACE_MENU_Y, FACE_MENU_SIZE);
 
     // The full-screen SPI blit already consumes most of a 16.7 ms frame.
     // Only sleep for the remaining budget; an unconditional delay(16) here
@@ -285,6 +283,8 @@ void loop() {
         BmoFace::setExpression(BmoFace::HAPPY);
         BmoFace::draw(); // one-shot launch celebration; large centered blit
         lastButtonMs = millis();
+        delay(400);      // Allow launch celebration face to be seen before first emu frame
+        return;
       }
     }
     
@@ -296,8 +296,7 @@ void loop() {
                                    CONSOLES[selectedConsoleIndex], SDCard::isMounted());
 
     // Blit the mascot face into the top-left corner of the game list menu.
-    if (BmoFace::isDirty())
-      BmoFace::draw(FACE_MENU_X, FACE_MENU_Y, FACE_MENU_SIZE);
+    BmoFace::draw(FACE_MENU_X, FACE_MENU_Y, FACE_MENU_SIZE);
 
     const unsigned long menuElapsed = millis() - menuFrameStart;
     if (menuElapsed < 16) delay(16 - menuElapsed);

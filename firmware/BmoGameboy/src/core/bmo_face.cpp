@@ -335,17 +335,20 @@ static void blitFace(int x, int y, int size) {
   if (size <= 0)              return;
 
   // -----------------------------------------------------------------------
-  // Timed SDF render pass — same profiling pattern as DOOM tick latency
-  // check in emu_doom.cpp.  Fires once per draw(), not per loop() call.
+  // Timed SDF render pass — only recompute when facial parameters are dirty.
+  // When clean, blitFace reuses the existing faceBuf, avoiding expensive
+  // SDF recomputation (~3ms) on static frames while keeping the display persistent.
   // -----------------------------------------------------------------------
-  unsigned long t0 = micros();
-  renderFace();
-  unsigned long renderUs = micros() - t0;
+  if (s_dirty) {
+    unsigned long t0 = micros();
+    renderFace();
+    unsigned long renderUs = micros() - t0;
 
-  static bool warnedSlow = false;
-  if (!warnedSlow && renderUs > 5000) {
-    LOG_WARN("[BmoFace] WARNING: SDF render took %lu us (>5ms threshold)", renderUs);
-    warnedSlow = true;
+    static bool warnedSlow = false;
+    if (!warnedSlow && renderUs > 5000) {
+      LOG_WARN("[BmoFace] WARNING: SDF render took %lu us (>5ms threshold)", renderUs);
+      warnedSlow = true;
+    }
   }
 
   // -----------------------------------------------------------------------
