@@ -79,31 +79,46 @@ namespace {
 
   const char* consoleName(RomType type) {
     switch (type) {
-      case ROM_GB:  return "GAME BOY";
-      case ROM_GBC: return "GAME BOY COLOR";
-      case ROM_NES: return "NES";
-      case ROM_WAD: return "DOOM";
-      default:      return "GAMES";
+      case ROM_GB:    return "GAME BOY";
+      case ROM_GBC:   return "GAME BOY COLOR";
+      case ROM_NES:   return "NES";
+      case ROM_WAD:   return "DOOM";
+      case ROM_SMS:   return "SEGA MASTER SYSTEM";
+      case ROM_GG:    return "GAME GEAR";
+      case ROM_PCE:   return "PC ENGINE";
+      case ROM_ATARI: return "ATARI 2600";
+      case ROM_PICO8: return "PICO-8";
+      default:        return "GAMES";
     }
   }
 
   const char* consoleYear(RomType type) {
     switch (type) {
-      case ROM_GB:  return "1989";
-      case ROM_GBC: return "1998";
-      case ROM_NES: return "1983";
-      case ROM_WAD: return "1993";
-      default:      return "";
+      case ROM_GB:    return "1989";
+      case ROM_GBC:   return "1998";
+      case ROM_NES:   return "1983";
+      case ROM_WAD:   return "1993";
+      case ROM_SMS:   return "1986";
+      case ROM_GG:    return "1990";
+      case ROM_PCE:   return "1987";
+      case ROM_ATARI: return "1977";
+      case ROM_PICO8: return "2015";
+      default:        return "";
     }
   }
 
   const char* consoleBadge(RomType type) {
     switch (type) {
-      case ROM_GB:  return "GB";
-      case ROM_GBC: return "GBC";
-      case ROM_NES: return "NES";
-      case ROM_WAD: return "DOOM";
-      default:      return "GAME";
+      case ROM_GB:    return "GB";
+      case ROM_GBC:   return "GBC";
+      case ROM_NES:   return "NES";
+      case ROM_WAD:   return "DOOM";
+      case ROM_SMS:   return "SMS";
+      case ROM_GG:    return "GG";
+      case ROM_PCE:   return "PCE";
+      case ROM_ATARI: return "A26";
+      case ROM_PICO8: return "P8";
+      default:        return "GAME";
     }
   }
 
@@ -293,6 +308,39 @@ void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
   tft.endWrite();
 }
 
+void DisplayEmu::streamSMSFrame(const uint16_t* sms_framebuffer, bool isGameGear) {
+  tft.startWrite();
+  if (isGameGear) {
+    tft.setAddrWindow(80, 48, 160, 144);
+    SPI.writeBytes((const uint8_t*)sms_framebuffer, 160 * 144 * 2);
+  } else {
+    tft.setAddrWindow(32, 24, 256, 192);
+    SPI.writeBytes((const uint8_t*)sms_framebuffer, 256 * 192 * 2);
+  }
+  tft.endWrite();
+}
+
+void DisplayEmu::streamPCEFrame(const uint16_t* pce_framebuffer) {
+  tft.startWrite();
+  tft.setAddrWindow(32, 0, 256, 240);
+  SPI.writeBytes((const uint8_t*)pce_framebuffer, 256 * 240 * 2);
+  tft.endWrite();
+}
+
+void DisplayEmu::streamAtariFrame(const uint16_t* atari_framebuffer) {
+  tft.startWrite();
+  tft.setAddrWindow(80, 24, 160, 192);
+  SPI.writeBytes((const uint8_t*)atari_framebuffer, 160 * 192 * 2);
+  tft.endWrite();
+}
+
+void DisplayEmu::streamPicoFrame(const uint16_t* pico_framebuffer) {
+  tft.startWrite();
+  tft.setAddrWindow(96, 56, 128, 128);
+  SPI.writeBytes((const uint8_t*)pico_framebuffer, 128 * 128 * 2);
+  tft.endWrite();
+}
+
 // ---------------------------------------------------------------------------
 // Legacy per-scanline push — used for occasional cover-art or menu blits
 // where no startFrame/endFrame context exists.
@@ -346,35 +394,46 @@ void DisplayEmu::cleanupMenuUI() {
   }
 }
 
-void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int gameCounts[4], bool sdMounted) {
-  if (!menuCanvas) return;
-  const RomType consoles[4] = {ROM_GB, ROM_GBC, ROM_NES, ROM_WAD};
-  if (selectedIndex < 0 || selectedIndex >= 4) selectedIndex = 0;
+void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts, int consoleCount, bool sdMounted) {
+  if (!menuCanvas || consoleCount <= 0) return;
+  const RomType consoles[9] = {
+    ROM_GB, ROM_GBC, ROM_NES, ROM_WAD,
+    ROM_SMS, ROM_GG, ROM_PCE, ROM_ATARI, ROM_PICO8
+  };
+  if (selectedIndex < 0) selectedIndex = 0;
+  if (selectedIndex >= consoleCount) selectedIndex = consoleCount - 1;
 
   menuCanvas->fillScreen(UI_TEAL);
   menuCanvas->fillRect(0, 0, 320, 42, UI_BLACK);
   menuCanvas->setFont(&FreeSans12pt7b);
-  drawCentered("BMO GAMEBOY", 29, UI_YELLOW);
+  drawCentered("BMO CONSOLE SELECT", 29, UI_YELLOW);
   menuCanvas->setFont(&FreeSans9pt7b);
 
-  for (int i = 0; i < 4; ++i) {
-    const int y = 53 + i * 39;
-    const bool selected = i == selectedIndex;
-    const bool available = gameCounts[i] > 0;
+  // Scroll window: 4 items visible at a time
+  int topIndex = 0;
+  if (selectedIndex >= 3) topIndex = selectedIndex - 2;
+  if (topIndex + 4 > consoleCount) topIndex = consoleCount - 4;
+  if (topIndex < 0) topIndex = 0;
+
+  for (int row = 0; row < 4 && (topIndex + row) < consoleCount; ++row) {
+    int i = topIndex + row;
+    const int y = 53 + row * 39;
+    const bool selected = (i == selectedIndex);
+    const bool available = (gameCounts[i] > 0);
     if (selected) menuCanvas->fillRoundRect(14, y, 292, 33, 7, UI_DEEP_TEAL);
     menuCanvas->drawRoundRect(14, y, 292, 33, 7, selected ? UI_YELLOW : UI_MUTED);
     menuCanvas->setCursor(27, y + 22);
     menuCanvas->setTextColor(available ? (selected ? UI_YELLOW : UI_WHITE) : UI_MUTED);
     menuCanvas->print(consoleName(consoles[i]));
     menuCanvas->setFont();
-    char detail[24];
+    char detail[28];
     snprintf(detail, sizeof(detail), "%s  |  %d game%s", consoleYear(consoles[i]),
              gameCounts[i], gameCounts[i] == 1 ? "" : "s");
-    menuCanvas->setCursor(170, y + 20);
+    menuCanvas->setCursor(160, y + 20);
     menuCanvas->print(detail);
     menuCanvas->setFont(&FreeSans9pt7b);
   }
-  drawFooter(sdMounted ? "LEFT / RIGHT: CHOOSE     A: OPEN" :
+  drawFooter(sdMounted ? "UP / DOWN: SELECT     A: OPEN GAMES" :
                          "BUILT-IN GAMES ONLY - SD CARD NOT FOUND");
   writeMenuCanvas();
 }

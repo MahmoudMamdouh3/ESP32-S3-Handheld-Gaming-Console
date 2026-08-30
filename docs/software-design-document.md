@@ -201,6 +201,11 @@ The ESP32-S3-N16R8 has a multi-tiered memory hierarchy. Internal SRAM is ultra-f
 | **Game Boy Color (GBC)** | 160 × 144 | 240 × 216 | 1.5× Nearest-Neighbor (Phase A-A-B-C-C-D) | Centered (`OFFSET_X = 40`, `OFFSET_Y = 12`) |
 | **NES** | 256 × 240 | 256 × 240 | 1.0× Native 1:1 Direct Pixel Blit | Centered (`OFFSET_X = 32`, `OFFSET_Y = 0`) |
 | **DOOM** | 320 × 200 | 320 × 200 | 1.0× Native 1:1 Direct Pixel Blit | Letterboxed (`OFFSET_X = 0`, `OFFSET_Y = 20`) |
+| **Sega Master System (SMS)** | 256 × 192 | 256 × 192 | 1.0× Native 1:1 Direct Pixel Blit | Centered (`OFFSET_X = 32`, `OFFSET_Y = 24`) |
+| **Sega Game Gear (GG)** | 160 × 144 | 160 × 144 | 1.0× Native / 1.5× Scaled Blit | Centered (`OFFSET_X = 80`, `OFFSET_Y = 48`) |
+| **PC Engine (PCE)** | 256 × 240 | 256 × 240 | 1.0× Native 1:1 Direct Pixel Blit | Centered (`OFFSET_X = 32`, `OFFSET_Y = 0`) |
+| **Atari 2600** | 160 × 192 | 160 × 192 | 1.0× Native 1:1 Direct Pixel Blit | Centered (`OFFSET_X = 80`, `OFFSET_Y = 24`) |
+| **PICO-8** | 128 × 128 | 128 × 128 | 1.0× Native 1:1 Direct Pixel Blit | Centered (`OFFSET_X = 96`, `OFFSET_Y = 56`) |
 | **Menu UI & Mascot** | 320 × 240 | 320 × 240 | Full-Screen Native Blit | Full display coverage (`0, 0` to `320, 240`) |
 
 ### High-Performance SPI Streaming Protocol (N3)

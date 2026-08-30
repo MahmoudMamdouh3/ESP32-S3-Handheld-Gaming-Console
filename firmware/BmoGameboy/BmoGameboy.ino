@@ -3,6 +3,10 @@
 #include "src/emulators/emu_walnut.h"
 #include "src/emulators/emu_nes.h"
 #include "src/emulators/emu_doom.h"
+#include "src/emulators/emu_sms.h"
+#include "src/emulators/emu_pce.h"
+#include "src/emulators/emu_atari.h"
+#include "src/emulators/emu_pico.h"
 #include "src/tests/unit_tests.h"
 #include "src/core/buttons.h"
 #include "src/core/sd_card.h"
@@ -23,7 +27,7 @@ SystemState currentState = STATE_CONSOLE_MENU;
 int selectedConsoleIndex = 0;
 int selectedEmulatorIndex = 0;
 int selectedGameIndex = 0;
-static const int MAX_VISIBLE_ROMS = 2048;
+static const int MAX_VISIBLE_ROMS = 16384;
 static int fallbackRomIndexes[32];
 static int* visibleRomIndexes = fallbackRomIndexes;
 static const RomFile* fallbackVisibleGames[32];
@@ -31,7 +35,10 @@ static const RomFile** visibleGames = fallbackVisibleGames;
 static int maxVisibleCapacity = 32;
 static int visibleGameCount = 0;
 
-static const RomType CONSOLES[] = {ROM_GB, ROM_GBC, ROM_NES, ROM_WAD};
+static const RomType CONSOLES[] = {
+  ROM_GB, ROM_GBC, ROM_NES, ROM_WAD,
+  ROM_SMS, ROM_GG, ROM_PCE, ROM_ATARI, ROM_PICO8
+};
 static const int CONSOLE_COUNT = sizeof(CONSOLES) / sizeof(CONSOLES[0]);
 
 // Pointer to dynamically loaded ROM buffer in PSRAM
@@ -171,18 +178,21 @@ void loop() {
     Buttons::update();
     const auto& btnLeft = Buttons::get(Buttons::LEFT);
     const auto& btnRight = Buttons::get(Buttons::RIGHT);
+    const auto& btnUp = Buttons::get(Buttons::UP);
+    const auto& btnDown = Buttons::get(Buttons::DOWN);
     const auto& btnA = Buttons::get(Buttons::A);
     bool left   = btnLeft.pressed   && btnLeft.changed;
     bool right  = btnRight.pressed  && btnRight.changed;
+    bool up     = btnUp.pressed     && btnUp.changed;
+    bool down   = btnDown.pressed   && btnDown.changed;
     bool a      = btnA.pressed      && btnA.changed;
-    bool select = Buttons::get(Buttons::SELECT).pressed && Buttons::get(Buttons::SELECT).changed;
-
+    
     if (canPress()) {
-      if (left) {
+      if (left || up) {
         selectedConsoleIndex = (selectedConsoleIndex - 1 + CONSOLE_COUNT) % CONSOLE_COUNT;
         lastButtonMs = millis();
       }
-      if (right) {
+      if (right || down) {
         selectedConsoleIndex = (selectedConsoleIndex + 1) % CONSOLE_COUNT;
         lastButtonMs = millis();
       }
@@ -197,7 +207,7 @@ void loop() {
 
     int counts[CONSOLE_COUNT];
     for (int i = 0; i < CONSOLE_COUNT; ++i) counts[i] = countGamesForConsole(CONSOLES[i]);
-    DisplayEmu::drawConsoleSelectMenu(selectedConsoleIndex, counts, SDCard::isMounted());
+    DisplayEmu::drawConsoleSelectMenu(selectedConsoleIndex, counts, CONSOLE_COUNT, SDCard::isMounted());
 
     // Blit the mascot face into the top-left corner on top of the menu canvas.
     // blitFace() internally caches faceBuf and recomputes SDF only when dirty (~0.4ms blit).
@@ -283,9 +293,24 @@ void loop() {
         } else if (selectedRom->type == ROM_GBC) {
           success = WalnutEmu::begin(romData, romSize);
           selectedEmulatorIndex = 0;
-        } else {
+        } else if (selectedRom->type == ROM_GB) {
           success = PeanutEmu::begin(romData, romSize);
           selectedEmulatorIndex = 1;
+        } else if (selectedRom->type == ROM_SMS) {
+          success = SmsEmu::begin(romData, romSize, false);
+          selectedEmulatorIndex = 4;
+        } else if (selectedRom->type == ROM_GG) {
+          success = SmsEmu::begin(romData, romSize, true);
+          selectedEmulatorIndex = 5;
+        } else if (selectedRom->type == ROM_PCE) {
+          success = PceEmu::begin(romData, romSize);
+          selectedEmulatorIndex = 6;
+        } else if (selectedRom->type == ROM_ATARI) {
+          success = AtariEmu::begin(romData, romSize);
+          selectedEmulatorIndex = 7;
+        } else if (selectedRom->type == ROM_PICO8) {
+          success = PicoEmu::begin(romData, romSize);
+          selectedEmulatorIndex = 8;
         }
         
         if (!success) {
@@ -342,6 +367,14 @@ void loop() {
         NesEmu::destroy();
       } else if (selectedEmulatorIndex == 3) {
         DoomEmu::destroy();
+      } else if (selectedEmulatorIndex == 4 || selectedEmulatorIndex == 5) {
+        SmsEmu::destroy();
+      } else if (selectedEmulatorIndex == 6) {
+        PceEmu::destroy();
+      } else if (selectedEmulatorIndex == 7) {
+        AtariEmu::destroy();
+      } else if (selectedEmulatorIndex == 8) {
+        PicoEmu::destroy();
       }
       
       if (currentRomBuffer) {
@@ -364,9 +397,17 @@ void loop() {
     } else if (selectedEmulatorIndex == 0) {
       WalnutEmu::updateJoypad();
       WalnutEmu::runFrame();
-    } else {
+    } else if (selectedEmulatorIndex == 1) {
       PeanutEmu::updateJoypad();
       PeanutEmu::runFrame();
+    } else if (selectedEmulatorIndex == 4 || selectedEmulatorIndex == 5) {
+      SmsEmu::runFrame();
+    } else if (selectedEmulatorIndex == 6) {
+      PceEmu::runFrame();
+    } else if (selectedEmulatorIndex == 7) {
+      AtariEmu::runFrame();
+    } else if (selectedEmulatorIndex == 8) {
+      PicoEmu::runFrame();
     }
 
     unsigned long elapsed = micros() - frameStart;

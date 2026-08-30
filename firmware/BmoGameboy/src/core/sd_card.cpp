@@ -14,7 +14,7 @@
 
 namespace {
   bool mounted = false;
-  static const int MAX_ROMS = 2048;
+  static const int MAX_ROMS = 16384;
   static RomFile fallbackRomList[32];
   static RomFile* romList = fallbackRomList;
   static int maxCapacity = 32;
@@ -27,6 +27,11 @@ namespace {
     if (strcasecmp(ext, ".gbc") == 0) return ROM_GBC;
     if (strcasecmp(ext, ".nes") == 0) return ROM_NES;
     if (strcasecmp(ext, ".wad") == 0) return ROM_WAD;
+    if (strcasecmp(ext, ".sms") == 0) return ROM_SMS;
+    if (strcasecmp(ext, ".gg") == 0) return ROM_GG;
+    if (strcasecmp(ext, ".pce") == 0) return ROM_PCE;
+    if (strcasecmp(ext, ".a26") == 0 || strcasecmp(ext, ".a78") == 0) return ROM_ATARI;
+    if (strcasecmp(ext, ".p8") == 0) return ROM_PICO8;
     return ROM_UNKNOWN;
   }
 }

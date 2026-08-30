@@ -13,7 +13,7 @@ namespace DisplayEmu {
   // it remains correct without changing any emulator palette or frame stream.
   void showSDCardWarning();
   void initMenuUI();
-  void drawConsoleSelectMenu(int selectedIndex, const int gameCounts[4], bool sdMounted);
+  void drawConsoleSelectMenu(int selectedIndex, const int* gameCounts, int consoleCount, bool sdMounted);
   void drawGameSelectMenu(const RomFile* const* games, int count, int selectedIndex,
                           RomType console, bool sdMounted);
   void cleanupMenuUI();
@@ -35,6 +35,18 @@ namespace DisplayEmu {
 
   // Starts an SPI transaction and streams 320x200 DOOM pixels.
   void streamDoomFrame(const uint8_t* cmap);
+
+  // Streams 256x192 SMS or 160x144 Game Gear frame
+  void streamSMSFrame(const uint16_t* sms_framebuffer, bool isGameGear = false);
+
+  // Streams 256x240 PC Engine frame
+  void streamPCEFrame(const uint16_t* pce_framebuffer);
+
+  // Streams 160x192 Atari 2600 frame
+  void streamAtariFrame(const uint16_t* atari_framebuffer);
+
+  // Streams 128x128 PICO-8 frame
+  void streamPicoFrame(const uint16_t* pico_framebuffer);
 
   // pushPixels: full self-contained transaction (startWrite + setAddrWindow +
   // writeBytes + endWrite). Use for cover art or any one-off blit.

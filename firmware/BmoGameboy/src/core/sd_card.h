@@ -7,7 +7,12 @@ enum RomType {
   ROM_GB,
   ROM_GBC,
   ROM_NES,
-  ROM_WAD // For future doom support
+  ROM_WAD,
+  ROM_SMS,
+  ROM_GG,
+  ROM_PCE,
+  ROM_ATARI,
+  ROM_PICO8
 };
 
 struct RomFile {
