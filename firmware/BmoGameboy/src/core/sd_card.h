@@ -12,7 +12,13 @@ enum RomType {
   ROM_GG,
   ROM_PCE,
   ROM_ATARI,
-  ROM_PICO8
+  ROM_PICO8,
+  ROM_GENESIS,
+  ROM_SNES,
+  ROM_WSWAN,
+  ROM_NGP,
+  ROM_LYNX,
+  ROM_COLEM
 };
 
 struct RomFile {

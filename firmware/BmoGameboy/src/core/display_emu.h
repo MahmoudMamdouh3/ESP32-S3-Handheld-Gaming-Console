@@ -48,6 +48,24 @@ namespace DisplayEmu {
   // Streams 128x128 PICO-8 frame
   void streamPicoFrame(const uint16_t* pico_framebuffer);
 
+  // Streams 320x224 Genesis frame
+  void streamGenesisFrame(const uint16_t* genesis_framebuffer, int width, int height);
+
+  // Streams 256x224 SNES frame
+  void streamSNESFrame(const uint16_t* snes_framebuffer, int width, int height);
+
+  // Streams 224x144 WonderSwan frame
+  void streamWSwanFrame(const uint16_t* wswan_framebuffer, int width, int height);
+
+  // Streams 160x152 Neo Geo Pocket frame
+  void streamNGPFrame(const uint16_t* ngp_framebuffer, int width, int height);
+
+  // Streams 160x102 Atari Lynx frame
+  void streamLynxFrame(const uint16_t* lynx_framebuffer, int width, int height);
+
+  // Streams 256x192 ColecoVision frame
+  void streamColemFrame(const uint16_t* colem_framebuffer, int width, int height);
+
   // pushPixels: full self-contained transaction (startWrite + setAddrWindow +
   // writeBytes + endWrite). Use for cover art or any one-off blit.
   void pushPixels(int yOffset, const uint16_t* rowBuffer, int rowsToDraw);

@@ -206,6 +206,12 @@ The ESP32-S3-N16R8 has a multi-tiered memory hierarchy. Internal SRAM is ultra-f
 | **PC Engine (PCE)** | 256 × 240 | 256 × 240 | 1.0× Native 1:1 Direct Pixel Blit | Centered (`OFFSET_X = 32`, `OFFSET_Y = 0`) |
 | **Atari 2600** | 160 × 192 | 160 × 192 | 1.0× Native 1:1 Direct Pixel Blit | Centered (`OFFSET_X = 80`, `OFFSET_Y = 24`) |
 | **PICO-8** | 128 × 128 | 128 × 128 | 1.0× Native 1:1 Direct Pixel Blit | Centered (`OFFSET_X = 96`, `OFFSET_Y = 56`) |
+| **Sega Genesis / Mega Drive** | 320 × 224 | 320 × 224 | 1.0× Native 1:1 Direct Pixel Blit | Centered (`OFFSET_X = 0`, `OFFSET_Y = 8`) |
+| **Super Nintendo (SNES)** | 256 × 224 | 256 × 224 | 1.0× Native 1:1 Direct Pixel Blit | Centered (`OFFSET_X = 32`, `OFFSET_Y = 8`) |
+| **WonderSwan & Color** | 224 × 144 | 224 × 144 | 1.0× Native 1:1 Direct Pixel Blit | Centered (`OFFSET_X = 48`, `OFFSET_Y = 48`) |
+| **Neo Geo Pocket & Color** | 160 × 152 | 160 × 152 | 1.0× Native 1:1 Direct Pixel Blit | Centered (`OFFSET_X = 80`, `OFFSET_Y = 44`) |
+| **Atari Lynx** | 160 × 102 | 160 × 102 | 1.0× Native 1:1 Direct Pixel Blit | Centered (`OFFSET_X = 80`, `OFFSET_Y = 69`) |
+| **ColecoVision / SG-1000** | 256 × 192 | 256 × 192 | 1.0× Native 1:1 Direct Pixel Blit | Centered (`OFFSET_X = 32`, `OFFSET_Y = 24`) |
 | **Menu UI & Mascot** | 320 × 240 | 320 × 240 | Full-Screen Native Blit | Full display coverage (`0, 0` to `320, 240`) |
 
 ### High-Performance SPI Streaming Protocol (N3)

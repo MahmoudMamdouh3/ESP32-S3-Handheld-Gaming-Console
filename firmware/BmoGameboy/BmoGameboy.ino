@@ -7,6 +7,12 @@
 #include "src/emulators/emu_pce.h"
 #include "src/emulators/emu_atari.h"
 #include "src/emulators/emu_pico.h"
+#include "src/emulators/emu_genesis.h"
+#include "src/emulators/emu_snes.h"
+#include "src/emulators/emu_wswan.h"
+#include "src/emulators/emu_ngp.h"
+#include "src/emulators/emu_lynx.h"
+#include "src/emulators/emu_colem.h"
 #include "src/tests/unit_tests.h"
 #include "src/core/buttons.h"
 #include "src/core/sd_card.h"
@@ -37,7 +43,8 @@ static int visibleGameCount = 0;
 
 static const RomType CONSOLES[] = {
   ROM_GB, ROM_GBC, ROM_NES, ROM_WAD,
-  ROM_SMS, ROM_GG, ROM_PCE, ROM_ATARI, ROM_PICO8
+  ROM_SMS, ROM_GG, ROM_PCE, ROM_ATARI, ROM_PICO8,
+  ROM_GENESIS, ROM_SNES, ROM_WSWAN, ROM_NGP, ROM_LYNX, ROM_COLEM
 };
 static const int CONSOLE_COUNT = sizeof(CONSOLES) / sizeof(CONSOLES[0]);
 
@@ -311,6 +318,24 @@ void loop() {
         } else if (selectedRom->type == ROM_PICO8) {
           success = PicoEmu::begin(romData, romSize);
           selectedEmulatorIndex = 8;
+        } else if (selectedRom->type == ROM_GENESIS) {
+          success = GenesisEmu::init(romData, romSize);
+          selectedEmulatorIndex = 9;
+        } else if (selectedRom->type == ROM_SNES) {
+          success = SNESEmu::init(romData, romSize);
+          selectedEmulatorIndex = 10;
+        } else if (selectedRom->type == ROM_WSWAN) {
+          success = WSwanEmu::init(romData, romSize, true);
+          selectedEmulatorIndex = 11;
+        } else if (selectedRom->type == ROM_NGP) {
+          success = NGPEmu::init(romData, romSize, true);
+          selectedEmulatorIndex = 12;
+        } else if (selectedRom->type == ROM_LYNX) {
+          success = LynxEmu::init(romData, romSize);
+          selectedEmulatorIndex = 13;
+        } else if (selectedRom->type == ROM_COLEM) {
+          success = ColemEmu::init(romData, romSize);
+          selectedEmulatorIndex = 14;
         }
         
         if (!success) {
@@ -375,6 +400,18 @@ void loop() {
         AtariEmu::destroy();
       } else if (selectedEmulatorIndex == 8) {
         PicoEmu::destroy();
+      } else if (selectedEmulatorIndex == 9) {
+        GenesisEmu::destroy();
+      } else if (selectedEmulatorIndex == 10) {
+        SNESEmu::destroy();
+      } else if (selectedEmulatorIndex == 11) {
+        WSwanEmu::destroy();
+      } else if (selectedEmulatorIndex == 12) {
+        NGPEmu::destroy();
+      } else if (selectedEmulatorIndex == 13) {
+        LynxEmu::destroy();
+      } else if (selectedEmulatorIndex == 14) {
+        ColemEmu::destroy();
       }
       
       if (currentRomBuffer) {
@@ -408,6 +445,18 @@ void loop() {
       AtariEmu::runFrame();
     } else if (selectedEmulatorIndex == 8) {
       PicoEmu::runFrame();
+    } else if (selectedEmulatorIndex == 9) {
+      GenesisEmu::update();
+    } else if (selectedEmulatorIndex == 10) {
+      SNESEmu::update();
+    } else if (selectedEmulatorIndex == 11) {
+      WSwanEmu::update();
+    } else if (selectedEmulatorIndex == 12) {
+      NGPEmu::update();
+    } else if (selectedEmulatorIndex == 13) {
+      LynxEmu::update();
+    } else if (selectedEmulatorIndex == 14) {
+      ColemEmu::update();
     }
 
     unsigned long elapsed = micros() - frameStart;

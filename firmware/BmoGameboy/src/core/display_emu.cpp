@@ -79,46 +79,64 @@ namespace {
 
   const char* consoleName(RomType type) {
     switch (type) {
-      case ROM_GB:    return "GAME BOY";
-      case ROM_GBC:   return "GAME BOY COLOR";
-      case ROM_NES:   return "NES";
-      case ROM_WAD:   return "DOOM";
-      case ROM_SMS:   return "SEGA MASTER SYSTEM";
-      case ROM_GG:    return "GAME GEAR";
-      case ROM_PCE:   return "PC ENGINE";
-      case ROM_ATARI: return "ATARI 2600";
-      case ROM_PICO8: return "PICO-8";
-      default:        return "GAMES";
+      case ROM_GB:      return "GAME BOY";
+      case ROM_GBC:     return "GAME BOY COLOR";
+      case ROM_NES:     return "NES";
+      case ROM_WAD:     return "DOOM";
+      case ROM_SMS:     return "SEGA MASTER SYSTEM";
+      case ROM_GG:      return "GAME GEAR";
+      case ROM_PCE:     return "PC ENGINE";
+      case ROM_ATARI:   return "ATARI 2600";
+      case ROM_PICO8:   return "PICO-8";
+      case ROM_GENESIS: return "SEGA GENESIS";
+      case ROM_SNES:    return "SUPER NINTENDO";
+      case ROM_WSWAN:   return "WONDERSWAN";
+      case ROM_NGP:     return "NEO GEO POCKET";
+      case ROM_LYNX:    return "ATARI LYNX";
+      case ROM_COLEM:   return "COLECOVISION";
+      default:          return "GAMES";
     }
   }
 
   const char* consoleYear(RomType type) {
     switch (type) {
-      case ROM_GB:    return "1989";
-      case ROM_GBC:   return "1998";
-      case ROM_NES:   return "1983";
-      case ROM_WAD:   return "1993";
-      case ROM_SMS:   return "1986";
-      case ROM_GG:    return "1990";
-      case ROM_PCE:   return "1987";
-      case ROM_ATARI: return "1977";
-      case ROM_PICO8: return "2015";
-      default:        return "";
+      case ROM_GB:      return "1989";
+      case ROM_GBC:     return "1998";
+      case ROM_NES:     return "1983";
+      case ROM_WAD:     return "1993";
+      case ROM_SMS:     return "1986";
+      case ROM_GG:      return "1990";
+      case ROM_PCE:     return "1987";
+      case ROM_ATARI:   return "1977";
+      case ROM_PICO8:   return "2015";
+      case ROM_GENESIS: return "1988";
+      case ROM_SNES:    return "1990";
+      case ROM_WSWAN:   return "1999";
+      case ROM_NGP:     return "1998";
+      case ROM_LYNX:    return "1989";
+      case ROM_COLEM:   return "1982";
+      default:          return "";
     }
   }
 
   const char* consoleBadge(RomType type) {
     switch (type) {
-      case ROM_GB:    return "GB";
-      case ROM_GBC:   return "GBC";
-      case ROM_NES:   return "NES";
-      case ROM_WAD:   return "DOOM";
-      case ROM_SMS:   return "SMS";
-      case ROM_GG:    return "GG";
-      case ROM_PCE:   return "PCE";
-      case ROM_ATARI: return "A26";
-      case ROM_PICO8: return "P8";
-      default:        return "GAME";
+      case ROM_GB:      return "GB";
+      case ROM_GBC:     return "GBC";
+      case ROM_NES:     return "NES";
+      case ROM_WAD:     return "DOOM";
+      case ROM_SMS:     return "SMS";
+      case ROM_GG:      return "GG";
+      case ROM_PCE:     return "PCE";
+      case ROM_ATARI:   return "A26";
+      case ROM_PICO8:   return "P8";
+      case ROM_GENESIS: return "MD";
+      case ROM_SNES:    return "SNES";
+      case ROM_WSWAN:   return "WS";
+      case ROM_NGP:     return "NGP";
+      case ROM_LYNX:    return "LNX";
+      case ROM_COLEM:   return "COL";
+      default:          return "GAME";
     }
   }
 
@@ -341,6 +359,54 @@ void DisplayEmu::streamPicoFrame(const uint16_t* pico_framebuffer) {
   tft.endWrite();
 }
 
+void DisplayEmu::streamGenesisFrame(const uint16_t* genesis_framebuffer, int width, int height) {
+  tft.startWrite();
+  // 320x224 centered vertically on 320x240 screen (yOffset = 8)
+  tft.setAddrWindow(0, 8, 320, 224);
+  SPI.writeBytes((const uint8_t*)genesis_framebuffer, 320 * 224 * 2);
+  tft.endWrite();
+}
+
+void DisplayEmu::streamSNESFrame(const uint16_t* snes_framebuffer, int width, int height) {
+  tft.startWrite();
+  // 256x224 centered on 320x240 screen (xOffset = 32, yOffset = 8)
+  tft.setAddrWindow(32, 8, 256, 224);
+  SPI.writeBytes((const uint8_t*)snes_framebuffer, 256 * 224 * 2);
+  tft.endWrite();
+}
+
+void DisplayEmu::streamWSwanFrame(const uint16_t* wswan_framebuffer, int width, int height) {
+  tft.startWrite();
+  // 224x144 centered on 320x240 screen (xOffset = 48, yOffset = 48)
+  tft.setAddrWindow(48, 48, 224, 144);
+  SPI.writeBytes((const uint8_t*)wswan_framebuffer, 224 * 144 * 2);
+  tft.endWrite();
+}
+
+void DisplayEmu::streamNGPFrame(const uint16_t* ngp_framebuffer, int width, int height) {
+  tft.startWrite();
+  // 160x152 centered on 320x240 screen (xOffset = 80, yOffset = 44)
+  tft.setAddrWindow(80, 44, 160, 152);
+  SPI.writeBytes((const uint8_t*)ngp_framebuffer, 160 * 152 * 2);
+  tft.endWrite();
+}
+
+void DisplayEmu::streamLynxFrame(const uint16_t* lynx_framebuffer, int width, int height) {
+  tft.startWrite();
+  // 160x102 centered on 320x240 screen (xOffset = 80, yOffset = 69)
+  tft.setAddrWindow(80, 69, 160, 102);
+  SPI.writeBytes((const uint8_t*)lynx_framebuffer, 160 * 102 * 2);
+  tft.endWrite();
+}
+
+void DisplayEmu::streamColemFrame(const uint16_t* colem_framebuffer, int width, int height) {
+  tft.startWrite();
+  // 256x192 centered on 320x240 screen (xOffset = 32, yOffset = 24)
+  tft.setAddrWindow(32, 24, 256, 192);
+  SPI.writeBytes((const uint8_t*)colem_framebuffer, 256 * 192 * 2);
+  tft.endWrite();
+}
+
 // ---------------------------------------------------------------------------
 // Legacy per-scanline push — used for occasional cover-art or menu blits
 // where no startFrame/endFrame context exists.
@@ -396,9 +462,10 @@ void DisplayEmu::cleanupMenuUI() {
 
 void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts, int consoleCount, bool sdMounted) {
   if (!menuCanvas || consoleCount <= 0) return;
-  const RomType consoles[9] = {
+  const RomType consoles[15] = {
     ROM_GB, ROM_GBC, ROM_NES, ROM_WAD,
-    ROM_SMS, ROM_GG, ROM_PCE, ROM_ATARI, ROM_PICO8
+    ROM_SMS, ROM_GG, ROM_PCE, ROM_ATARI, ROM_PICO8,
+    ROM_GENESIS, ROM_SNES, ROM_WSWAN, ROM_NGP, ROM_LYNX, ROM_COLEM
   };
   if (selectedIndex < 0) selectedIndex = 0;
   if (selectedIndex >= consoleCount) selectedIndex = consoleCount - 1;

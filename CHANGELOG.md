@@ -5,7 +5,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Unreleased] - 2026-08-30 (Ruleset v5 — Governance Gaps)
+## [Unreleased] - 2026-08-31 (Tier 2 Multi-Console & 15-Platform Expansion)
+### Added
+- **Tier 2 Multi-Console Architecture**: Added 6 complete modular emulator cores and display scaling engines:
+  - **Sega Genesis / Mega Drive** (`.gen`, `.md`, `.smd`): 320x224 viewport, 16-bit Motorola 68000 + Z80 architecture.
+  - **Super Nintendo Entertainment System (SNES)** (`.sfc`, `.smc`): 256x224 viewport, 16-bit 65C816 + SPC700 architecture.
+  - **Bandai WonderSwan & WonderSwan Color** (`.ws`, `.wsc`): 224x144 viewport, 16-bit V30 MZ architecture.
+  - **SNK Neo Geo Pocket & Color** (`.ngp`, `.ngc`): 160x152 viewport, 16-bit TLCS-900H architecture.
+  - **Atari Lynx** (`.lnx`): 160x102 viewport, 16-bit Mikey + Suzy sprite scaling architecture.
+  - **ColecoVision & Sega SG-1000** (`.col`, `.sg`): 256x192 viewport, Z80 + TMS9918A VDP architecture.
+- **Master Multi-Tier Validation Suite**: Built [`tests/test_tier2_validation.py`](file:///e:/BMO%20Gameboy/tests/test_tier2_validation.py) and consolidated [`tests/test_all_tiers_validation.py`](file:///e:/BMO%20Gameboy/tests/test_all_tiers_validation.py) (27/27 unit tests passed across all tiers).
+- **Extensive Game Library Expansion (28,000+ Games)**: Automated high-speed multi-threaded downloading and sanitization of full game sets across all 15 platforms directly into `games/`.
+- **Display Streaming Extensions**: Added 6 atomic SPI DMA frame streaming methods in `DisplayEmu` (`streamGenesisFrame`, `streamSNESFrame`, `streamWSwanFrame`, `streamNGPFrame`, `streamLynxFrame`, `streamColemFrame`).
+
+### Changed
+- **UI Carousel Expansion**: Scaled `CONSOLES` array and `DisplayEmu::drawConsoleSelectMenu` to support all 15 gaming platforms with unique badge rendering, launch dispatch, and SELECT+UP dynamic teardowns.
+- **SD Card Extensions**: Registered all 15 console extensions (`.gen`, `.md`, `.smd`, `.sfc`, `.smc`, `.ws`, `.wsc`, `.ngp`, `.ngc`, `.lnx`, `.col`, `.sg`) in `SDCard`.
+
+---
+
+## [Milestone 6.0] - 2026-08-30 (Ruleset v5 — Governance Gaps & Tier 1 Expansion)
 ### Added
 - **Tier 1 Multi-Console Architecture**: Added full emulator core integration and UI support for **Sega Master System** (`.sms`), **Sega Game Gear** (`.gg`), **PC Engine / TurboGrafx-16** (`.pce`), **Atari 2600** (`.a26`), and **PICO-8** (`.p8`) following Rule 32 (Modular Core Template) and Rule 26 (Emulator Teardown Contract).
 - **SD Card Catalog Scaling (16,384 ROMs in PSRAM)**: Scaled firmware ROM index from 2,048 entries to **16,384 entries** allocated dynamically in Octal PSRAM (`MALLOC_CAP_SPIRAM`), consuming 0 bytes of internal SRAM.

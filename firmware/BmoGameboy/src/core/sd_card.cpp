@@ -32,6 +32,12 @@ namespace {
     if (strcasecmp(ext, ".pce") == 0) return ROM_PCE;
     if (strcasecmp(ext, ".a26") == 0 || strcasecmp(ext, ".a78") == 0) return ROM_ATARI;
     if (strcasecmp(ext, ".p8") == 0) return ROM_PICO8;
+    if (strcasecmp(ext, ".gen") == 0 || strcasecmp(ext, ".md") == 0 || strcasecmp(ext, ".smd") == 0) return ROM_GENESIS;
+    if (strcasecmp(ext, ".sfc") == 0 || strcasecmp(ext, ".smc") == 0) return ROM_SNES;
+    if (strcasecmp(ext, ".ws") == 0 || strcasecmp(ext, ".wsc") == 0) return ROM_WSWAN;
+    if (strcasecmp(ext, ".ngp") == 0 || strcasecmp(ext, ".ngc") == 0) return ROM_NGP;
+    if (strcasecmp(ext, ".lnx") == 0) return ROM_LYNX;
+    if (strcasecmp(ext, ".col") == 0 || strcasecmp(ext, ".sg") == 0) return ROM_COLEM;
     return ROM_UNKNOWN;
   }
 }

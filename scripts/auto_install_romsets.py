@@ -78,10 +78,44 @@ ROM_PACKS = [
         "ext": ".p8",
         "url": "https://archive.org/download/pico8/PICO8.zip",
         "archive_name": "pico8.zip"
+    },
+    {
+        "console": "ColecoVision (Complete Collection)",
+        "ext": ".col",
+        "url": "https://archive.org/download/colecovision_202110/colecovision.zip",
+        "archive_name": "colecovision.zip"
+    },
+    {
+        "console": "Atari Lynx (Complete Collection)",
+        "ext": ".lnx",
+        "url": "https://archive.org/download/atari-lynx-roms/atari-lynx-champion-collection-updated.zip",
+        "archive_name": "atari_lynx.zip"
+    },
+    {
+        "console": "SNK Neo Geo Pocket Color (Complete Collection)",
+        "ext": ".ngc",
+        "url": "https://archive.org/download/snk-neo-geo-pocket-color_20210327/SNK%20-%20Neo%20Geo%20Pocket%20Color.zip",
+        "archive_name": "ngpc.zip"
+    },
+    {
+        "console": "Bandai WonderSwan Color (Complete Collection)",
+        "ext": ".wsc",
+        "url": "https://archive.org/download/wswanc_202604/wswanc.zip",
+        "archive_name": "wswanc.zip"
+    },
+    {
+        "console": "Sega Genesis / Mega Drive (Complete Collection)",
+        "ext": ".gen",
+        "url": "https://archive.org/download/sega-genesis/Sega%20Genesis.zip",
+        "archive_name": "sega_genesis.zip"
     }
 ]
 
-SUPPORTED_EXTS = (".gb", ".gbc", ".nes", ".wad", ".sms", ".gg", ".pce", ".a26", ".a78", ".p8")
+SUPPORTED_EXTS = (
+    ".gb", ".gbc", ".nes", ".wad", ".sms", ".gg", ".pce",
+    ".a26", ".a78", ".p8", ".gen", ".md", ".smd", ".sfc",
+    ".smc", ".ws", ".wsc", ".ngp", ".ngc", ".lnx", ".col", ".sg"
+)
 
 def sanitize_rom_filename(filename: str, max_len: int = 58) -> str:
     """
