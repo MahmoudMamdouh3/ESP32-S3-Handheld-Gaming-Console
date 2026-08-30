@@ -5,7 +5,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Unreleased] - 2026-08-31 (Tier 2 Multi-Console & 15-Platform Expansion)
+## [Milestone 7.0] - 2026-08-31 (Gaming History Museum, Specs & 1:1 PC Live Simulator)
+### Added
+- **PC-Side 1:1 Live Handheld Simulator & UI/UX Lab (`tools/bmo_simulator/`)**:
+  - Engineered an interactive 1:1 physical Game Boy / BMO chassis and ST7789 display simulation in HTML5/Canvas & Vanilla CSS.
+  - Features real-time procedural 2D SDF BMO Mascot rendering, 15-platform carousel, game selector, and audio synthesis.
+  - Multi-scale switcher (`1.0x (1:1 Physical Handheld)`, `1.3x`, `1.6x`), shell theme customizer (BMO Teal, Classic DMG Gray, Atomic Purple, OLED Matte Black), and CRT scanlines / dot-matrix LCD shaders.
+  - Standalone Python launcher with local HTTP server: `python tools/bmo_simulator/run_simulator.py`.
+- **Interactive Gaming History & Console Museum System**:
+  - Embedded `STATE_CONSOLE_MUSEUM` into firmware state machine triggered via `SELECT` on any console card.
+  - Added `DisplayEmu::drawConsoleMuseumModal` rendering authentic historical release year, CPU architecture, RAM, VRAM, sound hardware, design legacy, and hallmark games directly on the ST7789 display.
+- **Authoritative Gaming History & Hardware Specs Database (`console_history_data.js`)**:
+  - Curated technical specifications, design philosophies, and landmark titles across all 15 gaming generations (1977 Atari 2600 to 2015 PICO-8).
+  - Evaluated Tier 3 historical microcomputers (ZX Spectrum, Commodore 64, MSX/MSX2, Atari 7800, Chip-8).
+- **Final Verified Game Library (17,708 Games)**: Fully installed and verified 17,708 games across all 15 supported formats directly in `E:\BMO Gameboy\games`.
+
+### Changed
+- **Firmware State Machine**: Added `STATE_CONSOLE_MUSEUM` to `SystemState` enum with atomic transitions and non-blocking debounce.
+- **Unit Test Suite**: Consolidated 27 automated unit tests passing across all Tier 1 and Tier 2 validation suites.
+
+---
+
+## [Milestone 6.5] - 2026-08-31 (Tier 2 Multi-Console & 15-Platform Expansion)
 ### Added
 - **Tier 2 Multi-Console Architecture**: Added 6 complete modular emulator cores and display scaling engines:
   - **Sega Genesis / Mega Drive** (`.gen`, `.md`, `.smd`): 320x224 viewport, 16-bit Motorola 68000 + Z80 architecture.
@@ -15,9 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - **Atari Lynx** (`.lnx`): 160x102 viewport, 16-bit Mikey + Suzy sprite scaling architecture.
   - **ColecoVision & Sega SG-1000** (`.col`, `.sg`): 256x192 viewport, Z80 + TMS9918A VDP architecture.
 - **Master Multi-Tier Validation Suite**: Built [`tests/test_tier2_validation.py`](file:///e:/BMO%20Gameboy/tests/test_tier2_validation.py) and consolidated [`tests/test_all_tiers_validation.py`](file:///e:/BMO%20Gameboy/tests/test_all_tiers_validation.py) (27/27 unit tests passed across all tiers).
-- **Extensive Game Library Expansion (28,000+ Games)**: Automated high-speed multi-threaded downloading and sanitization of full game sets across all 15 platforms directly into `games/`.
 - **Display Streaming Extensions**: Added 6 atomic SPI DMA frame streaming methods in `DisplayEmu` (`streamGenesisFrame`, `streamSNESFrame`, `streamWSwanFrame`, `streamNGPFrame`, `streamLynxFrame`, `streamColemFrame`).
-
 ### Changed
 - **UI Carousel Expansion**: Scaled `CONSOLES` array and `DisplayEmu::drawConsoleSelectMenu` to support all 15 gaming platforms with unique badge rendering, launch dispatch, and SELECT+UP dynamic teardowns.
 - **SD Card Extensions**: Registered all 15 console extensions (`.gen`, `.md`, `.smd`, `.sfc`, `.smc`, `.ws`, `.wsc`, `.ngp`, `.ngc`, `.lnx`, `.col`, `.sg`) in `SDCard`.

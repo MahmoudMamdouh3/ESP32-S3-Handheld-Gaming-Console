@@ -25,6 +25,7 @@
 
 enum SystemState {
   STATE_CONSOLE_MENU,
+  STATE_CONSOLE_MUSEUM,
   STATE_GAME_MENU,
   STATE_EMULATOR
 };
@@ -188,11 +189,13 @@ void loop() {
     const auto& btnUp = Buttons::get(Buttons::UP);
     const auto& btnDown = Buttons::get(Buttons::DOWN);
     const auto& btnA = Buttons::get(Buttons::A);
+    const auto& btnSelect = Buttons::get(Buttons::SELECT);
     bool left   = btnLeft.pressed   && btnLeft.changed;
     bool right  = btnRight.pressed  && btnRight.changed;
     bool up     = btnUp.pressed     && btnUp.changed;
     bool down   = btnDown.pressed   && btnDown.changed;
     bool a      = btnA.pressed      && btnA.changed;
+    bool select = btnSelect.pressed && btnSelect.changed;
     
     if (canPress()) {
       if (left || up) {
@@ -201,6 +204,10 @@ void loop() {
       }
       if (right || down) {
         selectedConsoleIndex = (selectedConsoleIndex + 1) % CONSOLE_COUNT;
+        lastButtonMs = millis();
+      }
+      if (select) {
+        currentState = STATE_CONSOLE_MUSEUM;
         lastButtonMs = millis();
       }
       if (a) {
@@ -225,6 +232,27 @@ void loop() {
     // previously limited the menu to roughly 30 FPS.
     const unsigned long menuElapsed = millis() - menuFrameStart;
     if (menuElapsed < 16) delay(16 - menuElapsed);
+
+  } else if (currentState == STATE_CONSOLE_MUSEUM) {
+    const unsigned long museumFrameStart = millis();
+    DisplayEmu::initMenuUI();
+    Buttons::update();
+    const auto& btnB = Buttons::get(Buttons::B);
+    const auto& btnSelect = Buttons::get(Buttons::SELECT);
+    const auto& btnA = Buttons::get(Buttons::A);
+    bool b = btnB.pressed && btnB.changed;
+    bool select = btnSelect.pressed && btnSelect.changed;
+    bool a = btnA.pressed && btnA.changed;
+
+    if (canPress() && (b || select || a)) {
+      currentState = STATE_CONSOLE_MENU;
+      lastButtonMs = millis();
+    }
+
+    DisplayEmu::drawConsoleMuseumModal(CONSOLES[selectedConsoleIndex]);
+
+    const unsigned long elapsed = millis() - museumFrameStart;
+    if (elapsed < 16) delay(16 - elapsed);
 
   } else if (currentState == STATE_GAME_MENU) {
     const unsigned long menuFrameStart = millis();

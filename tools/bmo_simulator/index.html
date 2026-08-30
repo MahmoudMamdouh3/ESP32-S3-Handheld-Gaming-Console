@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BMO Gameboy — 1:1 Live Handheld UI/UX Simulator & History Lab</title>
+  <link rel="stylesheet" href="simulator.css">
+</head>
+<body data-theme="bmo-teal">
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="brand-wrapper">
+      <div class="brand-badge">BMO</div>
+      <div class="brand-title">Handheld Console <span>1:1 Live Simulator</span></div>
+    </div>
+
+    <div class="header-actions">
+      <!-- Scale Multiplier Selector -->
+      <div class="scale-selector-group" style="display: flex; gap: 6px;">
+        <button class="control-pill scale-btn active" data-scale="1.0">1.0× (1:1 Physical)</button>
+        <button class="control-pill scale-btn" data-scale="1.3">1.3×</button>
+        <button class="control-pill scale-btn" data-scale="1.6">1.6×</button>
+      </div>
+
+      <!-- Theme Selector -->
+      <select id="theme-select" class="control-pill">
+        <option value="bmo-teal">Shell: BMO Teal</option>
+        <option value="dmg-gray">Shell: DMG Classic Gray</option>
+        <option value="atomic-purple">Shell: Atomic Purple</option>
+        <option value="oled-black">Shell: OLED Matte Black</option>
+      </select>
+
+      <!-- Display Shader Selector -->
+      <select id="filter-select" class="control-pill">
+        <option value="none">Display: Sharp LCD</option>
+        <option value="crt">Display: CRT Scanlines</option>
+        <option value="lcd">Display: Dot Matrix LCD</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- Main Simulator Workspace -->
+  <main class="simulator-workspace">
+
+    <!-- Viewport Stage -->
+    <section class="stage-container">
+
+      <!-- Physical BMO Game Boy Chassis (1:1 Physical Form Factor) -->
+      <div class="bmo-gameboy-chassis" id="gameboy-chassis">
+        <div class="chassis-top-ridges"></div>
+
+        <!-- Screen Bezel Housing -->
+        <div class="screen-bezel-housing">
+          <div class="bezel-top-bar">
+            <div class="bezel-brand">BMO COLOR</div>
+            <div class="battery-indicator-wrapper">
+              <span class="battery-label">BATTERY</span>
+              <div class="battery-led"></div>
+            </div>
+          </div>
+
+          <!-- Display Viewport (320x240 Native ST7789) -->
+          <div class="display-viewport-frame">
+            <canvas id="tft-display"></canvas>
+            <div class="crt-scanlines-overlay"></div>
+            <div class="lcd-grid-overlay"></div>
+          </div>
+
+          <!-- Bezel Footer Logo -->
+          <div class="bezel-footer-logo">BMO <span>GAMEBOY</span></div>
+        </div>
+
+        <!-- Controls Section -->
+        <div class="controls-section">
+
+          <!-- Directional Pad (D-Pad) -->
+          <div class="dpad-cluster">
+            <button class="dpad-btn dpad-up" id="btn-dpad-up">▲</button>
+            <button class="dpad-btn dpad-down" id="btn-dpad-down">▼</button>
+            <button class="dpad-btn dpad-left" id="btn-dpad-left">◀</button>
+            <button class="dpad-btn dpad-right" id="btn-dpad-right">▶</button>
+            <div class="dpad-center"></div>
+          </div>
+
+          <!-- A / B Action Buttons -->
+          <div class="action-buttons-cluster">
+            <div class="action-btn-wrapper">
+              <button class="round-btn btn-b" id="btn-b">B</button>
+              <div class="btn-engraved-label">B</div>
+            </div>
+            <div class="action-btn-wrapper">
+              <button class="round-btn btn-a" id="btn-a">A</button>
+              <div class="btn-engraved-label">A</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Start & Select Pill Buttons -->
+        <div class="pill-buttons-cluster">
+          <div class="pill-btn-wrapper">
+            <button class="pill-btn" id="btn-select"></button>
+            <span class="pill-label">SELECT</span>
+          </div>
+          <div class="pill-btn-wrapper">
+            <button class="pill-btn" id="btn-start"></button>
+            <span class="pill-label">START</span>
+          </div>
+        </div>
+
+        <!-- Speaker Grille Slits -->
+        <div class="speaker-grille">
+          <div class="speaker-slit"></div>
+          <div class="speaker-slit"></div>
+          <div class="speaker-slit"></div>
+          <div class="speaker-slit"></div>
+          <div class="speaker-slit"></div>
+          <div class="speaker-slit"></div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- Sidebar: Console Museum, Specs & Telemetry -->
+    <aside class="sidebar-panel">
+
+      <!-- Live Telemetry Card -->
+      <div class="panel-card">
+        <div class="card-header">
+          <div class="card-title">⚡ Hardware Telemetry</div>
+          <div class="badge-counter" id="telemetry-fps">60 FPS</div>
+        </div>
+        <div class="telemetry-grid">
+          <div class="telemetry-box">
+            <div class="telemetry-label">MCU Architecture</div>
+            <div class="telemetry-value">ESP32-S3 240MHz</div>
+          </div>
+          <div class="telemetry-box">
+            <div class="telemetry-label">Octal PSRAM</div>
+            <div class="telemetry-value">8 MB (Active)</div>
+          </div>
+          <div class="telemetry-box">
+            <div class="telemetry-label">Internal SRAM</div>
+            <div class="telemetry-value">244 KB (0 Bloat)</div>
+          </div>
+          <div class="telemetry-box">
+            <div class="telemetry-label">Display Bus</div>
+            <div class="telemetry-value">SPI DMA 80MHz</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gaming History & Console Museum Drawer -->
+      <div class="panel-card">
+        <div class="card-header">
+          <div class="card-title">🏛️ Gaming History & Architecture</div>
+          <div class="badge-counter" id="museum-sidebar-year">Specs</div>
+        </div>
+
+        <div class="museum-specs-container">
+          <div class="museum-hero-header">
+            <div class="museum-console-title" id="museum-sidebar-title">Nintendo Game Boy (1989)</div>
+            <div class="museum-console-tagline" id="museum-sidebar-tagline">Gunpei Yokoi's Lateral Thinking with Withered Technology</div>
+          </div>
+
+          <div class="museum-spec-row">
+            <span class="museum-spec-key">CPU Processor:</span>
+            <span class="museum-spec-val" id="museum-sidebar-cpu">Sharp LR35902 @ 4.19 MHz</span>
+          </div>
+          <div class="museum-spec-row">
+            <span class="museum-spec-key">Work RAM / VRAM:</span>
+            <span class="museum-spec-val" id="museum-sidebar-ram">8 KB RAM + 8 KB VRAM</span>
+          </div>
+          <div class="museum-spec-row">
+            <span class="museum-spec-key">Native Resolution:</span>
+            <span class="museum-spec-val" id="museum-sidebar-res">160 × 144 pixels</span>
+          </div>
+
+          <div style="margin-top: 6px;">
+            <div class="telemetry-label" style="margin-bottom: 6px;">Historical Significance & Engineering:</div>
+            <div class="museum-history-text" id="museum-sidebar-history">
+              The Game Boy revolutionized portable entertainment by prioritizing 30-hour battery life and rugged durability over raw processing power, creating a global cultural phenomenon.
+            </div>
+          </div>
+
+          <div style="margin-top: 10px;">
+            <div class="telemetry-label" style="margin-bottom: 6px;">Iconic Landmark Titles:</div>
+            <div id="museum-sidebar-games"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls Guide Card -->
+      <div class="panel-card">
+        <div class="card-header">
+          <div class="card-title">🎮 Input & Keybindings</div>
+        </div>
+        <div class="keyboard-guide-grid">
+          <div class="key-binding-row">
+            <span class="key-label">D-Pad / Navigate</span>
+            <kbd class="key-cap">Arrow Keys</kbd>
+          </div>
+          <div class="key-binding-row">
+            <span class="key-label">A Button / Launch</span>
+            <kbd class="key-cap">Z</kbd>
+          </div>
+          <div class="key-binding-row">
+            <span class="key-label">B Button / Back</span>
+            <kbd class="key-cap">X</kbd>
+          </div>
+          <div class="key-binding-row">
+            <span class="key-label">Start Button</span>
+            <kbd class="key-cap">Enter</kbd>
+          </div>
+          <div class="key-binding-row">
+            <span class="key-label">Select Button</span>
+            <kbd class="key-cap">Shift</kbd>
+          </div>
+          <div class="key-binding-row">
+            <span class="key-label">Console Museum</span>
+            <kbd class="key-cap">Space / M</kbd>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <script src="console_history_data.js"></script>
+  <script src="simulator.js"></script>
+</body>
+</html>

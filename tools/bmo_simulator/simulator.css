@@ -1,0 +1,763 @@
+/* ==========================================================================
+   BMO HANDHELD CONSOLE 1:1 LIVE SIMULATOR & UI/UX DESIGN LAB
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=Press+Start+2P&family=JetBrains+Mono:wght@400;600;800&display=swap');
+
+:root {
+  --bg-primary: #0b0f19;
+  --bg-panel: rgba(18, 24, 38, 0.85);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --accent-cyan: #00d2d3;
+  --accent-teal: #1dd1a1;
+  --accent-bmo: #55efc4;
+  --accent-gold: #feca57;
+  --accent-red: #ff6b6b;
+  --accent-purple: #9c88ff;
+  --text-main: #f1f2f6;
+  --text-dim: #a4b0be;
+
+  /* BMO Teal Theme */
+  --chassis-color: #2ed573;
+  --chassis-shadow: #26af5f;
+  --chassis-highlight: #7bed9f;
+  --bezel-color: #2f3542;
+  --bezel-lens: #1e272e;
+  --dpad-color: #2f3542;
+  --btn-a-color: #00d2d3;
+  --btn-b-color: #ff4757;
+  --btn-pill-color: #747d8c;
+  
+  --scale-multiplier: 1.0;
+}
+
+/* Theme Variations */
+body[data-theme="dmg-gray"] {
+  --chassis-color: #d1ccc0;
+  --chassis-shadow: #a4b0be;
+  --chassis-highlight: #f1f2f6;
+  --bezel-color: #57606f;
+  --bezel-lens: #2f3542;
+  --btn-a-color: #881e4b;
+  --btn-b-color: #881e4b;
+}
+
+body[data-theme="atomic-purple"] {
+  --chassis-color: rgba(156, 136, 255, 0.85);
+  --chassis-shadow: #8c7ae6;
+  --chassis-highlight: #b8a9ff;
+  --bezel-color: #2f3542;
+  --bezel-lens: #1e272e;
+  --btn-a-color: #e056fd;
+  --btn-b-color: #ff5252;
+}
+
+body[data-theme="oled-black"] {
+  --chassis-color: #1e272e;
+  --chassis-shadow: #0f1417;
+  --chassis-highlight: #353b48;
+  --bezel-color: #111418;
+  --bezel-lens: #090a0c;
+  --btn-a-color: #00d2d3;
+  --btn-b-color: #ff6b6b;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+body {
+  background-color: var(--bg-primary);
+  background-image: 
+    radial-gradient(circle at 50% 20%, rgba(0, 210, 211, 0.1) 0%, transparent 60%),
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 30px 30px, 30px 30px;
+  color: var(--text-main);
+  font-family: 'Outfit', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+/* Header & Navigation Bar */
+header.app-header {
+  height: 64px;
+  padding: 0 32px;
+  background: var(--bg-panel);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 100;
+}
+
+.brand-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-badge {
+  background: linear-gradient(135deg, var(--accent-teal), var(--accent-cyan));
+  color: #05141a;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-weight: 900;
+  box-shadow: 0 0 15px rgba(29, 209, 161, 0.4);
+}
+
+.brand-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.brand-title span {
+  color: var(--accent-cyan);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Control Pills */
+.control-pill {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.control-pill:hover, .control-pill.active {
+  background: var(--accent-cyan);
+  color: #0b0f19;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 12px rgba(0, 210, 211, 0.4);
+}
+
+/* Main Container Workspace */
+main.simulator-workspace {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 24px;
+  padding: 24px 32px;
+  max-width: 1700px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Handheld Viewport Stage */
+.stage-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  padding: 40px;
+  overflow: auto;
+}
+
+/* ==========================================================================
+   PHYSICAL BMO GAME BOY CHASSIS (1:1 Proportions)
+   ========================================================================== */
+.bmo-gameboy-chassis {
+  width: calc(380px * var(--scale-multiplier));
+  height: calc(640px * var(--scale-multiplier));
+  background: var(--chassis-color);
+  border-radius: calc(24px * var(--scale-multiplier)) calc(24px * var(--scale-multiplier)) calc(48px * var(--scale-multiplier)) calc(24px * var(--scale-multiplier));
+  box-shadow: 
+    0 calc(20px * var(--scale-multiplier)) calc(50px * var(--scale-multiplier)) rgba(0, 0, 0, 0.6),
+    inset 0 calc(4px * var(--scale-multiplier)) calc(8px * var(--scale-multiplier)) var(--chassis-highlight),
+    inset 0 calc(-8px * var(--scale-multiplier)) calc(12px * var(--scale-multiplier)) var(--chassis-shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding-top: calc(28px * var(--scale-multiplier));
+}
+
+/* Top Ridge & Vent Lines */
+.chassis-top-ridges {
+  position: absolute;
+  top: calc(8px * var(--scale-multiplier));
+  left: calc(30px * var(--scale-multiplier));
+  right: calc(30px * var(--scale-multiplier));
+  height: calc(6px * var(--scale-multiplier));
+  border-top: calc(2px * var(--scale-multiplier)) solid var(--chassis-shadow);
+  border-bottom: calc(2px * var(--scale-multiplier)) solid var(--chassis-highlight);
+  opacity: 0.7;
+}
+
+/* Screen Bezel Housing (ST7789 2.4" 320x240) */
+.screen-bezel-housing {
+  width: calc(336px * var(--scale-multiplier));
+  height: calc(260px * var(--scale-multiplier));
+  background: var(--bezel-color);
+  border-radius: calc(12px * var(--scale-multiplier)) calc(12px * var(--scale-multiplier)) calc(36px * var(--scale-multiplier)) calc(12px * var(--scale-multiplier));
+  box-shadow: 
+    inset 0 calc(4px * var(--scale-multiplier)) calc(10px * var(--scale-multiplier)) rgba(0, 0, 0, 0.8),
+    0 calc(2px * var(--scale-multiplier)) calc(4px * var(--scale-multiplier)) rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: calc(10px * var(--scale-multiplier));
+}
+
+/* Bezel Header & Battery LED */
+.bezel-top-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 calc(12px * var(--scale-multiplier)) calc(6px * var(--scale-multiplier));
+}
+
+.bezel-brand {
+  font-family: 'Press Start 2P', monospace;
+  font-size: calc(8px * var(--scale-multiplier));
+  color: #747d8c;
+  letter-spacing: calc(1px * var(--scale-multiplier));
+}
+
+.battery-indicator-wrapper {
+  display: flex;
+  align-items: center;
+  gap: calc(6px * var(--scale-multiplier));
+}
+
+.battery-label {
+  font-family: 'Outfit', sans-serif;
+  font-size: calc(9px * var(--scale-multiplier));
+  font-weight: 700;
+  color: #747d8c;
+}
+
+.battery-led {
+  width: calc(8px * var(--scale-multiplier));
+  height: calc(8px * var(--scale-multiplier));
+  border-radius: 50%;
+  background: #ff4757;
+  box-shadow: 0 0 calc(8px * var(--scale-multiplier)) #ff4757;
+  animation: ledPulse 2s infinite ease-in-out;
+}
+
+@keyframes ledPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(0.9); }
+}
+
+/* Display Canvas Viewport (Exact 320x240 native) */
+.display-viewport-frame {
+  width: calc(320px * var(--scale-multiplier));
+  height: calc(240px * var(--scale-multiplier));
+  background: #000000;
+  position: relative;
+  overflow: hidden;
+  border-radius: calc(4px * var(--scale-multiplier));
+  box-shadow: inset 0 0 calc(10px * var(--scale-multiplier)) rgba(0, 0, 0, 0.9);
+}
+
+canvas#tft-display {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  display: block;
+}
+
+/* Shader Overlays (CRT / LCD Dot Matrix) */
+.crt-scanlines-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+  background-size: 100% calc(4px * var(--scale-multiplier));
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.body-crt .crt-scanlines-overlay {
+  opacity: 1;
+}
+
+.lcd-grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.15) 1px, transparent 1px);
+  background-size: calc(2px * var(--scale-multiplier)) calc(2px * var(--scale-multiplier));
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.body-lcd .lcd-grid-overlay {
+  opacity: 1;
+}
+
+/* Glass Reflection */
+.display-viewport-frame::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
+  pointer-events: none;
+  z-index: 11;
+}
+
+/* Bezel Footer Brand Logo */
+.bezel-footer-logo {
+  margin-top: calc(4px * var(--scale-multiplier));
+  font-family: 'Press Start 2P', monospace;
+  font-size: calc(10px * var(--scale-multiplier));
+  font-weight: 900;
+  letter-spacing: calc(1px * var(--scale-multiplier));
+  color: #a4b0be;
+}
+
+.bezel-footer-logo span {
+  color: var(--accent-cyan);
+}
+
+/* ==========================================================================
+   PHYSICAL CONTROLS & BUTTONS
+   ========================================================================== */
+.controls-section {
+  width: calc(336px * var(--scale-multiplier));
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: calc(24px * var(--scale-multiplier)) calc(12px * var(--scale-multiplier)) 0;
+  gap: calc(20px * var(--scale-multiplier));
+  align-items: center;
+}
+
+/* D-PAD */
+.dpad-cluster {
+  position: relative;
+  width: calc(108px * var(--scale-multiplier));
+  height: calc(108px * var(--scale-multiplier));
+  margin: 0 auto;
+}
+
+.dpad-btn {
+  position: absolute;
+  background: var(--dpad-color);
+  border: calc(1px * var(--scale-multiplier)) solid rgba(0, 0, 0, 0.4);
+  box-shadow: 
+    inset 0 calc(2px * var(--scale-multiplier)) calc(3px * var(--scale-multiplier)) rgba(255, 255, 255, 0.2),
+    0 calc(4px * var(--scale-multiplier)) calc(6px * var(--scale-multiplier)) rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: calc(14px * var(--scale-multiplier));
+  transition: all 0.08s ease;
+}
+
+.dpad-btn:active, .dpad-btn.pressed {
+  transform: translateY(calc(2px * var(--scale-multiplier)));
+  box-shadow: 
+    inset 0 calc(3px * var(--scale-multiplier)) calc(6px * var(--scale-multiplier)) rgba(0, 0, 0, 0.8),
+    0 calc(1px * var(--scale-multiplier)) calc(2px * var(--scale-multiplier)) rgba(0, 0, 0, 0.4);
+  background: #1e272e;
+}
+
+.dpad-up {
+  top: 0;
+  left: calc(36px * var(--scale-multiplier));
+  width: calc(36px * var(--scale-multiplier));
+  height: calc(38px * var(--scale-multiplier));
+  border-radius: calc(6px * var(--scale-multiplier)) calc(6px * var(--scale-multiplier)) 0 0;
+}
+
+.dpad-down {
+  bottom: 0;
+  left: calc(36px * var(--scale-multiplier));
+  width: calc(36px * var(--scale-multiplier));
+  height: calc(38px * var(--scale-multiplier));
+  border-radius: 0 0 calc(6px * var(--scale-multiplier)) calc(6px * var(--scale-multiplier));
+}
+
+.dpad-left {
+  top: calc(36px * var(--scale-multiplier));
+  left: 0;
+  width: calc(38px * var(--scale-multiplier));
+  height: calc(36px * var(--scale-multiplier));
+  border-radius: calc(6px * var(--scale-multiplier)) 0 0 calc(6px * var(--scale-multiplier));
+}
+
+.dpad-right {
+  top: calc(36px * var(--scale-multiplier));
+  right: 0;
+  width: calc(38px * var(--scale-multiplier));
+  height: calc(36px * var(--scale-multiplier));
+  border-radius: 0 calc(6px * var(--scale-multiplier)) calc(6px * var(--scale-multiplier)) 0;
+}
+
+.dpad-center {
+  top: calc(36px * var(--scale-multiplier));
+  left: calc(36px * var(--scale-multiplier));
+  width: calc(36px * var(--scale-multiplier));
+  height: calc(36px * var(--scale-multiplier));
+  background: var(--dpad-color);
+  position: absolute;
+  pointer-events: none;
+}
+
+.dpad-center::after {
+  content: '';
+  position: absolute;
+  width: calc(18px * var(--scale-multiplier));
+  height: calc(18px * var(--scale-multiplier));
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.25);
+  top: calc(9px * var(--scale-multiplier));
+  left: calc(9px * var(--scale-multiplier));
+}
+
+/* ACTION BUTTONS (A & B Angled) */
+.action-buttons-cluster {
+  display: flex;
+  gap: calc(18px * var(--scale-multiplier));
+  transform: rotate(-25deg);
+  justify-content: center;
+  align-items: center;
+}
+
+.action-btn-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(6px * var(--scale-multiplier));
+}
+
+.round-btn {
+  width: calc(44px * var(--scale-multiplier));
+  height: calc(44px * var(--scale-multiplier));
+  border-radius: 50%;
+  border: calc(1px * var(--scale-multiplier)) solid rgba(0, 0, 0, 0.4);
+  box-shadow: 
+    inset 0 calc(3px * var(--scale-multiplier)) calc(6px * var(--scale-multiplier)) rgba(255, 255, 255, 0.4),
+    0 calc(6px * var(--scale-multiplier)) calc(10px * var(--scale-multiplier)) rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  font-family: 'Press Start 2P', monospace;
+  font-size: calc(11px * var(--scale-multiplier));
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.9);
+  transition: all 0.08s ease;
+}
+
+.btn-b {
+  background: var(--btn-b-color);
+}
+
+.btn-a {
+  background: var(--btn-a-color);
+  color: #0b0f19;
+}
+
+.round-btn:active, .round-btn.pressed {
+  transform: translateY(calc(3px * var(--scale-multiplier)));
+  box-shadow: 
+    inset 0 calc(4px * var(--scale-multiplier)) calc(8px * var(--scale-multiplier)) rgba(0, 0, 0, 0.8),
+    0 calc(2px * var(--scale-multiplier)) calc(4px * var(--scale-multiplier)) rgba(0, 0, 0, 0.4);
+}
+
+.btn-engraved-label {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 900;
+  font-size: calc(11px * var(--scale-multiplier));
+  color: var(--chassis-shadow);
+  transform: rotate(25deg);
+  letter-spacing: calc(1px * var(--scale-multiplier));
+}
+
+/* START / SELECT PILL BUTTONS */
+.pill-buttons-cluster {
+  width: calc(180px * var(--scale-multiplier));
+  display: flex;
+  justify-content: space-between;
+  margin-top: calc(36px * var(--scale-multiplier));
+}
+
+.pill-btn-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(4px * var(--scale-multiplier));
+}
+
+.pill-btn {
+  width: calc(48px * var(--scale-multiplier));
+  height: calc(14px * var(--scale-multiplier));
+  background: var(--btn-pill-color);
+  border-radius: calc(10px * var(--scale-multiplier));
+  transform: rotate(-25deg);
+  box-shadow: 
+    inset 0 calc(2px * var(--scale-multiplier)) calc(3px * var(--scale-multiplier)) rgba(255, 255, 255, 0.3),
+    0 calc(3px * var(--scale-multiplier)) calc(5px * var(--scale-multiplier)) rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: all 0.08s ease;
+}
+
+.pill-btn:active, .pill-btn.pressed {
+  transform: rotate(-25deg) translateY(calc(2px * var(--scale-multiplier)));
+  box-shadow: 
+    inset 0 calc(2px * var(--scale-multiplier)) calc(4px * var(--scale-multiplier)) rgba(0, 0, 0, 0.8),
+    0 calc(1px * var(--scale-multiplier)) calc(2px * var(--scale-multiplier)) rgba(0, 0, 0, 0.3);
+}
+
+.pill-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: calc(7px * var(--scale-multiplier));
+  color: var(--chassis-shadow);
+  font-weight: 700;
+}
+
+/* Speaker Grille Slits */
+.speaker-grille {
+  position: absolute;
+  bottom: calc(28px * var(--scale-multiplier));
+  right: calc(30px * var(--scale-multiplier));
+  display: flex;
+  gap: calc(8px * var(--scale-multiplier));
+  transform: rotate(-25deg);
+}
+
+.speaker-slit {
+  width: calc(5px * var(--scale-multiplier));
+  height: calc(48px * var(--scale-multiplier));
+  background: var(--chassis-shadow);
+  border-radius: calc(3px * var(--scale-multiplier));
+  box-shadow: inset 0 calc(1px * var(--scale-multiplier)) calc(3px * var(--scale-multiplier)) rgba(0, 0, 0, 0.7);
+}
+
+/* ==========================================================================
+   SIDEBAR INSPECTOR & CONSOLE MUSEUM PANEL
+   ========================================================================== */
+.sidebar-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+}
+
+.panel-card {
+  background: var(--bg-panel);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-main);
+}
+
+.badge-counter {
+  background: rgba(0, 210, 211, 0.15);
+  color: var(--accent-cyan);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 210, 211, 0.3);
+}
+
+/* Keyboard Guide Table */
+.keyboard-guide-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.key-binding-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.key-label {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+kbd.key-cap {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-color);
+  color: var(--accent-gold);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.6);
+}
+
+/* Hardware Telemetry Specs */
+.telemetry-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.telemetry-box {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.telemetry-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.telemetry-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent-cyan);
+}
+
+/* Console Museum Specs Box */
+.museum-specs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.museum-hero-header {
+  background: linear-gradient(135deg, rgba(0, 210, 211, 0.1), rgba(156, 136, 255, 0.1));
+  border: 1px solid rgba(0, 210, 211, 0.2);
+  padding: 14px;
+  border-radius: 12px;
+}
+
+.museum-console-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+.museum-console-tagline {
+  font-size: 12px;
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.museum-spec-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+}
+
+.museum-spec-key {
+  color: var(--text-dim);
+}
+
+.museum-spec-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.museum-history-text {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #ced6e0;
+}
+
+/* Hallmark Games List */
+.hallmark-game-item {
+  background: rgba(255, 255, 255, 0.02);
+  border-left: 3px solid var(--accent-gold);
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 8px;
+}
+
+.hallmark-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--accent-gold);
+}
+
+.hallmark-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  main.simulator-workspace {
+    grid-template-columns: 1fr;
+  }
+}

@@ -13,7 +13,13 @@ namespace DisplayEmu {
   // it remains correct without changing any emulator palette or frame stream.
   void showSDCardWarning();
   void initMenuUI();
+  // Renders the console selection menu
   void drawConsoleSelectMenu(int selectedIndex, const int* gameCounts, int consoleCount, bool sdMounted);
+
+  // Renders the interactive Gaming History & Specs Museum modal
+  void drawConsoleMuseumModal(RomType console);
+
+  // Renders the game selection menu for the chosen console
   void drawGameSelectMenu(const RomFile* const* games, int count, int selectedIndex,
                           RomType console, bool sdMounted);
   void cleanupMenuUI();

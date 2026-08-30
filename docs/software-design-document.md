@@ -103,11 +103,14 @@ stateDiagram-v2
         NavigateConsoles --> RenderConsoleCarousel
     }
     
+    STATE_CONSOLE_MENU --> STATE_CONSOLE_MUSEUM: Press SELECT (View History & Specs)
+    STATE_CONSOLE_MUSEUM --> STATE_CONSOLE_MENU: Press B or SELECT (Return)
+
     STATE_CONSOLE_MENU --> STATE_GAME_MENU: Press A (Console Selected)
     
     state STATE_GAME_MENU {
         [*] --> RenderGameList
-        RenderGameList --> NavigateGames: D-Pad LEFT / RIGHT
+        RenderGameList --> NavigateGames: D-Pad LEFT / RIGHT / UP / DOWN (±10 jumps)
         NavigateGames --> RenderGameList
     }
     
@@ -118,7 +121,7 @@ stateDiagram-v2
         [*] --> CoreExecution
         CoreExecution --> PollInputs: Read REG_READ(GPIO_IN_REG)
         PollInputs --> RunFrame: Core Step
-        RunFrame --> StreamPixels: N3 SPI Stream
+        RunFrame --> StreamPixels: SPI DMA Stream
         StreamPixels --> FramePacing: 59.73 Hz Hardware Spin
         FramePacing --> CoreExecution
     }
@@ -128,11 +131,14 @@ stateDiagram-v2
 
 ### State Execution Details
 1. **`STATE_CONSOLE_MENU`**:
-   - Renders console selection carousel (Game Boy, Game Boy Color, NES, DOOM).
+   - Renders 15-system carousel (GB, GBC, NES, WAD, SMS, GG, PCE, ATARI, PICO-8, GENESIS, SNES, WSWAN, NGP, LYNX, COLEM).
    - Displays live game counts discovered from SD card and baked Flash `.rodata`.
    - Renders animated corner mascot face (`BmoFace`, 40×40) with dirty-flag caching (`BmoFace::isDirty()`).
    - Frame-paced at 60 FPS with non-blocking debounce (`DEBOUNCE_MS = 200`).
-2. **`STATE_GAME_MENU`**:
+2. **`STATE_CONSOLE_MUSEUM`**:
+   - Displays authentic historical hardware specifications (CPU, clock, RAM, VRAM, sound, resolution).
+   - Highlights architectural breakthroughs and hallmark games for the selected console.
+3. **`STATE_GAME_MENU`**:
    - Displays scrollable list of available ROMs for the active console (supports up to 2,048 games allocated dynamically in PSRAM).
    - Controls: **LEFT / RIGHT** for single-title browsing, **UP / DOWN** for rapid +/-10 title page jumping across large libraries.
    - Pressing **B** returns to `STATE_CONSOLE_MENU`.

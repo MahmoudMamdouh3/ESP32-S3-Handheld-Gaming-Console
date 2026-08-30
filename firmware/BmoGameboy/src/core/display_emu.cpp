@@ -500,8 +500,201 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
     menuCanvas->print(detail);
     menuCanvas->setFont(&FreeSans9pt7b);
   }
-  drawFooter(sdMounted ? "UP / DOWN: SELECT     A: OPEN GAMES" :
-                         "BUILT-IN GAMES ONLY - SD CARD NOT FOUND");
+    drawFooter(sdMounted ? "LEFT / RIGHT: CONSOLE    A: GAMES    SELECT: SPECS" :
+                           "BUILT-IN GAMES ONLY - SD CARD NOT FOUND");
+    writeMenuCanvas();
+}
+
+void DisplayEmu::drawConsoleMuseumModal(RomType console) {
+  if (!menuCanvas) return;
+  menuCanvas->fillScreen(UI_BLACK);
+  menuCanvas->drawRoundRect(8, 8, 304, 224, 8, UI_YELLOW);
+  menuCanvas->fillRect(0, 0, 320, 36, UI_DEEP_TEAL);
+  
+  menuCanvas->setFont(&FreeSans9pt7b);
+  char title[48];
+  snprintf(title, sizeof(title), "SPECS: %s", consoleName(console));
+  drawCentered(title, 24, UI_YELLOW);
+  
+  menuCanvas->setFont();
+  menuCanvas->setTextColor(UI_WHITE);
+  
+  menuCanvas->setCursor(18, 48);
+  menuCanvas->printf("Released: %s  |  Badge: %s", consoleYear(console), consoleBadge(console));
+  
+  menuCanvas->setCursor(18, 66);
+  switch (console) {
+    case ROM_GB:
+      menuCanvas->print("CPU: Sharp LR35902 @ 4.19MHz | 8KB RAM");
+      menuCanvas->setCursor(18, 80);
+      menuCanvas->print("Display: 160x144, 4-Shade Olive Green STN LCD");
+      menuCanvas->setCursor(18, 100);
+      menuCanvas->print("Legacy: Gunpei Yokoi's lateral thinking;");
+      menuCanvas->setCursor(18, 114);
+      menuCanvas->print("30h battery life, Pokemon & Tetris phenomenon.");
+      menuCanvas->setCursor(18, 134);
+      menuCanvas->print("Landmarks: Tetris, Pokemon R/B, Zelda Link's Awk");
+      break;
+    case ROM_GBC:
+      menuCanvas->print("CPU: Sharp LR35902 Dual @ 8.39MHz | 32KB RAM");
+      menuCanvas->setCursor(18, 80);
+      menuCanvas->print("Display: 160x144, 32,768 Color TFT LCD");
+      menuCanvas->setCursor(18, 100);
+      menuCanvas->print("Legacy: Full color portable revolution; double");
+      menuCanvas->setCursor(18, 114);
+      menuCanvas->print("CPU speed, backwards compatible palette engine.");
+      menuCanvas->setCursor(18, 134);
+      menuCanvas->print("Landmarks: Zelda Oracle Ages, Pokemon Crystal");
+      break;
+    case ROM_NES:
+      menuCanvas->print("CPU: Ricoh 2A03 @ 1.79MHz | 2KB RAM + Mappers");
+      menuCanvas->setCursor(18, 80);
+      menuCanvas->print("Display: 256x240, 25 Simultaneous Colors");
+      menuCanvas->setCursor(18, 100);
+      menuCanvas->print("Legacy: Revived gaming after 1983 crash;");
+      menuCanvas->setCursor(18, 114);
+      menuCanvas->print("Miyamoto created modern game design grammars.");
+      menuCanvas->setCursor(18, 134);
+      menuCanvas->print("Landmarks: Super Mario, Zelda, Metroid, Mega Man");
+      break;
+    case ROM_SNES:
+      menuCanvas->print("CPU: 65C816 @ 3.58MHz | 128KB RAM + SPC700 DSP");
+      menuCanvas->setCursor(18, 80);
+      menuCanvas->print("Display: 256x224, Mode 7 Scaling, 32,768 Colors");
+      menuCanvas->setCursor(18, 100);
+      menuCanvas->print("Legacy: Golden era of 2D pixel art & sampled");
+      menuCanvas->setCursor(18, 114);
+      menuCanvas->print("audio; multi-jointed sprites, 16-bit mastery.");
+      menuCanvas->setCursor(18, 134);
+      menuCanvas->print("Landmarks: Chrono Trigger, Super Metroid, Mario");
+      break;
+    case ROM_GENESIS:
+      menuCanvas->print("CPU: Motorola 68000 @ 7.67MHz + Z80 Sound Co-CPU");
+      menuCanvas->setCursor(18, 80);
+      menuCanvas->print("Display: 320x224, 64 Colors, YM2612 6-Ch FM Audio");
+      menuCanvas->setCursor(18, 100);
+      menuCanvas->print("Legacy: Blast processing speed & gritty FM synth;");
+      menuCanvas->setCursor(18, 114);
+      menuCanvas->print("Sonic momentum physics, electronic club tracks.");
+      menuCanvas->setCursor(18, 134);
+      menuCanvas->print("Landmarks: Sonic 2, Streets of Rage 2, Gunstar");
+      break;
+    case ROM_SMS:
+      menuCanvas->print("CPU: Zilog Z80 @ 3.58MHz | 8KB RAM + 16KB VRAM");
+      menuCanvas->setCursor(18, 80);
+      menuCanvas->print("Display: 256x192, 32 Simultaneous Colors");
+      menuCanvas->setCursor(18, 100);
+      menuCanvas->print("Legacy: Superior 8-bit color depth and memory;");
+      menuCanvas->setCursor(18, 114);
+      menuCanvas->print("pioneered 3D dungeon rendering in Phantasy Star.");
+      menuCanvas->setCursor(18, 134);
+      menuCanvas->print("Landmarks: Phantasy Star, Alex Kidd, Wonder Boy");
+      break;
+    case ROM_GG:
+      menuCanvas->print("CPU: Zilog Z80 @ 3.58MHz | 8KB RAM + 16KB VRAM");
+      menuCanvas->setCursor(18, 80);
+      menuCanvas->print("Display: 160x144, 4096-Color Master Palette");
+      menuCanvas->setCursor(18, 100);
+      menuCanvas->print("Legacy: Full-color landscape handheld with");
+      menuCanvas->setCursor(18, 114);
+      menuCanvas->print("backlit screen and arcade porting excellence.");
+      menuCanvas->setCursor(18, 134);
+      menuCanvas->print("Landmarks: Sonic Triple Trouble, Shinobi II");
+      break;
+    case ROM_PCE:
+      menuCanvas->print("CPU: HuC6280 @ 7.16MHz | 16-bit HuC6270 GPU");
+      menuCanvas->setCursor(18, 80);
+      menuCanvas->print("Display: 256x240, 482 Simultaneous Colors");
+      menuCanvas->setCursor(18, 100);
+      menuCanvas->print("Legacy: Tiny credit-card HuCards with giant");
+      menuCanvas->setCursor(18, 114);
+      menuCanvas->print("color palettes; the ultimate home arcade shmup.");
+      menuCanvas->setCursor(18, 134);
+      menuCanvas->print("Landmarks: Castlevania Rondo, Soldier Blade");
+      break;
+    case ROM_ATARI:
+      menuCanvas->print("CPU: MOS 6507 @ 1.19MHz | 128 BYTES RAM");
+      menuCanvas->setCursor(18, 80);
+      menuCanvas->print("Display: 160x192, Racing the beam with 0 VRAM");
+      menuCanvas->setCursor(18, 100);
+      menuCanvas->print("Legacy: Invented home cartridge gaming; programmers");
+      menuCanvas->setCursor(18, 114);
+      menuCanvas->print("calculated scanlines cycle-by-cycle in real time.");
+      menuCanvas->setCursor(18, 134);
+      menuCanvas->print("Landmarks: Pitfall!, River Raid, Space Invaders");
+      break;
+    case ROM_COLEM:
+      menuCanvas->print("CPU: Z80A @ 3.58MHz | 1KB RAM + 16KB TMS9918A VDP");
+      menuCanvas->setCursor(18, 80);
+      menuCanvas->print("Display: 256x192, 16 Colors, 32 Hardware Sprites");
+      menuCanvas->setCursor(18, 100);
+      menuCanvas->print("Legacy: First home console with true arcade ports");
+      menuCanvas->setCursor(18, 114);
+      menuCanvas->print("and dedicated hardware video memory.");
+      menuCanvas->setCursor(18, 134);
+      menuCanvas->print("Landmarks: Donkey Kong, Zaxxon, Venture");
+      break;
+    case ROM_NGP:
+      menuCanvas->print("CPU: Toshiba TLCS-900H 16/32-bit RISC @ 6.14MHz");
+      menuCanvas->setCursor(18, 80);
+      menuCanvas->print("Display: 160x152, 4096 Colors, Microswitch Stick");
+      menuCanvas->setCursor(18, 100);
+      menuCanvas->print("Legacy: Legendary arcade fighting precision and");
+      menuCanvas->setCursor(18, 114);
+      menuCanvas->print("ultra-fluid chibi animations on a clicky stick.");
+      menuCanvas->setCursor(18, 134);
+      menuCanvas->print("Landmarks: Card Fighters Clash, Match Millennium");
+      break;
+    case ROM_LYNX:
+      menuCanvas->print("CPU: MOS 65SC02 @ 4MHz + Suzy 16MHz Co-Processor");
+      menuCanvas->setCursor(18, 80);
+      menuCanvas->print("Display: 160x102, 4096 Colors, Hardware 3D Scaler");
+      menuCanvas->setCursor(18, 100);
+      menuCanvas->print("Legacy: World's first color handheld with real-time");
+      menuCanvas->setCursor(18, 114);
+      menuCanvas->print("sprite zooming, scaling, and 3D pseudo-space.");
+      menuCanvas->setCursor(18, 134);
+      menuCanvas->print("Landmarks: Blue Lightning, California Games");
+      break;
+    case ROM_WSWAN:
+      menuCanvas->print("CPU: 16-bit NEC V30 MZ @ 3.07MHz | 64KB RAM");
+      menuCanvas->setCursor(18, 80);
+      menuCanvas->print("Display: 224x144 Widescreen, Dual D-Pad TATE Mode");
+      menuCanvas->setCursor(18, 100);
+      menuCanvas->print("Legacy: Gunpei Yokoi's final design; 30+ hours on");
+      menuCanvas->setCursor(18, 114);
+      menuCanvas->print("ONE AA battery, playable vertical or horizontal.");
+      menuCanvas->setCursor(18, 134);
+      menuCanvas->print("Landmarks: Klonoa, Final Fantasy IV, Silversword");
+      break;
+    case ROM_PICO8:
+      menuCanvas->print("Engine: Lua Virtual Computer @ 8MHz virtual clock");
+      menuCanvas->setCursor(18, 80);
+      menuCanvas->print("Display: 128x128, 16 Curated Colors, 32KB Carts");
+      menuCanvas->setCursor(18, 100);
+      menuCanvas->print("Legacy: Ignited the modern fantasy console movement;");
+      menuCanvas->setCursor(18, 114);
+      menuCanvas->print("deliberate constraints spark unbounded creativity.");
+      menuCanvas->setCursor(18, 134);
+      menuCanvas->print("Landmarks: Celeste Classic, Slipways, High Stakes");
+      break;
+    case ROM_WAD:
+      menuCanvas->print("Engine: id Tech 1 / DOOM Engine (BSP Raycasting)");
+      menuCanvas->setCursor(18, 80);
+      menuCanvas->print("Display: 320x200 @ 35 FPS, 256 VGA Indexed Colors");
+      menuCanvas->setCursor(18, 100);
+      menuCanvas->print("Legacy: Carmack & Romero transformed gaming;");
+      menuCanvas->setCursor(18, 114);
+      menuCanvas->print("bioneered 3D FPS, multiplayer deathmatch, mods.");
+      menuCanvas->setCursor(18, 134);
+      menuCanvas->print("Landmarks: DOOM, DOOM II, Freedoom, FreeDM");
+      break;
+    default:
+      menuCanvas->print("Historic gaming hardware architecture.");
+      break;
+  }
+  
+  drawFooter("PRESS B OR SELECT TO RETURN");
   writeMenuCanvas();
 }
 
