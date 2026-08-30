@@ -8,6 +8,7 @@
 #include "../core/display_emu.h"
 #include "../emulators/emu_peanut.h"
 #include "../emulators/emu_walnut.h"
+#include "../core/config.h"
 
 // --- Custom Testing Framework Macros ---
 static int testsPassed = 0;

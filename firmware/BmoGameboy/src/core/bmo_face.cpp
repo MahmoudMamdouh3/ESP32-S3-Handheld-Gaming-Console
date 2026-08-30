@@ -19,6 +19,7 @@
 
 #include "bmo_face.h"
 #include "display_emu.h"
+#include "config.h"
 #include <Arduino.h>
 #include <math.h>
 

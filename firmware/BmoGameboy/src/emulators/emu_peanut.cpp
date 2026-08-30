@@ -3,6 +3,7 @@
 #include "../core/buttons.h"
 #include "../core/display_emu.h"
 #include "../core/bmo_face.h"
+#include "../core/config.h"
 #include <string.h>
 #include <Arduino.h>
 #include <esp_heap_caps.h>
