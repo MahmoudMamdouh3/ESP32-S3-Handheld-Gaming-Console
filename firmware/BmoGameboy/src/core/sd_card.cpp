@@ -8,6 +8,9 @@
 #include <string.h>
 #include "../assets/roms/mario_deluxe.h"
 #include "../assets/roms/zelda_ages.h"
+// Baked GBC ROMs (1MB each; tracked in repository under src/assets/roms/)
+#include "../assets/roms/aladdin.h"
+#include "../assets/roms/lego_racers.h"
 
 namespace {
   bool mounted = false;
@@ -35,6 +38,14 @@ bool SDCard::begin() {
   numRoms++;
 
   strncpy(romList[numRoms].filename, "Legend of Zelda Ages (Baked).gbc", 63);
+  romList[numRoms].type = ROM_GBC;
+  numRoms++;
+
+  strncpy(romList[numRoms].filename, "Aladdin (Baked).gbc", 63);
+  romList[numRoms].type = ROM_GBC;
+  numRoms++;
+
+  strncpy(romList[numRoms].filename, "Lego Racers (Baked).gbc", 63);
   romList[numRoms].type = ROM_GBC;
   numRoms++;
 
@@ -105,6 +116,14 @@ uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
     *outSize = zelda_ages_rom_size;
     return (uint8_t*)zelda_ages_rom;
   }
+  if (strcmp(filename, "Aladdin (Baked).gbc") == 0) {
+    *outSize = aladdin_rom_size;
+    return (uint8_t*)aladdin_rom;
+  }
+  if (strcmp(filename, "Lego Racers (Baked).gbc") == 0) {
+    *outSize = lego_racers_rom_size;
+    return (uint8_t*)lego_racers_rom;
+  }
 
 #if FEATURE_SD_CARD
   File file = SD.open(String("/") + filename, FILE_READ);
@@ -149,11 +168,14 @@ uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
 void SDCard::freeRom(uint8_t* buffer) {
   if (buffer) {
     // DO NOT free baked ROM pointers residing in Flash .rodata
-    if (buffer == mario_deluxe_rom || buffer == zelda_ages_rom) {
+    if (buffer == mario_deluxe_rom || buffer == zelda_ages_rom ||
+        buffer == aladdin_rom || buffer == lego_racers_rom) {
       return;
     }
     heap_caps_free(buffer);
   }
 }
+
+
 
 

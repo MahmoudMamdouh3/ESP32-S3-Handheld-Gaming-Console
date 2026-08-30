@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased] - 2026-08-30 (Ruleset v4 & AI Environment Upgrade)
 ### Added
+- **Baked ROM Registration & Flash Audit**: Validated and registered `aladdin.h` and `lego_racers.h` (1,048,576 bytes each) into `sd_card.cpp` alongside `mario_deluxe.h` and `zelda_ages.h`. Added Flash `.rodata` protection guards in `SDCard::freeRom()`. Compiled binary size is 4,986,092 bytes (59.44% of 8MB `app0` partition), retaining 3,402,516 bytes of headroom.
 - **Software Design Document (SDD) v3.0**: Upgraded [`docs/software-design-document.md`](file:///e:/BMO%20Gameboy/docs/software-design-document.md) to a comprehensive living architectural specification suitable for autonomous agents and external reviewers without filesystem access. Includes complete hardware matrix, memory topologies, 2D SDF mascot mathematics, N3 SPI streaming protocol, and dual-ROM fallback contracts.
 - **Rule 32 (Modular Core Template)**: Created [`.agents/rules/32_modular_core_template.md`](file:///e:/BMO%20Gameboy/.agents/rules/32_modular_core_template.md) with copy-paste templates and 6-step checklist for frictionless emulator and subsystem additions.
 - **Rule 33 (Agent Handoff & Optimization Cycle)**: Created [`.agents/rules/33_agent_handoff_and_optimization_cycle.md`](file:///e:/BMO%20Gameboy/.agents/rules/33_agent_handoff_and_optimization_cycle.md) establishing continuous optimization and status tagging across sequential AI sessions.
