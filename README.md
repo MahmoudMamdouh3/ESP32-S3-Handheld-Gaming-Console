@@ -35,22 +35,22 @@ A multi-platform retro gaming handheld console powered by the ESP32-S3 microcont
 repo-root/
 ├── README.md                          <- Project overview & quick start
 ├── CHANGELOG.md                       <- Human-readable version history
-├── AGENTS.md                          <- Entry point for AI coding agents (Ruleset v4)
+├── AGENTS.md                          <- Entry point for AI coding agents (Ruleset v5)
 ├── AGENT_MANIFEST.json                <- Machine-readable project metadata
 ├── docs/                              <- Specifications & hardware notes
 │   ├── software-design-document.md    <- Living reviewer-grade SDD (v3.0)
 │   └── hardware-notes.md              <- Pin restrictions & electrical notes
 ├── .agents/
-│   └── rules/                         <- Topic-specific modular agent rules (34 rules)
+│   └── rules/                         <- Topic-specific modular agent rules (37 rules)
 │       ├── 00_hard_stops.md           <- Non-negotiable hardware safety rules
 │       ├── 01_hardware.md             <- Verified pin map & physical state
 │       ├── 10_symbol_reference.md     <- Verified public symbol lookup table
 │       ├── 27_codebase_map.md         <- System architecture & memory map
 │       ├── 30_common_agent_mistakes.md<- Institutional anti-pattern catalogue (M1-M20)
 │       ├── 31_quick_start_primer.md   <- 90-second zero-context on-ramp
-│       ├── 32_modular_core_template.md<- Scaffolding template for new emulators
-│       ├── 33_agent_handoff_and_optimization_cycle.md <- Continuous optimization loop
-│       ├── 34_ai_agent_sandbox_and_guardrails.md      <- AI safety guardrails & invariants
+│       ├── 35_bmo_face_contract.md    <- Procedural mascot renderer contract
+│       ├── 36_bug_intake_protocol.md  <- Structured hardware bug intake protocol
+│       ├── 37_rom_governance_and_flash_budget.md <- ROM tracking & flash budget invariant
 │       └── CONTEXT_INDEX.json         <- Machine-readable task-to-rule map
 ├── firmware/
 │   └── BmoGameboy/                    <- Main Arduino sketch directory

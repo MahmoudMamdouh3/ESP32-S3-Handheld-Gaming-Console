@@ -1,4 +1,4 @@
-# Agent Instructions (Ruleset v4)
+# Agent Instructions (Ruleset v5)
 This repo is agent-developed firmware for a physical, soldered ESP32-S3
 handheld console. Mistakes here can brick real hardware, not just fail a build.
 

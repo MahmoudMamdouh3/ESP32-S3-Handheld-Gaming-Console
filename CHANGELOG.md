@@ -5,7 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Unreleased] - 2026-08-30 (Ruleset v4 & AI Environment Upgrade)
+## [Unreleased] - 2026-08-30 (Ruleset v5 — Governance Gaps)
+### Added
+- **Rule 35 (BmoFace Mascot Subsystem Contract)**: Created [`.agents/rules/35_bmo_face_contract.md`](file:///e:/BMO%20Gameboy/.agents/rules/35_bmo_face_contract.md) establishing all invariants governing the procedural 2D SDF mascot renderer (call timing, dirty-flag caching, expression state transitions, memory limits, and failure signatures).
+- **Rule 36 (Hardware Bug Intake Protocol)**: Created [`.agents/rules/36_bug_intake_protocol.md`](file:///e:/BMO%20Gameboy/.agents/rules/36_bug_intake_protocol.md) providing structured, anti-hallucination intake checklists and static-audit-before-hypothesis workflows for human-reported hardware issues.
+- **Rule 37 (ROM Governance & Flash-Budget Invariant)**: Created [`.agents/rules/37_rom_governance_and_flash_budget.md`](file:///e:/BMO%20Gameboy/.agents/rules/37_rom_governance_and_flash_budget.md) establishing git tracking truth for baked ROM headers, standing flash-budget invariant ($< 8\text{MB}$ `app0`), and safe partition modification protocols.
+
+### Changed
+- **Ruleset Version**: Bumped ruleset to Version 5 across [`.agents/rules/README.md`](file:///e:/BMO%20Gameboy/.agents/rules/README.md), [`AGENTS.md`](file:///e:/BMO%20Gameboy/AGENTS.md), [`11_rules_meta.md`](file:///e:/BMO%20Gameboy/.agents/rules/11_rules_meta.md), [`AGENT_MANIFEST.json`](file:///e:/BMO%20Gameboy/AGENT_MANIFEST.json), and [`.agents/rules/CONTEXT_INDEX.json`](file:///e:/BMO%20Gameboy/.agents/rules/CONTEXT_INDEX.json).
+- **Cross-References**: Updated [`07_task_protocol.md`](file:///e:/BMO%20Gameboy/.agents/rules/07_task_protocol.md) (flash-budget Definition of Done), [`29_adding_a_baked_rom.md`](file:///e:/BMO%20Gameboy/.agents/rules/29_adding_a_baked_rom.md) (standing invariant reference), [`30_common_agent_mistakes.md`](file:///e:/BMO%20Gameboy/.agents/rules/30_common_agent_mistakes.md) (M-7/M-19 pointers), and [`33_agent_handoff_and_optimization_cycle.md`](file:///e:/BMO%20Gameboy/.agents/rules/33_agent_handoff_and_optimization_cycle.md) (Stage 1 orientation link).
+
+---
+
+## [Milestone 5.0] - 2026-08-30 (Ruleset v4 & AI Environment Upgrade)
 ### Added
 - **Baked ROM Registration & Flash Audit**: Validated and registered `aladdin.h` and `lego_racers.h` (1,048,576 bytes each) into `sd_card.cpp` alongside `mario_deluxe.h` and `zelda_ages.h`. Added Flash `.rodata` protection guards in `SDCard::freeRom()`. Compiled binary size is 4,986,092 bytes (59.44% of 8MB `app0` partition), retaining 3,402,516 bytes of headroom.
 - **Software Design Document (SDD) v3.0**: Upgraded [`docs/software-design-document.md`](file:///e:/BMO%20Gameboy/docs/software-design-document.md) to a comprehensive living architectural specification suitable for autonomous agents and external reviewers without filesystem access. Includes complete hardware matrix, memory topologies, 2D SDF mascot mathematics, N3 SPI streaming protocol, and dual-ROM fallback contracts.
