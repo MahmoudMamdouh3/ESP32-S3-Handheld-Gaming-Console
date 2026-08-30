@@ -311,7 +311,11 @@ void loop() {
 
     // Return to menu: SELECT + UP
     if (select && up) {
-      if (selectedEmulatorIndex == 2) {
+      if (selectedEmulatorIndex == 0) {
+        WalnutEmu::destroy();
+      } else if (selectedEmulatorIndex == 1) {
+        PeanutEmu::destroy();
+      } else if (selectedEmulatorIndex == 2) {
         NesEmu::destroy();
       } else if (selectedEmulatorIndex == 3) {
         DoomEmu::destroy();
