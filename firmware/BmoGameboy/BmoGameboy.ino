@@ -23,7 +23,12 @@ SystemState currentState = STATE_CONSOLE_MENU;
 int selectedConsoleIndex = 0;
 int selectedEmulatorIndex = 0;
 int selectedGameIndex = 0;
-static int visibleRomIndexes[100];
+static const int MAX_VISIBLE_ROMS = 2048;
+static int fallbackRomIndexes[32];
+static int* visibleRomIndexes = fallbackRomIndexes;
+static const RomFile* fallbackVisibleGames[32];
+static const RomFile** visibleGames = fallbackVisibleGames;
+static int maxVisibleCapacity = 32;
 static int visibleGameCount = 0;
 
 static const RomType CONSOLES[] = {ROM_GB, ROM_GBC, ROM_NES, ROM_WAD};
@@ -76,7 +81,7 @@ static int countGamesForConsole(RomType type) {
 static void rebuildVisibleGames() {
   visibleGameCount = 0;
   const RomType selectedType = CONSOLES[selectedConsoleIndex];
-  for (int i = 0; i < SDCard::getRomCount() && visibleGameCount < 100; ++i) {
+  for (int i = 0; i < SDCard::getRomCount() && visibleGameCount < maxVisibleCapacity; ++i) {
     const RomFile* game = SDCard::getRomInfo(i);
     if (game && game->type == selectedType) {
       visibleRomIndexes[visibleGameCount++] = i;
@@ -129,6 +134,16 @@ void setup() {
   BmoFace::draw(); // full-screen centered boot face
   delay(1000);     // Boot splash display hold
   
+  int* psramIndexes = (int*)heap_caps_malloc(sizeof(int) * MAX_VISIBLE_ROMS, MALLOC_CAP_SPIRAM);
+  if (psramIndexes) {
+    visibleRomIndexes = psramIndexes;
+    maxVisibleCapacity = MAX_VISIBLE_ROMS;
+  }
+  const RomFile** psramGames = (const RomFile**)heap_caps_malloc(sizeof(const RomFile*) * MAX_VISIBLE_ROMS, MALLOC_CAP_SPIRAM);
+  if (psramGames) {
+    visibleGames = psramGames;
+  }
+
   if (!SDCard::begin()) {
     LOG_ERROR_STR("Failed to mount SD card!");
   } else {
@@ -200,6 +215,8 @@ void loop() {
     Buttons::update();
     bool left = Buttons::get(Buttons::LEFT).pressed && Buttons::get(Buttons::LEFT).changed;
     bool right = Buttons::get(Buttons::RIGHT).pressed && Buttons::get(Buttons::RIGHT).changed;
+    bool up = Buttons::get(Buttons::UP).pressed && Buttons::get(Buttons::UP).changed;
+    bool down = Buttons::get(Buttons::DOWN).pressed && Buttons::get(Buttons::DOWN).changed;
     bool a = Buttons::get(Buttons::A).pressed && Buttons::get(Buttons::A).changed;
     bool b = Buttons::get(Buttons::B).pressed && Buttons::get(Buttons::B).changed;
 
@@ -211,6 +228,14 @@ void loop() {
       }
       if (right && visibleGameCount > 0) {
         selectedGameIndex = (selectedGameIndex + 1) % visibleGameCount;
+        lastButtonMs = millis();
+      }
+      if (up && visibleGameCount > 0) {
+        selectedGameIndex = (selectedGameIndex - 10 + visibleGameCount) % visibleGameCount;
+        lastButtonMs = millis();
+      }
+      if (down && visibleGameCount > 0) {
+        selectedGameIndex = (selectedGameIndex + 10) % visibleGameCount;
         lastButtonMs = millis();
       }
       if (b) {
@@ -288,7 +313,6 @@ void loop() {
       }
     }
     
-    const RomFile* visibleGames[100];
     for (int i = 0; i < visibleGameCount; ++i) {
       visibleGames[i] = SDCard::getRomInfo(visibleRomIndexes[i]);
     }

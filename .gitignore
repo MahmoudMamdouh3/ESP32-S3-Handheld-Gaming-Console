@@ -25,6 +25,8 @@ __pycache__/
 *.nes
 *.wad
 roms/
+games/
+.rom_cache/
 rom_data*.h
 
 rom_*.h

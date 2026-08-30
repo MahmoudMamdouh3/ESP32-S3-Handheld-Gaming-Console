@@ -133,7 +133,8 @@ stateDiagram-v2
    - Renders animated corner mascot face (`BmoFace`, 40×40) with dirty-flag caching (`BmoFace::isDirty()`).
    - Frame-paced at 60 FPS with non-blocking debounce (`DEBOUNCE_MS = 200`).
 2. **`STATE_GAME_MENU`**:
-   - Displays scrollable list of available ROMs for the active console.
+   - Displays scrollable list of available ROMs for the active console (supports up to 2,048 games allocated dynamically in PSRAM).
+   - Controls: **LEFT / RIGHT** for single-title browsing, **UP / DOWN** for rapid +/-10 title page jumping across large libraries.
    - Pressing **B** returns to `STATE_CONSOLE_MENU`.
    - Pressing **A** triggers memory allocation, loads ROM into PSRAM (or prepares VFS stream for DOOM), flashes full-screen `BmoFace::HAPPY` celebration, and starts the emulator core.
 3. **`STATE_EMULATOR`**:
@@ -164,6 +165,7 @@ The ESP32-S3-N16R8 has a multi-tiered memory hierarchy. Internal SRAM is ultra-f
 | [External Octal PSRAM: 8 MB @ 80MHz OPI]                                          |
 |   ├── Cartridge Save RAM: 128 KB (allocated per active emulator instance)        |
 |   ├── Dynamic ROM Buffer: Up to 4 MB (allocated from SDCard via heap_caps)        |
+|   ├── ROM Catalog Index: ~140 KB (up to 2,048 ROMs dynamically allocated in PSRAM)|
 |   ├── Menu Canvas Buffer: 320x240x2 = 150 KB (freed upon entering game)           |
 |   └── DOOM Game Engine Heap: ~6 MB dynamic zone allocations                       |
 |                                                                                   |
@@ -325,8 +327,11 @@ The MicroSD card and ST7789 TFT display share the FSPI peripheral:
 - **Dedicated Lines:** `TFT_CS` (GPIO 10), `TFT_DC` (GPIO 8), `TFT_RST` (GPIO 9), `SD_CS` (GPIO 13), `SD_MISO` (GPIO 15)
 - **Arbitration Rule:** The SPI bus is claimed exclusively by `DisplayEmu::startFrame()` during display blits. No SD card reads are permitted mid-frame. During DOOM gameplay, disk I/O occurs strictly between frame renders.
 
-### Dual-ROM Fallback Mechanism
-At startup, `SDCard::begin()` registers baked flash ROMs (`mario_deluxe.h`, `zelda_ages.h`) at the top of the ROM list before scanning the MicroSD FAT directory. If no SD card is inserted, the console continues operating seamlessly with built-in flash games.
+### Baked Flash ROM Fallback Mechanism & Large SD Catalog Scaling
+At startup, `SDCard::begin()` registers four baked flash ROMs (`mario_deluxe.h`, `zelda_ages.h`, `aladdin.h`, `lego_racers.h` — totaling ~4MB in `.rodata`) at the top of the ROM list before scanning the MicroSD FAT directory. 
+- **PSRAM Dynamic Catalog Scaling:** To support massive game libraries without exhausting internal SRAM, `SDCard` and `BmoGameboy.ino` dynamically allocate ROM indexing buffers (`RomFile* romList`, `visibleRomIndexes`, `visibleGames`) in Octal PSRAM (`MALLOC_CAP_SPIRAM`), supporting up to **2,048 games** simultaneously (~140 KB PSRAM footprint).
+- **Fallback Guarantee:** If no MicroSD card is inserted, the console falls back gracefully to internal static buffers and built-in flash games.
+- **Automated Catalog Staging Tooling:** Complete curated 1G1R (1 Game, 1 Region) libraries for Game Boy (602 games), GBC (538 games), NES (577 games), and Doom WADs (1,720 games total) are downloaded, sanitized ($<60$ chars), and staged onto the SD card root via `scripts/auto_install_romsets.py`.
 
 ---
 

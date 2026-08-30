@@ -14,8 +14,10 @@
 
 namespace {
   bool mounted = false;
-  static const int MAX_ROMS = 100;
-  RomFile romList[MAX_ROMS];
+  static const int MAX_ROMS = 2048;
+  static RomFile fallbackRomList[32];
+  static RomFile* romList = fallbackRomList;
+  static int maxCapacity = 32;
   int numRoms = 0;
 
   RomType determineType(const char* filename) {
@@ -31,6 +33,14 @@ namespace {
 
 bool SDCard::begin() {
   numRoms = 0;
+
+  if (romList == fallbackRomList) {
+    RomFile* psramList = (RomFile*)heap_caps_malloc(sizeof(RomFile) * MAX_ROMS, MALLOC_CAP_SPIRAM);
+    if (psramList) {
+      romList = psramList;
+      maxCapacity = MAX_ROMS;
+    }
+  }
 
   // Always add baked ROMs first!
   strncpy(romList[numRoms].filename, "Super Mario Bros Deluxe (Baked).gbc", 63);
@@ -74,7 +84,7 @@ void SDCard::scanRoms() {
   File root = SD.open("/");
   if (!root || !root.isDirectory()) return;
 
-  while (numRoms < MAX_ROMS) {
+  while (numRoms < maxCapacity) {
     File entry = root.openNextFile();
     if (!entry) break;
 
