@@ -1,7 +1,8 @@
 import time
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS_DIR = Path(__file__).resolve().parent
 
 
 def benchmark(fn, label):
@@ -12,7 +13,7 @@ def benchmark(fn, label):
 
 
 def run_python_compile_check():
-    for script in sorted(REPO_ROOT.glob('*.py')):
+    for script in sorted(SCRIPTS_DIR.glob('*.py')):
         compile(script.read_text(encoding='utf-8'), str(script), 'exec')
 
 

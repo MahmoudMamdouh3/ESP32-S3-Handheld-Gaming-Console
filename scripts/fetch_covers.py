@@ -5,8 +5,8 @@ from pathlib import Path
 
 from PIL import Image
 
-REPO_ROOT = Path(__file__).resolve().parent
-OUT_DIR = REPO_ROOT / 'firmware' / '03_emulator'
+REPO_ROOT = Path(__file__).resolve().parents[1]
+OUT_DIR = REPO_ROOT / 'firmware' / 'BmoGameboy' / 'src' / 'assets' / 'roms'
 
 games = {
     'Zelda LA': 'The_Legend_of_Zelda:_Link%27s_Awakening',

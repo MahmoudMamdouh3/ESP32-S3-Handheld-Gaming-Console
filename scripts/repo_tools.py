@@ -11,6 +11,8 @@ def sanitize_identifier(value: str) -> str:
 
 def find_game_roots(repo_root: Path) -> dict[str, Path]:
     candidates = {
+        'roms_gb': repo_root / 'roms' / 'gb',
+        'roms_gbc': repo_root / 'roms' / 'gbc',
         'gameboy_games': repo_root / 'Gameboy games',
         'gameboy_color_games': repo_root / 'Gameboyt color games',
     }

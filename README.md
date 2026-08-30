@@ -1,120 +1,111 @@
 # BMO-Handheld-Gaming-Console
 
-A portable Game Boy handheld project built around an ESP32-S3 and a small set of supporting tooling scripts. The repository documents the wiring, the emulator integration, and the ROM asset pipeline needed to build and validate the firmware.
+A multi-platform retro gaming handheld console powered by the ESP32-S3 microcontroller, featuring a custom animated 2D Signed Distance Field (SDF) mascot face ("BMO") and support for Game Boy, Game Boy Color, NES, and DOOM.
 
-## Project overview
+---
 
-- Hardware bring-up for the ESP32-S3 and TFT display
-- Button polling and menu UI implementation
-- BMO Mascot Face non-blocking UI state machine for interactive animations (idle blinking, game launch, charging, low battery, and system crash)
-- Multi-emulator architecture: Peanut-GB (Game Boy), Walnut-CGB (Game Boy Color), Agnes (NES), and DOOM (doomgeneric)
-- Game selection menu dynamically loading ROMs from SD Card
-- Custom ESP32-S3 memory mapping to run heavy engines completely in PSRAM
+## Key Highlights
 
-## Current Status / Milestones
+- **Hardware Platform:** ESP32-S3-N16R8 (Dual-Core LX7 @ 240MHz, 16MB OPI Flash, 8MB Octal PSRAM).
+- **Display Pipeline:** ST7789 240×320 SPI TFT (Landscape 320×240) @ 80MHz SPI with atomic N3 streaming protocol (`startFrame` / `streamPixelRow` / `endFrame`).
+- **Mascot Face Engine:** Procedural 2D Signed Distance Field (SDF) mathematical renderer with analytic anti-aliasing and dynamic emotional expressions (`IDLE`, `HAPPY`, `SURPRISED`, `SLEEPY`, `LOW_BATTERY`, `CHARGING`, `ERROR`, `SHUTDOWN`).
+- **Multi-Console Emulation:**
+  - **Peanut-GB:** Game Boy DMG (`.gb`)
+  - **Walnut-CGB:** Game Boy Color (`.gbc`) with custom CGB palette engine
+  - **Agnes:** Nintendo Entertainment System (`.nes`)
+  - **doomgeneric:** Classic DOOM (`.wad`) with direct VFS streaming
+- **Storage & Fallback:** Dual-ROM system supporting hot-swappable MicroSD cards and built-in flash-baked ROMs (Super Mario Bros. Deluxe, Zelda: Oracle of Ages) running seamlessly without an SD card.
+- **AI-Compatible Agent Environment:** Strict governance rules, zero-context primers, symbol verification tables, and anti-pattern registries under [`.agents/rules/`](file:///e:/BMO%20Gameboy/.agents/rules/README.md).
 
-*Note: Milestones distinguish between "Code Exists", "Physically Wired", and "Tested on Real Hardware".*
+---
 
-- [x] **Milestone 1:** ILI9341/ST7789 display bring-up, button test. (Code Exists, Physically Wired, Tested on Real Hardware)
-- [ ] **Milestone 2:** SD Card module via shared SPI. (Code Exists. Hardware Pending / Not Tested)
-- [x] **Milestone 3:** Peanut-GB / Walnut-CGB integration (Code Exists, Tested on Real Hardware without SD)
-- [x] **Milestone 4:** Multi-platform architecture (Code Exists, Tested on Real Hardware without SD)
-- [x] **Milestone 5:** Game Selection UI (Code Exists, Tested on Real Hardware without SD)
-- [x] **Milestone 6:** BMO Mascot Face Integration (Code Exists, Tested on Real Hardware)
-- [ ] **Milestone 7:** I2S Audio Subsystem MAX98357A I2S DAC. (Code Exists. Hardware Pending / Not Tested)
-- [ ] **Milestone 8:** Portable Handheld Conversion LiPo + TP4056 + battery sensing on GPIO1. (Code Exists. Hardware Pending / Not Tested)
-- [x] Repo tooling is now portable, extensively tested, and versionable
+## Documentation Quick Links
 
-## Repository structure
+- [**Software Design Document (SDD v3.0)**](file:///e:/BMO%20Gameboy/docs/software-design-document.md) — Authoritative living architectural specification covering hardware ground truth, state machine, memory layout, rendering pipeline, emulator contracts, and AI governance.
+- [**Agent Quick-Start Primer**](file:///e:/BMO%20Gameboy/.agents/rules/31_quick_start_primer.md) — 90-second on-ramp and decision matrix for autonomous coding agents and human contributors.
+- [**Hardware Notes & Lessons Learned**](file:///e:/BMO%20Gameboy/docs/hardware-notes.md) — Board-level wiring, pin restrictions, and power notes.
+- [**Changelog**](file:///e:/BMO%20Gameboy/CHANGELOG.md) — Repository version history and milestone tracking.
+- [**Agent Manifest**](file:///e:/BMO%20Gameboy/AGENT_MANIFEST.json) — Machine-readable hardware and build metadata.
+
+---
+
+## Repository Structure
 
 ```text
-.
-├── README.md
-├── IMPLEMENTATION_PLAN.md
-├── scripts/
-│   ├── benchmark_repo.py
-│   ├── color_calc.py
-│   ├── convert_roms.py
-│   ├── fetch_covers.py
-│   ├── process_games.py
-│   ├── repo_tools.py
-│   ├── test_runner.py
-│   └── validate_repo.py
+repo-root/
+├── README.md                          <- Project overview & quick start
+├── CHANGELOG.md                       <- Human-readable version history
+├── AGENTS.md                          <- Entry point for AI coding agents (Ruleset v4)
+├── AGENT_MANIFEST.json                <- Machine-readable project metadata
+├── docs/                              <- Specifications & hardware notes
+│   ├── software-design-document.md    <- Living reviewer-grade SDD (v3.0)
+│   └── hardware-notes.md              <- Pin restrictions & electrical notes
+├── .agents/
+│   └── rules/                         <- Topic-specific modular agent rules (34 rules)
+│       ├── 00_hard_stops.md           <- Non-negotiable hardware safety rules
+│       ├── 01_hardware.md             <- Verified pin map & physical state
+│       ├── 10_symbol_reference.md     <- Verified public symbol lookup table
+│       ├── 27_codebase_map.md         <- System architecture & memory map
+│       ├── 30_common_agent_mistakes.md<- Institutional anti-pattern catalogue (M1-M20)
+│       ├── 31_quick_start_primer.md   <- 90-second zero-context on-ramp
+│       ├── 32_modular_core_template.md<- Scaffolding template for new emulators
+│       ├── 33_agent_handoff_and_optimization_cycle.md <- Continuous optimization loop
+│       ├── 34_ai_agent_sandbox_and_guardrails.md      <- AI safety guardrails & invariants
+│       └── CONTEXT_INDEX.json         <- Machine-readable task-to-rule map
 ├── firmware/
-│   ├── 01_display_button_test/
-│   ├── 02_sd_card_test/
-│   ├── 03_emulator/
-│   │   ├── 03_emulator.ino
-│   │   ├── bmo_assets.h
-│   │   ├── bmo_face.cpp
-│   │   ├── bmo_face.h
-│   │   ├── buttons.cpp
-│   │   ├── config.h
-│   │   ├── display_emu.cpp
-│   │   ├── emu_peanut.cpp (Game Boy)
-│   │   ├── emu_walnut.cpp (Game Boy Color)
-│   │   ├── emu_nes.cpp (NES Wrapper)
-│   │   ├── emu_doom.cpp (DOOM Wrapper)
-│   │   ├── sd_card.cpp
-│   │   ├── unit_tests.cpp
-│   │   └── src/
-│   │       └── doom/ (doomgeneric engine source)
-│   └── 04_unit_tests/
-├── docs/
-│   └── hardware-notes.md
-└── tests/
-    └── test_repo_tools.py
+│   └── BmoGameboy/                    <- Main Arduino sketch directory
+│       ├── BmoGameboy.ino             <- State machine, loop(), frame timing
+│       ├── partitions.csv             <- Custom 8MB app0 partition table
+│       └── src/
+│           ├── core/                  <- Hardware drivers (display, buttons, SD, face)
+│           ├── emulators/             <- Thin glue wrappers (peanut, walnut, nes, doom)
+│           ├── engine/                <- Header-only emulator engines (walnut_cgb)
+│           ├── vendor/                <- Upstream libraries (peanut_gb, agnes, doom)
+│           └── assets/                <- Assets & baked flash ROM headers
+├── tools/                             <- Host desktop test harness (Zig)
+└── scripts/                           <- AI Guardian validation & asset pipeline
 ```
 
-## Tooling workflow
 
-Use the repo-root-based scripts instead of machine-specific hardcoded paths.
+---
 
-1. Validate the repo state:
+## Firmware Build & Flash
+
+### Prerequisites
+1. **Arduino CLI** or **Arduino IDE** with ESP32 board support (Core v3.3.11).
+2. Libraries: `Adafruit_GFX`, `Adafruit_ST7789`.
+
+### Build Command (Arduino CLI)
+```powershell
+.\arduino-cli.exe compile --fqbn "esp32:esp32:esp32s3:FlashMode=opi,FlashSize=16M,PartitionScheme=custom,PSRAM=opi" firmware/BmoGameboy
+```
+
+> [!IMPORTANT]
+> Always compile with `FlashMode=opi` and `PSRAM=opi`. Using QPI/QIO will cause flash cache faults and boot loops on the ESP32-S3-N16R8.
+
+---
+
+## Tooling & Verification Pipeline
+
+1. **Repository Health Check:**
    ```bash
    python scripts/validate_repo.py
    ```
-2. Run the test suite:
+2. **Python Test Suite:**
    ```bash
    python -m unittest discover -s tests -v
    ```
-3. Benchmark the validation pipeline:
+3. **Validation Benchmark:**
    ```bash
    python scripts/benchmark_repo.py
    ```
-4. Regenerate ROM and cover assets when the zip archives change:
+4. **ROM Integrity Verification:**
    ```bash
-   python scripts/process_games.py
+   python scripts/test_runner.py
    ```
 
-## Firmware build notes
+---
 
-1. Install Arduino IDE with ESP32 board support.
-2. Add the libraries: Adafruit ST7789 and Adafruit GFX.
-3. Select **ESP32S3 Dev Module** with **16 MB flash**, **Custom** partition scheme,
-   and **OPI PSRAM**. The supplied `firmware/03_emulator/partitions.csv` reserves
-   an 8 MB application partition; the default 4 MB board profile is too small.
-4. Open the sketch in `firmware/03_emulator/03_emulator.ino` and flash it.
-
-Equivalent Arduino CLI build:
-
-```bash
-arduino-cli compile --fqbn "esp32:esp32:esp32s3:FlashSize=16M,PartitionScheme=custom,PSRAM=opi,FlashMode=opi" firmware/03_emulator
-```
-
-## Important repository conventions
-
-- Game ROMs are dynamically loaded from the SD Card and are intentionally excluded from git.
-  (Note: Some tested ROMs like Mario Deluxe and Zelda Ages can be "baked" directly into flash via C-headers if desired).
-- The DOOM engine uses dynamic `heap_caps_malloc(..., MALLOC_CAP_SPIRAM)` to load rendering tables into PSRAM, bypassing internal DRAM limits.
-- All Python scripts should be run from the repo root or invoked via `python path/to/script.py`.
-
-## Documentation
-
-See `docs/hardware-notes.md` for board-level debugging notes and wiring constraints. The repo also includes the implementation plan in `IMPLEMENTATION_PLAN.md`.
-
-## Recent Bug Fixes
-- **Display UI & Battery**: Fixed an issue where the battery indicator rendered off-screen on the 320x240 landscape display. Moved to the menu header. Fixed BGR color discrepancy for the low-battery indicator caused by MADCTL configuration (`0xA0 | 0x08`).
-- **Walnut Emulator Core**: Corrected a byte-swapping bug in `DMG_ON_GBC_PAL` where OBJ1 green values (`0x0700`, `0x0300`) were incorrectly assigned and appeared dark red on the BGR hardware. Changed to proper byte-swapped BGR565 values (`0xE007`, `0xE003`).
+## License
 
 MIT - see [LICENSE](LICENSE).

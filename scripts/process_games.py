@@ -11,8 +11,8 @@ except ImportError as exc:  # pragma: no cover - runtime dependency guard
         "Pillow is required for cover generation. Install it with: python -m pip install pillow"
     ) from exc
 
-REPO_ROOT = Path(__file__).resolve().parent
-OUT_DIR = REPO_ROOT / 'firmware' / '03_emulator'
+REPO_ROOT = Path(__file__).resolve().parents[1]
+OUT_DIR = REPO_ROOT / 'firmware' / 'BmoGameboy' / 'src' / 'assets' / 'roms'
 
 
 def generate_gradient_cover(title, out_path, var_name):

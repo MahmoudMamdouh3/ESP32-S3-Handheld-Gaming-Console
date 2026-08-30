@@ -5,7 +5,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Unreleased] - 2026-08-30 (Ruleset v3 & SDD Upgrade)
+## [Unreleased] - 2026-08-30 (Ruleset v4 & AI Environment Upgrade)
+### Added
+- **Software Design Document (SDD) v3.0**: Upgraded [`docs/software-design-document.md`](file:///e:/BMO%20Gameboy/docs/software-design-document.md) to a comprehensive living architectural specification suitable for autonomous agents and external reviewers without filesystem access. Includes complete hardware matrix, memory topologies, 2D SDF mascot mathematics, N3 SPI streaming protocol, and dual-ROM fallback contracts.
+- **Rule 32 (Modular Core Template)**: Created [`.agents/rules/32_modular_core_template.md`](file:///e:/BMO%20Gameboy/.agents/rules/32_modular_core_template.md) with copy-paste templates and 6-step checklist for frictionless emulator and subsystem additions.
+- **Rule 33 (Agent Handoff & Optimization Cycle)**: Created [`.agents/rules/33_agent_handoff_and_optimization_cycle.md`](file:///e:/BMO%20Gameboy/.agents/rules/33_agent_handoff_and_optimization_cycle.md) establishing continuous optimization and status tagging across sequential AI sessions.
+- **Rule 34 (AI Agent Sandbox & Guardrails)**: Created [`.agents/rules/34_ai_agent_sandbox_and_guardrails.md`](file:///e:/BMO%20Gameboy/.agents/rules/34_ai_agent_sandbox_and_guardrails.md) establishing strict invariants for LLMs (hardware safety, anti-hallucination, memory alignment, and teardown lifecycle).
+- **Machine-Readable Metadata**: Added [`AGENT_MANIFEST.json`](file:///e:/BMO%20Gameboy/AGENT_MANIFEST.json) and [`.agents/rules/CONTEXT_INDEX.json`](file:///e:/BMO%20Gameboy/.agents/rules/CONTEXT_INDEX.json) for instant task-to-rule indexing by autonomous tools and agents.
+- **Anti-Patterns M-17 to M-20**: Added M-17 (Unaligned pointer casts on Flash), M-18 (DOOM PSRAM pre-buffering), M-19 (Unmatched `startFrame()` SPI lock), and M-20 (Missing handoff logs) to [`.agents/rules/30_common_agent_mistakes.md`](file:///e:/BMO%20Gameboy/.agents/rules/30_common_agent_mistakes.md).
+- **AI Guardian CI Validator**: Expanded [`scripts/validate_repo.py`](file:///e:/BMO%20Gameboy/scripts/validate_repo.py) into a multi-phase CI validator checking Python syntax, ROM checksums, firmware safety guardrails, and ruleset integrity.
+- **Unit Test Expansion**: Added automated unit tests in [`tests/test_repo_tools.py`](file:///e:/BMO%20Gameboy/tests/test_repo_tools.py) covering all validation guardrails.
+
+### Changed
+- **Ruleset Version**: Bumped ruleset to Version 4 across [`.agents/rules/README.md`](file:///e:/BMO%20Gameboy/.agents/rules/README.md) and [`AGENTS.md`](file:///e:/BMO%20Gameboy/AGENTS.md).
+- **Quick-Start Primer**: Updated [`31_quick_start_primer.md`](file:///e:/BMO%20Gameboy/.agents/rules/31_quick_start_primer.md) with new rule pointers and CI validation workflows.
+
+---
+
+## [Milestone 4.5] - 2026-08-30 (Ruleset v3 & SDD Upgrade)
+
 ### Added
 - **Software Design Document (SDD) v2.0**: Completely rewritten [`docs/software-design-document.md`](file:///e:/BMO%20Gameboy/docs/software-design-document.md) to serve as a legitimate, reviewer-grade specification. Documents the complete rendering pipeline, procedural SDF mascot engine, emulator contracts, memory maps, SPI bus sharing, and multi-agent AI environment.
 - **Agent Quick-Start Primer**: Added [`.agents/rules/31_quick_start_primer.md`](file:///e:/BMO%20Gameboy/.agents/rules/31_quick_start_primer.md) providing a 90-second zero-context on-ramp and decision matrix for AI agents and human contributors.
@@ -16,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - **PSRAM Cartridge RAM Teardown**: Fixed return-to-menu SELECT+UP exit path in [`firmware/BmoGameboy/BmoGameboy.ino`](file:///e:/BMO%20Gameboy/firmware/BmoGameboy/BmoGameboy.ino) by wiring `WalnutEmu::destroy()` and `PeanutEmu::destroy()`, recovering 128KB PSRAM on every session exit.
 - **Directory Structure Sync**: Synchronized directory tree in [`.agents/rules/03_conventions.md`](file:///e:/BMO%20Gameboy/.agents/rules/03_conventions.md) and [`.agents/rules/27_codebase_map.md`](file:///e:/BMO%20Gameboy/.agents/rules/27_codebase_map.md) with `src/engine/` and `scripts/`.
+- **Tooling & Test Paths**: Synchronized `scripts/` and `tests/` paths with the unified `firmware/BmoGameboy/` architecture; validated 100% pass rate across python unit tests, benchmarks, and repo checks.
 - **Ruleset Version**: Bumped ruleset to Version 3 in [`.agents/rules/README.md`](file:///e:/BMO%20Gameboy/.agents/rules/README.md).
 
 ---

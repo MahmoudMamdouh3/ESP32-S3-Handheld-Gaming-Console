@@ -1,7 +1,7 @@
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent
-ROM_DIR = REPO_ROOT / 'firmware' / '03_emulator'
+REPO_ROOT = Path(__file__).resolve().parents[1]
+ROM_DIR = REPO_ROOT / 'firmware' / 'BmoGameboy' / 'src' / 'assets' / 'roms'
 
 roms = [
     ('Amazing Spider-Man, The (USA, Europe).gb', 'rom_amazingspiderman', 'rom_spiderman.h'),

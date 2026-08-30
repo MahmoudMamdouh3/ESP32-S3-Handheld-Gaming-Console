@@ -1,6 +1,10 @@
 import re
+from pathlib import Path
 
-with open('firmware/03_emulator/rom_data.h', 'r') as f:
+REPO_ROOT = Path(__file__).resolve().parents[1]
+rom_path = REPO_ROOT / 'firmware' / 'BmoGameboy' / 'src' / 'assets' / 'rom_data.h'
+
+with open(rom_path, 'r') as f:
     content = f.read()
 
 # Extract Tobu Tobu Girl ROM bytes
