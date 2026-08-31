@@ -1,3 +1,5 @@
+// STUB_ENGINE: Architectural scaffold only. Renders a blank framebuffer.
+// Not a functional emulator. Do not mark VERIFIED_HOST without a real engine.
 #include "genesis.h"
 #include <string.h>
 

@@ -2,7 +2,7 @@
 **Project:** BMO-Handheld-Gaming-Console  
 **Target Platform:** ESP32-S3-N16R8 (16MB OPI Flash, 8MB Octal PSRAM)  
 **Target Display:** ST7789VW 2.4" SPI TFT (240×320 Physical, 320×240 Landscape Viewport)  
-**Document Version:** 3.0 (Living Architectural Specification)  
+**Document Version:** 3.1 (Living Architectural Specification — Updated 2026-08-31)  
 **Status:** Approved Engineering Ground Truth  
 **Maintained By:** BMO Firmware Engineering Team & Autonomous AI Agents  
 
@@ -10,11 +10,34 @@
 
 ## 1. Executive Summary & Hardware Ground Truth
 
-The **BMO-Handheld-Gaming-Console** is an ultra-optimized, multi-platform retro gaming handheld engineered around the Espressif ESP32-S3 microcontroller. It merges a real-time procedural mascot animation system ("BMO") with four high-performance retro gaming cores:
-1. **Peanut-GB** (Nintendo Game Boy DMG, C99 engine)
-2. **Walnut-CGB** (Nintendo Game Boy Color CGB, dual-fetch engine)
-3. **Agnes** (Nintendo Entertainment System NES, discrete cycle-stepped engine)
-4. **doomgeneric** (Classic DOOM WAD engine ported to ESP32 VFS)
+The **BMO-Handheld-Gaming-Console** is an ultra-optimized, multi-platform retro gaming handheld engineered around the Espressif ESP32-S3 microcontroller. It merges a real-time procedural mascot animation system ("BMO") with a 14-core retro gaming emulation suite.
+
+### Engine Status Registry
+
+Engines are classified by their `engine_status` field in `AGENT_MANIFEST.json`. **Do not use VERIFIED_HOST for a stub engine.**
+
+| Engine | Platform | Extensions | Status | Real Emulation? |
+|---|---|---|---|---|
+| **Peanut-GB** | Game Boy DMG | `.gb` | FIXED_UNVERIFIED | ✅ Yes |
+| **Walnut-CGB** | Game Boy Color | `.gbc` | FIXED_UNVERIFIED | ✅ Yes (16-bit fast paths OFF) |
+| **Agnes** | NES | `.nes` | FIXED_UNVERIFIED | ✅ Yes |
+| **doomgeneric** | DOOM WAD | `.wad` | FIXED_UNVERIFIED | ✅ Yes |
+| **SMSPlus** | Sega Master System / Game Gear | `.sms`, `.gg` | FIXED_UNVERIFIED | ✅ Yes |
+| PCE-Stub | PC Engine / TurboGrafx-16 | `.pce` | STUB | ⚠️ Blank screen only |
+| Stella-Stub | Atari 2600 | `.a26` | STUB | ⚠️ Blank screen only |
+| PICO-8-Stub | PICO-8 | `.p8` | STUB | ⚠️ Blank screen only |
+| Genesis-Stub | Sega Genesis / Mega Drive | `.gen`, `.md`, `.smd` | STUB | ⚠️ Solid background only |
+| SNES-Stub | Super Nintendo | `.sfc`, `.smc` | STUB | ⚠️ Blank screen only |
+| WonderSwan-Stub | Bandai WonderSwan / Color | `.ws`, `.wsc` | STUB | ⚠️ Blank screen only |
+| NGP-Stub | SNK Neo Geo Pocket / Color | `.ngp`, `.ngc` | STUB | ⚠️ Blank screen only |
+| Lynx-Stub | Atari Lynx | `.lnx` | STUB | ⚠️ Blank screen only |
+| ColecoVision-Stub | ColecoVision / SG-1000 | `.col`, `.sg` | STUB | ⚠️ Blank screen only |
+
+> [!IMPORTANT]
+> Stub engines carry a `// STUB_ENGINE` sentinel comment at the top of their vendor `.c` file
+> and `"engine_status": "stub"` in `AGENT_MANIFEST.json`. They compile cleanly, allocate
+> PSRAM correctly, and call `destroy()` on exit — but render no actual emulation output.
+> A stub is **not** a broken emulator; it is an architectural placeholder.
 
 The hardware is permanently soldered onto a custom perfboard. To eliminate guesswork for reviewers and autonomous AI development agents, all subsystems are strictly categorized as **Physically Wired & Active** vs. **Dormant / Future Hardware**:
 

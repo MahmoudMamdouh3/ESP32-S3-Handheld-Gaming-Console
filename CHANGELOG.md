@@ -5,6 +5,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Milestone 8.0] - 2026-08-31 (Production-Grade Testing Overhaul & Flash Overflow Fix)
+### Fixed
+- **Flash Overflow Root Cause**: The `158% of storage space` error is caused by the Arduino IDE defaulting to the 3 MB partition scheme. Fix: **Tools → Partition Scheme → Custom**. Firmware compiles at 5,002,020 bytes = **29.8% of 16MB** (VERIFIED_HOST, arduino-cli exit 0, this session).
+- **Stub Engines Honestly Labeled**: 9 of 14 emulator vendor engines (`pce`, `stella`, `pico`, `genesis`, `snes`, `wswan`, `ngp`, `lynx`, `colem`) were scaffold stubs rendering a blank framebuffer with no CPU emulation. All 9 now carry `// STUB_ENGINE` sentinel comments and are tagged `"engine_status": "stub"` in `AGENT_MANIFEST.json`.
+- **False VERIFIED_HOST Claims Corrected**: All prior Tier 1/2 `VERIFIED_HOST` claims reclassified as `FIXED_UNVERIFIED`. The Python test suite was checking file existence — not running `arduino-cli compile`.
+
+### Added
+- **Production CI Validator — 7 Phases** (`scripts/validate_repo.py`): Phase 0 runs real `arduino-cli compile` with flash/SRAM budget reporting. Phase 2 checks all 14 teardowns, Serial.print ban, partition overlaps. Phase 4 validates structural soundness and `engine_status` fields.
+- **32 Unit Tests** (was 27): Added test_08 (STUB_ENGINE sentinel), test_09 (partition math), test_10 (no Serial.print), test_11 (manifest count vs filesystem), test_12 (config hard-stop exact values). All 32 pass.
+- **AGENT_MANIFEST.json**: All 14 emulators registered with `engine_status`, `build_verified: false`, `last_hardware_verified: null`.
+- **Rule 06 Verification Ladder**: 5-tier (STUB/FIXED_UNVERIFIED/VERIFIED_HOST/VERIFIED_SIMULATOR/VERIFIED_HARDWARE). VERIFIED_HOST requires arduino-cli compile output quoted literally.
+- **`04_known_issues.md`**: Added issues #8 (FLASH_OVERFLOW_IDE) and #9 (STUB_ENGINES_MISLABELED).
+
+---
+
 ## [Milestone 7.0] - 2026-08-31 (Gaming History Museum, Specs & 1:1 PC Live Simulator)
 ### Added
 - **PC-Side 1:1 Live Handheld Simulator & UI/UX Lab (`tools/bmo_simulator/`)**:
