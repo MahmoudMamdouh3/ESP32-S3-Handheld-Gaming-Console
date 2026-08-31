@@ -22,6 +22,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -30,6 +31,11 @@ SCRIPTS_DIR  = Path(__file__).resolve().parent
 TESTS_DIR    = REPO_ROOT / 'tests'
 FIRMWARE_DIR = REPO_ROOT / 'firmware' / 'BmoGameboy'
 RULES_DIR    = REPO_ROOT / '.agents' / 'rules'
+
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
 
 # Canonical build FQBN — must match 31_quick_start_primer.md
 ARDUINO_FQBN = (
@@ -420,6 +426,14 @@ def check_game_data():
 
 def check_rules_and_manifest_integrity():
     issues = []
+    
+    # Trigger live automated rebuild of AI Knowledge Graph, Decision Tree, Manifest, and Context Index
+    try:
+        from generate_ai_knowledge_base import build_knowledge_base
+        build_knowledge_base()
+    except Exception as exc:
+        issues.append(f'Failed to build AI Knowledge Base: {exc}')
+
     manifest_path = REPO_ROOT / 'AGENT_MANIFEST.json'
     if not manifest_path.exists():
         issues.append('AGENT_MANIFEST.json is missing')

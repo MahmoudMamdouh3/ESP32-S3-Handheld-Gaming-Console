@@ -182,6 +182,130 @@ def cmd_index(args) -> int:
     return 0
 
 
+def cmd_route(args) -> int:
+    """Zero-shot task intent routing for AI agents."""
+    import json
+    query = " ".join(args.query).lower()
+    tree_path = REPO_ROOT / "AGENT_DECISION_TREE.json"
+    if not tree_path.exists():
+        from scripts.generate_ai_knowledge_base import build_knowledge_base
+        build_knowledge_base()
+        
+    try:
+        tree = json.loads(tree_path.read_text(encoding="utf-8"))
+        tasks = tree.get("tasks", {})
+    except Exception as e:
+        print(f"Error loading decision tree: {e}")
+        return 1
+
+    best_task = None
+    best_score = 0
+    
+    for task_name, info in tasks.items():
+        score = 0
+        keywords = info.get("intent_keywords", [])
+        for kw in keywords:
+            if kw.lower() in query:
+                score += 2
+        for word in query.split():
+            if len(word) > 2 and word in task_name.lower():
+                score += 1
+            if len(word) > 2 and any(word in kw.lower() for kw in keywords):
+                score += 1
+        if score > best_score:
+            best_score = score
+            best_task = (task_name, info)
+
+    print("=" * 70)
+    print(" BMO AI ZERO-SHOT INTENT ROUTER")
+    print("=" * 70)
+    print(f"Query: \"{query}\"\n")
+    
+    if not best_task or best_score == 0:
+        print("No exact intent matched. Defaulting to general session workflow:")
+        print("  * Mandatory Rule: .agents/rules/31_quick_start_primer.md")
+        print("  * Verification Command: python scripts/validate_repo.py")
+        return 0
+
+    t_name, t_info = best_task
+    print(f"🎯 Matched Task Intent: [{t_name}]")
+    print("-" * 70)
+    print("📚 MANDATORY RULES TO READ FIRST:")
+    for r in t_info.get("mandatory_rules", []):
+        print(f"   * .agents/rules/{r}")
+    print("\n📂 PRIMARY TARGET FILES TO EDIT:")
+    for f in t_info.get("primary_files", []):
+        print(f"   * {f}")
+    print("\n⚠️ HARD INVARIANTS & GUARDRAILS:")
+    for g in t_info.get("guardrails", []):
+        print(f"   * {g}")
+    print(f"\n🧪 MANDATORY VERIFICATION COMMAND:")
+    print(f"   {t_info.get('verification_command', 'python scripts/validate_repo.py')}")
+    print("=" * 70)
+    return 0
+
+
+def cmd_lookup(args) -> int:
+    """Instantly looks up any symbol, pin, or file in the AI Knowledge Graph."""
+    import json
+    target = args.symbol.strip()
+    kg_path = REPO_ROOT / "AGENT_KNOWLEDGE_GRAPH.json"
+    if not kg_path.exists():
+        from scripts.generate_ai_knowledge_base import build_knowledge_base
+        build_knowledge_base()
+        
+    try:
+        kg = json.loads(kg_path.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(f"Error loading knowledge graph: {e}")
+        return 1
+
+    symbols = kg.get("symbol_registry", {})
+    pins = kg.get("hardware_pins", {})
+    platforms = kg.get("platforms_matrix", {})
+
+    print("=" * 70)
+    print(f" BMO AI SYMBOL & PIN GRAPH LOOKUP: \"{target}\"")
+    print("=" * 70)
+
+    found = False
+
+    # 1. Check Hardware Pins
+    for group, p_map in pins.items():
+        for p_name, p_val in p_map.items():
+            if target.lower() in p_name.lower() or target.lower() == str(p_val):
+                print(f"\n🔌 HARDWARE PIN MATCH ({group}):")
+                print(f"   * Net Name: {p_name} -> GPIO {p_val}")
+                found = True
+
+    # 2. Check Platforms
+    for p_id, p_info in platforms.items():
+        if target.lower() in p_id or target.lower() in p_info["name"].lower() or any(target.lower() in ext for ext in p_info["ext"]):
+            print(f"\n🎮 CONSOLE PLATFORM MATCH:")
+            print(f"   * Name: {p_info['name']} (ID: {p_id})")
+            print(f"   * Core Engine: {p_info['core']} ({p_info['status']})")
+            print(f"   * Viewport Resolution: {p_info['res']} @ {p_info['fps']} FPS")
+            print(f"   * Supported Extensions: {', '.join(p_info['ext'])}")
+            found = True
+
+    # 3. Check Symbols
+    matching_syms = {k: v for k, v in symbols.items() if target.lower() in k.lower()}
+    if matching_syms:
+        print(f"\n🧩 SYMBOL DEFINITIONS FOUND ({len(matching_syms)} matches):")
+        for s_name, s_meta in list(matching_syms.items())[:10]:
+            iram_badge = " [⚡ IRAM_ATTR]" if s_meta.get("is_iram") else ""
+            print(f"   * {s_name}{iram_badge}")
+            print(f"     Location: {s_meta['file']}:{s_meta['line']}")
+            print(f"     Signature: {s_meta['signature']}")
+        found = True
+
+    if not found:
+        print(f"No direct symbol or pin matching \"{target}\" was found.")
+        print("Tip: Run `python -m tools.guardian index` to refresh the index.")
+    print("=" * 70)
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="BMO Guardian Performance & Ground-Truth Suite")
     subparsers = parser.add_subparsers(dest="command", help="Available subcommands")
@@ -211,6 +335,14 @@ def main() -> int:
     # index
     subparsers.add_parser("index", help="Compile machine-readable AI knowledge graph and decision tree")
 
+    # route
+    p_route = subparsers.add_parser("route", help="Zero-shot intent router for AI agents (e.g. `route \"add new rom\"`)")
+    p_route.add_argument("query", nargs="+", help="English task prompt or query keywords")
+
+    # lookup
+    p_lookup = subparsers.add_parser("lookup", help="Look up symbol, function, or pin definition in Knowledge Graph")
+    p_lookup.add_argument("symbol", help="Symbol, function name, pin name, or console extension to inspect")
+
     args = parser.parse_args()
     if not args.command:
         parser.print_help()
@@ -224,6 +356,8 @@ def main() -> int:
         "cppcheck": cmd_audit,
         "report": cmd_report,
         "index": cmd_index,
+        "route": cmd_route,
+        "lookup": cmd_lookup,
     }
 
     handler = commands.get(args.command)
