@@ -208,6 +208,11 @@ static void renderFace() {
   const float lEyeX = -s_current.eyeOffsetX;   // left eye (negative X)
   const float rEyeX =  s_current.eyeOffsetX;   // right eye (positive X)
   const float eyeY  =  s_current.eyeOffsetY;   // both at same Y
+  const uint16_t bgPacked = packBGR565(83, 198, 181);
+  const float boundEyeX = (s_current.eyeWidth * 1.5f) + aaStep * 2.0f;
+  const float boundEyeY = (eyeHSafe * 1.5f) + aaStep * 2.0f;
+  const float boundMouthX = (s_current.mouthWidth * 1.4f) + aaStep * 2.0f;
+  const float boundMouthY = (fabsf(s_current.mouthCurve) * boundMouthX * boundMouthX) + (s_current.mouthOpenness * 2.5f) + aaStep * 3.0f;
 
   for (int fy = 0; fy < FACE_FB_H; ++fy) {
     // Invert Y so row 0 = top of face = positive Y in face space.
@@ -217,63 +222,76 @@ static void renderFace() {
     for (int fx = 0; fx < FACE_FB_W; ++fx) {
       float nx = -1.0f + 2.0f * ((float)fx + 0.5f) / (float)FACE_FB_W;
 
-      // ---------------------------------------------------------------
+      // PERF-12: Bounding box culling skips SDF math for 75%+ of pixels
+      bool inLeftEye  = (fabsf(nx - lEyeX) < boundEyeX) && (fabsf(ny - eyeY) < boundEyeY);
+      bool inRightEye = (fabsf(nx - rEyeX) < boundEyeX) && (fabsf(ny - eyeY) < boundEyeY);
+      bool inMouth    = (fabsf(nx) < boundMouthX) && (fabsf(ny - s_current.mouthOffsetY) < boundMouthY);
+
+      if (!inLeftEye && !inRightEye && !inMouth) {
+        row[fx] = bgPacked;
+        continue;
+      }
+
       // Background colour (BMO teal-green) as float RGB [0,1].
-      // ---------------------------------------------------------------
       float cr = 83.0f  / 255.0f;
       float cg = 198.0f / 255.0f;
       float cb = 181.0f / 255.0f;
 
       // ---------------------------------------------------------------
-      // Evaluate eye SDFs (left and right share the same logic).
+      // Evaluate eye SDFs
       // ---------------------------------------------------------------
-      float dEyeL, dEyeR, dPupilL, dPupilR;
+      float dEyeL = 10.0f, dEyeR = 10.0f, dPupilL = 10.0f, dPupilR = 10.0f;
 
-      if (!s_useXEyes) {
-        // --- Normal ellipse eyes ---
-        dEyeL   = sdfEllipse(nx - lEyeX, ny - eyeY, s_current.eyeWidth, eyeHSafe);
-        dEyeR   = sdfEllipse(nx - rEyeX, ny - eyeY, s_current.eyeWidth, eyeHSafe);
-
-        // Pupils: offset slightly down and toward the nose for a natural look.
-        dPupilL = sdfEllipse(nx - lEyeX + s_current.eyeWidth * 0.12f,
-                             ny - eyeY  - eyeHSafe * 0.18f,
-                             pupilW, pupilH);
-        dPupilR = sdfEllipse(nx - rEyeX - s_current.eyeWidth * 0.12f,
-                             ny - eyeY  - eyeHSafe * 0.18f,
-                             pupilW, pupilH);
-      } else {
-        // --- ERROR X-eyes: two crossing rectangles, rotated ±45° ---
-        // Left X
-        float lx = nx - lEyeX;
-        float ly = ny - eyeY;
-        float lxa =  lx * 0.7071f + ly * 0.7071f;
-        float lya = -lx * 0.7071f + ly * 0.7071f;
-        float lxb =  lx * 0.7071f - ly * 0.7071f;
-        float lyb =  lx * 0.7071f + ly * 0.7071f;
-        dEyeL   = fminf(sdfRect(lxa, lya, s_current.eyeWidth * 0.85f, s_current.eyeWidth * 0.11f),
-                        sdfRect(lxb, lyb, s_current.eyeWidth * 0.85f, s_current.eyeWidth * 0.11f));
-        dPupilL = 1.0f; // X shape drawn entirely via dEyeL
-
-        // Right X
-        float rx = nx - rEyeX;
-        float ry = ny - eyeY;
-        float rxa =  rx * 0.7071f + ry * 0.7071f;
-        float rya = -rx * 0.7071f + ry * 0.7071f;
-        float rxb =  rx * 0.7071f - ry * 0.7071f;
-        float ryb =  rx * 0.7071f + ry * 0.7071f;
-        dEyeR   = fminf(sdfRect(rxa, rya, s_current.eyeWidth * 0.85f, s_current.eyeWidth * 0.11f),
-                        sdfRect(rxb, ryb, s_current.eyeWidth * 0.85f, s_current.eyeWidth * 0.11f));
-        dPupilR = 1.0f;
+      if (inLeftEye || inRightEye) {
+        if (!s_useXEyes) {
+          // --- Normal ellipse eyes ---
+          if (inLeftEye) {
+            dEyeL   = sdfEllipse(nx - lEyeX, ny - eyeY, s_current.eyeWidth, eyeHSafe);
+            dPupilL = sdfEllipse(nx - lEyeX + s_current.eyeWidth * 0.12f,
+                                 ny - eyeY  - eyeHSafe * 0.18f,
+                                 pupilW, pupilH);
+          }
+          if (inRightEye) {
+            dEyeR   = sdfEllipse(nx - rEyeX, ny - eyeY, s_current.eyeWidth, eyeHSafe);
+            dPupilR = sdfEllipse(nx - rEyeX - s_current.eyeWidth * 0.12f,
+                                 ny - eyeY  - eyeHSafe * 0.18f,
+                                 pupilW, pupilH);
+          }
+        } else {
+          // --- ERROR X-eyes: two crossing rectangles, rotated ±45° ---
+          if (inLeftEye) {
+            float lx = nx - lEyeX;
+            float ly = ny - eyeY;
+            float lxa =  lx * 0.7071f + ly * 0.7071f;
+            float lya = -lx * 0.7071f + ly * 0.7071f;
+            float lxb =  lx * 0.7071f - ly * 0.7071f;
+            float lyb =  lx * 0.7071f + ly * 0.7071f;
+            dEyeL   = fminf(sdfRect(lxa, lya, s_current.eyeWidth * 0.85f, s_current.eyeWidth * 0.11f),
+                            sdfRect(lxb, lyb, s_current.eyeWidth * 0.85f, s_current.eyeWidth * 0.11f));
+            dPupilL = 1.0f;
+          }
+          if (inRightEye) {
+            float rx = nx - rEyeX;
+            float ry = ny - eyeY;
+            float rxa =  rx * 0.7071f + ry * 0.7071f;
+            float rya = -rx * 0.7071f + ry * 0.7071f;
+            float rxb =  rx * 0.7071f - ry * 0.7071f;
+            float ryb =  rx * 0.7071f + ry * 0.7071f;
+            dEyeR   = fminf(sdfRect(rxa, rya, s_current.eyeWidth * 0.85f, s_current.eyeWidth * 0.11f),
+                            sdfRect(rxb, ryb, s_current.eyeWidth * 0.85f, s_current.eyeWidth * 0.11f));
+            dPupilR = 1.0f;
+          }
+        }
       }
 
       // ---------------------------------------------------------------
       // Evaluate mouth SDF.
       // ---------------------------------------------------------------
-      float dMouth = sdfMouth(nx,
-                               ny - s_current.mouthOffsetY,
-                               s_current.mouthWidth,
-                               s_current.mouthCurve,
-                               s_current.mouthOpenness);
+      float dMouth = inMouth ? sdfMouth(nx,
+                                        ny - s_current.mouthOffsetY,
+                                        s_current.mouthWidth,
+                                        s_current.mouthCurve,
+                                        s_current.mouthOpenness) : 10.0f;
 
       // ---------------------------------------------------------------
       // Composite: background → eye white → pupil/X → mouth.
