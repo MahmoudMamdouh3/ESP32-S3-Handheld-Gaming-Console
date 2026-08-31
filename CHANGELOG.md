@@ -5,6 +5,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Milestone 11.0] - 2026-08-31 (Universal Multi-Console Favorites, 1:1 Carousel UI Replica, OnionUI Theme, Virtual BMO & Ambient Living Screensaver)
+### Added
+- **Universal Multi-Console Favorites Engine (`★`) & SD Persistence**:
+  - Added `ROM_FAVORITES` (Platform 1/16) allowing games from all 15 native emulator cores to be starred with `SELECT` button.
+  - Implemented multi-core automatic dispatch in `BmoGameboy.ino` routing any favorited game to its correct native engine (`PeanutEmu`, `WalnutEmu`, `NesEmu`, `DoomEmu`, `GenesisEmu`, `SNESEmu`, etc.).
+  - Added non-volatile `/favorites.txt` persistence on MicroSD card.
+- **Built-in "Virtual BMO (Official Game)" Integration**:
+  - Extracted and integrated `BMOv3.1.gb` (524,288 bytes) into `src/assets/roms/virtual_bmo.h`.
+  - Pre-favorited Virtual BMO in flash memory so every console boots with BMO Desktop and Guardians of Sunshine ready to play without an SD card.
+- **1-to-1 Exact Pixel-Perfect Carousel Card Replica**:
+  - Replaced list view in `display_emu.cpp` with exact 1:1 Carousel Card layout matching `tools/bmo_simulator/index.html`.
+  - Header: Dark Pine Teal `#1A4B42` with mini BMO mascot face and `SYSTEM X/16` counter.
+  - Center Card: Rounded `#1A4B42` card with gold border, badge, year, console name, format tag, game count tag, and navigation arrows.
+  - Large Hardware Pixel-Art Silhouette Icons: Custom retro hardware illustrations for all 16 platforms rendered in dedicated backdrop pill.
+- **Ambient Living Mascot Screensaver (`STATE_IDLE_MASCOT`)**:
+  - 30-second inactivity detection transitioning to full-screen dreaming BMO mascot (`DisplayEmu::drawIdleMascotScreen`).
+  - Animated blinking, sleepy expressions, floating `Z z z` bubbles, and instant any-button wake up.
+- **Retro Pixel-Art Battery Indicator**:
+  - Dynamic pixel-art battery shell with color-changing fill bars (Green > 50%, Gold 20-50%, Pulsing Red < 20%, Animated Cyan Pulse on Charge).
+- **Verified Hardware Ground Truth (`01_hardware.md`)**:
+  - Documented physical ESP32-S3-WROOM-1 N16R8 configuration: `Flash Mode: "QIO 80MHz"` (Quad SPI Flash) and `PSRAM: "OPI PSRAM"` (Octal SPI PSRAM).
+
+---
+
 ## [Milestone 10.0] - 2026-08-31 (Repository-Wide Line Benchmark & State-of-the-Art AI Knowledge Graph Engine)
 ### Added
 - **Automated AI Knowledge Graph & Indexer Pipeline (`scripts/generate_ai_knowledge_base.py`)**:
