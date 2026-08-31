@@ -151,7 +151,7 @@ def check_arduino_compile():
     print(f'  Compiling with FQBN: {ARDUINO_FQBN}')
     try:
         result = subprocess.run(
-            [cli, 'compile', '--clean', '--fqbn', ARDUINO_FQBN, str(FIRMWARE_DIR)],
+            [cli, 'compile', '--fqbn', ARDUINO_FQBN, str(FIRMWARE_DIR)],
             capture_output=True, text=True, timeout=360,
         )
     except subprocess.TimeoutExpired:
