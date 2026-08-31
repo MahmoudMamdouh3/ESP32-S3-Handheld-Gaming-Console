@@ -104,4 +104,10 @@ python -m tools.guardian report --output report_guardian.md
 
 # 6. Compile machine-readable AI Knowledge Graph and Decision Matrix
 python -m tools.guardian index
+
+# 7. Instant Zero-Shot Intent Routing for Tasks
+python -m tools.guardian route "I need to optimize scanline conversion"
+
+# 8. Instant Symbol, Function & Pin Lookup
+python -m tools.guardian lookup "DisplayEmu::streamPixelRow"
 ```

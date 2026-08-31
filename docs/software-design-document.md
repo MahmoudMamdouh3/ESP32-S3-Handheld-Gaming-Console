@@ -2,7 +2,7 @@
 **Project:** BMO-Handheld-Gaming-Console  
 **Target Platform:** ESP32-S3-N16R8 (16MB OPI Flash, 8MB Octal PSRAM)  
 **Target Display:** ST7789VW 2.4" SPI TFT (240×320 Physical, 320×240 Landscape Viewport)  
-**Document Version:** 3.1 (Living Architectural Specification — Updated 2026-08-31)  
+**Document Version:** 3.3 (Technical Specification — Updated 2026-08-31)  
 **Status:** Approved Engineering Ground Truth  
 **Maintained By:** BMO Firmware Engineering Team & Autonomous AI Agents  
 
@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary & Hardware Ground Truth
 
-The **BMO-Handheld-Gaming-Console** is an ultra-optimized, multi-platform retro gaming handheld engineered around the Espressif ESP32-S3 microcontroller. It merges a real-time procedural mascot animation system ("BMO") with a 14-core retro gaming emulation suite.
+The **BMO-Handheld-Gaming-Console** is a multi-platform retro gaming handheld firmware engineered for the Espressif ESP32-S3 microcontroller. It integrates a procedural 2D mascot animation system ("BMO") with a 14-core retro gaming emulation suite.
 
 ### Engine Status Registry
 
@@ -433,6 +433,8 @@ To allow autonomous AI agents and human engineers to develop and extend the firm
 - **Agent Handoff & Optimization Cycle (`33_agent_handoff_and_optimization_cycle.md`):** Standardized protocol for continuous anonymous agent-to-agent progress and issue tracking.
 - **Quick-Start Primer (`31_quick_start_primer.md`):** 90-second zero-context on-ramp enabling any LLM to safely contribute to the codebase.
 - **Guardian Performance Framework (`39_performance_and_benchmark_framework.md`):** Mandatory benchmarking engine rules and no-throwaway-scripts invariant.
+- **AI Knowledge Graph & Indexing Protocol (`40_ai_knowledge_graph_and_indexing_protocol.md`):** Continuous AST, symbol, and intent graph maintenance.
+- **Critical Pushback & Toolchain Autonomy (`41_engineering_communication_and_critical_pushback.md`):** Mandatory fact-checking, non-technical user protection, and ban on marketing hyperbole.
 
 ---
 
@@ -452,6 +454,8 @@ The BMO console codebase is governed by a machine-readable AI Knowledge Graph (`
 - **SD Catalog O(1) Query & Page Jump:** 16,384 PSRAM ROM indexing and navigation verified at **5.95 MOps/s** (0.168 µs latency).
 
 ### 3. Machine-Readable Knowledge Base & Decision Matrix
-- **`AGENT_KNOWLEDGE_GRAPH.json`:** Comprehensive graph indexing 782 files, 198 symbol definitions, hardware pin maps, and latency budgets.
+- **`AGENT_KNOWLEDGE_GRAPH.json`:** Comprehensive graph indexing 789 files, 198 symbol definitions, hardware pin maps, and latency budgets.
 - **`AGENT_DECISION_TREE.json`:** Zero-shot intent routing table mapping keywords to mandatory rules, primary files, guardrails, and verification commands.
+- **`python -m tools.guardian route "<task>"`:** Instant intent-to-rule navigation tool.
+- **`python -m tools.guardian lookup "<symbol>"`:** Instant symbol, function, and pin graph search tool.
 - **`python -m tools.guardian index`:** Deterministic command to regenerate the AI knowledge graph on demand.

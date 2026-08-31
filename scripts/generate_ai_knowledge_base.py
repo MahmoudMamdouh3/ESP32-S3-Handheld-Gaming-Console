@@ -23,7 +23,7 @@ from tools.guardian.core.host_bench import HostBenchmarkSuite
 
 def build_knowledge_base():
     print("=" * 70)
-    print(" BMO AI KNOWLEDGE BASE & GRAPH COMPILER (State-of-the-Art Indexer)")
+    print(" BMO AI KNOWLEDGE BASE & AST INDEX COMPILER")
     print("=" * 70)
 
     now_iso = datetime.now().isoformat()
@@ -237,9 +237,16 @@ def build_knowledge_base():
             },
             "session_handoff_and_logging": {
                 "intent_keywords": ["handoff", "changelog", "commit", "known issues", "log", "summary", "done"],
-                "mandatory_rules": ["33_agent_handoff_and_optimization_cycle.md", "06_verification_standards.md"],
+                "mandatory_rules": ["33_agent_handoff_and_optimization_cycle.md", "06_verification_standards.md", "41_engineering_communication_and_critical_pushback.md"],
                 "primary_files": [".agents/rules/04_known_issues.md", "CHANGELOG.md"],
-                "guardrails": ["Use two-header format: Verified by me this session / Waiting on you", "Run validate_repo.py first"],
+                "guardrails": ["Use two-header format: Verified by me this session / Waiting on you", "Run validate_repo.py first", "No marketing hyperbole"],
+                "verification_command": "python scripts/validate_repo.py",
+            },
+            "critical_pushback_and_fact_checking": {
+                "intent_keywords": ["idea", "question", "vibe", "change", "argue", "pushback", "suggest", "opinion", "why", "help"],
+                "mandatory_rules": ["41_engineering_communication_and_critical_pushback.md", "00_hard_stops.md", "01_hardware.md"],
+                "primary_files": [".agents/rules/41_engineering_communication_and_critical_pushback.md"],
+                "guardrails": ["Fact-check against hardware limits before executing", "Provide scientific pushback and alternatives", "No marketing hyperbole"],
                 "verification_command": "python scripts/validate_repo.py",
             },
         },
