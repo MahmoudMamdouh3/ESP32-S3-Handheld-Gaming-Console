@@ -565,48 +565,48 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
   const RomType currentConsole = consoles[selectedIndex];
   const bool isFav = (currentConsole == ROM_FAVORITES);
 
-  // Screen background: Mint Green
-  menuCanvas->fillScreen(UI_MINT);
+  // Screen background: Dark Navy / Midnight Black (Exact 1:1 match to simulator!)
+  menuCanvas->fillScreen(UI_BLACK);
 
-  // Top Header Bar: Dark Forest Teal (0, 0, 320, 36)
-  menuCanvas->fillRect(0, 0, 320, 36, UI_DEEP_TEAL);
+  // Top Header Bar: Dark Forest Teal (0, 0, 320, 42)
+  menuCanvas->fillRect(0, 0, 320, 42, UI_DEEP_TEAL);
 
-  // Mini BMO Mascot Face in top-left (8, 4, 40, 28)
-  menuCanvas->fillRoundRect(8, 4, 40, 28, 6, UI_TEAL);
-  menuCanvas->fillCircle(18, 14, 2, UI_BLACK);
-  menuCanvas->fillCircle(30, 14, 2, UI_BLACK);
-  menuCanvas->drawCircle(24, 18, 4, UI_BLACK);
-  menuCanvas->fillRect(20, 14, 8, 4, UI_TEAL);
-  menuCanvas->fillCircle(12, 19, 2, UI_CORAL);
-  menuCanvas->fillCircle(36, 19, 2, UI_CORAL);
+  // Mini BMO Mascot Face in top-left (8, 5, 48, 30)
+  menuCanvas->fillRoundRect(8, 5, 48, 30, 6, UI_TEAL);
+  menuCanvas->fillCircle(20, 15, 2, UI_BLACK);
+  menuCanvas->fillCircle(36, 15, 2, UI_BLACK);
+  menuCanvas->drawCircle(28, 20, 4, UI_BLACK);
+  menuCanvas->fillRect(24, 15, 8, 4, UI_TEAL);
+  menuCanvas->fillCircle(14, 20, 2, UI_CORAL);
+  menuCanvas->fillCircle(42, 20, 2, UI_CORAL);
 
   // Top Right System Counter ("SYSTEM 1/16")
   menuCanvas->setFont();
   char counterStr[32];
   snprintf(counterStr, sizeof(counterStr), "SYSTEM %d/%d", selectedIndex + 1, consoleCount);
-  menuCanvas->setCursor(228, 14);
+  menuCanvas->setCursor(220, 20);
   menuCanvas->setTextColor(UI_MINT);
   menuCanvas->print(counterStr);
 
-  // Center Carousel Card (35, 46, 250, 156) — Exact 1:1 match to simulator!
+  // Center Carousel Card (35, 54, 250, 148) — Exact 1:1 match to simulator!
   const int cardX = 35;
-  const int cardY = 46;
+  const int cardY = 54;
   const int cardW = 250;
-  const int cardH = 156;
+  const int cardH = 148;
 
   menuCanvas->fillRoundRect(cardX, cardY, cardW, cardH, 12, UI_DEEP_TEAL);
   menuCanvas->drawRoundRect(cardX, cardY, cardW, cardH, 12, UI_YELLOW);
   menuCanvas->drawRoundRect(cardX + 1, cardY + 1, cardW - 2, cardH - 2, 11, UI_YELLOW);
 
-  // Console Badge [ FAV ] / [ GB ] (cardX + 16, cardY + 14, 54, 22)
-  menuCanvas->fillRoundRect(cardX + 16, cardY + 14, 54, 22, 6, UI_YELLOW);
+  // Console Badge [ FAV ] / [ GB ] (cardX + 16, cardY + 16, 54, 24)
+  menuCanvas->fillRoundRect(cardX + 16, cardY + 16, 54, 24, 6, UI_YELLOW);
   menuCanvas->setFont();
-  menuCanvas->setCursor(cardX + 24, cardY + 21);
+  menuCanvas->setCursor(cardX + 24, cardY + 24);
   menuCanvas->setTextColor(UI_BLACK);
   menuCanvas->print(consoleBadge(currentConsole));
 
   // Year / "Starred" in top-right of card
-  menuCanvas->setCursor(cardX + cardW - 65, cardY + 21);
+  menuCanvas->setCursor(cardX + cardW - 65, cardY + 24);
   menuCanvas->setTextColor(UI_YELLOW);
   if (isFav) {
     menuCanvas->print("Starred");
@@ -615,39 +615,39 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
   }
 
   // Full Console Name
-  menuCanvas->setFont(&FreeSans12pt7b);
-  menuCanvas->setCursor(cardX + 16, cardY + 68);
+  menuCanvas->setFont(&FreeSans9pt7b);
+  menuCanvas->setCursor(cardX + 16, cardY + 74);
   menuCanvas->setTextColor(UI_WHITE);
   if (isFav) {
-    menuCanvas->print("Favorites");
+    menuCanvas->print("* Favorites");
   } else {
     menuCanvas->print(consoleName(currentConsole));
   }
 
   // Format Tag
   menuCanvas->setFont();
-  menuCanvas->setCursor(cardX + 16, cardY + 88);
+  menuCanvas->setCursor(cardX + 16, cardY + 95);
   menuCanvas->setTextColor(UI_MINT);
   char fmtBuf[32];
   snprintf(fmtBuf, sizeof(fmtBuf), "Format: %s", isFav ? "*" : consoleExt(currentConsole));
   menuCanvas->print(fmtBuf);
 
   // Game Count Tag
-  menuCanvas->setCursor(cardX + 16, cardY + 120);
+  menuCanvas->setCursor(cardX + 16, cardY + 124);
   menuCanvas->setTextColor(UI_YELLOW);
   char countBuf[32];
   snprintf(countBuf, sizeof(countBuf), "* %d Games Ready", gameCounts[selectedIndex]);
   menuCanvas->print(countBuf);
 
   // Large Pixel-Art Silhouette Icon under the Date on Right of Card!
-  drawConsoleIcon(currentConsole, cardX + 168, cardY + 48, UI_YELLOW);
+  drawConsoleIcon(currentConsole, cardX + 175, cardY + 50, UI_YELLOW);
 
   // Left & Right Carousel Arrows
   menuCanvas->setFont(&FreeSans12pt7b);
-  menuCanvas->setCursor(12, 134);
+  menuCanvas->setCursor(14, 134);
   menuCanvas->setTextColor(UI_TEAL);
   menuCanvas->print("<");
-  menuCanvas->setCursor(296, 134);
+  menuCanvas->setCursor(298, 134);
   menuCanvas->print(">");
 
   // Footer Instruction Bar (0, 214, 320, 26)
@@ -658,7 +658,7 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
   if (!sdMounted) {
     menuCanvas->print("BUILT-IN GAMES ONLY - SD CARD NOT FOUND");
   } else {
-    menuCanvas->print("A: Browse  |  SELECT: Specs  |  < / >: Console");
+    menuCanvas->print("A: Browse Games  |  SELECT: Specs  |  < / >: Console");
   }
 
   writeMenuCanvas();
