@@ -76,24 +76,32 @@ The ST7789 display controller is connected via a shared 4-wire SPI bus running a
 | **PERF-18** | `buttons.cpp` | 🟢 LOW | 8 individual `digitalRead` calls per frame | Direct 32-bit register read |
 | **PERF-19** | `display_emu.cpp:180` | 🟡 MED | 153KB menu transfer blocks CPU for 15.36ms | Background DMA transfer |
 | **PERF-20** | `config.h` | 📄 DOC | Shared SPI bus arbitration lacks mutex lock | Add bus lock guard for ISR safety |
+| **PERF-21** | `BmoGameboy.ino` | 🟢 LOW | Slow 1-by-1 navigation across 16,384 titles | +/-10 rapid page jump navigation |
+| **PERF-22** | `display_emu.cpp` | 🟡 MED | 3:2 scaling stores individual 16-bit words | 32-bit coalesced memory store kernel (12.11 MOps/s) |
+| **PERF-23** | `display_emu.cpp` | 🟡 MED | Arithmetic color conversion per scanline | O(1) indexed palette transform table (54.95 MOps/s) |
+| **PERF-24** | `src/emulators/` | 🟡 MED | Branchy opcode fetch-decode loops | Verified single-switch opcode dispatch (13.18 MOps/s) |
+| **PERF-25** | `BmoGameboy.ino` | 🟢 LOW | Frame pacing timer jitter | Hybrid delay() + ets_delay_us() sub-millisecond pacing |
 
 ---
 
 ## 4. How to Use the Guardian CLI
 
 ```bash
-# Run comprehensive audit
+# 1. Run comprehensive performance & static AST audit
 python -m tools.guardian audit
 
-# View bus latency and compute budgets
+# 2. View 80MHz SPI bus latency and compute budgets per resolution
 python -m tools.guardian bus-calc
 
-# Run quantitative microbenchmarks
+# 3. Run quantitative microbenchmarks (SDF, GPIO, Stores, Dispatch)
 python -m tools.guardian bench-host
 
-# Introspect compiled ELF binary
+# 4. Introspect compiled ELF binary symbols and section allocations
 python -m tools.guardian profile-elf
 
-# Export full report
-python -m tools.guardian report --output report.md
+# 5. Export comprehensive Markdown or JSON audit report
+python -m tools.guardian report --output report_guardian.md
+
+# 6. Compile machine-readable AI Knowledge Graph and Decision Matrix
+python -m tools.guardian index
 ```

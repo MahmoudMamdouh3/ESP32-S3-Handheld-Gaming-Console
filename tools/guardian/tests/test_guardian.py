@@ -66,7 +66,7 @@ class TestGuardianEngine(unittest.TestCase):
         """Verify host microbenchmarks run and produce valid quantitative numbers."""
         suite = HostBenchmarkSuite()
         metrics = suite.run_all()
-        self.assertEqual(len(metrics), 4)
+        self.assertEqual(len(metrics), 7)
         for m in metrics:
             self.assertGreater(m.iterations, 0)
             self.assertGreater(m.total_time_ms, 0.0)
@@ -79,6 +79,7 @@ class TestGuardianEngine(unittest.TestCase):
         bus_metrics = bus_model.calculate_all()
         linter = FirmwareAstLinter(FIRMWARE_DIR)
         ast_findings = linter.lint_all()
+        file_stats = linter.get_repo_line_stats()
         elf_analyzer = ElfAnalyzer(REPO_ROOT)
         elf_res = elf_analyzer.analyze()
         suite = HostBenchmarkSuite()
@@ -88,19 +89,22 @@ class TestGuardianEngine(unittest.TestCase):
 
         # Markdown
         md = ReportGenerator.generate_markdown(
-            elf_res, bus_metrics, ast_findings, cppcheck_findings, bench_metrics
+            elf_res, bus_metrics, ast_findings, cppcheck_findings, bench_metrics, file_stats
         )
-        self.assertIn("# BMO Guardian Performance & Ground-Truth Audit Report", md)
+        self.assertIn("BMO Handheld Console — Complete Line-by-Line Benchmark", md)
         self.assertIn("Hardware Bus & Frame Transmission Physics Model", md)
+        self.assertIn("Comprehensive Line-by-Line Repository Codebase Audit", md)
 
         # JSON
         json_str = ReportGenerator.generate_json(
-            elf_res, bus_metrics, ast_findings, cppcheck_findings, bench_metrics
+            elf_res, bus_metrics, ast_findings, cppcheck_findings, bench_metrics, file_stats
         )
         data = json.loads(json_str)
         self.assertIn("timestamp", data)
         self.assertIn("bus_metrics", data)
         self.assertIn("microbenchmarks", data)
+        self.assertIn("file_stats", data)
+        self.assertGreater(len(data["file_stats"]), 50)
 
 
 if __name__ == "__main__":

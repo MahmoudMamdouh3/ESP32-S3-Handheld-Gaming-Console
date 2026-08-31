@@ -45,12 +45,17 @@ def cmd_audit(args) -> int:
     print(f"  Processed {len(bus_metrics)} console viewport modes.")
     print(f"  Modes requiring DMA double-buffering for 60 FPS: {len(pinched)}")
 
-    # 2. Static AST Linter
-    print("\n[2/5] Running Embedded Firmware AST & Anti-Pattern Linter...")
+    # 2. Static AST Linter & Line-by-Line Code Density
+    print("\n[2/5] Running Embedded Firmware AST Linter & Line-by-Line Audit...")
     linter = FirmwareAstLinter(FIRMWARE_DIR)
     ast_findings = linter.lint_all()
+    file_stats = linter.get_repo_line_stats()
+    total_lines = sum(f.total_lines for f in file_stats)
+    total_sloc = sum(f.sloc for f in file_stats)
+    total_comments = sum(f.comment_lines for f in file_stats)
     critical = [f for f in ast_findings if f.severity == "CRITICAL"]
     warnings = [f for f in ast_findings if f.severity == "WARNING"]
+    print(f"  Audited {len(file_stats)} repository source files ({total_lines:,} total lines, {total_sloc:,} SLOC, {total_comments:,} comments).")
     print(f"  AST Violations: {len(critical)} Critical, {len(warnings)} Warnings.")
     for f in critical:
         print(f"    [CRITICAL] [{f.rule_id}] {f.file_path.name}:{f.line_number} -- {f.message}")
@@ -140,6 +145,7 @@ def cmd_report(args) -> int:
     
     linter = FirmwareAstLinter(FIRMWARE_DIR)
     ast_findings = linter.lint_all()
+    file_stats = linter.get_repo_line_stats()
     
     elf_analyzer = ElfAnalyzer(REPO_ROOT)
     elf_res = elf_analyzer.analyze()
@@ -152,11 +158,11 @@ def cmd_report(args) -> int:
     
     if hasattr(args, "json") and args.json:
         content = ReportGenerator.generate_json(
-            elf_res, bus_metrics, ast_findings, cppcheck_findings, bench_metrics
+            elf_res, bus_metrics, ast_findings, cppcheck_findings, bench_metrics, file_stats
         )
     else:
         content = ReportGenerator.generate_markdown(
-            elf_res, bus_metrics, ast_findings, cppcheck_findings, bench_metrics
+            elf_res, bus_metrics, ast_findings, cppcheck_findings, bench_metrics, file_stats
         )
         
     if hasattr(args, "output") and args.output:
@@ -166,6 +172,13 @@ def cmd_report(args) -> int:
     else:
         print(content)
         
+    return 0
+
+
+def cmd_index(args) -> int:
+    """Compiles the machine-readable AI knowledge base and graph."""
+    from scripts.generate_ai_knowledge_base import build_knowledge_base
+    build_knowledge_base()
     return 0
 
 
@@ -195,6 +208,9 @@ def main() -> int:
     p_rep.add_argument("--output", "-o", help="Output file path (e.g. report.md)")
     p_rep.add_argument("--json", action="store_true", help="Output JSON instead of Markdown")
 
+    # index
+    subparsers.add_parser("index", help="Compile machine-readable AI knowledge graph and decision tree")
+
     args = parser.parse_args()
     if not args.command:
         parser.print_help()
@@ -207,6 +223,7 @@ def main() -> int:
         "bench-host": cmd_bench_host,
         "cppcheck": cmd_audit,
         "report": cmd_report,
+        "index": cmd_index,
     }
 
     handler = commands.get(args.command)

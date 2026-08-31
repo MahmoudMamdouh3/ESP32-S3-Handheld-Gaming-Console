@@ -432,3 +432,26 @@ To allow autonomous AI agents and human engineers to develop and extend the firm
 - **Common Mistakes Catalogue (`30_common_agent_mistakes.md`):** Anti-pattern registry cataloguing historical failure modes (M-1 through M-20) with immediate preventions.
 - **Agent Handoff & Optimization Cycle (`33_agent_handoff_and_optimization_cycle.md`):** Standardized protocol for continuous anonymous agent-to-agent progress and issue tracking.
 - **Quick-Start Primer (`31_quick_start_primer.md`):** 90-second zero-context on-ramp enabling any LLM to safely contribute to the codebase.
+- **Guardian Performance Framework (`39_performance_and_benchmark_framework.md`):** Mandatory benchmarking engine rules and no-throwaway-scripts invariant.
+
+---
+
+## 13. Guardian Performance Physics, Line Density & AI Knowledge Graph
+
+The BMO console codebase is governed by a machine-readable AI Knowledge Graph (`AGENT_KNOWLEDGE_GRAPH.json`) and the Guardian telemetry engine (`tools/guardian/`):
+
+### 1. Hardware SPI Bus Physics (80 MHz FSPI)
+- Frame transfer time for 320×240 (153,600 bytes) is **15.36 ms** (92.2% bus saturation). Sequential blocking execution leaves only **1.31 ms** for CPU execution at 60 FPS. High-resolution modes require **DMA double-buffering**.
+- Game Boy 240×216 (103,680 bytes) takes **10.37 ms** (61.9% bus saturation), leaving **6.37 ms** for 4.19MHz Z80 emulation.
+
+### 2. Host Microbenchmark Baselines
+- **BMO Mascot SDF Procedural Math (PERF-12):** Spatial bounding box culling reduced evaluation latency from **1,252.76 µs → 483.97 µs (61.4% speedup)** at **8.46 MOps/s**.
+- **Direct Atomic GPIO Sampling (PERF-18):** Atomic single-cycle `REG_READ(GPIO_IN_REG)` bitmask unpacking runs at **16.02 MOps/s** (0.499 µs latency).
+- **O(1) Palette Indexed Scanline Transformation:** Converts indexed 240-pixel scanlines to BGR565 at **54.95 MOps/s** (4.37 µs per line).
+- **4-Pixel to 6-Pixel 32-bit Stores:** Coalesced memory store kernel runs at **12.11 MOps/s** (2.48 µs latency).
+- **SD Catalog O(1) Query & Page Jump:** 16,384 PSRAM ROM indexing and navigation verified at **5.95 MOps/s** (0.168 µs latency).
+
+### 3. Machine-Readable Knowledge Base & Decision Matrix
+- **`AGENT_KNOWLEDGE_GRAPH.json`:** Comprehensive graph indexing 782 files, 198 symbol definitions, hardware pin maps, and latency budgets.
+- **`AGENT_DECISION_TREE.json`:** Zero-shot intent routing table mapping keywords to mandatory rules, primary files, guardrails, and verification commands.
+- **`python -m tools.guardian index`:** Deterministic command to regenerate the AI knowledge graph on demand.

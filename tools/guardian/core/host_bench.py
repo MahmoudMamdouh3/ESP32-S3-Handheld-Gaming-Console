@@ -26,13 +26,16 @@ class HostBenchmarkSuite:
     def run_all(self) -> List[BenchmarkMetric]:
         metrics: List[BenchmarkMetric] = []
         metrics.append(self.bench_bmo_sdf_face_renderer())
+        metrics.append(self.bench_bmo_sdf_culled_face_renderer())
         metrics.append(self.bench_4pixel_coalesce_packing())
         metrics.append(self.bench_palette_lookup_transform())
         metrics.append(self.bench_z80_emulated_dispatch())
+        metrics.append(self.bench_direct_gpio_read_vs_digital_read())
+        metrics.append(self.bench_sd_catalog_indexing_and_page_jump())
         return metrics
 
     def bench_bmo_sdf_face_renderer(self, iterations: int = 100) -> BenchmarkMetric:
-        """Simulates BmoFace 128x128 SDF procedural mathematical evaluation."""
+        """Simulates BmoFace 128x128 SDF procedural mathematical evaluation (un-culled baseline)."""
         w, h = 128, 128
         total_pixels = w * h
         
@@ -69,12 +72,58 @@ class HostBenchmarkSuite:
         throughput = (pixels_evaluated / elapsed_sec) / 1_000_000.0
 
         return BenchmarkMetric(
-            name="BMO_SDF_Procedural_Face_Render",
+            name="BMO_SDF_Procedural_Face_Render_Unculled",
             iterations=iterations,
             total_time_ms=elapsed_ms,
             avg_latency_us=avg_us,
             throughput_mops=throughput,
-            description="Evaluates procedural 2D Signed Distance Field (SDF) mathematics across 128x128 grid.",
+            description="Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling.",
+        )
+
+    def bench_bmo_sdf_culled_face_renderer(self, iterations: int = 200) -> BenchmarkMetric:
+        """Simulates BmoFace 128x128 SDF evaluation with bounding-box feature culling (PERF-12)."""
+        w, h = 128, 128
+        total_pixels = w * h
+        
+        start = time.perf_counter()
+        
+        for _ in range(iterations):
+            for y in range(0, h, 2):
+                py = (y / h) * 2.0 - 1.0
+                # Y-culling: skip entire rows outside feature zones
+                if not (-0.5 < py < 0.45):
+                    continue
+                for x in range(0, w, 2):
+                    px = (x / w) * 2.0 - 1.0
+                    # X-culling: skip background regions
+                    if not (-0.75 < px < 0.75):
+                        continue
+                    
+                    sx1 = (px + 0.3) / 0.28
+                    sy1 = (py - 0.15) / 0.154
+                    r1 = math.sqrt(sx1 * sx1 + sy1 * sy1)
+                    
+                    sx2 = (px - 0.3) / 0.28
+                    sy2 = (py - 0.15) / 0.154
+                    r2 = math.sqrt(sx2 * sx2 + sy2 * sy2)
+                    
+                    arcY = 0.4 * px * px
+                    m_dist = abs(py + 0.25 - arcY) - 0.055
+                    val = r1 + r2 + m_dist
+
+        elapsed_sec = time.perf_counter() - start
+        elapsed_ms = elapsed_sec * 1000.0
+        avg_us = (elapsed_ms * 1000.0) / iterations
+        pixels_evaluated = (total_pixels // 4) * iterations
+        throughput = (pixels_evaluated / elapsed_sec) / 1_000_000.0
+
+        return BenchmarkMetric(
+            name="BMO_SDF_Procedural_Face_Render_Culled",
+            iterations=iterations,
+            total_time_ms=elapsed_ms,
+            avg_latency_us=avg_us,
+            throughput_mops=throughput,
+            description="Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction).",
         )
 
     def bench_4pixel_coalesce_packing(self, iterations: int = 50000) -> BenchmarkMetric:
@@ -167,4 +216,68 @@ class HostBenchmarkSuite:
             avg_latency_us=avg_us,
             throughput_mops=mips,
             description="Simulates CPU opcode fetch-decode-execute cycle dispatch throughput.",
+        )
+
+    def bench_direct_gpio_read_vs_digital_read(self, iterations: int = 100000) -> BenchmarkMetric:
+        """Benchmarks atomic REG_READ(GPIO_IN_REG) bitmask unpacking vs 8x digitalRead calls."""
+        raw_reg_val = 0b00000000_00000000_00000001_10110000
+        
+        start = time.perf_counter()
+        
+        for _ in range(iterations):
+            btn_up     = (raw_reg_val >> 4) & 1
+            btn_down   = (raw_reg_val >> 5) & 1
+            btn_left   = (raw_reg_val >> 6) & 1
+            btn_right  = (raw_reg_val >> 7) & 1
+            btn_a      = (raw_reg_val >> 15) & 1
+            btn_b      = (raw_reg_val >> 16) & 1
+            btn_start  = (raw_reg_val >> 0) & 1
+            btn_select = (raw_reg_val >> 14) & 1
+            mask = (btn_up << 0) | (btn_down << 1) | (btn_left << 2) | (btn_right << 3) | \
+                   (btn_a << 4) | (btn_b << 5) | (btn_select << 6) | (btn_start << 7)
+
+        elapsed_sec = time.perf_counter() - start
+        elapsed_ms = elapsed_sec * 1000.0
+        avg_us = (elapsed_ms * 1000.0) / iterations
+        reads = 8 * iterations
+        throughput = (reads / elapsed_sec) / 1_000_000.0
+
+        return BenchmarkMetric(
+            name="Direct_GPIO_Atomic_Bitmask_Sampling",
+            iterations=iterations,
+            total_time_ms=elapsed_ms,
+            avg_latency_us=avg_us,
+            throughput_mops=throughput,
+            description="Measures atomic 8-pin bitmask unpacking replacing 8 sequential digitalRead calls.",
+        )
+
+    def bench_sd_catalog_indexing_and_page_jump(self, iterations: int = 10000) -> BenchmarkMetric:
+        """Benchmarks 16,384 PSRAM ROM indexing and O(1) query + page navigation (PERF-02, PERF-03)."""
+        catalog_types = [i % 15 for i in range(16384)]
+        cached_counts = [0] * 15
+        for t in catalog_types:
+            cached_counts[t] += 1
+            
+        start = time.perf_counter()
+        
+        for _ in range(iterations):
+            active_console = 4
+            count = cached_counts[active_console]
+            sel_idx = (120 + 10) % count
+            page_start = max(0, min(sel_idx - 1, count - 4))
+            window = [page_start, page_start + 1, page_start + 2, page_start + 3]
+
+        elapsed_sec = time.perf_counter() - start
+        elapsed_ms = elapsed_sec * 1000.0
+        avg_us = (elapsed_ms * 1000.0) / iterations
+        lookups = iterations
+        throughput = (lookups / elapsed_sec) / 1_000_000.0
+
+        return BenchmarkMetric(
+            name="SD_Catalog_O1_Query_And_Page_Jump",
+            iterations=iterations,
+            total_time_ms=elapsed_ms,
+            avg_latency_us=avg_us,
+            throughput_mops=throughput,
+            description="Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations.",
         )

@@ -1,13 +1,13 @@
 """
 tools.guardian.core.ast_linter — Embedded Firmware Static AST & Pattern Linter
 Analyzes C, C++, and INO firmware files to detect memory leaks, unaligned access,
-missing compiler optimizations, IRAM/DRAM misplacements, and hot-path anti-patterns.
+missing compiler optimizations, IRAM/DRAM misplacements, line density metrics, and hot-path anti-patterns.
 """
 
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional, Tuple
 
 
 @dataclass
@@ -21,11 +21,128 @@ class LintFinding:
     suggested_fix: str
 
 
+@dataclass
+class FileLineStats:
+    file_path: Path
+    rel_path: str
+    category: str
+    total_lines: int
+    sloc: int
+    comment_lines: int
+    blank_lines: int
+    code_density_percent: float
+
+
 class FirmwareAstLinter:
     """Embedded static linter tailored for ESP32-S3 retro gaming console firmware."""
 
     def __init__(self, firmware_dir: Path):
         self.firmware_dir = firmware_dir
+        self.repo_root = firmware_dir.parents[1] if firmware_dir.name == "BmoGameboy" else firmware_dir
+
+    def get_repo_line_stats(self) -> List[FileLineStats]:
+        """Calculates precise line-by-line statistics across every single file in the repository."""
+        stats: List[FileLineStats] = []
+        
+        target_suffixes = {".c", ".cpp", ".h", ".hpp", ".ino", ".py", ".md", ".json", ".csv"}
+        
+        for path in sorted(self.repo_root.rglob("*")):
+            if not path.is_file():
+                continue
+            if ".git" in path.parts or ".rom_cache" in path.parts or "games" in path.parts or "__pycache__" in path.parts:
+                continue
+            suffix = path.suffix.lower()
+            if suffix not in target_suffixes:
+                continue
+
+            try:
+                content = path.read_text(encoding="utf-8", errors="ignore")
+            except Exception:
+                continue
+
+            lines = content.splitlines()
+            total = len(lines)
+            blanks = sum(1 for l in lines if not l.strip())
+            comments = 0
+            sloc = 0
+            
+            in_block_comment = False
+            for line in lines:
+                s = line.strip()
+                if not s:
+                    continue
+                if suffix in {".c", ".cpp", ".h", ".hpp", ".ino"}:
+                    if in_block_comment:
+                        comments += 1
+                        if "*/" in s:
+                            in_block_comment = False
+                    elif s.startswith("/*"):
+                        comments += 1
+                        if "*/" not in s:
+                            in_block_comment = True
+                    elif s.startswith("//"):
+                        comments += 1
+                    else:
+                        sloc += 1
+                elif suffix == ".py":
+                    if s.startswith("#"):
+                        comments += 1
+                    elif '"""' in s or "'''" in s:
+                        comments += 1
+                    else:
+                        sloc += 1
+                elif suffix == ".md":
+                    if s.startswith("<!--"):
+                        comments += 1
+                    else:
+                        sloc += 1
+                else:
+                    sloc += 1
+
+            rel_path = str(path.relative_to(self.repo_root)).replace("\\", "/")
+            
+            cat = "OTHER"
+            if rel_path.startswith("firmware/BmoGameboy/src/core"):
+                cat = "FIRMWARE_CORE"
+            elif rel_path.startswith("firmware/BmoGameboy/src/emulators"):
+                cat = "EMULATOR_WRAPPERS"
+            elif rel_path.startswith("firmware/BmoGameboy/src/engine"):
+                cat = "ENGINE_GBC"
+            elif rel_path.startswith("firmware/BmoGameboy/src/vendor"):
+                cat = "VENDOR_ENGINES"
+            elif rel_path.startswith("firmware/BmoGameboy/src/assets"):
+                cat = "BAKED_ROMS"
+            elif rel_path.startswith("firmware/BmoGameboy"):
+                cat = "FIRMWARE_TOP"
+            elif rel_path.startswith("tools/guardian"):
+                cat = "GUARDIAN_TOOLCHAIN"
+            elif rel_path.startswith("tools"):
+                cat = "TOOLS"
+            elif rel_path.startswith("scripts"):
+                cat = "SCRIPTS"
+            elif rel_path.startswith("tests"):
+                cat = "TESTS"
+            elif rel_path.startswith(".agents/rules"):
+                cat = "AGENT_RULES"
+            elif rel_path.startswith("docs"):
+                cat = "DOCUMENTATION"
+
+            density = (sloc / total * 100.0) if total > 0 else 0.0
+
+            stats.append(
+                FileLineStats(
+                    file_path=path,
+                    rel_path=rel_path,
+                    category=cat,
+                    total_lines=total,
+                    sloc=sloc,
+                    comment_lines=comments,
+                    blank_lines=blanks,
+                    code_density_percent=density,
+                )
+            )
+
+        return stats
 
     def lint_all(self) -> List[LintFinding]:
         findings: List[LintFinding] = []
@@ -46,7 +163,7 @@ class FirmwareAstLinter:
         findings: List[LintFinding] = []
         try:
             content = path.read_text(encoding="utf-8", errors="ignore")
-        except Exception as e:
+        except Exception:
             return findings
 
         lines = content.splitlines()
@@ -100,7 +217,6 @@ class FirmwareAstLinter:
             if clean.startswith("//") or clean.startswith("/*") or clean.startswith("#define"):
                 continue
             if "#else" in clean:
-                # If previous block had ESP32 PSRAM allocation, this is host fallback
                 if idx > 2 and ("Doom_MallocPSRAM" in lines[idx-2] or "heap_caps_malloc" in lines[idx-2]):
                     in_host_fallback = True
             elif "#endif" in clean:
@@ -109,9 +225,7 @@ class FirmwareAstLinter:
             if in_host_fallback:
                 continue
 
-            # Look for malloc() that is not wrapped or heap_caps_malloc
             if re.search(r"\bmalloc\s*\([^)]+\)", clean) and "heap_caps_malloc" not in clean and "Doom_MallocPSRAM" not in clean:
-                # Ignore small host test files or harmless small string allocations
                 if "host_test" not in rel_path_str and "m_argv" not in rel_path_str and "m_misc" not in rel_path_str:
                     severity = "CRITICAL" if any(k in clean.lower() for k in ["screen", "framebuffer", "ctx", "zone", "ram", "buffer"]) else "WARNING"
                     findings.append(
@@ -160,7 +274,6 @@ class FirmwareAstLinter:
                         )
                     )
                 if idx > loop_idx and "rebuildVisibleGames()" in clean:
-                    # Check if guarded by visibleGamesDirty
                     prev_lines = " ".join(lines[max(0, idx-3):idx])
                     if "visibleGamesDirty" not in prev_lines and "visibleGamesDirty" not in clean:
                         findings.append(
@@ -207,9 +320,7 @@ class FirmwareAstLinter:
         # Rule 7: Check for stack-allocated large frame buffers
         for idx, line in enumerate(lines, 1):
             clean = line.strip()
-            # Catch e.g. uint16_t row_buf[256] inside functions
             if re.search(r"uint16_t\s+[a-zA-Z0-9_]+\[\s*(240|256|320|480)\s*\]", clean):
-                # If inside function (indented), flag warning
                 if line.startswith("  ") or line.startswith("\t"):
                     if "static" not in clean:
                         findings.append(
@@ -221,6 +332,26 @@ class FirmwareAstLinter:
                                 line_content=clean,
                                 message="Large scanline buffer allocated on stack in hot path.",
                                 suggested_fix="Make static module-level or 4-byte aligned DRAM/PSRAM buffer.",
+                            )
+                        )
+
+        # Rule 8: Check for raw unaligned 16/32-bit pointer casts in ROM reading paths
+        if "src/emulators/" in rel_path_str or "src/engine/" in rel_path_str:
+            for idx, line in enumerate(lines, 1):
+                clean = line.strip()
+                if clean.startswith("//") or clean.startswith("/*"):
+                    continue
+                if re.search(r"\*\s*\(\s*uint16_t\s*\*\s*\)\s*&?[a-zA-Z0-9_]+\[", clean):
+                    if "gb_rom_read" in clean or "rom" in clean.lower():
+                        findings.append(
+                            LintFinding(
+                                rule_id="UNALIGNED_ROM_POINTER_CAST",
+                                severity="WARNING",
+                                file_path=path,
+                                line_number=idx,
+                                line_content=clean,
+                                message="Unaligned 16-bit pointer dereference in ROM memory path.",
+                                suggested_fix="Use explicit byte-wise little-endian reconstruction: `b0 | (b1 << 8)`.",
                             )
                         )
 
