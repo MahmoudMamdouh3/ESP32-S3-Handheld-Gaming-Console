@@ -1,3 +1,4 @@
+#pragma GCC optimize ("O3,unroll-loops")
 #include "emu_colem.h"
 #include "../vendor/colem/colem.h"
 #include "../core/display_emu.h"

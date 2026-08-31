@@ -18,7 +18,12 @@ void doomgeneric_Create(int argc, char **argv)
 
 	M_FindResponseFile();
 
+#if defined(ESP32) || defined(ARDUINO)
+    extern void* Doom_MallocPSRAM(size_t size);
+	DG_ScreenBuffer = (pixel_t*)Doom_MallocPSRAM(DOOMGENERIC_RESX * DOOMGENERIC_RESY * 4);
+#else
 	DG_ScreenBuffer = malloc(DOOMGENERIC_RESX * DOOMGENERIC_RESY * 4);
+#endif
 
 	DG_Init();
 

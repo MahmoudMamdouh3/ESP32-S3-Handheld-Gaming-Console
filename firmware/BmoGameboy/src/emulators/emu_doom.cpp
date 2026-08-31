@@ -1,3 +1,4 @@
+#pragma GCC optimize ("O3,unroll-loops")
 #include "emu_doom.h"
 #include "../core/display_emu.h"
 #include "../core/buttons.h"

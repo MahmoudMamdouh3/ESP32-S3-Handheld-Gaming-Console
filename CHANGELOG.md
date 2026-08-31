@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Milestone 9.1] - 2026-08-31 (Performance Optimizations & Critical Memory Safety Fixes)
+### Fixed & Optimized
+- **PERF-01 (SD Clock Speedup)**: Bumped `SD.begin` SPI clock from 4 MHz to 25 MHz in `src/core/sd_card.cpp` (5-6× ROM load speedup; 4MB loads in ~1.5s vs ~8s).
+- **PERF-02 (O(1) Game Counting)**: Replaced per-frame O(N×15) = 245K iteration scan in `BmoGameboy.ino` with cached `romCountsByType[]` and O(1) `SDCard::getRomCountForType()`.
+- **PERF-03 (Visible Games Dirty Gating)**: Added `visibleGamesDirty` flag in `BmoGameboy.ino` to eliminate O(N) game menu filter scans on idle frames.
+- **PERF-05 (NES Internal SRAM Relief)**: Patched `agnes.c:511` to allocate `agnes_t` in `MALLOC_CAP_SPIRAM`, saving ~40KB of internal DRAM.
+- **PERF-06, PERF-15, PERF-16 (Compiler Optimization Pragmas)**: Added `#pragma GCC optimize("O3,unroll-loops")` to `emu_nes.cpp`, `emu_sms.cpp`, `emu_doom.cpp`, and all 9 Tier 2 emulator wrappers.
+- **PERF-07 (Vectorized Scanline Buffering)**: Hoisted stack row buffers to static 4-byte aligned module buffers (`s_nesRowBuf`, `s_doomLineBuf`) with 32-bit coalesced stores (2 pixels per store).
+- **PERF-10 & PERF-11 (DOOM PSRAM Allocation Routing)**: Routed DOOM `DG_ScreenBuffer` (256KB) and zone memory heap `zonemem` (4MB) to `Doom_MallocPSRAM` (`MALLOC_CAP_SPIRAM`), eliminating fatal DRAM out-of-memory errors.
+
+---
+
 ## [Milestone 9.0] - 2026-08-31 (Guardian Performance, Ground-Truth & Benchmarking Architecture)
 ### Added
 - **Unified Guardian Ground-Truth Engine (`tools/guardian/`)**:

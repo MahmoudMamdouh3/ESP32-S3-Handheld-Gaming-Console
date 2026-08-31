@@ -116,7 +116,12 @@ static byte *AutoAllocMemory(int *size, int default_ram, int min_ram)
 
         *size = default_ram * 1024 * 1024;
 
+#if defined(ESP32) || defined(ARDUINO)
+        extern void* Doom_MallocPSRAM(size_t size);
+        zonemem = (byte*)Doom_MallocPSRAM(*size);
+#else
         zonemem = malloc(*size);
+#endif
 
         // Failed to allocate?  Reduce zone size until we reach a size
         // that is acceptable.

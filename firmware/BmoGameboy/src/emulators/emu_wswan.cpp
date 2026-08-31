@@ -1,3 +1,4 @@
+#pragma GCC optimize ("O3,unroll-loops")
 #include "emu_wswan.h"
 #include "../vendor/wswan/wswan.h"
 #include "../core/display_emu.h"

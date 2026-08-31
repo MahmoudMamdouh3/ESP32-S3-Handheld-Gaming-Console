@@ -34,6 +34,7 @@ public:
   // Scans the root directory for ROMs and builds a list
   static void scanRoms();
   static int getRomCount();
+  static int getRomCountForType(RomType type);
   static const RomFile* getRomInfo(int index);
   
   // Dynamically load a ROM file entirely into PSRAM

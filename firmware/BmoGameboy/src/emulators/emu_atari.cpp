@@ -1,3 +1,4 @@
+#pragma GCC optimize ("O3,unroll-loops")
 #include "emu_atari.h"
 #include "../vendor/stella/atari.h"
 #include "../core/display_emu.h"

@@ -1,8 +1,8 @@
 # BMO Guardian Performance & Ground-Truth Audit Report
-**Generated:** 2026-08-31 14:08:02  
+**Generated:** 2026-08-31 14:44:37  
 **Target MCU:** ESP32-S3-N16R8 (240MHz Xtensa LX7, 16MB OPI Flash, 8MB Octal PSRAM)  
 **Display:** ST7789VW 2.4" TFT on Shared 80MHz FSPI  
-**Ground-Truth Status:** FAIL (Critical Violations Found)
+**Ground-Truth Status:** PASS
 
 ---
 
@@ -13,8 +13,8 @@
 | **Internal SRAM (DRAM)** | 244,352 bytes | 327,680 bytes | 74.6% | ✅ OK |
 | **Flash Storage (app0)** | 5,002,020 bytes | 16,777,216 bytes | 29.8% | ✅ OK (Headroom 70%) |
 | **Static PSRAM** | 0 bytes | 8,388,608 bytes | 0.0% | ✅ OK |
-| **AST Critical Findings** | 4 | 0 allowed | - | 🔴 FAIL |
-| **AST Warnings** | 29 | < 10 allowed | - | ⚠️ WARN |
+| **AST Critical Findings** | 0 | 0 allowed | - | ✅ PASS |
+| **AST Warnings** | 10 | < 10 allowed | - | ⚠️ WARN |
 | **Cppcheck Violations** | 0 | 0 critical | - | ✅ CLEAN |
 
 ---
@@ -47,41 +47,18 @@ Mathematical limits of the 80 MHz FSPI display bus and CPU computation budget pe
 
 ---
 
-## 3. Static AST & Architecture Linter Findings (33 total)
+## 3. Static AST & Architecture Linter Findings (10 total)
 
 | Severity | Rule ID | File : Line | Issue Description | Suggested Action |
 | :--- | :--- | :--- | :--- | :--- |
-| `🔴 CRITICAL` | `PER_FRAME_O_N_SCAN` | `BmoGameboy.ino:223` | countGamesForConsole() called inside per-frame UI loop (up to 245K iterations/frame). | Cache console game counts in a static array at SD scan time. |
-| `🟡 WARNING` | `UNGUARDED_PER_FRAME_FILTER` | `BmoGameboy.ino:268` | rebuildVisibleGames() called unconditionally on every game menu frame. | Gate with a `visibleGamesDirty` boolean flag. |
-| `🟡 WARNING` | `STACK_ALLOCATED_SCANLINE_BUFFER` | `display_emu.cpp:276` | Large scanline buffer allocated on stack in hot path. | Make static module-level or 4-byte aligned DRAM/PSRAM buffer. |
-| `🟡 WARNING` | `STACK_ALLOCATED_SCANLINE_BUFFER` | `display_emu.cpp:317` | Large scanline buffer allocated on stack in hot path. | Make static module-level or 4-byte aligned DRAM/PSRAM buffer. |
-| `🔴 CRITICAL` | `SD_SPI_SPEED_SUBOPTIMAL` | `sd_card.cpp:75` | SD card mounted at 4 MHz instead of 25 MHz standard (5-6x slower ROM load). | Increase SD.begin clock to 25000000 (25 MHz). |
-| `🟡 WARNING` | `MISSING_GCC_OPTIMIZE_PRAGMA` | `emu_atari.cpp:1` | Emulator wrapper missing #pragma GCC optimize("O3,unroll-loops"). | Add `#pragma GCC optimize("O3,unroll-loops")` to top of file. |
-| `🟡 WARNING` | `MISSING_GCC_OPTIMIZE_PRAGMA` | `emu_colem.cpp:1` | Emulator wrapper missing #pragma GCC optimize("O3,unroll-loops"). | Add `#pragma GCC optimize("O3,unroll-loops")` to top of file. |
-| `🟡 WARNING` | `MISSING_GCC_OPTIMIZE_PRAGMA` | `emu_doom.cpp:1` | Emulator wrapper missing #pragma GCC optimize("O3,unroll-loops"). | Add `#pragma GCC optimize("O3,unroll-loops")` to top of file. |
-| `🟡 WARNING` | `MISSING_GCC_OPTIMIZE_PRAGMA` | `emu_genesis.cpp:1` | Emulator wrapper missing #pragma GCC optimize("O3,unroll-loops"). | Add `#pragma GCC optimize("O3,unroll-loops")` to top of file. |
-| `🟡 WARNING` | `MISSING_GCC_OPTIMIZE_PRAGMA` | `emu_lynx.cpp:1` | Emulator wrapper missing #pragma GCC optimize("O3,unroll-loops"). | Add `#pragma GCC optimize("O3,unroll-loops")` to top of file. |
-| `🟡 WARNING` | `MISSING_GCC_OPTIMIZE_PRAGMA` | `emu_nes.cpp:1` | Emulator wrapper missing #pragma GCC optimize("O3,unroll-loops"). | Add `#pragma GCC optimize("O3,unroll-loops")` to top of file. |
-| `🟡 WARNING` | `MISSING_GCC_OPTIMIZE_PRAGMA` | `emu_ngp.cpp:1` | Emulator wrapper missing #pragma GCC optimize("O3,unroll-loops"). | Add `#pragma GCC optimize("O3,unroll-loops")` to top of file. |
-| `🟡 WARNING` | `MISSING_GCC_OPTIMIZE_PRAGMA` | `emu_pce.cpp:1` | Emulator wrapper missing #pragma GCC optimize("O3,unroll-loops"). | Add `#pragma GCC optimize("O3,unroll-loops")` to top of file. |
-| `🟡 WARNING` | `MISSING_GCC_OPTIMIZE_PRAGMA` | `emu_pico.cpp:1` | Emulator wrapper missing #pragma GCC optimize("O3,unroll-loops"). | Add `#pragma GCC optimize("O3,unroll-loops")` to top of file. |
-| `🟡 WARNING` | `MISSING_GCC_OPTIMIZE_PRAGMA` | `emu_sms.cpp:1` | Emulator wrapper missing #pragma GCC optimize("O3,unroll-loops"). | Add `#pragma GCC optimize("O3,unroll-loops")` to top of file. |
-| `🟡 WARNING` | `MISSING_GCC_OPTIMIZE_PRAGMA` | `emu_snes.cpp:1` | Emulator wrapper missing #pragma GCC optimize("O3,unroll-loops"). | Add `#pragma GCC optimize("O3,unroll-loops")` to top of file. |
-| `🟡 WARNING` | `MISSING_GCC_OPTIMIZE_PRAGMA` | `emu_wswan.cpp:1` | Emulator wrapper missing #pragma GCC optimize("O3,unroll-loops"). | Add `#pragma GCC optimize("O3,unroll-loops")` to top of file. |
 | `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `d_iwad.c:217` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
 | `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `d_iwad.c:346` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
 | `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `d_iwad.c:762` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
 | `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `d_main.c:1124` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
-| `🔴 CRITICAL` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `doomgeneric.c:21` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
 | `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `i_system.c:77` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
-| `🔴 CRITICAL` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `i_system.c:119` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
-| `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `i_system.c:286` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
-| `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `i_system.c:338` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
+| `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `i_system.c:291` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
+| `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `i_system.c:343` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
 | `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `m_config.c:2045` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
-| `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `m_misc.c:338` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
-| `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `m_misc.c:448` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
-| `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `m_misc.c:526` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
-| `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `m_misc.c:528` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
 | `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `p_saveg.c:70` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
 | `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `v_video.c:757` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
 
@@ -91,7 +68,7 @@ Mathematical limits of the 80 MHz FSPI display bus and CPU computation budget pe
 
 | Benchmark Kernel | Iterations | Total Time | Avg Latency | Throughput | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **BMO_SDF_Procedural_Face_Render** | 100 | 142.80 ms | 1427.980 µs | 2.87 MOps/s | Evaluates procedural 2D Signed Distance Field (SDF) mathematics across 128x128 grid. |
-| **4Pixel_Coalesced_Aligned_Store_Kernel** | 50,000 | 147.19 ms | 2.944 µs | 10.19 MOps/s | Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling. |
-| **O1_Palette_Scanline_Transformation** | 10,000 | 56.62 ms | 5.662 µs | 42.39 MOps/s | Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput. |
-| **CPU_Emulation_Opcode_Dispatch** | 500,000 | 43.43 ms | 0.087 µs | 11.51 MOps/s | Simulates CPU opcode fetch-decode-execute cycle dispatch throughput. |
+| **BMO_SDF_Procedural_Face_Render** | 100 | 122.52 ms | 1225.167 µs | 3.34 MOps/s | Evaluates procedural 2D Signed Distance Field (SDF) mathematics across 128x128 grid. |
+| **4Pixel_Coalesced_Aligned_Store_Kernel** | 50,000 | 122.26 ms | 2.445 µs | 12.27 MOps/s | Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling. |
+| **O1_Palette_Scanline_Transformation** | 10,000 | 47.01 ms | 4.701 µs | 51.06 MOps/s | Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput. |
+| **CPU_Emulation_Opcode_Dispatch** | 500,000 | 37.62 ms | 0.075 µs | 13.29 MOps/s | Simulates CPU opcode fetch-decode-execute cycle dispatch throughput. |

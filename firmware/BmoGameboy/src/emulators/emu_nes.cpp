@@ -1,3 +1,4 @@
+#pragma GCC optimize ("O3,unroll-loops")
 #include "emu_nes.h"
 #include "../vendor/agnes/agnes.h"
 #include "../core/display_emu.h"

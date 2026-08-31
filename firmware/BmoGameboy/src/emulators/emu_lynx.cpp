@@ -1,3 +1,4 @@
+#pragma GCC optimize ("O3,unroll-loops")
 #include "emu_lynx.h"
 #include "../vendor/lynx/lynx.h"
 #include "../core/display_emu.h"

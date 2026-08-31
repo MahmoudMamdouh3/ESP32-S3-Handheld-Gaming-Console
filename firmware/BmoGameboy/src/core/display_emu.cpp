@@ -267,26 +267,33 @@ void DisplayEmu::streamPixelRow(const uint16_t* buf, int pixelCount) {
 }
 
 // ---------------------------------------------------------------------------
-// NES Rendering
+// NES Rendering (PERF-07: Static aligned buffer + 32-bit store coalescing)
 // ---------------------------------------------------------------------------
+static uint16_t __attribute__((aligned(4))) s_nesRowBuf[256];
+
 void DisplayEmu::streamNESFrame(const uint8_t* nes_framebuffer) {
   tft.startWrite();
   tft.setAddrWindow(32, 0, 256, 240); // Center 256x240 on 320x240 display
   
-  uint16_t row_buf[256];
+  uint32_t* out32 = (uint32_t*)s_nesRowBuf;
   for (int y = 0; y < 240; y++) {
-    for (int x = 0; x < 256; x++) {
-      uint8_t color_ix = nes_framebuffer[(y * 256) + x];
-      row_buf[x] = NES_PALETTE[color_ix & 0x3f];
+    const uint8_t* inRow = &nes_framebuffer[y * 256];
+    for (int x = 0; x < 256; x += 4) {
+      uint16_t p0 = NES_PALETTE[inRow[x]     & 0x3F];
+      uint16_t p1 = NES_PALETTE[inRow[x + 1] & 0x3F];
+      uint16_t p2 = NES_PALETTE[inRow[x + 2] & 0x3F];
+      uint16_t p3 = NES_PALETTE[inRow[x + 3] & 0x3F];
+      out32[(x >> 1)]     = (uint32_t)p0 | ((uint32_t)p1 << 16);
+      out32[(x >> 1) + 1] = (uint32_t)p2 | ((uint32_t)p3 << 16);
     }
-    SPI.writeBytes((const uint8_t*)row_buf, 256 * 2);
+    SPI.writeBytes((const uint8_t*)s_nesRowBuf, 256 * 2);
   }
   
   tft.endWrite();
 }
 
 // ---------------------------------------------------------------------------
-// DOOM Rendering
+// DOOM Rendering (PERF-07/14: Static aligned buffer + 32-bit coalescing)
 // ---------------------------------------------------------------------------
 struct color {
     uint32_t b:8;
@@ -296,16 +303,12 @@ struct color {
 };
 extern "C" struct color colors[256];
 
+static uint16_t __attribute__((aligned(4))) s_doomLineBuf[320];
+
 void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
-  // Screen is 320x240, DOOM is 320x200
-  // So we center DOOM on Y (offset = 20)
   tft.startWrite();
   tft.setAddrWindow(0, 20, 320, 200);
 
-  // Convert the 256-entry palette once per frame, rather than redoing RGB565
-  // packing and byte swapping for all 64,000 pixels.  Doom can change its
-  // palette for damage/pickup effects, so rebuilding this tiny table per frame
-  // is both correct and dramatically cheaper than assuming it is static.
   static uint16_t doomPalette[256];
   for (int i = 0; i < 256; ++i) {
     const struct color c = colors[i];
@@ -313,14 +316,18 @@ void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
     doomPalette[i] = (p >> 8) | (p << 8);
   }
 
-  // We have enough RAM to do 1 line at a time.
-  uint16_t lineBuf[320];
-
+  uint32_t* out32 = (uint32_t*)s_doomLineBuf;
   for (int y = 0; y < 200; y++) {
-    for (int x = 0; x < 320; x++) {
-      lineBuf[x] = doomPalette[cmap[y * 320 + x]];
+    const uint8_t* inRow = &cmap[y * 320];
+    for (int x = 0; x < 320; x += 4) {
+      uint16_t p0 = doomPalette[inRow[x]];
+      uint16_t p1 = doomPalette[inRow[x + 1]];
+      uint16_t p2 = doomPalette[inRow[x + 2]];
+      uint16_t p3 = doomPalette[inRow[x + 3]];
+      out32[(x >> 1)]     = (uint32_t)p0 | ((uint32_t)p1 << 16);
+      out32[(x >> 1) + 1] = (uint32_t)p2 | ((uint32_t)p3 << 16);
     }
-    SPI.writeBytes((const uint8_t*)lineBuf, 320 * 2);
+    SPI.writeBytes((const uint8_t*)s_doomLineBuf, 320 * 2);
   }
   
   tft.endWrite();

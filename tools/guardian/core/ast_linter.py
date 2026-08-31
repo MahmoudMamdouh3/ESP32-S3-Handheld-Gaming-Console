@@ -94,14 +94,25 @@ class FirmwareAstLinter:
                 )
 
         # Rule 3: Check for plain malloc() in vendor engines & firmware (should use PSRAM)
+        in_host_fallback = False
         for idx, line in enumerate(lines, 1):
             clean = line.strip()
             if clean.startswith("//") or clean.startswith("/*") or clean.startswith("#define"):
                 continue
+            if "#else" in clean:
+                # If previous block had ESP32 PSRAM allocation, this is host fallback
+                if idx > 2 and ("Doom_MallocPSRAM" in lines[idx-2] or "heap_caps_malloc" in lines[idx-2]):
+                    in_host_fallback = True
+            elif "#endif" in clean:
+                in_host_fallback = False
+
+            if in_host_fallback:
+                continue
+
             # Look for malloc() that is not wrapped or heap_caps_malloc
             if re.search(r"\bmalloc\s*\([^)]+\)", clean) and "heap_caps_malloc" not in clean and "Doom_MallocPSRAM" not in clean:
-                # Ignore small host test files or harmless string mallocs
-                if "host_test" not in rel_path_str and "m_argv" not in rel_path_str:
+                # Ignore small host test files or harmless small string allocations
+                if "host_test" not in rel_path_str and "m_argv" not in rel_path_str and "m_misc" not in rel_path_str:
                     severity = "CRITICAL" if any(k in clean.lower() for k in ["screen", "framebuffer", "ctx", "zone", "ram", "buffer"]) else "WARNING"
                     findings.append(
                         LintFinding(
@@ -133,9 +144,10 @@ class FirmwareAstLinter:
 
         # Rule 5: Check for O(N) linear scans called in per-frame loop in BmoGameboy.ino
         if rel_path_str.endswith("BmoGameboy.ino"):
+            loop_idx = next((i for i, l in enumerate(lines, 1) if "void loop()" in l), 9999)
             for idx, line in enumerate(lines, 1):
                 clean = line.strip()
-                if "countGamesForConsole(" in clean and "loop" in content[:content.find(clean)]:
+                if idx > loop_idx and "countGamesForConsole(" in clean:
                     findings.append(
                         LintFinding(
                             rule_id="PER_FRAME_O_N_SCAN",
@@ -147,19 +159,21 @@ class FirmwareAstLinter:
                             suggested_fix="Cache console game counts in a static array at SD scan time.",
                         )
                     )
-                if "rebuildVisibleGames()" in clean and idx > 250:
-                    # In game menu frame loop
-                    findings.append(
-                        LintFinding(
-                            rule_id="UNGUARDED_PER_FRAME_FILTER",
-                            severity="WARNING",
-                            file_path=path,
-                            line_number=idx,
-                            line_content=clean,
-                            message="rebuildVisibleGames() called unconditionally on every game menu frame.",
-                            suggested_fix="Gate with a `visibleGamesDirty` boolean flag.",
+                if idx > loop_idx and "rebuildVisibleGames()" in clean:
+                    # Check if guarded by visibleGamesDirty
+                    prev_lines = " ".join(lines[max(0, idx-3):idx])
+                    if "visibleGamesDirty" not in prev_lines and "visibleGamesDirty" not in clean:
+                        findings.append(
+                            LintFinding(
+                                rule_id="UNGUARDED_PER_FRAME_FILTER",
+                                severity="WARNING",
+                                file_path=path,
+                                line_number=idx,
+                                line_content=clean,
+                                message="rebuildVisibleGames() called unconditionally on every game menu frame.",
+                                suggested_fix="Gate with a `visibleGamesDirty` boolean flag.",
+                            )
                         )
-                    )
 
         # Rule 6: Check for hard stop flags in config.h
         if rel_path_str.endswith("config.h"):

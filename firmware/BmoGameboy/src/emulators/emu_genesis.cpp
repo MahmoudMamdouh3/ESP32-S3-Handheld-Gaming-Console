@@ -1,3 +1,4 @@
+#pragma GCC optimize ("O3,unroll-loops")
 #include "emu_genesis.h"
 #include "../vendor/genesis/genesis.h"
 #include "../core/display_emu.h"

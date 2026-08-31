@@ -84,16 +84,16 @@ static void resetFrameStats() {
   frameTimeCount = 0;
 }
 
+static bool visibleGamesDirty = true;
+
 static int countGamesForConsole(RomType type) {
-  int count = 0;
-  for (int i = 0; i < SDCard::getRomCount(); ++i) {
-    const RomFile* game = SDCard::getRomInfo(i);
-    if (game && game->type == type) ++count;
-  }
-  return count;
+  // PERF-02: O(1) lookup via SDCard::getRomCountForType (eliminates 245K iterations per frame)
+  return SDCard::getRomCountForType(type);
 }
 
 static void rebuildVisibleGames() {
+  // PERF-03: Gate scan with dirty flag so idle frames do not perform O(N) linear scans
+  if (!visibleGamesDirty) return;
   visibleGameCount = 0;
   const RomType selectedType = CONSOLES[selectedConsoleIndex];
   for (int i = 0; i < SDCard::getRomCount() && visibleGameCount < maxVisibleCapacity; ++i) {
@@ -104,6 +104,7 @@ static void rebuildVisibleGames() {
   }
   if (visibleGameCount == 0) selectedGameIndex = 0;
   else if (selectedGameIndex >= visibleGameCount) selectedGameIndex = visibleGameCount - 1;
+  visibleGamesDirty = false;
 }
 
 static const RomFile* selectedGame() {
@@ -200,10 +201,12 @@ void loop() {
     if (canPress()) {
       if (left || up) {
         selectedConsoleIndex = (selectedConsoleIndex - 1 + CONSOLE_COUNT) % CONSOLE_COUNT;
+        visibleGamesDirty = true;
         lastButtonMs = millis();
       }
       if (right || down) {
         selectedConsoleIndex = (selectedConsoleIndex + 1) % CONSOLE_COUNT;
+        visibleGamesDirty = true;
         lastButtonMs = millis();
       }
       if (select) {
@@ -212,6 +215,7 @@ void loop() {
       }
       if (a) {
         selectedGameIndex = 0;
+        visibleGamesDirty = true;
         rebuildVisibleGames();
         currentState = STATE_GAME_MENU;
         BmoFace::setExpression(BmoFace::IDLE);
@@ -219,9 +223,13 @@ void loop() {
       }
     }
 
-    int counts[CONSOLE_COUNT];
-    for (int i = 0; i < CONSOLE_COUNT; ++i) counts[i] = countGamesForConsole(CONSOLES[i]);
-    DisplayEmu::drawConsoleSelectMenu(selectedConsoleIndex, counts, CONSOLE_COUNT, SDCard::isMounted());
+    static int cachedConsoleCounts[CONSOLE_COUNT];
+    static bool consoleCountsDirty = true;
+    if (consoleCountsDirty) {
+      for (int i = 0; i < CONSOLE_COUNT; ++i) cachedConsoleCounts[i] = SDCard::getRomCountForType(CONSOLES[i]);
+      consoleCountsDirty = false;
+    }
+    DisplayEmu::drawConsoleSelectMenu(selectedConsoleIndex, cachedConsoleCounts, CONSOLE_COUNT, SDCard::isMounted());
 
     // Blit the mascot face into the top-left corner on top of the menu canvas.
     // blitFace() internally caches faceBuf and recomputes SDF only when dirty (~0.4ms blit).
@@ -265,7 +273,9 @@ void loop() {
     bool a = Buttons::get(Buttons::A).pressed && Buttons::get(Buttons::A).changed;
     bool b = Buttons::get(Buttons::B).pressed && Buttons::get(Buttons::B).changed;
 
-    rebuildVisibleGames();
+    if (visibleGamesDirty) {
+      rebuildVisibleGames();
+    }
     if (canPress()) {
       if (left && visibleGameCount > 0) {
         selectedGameIndex = (selectedGameIndex - 1 + visibleGameCount) % visibleGameCount;

@@ -1,3 +1,4 @@
+#pragma GCC optimize ("O3,unroll-loops")
 #include "emu_ngp.h"
 #include "../vendor/ngp/ngp.h"
 #include "../core/display_emu.h"

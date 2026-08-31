@@ -508,7 +508,11 @@ static agnes_color_t g_colors[64] = {
 };
 
 agnes_t* agnes_make(void) {
-    agnes_t *agnes = (agnes_t*)heap_caps_aligned_alloc(32, sizeof(*agnes), MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+    // BMO-PATCH: Allocate agnes_t in PSRAM to free ~40KB internal SRAM (PERF-05)
+    agnes_t *agnes = (agnes_t*)heap_caps_aligned_alloc(32, sizeof(*agnes), MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
+    if (!agnes) {
+        agnes = (agnes_t*)heap_caps_aligned_alloc(32, sizeof(*agnes), MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+    }
     if (!agnes) {
         return NULL;
     }

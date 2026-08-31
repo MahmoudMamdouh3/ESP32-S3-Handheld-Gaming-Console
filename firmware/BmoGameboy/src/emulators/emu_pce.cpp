@@ -1,3 +1,4 @@
+#pragma GCC optimize ("O3,unroll-loops")
 #include "emu_pce.h"
 #include "../vendor/pce/pce.h"
 #include "../core/display_emu.h"

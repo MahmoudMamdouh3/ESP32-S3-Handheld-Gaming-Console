@@ -1,3 +1,4 @@
+#pragma GCC optimize ("O3,unroll-loops")
 #include "emu_snes.h"
 #include "../vendor/snes/snes.h"
 #include "../core/display_emu.h"

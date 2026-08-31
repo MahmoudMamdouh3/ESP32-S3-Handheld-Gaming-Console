@@ -19,6 +19,7 @@ namespace {
   static RomFile* romList = fallbackRomList;
   static int maxCapacity = 32;
   int numRoms = 0;
+  static int romCountsByType[ROM_COLEM + 1] = {0};
 
   RomType determineType(const char* filename) {
     const char* ext = strrchr(filename, '.');
@@ -44,6 +45,7 @@ namespace {
 
 bool SDCard::begin() {
   numRoms = 0;
+  memset(romCountsByType, 0, sizeof(romCountsByType));
 
   if (romList == fallbackRomList) {
     RomFile* psramList = (RomFile*)heap_caps_malloc(sizeof(RomFile) * MAX_ROMS, MALLOC_CAP_SPIRAM);
@@ -56,23 +58,27 @@ bool SDCard::begin() {
   // Always add baked ROMs first!
   strncpy(romList[numRoms].filename, "Super Mario Bros Deluxe (Baked).gbc", 63);
   romList[numRoms].type = ROM_GBC;
+  romCountsByType[ROM_GBC]++;
   numRoms++;
 
   strncpy(romList[numRoms].filename, "Legend of Zelda Ages (Baked).gbc", 63);
   romList[numRoms].type = ROM_GBC;
+  romCountsByType[ROM_GBC]++;
   numRoms++;
 
   strncpy(romList[numRoms].filename, "Aladdin (Baked).gbc", 63);
   romList[numRoms].type = ROM_GBC;
+  romCountsByType[ROM_GBC]++;
   numRoms++;
 
   strncpy(romList[numRoms].filename, "Lego Racers (Baked).gbc", 63);
   romList[numRoms].type = ROM_GBC;
+  romCountsByType[ROM_GBC]++;
   numRoms++;
 
-  // Use explicit "/sd" mount point so standard C functions (fopen) can access it
+  // PERF-01: Run SD card at 25 MHz standard high-speed clock (up from 4 MHz)
 #if FEATURE_SD_CARD
-  if (!SD.begin(SD_CS, SPI, 4000000, "/sd")) {
+  if (!SD.begin(SD_CS, SPI, 25000000, "/sd")) {
     mounted = false;
     // Do not reset numRoms to 0, because we have baked ROMs!
     return false;
@@ -106,6 +112,9 @@ void SDCard::scanRoms() {
         strncpy(romList[numRoms].filename, name, 63);
         romList[numRoms].filename[63] = '\0';
         romList[numRoms].type = type;
+        if (type <= ROM_COLEM) {
+          romCountsByType[type]++;
+        }
         numRoms++;
       }
     }
@@ -117,6 +126,11 @@ void SDCard::scanRoms() {
 
 int SDCard::getRomCount() {
   return numRoms;
+}
+
+int SDCard::getRomCountForType(RomType type) {
+  if (type <= ROM_COLEM) return romCountsByType[type];
+  return 0;
 }
 
 const RomFile* SDCard::getRomInfo(int index) {

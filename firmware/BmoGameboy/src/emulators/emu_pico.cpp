@@ -1,3 +1,4 @@
+#pragma GCC optimize ("O3,unroll-loops")
 #include "emu_pico.h"
 #include "../vendor/pico/pico.h"
 #include "../core/display_emu.h"
