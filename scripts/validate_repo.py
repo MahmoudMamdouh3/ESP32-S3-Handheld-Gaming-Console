@@ -37,10 +37,10 @@ if str(REPO_ROOT) not in sys.path:
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-# Canonical build FQBN — FlashMode=qio for Quad Flash + Octal PSRAM module
+# Canonical build FQBN — CDCOnBoot=cdc, FlashMode=qio for Quad Flash + Octal PSRAM module
 ARDUINO_FQBN = (
     'esp32:esp32:esp32s3:'
-    'FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi'
+    'CDCOnBoot=cdc,FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi'
 )
 
 # All expected emulator wrapper stems
@@ -151,7 +151,7 @@ def check_arduino_compile():
     print(f'  Compiling with FQBN: {ARDUINO_FQBN}')
     try:
         result = subprocess.run(
-            [cli, 'compile', '--fqbn', ARDUINO_FQBN, str(FIRMWARE_DIR)],
+            [cli, 'compile', '--clean', '--fqbn', ARDUINO_FQBN, str(FIRMWARE_DIR)],
             capture_output=True, text=True, timeout=360,
         )
     except subprocess.TimeoutExpired:
