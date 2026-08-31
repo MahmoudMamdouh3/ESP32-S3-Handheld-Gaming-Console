@@ -224,6 +224,7 @@ void DisplayEmu::begin() {
   SPI.endTransaction();
 
   tft.fillScreen(ST77XX_BLACK);
+  initMenuUI();
 }
 
 void DisplayEmu::clearScreen() {
@@ -310,10 +311,14 @@ void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
   tft.setAddrWindow(0, 20, 320, 200);
 
   static uint16_t doomPalette[256];
-  for (int i = 0; i < 256; ++i) {
-    const struct color c = colors[i];
-    const uint16_t p = ((c.r & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.b >> 3);
-    doomPalette[i] = (p >> 8) | (p << 8);
+  static struct color lastColors[256];
+  if (memcmp(lastColors, colors, sizeof(lastColors)) != 0) {
+    memcpy(lastColors, colors, sizeof(lastColors));
+    for (int i = 0; i < 256; ++i) {
+      const struct color c = colors[i];
+      const uint16_t p = ((c.r & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.b >> 3);
+      doomPalette[i] = (p >> 8) | (p << 8);
+    }
   }
 
   uint32_t* out32 = (uint32_t*)s_doomLineBuf;
@@ -447,6 +452,19 @@ void DisplayEmu::pushPixelsAt(int x, int y, int w, int h, const uint16_t* buf) {
   tft.endWrite();
 }
 
+void DisplayEmu::startDirectWindow(int x, int y, int w, int h) {
+  tft.startWrite();
+  tft.setAddrWindow(x, y, w, h);
+}
+
+void DisplayEmu::writeWindowBytes(const uint8_t* data, size_t len) {
+  SPI.writeBytes(data, len);
+}
+
+void DisplayEmu::endDirectWindow() {
+  tft.endWrite();
+}
+
 void DisplayEmu::initMenuUI() {
   if (!menuCanvas) {
     PSRAMCanvas* canvas = new (std::nothrow) PSRAMCanvas(320, 240);
@@ -461,10 +479,7 @@ void DisplayEmu::initMenuUI() {
 }
 
 void DisplayEmu::cleanupMenuUI() {
-  if (menuCanvas) {
-    delete menuCanvas;
-    menuCanvas = nullptr;
-  }
+  // PERF-04: Preserve menuCanvas in PSRAM across game launches to prevent fragmentation
 }
 
 void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts, int consoleCount, bool sdMounted) {

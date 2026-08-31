@@ -353,10 +353,15 @@ static void blitFace(int x, int y, int size) {
 
   // -----------------------------------------------------------------------
   // Scale-blit: map output pixel (ox, oy) → source pixel (sx, sy) using
-  // nearest-neighbour sampling.  Push each row as a self-contained
-  // DisplayEmu::pushPixelsAt() transaction.
+  // nearest-neighbour sampling. (PERF-13: Single contiguous SPI transaction)
   // -----------------------------------------------------------------------
+  if (size == FACE_FB_W && size == FACE_FB_H) {
+    DisplayEmu::pushPixelsAt(x, y, size, size, faceBuf);
+    return;
+  }
+
   float invSize = (float)FACE_FB_W / (float)size;
+  DisplayEmu::startDirectWindow(x, y, size, size);
 
   for (int oy = 0; oy < size; ++oy) {
     int sy = (int)(((float)oy + 0.5f) * invSize);
@@ -369,8 +374,10 @@ static void blitFace(int x, int y, int size) {
       rowOut[ox] = srcRow[sx];
     }
 
-    DisplayEmu::pushPixelsAt(x, y + oy, size, 1, rowOut);
+    DisplayEmu::writeWindowBytes((const uint8_t*)rowOut, size * 2);
   }
+
+  DisplayEmu::endDirectWindow();
 }
 
 } // anonymous namespace

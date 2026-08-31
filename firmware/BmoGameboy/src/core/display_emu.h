@@ -89,6 +89,11 @@ namespace DisplayEmu {
   // Used by BmoFace to place the mascot face anywhere on the 320×240 display.
   void pushPixelsAt(int x, int y, int w, int h, const uint16_t* buf);
 
+  // Direct arbitrary window streaming API (PERF-13)
+  void startDirectWindow(int x, int y, int w, int h);
+  void writeWindowBytes(const uint8_t* data, size_t len);
+  void endDirectWindow();
+
 
   // ---------------------------------------------------------------------------
   // High-performance frame rendering (N3)

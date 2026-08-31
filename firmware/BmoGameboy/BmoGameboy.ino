@@ -503,16 +503,15 @@ void loop() {
     recordFrameTime(elapsed);
     
     // ---------------------------------------------------------------------------
-    // N7: Frame pacing — target 16742 µs (59.73 Hz Game Boy vsync).
+    // N7/PERF-09: Frame pacing — target 16742 µs (59.73 Hz Game Boy vsync).
     // Use delay() for the bulk sleep (yields to FreeRTOS/watchdog), then
     // ets_delay_us() for a clean hardware-timer spin on the sub-ms remainder.
-    // This avoids the micros()-polling busy-loop that burned CPU every frame.
     // ---------------------------------------------------------------------------
     if (elapsed < 16742) {
       unsigned long remaining = 16742 - elapsed;
-      if (remaining > 2000) {
-        // Sleep the bulk — FreeRTOS can run WiFi/BT tasks here.
-        delay((remaining - 2000) / 1000);
+      if (remaining > 1000) {
+        // Sleep bulk margin with 800us spin-tail guard (PERF-09)
+        delay((remaining - 800) / 1000);
       }
       // Re-measure after sleep, then use hardware-timer spin for the tail.
       elapsed = micros() - frameStart;

@@ -10,10 +10,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **PERF-01 (SD Clock Speedup)**: Bumped `SD.begin` SPI clock from 4 MHz to 25 MHz in `src/core/sd_card.cpp` (5-6× ROM load speedup; 4MB loads in ~1.5s vs ~8s).
 - **PERF-02 (O(1) Game Counting)**: Replaced per-frame O(N×15) = 245K iteration scan in `BmoGameboy.ino` with cached `romCountsByType[]` and O(1) `SDCard::getRomCountForType()`.
 - **PERF-03 (Visible Games Dirty Gating)**: Added `visibleGamesDirty` flag in `BmoGameboy.ino` to eliminate O(N) game menu filter scans on idle frames.
+- **PERF-04 (PSRAM Menu Canvas Persistence)**: Pre-allocated `menuCanvas` in `DisplayEmu::begin()` and preserved in PSRAM across game launches, eliminating heap fragmentation.
 - **PERF-05 (NES Internal SRAM Relief)**: Patched `agnes.c:511` to allocate `agnes_t` in `MALLOC_CAP_SPIRAM`, saving ~40KB of internal DRAM.
 - **PERF-06, PERF-15, PERF-16 (Compiler Optimization Pragmas)**: Added `#pragma GCC optimize("O3,unroll-loops")` to `emu_nes.cpp`, `emu_sms.cpp`, `emu_doom.cpp`, and all 9 Tier 2 emulator wrappers.
 - **PERF-07 (Vectorized Scanline Buffering)**: Hoisted stack row buffers to static 4-byte aligned module buffers (`s_nesRowBuf`, `s_doomLineBuf`) with 32-bit coalesced stores (2 pixels per store).
+- **PERF-09 (Frame Pacing Spin Margin)**: Tuned spin-tail margin from 2000µs to 800µs in `BmoGameboy.ino` to reduce CPU burning in tight frames.
 - **PERF-10 & PERF-11 (DOOM PSRAM Allocation Routing)**: Routed DOOM `DG_ScreenBuffer` (256KB) and zone memory heap `zonemem` (4MB) to `Doom_MallocPSRAM` (`MALLOC_CAP_SPIRAM`), eliminating fatal DRAM out-of-memory errors.
+- **PERF-13 (BmoFace Single Direct Window Blit)**: Replaced 160 per-row SPI transactions with single `startDirectWindow` / `writeWindowBytes` transaction.
+- **PERF-14 (DOOM Palette Cache)**: Added dirty cache check to avoid re-packing 256 DOOM palette entries on static frames.
+- **PERF-17 (SD 64KB Multi-Sector Bursts)**: Tuned `SDCard::loadRom()` chunk size to 64KB bursts.
+- **PERF-18 (Direct GPIO Register Read)**: Verified atomic single-cycle `REG_READ(GPIO_IN_REG)` in `buttons.cpp`.
+- **PERF-20 (SPI Bus Isolation)**: Verified isolated SPI transaction boundaries across display and SD subsystems.
 
 ---
 

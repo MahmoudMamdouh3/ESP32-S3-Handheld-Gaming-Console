@@ -178,10 +178,11 @@ uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
     return nullptr;
   }
 
-  // Read entire file in chunks
+  // Read entire file in multi-sector burst chunks (PERF-17: 64KB chunk bursts)
   size_t bytesRead = 0;
   while (bytesRead < size) {
-    int chunk = file.read(buffer + bytesRead, size - bytesRead);
+    size_t toRead = (size - bytesRead > 65536) ? 65536 : (size - bytesRead);
+    int chunk = file.read(buffer + bytesRead, toRead);
     if (chunk <= 0) break; // EOF or error
     bytesRead += chunk;
   }
