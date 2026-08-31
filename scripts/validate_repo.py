@@ -200,10 +200,11 @@ def check_arduino_compile():
 
 def check_python_files():
     errors = []
-    for folder in [SCRIPTS_DIR, TESTS_DIR]:
+    guardian_dir = REPO_ROOT / 'tools' / 'guardian'
+    for folder in [SCRIPTS_DIR, TESTS_DIR, guardian_dir]:
         if not folder.exists():
             continue
-        for script in sorted(folder.glob('*.py')):
+        for script in sorted(folder.rglob('*.py')):
             try:
                 compile(script.read_text(encoding='utf-8'), str(script), 'exec')
             except SyntaxError as exc:

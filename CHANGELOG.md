@@ -5,6 +5,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Milestone 9.0] - 2026-08-31 (Guardian Performance, Ground-Truth & Benchmarking Architecture)
+### Added
+- **Unified Guardian Ground-Truth Engine (`tools/guardian/`)**:
+  - `core/bus_model.py`: Mathematical hardware model of 80MHz FSPI bus, DMA throughput, and compute budgets across all 15 console resolutions.
+  - `core/ast_linter.py`: Static AST linter detecting 25+ embedded firmware anti-patterns (naked mallocs in DRAM, missing O3 pragmas, stack buffers in loops, O(N) per-frame traversals).
+  - `core/elf_analyzer.py`: Direct Xtensa ESP32-S3 ELF binary introspection (`nm`, `size`, `objdump`, `readelf`) for SRAM, Flash, IRAM, and symbol size profiling.
+  - `core/host_bench.py`: Quantitative microbenchmark suite for BmoFace SDF math, 4-pixel coalesced stores, and opcode dispatch.
+  - `core/cppcheck_runner.py`: Cppcheck static analyzer integration for embedded memory safety.
+  - `core/report_gen.py`: Ground-truth Markdown & JSON audit report generator.
+  - `cli.py`: Unified command line interface (`python -m tools.guardian audit`, `bus-calc`, `profile-elf`, `bench-host`, `report`).
+  - `tests/test_guardian.py`: Complete test suite for Guardian framework (5 unit tests).
+- **Firmware Hardware Cycle Profiler Subsystem (`profiler.h` / `profiler.cpp`)**:
+  - Zero-overhead compile-time gated (`FEATURE_PROFILER`) 240MHz hardware cycle counter (`RSR CCOUNT`) measuring microsecond timing of emulator frames, SPI streaming, SDF rendering, menu layout, and SD loads.
+- **Rule 39 Governance**: `.agents/rules/39_performance_and_benchmark_framework.md` mandating that all future agents utilize Guardian rather than creating ad-hoc scripts.
+- **Documentation**: `docs/performance_and_benchmarking.md` providing comprehensive manual on bus physics, memory sections, and performance commands.
+- **Expanded Performance Audit**: `04_known_issues.md` expanded with 20-issue catalogue (PERF-01 through PERF-20).
+
+---
+
 ## [Milestone 8.0] - 2026-08-31 (Production-Grade Testing Overhaul & Flash Overflow Fix)
 ### Fixed
 - **Flash Overflow Root Cause**: The `158% of storage space` error is caused by the Arduino IDE defaulting to the 3 MB partition scheme. Fix: **Tools → Partition Scheme → Custom**. Firmware compiles at 5,002,020 bytes = **29.8% of 16MB** (VERIFIED_HOST, arduino-cli exit 0, this session).
