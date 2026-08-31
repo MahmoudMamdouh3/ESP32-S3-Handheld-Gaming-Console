@@ -37,10 +37,10 @@ if str(REPO_ROOT) not in sys.path:
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-# Canonical build FQBN — must match 31_quick_start_primer.md
+# Canonical build FQBN — FlashMode=qio for Quad Flash + Octal PSRAM module
 ARDUINO_FQBN = (
     'esp32:esp32:esp32s3:'
-    'FlashMode=opi,FlashSize=16M,PartitionScheme=custom,PSRAM=opi'
+    'FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi'
 )
 
 # All expected emulator wrapper stems

@@ -24,6 +24,7 @@
 #include <esp_heap_caps.h>    // BM2: IRAM usage reporting
 
 enum SystemState {
+  STATE_BOOT_SPLASH,
   STATE_CONSOLE_MENU,
   STATE_CONSOLE_MUSEUM,
   STATE_GAME_MENU,
@@ -32,7 +33,8 @@ enum SystemState {
   STATE_IDLE_MASCOT
 };
 
-SystemState currentState = STATE_CONSOLE_MENU;
+SystemState currentState = STATE_BOOT_SPLASH;
+static unsigned long bootSplashStartMs = 0;
 static unsigned long lastInputActivityMs = 0;
 static const unsigned long IDLE_MASCOT_TIMEOUT_MS = 30000;
 int selectedConsoleIndex = 0;
@@ -159,13 +161,9 @@ void setup() {
   Buttons::begin();
   DisplayEmu::begin();
   Battery::begin();
-
-  // Boot splash: show the mascot face before SD scan so the user sees
-  // something while the (potentially slow) SD enumeration runs.
   BmoFace::begin();
   BmoFace::setExpression(BmoFace::IDLE);
-  BmoFace::draw(); // full-screen centered boot face
-  delay(1000);     // Boot splash display hold
+  bootSplashStartMs = millis();
   
   int* psramIndexes = (int*)heap_caps_malloc(sizeof(int) * MAX_VISIBLE_ROMS, MALLOC_CAP_SPIRAM);
   if (psramIndexes) {
@@ -196,6 +194,32 @@ void setup() {
 void loop() {
   Battery::update();
   BmoFace::update();
+
+  if (currentState == STATE_BOOT_SPLASH) {
+    DisplayEmu::initMenuUI();
+    Buttons::update();
+    uint8_t btnMask = 0;
+    if (Buttons::get(Buttons::UP).pressed) btnMask |= (1 << 0);
+    if (Buttons::get(Buttons::DOWN).pressed) btnMask |= (1 << 1);
+    if (Buttons::get(Buttons::LEFT).pressed) btnMask |= (1 << 2);
+    if (Buttons::get(Buttons::RIGHT).pressed) btnMask |= (1 << 3);
+    if (Buttons::get(Buttons::A).pressed) btnMask |= (1 << 4);
+    if (Buttons::get(Buttons::B).pressed) btnMask |= (1 << 5);
+    if (Buttons::get(Buttons::SELECT).pressed) btnMask |= (1 << 6);
+    if (Buttons::get(Buttons::START).pressed) btnMask |= (1 << 7);
+
+    if ((btnMask != 0 && canPress()) || (millis() - bootSplashStartMs > 3500)) {
+      currentState = STATE_CONSOLE_MENU;
+      lastInputActivityMs = millis();
+      lastButtonMs = millis();
+      return;
+    }
+
+    bool blinkState = ((millis() / 400) % 2 == 0);
+    DisplayEmu::drawBootSplash(blinkState);
+    delay(33);
+    return;
+  }
   
   if (currentState == STATE_CONSOLE_MENU) {
     const unsigned long menuFrameStart = millis();

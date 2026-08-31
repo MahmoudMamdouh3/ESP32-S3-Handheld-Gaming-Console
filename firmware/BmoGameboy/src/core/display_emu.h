@@ -13,7 +13,11 @@ namespace DisplayEmu {
   // it remains correct without changing any emulator palette or frame stream.
   void showSDCardWarning();
   void initMenuUI();
-  // Renders the console selection menu
+
+  // Renders the Power-On Boot Splash Screen (1:1 with Web Simulator)
+  void drawBootSplash(bool pressAnyButtonBlink);
+
+  // Renders the carousel console selection menu
   void drawConsoleSelectMenu(int selectedIndex, const int* gameCounts, int consoleCount, bool sdMounted);
 
   // Renders the interactive Gaming History & Specs Museum modal

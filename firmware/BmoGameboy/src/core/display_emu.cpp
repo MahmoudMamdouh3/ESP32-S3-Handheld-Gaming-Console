@@ -147,6 +147,28 @@ namespace {
     }
   }
 
+  const char* consoleExt(RomType type) {
+    switch (type) {
+      case ROM_FAVORITES: return "*";
+      case ROM_GB:        return ".gb";
+      case ROM_GBC:       return ".gbc";
+      case ROM_NES:       return ".nes";
+      case ROM_WAD:       return ".wad";
+      case ROM_SMS:       return ".sms";
+      case ROM_GG:        return ".gg";
+      case ROM_PCE:       return ".pce";
+      case ROM_ATARI:     return ".a26";
+      case ROM_PICO8:     return ".p8";
+      case ROM_GENESIS:   return ".md";
+      case ROM_SNES:      return ".sfc";
+      case ROM_WSWAN:     return ".ws";
+      case ROM_NGP:       return ".ngc";
+      case ROM_LYNX:      return ".lnx";
+      case ROM_COLEM:     return ".col";
+      default:            return ".rom";
+    }
+  }
+
   void drawCentered(const char* text, int y, uint16_t color) {
     menuCanvas->setCursor(centeredX(text, 320), y);
     menuCanvas->setTextColor(color);
@@ -485,6 +507,50 @@ void DisplayEmu::cleanupMenuUI() {
   // PERF-04: Preserve menuCanvas in PSRAM across game launches to prevent fragmentation
 }
 
+void DisplayEmu::drawBootSplash(bool pressAnyButtonBlink) {
+  if (!menuCanvas) return;
+  menuCanvas->fillScreen(UI_BLACK);
+
+  // Large Centered BMO Mascot Face (w=120, h=80 centered on 320x240)
+  const int cx = 160;
+  const int cy = 76;
+  
+  // Body Card (BMO Teal #5FB49C)
+  menuCanvas->fillRoundRect(cx - 60, cy - 40, 120, 80, 16, UI_TEAL);
+  menuCanvas->drawRoundRect(cx - 60, cy - 40, 120, 80, 16, UI_DEEP_TEAL);
+
+  // Black Dot Eyes
+  menuCanvas->fillCircle(cx - 25, cy - 8, 7, UI_BLACK);
+  menuCanvas->fillCircle(cx + 25, cy - 8, 7, UI_BLACK);
+
+  // Cheerful Smile
+  menuCanvas->drawCircle(cx, cy + 8, 10, UI_BLACK);
+  menuCanvas->drawCircle(cx, cy + 9, 10, UI_BLACK);
+  menuCanvas->fillRect(cx - 12, cy - 2, 24, 10, UI_TEAL);
+
+  // Rosy Cheeks (#E8175D / #F48FB1)
+  menuCanvas->fillCircle(cx - 40, cy + 2, 6, UI_CORAL);
+  menuCanvas->fillCircle(cx + 40, cy + 2, 6, UI_CORAL);
+
+  // Title: "BMO GAMEBOY"
+  menuCanvas->setFont(&FreeSans12pt7b);
+  drawCentered("BMO GAMEBOY", 152, UI_WHITE);
+
+  // Subtitle: "15 Retro Consoles - Thousands of Adventures"
+  menuCanvas->setFont();
+  menuCanvas->setCursor(34, 178);
+  menuCanvas->setTextColor(UI_MINT);
+  menuCanvas->print("15 Retro Consoles - Thousands of Adventures");
+
+  // Blinking Prompt: "PRESS ANY BUTTON"
+  if (pressAnyButtonBlink) {
+    menuCanvas->setFont(&FreeSans9pt7b);
+    drawCentered("PRESS ANY BUTTON", 216, UI_YELLOW);
+  }
+
+  writeMenuCanvas();
+}
+
 void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts, int consoleCount, bool sdMounted) {
   if (!menuCanvas || consoleCount <= 0) return;
   const RomType consoles[16] = {
@@ -496,56 +562,106 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
   if (selectedIndex < 0) selectedIndex = 0;
   if (selectedIndex >= consoleCount) selectedIndex = consoleCount - 1;
 
+  const RomType currentConsole = consoles[selectedIndex];
+  const bool isFav = (currentConsole == ROM_FAVORITES);
+
+  // Screen background: Mint Green
   menuCanvas->fillScreen(UI_MINT);
-  menuCanvas->fillRect(0, 0, 320, 38, UI_DEEP_TEAL);
-  menuCanvas->setFont(&FreeSans12pt7b);
-  drawCentered("BMO CONSOLE SELECT", 26, UI_YELLOW);
-  menuCanvas->setFont(&FreeSans9pt7b);
 
-  // Scroll window: 4 items visible at a time
-  int topIndex = 0;
-  if (selectedIndex >= 3) topIndex = selectedIndex - 2;
-  if (topIndex + 4 > consoleCount) topIndex = consoleCount - 4;
-  if (topIndex < 0) topIndex = 0;
+  // Top Header Bar: Dark Forest Teal (0, 0, 320, 36)
+  menuCanvas->fillRect(0, 0, 320, 36, UI_DEEP_TEAL);
 
-  for (int row = 0; row < 4 && (topIndex + row) < consoleCount; ++row) {
-    int i = topIndex + row;
-    const int y = 48 + row * 40;
-    const bool selected = (i == selectedIndex);
-    const bool isFav = (consoles[i] == ROM_FAVORITES);
-    const bool available = (gameCounts[i] > 0);
-    
-    if (selected) {
-      menuCanvas->fillRoundRect(14, y, 292, 34, 8, UI_DEEP_TEAL);
-    } else {
-      menuCanvas->fillRoundRect(14, y, 292, 34, 8, UI_TEAL);
-    }
-    menuCanvas->drawRoundRect(14, y, 292, 34, 8, selected ? UI_YELLOW : (isFav ? UI_YELLOW : UI_DEEP_TEAL));
-    
-    menuCanvas->setCursor(24, y + 23);
-    menuCanvas->setTextColor(available ? (selected ? UI_YELLOW : (isFav ? UI_YELLOW : UI_BLACK)) : UI_MUTED);
-    if (isFav) {
-      menuCanvas->print("★ FAVORITES");
-    } else {
-      menuCanvas->print(consoleName(consoles[i]));
-    }
-    
-    menuCanvas->setFont();
-    char detail[32];
-    snprintf(detail, sizeof(detail), "%s | %d game%s", consoleYear(consoles[i]),
-             gameCounts[i], gameCounts[i] == 1 ? "" : "s");
-    menuCanvas->setCursor(168, y + 21);
-    menuCanvas->setTextColor(selected ? UI_WHITE : UI_DEEP_TEAL);
-    menuCanvas->print(detail);
-    
-    // Hardware Console Icon
-    drawConsoleIcon(consoles[i], 278, y + 9, selected ? UI_YELLOW : (isFav ? UI_YELLOW : UI_DEEP_TEAL));
-    
-    menuCanvas->setFont(&FreeSans9pt7b);
+  // Mini BMO Mascot Face in top-left (8, 4, 40, 28)
+  menuCanvas->fillRoundRect(8, 4, 40, 28, 6, UI_TEAL);
+  menuCanvas->fillCircle(18, 14, 2, UI_BLACK);
+  menuCanvas->fillCircle(30, 14, 2, UI_BLACK);
+  menuCanvas->drawCircle(24, 18, 4, UI_BLACK);
+  menuCanvas->fillRect(20, 14, 8, 4, UI_TEAL);
+  menuCanvas->fillCircle(12, 19, 2, UI_CORAL);
+  menuCanvas->fillCircle(36, 19, 2, UI_CORAL);
+
+  // Top Right System Counter ("SYSTEM 1/16")
+  menuCanvas->setFont();
+  char counterStr[32];
+  snprintf(counterStr, sizeof(counterStr), "SYSTEM %d/%d", selectedIndex + 1, consoleCount);
+  menuCanvas->setCursor(228, 14);
+  menuCanvas->setTextColor(UI_MINT);
+  menuCanvas->print(counterStr);
+
+  // Center Carousel Card (35, 46, 250, 156) — Exact 1:1 match to simulator!
+  const int cardX = 35;
+  const int cardY = 46;
+  const int cardW = 250;
+  const int cardH = 156;
+
+  menuCanvas->fillRoundRect(cardX, cardY, cardW, cardH, 12, UI_DEEP_TEAL);
+  menuCanvas->drawRoundRect(cardX, cardY, cardW, cardH, 12, UI_YELLOW);
+  menuCanvas->drawRoundRect(cardX + 1, cardY + 1, cardW - 2, cardH - 2, 11, UI_YELLOW);
+
+  // Console Badge [ FAV ] / [ GB ] (cardX + 16, cardY + 14, 54, 22)
+  menuCanvas->fillRoundRect(cardX + 16, cardY + 14, 54, 22, 6, UI_YELLOW);
+  menuCanvas->setFont();
+  menuCanvas->setCursor(cardX + 24, cardY + 21);
+  menuCanvas->setTextColor(UI_BLACK);
+  menuCanvas->print(consoleBadge(currentConsole));
+
+  // Year / "Starred" in top-right of card
+  menuCanvas->setCursor(cardX + cardW - 65, cardY + 21);
+  menuCanvas->setTextColor(UI_YELLOW);
+  if (isFav) {
+    menuCanvas->print("Starred");
+  } else {
+    menuCanvas->print(consoleYear(currentConsole));
   }
-    drawFooter(sdMounted ? "◄/►: CONSOLE    A: OPEN    SELECT: SPECS    START: SELF-TEST" :
-                           "BUILT-IN GAMES ONLY - SD CARD NOT FOUND");
-    writeMenuCanvas();
+
+  // Full Console Name
+  menuCanvas->setFont(&FreeSans12pt7b);
+  menuCanvas->setCursor(cardX + 16, cardY + 68);
+  menuCanvas->setTextColor(UI_WHITE);
+  if (isFav) {
+    menuCanvas->print("Favorites");
+  } else {
+    menuCanvas->print(consoleName(currentConsole));
+  }
+
+  // Format Tag
+  menuCanvas->setFont();
+  menuCanvas->setCursor(cardX + 16, cardY + 88);
+  menuCanvas->setTextColor(UI_MINT);
+  char fmtBuf[32];
+  snprintf(fmtBuf, sizeof(fmtBuf), "Format: %s", isFav ? "*" : consoleExt(currentConsole));
+  menuCanvas->print(fmtBuf);
+
+  // Game Count Tag
+  menuCanvas->setCursor(cardX + 16, cardY + 120);
+  menuCanvas->setTextColor(UI_YELLOW);
+  char countBuf[32];
+  snprintf(countBuf, sizeof(countBuf), "* %d Games Ready", gameCounts[selectedIndex]);
+  menuCanvas->print(countBuf);
+
+  // Large Pixel-Art Silhouette Icon under the Date on Right of Card!
+  drawConsoleIcon(currentConsole, cardX + 168, cardY + 48, UI_YELLOW);
+
+  // Left & Right Carousel Arrows
+  menuCanvas->setFont(&FreeSans12pt7b);
+  menuCanvas->setCursor(12, 134);
+  menuCanvas->setTextColor(UI_TEAL);
+  menuCanvas->print("<");
+  menuCanvas->setCursor(296, 134);
+  menuCanvas->print(">");
+
+  // Footer Instruction Bar (0, 214, 320, 26)
+  menuCanvas->fillRect(0, 214, 320, 26, UI_DEEP_TEAL);
+  menuCanvas->setFont();
+  menuCanvas->setCursor(20, 224);
+  menuCanvas->setTextColor(UI_MINT);
+  if (!sdMounted) {
+    menuCanvas->print("BUILT-IN GAMES ONLY - SD CARD NOT FOUND");
+  } else {
+    menuCanvas->print("A: Browse  |  SELECT: Specs  |  < / >: Console");
+  }
+
+  writeMenuCanvas();
 }
 
 void DisplayEmu::drawConsoleMuseumModal(RomType console) {
@@ -759,6 +875,15 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
 
   menuCanvas->fillScreen(UI_MINT);
   menuCanvas->fillRect(0, 0, 320, 38, UI_DEEP_TEAL);
+
+  // Mini BMO Mascot Face in top-left (8, 4, 40, 28)
+  menuCanvas->fillRoundRect(8, 4, 40, 28, 6, UI_TEAL);
+  menuCanvas->fillCircle(18, 14, 2, UI_BLACK);
+  menuCanvas->fillCircle(30, 14, 2, UI_BLACK);
+  menuCanvas->drawCircle(24, 18, 4, UI_BLACK);
+  menuCanvas->fillRect(20, 14, 8, 4, UI_TEAL);
+  menuCanvas->fillCircle(12, 19, 2, UI_CORAL);
+  menuCanvas->fillCircle(36, 19, 2, UI_CORAL);
   
   // Battery status block (Top right header)
 #if FEATURE_BATTERY_MONITOR
@@ -881,7 +1006,7 @@ void DisplayEmu::sanitizeRomTitle(const char* src, char* dst, size_t maxLen) {
   }
 }
 
-static int activeDmgPaletteIdx = 0;
+static int activeDmgPaletteIdx = 1; // Default to authentic BMO Teal (Theme::PALETTE_BMO)
 static const uint16_t* const DMG_PALETTES[Theme::PALETTE_COUNT] = {
   DisplayEmu::CLASSIC_PALETTE,
   Theme::PALETTE_BMO,
@@ -1017,66 +1142,112 @@ void DisplayEmu::drawConsoleIcon(RomType type, int x, int y, uint16_t primaryCol
   if (!menuCanvas) return;
   if (primaryColor == 0) primaryColor = UI_YELLOW;
 
+  // Dark backdrop pill (w=68, h=76)
+  menuCanvas->fillRoundRect(x, y, 68, 76, 8, UI_BLACK);
+  menuCanvas->drawRoundRect(x, y, 68, 76, 8, UI_TEAL);
+
+  const int cx = x + 34;
+  const int cy = y + 38;
+
   switch (type) {
     case ROM_FAVORITES:
-      menuCanvas->fillTriangle(x + 7, y + 1, x + 3, y + 13, x + 12, y + 5, primaryColor);
-      menuCanvas->fillTriangle(x + 7, y + 1, x + 11, y + 13, x + 2, y + 5, primaryColor);
+      menuCanvas->fillTriangle(cx, cy - 22, cx - 18, cy + 18, cx + 18, cy - 6, UI_YELLOW);
+      menuCanvas->fillTriangle(cx, cy - 22, cx + 18, cy + 18, cx - 18, cy - 6, UI_YELLOW);
+      menuCanvas->fillTriangle(cx - 22, cy - 6, cx + 22, cy - 6, cx, cy + 22, UI_YELLOW);
+      menuCanvas->fillCircle(cx - 7, cy - 2, 2, UI_BLACK);
+      menuCanvas->fillCircle(cx + 7, cy - 2, 2, UI_BLACK);
+      menuCanvas->drawCircle(cx, cy + 2, 4, UI_BLACK);
+      menuCanvas->fillRect(cx - 5, cy - 2, 10, 4, UI_YELLOW);
+      menuCanvas->fillCircle(cx - 11, cy + 3, 2, UI_CORAL);
+      menuCanvas->fillCircle(cx + 11, cy + 3, 2, UI_CORAL);
       break;
+
     case ROM_GB:
     case ROM_GBC:
-      menuCanvas->fillRoundRect(x + 2, y + 1, 12, 14, 2, primaryColor);
-      menuCanvas->fillRect(x + 4, y + 3, 8, 6, UI_BLACK);
-      menuCanvas->drawPixel(x + 5, y + 11, UI_BLACK);
-      menuCanvas->drawPixel(x + 11, y + 11, UI_CORAL);
+      menuCanvas->fillRoundRect(cx - 16, cy - 26, 32, 54, 4, (type == ROM_GB) ? UI_TEAL : UI_BLUE);
+      menuCanvas->fillRect(cx - 12, cy - 22, 24, 20, UI_DEEP_TEAL);
+      menuCanvas->fillRect(cx - 9, cy - 19, 18, 14, UI_MINT);
+      menuCanvas->drawPixel(cx - 4, cy - 14, UI_BLACK);
+      menuCanvas->drawPixel(cx + 4, cy - 14, UI_BLACK);
+      menuCanvas->drawFastHLine(cx - 2, cy - 10, 4, UI_BLACK);
+      menuCanvas->fillRect(cx - 12, cy + 6, 8, 3, UI_YELLOW);
+      menuCanvas->fillRect(cx - 10, cy + 4, 4, 7, UI_YELLOW);
+      menuCanvas->fillCircle(cx + 8, cy + 7, 2, UI_CORAL);
+      menuCanvas->fillCircle(cx + 3, cy + 11, 2, UI_CORAL);
       break;
+
     case ROM_NES:
-      menuCanvas->drawRect(x + 1, y + 3, 14, 10, primaryColor);
-      menuCanvas->fillRect(x + 3, y + 5, 10, 6, UI_BLACK);
-      menuCanvas->drawPixel(x + 4, y + 8, UI_WHITE);
-      menuCanvas->drawPixel(x + 10, y + 8, UI_CORAL);
-      menuCanvas->drawPixel(x + 12, y + 8, UI_CORAL);
+      menuCanvas->fillRoundRect(cx - 24, cy - 14, 48, 28, 3, UI_WHITE);
+      menuCanvas->fillRect(cx - 21, cy - 11, 42, 22, UI_BLACK);
+      menuCanvas->fillRect(cx - 18, cy - 2, 10, 4, UI_WHITE);
+      menuCanvas->fillRect(cx - 15, cy - 5, 4, 10, UI_WHITE);
+      menuCanvas->fillCircle(cx + 10, cy + 1, 3, UI_CORAL);
+      menuCanvas->fillCircle(cx + 17, cy + 1, 3, UI_CORAL);
       break;
+
     case ROM_SNES:
-      menuCanvas->fillRoundRect(x + 1, y + 4, 15, 8, 4, primaryColor);
-      menuCanvas->drawPixel(x + 4, y + 8, UI_BLACK);
-      menuCanvas->drawPixel(x + 11, y + 6, UI_YELLOW);
-      menuCanvas->drawPixel(x + 13, y + 8, UI_BLUE);
-      menuCanvas->drawPixel(x + 11, y + 10, UI_CORAL);
+      menuCanvas->fillRoundRect(cx - 26, cy - 14, 52, 28, 12, UI_WHITE);
+      menuCanvas->fillRoundRect(cx - 22, cy - 11, 44, 22, 9, UI_MUTED);
+      menuCanvas->fillRect(cx - 18, cy - 2, 8, 3, UI_BLACK);
+      menuCanvas->fillRect(cx - 16, cy - 4, 3, 7, UI_BLACK);
+      menuCanvas->fillCircle(cx + 14, cy - 5, 2, UI_YELLOW);
+      menuCanvas->fillCircle(cx + 9, cy, 2, Theme::COLOR_SUCCESS);
+      menuCanvas->fillCircle(cx + 19, cy, 2, UI_BLUE);
+      menuCanvas->fillCircle(cx + 14, cy + 5, 2, UI_CORAL);
       break;
+
     case ROM_GENESIS:
-      menuCanvas->fillRoundRect(x + 1, y + 3, 14, 10, 5, UI_BLACK);
-      menuCanvas->drawRoundRect(x + 1, y + 3, 14, 10, 5, primaryColor);
-      menuCanvas->drawPixel(x + 10, y + 8, UI_WHITE);
-      menuCanvas->drawPixel(x + 12, y + 7, UI_WHITE);
+      menuCanvas->fillRoundRect(cx - 24, cy - 14, 48, 28, 10, UI_BLACK);
+      menuCanvas->drawRoundRect(cx - 24, cy - 14, 48, 28, 10, UI_MUTED);
+      menuCanvas->fillRect(cx - 3, cy - 8, 6, 2, UI_CORAL);
+      menuCanvas->fillCircle(cx - 13, cy + 2, 6, UI_MUTED);
+      menuCanvas->fillCircle(cx + 6, cy + 5, 2, UI_WHITE);
+      menuCanvas->fillCircle(cx + 12, cy + 2, 2, UI_WHITE);
+      menuCanvas->fillCircle(cx + 18, cy - 1, 2, UI_WHITE);
       break;
+
     case ROM_SMS:
     case ROM_GG:
-      menuCanvas->fillRoundRect(x + 1, y + 2, 15, 12, 2, UI_BLACK);
-      menuCanvas->drawRoundRect(x + 1, y + 2, 15, 12, 2, primaryColor);
-      menuCanvas->fillRect(x + 5, y + 4, 7, 8, UI_BLUE);
+      menuCanvas->fillRoundRect(cx - 25, cy - 16, 50, 32, 6, UI_BLACK);
+      menuCanvas->drawRoundRect(cx - 25, cy - 16, 50, 32, 6, UI_TEAL);
+      menuCanvas->fillRect(cx - 14, cy - 10, 28, 20, UI_BLUE);
+      menuCanvas->fillCircle(cx + 18, cy - 2, 2, UI_CORAL);
+      menuCanvas->fillCircle(cx + 18, cy + 5, 2, UI_YELLOW);
       break;
+
     case ROM_ATARI:
-      menuCanvas->fillRect(x + 3, y + 7, 10, 7, UI_BLACK);
-      menuCanvas->drawRect(x + 3, y + 7, 10, 7, primaryColor);
-      menuCanvas->drawLine(x + 8, y + 2, x + 8, y + 7, UI_BLACK);
-      menuCanvas->drawPixel(x + 8, y + 1, UI_CORAL);
-      menuCanvas->drawPixel(x + 5, y + 9, UI_CORAL);
+      menuCanvas->fillRoundRect(cx - 16, cy - 4, 32, 26, 4, UI_BLACK);
+      menuCanvas->drawRoundRect(cx - 16, cy - 4, 32, 26, 4, UI_YELLOW);
+      menuCanvas->drawCircle(cx, cy + 9, 7, UI_CORAL);
+      menuCanvas->fillRect(cx - 3, cy - 22, 6, 20, UI_BLACK);
+      menuCanvas->fillCircle(cx, cy - 22, 5, UI_CORAL);
+      menuCanvas->fillCircle(cx - 10, cy + 2, 3, UI_CORAL);
       break;
+
     case ROM_PICO8:
-      menuCanvas->fillRect(x + 3, y + 2, 10, 12, UI_DEEP_TEAL);
-      menuCanvas->drawRect(x + 3, y + 2, 10, 12, primaryColor);
-      menuCanvas->fillRect(x + 5, y + 4, 6, 5, UI_YELLOW);
-      menuCanvas->drawFastHLine(x + 5, y + 10, 6, UI_CORAL);
+      menuCanvas->fillRoundRect(cx - 16, cy - 24, 32, 48, 4, UI_DEEP_TEAL);
+      menuCanvas->fillRect(cx - 12, cy - 18, 24, 26, UI_YELLOW);
+      menuCanvas->fillRect(cx - 12, cy + 10, 5, 4, UI_CORAL);
+      menuCanvas->fillRect(cx - 7, cy + 10, 5, 4, UI_YELLOW);
+      menuCanvas->fillRect(cx - 2, cy + 10, 5, 4, Theme::COLOR_SUCCESS);
+      menuCanvas->fillRect(cx + 3, cy + 10, 5, 4, UI_BLUE);
+      menuCanvas->fillRect(cx + 8, cy + 10, 4, 4, UI_WHITE);
       break;
+
     case ROM_WAD:
-      menuCanvas->fillRoundRect(x + 2, y + 2, 12, 12, 3, UI_BLACK);
-      menuCanvas->drawRoundRect(x + 2, y + 2, 12, 12, 3, primaryColor);
-      menuCanvas->fillRect(x + 4, y + 5, 8, 4, Theme::COLOR_SUCCESS);
+      menuCanvas->fillRoundRect(cx - 16, cy - 18, 32, 36, 6, UI_BLACK);
+      menuCanvas->drawRoundRect(cx - 16, cy - 18, 32, 36, 6, UI_CORAL);
+      menuCanvas->fillRect(cx - 11, cy - 8, 22, 8, Theme::COLOR_SUCCESS);
       break;
+
     default:
-      menuCanvas->fillRect(x + 3, y + 2, 10, 12, UI_BLACK);
-      menuCanvas->drawRect(x + 3, y + 2, 10, 12, primaryColor);
-      menuCanvas->fillRect(x + 5, y + 5, 6, 6, primaryColor);
+      menuCanvas->fillRoundRect(cx - 16, cy - 22, 32, 44, 4, UI_BLACK);
+      menuCanvas->drawRoundRect(cx - 16, cy - 22, 32, 44, 4, UI_YELLOW);
+      menuCanvas->fillRect(cx - 11, cy - 15, 22, 18, UI_TEAL);
+      menuCanvas->setFont();
+      menuCanvas->setCursor(cx - 8, cy - 4);
+      menuCanvas->setTextColor(UI_BLACK);
+      menuCanvas->print(consoleBadge(type));
       break;
   }
 }
