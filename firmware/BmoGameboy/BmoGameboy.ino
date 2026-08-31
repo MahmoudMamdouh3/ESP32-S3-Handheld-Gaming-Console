@@ -286,10 +286,6 @@ void loop() {
     }
     DisplayEmu::drawConsoleSelectMenu(selectedConsoleIndex, cachedConsoleCounts, CONSOLE_COUNT, SDCard::isMounted());
 
-    // Blit the mascot face into the top-left corner on top of the menu canvas.
-    // blitFace() internally caches faceBuf and recomputes SDF only when dirty (~0.4ms blit).
-    BmoFace::draw(FACE_MENU_X, FACE_MENU_Y, FACE_MENU_SIZE);
-
     // The full-screen SPI blit already consumes most of a 16.7 ms frame.
     // Only sleep for the remaining budget; an unconditional delay(16) here
     // previously limited the menu to roughly 30 FPS.
@@ -567,9 +563,6 @@ void loop() {
     }
     DisplayEmu::drawGameSelectMenu(visibleGames, visibleGameCount, selectedGameIndex,
                                    CONSOLES[selectedConsoleIndex], SDCard::isMounted());
-
-    // Blit the mascot face into the top-left corner of the game list menu.
-    BmoFace::draw(FACE_MENU_X, FACE_MENU_Y, FACE_MENU_SIZE);
 
     const unsigned long menuElapsed = millis() - menuFrameStart;
     if (menuElapsed < 16) delay(16 - menuElapsed);

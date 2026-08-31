@@ -873,7 +873,7 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   if (count < 0) count = 0;
   if (count > 0 && (selectedIndex < 0 || selectedIndex >= count)) selectedIndex = 0;
 
-  menuCanvas->fillScreen(UI_MINT);
+  menuCanvas->fillScreen(UI_BLACK);
   menuCanvas->fillRect(0, 0, 320, 38, UI_DEEP_TEAL);
 
   // Mini BMO Mascot Face in top-left (8, 4, 40, 28)
@@ -1142,12 +1142,12 @@ void DisplayEmu::drawConsoleIcon(RomType type, int x, int y, uint16_t primaryCol
   if (!menuCanvas) return;
   if (primaryColor == 0) primaryColor = UI_YELLOW;
 
-  // Dark backdrop pill (w=68, h=76)
-  menuCanvas->fillRoundRect(x, y, 68, 76, 8, UI_BLACK);
-  menuCanvas->drawRoundRect(x, y, 68, 76, 8, UI_TEAL);
+  // Dark backdrop pill (w=58, h=74)
+  menuCanvas->fillRoundRect(x, y, 58, 74, 8, UI_BLACK);
+  menuCanvas->drawRoundRect(x, y, 58, 74, 8, UI_TEAL);
 
-  const int cx = x + 34;
-  const int cy = y + 38;
+  const int cx = x + 29;
+  const int cy = y + 37;
 
   switch (type) {
     case ROM_FAVORITES:
@@ -1254,7 +1254,7 @@ void DisplayEmu::drawConsoleIcon(RomType type, int x, int y, uint16_t primaryCol
 
 void DisplayEmu::drawIdleMascotScreen(unsigned long idleSeconds, const char* stateMessage) {
   if (!menuCanvas) return;
-  menuCanvas->fillScreen(UI_MINT);
+  menuCanvas->fillScreen(UI_BLACK);
   
   // Header bar
   menuCanvas->fillRect(0, 0, 320, 32, UI_DEEP_TEAL);
