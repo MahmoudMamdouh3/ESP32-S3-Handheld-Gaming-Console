@@ -16,7 +16,8 @@ const STATE = {
 
 // Console Metadata
 const CONSOLES_LIST = [
-  { id: "ROM_GB", name: "Game Boy", year: "1989", ext: ".gb", badge: "DMG", color: "#48DBFB", count: 602 },
+  { id: "ROM_FAVORITES", name: "★ Favorites", year: "Starred", ext: "★", badge: "FAV", color: "#FFE033", count: 5 },
+  { id: "ROM_GB", name: "Game Boy", year: "1989", ext: ".gb", badge: "DMG", color: "#5FB49C", count: 603 },
   { id: "ROM_GBC", name: "Game Boy Color", year: "1998", ext: ".gbc", badge: "GBC", color: "#2ED573", count: 538 },
   { id: "ROM_NES", name: "Nintendo NES", year: "1983", ext: ".nes", badge: "NES", color: "#FF5E57", count: 578 },
   { id: "ROM_SNES", name: "Super Nintendo", year: "1990", ext: ".sfc", badge: "SNES", color: "#9C88FF", count: 818 },
@@ -59,6 +60,21 @@ class BmoSimulator {
       mouthCurve: 0.8,
       isBlinking: false
     };
+
+    // DMG Runtime Palettes
+    this.palettes = {
+      classic: ["#9bbc0f", "#8bac0f", "#306230", "#0f380f"],
+      bmo:     ["#dcf8f2", "#53c6b5", "#164848", "#051214"],
+      pocket:  ["#f5f5f5", "#aaaaaa", "#555555", "#0a0a0a"],
+      light:   ["#b4fff0", "#50c8d2", "#146478", "#021e28"],
+      amber:   ["#ffd250", "#dc9614", "#784600", "#140a00"]
+    };
+    this.activePalette = "classic";
+
+    // Battery State
+    this.batteryState = 88;
+    this.batteryLevel = 88;
+    this.isCharging = false;
 
     // Audio SFX synthesis using Web Audio API
     this.initAudio();
@@ -103,17 +119,48 @@ class BmoSimulator {
   generateMockGameDatabase() {
     const db = {};
     CONSOLES_LIST.forEach(c => {
+      if (c.id === "ROM_FAVORITES") return;
       const history = CONSOLE_HISTORY_DATABASE[c.id];
       const games = [];
-      if (history && history.hallmarkGames) {
-        history.hallmarkGames.forEach(hg => games.push(`${hg.title} (${c.year})`));
-      }
-      for (let i = 1; i <= 25; i++) {
-        games.push(`${c.name} Classic Title ${i} [USA]`);
+      if (c.id === "ROM_GB") {
+        games.push({ title: "Virtual BMO (Official Game)", console: "GB", isFav: true });
+        games.push({ title: "Tetris (World) (Rev A)", console: "GB", isFav: true });
+        games.push({ title: "Pokemon Red Version", console: "GB", isFav: false });
+        games.push({ title: "The Legend of Zelda - Link's Awakening", console: "GB", isFav: false });
+      } else if (c.id === "ROM_GBC") {
+        games.push({ title: "Super Mario Bros Deluxe", console: "GBC", isFav: true });
+        games.push({ title: "The Legend of Zelda - Oracle of Ages", console: "GBC", isFav: true });
+        games.push({ title: "Pokemon Crystal Version", console: "GBC", isFav: false });
+        games.push({ title: "Aladdin", console: "GBC", isFav: false });
+      } else if (c.id === "ROM_NES") {
+        games.push({ title: "Super Mario Bros 3", console: "NES", isFav: true });
+        games.push({ title: "The Legend of Zelda", console: "NES", isFav: false });
+        games.push({ title: "Mega Man 2", console: "NES", isFav: false });
+      } else {
+        if (history && history.hallmarkGames) {
+          history.hallmarkGames.forEach(hg => games.push({ title: `${hg.title}`, console: c.badge, isFav: false }));
+        }
+        for (let i = 1; i <= 15; i++) {
+          games.push({ title: `${c.name} Classic Title ${i}`, console: c.badge, isFav: false });
+        }
       }
       db[c.id] = games;
     });
+    this.rebuildFavoritesInDatabase(db);
     return db;
+  }
+
+  rebuildFavoritesInDatabase(db) {
+    const favs = [];
+    Object.keys(db).forEach(cid => {
+      if (cid === "ROM_FAVORITES") return;
+      db[cid].forEach(g => {
+        if (g.isFav) favs.push(g);
+      });
+    });
+    db["ROM_FAVORITES"] = favs;
+    const favConsole = CONSOLES_LIST.find(c => c.id === "ROM_FAVORITES");
+    if (favConsole) favConsole.count = favs.length;
   }
 
   setupInputHandlers() {
@@ -240,11 +287,34 @@ class BmoSimulator {
         this.selectedGameIndex = Math.min(games.length - 1, this.selectedGameIndex + 8);
       } else if (key === "LEFT") {
         this.selectedGameIndex = Math.max(0, this.selectedGameIndex - 8);
+      } else if (key === "SELECT") {
+        if (games.length > 0) {
+          const game = games[this.selectedGameIndex];
+          if (game) {
+            game.isFav = !game.isFav;
+            this.rebuildFavoritesInDatabase(this.mockGames);
+            if (game.isFav) {
+              this.playBeep(880, "triangle", 0.08);
+              this.bmo.expression = "HAPPY";
+            } else {
+              this.playBeep(330, "sine", 0.08);
+              this.bmo.expression = "SURPRISED";
+            }
+            if (activeConsole.id === "ROM_FAVORITES") {
+              if (this.selectedGameIndex >= (this.mockGames["ROM_FAVORITES"] || []).length) {
+                this.selectedGameIndex = Math.max(0, (this.mockGames["ROM_FAVORITES"] || []).length - 1);
+              }
+            }
+          }
+        }
       } else if (key === "B") {
         this.currentState = STATE.CONSOLE_SELECT;
+        this.bmo.expression = "IDLE";
       } else if (key === "A" || key === "START") {
-        this.currentState = STATE.EMULATION_VIEW;
-        this.bmo.expression = "HAPPY";
+        if (games.length > 0) {
+          this.currentState = STATE.EMULATION_VIEW;
+          this.bmo.expression = "HAPPY";
+        }
       }
     } else if (this.currentState === STATE.EMULATION_VIEW) {
       if (key === "SELECT" || key === "B") {
@@ -271,6 +341,25 @@ class BmoSimulator {
         document.body.setAttribute("data-theme", e.target.value);
       });
     }
+    // Palette selector
+    const paletteSelect = document.getElementById("palette-select");
+    if (paletteSelect) {
+      paletteSelect.addEventListener("change", (e) => {
+        this.activePalette = e.target.value;
+      });
+    }
+
+    // Battery indicator interactive cycle
+    const battIndicator = document.getElementById("battery-indicator");
+    if (battIndicator) {
+      battIndicator.addEventListener("click", () => {
+        const states = [100, 75, 45, 15, "charging"];
+        const curIdx = states.indexOf(this.batteryState);
+        const nextState = states[(curIdx + 1) % states.length];
+        this.setBatteryState(nextState);
+        this.playBeep(nextState === "charging" ? 750 : nextState <= 20 ? 300 : 550, "sine", 0.05);
+      });
+    }
 
     // Filter toggles
     const filterSelect = document.getElementById("filter-select");
@@ -293,6 +382,36 @@ class BmoSimulator {
     });
 
     this.updateSidebarMuseumView();
+  }
+
+  setBatteryState(state) {
+    this.batteryState = state;
+    const fillEl = document.getElementById("chassis-battery-fill");
+    const pctEl = document.getElementById("chassis-battery-pct");
+    if (!fillEl || !pctEl) return;
+
+    fillEl.className = "pixel-battery-fill";
+    if (state === "charging") {
+      fillEl.classList.add("charging");
+      pctEl.innerText = "CHG";
+      this.batteryLevel = 100;
+      this.isCharging = true;
+      this.bmo.expression = "HAPPY";
+    } else {
+      this.isCharging = false;
+      this.batteryLevel = state;
+      fillEl.style.width = `${state}%`;
+      pctEl.innerText = `${state}%`;
+      if (state <= 20) {
+        fillEl.classList.add("charge-low");
+        this.bmo.expression = "SLEEPY";
+      } else if (state <= 50) {
+        fillEl.classList.add("charge-med");
+        this.bmo.expression = "IDLE";
+      } else {
+        this.bmo.expression = "IDLE";
+      }
+    }
   }
 
   updateSidebarMuseumView() {
@@ -432,36 +551,326 @@ class BmoSimulator {
     this.bootTimer += dt;
 
     // Large Centered BMO Face
-    this.drawBmoFace(100, 50, 2.5);
+    this.drawBmoFace(100, 42, 2.5);
 
     // Title
     this.ctx.fillStyle = "#ffffff";
     this.ctx.font = "bold 16px 'Press Start 2P', monospace";
     this.ctx.textAlign = "center";
-    this.ctx.fillText("BMO GAMEBOY", 160, 160);
+    this.ctx.fillText("BMO GAMEBOY", 160, 156);
 
-    this.ctx.fillStyle = "#00d2d3";
-    this.ctx.font = "10px 'Outfit', sans-serif";
-    this.ctx.fillText("15 CONSOLES • 17,700+ GAMES • OCTAL PSRAM", 160, 185);
+    this.ctx.fillStyle = "#cef5e4";
+    this.ctx.font = "11px 'Outfit', sans-serif";
+    this.ctx.textAlign = "center";
+    this.ctx.fillText("15 Retro Consoles • Thousands of Adventures", 160, 182);
 
     // Press A Prompt
     if (Math.floor(this.bootTimer * 2) % 2 === 0) {
-      this.ctx.fillStyle = "#feca57";
+      this.ctx.fillStyle = "#ffe033";
       this.ctx.font = "bold 11px 'Press Start 2P', monospace";
-      this.ctx.fillText("PRESS ANY BUTTON", 160, 215);
+      this.ctx.fillText("PRESS ANY BUTTON", 160, 218);
     }
+  }
+
+  // Pixel-Art & Vector Illustration for Active Console
+  drawConsolePixelArt(c, x, y, w, h) {
+    this.ctx.save();
+    this.ctx.translate(x, y);
+
+    // Subtle dark backdrop pill
+    this.ctx.fillStyle = "rgba(10, 24, 30, 0.6)";
+    this.ctx.beginPath();
+    this.ctx.roundRect(0, 0, w, h, 8);
+    this.ctx.fill();
+    this.ctx.strokeStyle = "rgba(95, 180, 156, 0.3)";
+    this.ctx.lineWidth = 1;
+    this.ctx.stroke();
+
+    const id = c.id;
+    if (id === "ROM_FAVORITES") {
+      // Cheerful smiling golden star with BMO eyes & cheeks
+      this.ctx.fillStyle = "#FFE033";
+      this.ctx.beginPath();
+      const cx = 29, cy = 36, spikes = 5, outerRadius = 24, innerRadius = 11;
+      let rot = Math.PI / 2 * 3;
+      let step = Math.PI / spikes;
+      this.ctx.moveTo(cx, cy - outerRadius);
+      for (let i = 0; i < spikes; i++) {
+        let sx = cx + Math.cos(rot) * outerRadius;
+        let sy = cy + Math.sin(rot) * outerRadius;
+        this.ctx.lineTo(sx, sy);
+        rot += step;
+        sx = cx + Math.cos(rot) * innerRadius;
+        sy = cy + Math.sin(rot) * innerRadius;
+        this.ctx.lineTo(sx, sy);
+        rot += step;
+      }
+      this.ctx.lineTo(cx, cy - outerRadius);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // Star BMO Eyes
+      this.ctx.fillStyle = "#0F2620";
+      this.ctx.beginPath();
+      this.ctx.arc(23, 34, 2, 0, Math.PI * 2);
+      this.ctx.arc(35, 34, 2, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Star Smile
+      this.ctx.strokeStyle = "#0F2620";
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      this.ctx.arc(29, 36, 3.5, 0.1 * Math.PI, 0.9 * Math.PI, false);
+      this.ctx.stroke();
+
+      // Rosy Cheeks
+      this.ctx.fillStyle = "#F48FB1";
+      this.ctx.beginPath();
+      this.ctx.arc(20, 37, 1.8, 0, Math.PI * 2);
+      this.ctx.arc(38, 37, 1.8, 0, Math.PI * 2);
+      this.ctx.fill();
+
+    } else if (id === "ROM_GB" || id === "ROM_GBC") {
+      // Classic Vertical Handheld Game Boy
+      const bodyColor = (id === "ROM_GB") ? "#5FB49C" : "#9C88FF";
+      this.ctx.fillStyle = bodyColor;
+      this.ctx.beginPath();
+      this.ctx.roundRect(11, 6, 36, 62, [6, 6, 12, 6]);
+      this.ctx.fill();
+
+      // Bezel
+      this.ctx.fillStyle = "#1A4B42";
+      this.ctx.fillRect(15, 11, 28, 24);
+
+      // Screen
+      this.ctx.fillStyle = (id === "ROM_GB") ? "#CEF5E4" : "#D4F7EA";
+      this.ctx.fillRect(19, 14, 20, 18);
+
+      // Mini Face on Screen!
+      this.ctx.fillStyle = "#0F2620";
+      this.ctx.fillRect(23, 20, 2, 3);
+      this.ctx.fillRect(33, 20, 2, 3);
+      this.ctx.fillRect(26, 26, 6, 2);
+
+      // D-Pad
+      this.ctx.fillStyle = "#FFE033";
+      this.ctx.fillRect(16, 42, 10, 3);
+      this.ctx.fillRect(19, 39, 4, 9);
+
+      // A / B Buttons
+      this.ctx.fillStyle = "#E8175D";
+      this.ctx.beginPath();
+      this.ctx.arc(38, 43, 2.5, 0, Math.PI * 2);
+      this.ctx.arc(32, 47, 2.5, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Slanted Speaker Grille
+      this.ctx.fillStyle = "rgba(15, 38, 32, 0.4)";
+      this.ctx.fillRect(36, 57, 6, 1);
+      this.ctx.fillRect(38, 60, 5, 1);
+
+    } else if (id === "ROM_NES") {
+      // Classic NES Controller Rectangle
+      this.ctx.fillStyle = "#C8D6E5";
+      this.ctx.beginPath();
+      this.ctx.roundRect(8, 20, 42, 28, 3);
+      this.ctx.fill();
+
+      // Black Center Stripe
+      this.ctx.fillStyle = "#1E272E";
+      this.ctx.fillRect(11, 23, 36, 22);
+
+      // D-Pad
+      this.ctx.fillStyle = "#C8D6E5";
+      this.ctx.fillRect(14, 30, 8, 3);
+      this.ctx.fillRect(17, 27, 3, 9);
+
+      // Red A & B buttons
+      this.ctx.fillStyle = "#FF4757";
+      this.ctx.beginPath();
+      this.ctx.arc(36, 34, 2.5, 0, Math.PI * 2);
+      this.ctx.arc(42, 34, 2.5, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Red Stripe Accent
+      this.ctx.fillStyle = "#FF4757";
+      this.ctx.fillRect(24, 39, 8, 2);
+
+    } else if (id === "ROM_SNES") {
+      // Super Nintendo Rounded Dogbone Controller
+      this.ctx.fillStyle = "#D2D7DE";
+      this.ctx.beginPath();
+      this.ctx.roundRect(6, 20, 46, 26, 13);
+      this.ctx.fill();
+
+      // Inner recess
+      this.ctx.fillStyle = "#A4B0BE";
+      this.ctx.beginPath();
+      this.ctx.roundRect(10, 23, 38, 20, 10);
+      this.ctx.fill();
+
+      // D-Pad
+      this.ctx.fillStyle = "#2F3542";
+      this.ctx.fillRect(13, 30, 8, 3);
+      this.ctx.fillRect(16, 27, 3, 9);
+
+      // 4 Diamond Color Buttons (Yellow, Green, Blue, Red)
+      this.ctx.fillStyle = "#FFE033";
+      this.ctx.beginPath(); this.ctx.arc(38, 27, 2, 0, Math.PI * 2); this.ctx.fill();
+      this.ctx.fillStyle = "#2ED573";
+      this.ctx.beginPath(); this.ctx.arc(34, 31, 2, 0, Math.PI * 2); this.ctx.fill();
+      this.ctx.fillStyle = "#3742FA";
+      this.ctx.beginPath(); this.ctx.arc(42, 31, 2, 0, Math.PI * 2); this.ctx.fill();
+      this.ctx.fillStyle = "#FF4757";
+      this.ctx.beginPath(); this.ctx.arc(38, 35, 2, 0, Math.PI * 2); this.ctx.fill();
+
+    } else if (id === "ROM_GENESIS") {
+      // Sega Genesis Arc Controller
+      this.ctx.fillStyle = "#1E272E";
+      this.ctx.beginPath();
+      this.ctx.roundRect(7, 20, 44, 26, [14, 14, 8, 8]);
+      this.ctx.fill();
+
+      // Red Start Button
+      this.ctx.fillStyle = "#FF4757";
+      this.ctx.fillRect(25, 24, 7, 2);
+
+      // D-Pad Disc
+      this.ctx.fillStyle = "#57606F";
+      this.ctx.beginPath();
+      this.ctx.arc(17, 33, 6, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // 3 Action Buttons (A, B, C)
+      this.ctx.fillStyle = "#747D8C";
+      this.ctx.beginPath();
+      this.ctx.arc(33, 36, 2.2, 0, Math.PI * 2);
+      this.ctx.arc(38, 33, 2.2, 0, Math.PI * 2);
+      this.ctx.arc(43, 30, 2.2, 0, Math.PI * 2);
+      this.ctx.fill();
+
+    } else if (id === "ROM_GG" || id === "ROM_LYNX") {
+      // Landscape Handheld Console
+      this.ctx.fillStyle = "#2F3542";
+      this.ctx.beginPath();
+      this.ctx.roundRect(6, 18, 46, 32, 8);
+      this.ctx.fill();
+
+      // Screen
+      this.ctx.fillStyle = "#50C8D2";
+      this.ctx.fillRect(17, 23, 24, 18);
+
+      // Buttons
+      this.ctx.fillStyle = "#FFE033";
+      this.ctx.fillRect(10, 28, 4, 4);
+      this.ctx.fillStyle = "#FF4757";
+      this.ctx.beginPath();
+      this.ctx.arc(45, 30, 2, 0, Math.PI * 2);
+      this.ctx.arc(45, 35, 2, 0, Math.PI * 2);
+      this.ctx.fill();
+
+    } else if (id === "ROM_ATARI") {
+      // Atari 2600 Joystick
+      this.ctx.fillStyle = "#2F3542";
+      this.ctx.beginPath();
+      this.ctx.roundRect(14, 30, 30, 26, 4);
+      this.ctx.fill();
+
+      // Orange ring
+      this.ctx.strokeStyle = "#FF7F50";
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      this.ctx.arc(29, 43, 8, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      // Red fire button
+      this.ctx.fillStyle = "#FF4757";
+      this.ctx.beginPath();
+      this.ctx.arc(19, 36, 3, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Stick shaft & top
+      this.ctx.fillStyle = "#1E272E";
+      this.ctx.fillRect(27, 14, 4, 20);
+      this.ctx.beginPath();
+      this.ctx.arc(29, 14, 5, 0, Math.PI * 2);
+      this.ctx.fill();
+
+    } else if (id === "ROM_PICO8") {
+      // PICO-8 Fantasy Cartridge
+      this.ctx.fillStyle = "#303A52";
+      this.ctx.beginPath();
+      this.ctx.roundRect(12, 14, 34, 44, 4);
+      this.ctx.fill();
+
+      // Cart Label
+      this.ctx.fillStyle = "#FFE033";
+      this.ctx.fillRect(16, 20, 26, 26);
+
+      // Rainbow bar
+      const colors = ["#FF004D", "#FFA300", "#FFEC27", "#00E436", "#29ADFF"];
+      for (let ci = 0; ci < colors.length; ci++) {
+        this.ctx.fillStyle = colors[ci];
+        this.ctx.fillRect(16 + ci * 5.2, 42, 5.2, 4);
+      }
+
+      // Mini PICO-8 Logo
+      this.ctx.fillStyle = "#1D2B53";
+      this.ctx.beginPath();
+      this.ctx.arc(29, 30, 4, 0, Math.PI * 2);
+      this.ctx.fill();
+
+    } else if (id === "ROM_WAD") {
+      // DOOM Skull / Helmet Icon
+      this.ctx.fillStyle = "#2F3542";
+      this.ctx.beginPath();
+      this.ctx.roundRect(14, 18, 30, 32, 6);
+      this.ctx.fill();
+
+      // Green Visor
+      this.ctx.fillStyle = "#2ED573";
+      this.ctx.fillRect(18, 26, 22, 7);
+
+      // Blood red horn accents
+      this.ctx.fillStyle = "#FF4757";
+      this.ctx.beginPath();
+      this.ctx.moveTo(14, 20); this.ctx.lineTo(10, 12); this.ctx.lineTo(18, 16);
+      this.ctx.moveTo(44, 20); this.ctx.lineTo(48, 12); this.ctx.lineTo(40, 16);
+      this.ctx.fill();
+
+    } else {
+      // Elegant Generic Console Cartridge / Device
+      this.ctx.fillStyle = "#1E272E";
+      this.ctx.beginPath();
+      this.ctx.roundRect(10, 14, 38, 44, 6);
+      this.ctx.fill();
+
+      this.ctx.fillStyle = c.color;
+      this.ctx.fillRect(14, 20, 30, 20);
+
+      this.ctx.fillStyle = "#0B0F19";
+      this.ctx.font = "bold 9px 'Press Start 2P', monospace";
+      this.ctx.textAlign = "center";
+      this.ctx.fillText(c.badge, 29, 34);
+
+      this.ctx.fillStyle = "#A4B0BE";
+      this.ctx.fillRect(16, 44, 26, 3);
+      this.ctx.fillRect(16, 49, 18, 2);
+    }
+
+    this.ctx.restore();
   }
 
   renderConsoleSelectMenu() {
     // Header Bar
-    this.ctx.fillStyle = "#1e272e";
+    this.ctx.fillStyle = "#1a4b42";
     this.ctx.fillRect(0, 0, 320, 42);
 
     // Mini BMO Face
     this.drawBmoFace(8, 5, 1.0);
 
     // Console Index / Counter
-    this.ctx.fillStyle = "#a4b0be";
+    this.ctx.fillStyle = "#cef5e4";
     this.ctx.font = "bold 11px 'JetBrains Mono', monospace";
     this.ctx.textAlign = "right";
     this.ctx.fillText(`SYSTEM ${this.selectedConsoleIndex + 1}/${CONSOLES_LIST.length}`, 310, 26);
@@ -475,17 +884,17 @@ class BmoSimulator {
     const cardW = 250;
     const cardH = 145;
 
-    this.ctx.fillStyle = "#182130";
+    this.ctx.fillStyle = "#1a4b42";
     this.ctx.beginPath();
     this.ctx.roundRect(cardX, cardY, cardW, cardH, 12);
     this.ctx.fill();
 
-    this.ctx.strokeStyle = c.color;
+    this.ctx.strokeStyle = (c.id === "ROM_FAVORITES") ? "#ffe033" : c.color;
     this.ctx.lineWidth = 2;
     this.ctx.stroke();
 
     // Console Badge
-    this.ctx.fillStyle = c.color;
+    this.ctx.fillStyle = (c.id === "ROM_FAVORITES") ? "#ffe033" : c.color;
     this.ctx.beginPath();
     this.ctx.roundRect(cardX + 16, cardY + 16, 54, 24, 6);
     this.ctx.fill();
@@ -496,10 +905,13 @@ class BmoSimulator {
     this.ctx.fillText(c.badge, cardX + 43, cardY + 33);
 
     // Year
-    this.ctx.fillStyle = "#feca57";
+    this.ctx.fillStyle = "#ffe033";
     this.ctx.font = "bold 12px 'JetBrains Mono', monospace";
     this.ctx.textAlign = "right";
     this.ctx.fillText(c.year, cardX + cardW - 20, cardY + 33);
+
+    // Dynamic Pixel-Art Illustration Right Underneath The Date!
+    this.drawConsolePixelArt(c, cardX + 175, cardY + 50, 58, 74);
 
     // Full Name
     this.ctx.fillStyle = "#ffffff";
@@ -508,27 +920,27 @@ class BmoSimulator {
     this.ctx.fillText(c.name, cardX + 16, cardY + 74);
 
     // Extension & Format Tag
-    this.ctx.fillStyle = "#747d8c";
+    this.ctx.fillStyle = "#8cd7c2";
     this.ctx.font = "11px 'JetBrains Mono', monospace";
     this.ctx.fillText(`Format: ${c.ext}`, cardX + 16, cardY + 95);
 
     // Game Count Tag
-    this.ctx.fillStyle = "#1dd1a1";
+    this.ctx.fillStyle = "#ffe033";
     this.ctx.font = "bold 13px 'JetBrains Mono', monospace";
     this.ctx.fillText(`★ ${c.count.toLocaleString()} Games Ready`, cardX + 16, cardY + 124);
 
     // Carousel Navigation Arrows
-    this.ctx.fillStyle = "#00d2d3";
+    this.ctx.fillStyle = "#5fb49c";
     this.ctx.font = "bold 18px 'Outfit', sans-serif";
     this.ctx.textAlign = "center";
     this.ctx.fillText("◀", 18, 134);
     this.ctx.fillText("▶", 302, 134);
 
     // Footer Instruction Bar
-    this.ctx.fillStyle = "#121824";
+    this.ctx.fillStyle = "#1a4b42";
     this.ctx.fillRect(0, 214, 320, 26);
 
-    this.ctx.fillStyle = "#a4b0be";
+    this.ctx.fillStyle = "#cef5e4";
     this.ctx.font = "10px 'Outfit', sans-serif";
     this.ctx.textAlign = "center";
     this.ctx.fillText("A: Browse Games  •  SELECT: History & Specs  •  ◄/►: Console", 160, 231);
@@ -622,78 +1034,127 @@ class BmoSimulator {
     const c = CONSOLES_LIST[this.selectedConsoleIndex];
     const games = this.mockGames[c.id] || [];
 
-    // Header Bar
-    this.ctx.fillStyle = "#1e272e";
+    // Background - Authentic BMO Mint Screen
+    this.ctx.fillStyle = "#cef5e4";
+    this.ctx.fillRect(0, 0, 320, 240);
+
+    // Header Bar - Deep Forest Teal
+    this.ctx.fillStyle = "#1a4b42";
     this.ctx.fillRect(0, 0, 320, 34);
 
-    this.ctx.fillStyle = c.color;
-    this.ctx.font = "bold 12px 'Outfit', sans-serif";
+    this.ctx.fillStyle = (c.id === "ROM_FAVORITES") ? "#ffe033" : "#ffe033";
+    this.ctx.font = "bold 13px 'Outfit', sans-serif";
     this.ctx.textAlign = "left";
-    this.ctx.fillText(`📂 ${c.name} Games`, 12, 22);
+    this.ctx.fillText(c.id === "ROM_FAVORITES" ? "★ FAVORITE GAMES" : `📂 ${c.name} Games`, 12, 22);
 
-    this.ctx.fillStyle = "#a4b0be";
+    this.ctx.fillStyle = "#cef5e4";
     this.ctx.font = "bold 10px 'JetBrains Mono', monospace";
     this.ctx.textAlign = "right";
-    this.ctx.fillText(`${this.selectedGameIndex + 1}/${games.length}`, 310, 22);
+    this.ctx.fillText(`${games.length > 0 ? this.selectedGameIndex + 1 : 0}/${games.length}`, 310, 22);
 
-    // List rendering (6 visible items per page)
-    const visibleCount = 6;
-    const startIdx = Math.max(0, Math.min(this.selectedGameIndex - 2, games.length - visibleCount));
-    const endIdx = Math.min(games.length, startIdx + visibleCount);
+    if (games.length === 0) {
+      this.ctx.fillStyle = "#0f2620";
+      this.ctx.font = "bold 14px 'Outfit', sans-serif";
+      this.ctx.textAlign = "center";
+      this.ctx.fillText("NO FAVORITES YET!", 160, 105);
+      this.ctx.fillStyle = "#1a4b42";
+      this.ctx.font = "12px 'Outfit', sans-serif";
+      this.ctx.fillText("Press SELECT on any game to star it ★", 160, 130);
+    } else {
+      // List rendering (5 visible items per page)
+      const visibleCount = 5;
+      const startIdx = Math.max(0, Math.min(this.selectedGameIndex - 2, games.length - visibleCount));
+      const endIdx = Math.min(games.length, startIdx + visibleCount);
 
-    for (let i = startIdx; i < endIdx; i++) {
-      const y = 42 + (i - startIdx) * 28;
-      const isSelected = (i === this.selectedGameIndex);
+      for (let i = startIdx; i < endIdx; i++) {
+        const y = 42 + (i - startIdx) * 33;
+        const isSelected = (i === this.selectedGameIndex);
+        const game = games[i];
+        const title = (typeof game === "string") ? game : (game.title || `Game ${i + 1}`);
+        const isFav = (typeof game === "object") ? game.isFav : false;
+        const badge = (typeof game === "object" && game.console) ? game.console : c.badge;
 
-      if (isSelected) {
-        this.ctx.fillStyle = c.color;
-        this.ctx.beginPath();
-        this.ctx.roundRect(8, y, 304, 24, 6);
-        this.ctx.fill();
-        this.ctx.fillStyle = "#0b0f19";
-      } else {
-        this.ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
-        this.ctx.beginPath();
-        this.ctx.roundRect(8, y, 304, 24, 6);
-        this.ctx.fill();
-        this.ctx.fillStyle = "#f1f2f6";
+        if (isSelected) {
+          this.ctx.fillStyle = "#1a4b42";
+          this.ctx.beginPath();
+          this.ctx.roundRect(8, y, 304, 30, 8);
+          this.ctx.fill();
+          this.ctx.strokeStyle = "#ffe033";
+          this.ctx.lineWidth = 1.5;
+          this.ctx.stroke();
+          this.ctx.fillStyle = "#ffe033";
+        } else {
+          this.ctx.fillStyle = "rgba(95, 180, 156, 0.25)";
+          this.ctx.beginPath();
+          this.ctx.roundRect(8, y, 304, 30, 8);
+          this.ctx.fill();
+          this.ctx.strokeStyle = "#5fb49c";
+          this.ctx.lineWidth = 1;
+          this.ctx.stroke();
+          this.ctx.fillStyle = "#0f2620";
+        }
+
+        this.ctx.font = isSelected ? "bold 12px 'Outfit', sans-serif" : "12px 'Outfit', sans-serif";
+        this.ctx.textAlign = "left";
+        this.ctx.fillText(`${isSelected ? '▶ ' : '  '}${title}`, 16, y + 20);
+
+        // Right-aligned Star & Badge
+        this.ctx.textAlign = "right";
+        if (isFav) {
+          this.ctx.fillStyle = "#ffe033";
+          this.ctx.font = "bold 12px 'Outfit', sans-serif";
+          this.ctx.fillText(`★ [${badge}]`, 300, y + 20);
+        } else {
+          this.ctx.fillStyle = isSelected ? "#cef5e4" : "#438f7a";
+          this.ctx.font = "10px 'JetBrains Mono', monospace";
+          this.ctx.fillText(`[${badge}]`, 300, y + 20);
+        }
       }
-
-      this.ctx.font = isSelected ? "bold 12px 'Outfit', sans-serif" : "12px 'Outfit', sans-serif";
-      this.ctx.textAlign = "left";
-      const title = games[i] || `Game ${i + 1}`;
-      this.ctx.fillText(`${isSelected ? '▶ ' : '  '}${title}`, 16, y + 16);
     }
 
     // Footer Bar
-    this.ctx.fillStyle = "#121824";
+    this.ctx.fillStyle = "#1a4b42";
     this.ctx.fillRect(0, 214, 320, 26);
-    this.ctx.fillStyle = "#a4b0be";
+    this.ctx.fillStyle = "#cef5e4";
     this.ctx.font = "10px 'Outfit', sans-serif";
     this.ctx.textAlign = "center";
-    this.ctx.fillText("A: Launch  •  B: Back  •  ◄/►: Jump ±8", 160, 231);
+    this.ctx.fillText("A: Play  •  B: Back  •  SELECT: ★ Favorite  •  ◄/►: Jump ±8", 160, 231);
   }
 
   renderEmulationView() {
     const c = CONSOLES_LIST[this.selectedConsoleIndex];
+    const pal = this.palettes[this.activePalette] || this.palettes.classic;
 
-    // Simulated Emulation Screen
-    this.ctx.fillStyle = "#000000";
+    // Viewport background
+    this.ctx.fillStyle = pal[3];
     this.ctx.fillRect(0, 0, 320, 240);
 
-    // Render retro viewport simulation
-    this.ctx.fillStyle = c.color;
-    this.ctx.font = "bold 14px 'Press Start 2P', monospace";
+    // Centered Game Frame Window (240x216)
+    this.ctx.fillStyle = pal[0];
+    this.ctx.fillRect(40, 12, 240, 216);
+
+    // Decorative retro elements
+    this.ctx.fillStyle = pal[2];
+    this.ctx.fillRect(50, 22, 220, 196);
+
+    this.ctx.fillStyle = pal[1];
+    this.ctx.fillRect(60, 32, 200, 176);
+
+    this.ctx.fillStyle = pal[3];
+    this.ctx.font = "bold 13px 'Press Start 2P', monospace";
     this.ctx.textAlign = "center";
-    this.ctx.fillText(`EMULATING ${c.name}`, 160, 100);
+    this.ctx.fillText(c.name, 160, 95);
 
-    this.ctx.fillStyle = "#ffffff";
-    this.ctx.font = "11px 'Press Start 2P', monospace";
-    this.ctx.fillText("60 FPS • SPI DMA ACTIVE", 160, 130);
+    this.ctx.fillStyle = pal[2];
+    this.ctx.font = "10px 'Press Start 2P', monospace";
+    this.ctx.fillText("60 FPS • SPI DMA", 160, 125);
 
-    this.ctx.fillStyle = "#feca57";
+    this.ctx.fillStyle = pal[3];
+    this.ctx.font = "bold 11px 'Outfit', sans-serif";
+    this.ctx.fillText(`Palette: ${this.activePalette.toUpperCase()}`, 160, 155);
+
     this.ctx.font = "10px 'Outfit', sans-serif";
-    this.ctx.fillText("Press SELECT or B to Return to Menu", 160, 160);
+    this.ctx.fillText("Hold SELECT + ◄/► to Fast-Forward | SELECT/B: Exit", 160, 185);
   }
 }
 

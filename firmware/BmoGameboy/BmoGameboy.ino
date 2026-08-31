@@ -27,10 +27,14 @@ enum SystemState {
   STATE_CONSOLE_MENU,
   STATE_CONSOLE_MUSEUM,
   STATE_GAME_MENU,
-  STATE_EMULATOR
+  STATE_EMULATOR,
+  STATE_DIAGNOSTICS,
+  STATE_IDLE_MASCOT
 };
 
 SystemState currentState = STATE_CONSOLE_MENU;
+static unsigned long lastInputActivityMs = 0;
+static const unsigned long IDLE_MASCOT_TIMEOUT_MS = 30000;
 int selectedConsoleIndex = 0;
 int selectedEmulatorIndex = 0;
 int selectedGameIndex = 0;
@@ -43,6 +47,7 @@ static int maxVisibleCapacity = 32;
 static int visibleGameCount = 0;
 
 static const RomType CONSOLES[] = {
+  ROM_FAVORITES,
   ROM_GB, ROM_GBC, ROM_NES, ROM_WAD,
   ROM_SMS, ROM_GG, ROM_PCE, ROM_ATARI, ROM_PICO8,
   ROM_GENESIS, ROM_SNES, ROM_WSWAN, ROM_NGP, ROM_LYNX, ROM_COLEM
@@ -96,12 +101,24 @@ static void rebuildVisibleGames() {
   if (!visibleGamesDirty) return;
   visibleGameCount = 0;
   const RomType selectedType = CONSOLES[selectedConsoleIndex];
-  for (int i = 0; i < SDCard::getRomCount() && visibleGameCount < maxVisibleCapacity; ++i) {
-    const RomFile* game = SDCard::getRomInfo(i);
-    if (game && game->type == selectedType) {
-      visibleRomIndexes[visibleGameCount++] = i;
+  const int totalRoms = SDCard::getRomCount();
+
+  if (selectedType == ROM_FAVORITES) {
+    for (int i = 0; i < totalRoms && visibleGameCount < maxVisibleCapacity; ++i) {
+      const RomFile* game = SDCard::getRomInfo(i);
+      if (game && game->isFavorite) {
+        visibleRomIndexes[visibleGameCount++] = i;
+      }
+    }
+  } else {
+    for (int i = 0; i < totalRoms && visibleGameCount < maxVisibleCapacity; ++i) {
+      const RomFile* game = SDCard::getRomInfo(i);
+      if (game && game->type == selectedType) {
+        visibleRomIndexes[visibleGameCount++] = i;
+      }
     }
   }
+
   if (visibleGameCount == 0) selectedGameIndex = 0;
   else if (selectedGameIndex >= visibleGameCount) selectedGameIndex = visibleGameCount - 1;
   visibleGamesDirty = false;
@@ -191,14 +208,19 @@ void loop() {
     const auto& btnDown = Buttons::get(Buttons::DOWN);
     const auto& btnA = Buttons::get(Buttons::A);
     const auto& btnSelect = Buttons::get(Buttons::SELECT);
+    const auto& btnStart = Buttons::get(Buttons::START);
     bool left   = btnLeft.pressed   && btnLeft.changed;
     bool right  = btnRight.pressed  && btnRight.changed;
     bool up     = btnUp.pressed     && btnUp.changed;
     bool down   = btnDown.pressed   && btnDown.changed;
     bool a      = btnA.pressed      && btnA.changed;
     bool select = btnSelect.pressed && btnSelect.changed;
+    bool start  = btnStart.pressed  && btnStart.changed;
     
     if (canPress()) {
+      if (left || right || up || down || a || select || start) {
+        lastInputActivityMs = millis();
+      }
       if (left || up) {
         selectedConsoleIndex = (selectedConsoleIndex - 1 + CONSOLE_COUNT) % CONSOLE_COUNT;
         visibleGamesDirty = true;
@@ -213,6 +235,10 @@ void loop() {
         currentState = STATE_CONSOLE_MUSEUM;
         lastButtonMs = millis();
       }
+      if (start) {
+        currentState = STATE_DIAGNOSTICS;
+        lastButtonMs = millis();
+      }
       if (a) {
         selectedGameIndex = 0;
         visibleGamesDirty = true;
@@ -221,6 +247,11 @@ void loop() {
         BmoFace::setExpression(BmoFace::IDLE);
         lastButtonMs = millis();
       }
+    }
+
+    if (millis() - lastInputActivityMs > IDLE_MASCOT_TIMEOUT_MS) {
+      currentState = STATE_IDLE_MASCOT;
+      BmoFace::setExpression(BmoFace::SLEEPY);
     }
 
     static int cachedConsoleCounts[CONSOLE_COUNT];
@@ -262,6 +293,64 @@ void loop() {
     const unsigned long elapsed = millis() - museumFrameStart;
     if (elapsed < 16) delay(16 - elapsed);
 
+  } else if (currentState == STATE_DIAGNOSTICS) {
+    const unsigned long diagFrameStart = millis();
+    DisplayEmu::initMenuUI();
+    Buttons::update();
+
+    uint8_t btnMask = 0;
+    if (Buttons::get(Buttons::UP).pressed)     btnMask |= (1 << 0);
+    if (Buttons::get(Buttons::DOWN).pressed)   btnMask |= (1 << 1);
+    if (Buttons::get(Buttons::LEFT).pressed)   btnMask |= (1 << 2);
+    if (Buttons::get(Buttons::RIGHT).pressed)  btnMask |= (1 << 3);
+    if (Buttons::get(Buttons::A).pressed)      btnMask |= (1 << 4);
+    if (Buttons::get(Buttons::B).pressed)      btnMask |= (1 << 5);
+    if (Buttons::get(Buttons::SELECT).pressed) btnMask |= (1 << 6);
+    if (Buttons::get(Buttons::START).pressed)  btnMask |= (1 << 7);
+
+    const auto& btnB = Buttons::get(Buttons::B);
+    if (canPress() && btnB.pressed && btnB.changed) {
+      currentState = STATE_CONSOLE_MENU;
+      lastButtonMs = millis();
+    }
+
+    uint32_t freeDram = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    uint32_t freePsram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+    uint32_t freeIram = heap_caps_get_free_size(MALLOC_CAP_IRAM_8BIT);
+
+    DisplayEmu::drawDiagnosticsDashboard(millis(), freeDram, freePsram, freeIram, btnMask);
+
+    const unsigned long elapsed = millis() - diagFrameStart;
+    if (elapsed < 16) delay(16 - elapsed);
+
+  } else if (currentState == STATE_IDLE_MASCOT) {
+    const unsigned long idleStart = millis();
+    Buttons::update();
+    
+    // Check if ANY button is pressed to wake BMO up
+    uint8_t btnMask = 0;
+    if (Buttons::get(Buttons::UP).pressed) btnMask |= (1 << 0);
+    if (Buttons::get(Buttons::DOWN).pressed) btnMask |= (1 << 1);
+    if (Buttons::get(Buttons::LEFT).pressed) btnMask |= (1 << 2);
+    if (Buttons::get(Buttons::RIGHT).pressed) btnMask |= (1 << 3);
+    if (Buttons::get(Buttons::A).pressed) btnMask |= (1 << 4);
+    if (Buttons::get(Buttons::B).pressed) btnMask |= (1 << 5);
+    if (Buttons::get(Buttons::SELECT).pressed) btnMask |= (1 << 6);
+    if (Buttons::get(Buttons::START).pressed) btnMask |= (1 << 7);
+
+    if (btnMask != 0 && canPress()) {
+      currentState = STATE_CONSOLE_MENU;
+      BmoFace::setExpression(BmoFace::HAPPY);
+      lastInputActivityMs = millis();
+      lastButtonMs = millis();
+    } else {
+      unsigned long idleSec = (millis() - lastInputActivityMs) / 1000;
+      DisplayEmu::drawIdleMascotScreen(idleSec, "PRESS ANY BUTTON TO WAKE UP BMO!");
+    }
+    
+    const unsigned long elapsed = millis() - idleStart;
+    if (elapsed < 33) delay(33 - elapsed);
+
   } else if (currentState == STATE_GAME_MENU) {
     const unsigned long menuFrameStart = millis();
     DisplayEmu::initMenuUI();
@@ -272,25 +361,73 @@ void loop() {
     bool down = Buttons::get(Buttons::DOWN).pressed && Buttons::get(Buttons::DOWN).changed;
     bool a = Buttons::get(Buttons::A).pressed && Buttons::get(Buttons::A).changed;
     bool b = Buttons::get(Buttons::B).pressed && Buttons::get(Buttons::B).changed;
+    bool select = Buttons::get(Buttons::SELECT).pressed && Buttons::get(Buttons::SELECT).changed;
 
     if (visibleGamesDirty) {
       rebuildVisibleGames();
     }
     if (canPress()) {
+      if (select && visibleGameCount > 0) {
+        int romIdx = visibleRomIndexes[selectedGameIndex];
+        SDCard::toggleFavorite(romIdx);
+        
+        // Show BMO happy reaction when starring a game
+        if (SDCard::isFavorite(romIdx)) {
+          BmoFace::setExpression(BmoFace::HAPPY);
+        } else {
+          BmoFace::setExpression(BmoFace::SURPRISED);
+        }
+        
+        if (CONSOLES[selectedConsoleIndex] == ROM_FAVORITES) {
+          visibleGamesDirty = true;
+          rebuildVisibleGames();
+        }
+        lastButtonMs = millis();
+      }
       if (left && visibleGameCount > 0) {
-        selectedGameIndex = (selectedGameIndex - 1 + visibleGameCount) % visibleGameCount;
+        // Alphabetical reverse skip: find previous ROM with different starting letter
+        const RomFile* cur = selectedGame();
+        char curLetter = (cur && cur->filename[0]) ? toupper((unsigned char)cur->filename[0]) : 'A';
+        int targetIdx = selectedGameIndex;
+        for (int step = 1; step < visibleGameCount; ++step) {
+          int testIdx = (selectedGameIndex - step + visibleGameCount) % visibleGameCount;
+          const RomFile* testRom = SDCard::getRomInfo(visibleRomIndexes[testIdx]);
+          if (testRom && testRom->filename[0]) {
+            char testLetter = toupper((unsigned char)testRom->filename[0]);
+            if (testLetter != curLetter) {
+              targetIdx = testIdx;
+              break;
+            }
+          }
+        }
+        selectedGameIndex = targetIdx;
         lastButtonMs = millis();
       }
       if (right && visibleGameCount > 0) {
-        selectedGameIndex = (selectedGameIndex + 1) % visibleGameCount;
+        // Alphabetical forward skip: find next ROM with different starting letter
+        const RomFile* cur = selectedGame();
+        char curLetter = (cur && cur->filename[0]) ? toupper((unsigned char)cur->filename[0]) : 'A';
+        int targetIdx = selectedGameIndex;
+        for (int step = 1; step < visibleGameCount; ++step) {
+          int testIdx = (selectedGameIndex + step) % visibleGameCount;
+          const RomFile* testRom = SDCard::getRomInfo(visibleRomIndexes[testIdx]);
+          if (testRom && testRom->filename[0]) {
+            char testLetter = toupper((unsigned char)testRom->filename[0]);
+            if (testLetter != curLetter) {
+              targetIdx = testIdx;
+              break;
+            }
+          }
+        }
+        selectedGameIndex = targetIdx;
         lastButtonMs = millis();
       }
       if (up && visibleGameCount > 0) {
-        selectedGameIndex = (selectedGameIndex - 10 + visibleGameCount) % visibleGameCount;
+        selectedGameIndex = (selectedGameIndex - 1 + visibleGameCount) % visibleGameCount;
         lastButtonMs = millis();
       }
       if (down && visibleGameCount > 0) {
-        selectedGameIndex = (selectedGameIndex + 10) % visibleGameCount;
+        selectedGameIndex = (selectedGameIndex + 1) % visibleGameCount;
         lastButtonMs = millis();
       }
       if (b) {
@@ -419,6 +556,13 @@ void loop() {
     Buttons::update();
     bool select = Buttons::get(Buttons::SELECT).pressed;
     bool up     = Buttons::get(Buttons::UP).pressed;
+    bool down   = Buttons::get(Buttons::DOWN).pressed && Buttons::get(Buttons::DOWN).changed;
+    bool right  = Buttons::get(Buttons::RIGHT).pressed;
+
+    // Runtime DMG Palette Switcher: SELECT + DOWN
+    if (select && down && (selectedEmulatorIndex == 0 || selectedEmulatorIndex == 1)) {
+      DisplayEmu::cycleDmgPalette();
+    }
 
     // Return to menu: SELECT + UP
     if (select && up) {
@@ -506,21 +650,25 @@ void loop() {
     // N7/PERF-09: Frame pacing — target 16742 µs (59.73 Hz Game Boy vsync).
     // Use delay() for the bulk sleep (yields to FreeRTOS/watchdog), then
     // ets_delay_us() for a clean hardware-timer spin on the sub-ms remainder.
+    // SELECT + RIGHT activates Fast-Forward (skips pacing delay).
     // ---------------------------------------------------------------------------
-    if (elapsed < 16742) {
-      unsigned long remaining = 16742 - elapsed;
-      if (remaining > 1000) {
-        // Sleep bulk margin with 800us spin-tail guard (PERF-09)
-        delay((remaining - 800) / 1000);
-      }
-      // Re-measure after sleep, then use hardware-timer spin for the tail.
-      elapsed = micros() - frameStart;
+    const bool fastForwardActive = select && right;
+    if (!fastForwardActive) {
       if (elapsed < 16742) {
-        ets_delay_us(16742 - elapsed);
+        unsigned long remaining = 16742 - elapsed;
+        if (remaining > 1000) {
+          // Sleep bulk margin with 800us spin-tail guard (PERF-09)
+          delay((remaining - 800) / 1000);
+        }
+        // Re-measure after sleep, then use hardware-timer spin for the tail.
+        elapsed = micros() - frameStart;
+        if (elapsed < 16742) {
+          ets_delay_us(16742 - elapsed);
+        }
+      } else {
+        droppedFrames++;
+        totalDroppedFramesThisSecond++;
       }
-    } else {
-      droppedFrames++;
-      totalDroppedFramesThisSecond++;
     }
 
     // FPS + frame timing diagnostics reported once per second.

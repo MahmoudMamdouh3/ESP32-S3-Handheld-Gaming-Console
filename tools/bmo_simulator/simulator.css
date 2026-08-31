@@ -17,16 +17,17 @@
   --text-main: #f1f2f6;
   --text-dim: #a4b0be;
 
-  /* BMO Teal Theme */
-  --chassis-color: #2ed573;
-  --chassis-shadow: #26af5f;
-  --chassis-highlight: #7bed9f;
-  --bezel-color: #2f3542;
-  --bezel-lens: #1e272e;
-  --dpad-color: #2f3542;
-  --btn-a-color: #00d2d3;
-  --btn-b-color: #ff4757;
-  --btn-pill-color: #747d8c;
+  /* Authentic OnionUI BMO Palette */
+  --chassis-color: #5fb49c;
+  --chassis-shadow: #438f7a;
+  --chassis-highlight: #84d0bc;
+  --bezel-color: #1a4b42;
+  --bezel-lens: #0f2620;
+  --dpad-color: #ffe033;
+  --btn-a-color: #52a6ba;
+  --btn-b-color: #e8175d;
+  --btn-pill-color: #264b42;
+  --screen-mint: #cef5e4;
   
   --scale-multiplier: 1.0;
 }
@@ -247,28 +248,89 @@ main.simulator-workspace {
 .battery-indicator-wrapper {
   display: flex;
   align-items: center;
-  gap: calc(6px * var(--scale-multiplier));
+  gap: calc(5px * var(--scale-multiplier));
+  cursor: pointer;
+  padding: calc(2px * var(--scale-multiplier)) calc(4px * var(--scale-multiplier));
+  border-radius: calc(4px * var(--scale-multiplier));
+  transition: background 0.2s ease;
+}
+
+.battery-indicator-wrapper:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .battery-label {
-  font-family: 'Outfit', sans-serif;
-  font-size: calc(9px * var(--scale-multiplier));
-  font-weight: 700;
+  font-family: 'Press Start 2P', monospace;
+  font-size: calc(7px * var(--scale-multiplier));
   color: #747d8c;
 }
 
-.battery-led {
-  width: calc(8px * var(--scale-multiplier));
-  height: calc(8px * var(--scale-multiplier));
-  border-radius: 50%;
-  background: #ff4757;
-  box-shadow: 0 0 calc(8px * var(--scale-multiplier)) #ff4757;
-  animation: ledPulse 2s infinite ease-in-out;
+.pixel-battery-icon {
+  display: flex;
+  align-items: center;
+  gap: 1px;
 }
 
-@keyframes ledPulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(0.9); }
+.pixel-battery-shell {
+  width: calc(18px * var(--scale-multiplier));
+  height: calc(10px * var(--scale-multiplier));
+  border: calc(1.5px * var(--scale-multiplier)) solid #8cd7c2;
+  border-radius: calc(2px * var(--scale-multiplier));
+  padding: 1px;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+}
+
+.pixel-battery-cap {
+  width: calc(2px * var(--scale-multiplier));
+  height: calc(5px * var(--scale-multiplier));
+  background: #8cd7c2;
+  border-radius: 0 calc(1px * var(--scale-multiplier)) calc(1px * var(--scale-multiplier)) 0;
+}
+
+.pixel-battery-fill {
+  height: 100%;
+  width: 88%;
+  background: #2ed573;
+  border-radius: 1px;
+  box-shadow: 0 0 6px rgba(46, 213, 115, 0.8);
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.pixel-battery-fill.charge-med {
+  background: #feca57;
+  box-shadow: 0 0 6px rgba(254, 202, 87, 0.8);
+}
+
+.pixel-battery-fill.charge-low {
+  background: #ff4757;
+  box-shadow: 0 0 6px rgba(255, 71, 87, 0.8);
+  animation: battPulse 1s infinite alternate;
+}
+
+.pixel-battery-fill.charging {
+  background: #00d2d3;
+  box-shadow: 0 0 8px rgba(0, 210, 211, 0.9);
+  animation: chargingFlow 1.2s infinite ease-in-out;
+}
+
+@keyframes battPulse {
+  0% { opacity: 1; }
+  100% { opacity: 0.3; }
+}
+
+@keyframes chargingFlow {
+  0% { width: 10%; }
+  50% { width: 100%; }
+  100% { width: 10%; }
+}
+
+.battery-pct-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: calc(8px * var(--scale-multiplier));
+  font-weight: 700;
+  color: #8cd7c2;
 }
 
 /* Display Canvas Viewport (Exact 320x240 native) */

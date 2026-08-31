@@ -24,6 +24,25 @@ namespace DisplayEmu {
                           RomType console, bool sdMounted);
   void cleanupMenuUI();
 
+  // Renders the Hardware Self-Test & Diagnostics dashboard
+  void drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeDram, uint32_t freePsram,
+                                uint32_t freeIram, uint8_t buttonMask);
+
+  // Renders a hardware silhouette pixel-art icon for a retro console
+  void drawConsoleIcon(RomType type, int x, int y, uint16_t primaryColor = 0);
+
+  // Renders the Living BMO Mascot Ambient Screensaver
+  void drawIdleMascotScreen(unsigned long idleSeconds, const char* stateMessage);
+
+  // Cleans and sanitizes ROM filenames for UI presentation (strips [!], (USA), extensions)
+  void sanitizeRomTitle(const char* src, char* dst, size_t maxLen);
+
+  // Dynamic DMG Palette Management (Classic, BMO Teal, Pocket Gray, Light Cyan, Amber)
+  void setDmgPalette(int paletteIndex);
+  int getDmgPaletteIndex();
+  void cycleDmgPalette();
+  const uint16_t* getActiveDmgPalette();
+
   // ---------------------------------------------------------------------------
   // Pixel push API
   // ---------------------------------------------------------------------------

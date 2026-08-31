@@ -31,6 +31,15 @@
         <option value="oled-black">Shell: OLED Matte Black</option>
       </select>
 
+      <!-- DMG Palette Selector -->
+      <select id="palette-select" class="control-pill">
+        <option value="classic">Palette: 1989 Pea-Soup</option>
+        <option value="bmo">Palette: BMO Mint/Teal</option>
+        <option value="pocket">Palette: Pocket Gray</option>
+        <option value="light">Palette: Light Cyan</option>
+        <option value="amber">Palette: Amber CRT</option>
+      </select>
+
       <!-- Display Shader Selector -->
       <select id="filter-select" class="control-pill">
         <option value="none">Display: Sharp LCD</option>
@@ -54,9 +63,15 @@
         <div class="screen-bezel-housing">
           <div class="bezel-top-bar">
             <div class="bezel-brand">BMO COLOR</div>
-            <div class="battery-indicator-wrapper">
-              <span class="battery-label">BATTERY</span>
-              <div class="battery-led"></div>
+            <div class="battery-indicator-wrapper" id="battery-indicator" title="Click to cycle battery level">
+              <span class="battery-label">BATT</span>
+              <div class="pixel-battery-icon">
+                <div class="pixel-battery-shell">
+                  <div class="pixel-battery-fill" id="chassis-battery-fill"></div>
+                </div>
+                <div class="pixel-battery-cap"></div>
+              </div>
+              <span class="battery-pct-label" id="chassis-battery-pct">88%</span>
             </div>
           </div>
 
@@ -215,7 +230,7 @@
             <kbd class="key-cap">Enter</kbd>
           </div>
           <div class="key-binding-row">
-            <span class="key-label">Select Button</span>
+            <span class="key-label">Select / ★ Favorite</span>
             <kbd class="key-cap">Shift</kbd>
           </div>
           <div class="key-binding-row">

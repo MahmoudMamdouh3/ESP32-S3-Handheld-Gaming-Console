@@ -6,6 +6,7 @@
 #endif
 #include <esp_heap_caps.h>
 #include <string.h>
+#include "../assets/roms/virtual_bmo.h"
 #include "../assets/roms/mario_deluxe.h"
 #include "../assets/roms/zelda_ages.h"
 // Baked GBC ROMs (1MB each; tracked in repository under src/assets/roms/)
@@ -55,24 +56,40 @@ bool SDCard::begin() {
     }
   }
 
-  // Always add baked ROMs first!
+  // Always add premier Virtual BMO (Official Game) first - pre-favorited!
+  strncpy(romList[numRoms].filename, "Virtual BMO (Official Game).gb", 63);
+  romList[numRoms].filename[63] = '\0';
+  romList[numRoms].type = ROM_GB;
+  romList[numRoms].isFavorite = true;
+  romCountsByType[ROM_GB]++;
+  numRoms++;
+
+  // Baked classics
   strncpy(romList[numRoms].filename, "Super Mario Bros Deluxe (Baked).gbc", 63);
+  romList[numRoms].filename[63] = '\0';
   romList[numRoms].type = ROM_GBC;
+  romList[numRoms].isFavorite = true;
   romCountsByType[ROM_GBC]++;
   numRoms++;
 
   strncpy(romList[numRoms].filename, "Legend of Zelda Ages (Baked).gbc", 63);
+  romList[numRoms].filename[63] = '\0';
   romList[numRoms].type = ROM_GBC;
+  romList[numRoms].isFavorite = true;
   romCountsByType[ROM_GBC]++;
   numRoms++;
 
   strncpy(romList[numRoms].filename, "Aladdin (Baked).gbc", 63);
+  romList[numRoms].filename[63] = '\0';
   romList[numRoms].type = ROM_GBC;
+  romList[numRoms].isFavorite = false;
   romCountsByType[ROM_GBC]++;
   numRoms++;
 
   strncpy(romList[numRoms].filename, "Lego Racers (Baked).gbc", 63);
+  romList[numRoms].filename[63] = '\0';
   romList[numRoms].type = ROM_GBC;
+  romList[numRoms].isFavorite = false;
   romCountsByType[ROM_GBC]++;
   numRoms++;
 
@@ -85,6 +102,7 @@ bool SDCard::begin() {
   }
   mounted = true;
   scanRoms();
+  loadFavorites();
 #else
   mounted = false;
 #endif
@@ -112,6 +130,7 @@ void SDCard::scanRoms() {
         strncpy(romList[numRoms].filename, name, 63);
         romList[numRoms].filename[63] = '\0';
         romList[numRoms].type = type;
+        romList[numRoms].isFavorite = false;
         if (type <= ROM_COLEM) {
           romCountsByType[type]++;
         }
@@ -129,6 +148,9 @@ int SDCard::getRomCount() {
 }
 
 int SDCard::getRomCountForType(RomType type) {
+  if (type == ROM_FAVORITES) {
+    return getFavoritesCount();
+  }
   if (type <= ROM_COLEM) return romCountsByType[type];
   return 0;
 }
@@ -138,11 +160,80 @@ const RomFile* SDCard::getRomInfo(int index) {
   return &romList[index];
 }
 
+bool SDCard::isFavorite(int index) {
+  if (index < 0 || index >= numRoms) return false;
+  return romList[index].isFavorite;
+}
+
+bool SDCard::isFavorite(const char* filename) {
+  if (!filename) return false;
+  for (int i = 0; i < numRoms; ++i) {
+    if (strcmp(romList[i].filename, filename) == 0) {
+      return romList[i].isFavorite;
+    }
+  }
+  return false;
+}
+
+void SDCard::toggleFavorite(int index) {
+  if (index < 0 || index >= numRoms) return;
+  romList[index].isFavorite = !romList[index].isFavorite;
+  saveFavorites();
+}
+
+int SDCard::getFavoritesCount() {
+  int count = 0;
+  for (int i = 0; i < numRoms; ++i) {
+    if (romList[i].isFavorite) count++;
+  }
+  return count;
+}
+
+void SDCard::saveFavorites() {
+#if FEATURE_SD_CARD
+  if (!mounted) return;
+  File f = SD.open("/favorites.txt", FILE_WRITE);
+  if (!f) return;
+  for (int i = 0; i < numRoms; ++i) {
+    if (romList[i].isFavorite) {
+      f.println(romList[i].filename);
+    }
+  }
+  f.close();
+#endif
+}
+
+void SDCard::loadFavorites() {
+#if FEATURE_SD_CARD
+  if (!mounted) return;
+  if (!SD.exists("/favorites.txt")) return;
+  File f = SD.open("/favorites.txt", FILE_READ);
+  if (!f) return;
+  while (f.available()) {
+    String line = f.readStringUntil('\n');
+    line.trim();
+    if (line.length() > 0) {
+      for (int i = 0; i < numRoms; ++i) {
+        if (strcmp(romList[i].filename, line.c_str()) == 0) {
+          romList[i].isFavorite = true;
+          break;
+        }
+      }
+    }
+  }
+  f.close();
+#endif
+}
+
 uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
   if (!filename || !outSize) return nullptr;
   *outSize = 0;
 
   // Check for baked ROMs first
+  if (strcmp(filename, "Virtual BMO (Official Game).gb") == 0) {
+    *outSize = virtual_bmo_rom_size;
+    return (uint8_t*)virtual_bmo_rom;
+  }
   if (strcmp(filename, "Super Mario Bros Deluxe (Baked).gbc") == 0) {
     *outSize = mario_deluxe_rom_size;
     return (uint8_t*)mario_deluxe_rom;
@@ -204,8 +295,9 @@ uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
 void SDCard::freeRom(uint8_t* buffer) {
   if (buffer) {
     // DO NOT free baked ROM pointers residing in Flash .rodata
-    if (buffer == mario_deluxe_rom || buffer == zelda_ages_rom ||
-        buffer == aladdin_rom || buffer == lego_racers_rom) {
+    if (buffer == virtual_bmo_rom || buffer == mario_deluxe_rom ||
+        buffer == zelda_ages_rom || buffer == aladdin_rom ||
+        buffer == lego_racers_rom) {
       return;
     }
     heap_caps_free(buffer);

@@ -306,6 +306,69 @@ def cmd_lookup(args) -> int:
     return 0
 
 
+def cmd_budget(args) -> int:
+    """Visualizes Flash partition budget, baked ROM sizes, and headroom."""
+    print("=" * 70)
+    print(" BMO GUARDIAN -- Flash & Memory Budget Explorer")
+    print("=" * 70)
+    
+    total_flash = 16 * 1024 * 1024
+    app0_size = 8 * 1024 * 1024
+    
+    roms_dir = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "assets" / "roms"
+    baked_roms = []
+    if roms_dir.exists():
+        for f in roms_dir.glob("*.h"):
+            # Count lines with hex bytes (16 bytes per line standard)
+            with open(f, "r", encoding="utf-8", errors="ignore") as hf:
+                lines = [line for line in hf if line.strip().startswith("0x")]
+            bin_size = len(lines) * 16
+            baked_roms.append((f.name, bin_size))
+            
+    total_baked_bytes = sum(s for _, s in baked_roms)
+    
+    print(f"\n📦 Flash Allocation Overview (16MB Octal SPI Flash):")
+    print(f"  * Physical Flash Chip: {total_flash / (1024*1024):.1f} MB (16,777,216 bytes)")
+    print(f"  * Firmware App Partition (app0): {app0_size / (1024*1024):.1f} MB (8,388,608 bytes)")
+    print(f"  * Baked Binary ROMs In Flash ({len(baked_roms)} headers): {total_baked_bytes / (1024*1024):.2f} MB ({total_baked_bytes:,} bytes)")
+    
+    for name, size in baked_roms:
+        print(f"    - {name:30s} : {size / 1024:8.1f} KB ({size / (1024*1024):.2f} MB)")
+        
+    headroom = app0_size - total_baked_bytes
+    print(f"\n⚡ Flash App Headroom: ~{headroom / (1024*1024):.2f} MB ({headroom:,} bytes) available for code & assets")
+    print("=" * 70)
+    return 0
+
+
+def cmd_qol(args) -> int:
+    """Displays the system-wide Quality of Life (QoL) and UI/UX roadmap ledger."""
+    qol_path = REPO_ROOT / ".agents" / "rules" / "42_quality_of_life_and_roadmap_ledger.md"
+    if not qol_path.exists():
+        print("Rule 42 (QoL Ledger) not found.")
+        return 1
+        
+    print("=" * 70)
+    print(" BMO QUALITY OF LIFE (QoL) & ROADMAP LEDGER (Rule 42)")
+    print("=" * 70)
+    
+    with open(qol_path, "r", encoding="utf-8") as f:
+        content = f.read()
+        
+    for line in content.splitlines():
+        if line.startswith("## ") or line.startswith("### "):
+            print(f"\n{line.strip('# ')}")
+        elif line.startswith("| **"):
+            parts = [p.strip() for p in line.split("|")[1:-1]]
+            if len(parts) >= 3:
+                name, status, desc = parts[0], parts[1], parts[2]
+                status_badge = "✅" if "IMPLEMENTED" in status else "🔄" if "PROGRESS" in status else "⏳" if "ROADMAP" in status else "🛑"
+                print(f"  {status_badge} {name:32s} [{status}] : {desc}")
+                
+    print("\n" + "=" * 70)
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="BMO Guardian Performance & Ground-Truth Suite")
     subparsers = parser.add_subparsers(dest="command", help="Available subcommands")
@@ -343,6 +406,12 @@ def main() -> int:
     p_lookup = subparsers.add_parser("lookup", help="Look up symbol, function, or pin definition in Knowledge Graph")
     p_lookup.add_argument("symbol", help="Symbol, function name, pin name, or console extension to inspect")
 
+    # budget
+    subparsers.add_parser("budget", help="Explore Flash memory partition allocation and baked ROM budget")
+
+    # qol
+    subparsers.add_parser("qol", help="View the system-wide Quality of Life (QoL) and UI/UX roadmap ledger")
+
     args = parser.parse_args()
     if not args.command:
         parser.print_help()
@@ -358,6 +427,8 @@ def main() -> int:
         "index": cmd_index,
         "route": cmd_route,
         "lookup": cmd_lookup,
+        "budget": cmd_budget,
+        "qol": cmd_qol,
     }
 
     handler = commands.get(args.command)

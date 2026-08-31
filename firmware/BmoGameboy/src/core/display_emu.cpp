@@ -2,6 +2,7 @@
 #include "display_emu.h"
 #include "config.h"
 #include "battery.h"
+#include "theme.h"
 #include <SPI.h>
 #include <Adafruit_ST7789.h>
 #include <cstring>
@@ -70,73 +71,79 @@ namespace {
          | ((uint16_t)r >> 3);
   }
 
-  constexpr uint16_t UI_TEAL = uiColor(83, 198, 181);
-  constexpr uint16_t UI_DEEP_TEAL = uiColor(22, 72, 72);
-  constexpr uint16_t UI_YELLOW = uiColor(255, 210, 66);
-  constexpr uint16_t UI_WHITE = uiColor(245, 248, 245);
-  constexpr uint16_t UI_MUTED = uiColor(163, 202, 195);
-  constexpr uint16_t UI_BLACK = uiColor(5, 12, 14);
+  constexpr uint16_t UI_TEAL        = Theme::BMO_BODY_TEAL;
+  constexpr uint16_t UI_MINT        = Theme::BMO_SCREEN_MINT;
+  constexpr uint16_t UI_DEEP_TEAL   = Theme::BMO_DEEP_TEAL;
+  constexpr uint16_t UI_YELLOW      = Theme::BMO_DPAD_YELLOW;
+  constexpr uint16_t UI_CORAL       = Theme::BMO_CORAL_RED;
+  constexpr uint16_t UI_BLUE        = Theme::BMO_BLUE_BUTTON;
+  constexpr uint16_t UI_WHITE       = Theme::BMO_WHITE;
+  constexpr uint16_t UI_MUTED       = Theme::COLOR_TEXT_MUTED;
+  constexpr uint16_t UI_BLACK       = Theme::BMO_DARK_FOREST;
 
   const char* consoleName(RomType type) {
     switch (type) {
-      case ROM_GB:      return "GAME BOY";
-      case ROM_GBC:     return "GAME BOY COLOR";
-      case ROM_NES:     return "NES";
-      case ROM_WAD:     return "DOOM";
-      case ROM_SMS:     return "SEGA MASTER SYSTEM";
-      case ROM_GG:      return "GAME GEAR";
-      case ROM_PCE:     return "PC ENGINE";
-      case ROM_ATARI:   return "ATARI 2600";
-      case ROM_PICO8:   return "PICO-8";
-      case ROM_GENESIS: return "SEGA GENESIS";
-      case ROM_SNES:    return "SUPER NINTENDO";
-      case ROM_WSWAN:   return "WONDERSWAN";
-      case ROM_NGP:     return "NEO GEO POCKET";
-      case ROM_LYNX:    return "ATARI LYNX";
-      case ROM_COLEM:   return "COLECOVISION";
-      default:          return "GAMES";
+      case ROM_FAVORITES: return "FAVORITES";
+      case ROM_GB:        return "GAME BOY";
+      case ROM_GBC:       return "GAME BOY COLOR";
+      case ROM_NES:       return "NES";
+      case ROM_WAD:       return "DOOM";
+      case ROM_SMS:       return "SEGA MASTER SYSTEM";
+      case ROM_GG:        return "GAME GEAR";
+      case ROM_PCE:       return "PC ENGINE";
+      case ROM_ATARI:     return "ATARI 2600";
+      case ROM_PICO8:     return "PICO-8";
+      case ROM_GENESIS:   return "SEGA GENESIS";
+      case ROM_SNES:      return "SUPER NINTENDO";
+      case ROM_WSWAN:     return "WONDERSWAN";
+      case ROM_NGP:       return "NEO GEO POCKET";
+      case ROM_LYNX:      return "ATARI LYNX";
+      case ROM_COLEM:     return "COLECOVISION";
+      default:            return "GAMES";
     }
   }
 
   const char* consoleYear(RomType type) {
     switch (type) {
-      case ROM_GB:      return "1989";
-      case ROM_GBC:     return "1998";
-      case ROM_NES:     return "1983";
-      case ROM_WAD:     return "1993";
-      case ROM_SMS:     return "1986";
-      case ROM_GG:      return "1990";
-      case ROM_PCE:     return "1987";
-      case ROM_ATARI:   return "1977";
-      case ROM_PICO8:   return "2015";
-      case ROM_GENESIS: return "1988";
-      case ROM_SNES:    return "1990";
-      case ROM_WSWAN:   return "1999";
-      case ROM_NGP:     return "1998";
-      case ROM_LYNX:    return "1989";
-      case ROM_COLEM:   return "1982";
-      default:          return "";
+      case ROM_FAVORITES: return "STARRED";
+      case ROM_GB:        return "1989";
+      case ROM_GBC:       return "1998";
+      case ROM_NES:       return "1983";
+      case ROM_WAD:       return "1993";
+      case ROM_SMS:       return "1986";
+      case ROM_GG:        return "1990";
+      case ROM_PCE:       return "1987";
+      case ROM_ATARI:     return "1977";
+      case ROM_PICO8:     return "2015";
+      case ROM_GENESIS:   return "1988";
+      case ROM_SNES:      return "1990";
+      case ROM_WSWAN:     return "1999";
+      case ROM_NGP:       return "1998";
+      case ROM_LYNX:      return "1989";
+      case ROM_COLEM:     return "1982";
+      default:            return "";
     }
   }
 
   const char* consoleBadge(RomType type) {
     switch (type) {
-      case ROM_GB:      return "GB";
-      case ROM_GBC:     return "GBC";
-      case ROM_NES:     return "NES";
-      case ROM_WAD:     return "DOOM";
-      case ROM_SMS:     return "SMS";
-      case ROM_GG:      return "GG";
-      case ROM_PCE:     return "PCE";
-      case ROM_ATARI:   return "A26";
-      case ROM_PICO8:   return "P8";
-      case ROM_GENESIS: return "MD";
-      case ROM_SNES:    return "SNES";
-      case ROM_WSWAN:   return "WS";
-      case ROM_NGP:     return "NGP";
-      case ROM_LYNX:    return "LNX";
-      case ROM_COLEM:   return "COL";
-      default:          return "GAME";
+      case ROM_FAVORITES: return "FAV";
+      case ROM_GB:        return "GB";
+      case ROM_GBC:       return "GBC";
+      case ROM_NES:       return "NES";
+      case ROM_WAD:       return "DOOM";
+      case ROM_SMS:       return "SMS";
+      case ROM_GG:        return "GG";
+      case ROM_PCE:       return "PCE";
+      case ROM_ATARI:     return "A26";
+      case ROM_PICO8:     return "P8";
+      case ROM_GENESIS:   return "MD";
+      case ROM_SNES:      return "SNES";
+      case ROM_WSWAN:     return "WS";
+      case ROM_NGP:       return "NGP";
+      case ROM_LYNX:      return "LNX";
+      case ROM_COLEM:     return "COL";
+      default:            return "GAME";
     }
   }
 
@@ -164,11 +171,7 @@ namespace {
   }
 
   void gameTitle(const char* filename, char* output, size_t outputSize) {
-    snprintf(output, outputSize, "%s", filename ? filename : "Unknown game");
-    char* extension = strrchr(output, '.');
-    if (extension) *extension = '\0';
-    const char* baked = strstr(output, " (Baked)");
-    if (baked) output[baked - output] = '\0';
+    DisplayEmu::sanitizeRomTitle(filename, output, outputSize);
   }
 
   void drawFooter(const char* text) {
@@ -484,7 +487,8 @@ void DisplayEmu::cleanupMenuUI() {
 
 void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts, int consoleCount, bool sdMounted) {
   if (!menuCanvas || consoleCount <= 0) return;
-  const RomType consoles[15] = {
+  const RomType consoles[16] = {
+    ROM_FAVORITES,
     ROM_GB, ROM_GBC, ROM_NES, ROM_WAD,
     ROM_SMS, ROM_GG, ROM_PCE, ROM_ATARI, ROM_PICO8,
     ROM_GENESIS, ROM_SNES, ROM_WSWAN, ROM_NGP, ROM_LYNX, ROM_COLEM
@@ -492,10 +496,10 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
   if (selectedIndex < 0) selectedIndex = 0;
   if (selectedIndex >= consoleCount) selectedIndex = consoleCount - 1;
 
-  menuCanvas->fillScreen(UI_TEAL);
-  menuCanvas->fillRect(0, 0, 320, 42, UI_BLACK);
+  menuCanvas->fillScreen(UI_MINT);
+  menuCanvas->fillRect(0, 0, 320, 38, UI_DEEP_TEAL);
   menuCanvas->setFont(&FreeSans12pt7b);
-  drawCentered("BMO CONSOLE SELECT", 29, UI_YELLOW);
+  drawCentered("BMO CONSOLE SELECT", 26, UI_YELLOW);
   menuCanvas->setFont(&FreeSans9pt7b);
 
   // Scroll window: 4 items visible at a time
@@ -506,23 +510,40 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
 
   for (int row = 0; row < 4 && (topIndex + row) < consoleCount; ++row) {
     int i = topIndex + row;
-    const int y = 53 + row * 39;
+    const int y = 48 + row * 40;
     const bool selected = (i == selectedIndex);
+    const bool isFav = (consoles[i] == ROM_FAVORITES);
     const bool available = (gameCounts[i] > 0);
-    if (selected) menuCanvas->fillRoundRect(14, y, 292, 33, 7, UI_DEEP_TEAL);
-    menuCanvas->drawRoundRect(14, y, 292, 33, 7, selected ? UI_YELLOW : UI_MUTED);
-    menuCanvas->setCursor(27, y + 22);
-    menuCanvas->setTextColor(available ? (selected ? UI_YELLOW : UI_WHITE) : UI_MUTED);
-    menuCanvas->print(consoleName(consoles[i]));
+    
+    if (selected) {
+      menuCanvas->fillRoundRect(14, y, 292, 34, 8, UI_DEEP_TEAL);
+    } else {
+      menuCanvas->fillRoundRect(14, y, 292, 34, 8, UI_TEAL);
+    }
+    menuCanvas->drawRoundRect(14, y, 292, 34, 8, selected ? UI_YELLOW : (isFav ? UI_YELLOW : UI_DEEP_TEAL));
+    
+    menuCanvas->setCursor(24, y + 23);
+    menuCanvas->setTextColor(available ? (selected ? UI_YELLOW : (isFav ? UI_YELLOW : UI_BLACK)) : UI_MUTED);
+    if (isFav) {
+      menuCanvas->print("★ FAVORITES");
+    } else {
+      menuCanvas->print(consoleName(consoles[i]));
+    }
+    
     menuCanvas->setFont();
-    char detail[28];
-    snprintf(detail, sizeof(detail), "%s  |  %d game%s", consoleYear(consoles[i]),
+    char detail[32];
+    snprintf(detail, sizeof(detail), "%s | %d game%s", consoleYear(consoles[i]),
              gameCounts[i], gameCounts[i] == 1 ? "" : "s");
-    menuCanvas->setCursor(160, y + 20);
+    menuCanvas->setCursor(168, y + 21);
+    menuCanvas->setTextColor(selected ? UI_WHITE : UI_DEEP_TEAL);
     menuCanvas->print(detail);
+    
+    // Hardware Console Icon
+    drawConsoleIcon(consoles[i], 278, y + 9, selected ? UI_YELLOW : (isFav ? UI_YELLOW : UI_DEEP_TEAL));
+    
     menuCanvas->setFont(&FreeSans9pt7b);
   }
-    drawFooter(sdMounted ? "LEFT / RIGHT: CONSOLE    A: GAMES    SELECT: SPECS" :
+    drawFooter(sdMounted ? "◄/►: CONSOLE    A: OPEN    SELECT: SPECS    START: SELF-TEST" :
                            "BUILT-IN GAMES ONLY - SD CARD NOT FOUND");
     writeMenuCanvas();
 }
@@ -546,6 +567,17 @@ void DisplayEmu::drawConsoleMuseumModal(RomType console) {
   
   menuCanvas->setCursor(18, 66);
   switch (console) {
+    case ROM_FAVORITES:
+      menuCanvas->print("Category: Universal Starred Games Collection");
+      menuCanvas->setCursor(18, 80);
+      menuCanvas->print("Consoles: Multi-System Auto-Dispatch Launcher");
+      menuCanvas->setCursor(18, 100);
+      menuCanvas->print("BMO Tip: Press SELECT on ANY game in ANY console");
+      menuCanvas->setCursor(18, 114);
+      menuCanvas->print("library to star it and launch directly from here!");
+      menuCanvas->setCursor(18, 134);
+      menuCanvas->print("Auto-saves favorites list to SD: /favorites.txt");
+      break;
     case ROM_GB:
       menuCanvas->print("CPU: Sharp LR35902 @ 4.19MHz | 8KB RAM");
       menuCanvas->setCursor(18, 80);
@@ -725,57 +757,84 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   if (count < 0) count = 0;
   if (count > 0 && (selectedIndex < 0 || selectedIndex >= count)) selectedIndex = 0;
 
-  menuCanvas->fillScreen(UI_TEAL);
-  menuCanvas->fillRect(0, 0, 320, 42, UI_BLACK);
+  menuCanvas->fillScreen(UI_MINT);
+  menuCanvas->fillRect(0, 0, 320, 38, UI_DEEP_TEAL);
   
   // Battery status block (Top right header)
 #if FEATURE_BATTERY_MONITOR
-  menuCanvas->fillRect(275, 13, 36, 16, UI_BLACK);
   int pct = Battery::getPercentage();
-  menuCanvas->drawRect(275, 16, 30, 10, UI_WHITE);
-  menuCanvas->fillRect(305, 19, 2, 4, UI_WHITE);
-  if (pct > 0) {
-    uint16_t color = (pct > 20) ? uiColor(0, 255, 0) : uiColor(255, 0, 0);
-    int fillW = (int)((pct / 100.0f) * 26);
-    menuCanvas->fillRect(277, 18, fillW, 6, color);
+  uint16_t battColor = (pct > 50) ? Theme::COLOR_SUCCESS : ((pct > 20) ? UI_YELLOW : UI_CORAL);
+  menuCanvas->drawRoundRect(280, 13, 24, 12, 2, UI_WHITE);
+  menuCanvas->fillRect(304, 16, 2, 6, UI_WHITE); // Battery positive cap
+  int fillW = (int)((pct / 100.0f) * 20);
+  if (fillW > 0) {
+    menuCanvas->fillRect(282, 15, fillW, 8, battColor);
   }
 #endif
 
   menuCanvas->setFont(&FreeSans9pt7b);
   char heading[40];
-  snprintf(heading, sizeof(heading), "%s LIBRARY", consoleName(console));
-  drawCentered(heading, 28, UI_YELLOW);
+  if (console == ROM_FAVORITES) {
+    snprintf(heading, sizeof(heading), "★ FAVORITE GAMES");
+  } else {
+    snprintf(heading, sizeof(heading), "%s LIBRARY", consoleName(console));
+  }
+  drawCentered(heading, 25, UI_YELLOW);
 
   if (count == 0) {
     menuCanvas->setFont(&FreeSans12pt7b);
-    drawCentered("NO GAMES", 112, UI_WHITE);
-    menuCanvas->setFont(&FreeSans9pt7b);
-    drawCentered(sdMounted ? "Add compatible ROMs to the SD card." :
-                            "Insert an SD card to add more games.", 145, UI_DEEP_TEAL);
+    if (console == ROM_FAVORITES) {
+      drawCentered("NO FAVORITES YET!", 100, UI_BLACK);
+      menuCanvas->setFont(&FreeSans9pt7b);
+      drawCentered("Press SELECT on any game in any", 128, UI_DEEP_TEAL);
+      drawCentered("console library to star it ★", 148, UI_DEEP_TEAL);
+    } else {
+      drawCentered("NO GAMES", 100, UI_BLACK);
+      menuCanvas->setFont(&FreeSans9pt7b);
+      drawCentered(sdMounted ? "Add compatible ROMs to the SD card." :
+                              "Insert an SD card to add more games.", 138, UI_DEEP_TEAL);
+    }
     drawFooter("B: BACK");
     writeMenuCanvas();
     return;
   }
 
   const RomFile* game = games[selectedIndex];
+  const bool isFav = game ? game->isFavorite : false;
+  const RomType actualType = game ? game->type : console;
+
   char title[64];
   gameTitle(game ? game->filename : nullptr, title, sizeof(title));
 
-  // A deliberately generic cover card: it gives every ROM a polished, safe
-  // presentation without pretending that arbitrary files have cover art.
-  menuCanvas->fillRoundRect(81, 54, 158, 112, 12, UI_DEEP_TEAL);
-  menuCanvas->drawRoundRect(81, 54, 158, 112, 12, UI_YELLOW);
-  menuCanvas->fillRect(102, 73, 116, 51, UI_BLACK);
-  menuCanvas->drawRoundRect(112, 137, 96, 17, 8, UI_BLACK);
+  // Authentic BMO Mint & Teal Cover Card
+  menuCanvas->fillRoundRect(81, 46, 158, 114, 12, UI_DEEP_TEAL);
+  menuCanvas->drawRoundRect(81, 46, 158, 114, 12, isFav ? UI_YELLOW : UI_TEAL);
+  menuCanvas->fillRect(102, 62, 116, 52, UI_BLACK);
+  menuCanvas->drawRoundRect(112, 126, 96, 18, 8, isFav ? UI_YELLOW : UI_TEAL);
+  
   menuCanvas->setFont(&FreeSans12pt7b);
-  drawCentered(consoleBadge(console), 106, UI_YELLOW);
-  menuCanvas->setFont(&FreeSans9pt7b);
-  drawFittedCentered(title, 185, 282, UI_WHITE);
+  drawCentered(consoleBadge(actualType), 98, UI_YELLOW);
+  
   menuCanvas->setFont();
-  char position[28];
-  snprintf(position, sizeof(position), "%d / %d", selectedIndex + 1, count);
-  drawCentered(position, 204, UI_DEEP_TEAL);
-  drawFooter("LEFT / RIGHT: BROWSE     A: PLAY     B: BACK");
+  if (isFav) {
+    menuCanvas->setTextColor(UI_YELLOW);
+    menuCanvas->setCursor(120, 139);
+    menuCanvas->print("★ FAVORITE");
+  } else {
+    menuCanvas->setTextColor(UI_WHITE);
+    menuCanvas->setCursor(126, 139);
+    menuCanvas->print(consoleBadge(actualType));
+  }
+
+  menuCanvas->setFont(&FreeSans9pt7b);
+  drawFittedCentered(title, 180, 290, UI_BLACK);
+  
+  menuCanvas->setFont();
+  char position[36];
+  snprintf(position, sizeof(position), "%d / %d  [%s]", selectedIndex + 1, count, consoleBadge(actualType));
+  drawCentered(position, 198, UI_DEEP_TEAL);
+  
+  drawFooter("◄/►: JUMP A-Z    A: PLAY    B: BACK    SELECT: ★ FAV");
   writeMenuCanvas();
 }
 
@@ -787,7 +846,300 @@ void DisplayEmu::showSDCardWarning() {
   tft.setCursor(55, 115);
   tft.print("SD CARD REQUIRED");
   tft.setCursor(55, 135);
-    tft.print("FOR THIS CONSOLE");
+  tft.print("FOR THIS CONSOLE");
+}
+
+void DisplayEmu::sanitizeRomTitle(const char* src, char* dst, size_t maxLen) {
+  if (!src || !dst || maxLen == 0) return;
+  size_t si = 0, di = 0;
+  bool inParen = false, inBracket = false;
+  
+  while (src[si] != '\0' && di + 1 < maxLen) {
+    char c = src[si++];
+    if (c == '(') { inParen = true; continue; }
+    if (c == ')') { inParen = false; continue; }
+    if (c == '[') { inBracket = true; continue; }
+    if (c == ']') { inBracket = false; continue; }
+    if (inParen || inBracket) continue;
+    
+    if (c == '_') c = ' ';
+    if (c == ' ' && di > 0 && dst[di - 1] == ' ') continue;
+    
+    dst[di++] = c;
+  }
+  dst[di] = '\0';
+  
+  char* ext = strrchr(dst, '.');
+  if (ext) *ext = '\0';
+  
+  while (di > 0 && (dst[di - 1] == ' ' || dst[di - 1] == '\t')) {
+    dst[--di] = '\0';
+  }
+  
+  if (di == 0) {
+    snprintf(dst, maxLen, "%s", src);
+  }
+}
+
+static int activeDmgPaletteIdx = 0;
+static const uint16_t* const DMG_PALETTES[Theme::PALETTE_COUNT] = {
+  DisplayEmu::CLASSIC_PALETTE,
+  Theme::PALETTE_BMO,
+  Theme::PALETTE_POCKET,
+  Theme::PALETTE_LIGHT,
+  Theme::PALETTE_AMBER
+};
+
+void DisplayEmu::setDmgPalette(int paletteIndex) {
+  if (paletteIndex >= 0 && paletteIndex < Theme::PALETTE_COUNT) {
+    activeDmgPaletteIdx = paletteIndex;
+  }
+}
+
+int DisplayEmu::getDmgPaletteIndex() {
+  return activeDmgPaletteIdx;
+}
+
+void DisplayEmu::cycleDmgPalette() {
+  activeDmgPaletteIdx = (activeDmgPaletteIdx + 1) % Theme::PALETTE_COUNT;
+}
+
+const uint16_t* DisplayEmu::getActiveDmgPalette() {
+  return DMG_PALETTES[activeDmgPaletteIdx];
+}
+
+void DisplayEmu::drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeDram,
+                                         uint32_t freePsram, uint32_t freeIram,
+                                         uint8_t buttonMask) {
+  if (!menuCanvas) return;
+  menuCanvas->fillScreen(UI_BLACK);
+  menuCanvas->drawRoundRect(8, 8, 304, 224, 8, UI_TEAL);
+  menuCanvas->fillRect(0, 0, 320, 36, UI_DEEP_TEAL);
+  
+  menuCanvas->setFont(&FreeSans9pt7b);
+  drawCentered("HARDWARE DIAGNOSTICS", 24, UI_YELLOW);
+  
+  menuCanvas->setFont();
+  menuCanvas->setTextColor(UI_WHITE);
+  
+  // System Telemetry
+  menuCanvas->setCursor(18, 46);
+  menuCanvas->printf("MCU: ESP32-S3 Dual LX7 @ 240MHz");
+  menuCanvas->setCursor(18, 58);
+  unsigned long sec = uptimeMs / 1000;
+  menuCanvas->printf("Uptime: %lum %lus  |  Flash: 16MB OPI 80MHz", sec / 60, sec % 60);
+
+  // Memory Telemetry
+  menuCanvas->setCursor(18, 74);
+  menuCanvas->setTextColor(UI_YELLOW);
+  menuCanvas->print("--- MEMORY TELEMETRY ---");
+  menuCanvas->setTextColor(UI_WHITE);
+  
+  menuCanvas->setCursor(18, 88);
+  menuCanvas->printf("Internal DRAM Free : %6u / 327,680 B (%u%%)", 
+                     (unsigned int)freeDram, (unsigned int)(freeDram * 100 / 327680));
+  menuCanvas->setCursor(18, 100);
+  menuCanvas->printf("Octal PSRAM Free   : %6u / 8,388,608 B", (unsigned int)freePsram);
+  menuCanvas->setCursor(18, 112);
+  menuCanvas->printf("IRAM Execution Free: %6u B", (unsigned int)freeIram);
+
+  // Live Button Tester
+  menuCanvas->setCursor(18, 130);
+  menuCanvas->setTextColor(UI_YELLOW);
+  menuCanvas->print("--- LIVE BUTTON MATRIX TESTER ---");
+  menuCanvas->setTextColor(UI_WHITE);
+
+  const bool upPressed    = (buttonMask & (1 << 0));
+  const bool downPressed  = (buttonMask & (1 << 1));
+  const bool leftPressed  = (buttonMask & (1 << 2));
+  const bool rightPressed = (buttonMask & (1 << 3));
+  const bool aPressed     = (buttonMask & (1 << 4));
+  const bool bPressed     = (buttonMask & (1 << 5));
+  const bool selPressed   = (buttonMask & (1 << 6));
+  const bool startPressed = (buttonMask & (1 << 7));
+
+  // D-Pad
+  menuCanvas->fillRect(42, 146, 16, 14, upPressed    ? UI_YELLOW : UI_DEEP_TEAL);
+  menuCanvas->drawRect(42, 146, 16, 14, UI_WHITE);
+  menuCanvas->setCursor(47, 157);
+  menuCanvas->setTextColor(upPressed ? UI_BLACK : UI_WHITE);
+  menuCanvas->print("U");
+
+  menuCanvas->fillRect(24, 162, 16, 14, leftPressed  ? UI_YELLOW : UI_DEEP_TEAL);
+  menuCanvas->drawRect(24, 162, 16, 14, UI_WHITE);
+  menuCanvas->setCursor(29, 173);
+  menuCanvas->setTextColor(leftPressed ? UI_BLACK : UI_WHITE);
+  menuCanvas->print("L");
+
+  menuCanvas->fillRect(60, 162, 16, 14, rightPressed ? UI_YELLOW : UI_DEEP_TEAL);
+  menuCanvas->drawRect(60, 162, 16, 14, UI_WHITE);
+  menuCanvas->setCursor(65, 173);
+  menuCanvas->setTextColor(rightPressed ? UI_BLACK : UI_WHITE);
+  menuCanvas->print("R");
+
+  menuCanvas->fillRect(42, 178, 16, 14, downPressed  ? UI_YELLOW : UI_DEEP_TEAL);
+  menuCanvas->drawRect(42, 178, 16, 14, UI_WHITE);
+  menuCanvas->setCursor(47, 189);
+  menuCanvas->setTextColor(downPressed ? UI_BLACK : UI_WHITE);
+  menuCanvas->print("D");
+
+  // Select / Start
+  menuCanvas->fillRect(104, 168, 36, 16, selPressed   ? UI_YELLOW : UI_DEEP_TEAL);
+  menuCanvas->drawRect(104, 168, 36, 16, UI_WHITE);
+  menuCanvas->setCursor(110, 180);
+  menuCanvas->setTextColor(selPressed ? UI_BLACK : UI_WHITE);
+  menuCanvas->print("SEL");
+
+  menuCanvas->fillRect(148, 168, 36, 16, startPressed ? UI_YELLOW : UI_DEEP_TEAL);
+  menuCanvas->drawRect(148, 168, 36, 16, UI_WHITE);
+  menuCanvas->setCursor(154, 180);
+  menuCanvas->setTextColor(startPressed ? UI_BLACK : UI_WHITE);
+  menuCanvas->print("STA");
+
+  // Action Buttons B & A
+  menuCanvas->fillRect(212, 166, 22, 20, bPressed     ? UI_YELLOW : UI_DEEP_TEAL);
+  menuCanvas->drawRect(212, 166, 22, 20, UI_WHITE);
+  menuCanvas->setCursor(219, 180);
+  menuCanvas->setTextColor(bPressed ? UI_BLACK : UI_WHITE);
+  menuCanvas->print("B");
+
+  menuCanvas->fillRect(244, 154, 22, 20, aPressed     ? UI_YELLOW : UI_DEEP_TEAL);
+  menuCanvas->drawRect(244, 154, 22, 20, UI_WHITE);
+  menuCanvas->setCursor(251, 168);
+  menuCanvas->setTextColor(aPressed ? UI_BLACK : UI_WHITE);
+  menuCanvas->print("A");
+
+  drawFooter("PRESS B TO EXIT DIAGNOSTICS");
+  writeMenuCanvas();
+}
+
+void DisplayEmu::drawConsoleIcon(RomType type, int x, int y, uint16_t primaryColor) {
+  if (!menuCanvas) return;
+  if (primaryColor == 0) primaryColor = UI_YELLOW;
+
+  switch (type) {
+    case ROM_FAVORITES:
+      menuCanvas->fillTriangle(x + 7, y + 1, x + 3, y + 13, x + 12, y + 5, primaryColor);
+      menuCanvas->fillTriangle(x + 7, y + 1, x + 11, y + 13, x + 2, y + 5, primaryColor);
+      break;
+    case ROM_GB:
+    case ROM_GBC:
+      menuCanvas->fillRoundRect(x + 2, y + 1, 12, 14, 2, primaryColor);
+      menuCanvas->fillRect(x + 4, y + 3, 8, 6, UI_BLACK);
+      menuCanvas->drawPixel(x + 5, y + 11, UI_BLACK);
+      menuCanvas->drawPixel(x + 11, y + 11, UI_CORAL);
+      break;
+    case ROM_NES:
+      menuCanvas->drawRect(x + 1, y + 3, 14, 10, primaryColor);
+      menuCanvas->fillRect(x + 3, y + 5, 10, 6, UI_BLACK);
+      menuCanvas->drawPixel(x + 4, y + 8, UI_WHITE);
+      menuCanvas->drawPixel(x + 10, y + 8, UI_CORAL);
+      menuCanvas->drawPixel(x + 12, y + 8, UI_CORAL);
+      break;
+    case ROM_SNES:
+      menuCanvas->fillRoundRect(x + 1, y + 4, 15, 8, 4, primaryColor);
+      menuCanvas->drawPixel(x + 4, y + 8, UI_BLACK);
+      menuCanvas->drawPixel(x + 11, y + 6, UI_YELLOW);
+      menuCanvas->drawPixel(x + 13, y + 8, UI_BLUE);
+      menuCanvas->drawPixel(x + 11, y + 10, UI_CORAL);
+      break;
+    case ROM_GENESIS:
+      menuCanvas->fillRoundRect(x + 1, y + 3, 14, 10, 5, UI_BLACK);
+      menuCanvas->drawRoundRect(x + 1, y + 3, 14, 10, 5, primaryColor);
+      menuCanvas->drawPixel(x + 10, y + 8, UI_WHITE);
+      menuCanvas->drawPixel(x + 12, y + 7, UI_WHITE);
+      break;
+    case ROM_SMS:
+    case ROM_GG:
+      menuCanvas->fillRoundRect(x + 1, y + 2, 15, 12, 2, UI_BLACK);
+      menuCanvas->drawRoundRect(x + 1, y + 2, 15, 12, 2, primaryColor);
+      menuCanvas->fillRect(x + 5, y + 4, 7, 8, UI_BLUE);
+      break;
+    case ROM_ATARI:
+      menuCanvas->fillRect(x + 3, y + 7, 10, 7, UI_BLACK);
+      menuCanvas->drawRect(x + 3, y + 7, 10, 7, primaryColor);
+      menuCanvas->drawLine(x + 8, y + 2, x + 8, y + 7, UI_BLACK);
+      menuCanvas->drawPixel(x + 8, y + 1, UI_CORAL);
+      menuCanvas->drawPixel(x + 5, y + 9, UI_CORAL);
+      break;
+    case ROM_PICO8:
+      menuCanvas->fillRect(x + 3, y + 2, 10, 12, UI_DEEP_TEAL);
+      menuCanvas->drawRect(x + 3, y + 2, 10, 12, primaryColor);
+      menuCanvas->fillRect(x + 5, y + 4, 6, 5, UI_YELLOW);
+      menuCanvas->drawFastHLine(x + 5, y + 10, 6, UI_CORAL);
+      break;
+    case ROM_WAD:
+      menuCanvas->fillRoundRect(x + 2, y + 2, 12, 12, 3, UI_BLACK);
+      menuCanvas->drawRoundRect(x + 2, y + 2, 12, 12, 3, primaryColor);
+      menuCanvas->fillRect(x + 4, y + 5, 8, 4, Theme::COLOR_SUCCESS);
+      break;
+    default:
+      menuCanvas->fillRect(x + 3, y + 2, 10, 12, UI_BLACK);
+      menuCanvas->drawRect(x + 3, y + 2, 10, 12, primaryColor);
+      menuCanvas->fillRect(x + 5, y + 5, 6, 6, primaryColor);
+      break;
+  }
+}
+
+void DisplayEmu::drawIdleMascotScreen(unsigned long idleSeconds, const char* stateMessage) {
+  if (!menuCanvas) return;
+  menuCanvas->fillScreen(UI_MINT);
+  
+  // Header bar
+  menuCanvas->fillRect(0, 0, 320, 32, UI_DEEP_TEAL);
+  menuCanvas->setFont(&FreeSans9pt7b);
+  drawCentered("BMO IS DREAMING...", 22, UI_YELLOW);
+
+  // Large living BMO face
+  const int cx = 160;
+  const int cy = 110;
+  
+  // BMO Body Card
+  menuCanvas->fillRoundRect(cx - 70, cy - 50, 140, 100, 16, UI_TEAL);
+  menuCanvas->drawRoundRect(cx - 70, cy - 50, 140, 100, 16, UI_DEEP_TEAL);
+  
+  // Eyes
+  const unsigned long phase = (idleSeconds / 3) % 4;
+  if (phase == 0) {
+    menuCanvas->fillCircle(cx - 30, cy - 10, 7, UI_BLACK);
+    menuCanvas->fillCircle(cx + 30, cy - 10, 7, UI_BLACK);
+    menuCanvas->drawCircle(cx, cy + 12, 14, UI_BLACK);
+    menuCanvas->fillRect(cx - 16, cy - 2, 32, 14, UI_TEAL);
+  } else if (phase == 1) {
+    menuCanvas->fillRect(cx - 36, cy - 12, 14, 5, UI_BLACK);
+    menuCanvas->fillRect(cx + 22, cy - 12, 14, 5, UI_BLACK);
+    menuCanvas->drawFastHLine(cx - 10, cy + 15, 20, UI_BLACK);
+  } else if (phase == 2) {
+    menuCanvas->drawLine(cx - 36, cy - 6, cx - 29, cy - 14, UI_BLACK);
+    menuCanvas->drawLine(cx - 29, cy - 14, cx - 22, cy - 6, UI_BLACK);
+    menuCanvas->drawLine(cx + 22, cy - 6, cx + 29, cy - 14, UI_BLACK);
+    menuCanvas->drawLine(cx + 29, cy - 14, cx + 36, cy - 6, UI_BLACK);
+    menuCanvas->drawCircle(cx, cy + 10, 8, UI_BLACK);
+    menuCanvas->fillRect(cx - 10, cy + 2, 20, 8, UI_TEAL);
+  } else {
+    menuCanvas->fillCircle(cx - 30, cy - 10, 7, UI_BLACK);
+    menuCanvas->fillCircle(cx + 30, cy - 10, 7, UI_BLACK);
+    menuCanvas->fillCircle(cx, cy + 12, 12, UI_BLACK);
+    menuCanvas->fillRect(cx - 14, cy, 28, 12, UI_TEAL);
+  }
+
+  // Rosy cheeks
+  menuCanvas->fillCircle(cx - 48, cy + 2, 6, UI_CORAL);
+  menuCanvas->fillCircle(cx + 48, cy + 2, 6, UI_CORAL);
+
+  // Floating Z z z
+  menuCanvas->setFont();
+  menuCanvas->setTextColor(UI_DEEP_TEAL);
+  menuCanvas->setCursor(cx + 80, cy - 35);
+  menuCanvas->print("Z");
+  menuCanvas->setCursor(cx + 92, cy - 48);
+  menuCanvas->print("z");
+  menuCanvas->setCursor(cx + 102, cy - 60);
+  menuCanvas->print("z");
+
+  // Bottom prompt
+  drawFooter(stateMessage ? stateMessage : "PRESS ANY BUTTON TO WAKE UP BMO!");
+  writeMenuCanvas();
 }
 
 

@@ -161,6 +161,16 @@ void PeanutEmu::updateJoypad() {
 }
 
 void PeanutEmu::runFrame() {
+  static int lastPaletteIdx = -1;
+  int curPaletteIdx = DisplayEmu::getDmgPaletteIndex();
+  if (curPaletteIdx != lastPaletteIdx) {
+    const uint16_t* pal = DisplayEmu::getActiveDmgPalette();
+    for (int i = 0; i < 256; i++) {
+      PAL_256[i] = pal[i & 0x03];
+    }
+    lastPaletteIdx = curPaletteIdx;
+  }
+
   // startFrame holds SPI bus open and sets address window once for the
   // entire 240×216 frame (N1 + N3).
   DisplayEmu::startFrame();
