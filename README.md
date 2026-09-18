@@ -1,4 +1,4 @@
-# BMO-Handheld-Gaming-Console
+# ESP32-S3-Handheld-Gaming-Console
 
 A multi-platform retro gaming handheld console powered by the ESP32-S3 microcontroller, featuring a custom animated 2D Signed Distance Field (SDF) mascot face ("BMO") and support for Game Boy, Game Boy Color, NES, and DOOM.
 

@@ -1,6 +1,6 @@
 # Performance, Benchmarking & Ground-Truth Engineering Manual
 
-**Project:** BMO-Handheld-Gaming-Console  
+**Project:** ESP32-S3-Handheld-Gaming-Console  
 **Target Platform:** ESP32-S3-N16R8 (Xtensa LX7 @ 240MHz, 16MB OPI Flash, 8MB Octal PSRAM)  
 **Display:** ST7789VW 2.4" SPI TFT (240×320 Physical, 320×240 Landscape Viewport) on Shared 80MHz FSPI Bus  
 **Authoritative Framework:** `tools/guardian/` (Guardian Ground-Truth Engine)  

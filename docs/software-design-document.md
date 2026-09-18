@@ -1,16 +1,16 @@
 # Software Design Document (SDD)
-**Project:** BMO-Handheld-Gaming-Console  
+**Project:** ESP32-S3-Handheld-Gaming-Console  
 **Target Platform:** ESP32-S3-N16R8 (16MB OPI Flash, 8MB Octal PSRAM)  
 **Target Display:** ST7789VW 2.4" SPI TFT (240×320 Physical, 320×240 Landscape Viewport)  
 **Document Version:** 3.3 (Technical Specification — Updated 2026-08-31)  
 **Status:** Approved Engineering Ground Truth  
-**Maintained By:** BMO Firmware Engineering Team & Autonomous AI Agents  
+**Maintained By:** Firmware Engineering Team & Autonomous AI Agents  
 
 ---
 
 ## 1. Executive Summary & Hardware Ground Truth
 
-The **BMO-Handheld-Gaming-Console** is a multi-platform retro gaming handheld firmware engineered for the Espressif ESP32-S3 microcontroller. It integrates a procedural 2D mascot animation system ("BMO") with a 14-core retro gaming emulation suite.
+The **ESP32-S3-Handheld-Gaming-Console** is a multi-platform retro gaming handheld firmware engineered for the Espressif ESP32-S3 microcontroller. It integrates a procedural 2D mascot animation system ("BMO") with a 14-core retro gaming emulation suite.
 
 ### Engine Status Registry
 
