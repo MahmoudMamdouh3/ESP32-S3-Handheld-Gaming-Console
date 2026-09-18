@@ -50,11 +50,11 @@ void GenesisEmu::update() {
 void GenesisEmu::destroy() {
   running = false;
   if (genesisFb) {
-    free(genesisFb);
+    heap_caps_free(genesisFb); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
     genesisFb = nullptr;
   }
   if (genesisRam) {
-    free(genesisRam);
+    heap_caps_free(genesisRam); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
     genesisRam = nullptr;
   }
   memset(&genesisState, 0, sizeof(genesisState));

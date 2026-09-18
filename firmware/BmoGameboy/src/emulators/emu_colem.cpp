@@ -51,15 +51,15 @@ void ColemEmu::update() {
 void ColemEmu::destroy() {
   running = false;
   if (colemFb) {
-    free(colemFb);
+    heap_caps_free(colemFb); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
     colemFb = nullptr;
   }
   if (colemRam) {
-    free(colemRam);
+    heap_caps_free(colemRam); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
     colemRam = nullptr;
   }
   if (colemVram) {
-    free(colemVram);
+    heap_caps_free(colemVram); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
     colemVram = nullptr;
   }
   memset(&colemState, 0, sizeof(colemState));

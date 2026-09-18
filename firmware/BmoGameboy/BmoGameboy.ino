@@ -93,6 +93,11 @@ static void resetFrameStats() {
 
 static bool visibleGamesDirty = true;
 
+// PERF-M3: File-scope so STATE_GAME_MENU (toggleFavorite) can invalidate the
+//          Favorites-count badge rendered in STATE_CONSOLE_MENU.
+static int  s_cachedConsoleCounts[CONSOLE_COUNT];
+static bool s_consoleCountsDirty = true;
+
 static int countGamesForConsole(RomType type) {
   // PERF-02: O(1) lookup via SDCard::getRomCountForType (eliminates 245K iterations per frame)
   return SDCard::getRomCountForType(type);
@@ -121,6 +126,12 @@ static void rebuildVisibleGames() {
     }
   }
 
+  // PERF-C2: Rebuild pointer array here (dirty-flag guarded) so the game-menu
+  //          render path never repeats this work on idle frames.
+  for (int i = 0; i < visibleGameCount; ++i) {
+    visibleGames[i] = SDCard::getRomInfo(visibleRomIndexes[i]);
+  }
+
   if (visibleGameCount == 0) selectedGameIndex = 0;
   else if (selectedGameIndex >= visibleGameCount) selectedGameIndex = visibleGameCount - 1;
   visibleGamesDirty = false;
@@ -142,7 +153,13 @@ void setup() {
   Serial.begin(115200);
   
   // Wait 3 seconds for Serial to connect (avoids hang on UART port).
+  // PERF-M5: In release builds skip the 3-second Serial wait — users see a black
+  //           screen for 3 s on every cold boot otherwise.
+#if defined(CORE_DEBUG_LEVEL) && CORE_DEBUG_LEVEL > 0
   delay(3000);
+#else
+  delay(500);  // Brief settle for USB CDC enumeration.
+#endif
 
   LOG_INFO_STR("\n\n--- BOOTING ---");
   LOG_INFO_STR("Milestone 4: Game Selection UI");
@@ -193,7 +210,10 @@ void setup() {
 
 void loop() {
   Battery::update();
-  BmoFace::update();
+  // PERF-H5: Face is HIDDEN during emulation and never drawn; skip update() overhead.
+  if (currentState != STATE_EMULATOR) {
+    BmoFace::update();
+  }
 
   if (currentState == STATE_BOOT_SPLASH) {
     DisplayEmu::initMenuUI();
@@ -242,26 +262,28 @@ void loop() {
     bool start  = btnStart.pressed  && btnStart.changed;
     
     if (canPress()) {
+      // PERF-M1: Cache millis() once per frame instead of calling it 5+ times per event.
+      const unsigned long nowMs = millis();
       if (left || right || up || down || a || select || start) {
-        lastInputActivityMs = millis();
+        lastInputActivityMs = nowMs;
       }
       if (left || up) {
         selectedConsoleIndex = (selectedConsoleIndex - 1 + CONSOLE_COUNT) % CONSOLE_COUNT;
         visibleGamesDirty = true;
-        lastButtonMs = millis();
+        lastButtonMs = nowMs;
       }
       if (right || down) {
         selectedConsoleIndex = (selectedConsoleIndex + 1) % CONSOLE_COUNT;
         visibleGamesDirty = true;
-        lastButtonMs = millis();
+        lastButtonMs = nowMs;
       }
       if (select) {
         currentState = STATE_CONSOLE_MUSEUM;
-        lastButtonMs = millis();
+        lastButtonMs = nowMs;
       }
       if (start) {
         currentState = STATE_DIAGNOSTICS;
-        lastButtonMs = millis();
+        lastButtonMs = nowMs;
       }
       if (a) {
         selectedGameIndex = 0;
@@ -269,7 +291,7 @@ void loop() {
         rebuildVisibleGames();
         currentState = STATE_GAME_MENU;
         BmoFace::setExpression(BmoFace::IDLE);
-        lastButtonMs = millis();
+        lastButtonMs = nowMs;
       }
     }
 
@@ -278,13 +300,14 @@ void loop() {
       BmoFace::setExpression(BmoFace::SLEEPY);
     }
 
-    static int cachedConsoleCounts[CONSOLE_COUNT];
-    static bool consoleCountsDirty = true;
-    if (consoleCountsDirty) {
-      for (int i = 0; i < CONSOLE_COUNT; ++i) cachedConsoleCounts[i] = SDCard::getRomCountForType(CONSOLES[i]);
-      consoleCountsDirty = false;
+    // PERF-M3: Use file-scope dirty flag so toggleFavorite() in STATE_GAME_MENU
+    //          invalidates the Favorites-count badge in the carousel.
+    if (s_consoleCountsDirty) {
+      for (int i = 0; i < CONSOLE_COUNT; ++i)
+        s_cachedConsoleCounts[i] = SDCard::getRomCountForType(CONSOLES[i]);
+      s_consoleCountsDirty = false;
     }
-    DisplayEmu::drawConsoleSelectMenu(selectedConsoleIndex, cachedConsoleCounts, CONSOLE_COUNT, SDCard::isMounted());
+    DisplayEmu::drawConsoleSelectMenu(selectedConsoleIndex, s_cachedConsoleCounts, CONSOLE_COUNT, SDCard::isMounted());
 
     // The full-screen SPI blit already consumes most of a 16.7 ms frame.
     // Only sleep for the remaining budget; an unconditional delay(16) here
@@ -390,6 +413,7 @@ void loop() {
       if (select && visibleGameCount > 0) {
         int romIdx = visibleRomIndexes[selectedGameIndex];
         SDCard::toggleFavorite(romIdx);
+        s_consoleCountsDirty = true;   // PERF-M3: Favorites badge in console menu needs refresh
         
         // Show BMO happy reaction when starring a game
         if (SDCard::isFavorite(romIdx)) {
@@ -558,9 +582,8 @@ void loop() {
       }
     }
     
-    for (int i = 0; i < visibleGameCount; ++i) {
-      visibleGames[i] = SDCard::getRomInfo(visibleRomIndexes[i]);
-    }
+    // PERF-C2: visibleGames[] is rebuilt inside rebuildVisibleGames() (dirty-flag guarded).
+    //          No unconditional O(N) pointer-copy on every frame.
     DisplayEmu::drawGameSelectMenu(visibleGames, visibleGameCount, selectedGameIndex,
                                    CONSOLES[selectedConsoleIndex], SDCard::isMounted());
 

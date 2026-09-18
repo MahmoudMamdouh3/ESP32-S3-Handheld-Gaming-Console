@@ -50,11 +50,11 @@ void LynxEmu::update() {
 void LynxEmu::destroy() {
   running = false;
   if (lynxFb) {
-    free(lynxFb);
+    heap_caps_free(lynxFb); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
     lynxFb = nullptr;
   }
   if (lynxRam) {
-    free(lynxRam);
+    heap_caps_free(lynxRam); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
     lynxRam = nullptr;
   }
   memset(&lynxState, 0, sizeof(lynxState));

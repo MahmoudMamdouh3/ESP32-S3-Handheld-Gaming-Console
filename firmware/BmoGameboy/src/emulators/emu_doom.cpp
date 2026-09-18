@@ -12,8 +12,14 @@ extern "C" {
 #include <Arduino.h>
 #include <esp_heap_caps.h>
 
-// Globals to track key state for Doom
-static int keys[256] = {0};
+// PERF-H2: Ring-buffer for Doom key events — O(1) dequeue vs O(256) table scan.
+// Only 8 physical buttons exist; a 16-slot ring (power-of-2 for fast masking) is plenty.
+struct DoomKeyEvent { uint8_t key; uint8_t pressed; };
+static DoomKeyEvent s_keyRing[16];
+static int          s_keyRingHead = 0;
+static int          s_keyRingTail = 0;
+// Per-key edge-detect: 0 = idle/released, 1 = pressed/held.
+static uint8_t      s_keyState[256];
 
 extern "C" {
     void* Doom_MallocPSRAM(size_t size) {
@@ -40,6 +46,10 @@ void DG_DrawFrame() {
 }
 
 void DG_SleepMs(uint32_t ms) {
+  // PERF-M4: Warn if Doom's own pacing fires — it would fight the outer 16 742 µs frame pacer.
+  if (ms > 0) {
+    LOG_WARN("[DOOM] DG_SleepMs(%u ms) — engine pacing active", (unsigned)ms);
+  }
   delay(ms);
 }
 
@@ -48,23 +58,12 @@ uint32_t DG_GetTicksMs() {
 }
 
 int DG_GetKey(int* pressed, unsigned char* key) {
-  // Find a key that was just pressed or released
-  for (int i = 0; i < 256; i++) {
-    if (keys[i] > 0) {
-      if (keys[i] == 1) { // Pressed
-        *pressed = 1;
-        *key = i;
-        keys[i] = 2; // Mark as held
-        return 1;
-      } else if (keys[i] == 3) { // Released
-        *pressed = 0;
-        *key = i;
-        keys[i] = 0; // Clear state
-        return 1;
-      }
-    }
-  }
-  return 0; // No key events
+  // PERF-H2: O(1) ring-buffer dequeue — no 256-entry table scan.
+  if (s_keyRingTail == s_keyRingHead) return 0;
+  *pressed = s_keyRing[s_keyRingTail].pressed;
+  *key     = s_keyRing[s_keyRingTail].key;
+  s_keyRingTail = (s_keyRingTail + 1) & 15;
+  return 1;
 }
 
 void DG_SetWindowTitle(const char * title) {
@@ -73,20 +72,35 @@ void DG_SetWindowTitle(const char * title) {
 
 } // extern "C"
 
-// Helper to push key events
+// PERF-H2: Edge-detect + ring enqueue.  Only fires on state transitions (press/release).
 static void updateDoomKey(int doomKey, bool pressed) {
   if (pressed) {
-    if (keys[doomKey] == 0) keys[doomKey] = 1; // Just pressed
+    if (s_keyState[doomKey] == 0) {
+      s_keyState[doomKey] = 1;
+      int next = (s_keyRingHead + 1) & 15;
+      if (next != s_keyRingTail) {  // ring not full
+        s_keyRing[s_keyRingHead] = { (uint8_t)doomKey, 1 };
+        s_keyRingHead = next;
+      }
+    }
   } else {
-    if (keys[doomKey] == 2) keys[doomKey] = 3; // Just released
+    if (s_keyState[doomKey] == 1) {
+      s_keyState[doomKey] = 0;
+      int next = (s_keyRingHead + 1) & 15;
+      if (next != s_keyRingTail) {
+        s_keyRing[s_keyRingHead] = { (uint8_t)doomKey, 0 };
+        s_keyRingHead = next;
+      }
+    }
   }
 }
 
 namespace DoomEmu {
 
 bool begin(const char* wadPath) {
-  // Initialize keyboard state
-  memset(keys, 0, sizeof(keys));
+  // Initialize key ring-buffer and per-key edge-detect state.
+  memset(s_keyState, 0, sizeof(s_keyState));
+  s_keyRingHead = s_keyRingTail = 0;
 
   // We must pass the WAD path to doomgeneric using argv
   // e.g. ["doom", "-iwad", "/sd/DOOM1.WAD"]

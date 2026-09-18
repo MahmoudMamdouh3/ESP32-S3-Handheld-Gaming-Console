@@ -50,11 +50,11 @@ void WSwanEmu::update() {
 void WSwanEmu::destroy() {
   running = false;
   if (wswanFb) {
-    free(wswanFb);
+    heap_caps_free(wswanFb); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
     wswanFb = nullptr;
   }
   if (wswanRam) {
-    free(wswanRam);
+    heap_caps_free(wswanRam); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
     wswanRam = nullptr;
   }
   memset(&wswanState, 0, sizeof(wswanState));

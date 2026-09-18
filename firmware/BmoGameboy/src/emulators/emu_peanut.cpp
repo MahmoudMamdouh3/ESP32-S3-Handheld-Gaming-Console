@@ -180,7 +180,7 @@ void PeanutEmu::runFrame() {
 
 void PeanutEmu::destroy() {
   if (cart_ram) {
-    free(cart_ram);
+    heap_caps_free(cart_ram); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
     cart_ram = nullptr;
   }
 }

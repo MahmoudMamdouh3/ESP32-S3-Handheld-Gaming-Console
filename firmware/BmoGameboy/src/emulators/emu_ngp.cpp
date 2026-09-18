@@ -50,11 +50,11 @@ void NGPEmu::update() {
 void NGPEmu::destroy() {
   running = false;
   if (ngpFb) {
-    free(ngpFb);
+    heap_caps_free(ngpFb); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
     ngpFb = nullptr;
   }
   if (ngpRam) {
-    free(ngpRam);
+    heap_caps_free(ngpRam); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
     ngpRam = nullptr;
   }
   memset(&ngpState, 0, sizeof(ngpState));

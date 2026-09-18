@@ -49,6 +49,9 @@ void SmsEmu::updateJoypad() {
 void SmsEmu::runFrame() {
   if (!sms_ctx) return;
   
+  // PERF-L3: updateJoypad() is called here internally (NOT from BmoGameboy.ino).
+  // Unlike GB/NES which expose separate updateJoypad() calls in the main loop,
+  // SMS polls buttons inside runFrame() — do NOT add a redundant external call.
   updateJoypad();
   sms_run_frame(sms_ctx);
   

@@ -51,11 +51,11 @@ void SNESEmu::update() {
 void SNESEmu::destroy() {
   running = false;
   if (snesFb) {
-    free(snesFb);
+    heap_caps_free(snesFb); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
     snesFb = nullptr;
   }
   if (snesWram) {
-    free(snesWram);
+    heap_caps_free(snesWram); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
     snesWram = nullptr;
   }
   memset(&snesState, 0, sizeof(snesState));

@@ -1,4 +1,4 @@
-#pragma GCC optimize ("O3")
+#pragma GCC optimize("O3,unroll-loops")
 #include "display_emu.h"
 #include "config.h"
 #include "battery.h"
@@ -177,16 +177,20 @@ namespace {
 
   void drawFittedCentered(const char* source, int y, int maxWidth, uint16_t color) {
     char fitted[64];
-    snprintf(fitted, sizeof(fitted), "%s", source ? source : "Unknown game");
+    // PERF-H1: Track length as int — eliminates O(N) strlen() inside the truncation loop.
+    int len = snprintf(fitted, sizeof(fitted), "%s", source ? source : "Unknown game");
+    if (len >= (int)sizeof(fitted)) len = (int)sizeof(fitted) - 1;
     int16_t x1, y1;
     uint16_t width, height;
     menuCanvas->getTextBounds(fitted, 0, 0, &x1, &y1, &width, &height);
-    while (width > maxWidth && strlen(fitted) > 4) {
-      size_t length = strlen(fitted);
-      fitted[length - 4] = '.';
-      fitted[length - 3] = '.';
-      fitted[length - 2] = '.';
-      fitted[length - 1] = '\0';
+    // Truncate one char at a time; getTextBounds re-measurement is unavoidable.
+    // O(N) strlen() per iteration is now O(1) via the tracked 'len' variable.
+    while ((int)width > maxWidth && len > 4) {
+      len--;
+      fitted[len - 3] = '.';
+      fitted[len - 2] = '.';
+      fitted[len - 1] = '.';
+      fitted[len]     = '\0';
       menuCanvas->getTextBounds(fitted, 0, 0, &x1, &y1, &width, &height);
     }
     drawCentered(fitted, y, color);
@@ -553,7 +557,8 @@ void DisplayEmu::drawBootSplash(bool pressAnyButtonBlink) {
 
 void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts, int consoleCount, bool sdMounted) {
   if (!menuCanvas || consoleCount <= 0) return;
-  const RomType consoles[16] = {
+  // PERF-L1: static const — avoids a 16-entry stack re-init on every ~60 Hz menu frame.
+  static const RomType consoles[16] = {
     ROM_FAVORITES,
     ROM_GB, ROM_GBC, ROM_NES, ROM_WAD,
     ROM_SMS, ROM_GG, ROM_PCE, ROM_ATARI, ROM_PICO8,

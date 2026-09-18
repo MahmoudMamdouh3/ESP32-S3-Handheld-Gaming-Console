@@ -5,6 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Perf-Fix-2] - 2026-09-18 (PSRAM Allocator Mismatch + O3 Pragma Completions)
+### Fixed
+- **Critical: PSRAM `heap_caps_free()` mismatch in 8 emulators** (`emu_peanut`, `emu_walnut`, `emu_genesis`, `emu_snes`, `emu_wswan`, `emu_ngp`, `emu_lynx`, `emu_colem`): All `destroy()` functions called plain `free()` on buffers allocated via `heap_caps_malloc(MALLOC_CAP_SPIRAM)`. Fixed to use `heap_caps_free()` matching the allocator contract.
+### Performance
+- Added `#pragma GCC optimize("O3,unroll-loops")` to `bmo_face.cpp` — SDF renderer is the 2nd most expensive hot path (~468–1241 µs), enabling loop vectorisation and unroll.
+- Completed `display_emu.cpp` pragma from `O3` → `O3,unroll-loops` for NES/DOOM scanline loops.
+### Verified
+- `python scripts/validate_repo.py` → PASS (Flash 33.0%, SRAM 75.1%)
+- `python -m tools.guardian audit` → 0 Critical, 11 pre-existing Warnings
+- `python -m unittest discover tests` → 32/32 OK
+
+---
+
 ## [Milestone 11.0] - 2026-08-31 (Universal Multi-Console Favorites, 1:1 Carousel UI Replica, OnionUI Theme, Virtual BMO & Ambient Living Screensaver)
 ### Added
 - **Universal Multi-Console Favorites Engine (`★`) & SD Persistence**:

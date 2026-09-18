@@ -20,6 +20,7 @@ namespace {
   static RomFile* romList = fallbackRomList;
   static int maxCapacity = 32;
   int numRoms = 0;
+  static int s_favoritesCount = 0;                  // PERF-C1: O(1) counter — maintained by begin/toggleFavorite/loadFavorites
   static int romCountsByType[ROM_COLEM + 1] = {0};
 
   RomType determineType(const char* filename) {
@@ -61,6 +62,7 @@ bool SDCard::begin() {
   romList[numRoms].filename[63] = '\0';
   romList[numRoms].type = ROM_GB;
   romList[numRoms].isFavorite = true;
+  s_favoritesCount++;                  // PERF-C1
   romCountsByType[ROM_GB]++;
   numRoms++;
 
@@ -69,6 +71,7 @@ bool SDCard::begin() {
   romList[numRoms].filename[63] = '\0';
   romList[numRoms].type = ROM_GBC;
   romList[numRoms].isFavorite = true;
+  s_favoritesCount++;                  // PERF-C1
   romCountsByType[ROM_GBC]++;
   numRoms++;
 
@@ -76,6 +79,7 @@ bool SDCard::begin() {
   romList[numRoms].filename[63] = '\0';
   romList[numRoms].type = ROM_GBC;
   romList[numRoms].isFavorite = true;
+  s_favoritesCount++;                  // PERF-C1
   romCountsByType[ROM_GBC]++;
   numRoms++;
 
@@ -177,16 +181,20 @@ bool SDCard::isFavorite(const char* filename) {
 
 void SDCard::toggleFavorite(int index) {
   if (index < 0 || index >= numRoms) return;
-  romList[index].isFavorite = !romList[index].isFavorite;
+  // PERF-C1: Maintain O(1) counter instead of letting getFavoritesCount() re-scan.
+  if (romList[index].isFavorite) {
+    romList[index].isFavorite = false;
+    s_favoritesCount--;
+  } else {
+    romList[index].isFavorite = true;
+    s_favoritesCount++;
+  }
   saveFavorites();
 }
 
 int SDCard::getFavoritesCount() {
-  int count = 0;
-  for (int i = 0; i < numRoms; ++i) {
-    if (romList[i].isFavorite) count++;
-  }
-  return count;
+  // PERF-C1: O(1) — counter maintained by begin/toggleFavorite/loadFavorites.
+  return s_favoritesCount;
 }
 
 void SDCard::saveFavorites() {
@@ -209,13 +217,22 @@ void SDCard::loadFavorites() {
   if (!SD.exists("/favorites.txt")) return;
   File f = SD.open("/favorites.txt", FILE_READ);
   if (!f) return;
+  // H-3 / L-5: Stack char[] instead of Arduino String — no heap alloc per line.
+  char line[64];
   while (f.available()) {
-    String line = f.readStringUntil('\n');
-    line.trim();
-    if (line.length() > 0) {
+    int len = f.readBytesUntil('\n', line, (int)sizeof(line) - 1);
+    line[len] = '\0';
+    // Trim trailing \r and spaces to handle Windows \r\n line endings.
+    while (len > 0 && (line[len - 1] == '\r' || line[len - 1] == ' ')) {
+      line[--len] = '\0';
+    }
+    if (len > 0) {
       for (int i = 0; i < numRoms; ++i) {
-        if (strcmp(romList[i].filename, line.c_str()) == 0) {
-          romList[i].isFavorite = true;
+        if (strcmp(romList[i].filename, line) == 0) {
+          if (!romList[i].isFavorite) {
+            romList[i].isFavorite = true;
+            s_favoritesCount++;  // PERF-C1: maintain O(1) counter
+          }
           break;
         }
       }
@@ -252,7 +269,10 @@ uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
   }
 
 #if FEATURE_SD_CARD
-  File file = SD.open(String("/") + filename, FILE_READ);
+  // H-3: Stack buffer instead of Arduino String — avoids DRAM heap alloc on every ROM launch.
+  char path[128];
+  snprintf(path, sizeof(path), "/%s", filename);
+  File file = SD.open(path, FILE_READ);
   if (!file) return nullptr;
 
   size_t size = file.size();
