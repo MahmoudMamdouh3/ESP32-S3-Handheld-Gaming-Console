@@ -363,17 +363,27 @@ void loop() {
       if (left || right || up || down || a || select || start) {
         lastInputActivityMs = nowMs;
       }
-      if (left || up) {
+      if (left) {
         selectedConsoleIndex = (selectedConsoleIndex - 1 + CONSOLE_COUNT) % CONSOLE_COUNT;
         visibleGamesDirty = true;
         lastButtonMs = nowMs;
         BmoFace::setGaze(-0.70f, 0.0f); // BMO companion glances left with carousel
       }
-      if (right || down) {
+      if (right) {
         selectedConsoleIndex = (selectedConsoleIndex + 1) % CONSOLE_COUNT;
         visibleGamesDirty = true;
         lastButtonMs = nowMs;
         BmoFace::setGaze(0.70f, 0.0f);  // BMO companion glances right with carousel
+      }
+      if (up) {
+        currentState = STATE_IDLE_MASCOT;
+        BmoFace::setExpression(BmoFace::HAPPY);
+        BmoFace::say("Who wants to play video games?!", 3500);
+        lastButtonMs = nowMs;
+      }
+      if (down) {
+        currentState = STATE_CONSOLE_MUSEUM;
+        lastButtonMs = nowMs;
       }
       if (select) {
         currentState = STATE_CONSOLE_MUSEUM;
@@ -494,7 +504,7 @@ void loop() {
       BmoFace::setGaze(gx, gy);
       lastInputActivityMs = millis();
 
-      // Tickle detection: rapid direction toggling
+      // Tickle detection: rapid direction toggling pets companion
       static unsigned long lastDirChangeMs = 0;
       static int dirToggleCount = 0;
       static float lastGx = 0.0f;
@@ -502,7 +512,7 @@ void loop() {
         if (millis() - lastDirChangeMs < 350) {
           dirToggleCount++;
           if (dirToggleCount >= 2) {
-            BmoFace::tickle(1.0f);
+            BmoFace::petCompanion();
             dirToggleCount = 0;
           }
         } else {
@@ -516,28 +526,50 @@ void loop() {
     // Interactive button triggers
     if (bA.pressed && bA.changed) {
       BmoFace::triggerWink();
+      BmoFace::say("BMO is camera ready! *wink*", 3000);
       lastInputActivityMs = millis();
     } else if (bB.pressed && bB.changed) {
       BmoFace::triggerBlush();
+      BmoFace::say("Oh, you are making BMO blush!", 3000);
       lastInputActivityMs = millis();
     } else if (bSel.pressed && bSel.changed) {
-      BmoFace::setExpression(BmoFace::CONFUSED);
+      static const char* const BMO_QUOTES[] = {
+        "Who wants to play video games?!",
+        "Yay! BMO is so happy to see you!",
+        "Sometimes life is scary, but we have games!",
+        "Yes, Finn. It goes in my butt.",
+        "BMO chop! If this were a real attack, you'd be dead!",
+        "When bad things happen, I know you want to believe they're a joke.",
+        "I am a little living boy!"
+      };
+      static int s_quoteIdx = 0;
+      BmoFace::setExpression(BmoFace::JOY);
+      BmoFace::say(BMO_QUOTES[s_quoteIdx % 7], 3800);
+      s_quoteIdx++;
+      lastInputActivityMs = millis();
+    } else if (bUp.pressed && bUp.changed) {
+      if (BmoFace::isDancing()) {
+        BmoFace::stopDance();
+        BmoFace::say("Whew! What a fun dance party!", 2500);
+      } else {
+        BmoFace::triggerDance(125.0f);
+      }
       lastInputActivityMs = millis();
     }
 
-    // Wake Up: START button or any button held for > 1 second
+    // Wake Up / Return to Menu: START button or hold B
     static unsigned long btnHoldStart = 0;
-    bool anyPressed = bUp.pressed || bDown.pressed || bLeft.pressed || bRight.pressed ||
-                      bA.pressed || bB.pressed || bSel.pressed || bStart.pressed;
-    if (anyPressed) {
+    bool returnPressed = (bStart.pressed && bStart.changed);
+    if (bB.pressed) {
       if (btnHoldStart == 0) btnHoldStart = millis();
     } else {
       btnHoldStart = 0;
     }
 
-    if ((bStart.pressed && bStart.changed) || (btnHoldStart != 0 && (millis() - btnHoldStart > 1000))) {
+    if (returnPressed || (btnHoldStart != 0 && (millis() - btnHoldStart > 600))) {
       currentState = STATE_CONSOLE_MENU;
       BmoFace::setExpression(BmoFace::HAPPY);
+      BmoFace::clearSpeech();
       lastInputActivityMs = millis();
       lastButtonMs = millis();
       btnHoldStart = 0;
@@ -548,7 +580,7 @@ void loop() {
       } else if (idleSec > 20 && idleSec <= 45 && BmoFace::getExpression() == BmoFace::IDLE) {
         BmoFace::setExpression(BmoFace::SLEEPY);
       }
-      DisplayEmu::drawIdleMascotScreen(idleSec, "D-PAD: LOOK/TICKLE | A: WINK | B: BLUSH | START: WAKE");
+      DisplayEmu::drawIdleMascotScreen(idleSec);
     }
 
     const unsigned long elapsed = millis() - idleStart;

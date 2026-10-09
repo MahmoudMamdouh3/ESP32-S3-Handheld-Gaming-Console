@@ -249,6 +249,24 @@ static int           s_blinkPhase    = 0; // 0=single blink, 1=double blink firs
 static uint16_t* s_psramFaceBuf = nullptr;
 static unsigned long s_lastUpdateUs = 0;
 
+// Speech & Dialogue State
+static char          s_speechText[64] = "";
+static unsigned long s_speechExpireMs = 0;
+static int           s_speechVisibleChars = 0;
+static unsigned long s_speechLastCharMs = 0;
+static bool          s_speechActive = false;
+
+// Dance Party Parameters
+static bool          s_danceActive = false;
+static float         s_danceBpm = 125.0f;
+static float         s_dancePhase = 0.0f;
+static unsigned long s_danceEndMs = 0;
+
+// Companion Relationship & Metrics
+static int           s_buddyLevel = 1;
+static int           s_happiness = 95;
+static int           s_totalPets = 0;
+
 // ---------------------------------------------------------------------------
 // Particle Helpers
 // ---------------------------------------------------------------------------
@@ -326,6 +344,16 @@ static inline float sdfSleepStroke(float px, float py, float halfW, float thickn
 // 4-point Diamond Star Sparkle SDF
 static inline float sdfDiamondStar(float px, float py, float radius) {
   return (fabsf(px) + fabsf(py)) - radius;
+}
+
+// Rounded rectangle SDF (used for speech bubbles and cards)
+static inline float sdfRoundRect(float px, float py, float hw, float hh, float r) {
+  float dx = fabsf(px) - hw + r;
+  float dy = fabsf(py) - hh + r;
+  float ox = dx > 0.0f ? dx : 0.0f;
+  float oy = dy > 0.0f ? dy : 0.0f;
+  float inside = (dx < 0.0f && dy < 0.0f) ? (dx > dy ? dx : dy) : 0.0f;
+  return sqrtf(ox * ox + oy * oy) + inside - r;
 }
 
 // Heart Shape SDF for LOVE state
@@ -466,8 +494,15 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
   const int bMouthY0    = max(0, normToPixelY(mouthOffY + fabsf(mouthCrv) * mouthW * mouthW + mouthOpen * 1.8f + aaBand));
   const int bMouthY1    = min(destH - 1, normToPixelY(mouthOffY - mouthOpen * 1.8f - aaBand));
 
+  // Speech bubble bounding box (Y in [12, 64] px)
+  const int bBubbleX0   = max(0, normToPixelX(-0.43f - aaBand));
+  const int bBubbleX1   = min(destW - 1, normToPixelX( 0.43f + aaBand));
+  const int bBubbleY0   = max(0, normToPixelY( 0.708f + 0.095f + aaBand));
+  const int bBubbleY1   = min(destH - 1, normToPixelY( 0.50f - aaBand));
+
   // Pixel evaluation pass strictly inside bounding areas
-  const int minBoundY = min(min(bEyeY0, bCheekY0), bMouthY0);
+  int minBoundY = min(min(bEyeY0, bCheekY0), bMouthY0);
+  if (s_speechActive) minBoundY = min(minBoundY, bBubbleY0);
   const int maxBoundY = max(max(bEyeY1, bCheekY1), bMouthY1);
 
   for (int py = minBoundY; py <= maxBoundY; ++py) {
@@ -480,8 +515,9 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
       bool inLeftCheek  = (blushIntensity > 0.05f && px >= bCheekL_X0 && px <= bCheekL_X1 && py >= bCheekY0 && py <= bCheekY1);
       bool inRightCheek = (blushIntensity > 0.05f && px >= bCheekR_X0 && px <= bCheekR_X1 && py >= bCheekY0 && py <= bCheekY1);
       bool inMouth    = (px >= bMouthX0 && px <= bMouthX1 && py >= bMouthY0 && py <= bMouthY1);
+      bool inBubble   = (s_speechActive && px >= bBubbleX0 && px <= bBubbleX1 && py >= bBubbleY0 && py <= bBubbleY1);
 
-      if (!inLeftEye && !inRightEye && !inLeftCheek && !inRightCheek && !inMouth) {
+      if (!inLeftEye && !inRightEye && !inLeftCheek && !inRightCheek && !inMouth && !inBubble) {
         continue; // Culled! Already filled with background.
       }
 
@@ -489,6 +525,30 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
       float cr = 138.0f / 255.0f;
       float cg = 213.0f / 255.0f;
       float cb = 195.0f / 255.0f;
+
+      // 0. Speech Bubble Layer (Rounded Card + Tail)
+      if (inBubble) {
+        float dBox = sdfRoundRect(nx, ny - 0.708f, 0.406f, 0.0875f, 0.033f);
+        float dTail = 10.0f;
+        if (ny >= 0.52f && ny <= 0.625f) {
+          float halfW = (ny - 0.52f) * 0.5f;
+          dTail = fabsf(nx - 0.03f) - halfW;
+        }
+        float dBubble = fminf(dBox, dTail);
+        float bubbleAlpha = smoothstepf(aaBand, 0.0f, -dBubble);
+        if (bubbleAlpha > 0.005f) {
+          float borderAlpha = smoothstepf(aaBand, 0.0f, -(fabsf(dBubble) - 0.010f));
+          if (borderAlpha > 0.35f) {
+            cr = lerpf(cr, 16.0f / 255.0f, bubbleAlpha);
+            cg = lerpf(cg, 30.0f / 255.0f, bubbleAlpha);
+            cb = lerpf(cb, 43.0f / 255.0f, bubbleAlpha);
+          } else {
+            cr = lerpf(cr, 1.0f, bubbleAlpha);
+            cg = lerpf(cg, 1.0f, bubbleAlpha);
+            cb = lerpf(cb, 1.0f, bubbleAlpha);
+          }
+        }
+      }
 
       // 1. Cheeks Blush Layer (Soft Gaussian Falloff)
       if (inLeftCheek || inRightCheek) {
@@ -933,7 +993,55 @@ void update() {
     }
   }
 
-  // 5. Update Springs
+  // 5. Speech Typewriter Progression
+  if (s_speechActive) {
+    if (nowMs > s_speechExpireMs) {
+      s_speechActive = false;
+      s_speechText[0] = '\0';
+      s_speechVisibleChars = 0;
+      s_dirty = true;
+    } else {
+      int fullLen = (int)strlen(s_speechText);
+      if (s_speechVisibleChars < fullLen) {
+        if (nowMs - s_speechLastCharMs >= 25) {
+          s_speechVisibleChars++;
+          s_speechLastCharMs = nowMs;
+          s_dirty = true;
+        }
+      }
+    }
+  }
+
+  // 6. Musical Dance Party Groove
+  if (s_danceActive) {
+    if (s_danceEndMs != 0 && nowMs > s_danceEndMs) {
+      s_danceActive = false;
+      s_spBounceY.setTarget(0.0f);
+      s_spSquashX.setTarget(1.0f);
+      s_spGazeX.setTarget(0.0f);
+      setExpression(HAPPY);
+      s_dirty = true;
+    } else {
+      float danceOmega = (s_danceBpm * 2.0f * 3.14159265f / 60.0f);
+      s_dancePhase += dt * danceOmega;
+      if (s_dancePhase > 628.31853f) s_dancePhase -= 628.31853f;
+
+      s_spBounceY.val = 0.09f * sinf(s_dancePhase);
+      s_spGazeX.val   = 0.45f * sinf(s_dancePhase * 0.5f);
+      s_spSquashX.val = 1.0f + 0.12f * cosf(s_dancePhase);
+
+      static float s_lastDanceSine = 0.0f;
+      float curDanceSine = sinf(s_dancePhase);
+      if (curDanceSine > 0.95f && s_lastDanceSine <= 0.95f) {
+        float sparkX = (random(0, 2) == 0) ? -0.45f : 0.45f;
+        spawnParticle(PARTICLE_SPARKLE, sparkX, 0.20f, 0.06f, 0.15f, 0.06f, 0.7f);
+      }
+      s_lastDanceSine = curDanceSine;
+      s_dirty = true;
+    }
+  }
+
+  // 7. Update Springs
   bool moved = false;
   moved |= s_spOpenness.update(dt);
   moved |= s_spEyeW.update(dt);
@@ -956,6 +1064,78 @@ void update() {
   updateParticles(dt);
 
   if (moved) s_dirty = true;
+}
+
+// ---------------------------------------------------------------------------
+// Living Companion Dialogue, Dance & Mood System
+// ---------------------------------------------------------------------------
+void say(const char* quote, unsigned long durationMs) {
+  if (!quote) return;
+  strncpy(s_speechText, quote, sizeof(s_speechText) - 1);
+  s_speechText[sizeof(s_speechText) - 1] = '\0';
+  s_speechExpireMs = millis() + durationMs;
+  s_speechVisibleChars = 1;
+  s_speechLastCharMs = millis();
+  s_speechActive = true;
+  s_dirty = true;
+}
+
+const char* getCurrentQuote() {
+  return s_speechText;
+}
+
+int getVisibleChars() {
+  return s_speechVisibleChars;
+}
+
+bool hasSpeech() {
+  return s_speechActive;
+}
+
+void clearSpeech() {
+  s_speechActive = false;
+  s_speechText[0] = '\0';
+  s_speechVisibleChars = 0;
+  s_dirty = true;
+}
+
+void triggerDance(float bpm) {
+  s_danceActive = true;
+  s_danceBpm = (bpm > 40.0f && bpm < 240.0f) ? bpm : 125.0f;
+  s_dancePhase = 0.0f;
+  s_danceEndMs = millis() + 10000;
+  setExpression(JOY);
+  say("Dance party with BMO! Unce unce! ♪", 4000);
+  s_dirty = true;
+}
+
+void stopDance() {
+  s_danceActive = false;
+  s_spBounceY.setTarget(0.0f);
+  s_spSquashX.setTarget(1.0f);
+  s_spGazeX.setTarget(0.0f);
+  setExpression(HAPPY);
+  s_dirty = true;
+}
+
+bool isDancing() {
+  return s_danceActive;
+}
+
+int getBuddyLevel() {
+  return s_buddyLevel;
+}
+
+int getHappiness() {
+  return s_happiness;
+}
+
+void petCompanion() {
+  s_totalPets++;
+  s_happiness = min(100, s_happiness + 5);
+  s_buddyLevel = (s_totalPets / 10) + 1;
+  tickle(1.2f);
+  say("Hehehe! Stop it, that tickles!", 2500);
 }
 
 void renderFullScreen(uint16_t* dst, int width, int height) {

@@ -5,6 +5,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Milestone 16.2] - 2026-10-09 (Living BMO Mascot Companion Mode, Speech Bubbles, Typewriter Dialogue & Dance Party)
+### Added
+- **Interactive Living Companion Mode (`STATE_IDLE_MASCOT` & `STATE_CONSOLE_MENU`)**:
+  - Direct 1-button access: Pressing `UP` on the main console carousel immediately launches the Living BMO Companion with initial greeting quote (`"Who wants to play video games?!"`).
+  - Added glanceable Nintendo-style `[UP] BMO` button pill badge to the console select menu footer alongside `[A] PLAY`, `[SEL] SPECS`, and `[< >] SYSTEM`.
+  - Comprehensive interactive companion loop:
+    * **D-Pad Directional Gaze**: BMO's eyes track D-Pad input in real time.
+    * **Pet / Tickle Interaction (`petCompanion()`)**: Rapid D-Pad wiggling triggers squirming laughing bounce, increases happiness, and triggers dialogue: `"Hehehe! Stop it, that tickles!"`.
+    * **[A] Wink Celebration**: Triggers playful one-eyed wink, 3 celebration star sparkles, and dialogue: `"BMO is camera ready! *wink*"`.
+    * **[B] Bashful Blush**: Triggers deep glowing coral cheeks, bashful downward gaze, and dialogue: `"Oh, you are making BMO blush!"`.
+    * **[SEL] Adventure Time Quote Cycler**: Cycles 7 iconic Adventure Time lines (`"Who wants to play video games?!"`, `"Yay! BMO is so happy to see you!"`, `"Sometimes life is scary, but we have games!"`, `"Yes, Finn. It goes in my butt."`, `"BMO chop! If this were a real attack, you'd be dead!"`, `"When bad things happen, I know you want to believe they're a joke."`, `"I am a little living boy!"`).
+    * **[UP] Dance Party Toggle**: Starts/stops 125 BPM musical dance groove.
+    * **[START] / Hold [B]**: Smoothly returns to console menu with happy expression.
+- **Vector Speech Bubble Engine (`BmoFace`)**:
+  - Procedural anti-aliased rounded speech card ($hw = 0.406, hh = 0.0875, r = 0.033$) with downward directional pointer tail pointing toward BMO's mouth, composited via vector SDF in PSRAM.
+  - High-contrast pure white interior with `#101E2B` deep charcoal border.
+  - Integrated into spatial bounding box culling for zero CPU waste when inactive.
+- **Dynamic Typewriter Dialogue System (`BmoFace` & `DisplayEmu::drawIdleMascotScreen`)**:
+  - Organic typewriter character reveal running at 25ms per character reveal.
+  - Non-blocking expiration timer (`durationMs`) auto-dismissing dialogue bubbles after display.
+  - High-contrast typography rendered inside the vector speech card.
+- **Musical Dance Party Groove Engine (`BmoFace`)**:
+  - 125 BPM tempo oscillator coupled to 2nd-order harmonic spring dampers:
+    * Bounce Y: $0.09 \sin(\phi)$
+    * Gaze X: $0.45 \sin(0.5\phi)$
+    * Squash X: $1.0 + 0.12 \cos(\phi)$
+  - Peak-beat detection spawning rhythm star sparkles at bounce apices.
+- **Companion Relationship & Progression System**:
+  - Tracks total pets, happiness rating (0-100), and companion level progression (`getBuddyLevel()`, `getHappiness()`, `petCompanion()`).
+- **Unit Testing Suite Expansion**:
+  - Added tests 07, 08, 09 to `tests/test_bmo_mascot_engine.py` verifying speech bubble geometry, typewriter timing, musical tempo phase integration, and companion level formulas.
+  - Repo test suite expanded to 61/61 passing unit tests.
+### Verified
+- `python scripts/validate_repo.py` → PASS (All 7 phases clean, Flash 33.3%, SRAM 65.3%).
+- `python -m unittest discover tests` → 61/61 tests OK.
+
+---
+
 ## [Milestone 16.1] - 2026-10-09 (Apple & Nintendo UI/UX Ergonomic Polish & Glanceable Interface)
 ### Added
 - **UI/UX Research & Architectural Synthesis (`docs/research_apple_nintendo_ui_ux.md`)**:

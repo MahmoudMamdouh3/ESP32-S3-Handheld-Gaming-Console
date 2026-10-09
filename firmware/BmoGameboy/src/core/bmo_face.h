@@ -97,10 +97,28 @@ namespace BmoFace {
   void triggerBlush();
   void triggerJoy();
 
+  // -----------------------------------------------------------------------
+  // Living Companion Dialogue, Dance & Mood System
+  // -----------------------------------------------------------------------
+  void say(const char* quote, unsigned long durationMs = 3500);
+  const char* getCurrentQuote();
+  int getVisibleChars();
+  bool hasSpeech();
+  void clearSpeech();
+
+  void triggerDance(float bpm = 125.0f);
+  void stopDance();
+  bool isDancing();
+
+  int getBuddyLevel();
+  int getHappiness();
+  void petCompanion();
+
   // Direct high-performance vector SDF rendering into caller-supplied buffer
   void renderToBuffer(uint16_t* dst, int stride, int x, int y, int w, int h);
   void renderFullScreen(uint16_t* dst, int width = 320, int height = 240);
   uint16_t getScreenBgColor();
 
 } // namespace BmoFace
+
 
