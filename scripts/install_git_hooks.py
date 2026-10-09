@@ -23,6 +23,7 @@ def install_hooks():
 # BMO Handheld Console — Pre-Commit AI Knowledge Base & Validation Hook
 echo "[Git Hook] Synchronizing AI Knowledge Graph & Decision Tree..."
 python -m tools.guardian index
+git add AGENT_KNOWLEDGE_GRAPH.json AGENT_DECISION_TREE.json AGENT_MANIFEST.json .agents/rules/CONTEXT_INDEX.json
 
 echo "[Git Hook] Running AI Guardian CI Validation Gate..."
 python scripts/validate_repo.py
@@ -30,6 +31,7 @@ if [ $? -ne 0 ]; then
     echo "[Git Hook] Pre-commit validation FAILED. Commit aborted."
     exit 1
 fi
+git add AGENT_KNOWLEDGE_GRAPH.json AGENT_DECISION_TREE.json AGENT_MANIFEST.json .agents/rules/CONTEXT_INDEX.json
 echo "[Git Hook] Pre-commit validation PASSED."
 exit 0
 """
