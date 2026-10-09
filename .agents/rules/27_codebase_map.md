@@ -3,7 +3,7 @@ Purpose: an agent starting a new session should be able to read this ONE
 file and understand the whole system before touching anything. Updated
 whenever structure changes.
 
-Last updated: 2026-08-30 (Antigravity)
+Last updated: 2026-10-09 (Antigravity)
 
 ---
 
@@ -29,6 +29,10 @@ repo-root/
 │       │   ├── buttons.cpp/h      <- GPIO polling, joypad bitmask
 │       │   ├── sd_card.cpp/h      <- SD + baked ROM registration
 │       │   ├── bmo_face.cpp/h     <- procedural SDF mascot renderer
+│       │   ├── spi_arbiter.cpp/h  <- FreeRTOS FSPI bus mutex arbiter
+│       │   ├── save_manager.cpp/h <- Multi-slot save states & battery RAM
+│       │   ├── box_art.cpp/h      <- 64x64 raw/BMP cover art streaming engine
+│       │   ├── rom_index.h        <- Binary ROM index cache (.bmo_index)
 │       │   ├── battery.cpp/h      <- DORMANT (FEATURE_BATTERY_MONITOR=0)
 │       │   ├── audio_i2s.cpp/h    <- DORMANT (FEATURE_AUDIO=0)
 │       │   └── fram_save.cpp/h    <- DORMANT (not wired, no FEATURE flag yet)

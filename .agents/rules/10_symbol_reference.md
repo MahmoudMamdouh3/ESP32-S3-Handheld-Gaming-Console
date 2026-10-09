@@ -35,6 +35,8 @@ this file is stale — grep live and update before making any symbol claims:
 - `src/core/buttons.h`
 - `src/core/save_manager.h`
 - `src/core/spi_arbiter.h`
+- `src/core/box_art.h`
+- `src/core/rom_index.h`
 - `src/core/sd_card.h`
 - `src/core/bmo_face.h`
 -`src/core/battery.h`
@@ -152,10 +154,39 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `SDCard::getFavoritesCount` | fn | `int getFavoritesCount()` | Returns total count of starred favorite games |
 | `SDCard::saveFavorites` | fn | `void saveFavorites()` | Writes starred titles to /favorites.txt |
 | `SDCard::loadFavorites` | fn | `void loadFavorites()` | Reads starred titles from /favorites.txt |
+| `SDCard::loadIndex` | fn | `bool loadIndex()` | Fast-loads binary cached ROM list from /.bmo_index (<15ms) |
+| `SDCard::saveIndex` | fn | `bool saveIndex()` | Writes binary cached ROM list to /.bmo_index |
+| `SDCard::rebuildIndex` | fn | `void rebuildIndex()` | Deletes cached index and forces full directory rescanning |
+| `SDCard::sortRoms` | fn | `void sortRoms()` | Sorts scanned ROM entries alphabetically case-insensitively |
 | `SDCard::loadRom` | fn | `uint8_t* loadRom(const char* filename, size_t* outSize)` | Loads ROM to PSRAM (or returns .rodata) |
 | `SDCard::freeRom` | fn | `void freeRom(uint8_t* buffer)` | Frees PSRAM ROM (safe for .rodata) |
 | `RomType` | enum | `enum RomType { ROM_FAVORITES, ROM_GB, ROM_GBC, ROM_NES, ... }` | 16-platform console enum |
-| `RomFile` | struct | `struct RomFile { char filename[64]; RomType type; bool isFavorite; }` | ROM entry info with favorite status |
+| `RomFile` | struct | `struct RomFile { char filename[64]; RomType type; bool isFavorite; bool hasBoxArt; }` | ROM entry info with favorite and box art status |
+
+---
+
+## src/core/box_art.h (BoxArt)
+| Symbol | Kind | Signature | Notes |
+|---|---|---|---|
+| `BoxArt::init` | fn | `bool init()` | Allocates 8KB buffer in PSRAM for 64x64 pixel data |
+| `BoxArt::load` | fn | `bool load(const char* romFilename)` | Loads 64x64 raw/BMP cover art from /boxart/ or /covers/ |
+| `BoxArt::unload` | fn | `void unload()` | Clears cached box art buffer and marks inactive |
+| `BoxArt::hasArt` | fn | `bool hasArt()` | Returns true if valid cover art is currently loaded in PSRAM |
+| `BoxArt::getBuffer` | fn | `const uint16_t* getBuffer()` | Returns pointer to 64x64 pixel buffer |
+| `BoxArt::draw` | fn | `void draw(GFXcanvas16* canvas, int x, int y, bool drawBorder = true, uint16_t borderColor = 0xFFFF)` | Blits 64x64 art into canvas with optional rounded border |
+| `BoxArt::existsForRom` | fn | `bool existsForRom(const char* romFilename)` | Checks if raw or BMP box art exists on SD card |
+| `BoxArt::getBaseName` | fn | `void getBaseName(const char* romFilename, char* outBaseName, size_t maxLen)` | Strips directory path and file extension |
+
+---
+
+## src/core/rom_index.h (RomIndex)
+| Symbol | Kind | Signature | Notes |
+|---|---|---|---|
+| `BMO_INDEX_MAGIC` | macro | `"#define BMO_INDEX_MAGIC \"BMOIDX01\""` | 8-byte magic header signature |
+| `BMO_INDEX_VERSION` | macro | `"#define BMO_INDEX_VERSION 1"` | Version number (1) |
+| `BMO_INDEX_PATH` | macro | `"#define BMO_INDEX_PATH \"/.bmo_index\""` | MicroSD path for binary ROM index cache |
+| `BmoIndexHeader` | struct | `struct BmoIndexHeader { char magic[8]; uint32_t version, entryCount, entrySize, crc32, timestamp, reserved[2]; }` | 36-byte packed index file header |
+| `BmoIndexEntry` | struct | `struct BmoIndexEntry { char filename[64]; uint8_t type, isFavorite, hasBoxArt, reserved; uint32_t fileSize; }` | 72-byte packed binary ROM entry record |
 
 ---
 

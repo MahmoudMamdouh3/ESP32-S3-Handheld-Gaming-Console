@@ -26,6 +26,7 @@ struct RomFile {
   char filename[64];
   RomType type;
   bool isFavorite;
+  bool hasBoxArt;
 };
 
 class SDCard {
@@ -46,6 +47,12 @@ public:
   static int getFavoritesCount();
   static void saveFavorites();
   static void loadFavorites();
+
+  // Binary ROM Index Cache (.bmo_index) API
+  static bool loadIndex();
+  static bool saveIndex();
+  static void rebuildIndex();
+  static void sortRoms();
   
   // Dynamically load a ROM file entirely into PSRAM
   // Returns pointer to PSRAM buffer (must be free'd via freeRom) or nullptr on failure.

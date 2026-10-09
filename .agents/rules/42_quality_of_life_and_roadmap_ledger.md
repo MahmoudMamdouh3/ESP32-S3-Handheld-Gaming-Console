@@ -24,7 +24,7 @@ Every feature or tool in this ledger is categorized into one of four states:
 | **DMG Runtime Palette Switcher** | `[IMPLEMENTED]` | On-the-fly switching between Classic Green, BMO Teal, Pocket Gray, Light Cyan, and Amber palettes. | `src/core/theme.h`, `src/emulators/` |
 | **Fast-Forward Turbo Mode** | `[IMPLEMENTED]` | Bypasses 16.7ms frame pacing while holding `SELECT + RIGHT` to accelerate RPG dialog/grinding. | `BmoGameboy.ino` |
 | **In-Game Screenshot Dump** | `[BACKLOG / ROADMAP]` | Captures 320×240 BGR565 framebuffer to `/screenshots/<game>_<timestamp>.bmp` on MicroSD. | `src/core/sd_card`, `display_emu` |
-| **Multi-Slot Save States (1–5)** | `[BACKLOG / ROADMAP]` | Quick save / load state snapshots to SD `/saves/` with thumbnail preview. | `src/core/fram_save`, `sd_card` |
+| **Multi-Slot Save States (1–5)** | `[IMPLEMENTED]` | Quick save / load state snapshots to SD `/saves/` with CRC32 verification and pause menu. | `src/core/save_manager`, `display_emu` |
 | **Per-Core Button Remap & Turbo** | `[BACKLOG / ROADMAP]` | Custom A/B button orientation and auto-fire turbo rate per console. | `src/core/buttons` |
 | **Custom Console Bezels (1:1 Mode)** | `[BACKLOG / ROADMAP]` | Pixel-perfect 160×144 rendering surrounded by authentic styled console artwork. | `src/core/display_emu` |
 
@@ -43,9 +43,9 @@ Every feature or tool in this ledger is categorized into one of four states:
 | **Virtual BMO Official Game** | `[IMPLEMENTED]` | Pre-loaded featured title with BMO Desktop, Guardians of Sunshine action platformer, and BMO Talk. | `src/assets/roms/virtual_bmo.h`, `sd_card` |
 | **1:1 Carousel Card UI & Hardware Silhouettes** | `[IMPLEMENTED]` | 1:1 replica of web simulator carousel card with dedicated retro hardware silhouette pixel-art per system. | `src/core/display_emu`, `theme.h` |
 | **Retro Pixel-Art Dynamic Battery Indicator** | `[IMPLEMENTED]` | Pixel-art battery shell with color-changing fill bars (Green > 50%, Gold 20-50%, Pulsing Red < 20%, Cyan Charge Pulse). | `display_emu`, `tools/bmo_simulator` |
-| **Binary ROM Fast-Cache (`.bmo_index`)**| `[BACKLOG / ROADMAP]` | Binary cache reducing 2,000-ROM SD boot enumeration from ~3.5s to < 50ms. | `src/core/sd_card` |
+| **Binary ROM Fast-Cache (`.bmo_index`)**| `[IMPLEMENTED]` | Binary cache reducing 2,000-ROM SD boot enumeration from ~3.5s to < 15ms. | `src/core/sd_card`, `src/core/rom_index` |
 | **Recently Played History Playlist** | `[BACKLOG / ROADMAP]` | Dynamic playlist tracking last 10 games launched. | `src/core/sd_card` |
-| **Box Art / Screenshot Preview** | `[BACKLOG / ROADMAP]` | Renders 64×64 cover thumbnail next to selected ROM from `/covers/`. | `src/core/display_emu` |
+| **Box Art / Screenshot Preview** | `[IMPLEMENTED]` | Renders 64×64 cover thumbnail next to selected ROM from `/boxart/` or `/covers/`. | `src/core/box_art`, `src/core/display_emu` |
 | **Folder Hierarchy Navigation** | `[BACKLOG / ROADMAP]` | Directory traversal for categorized ROM sets (e.g. `/roms/gb/rpg/`). | `src/core/sd_card` |
 
 ---

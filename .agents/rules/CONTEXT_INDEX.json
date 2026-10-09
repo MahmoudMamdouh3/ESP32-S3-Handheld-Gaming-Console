@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0.0",
-  "last_updated": "2026-10-09T12:58:32.781154",
+  "last_updated": "2026-10-09T13:25:37.393702",
   "task_decision_table": {
     "modify_gpio_or_pin": {
       "rules": [
@@ -84,6 +84,31 @@
       "files": [
         ".agents/rules/41_engineering_communication_and_critical_pushback.md"
       ]
+    },
+    "save_states_and_persistence": {
+      "rules": [
+        "19_security_and_data_integrity.md",
+        "28_display_and_spi_contract.md",
+        "15_performance_budgets.md"
+      ],
+      "files": [
+        "firmware/BmoGameboy/src/core/save_manager.h",
+        "firmware/BmoGameboy/src/core/save_manager.cpp"
+      ]
+    },
+    "binary_rom_index_and_box_art": {
+      "rules": [
+        "19_security_and_data_integrity.md",
+        "15_performance_budgets.md",
+        "28_display_and_spi_contract.md"
+      ],
+      "files": [
+        "firmware/BmoGameboy/src/core/rom_index.h",
+        "firmware/BmoGameboy/src/core/box_art.h",
+        "firmware/BmoGameboy/src/core/box_art.cpp",
+        "firmware/BmoGameboy/src/core/sd_card.h",
+        "firmware/BmoGameboy/src/core/sd_card.cpp"
+      ]
     }
   },
   "rules": {
@@ -100,7 +125,7 @@
     "02_architecture.md": {
       "file": ".agents/rules/02_architecture.md",
       "title": "4. Toolchain & Build Configuration",
-      "lines": 19
+      "lines": 26
     },
     "03_conventions.md": {
       "file": ".agents/rules/03_conventions.md",
@@ -110,7 +135,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "6. Known Issues, Technical Debt & Hardware Limitations Registry",
-      "lines": 289
+      "lines": 298
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -140,7 +165,7 @@
     "10_symbol_reference.md": {
       "file": ".agents/rules/10_symbol_reference.md",
       "title": "Symbol Reference (Ground Truth for Names)",
-      "lines": 254
+      "lines": 285
     },
     "11_rules_meta.md": {
       "file": ".agents/rules/11_rules_meta.md",
@@ -165,7 +190,7 @@
     "15_performance_budgets.md": {
       "file": ".agents/rules/15_performance_budgets.md",
       "title": "Performance Engineering & Budgets",
-      "lines": 33
+      "lines": 51
     },
     "16_logging_and_diagnostics.md": {
       "file": ".agents/rules/16_logging_and_diagnostics.md",
@@ -185,7 +210,7 @@
     "19_security_and_data_integrity.md": {
       "file": ".agents/rules/19_security_and_data_integrity.md",
       "title": "Security & Data Integrity",
-      "lines": 18
+      "lines": 34
     },
     "20_multi_agent_protocol.md": {
       "file": ".agents/rules/20_multi_agent_protocol.md",
@@ -225,12 +250,12 @@
     "27_codebase_map.md": {
       "file": ".agents/rules/27_codebase_map.md",
       "title": "Codebase Map \u2014 Ground Truth for Architecture",
-      "lines": 191
+      "lines": 195
     },
     "28_display_and_spi_contract.md": {
       "file": ".agents/rules/28_display_and_spi_contract.md",
       "title": "Display & SPI Bus Contract",
-      "lines": 73
+      "lines": 85
     },
     "29_adding_a_baked_rom.md": {
       "file": ".agents/rules/29_adding_a_baked_rom.md",
@@ -245,7 +270,7 @@
     "31_quick_start_primer.md": {
       "file": ".agents/rules/31_quick_start_primer.md",
       "title": "31. Quick-Start Primer (Zero-Context Agent On-Ramp)",
-      "lines": 84
+      "lines": 90
     },
     "32_modular_core_template.md": {
       "file": ".agents/rules/32_modular_core_template.md",

@@ -44,15 +44,27 @@ DisplayEmu::endFrame();       // releases CS
 - DOOM: streamDoomFrame() is also self-contained. DOOM interleaves SD reads
   between frames; do not call startFrame before doomgeneric_Tick().
 
-## SPI bus sharing rules
+## Dual-Core Asynchronous Display Pipeline (Core 0 Worker)
+- **Architecture:** To eliminate display transfer stalls on the emulation thread, the system runs an asynchronous display worker task `vDisplayTask` pinned to Core 0.
+- **Contract:**
+  - Core 1 generates the frame and calls `DisplayEmu::streamGBFrame(fb)` or `DisplayEmu::streamRawFrameAsync(fb, x, y, w, h)`.
+  - Frame submission swaps between double-buffered PSRAM canvases and signals Core 0 via FreeRTOS notification.
+  - Core 0 acquires `SpiArbiter`, configures ST7789 window address, and streams DMA pixel data over SPI.
+  - Core 1 immediately begins emulating the next frame in parallel, yielding steady 60 FPS without frame-drop.
+  - Call `DisplayEmu::waitForDisplay()` to synchronize if state tear-down or SD access requires the display task to be idle.
+
+## SPI bus sharing & SpiArbiter rules
 - The SD card and TFT share SCK (GPIO12) and MOSI (GPIO11).
 - They have SEPARATE CS pins: TFT=GPIO10, SD=GPIO13.
 - The SD card uses MISO (GPIO15); the TFT does not use MISO.
+- **SpiArbiter Synchronization:** Because Core 0 and Core 1 run in parallel, concurrent SPI access is prevented by `SpiArbiter` (`spi_arbiter.h`), a recursive FreeRTOS mutex.
+  - Every SD Card operation (`SDCard::scanRoms()`, `SaveManager::saveState()`, `BoxArt::load()`) must acquire `SpiArbiter::lock()`.
+  - Every TFT blit (`DisplayEmu::pushPixelsFullScreen()`, `vDisplayTask`) must acquire `SpiArbiter::lock()`.
 - The Arduino SPI library manages CS via the transaction API.
   Never manually toggle CS pins outside startWrite/endWrite or
   SPISettings transactions -- this will corrupt in-flight data.
-- SD card reads are BLOCKED during an active startFrame()/endFrame() window.
-  Do not call SDCard::loadRom() or any SD operation while a frame is rendering.
+- SD card reads are BLOCKED during an active startFrame()/endFrame() window or while `vDisplayTask` holds `SpiArbiter`.
+
 
 ## Adding a new display region or blitting API
 Any new blit function must:

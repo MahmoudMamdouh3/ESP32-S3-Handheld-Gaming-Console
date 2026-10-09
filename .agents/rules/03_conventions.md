@@ -16,7 +16,7 @@ repo-root/
         ├── BmoGameboy.ino            ← ONLY setup(), loop(), and state dispatch
         ├── partitions.csv            ← 8MB app0 custom partition table
         └── src/
-            ├── core/                 ← hardware drivers (config.h, display, buttons, SDF face)
+            ├── core/                 ← hardware drivers & storage (config.h, display, buttons, SDF face, spi_arbiter, save_manager, box_art, rom_index)
             ├── emulators/            ← glue code per console (emu_peanut, emu_walnut, emu_nes, emu_doom)
             ├── engine/               ← header-only engines (walnut_cgb)
             ├── vendor/               ← third-party libraries (peanut_gb, agnes, doom)

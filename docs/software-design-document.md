@@ -2,7 +2,7 @@
 **Project:** ESP32-S3-Handheld-Gaming-Console  
 **Target Platform:** ESP32-S3-N16R8 (16MB OPI Flash, 8MB Octal PSRAM)  
 **Target Display:** ST7789VW 2.4" SPI TFT (240×320 Physical, 320×240 Landscape Viewport)  
-**Document Version:** 3.4 (Technical Specification — Updated 2026-10-09)  
+**Document Version:** 3.5 (Technical Specification — Updated 2026-10-09)  
 **Status:** Approved Engineering Ground Truth  
 **Maintained By:** Firmware Engineering Team & Autonomous AI Agents  
 
@@ -50,6 +50,7 @@ The hardware is permanently soldered onto a custom perfboard. To eliminate guess
 | **Input** | Soldered & Active | `src/core/buttons.cpp/h` | Mandatory | 8 Game Boy tactile buttons (GPIO 4-7, 16-18, 21), active-low internal pull-ups (`INPUT_PULLUP`) |
 | **MicroSD Storage** | Soldered & Active | `src/core/sd_card.cpp/h` | `FEATURE_SD_CARD = 1` | MicroSD on shared FSPI (`MISO=15, CS=13`); dynamic ROM/WAD streaming |
 | **Save States & Battery RAM** | Active | `src/core/save_manager.cpp/h` | Mandatory | Multi-slot save states (.s01-.s05) & battery RAM (.sav) on MicroSD with CRC32 verification |
+| **ROM Index Cache & Box Art** | Active | `src/core/box_art.cpp/h`, `src/core/rom_index.h` | Mandatory | Binary fast-cache (.bmo_index) < 15ms boot load & 64x64 raw/BMP cover art streaming |
 | **Baked ROMs** | Active (Flash) | `src/assets/rom_data.h` | Mandatory Fallback | 1MB Mario Deluxe + 1MB Zelda Ages in Flash `.rodata` partition |
 | **BMO Mascot Face** | Active | `src/core/bmo_face.cpp/h` | Built-in | Procedural 2D Signed Distance Field (SDF) math renderer in internal DRAM (32KB) |
 | **Battery Monitor** | **Dormant** | `src/core/battery.cpp/h` | `FEATURE_BATTERY_MONITOR = 0` | Complete driver compiled to no-op; no physical divider on GPIO1 (prevents floating ADC bootloop) |

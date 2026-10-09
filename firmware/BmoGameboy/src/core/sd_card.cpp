@@ -1,12 +1,16 @@
 #include "sd_card.h"
 #include "config.h"
 #include "spi_arbiter.h"
+#include "rom_index.h"
+#include "save_manager.h"
+#include "box_art.h"
 #if FEATURE_SD_CARD
 #include <SD.h>
 #include <SPI.h>
 #endif
 #include <esp_heap_caps.h>
 #include <string.h>
+#include <stdlib.h>
 #include "../assets/roms/virtual_bmo.h"
 #include "../assets/roms/mario_deluxe.h"
 #include "../assets/roms/zelda_ages.h"
@@ -17,6 +21,7 @@
 namespace {
   bool mounted = false;
   static const int MAX_ROMS = 16384;
+  static const int BAKED_ROM_COUNT = 5;
   static RomFile fallbackRomList[32];
   static RomFile* romList = fallbackRomList;
   static int maxCapacity = 32;
@@ -44,6 +49,12 @@ namespace {
     if (strcasecmp(ext, ".col") == 0 || strcasecmp(ext, ".sg") == 0) return ROM_COLEM;
     return ROM_UNKNOWN;
   }
+
+  int compareRoms(const void* a, const void* b) {
+    const RomFile* ra = (const RomFile*)a;
+    const RomFile* rb = (const RomFile*)b;
+    return strcasecmp(ra->filename, rb->filename);
+  }
 }
 
 bool SDCard::begin() {
@@ -63,6 +74,7 @@ bool SDCard::begin() {
   romList[numRoms].filename[63] = '\0';
   romList[numRoms].type = ROM_GB;
   romList[numRoms].isFavorite = true;
+  romList[numRoms].hasBoxArt = false;
   s_favoritesCount++;                  // PERF-C1
   romCountsByType[ROM_GB]++;
   numRoms++;
@@ -72,6 +84,7 @@ bool SDCard::begin() {
   romList[numRoms].filename[63] = '\0';
   romList[numRoms].type = ROM_GBC;
   romList[numRoms].isFavorite = true;
+  romList[numRoms].hasBoxArt = false;
   s_favoritesCount++;                  // PERF-C1
   romCountsByType[ROM_GBC]++;
   numRoms++;
@@ -80,6 +93,7 @@ bool SDCard::begin() {
   romList[numRoms].filename[63] = '\0';
   romList[numRoms].type = ROM_GBC;
   romList[numRoms].isFavorite = true;
+  romList[numRoms].hasBoxArt = false;
   s_favoritesCount++;                  // PERF-C1
   romCountsByType[ROM_GBC]++;
   numRoms++;
@@ -88,6 +102,7 @@ bool SDCard::begin() {
   romList[numRoms].filename[63] = '\0';
   romList[numRoms].type = ROM_GBC;
   romList[numRoms].isFavorite = false;
+  romList[numRoms].hasBoxArt = false;
   romCountsByType[ROM_GBC]++;
   numRoms++;
 
@@ -95,6 +110,7 @@ bool SDCard::begin() {
   romList[numRoms].filename[63] = '\0';
   romList[numRoms].type = ROM_GBC;
   romList[numRoms].isFavorite = false;
+  romList[numRoms].hasBoxArt = false;
   romCountsByType[ROM_GBC]++;
   numRoms++;
 
@@ -121,10 +137,158 @@ bool SDCard::isMounted() {
   return mounted;
 }
 
+void SDCard::sortRoms() {
+  if (numRoms > BAKED_ROM_COUNT) {
+    qsort(&romList[BAKED_ROM_COUNT], numRoms - BAKED_ROM_COUNT, sizeof(RomFile), compareRoms);
+  }
+}
+
+bool SDCard::loadIndex() {
+#if FEATURE_SD_CARD
+  if (!SD.exists(BMO_INDEX_PATH)) return false;
+
+  File f = SD.open(BMO_INDEX_PATH, FILE_READ);
+  if (!f) return false;
+
+  BmoIndexHeader header;
+  if (f.read((uint8_t*)&header, sizeof(header)) != sizeof(header)) {
+    f.close();
+    return false;
+  }
+
+  if (strncmp(header.magic, BMO_INDEX_MAGIC, 8) != 0 ||
+      header.version != BMO_INDEX_VERSION ||
+      header.entrySize != sizeof(BmoIndexEntry) ||
+      header.entryCount == 0 ||
+      header.entryCount > (uint32_t)(maxCapacity - BAKED_ROM_COUNT)) {
+    f.close();
+    return false;
+  }
+
+  size_t expectedFileSize = sizeof(BmoIndexHeader) + header.entryCount * sizeof(BmoIndexEntry);
+  if (f.size() != expectedFileSize) {
+    f.close();
+    return false;
+  }
+
+  size_t entriesBytes = header.entryCount * sizeof(BmoIndexEntry);
+  BmoIndexEntry* entries = (BmoIndexEntry*)heap_caps_malloc(entriesBytes, MALLOC_CAP_SPIRAM);
+  if (!entries) {
+    f.close();
+    return false;
+  }
+
+  if (f.read((uint8_t*)entries, entriesBytes) != entriesBytes) {
+    heap_caps_free(entries);
+    f.close();
+    return false;
+  }
+  f.close();
+
+  uint32_t computedCrc = SaveManager::computeCRC32((const uint8_t*)entries, entriesBytes);
+  if (computedCrc != header.crc32) {
+    heap_caps_free(entries);
+    return false;
+  }
+
+  for (uint32_t i = 0; i < header.entryCount && numRoms < maxCapacity; ++i) {
+    const BmoIndexEntry& e = entries[i];
+    strncpy(romList[numRoms].filename, e.filename, 63);
+    romList[numRoms].filename[63] = '\0';
+    romList[numRoms].type = (RomType)e.type;
+    romList[numRoms].isFavorite = (e.isFavorite != 0);
+    romList[numRoms].hasBoxArt = (e.hasBoxArt != 0);
+    if (romList[numRoms].type <= ROM_COLEM) {
+      romCountsByType[romList[numRoms].type]++;
+    }
+    numRoms++;
+  }
+
+  heap_caps_free(entries);
+  return true;
+#else
+  return false;
+#endif
+}
+
+bool SDCard::saveIndex() {
+#if FEATURE_SD_CARD
+  if (numRoms <= BAKED_ROM_COUNT) return false;
+
+  uint32_t entryCount = numRoms - BAKED_ROM_COUNT;
+  size_t entriesBytes = entryCount * sizeof(BmoIndexEntry);
+  BmoIndexEntry* entries = (BmoIndexEntry*)heap_caps_malloc(entriesBytes, MALLOC_CAP_SPIRAM);
+  if (!entries) return false;
+
+  for (uint32_t i = 0; i < entryCount; ++i) {
+    const RomFile& rf = romList[BAKED_ROM_COUNT + i];
+    strncpy(entries[i].filename, rf.filename, 63);
+    entries[i].filename[63] = '\0';
+    entries[i].type = (uint8_t)rf.type;
+    entries[i].isFavorite = rf.isFavorite ? 1 : 0;
+    entries[i].hasBoxArt = rf.hasBoxArt ? 1 : 0;
+    entries[i].reserved = 0;
+    entries[i].fileSize = 0;
+  }
+
+  BmoIndexHeader header;
+  memset(&header, 0, sizeof(header));
+  memcpy(header.magic, BMO_INDEX_MAGIC, 8);
+  header.version = BMO_INDEX_VERSION;
+  header.entryCount = entryCount;
+  header.entrySize = sizeof(BmoIndexEntry);
+  header.crc32 = SaveManager::computeCRC32((const uint8_t*)entries, entriesBytes);
+  header.timestamp = 0;
+
+  File f = SD.open(BMO_INDEX_PATH, FILE_WRITE);
+  if (!f) {
+    heap_caps_free(entries);
+    return false;
+  }
+
+  bool ok = true;
+  if (f.write((const uint8_t*)&header, sizeof(header)) != sizeof(header)) ok = false;
+  if (ok && f.write((const uint8_t*)entries, entriesBytes) != entriesBytes) ok = false;
+  f.close();
+
+  heap_caps_free(entries);
+  return ok;
+#else
+  return false;
+#endif
+}
+
+void SDCard::rebuildIndex() {
+#if FEATURE_SD_CARD
+  SpiArbiter::lock();
+  if (SD.exists(BMO_INDEX_PATH)) {
+    SD.remove(BMO_INDEX_PATH);
+  }
+
+  numRoms = BAKED_ROM_COUNT;
+  memset(romCountsByType, 0, sizeof(romCountsByType));
+  for (int i = 0; i < BAKED_ROM_COUNT; ++i) {
+    if (romList[i].type <= ROM_COLEM) {
+      romCountsByType[romList[i].type]++;
+    }
+  }
+
+  scanRoms();
+  loadFavorites();
+  SpiArbiter::unlock();
+#endif
+}
+
 void SDCard::scanRoms() {
 #if FEATURE_SD_CARD
   SpiArbiter::lock();
-  // Do not reset numRoms to 0, we already added baked ROMs!
+
+  // Try fast-loading cached index first (<15ms vs 3500ms directory crawl)
+  if (loadIndex()) {
+    SpiArbiter::unlock();
+    return;
+  }
+
   File root = SD.open("/");
   if (!root || !root.isDirectory()) {
     SpiArbiter::unlock();
@@ -143,6 +307,7 @@ void SDCard::scanRoms() {
         romList[numRoms].filename[63] = '\0';
         romList[numRoms].type = type;
         romList[numRoms].isFavorite = false;
+        romList[numRoms].hasBoxArt = BoxArt::existsForRom(name);
         if (type <= ROM_COLEM) {
           romCountsByType[type]++;
         }
@@ -152,6 +317,13 @@ void SDCard::scanRoms() {
     entry.close();
   }
   root.close();
+
+  // Sort newly crawled ROMs alphabetically
+  sortRoms();
+
+  // Save fresh binary index cache
+  saveIndex();
+
   SpiArbiter::unlock();
 #endif
 }

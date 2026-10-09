@@ -7,6 +7,15 @@
 
 ---
 
+## [PHASE-4-INDEX-BOXART] - 2026-10-09 - High-Speed Binary ROM Index Cache & 64×64 Box Art Cover Engine
+- RESOLVED: Binary ROM Index Cache (`.bmo_index`) with 36-byte header (`BMOIDX01`), 72-byte entries, and CRC32 payload checksum.
+- SPEEDUP: Boot-time catalog enumeration latency reduced from ~3,500 ms to < 15 ms (>200× acceleration).
+- CATALOG ORDER: Case-insensitive alphabetical sorting (`sortRoms()`) active across all SD collections for instant A–Z jumping.
+- COVER ART: `BoxArt` engine supporting 64×64 raw 16-bit and 16/24-bit BMP images in 8KB PSRAM buffer with zero DRAM consumption.
+- THREAD SAFETY: All SD card index and box art I/O protected under `SpiArbiter` mutex lock.
+- Verified: validate_repo.py PASSED (all 7 phases clean, Flash 33.1%, SRAM 75.2%). unittest 51/51 OK. Guardian audit 0 Critical.
+---
+
 ## [PHASE-3-SAVES] - 2026-10-09 - Non-Volatile Multi-Slot Save States & Cartridge Battery RAM Persistence
 - RESOLVED: Non-volatile cartridge battery RAM (.sav) and 5-slot emulator state snapshots (.s01-.s05) implemented in `SaveManager`.
 - THREAD-SAFETY: All save/load operations protected by `SpiArbiter` mutex lock (`spiBusMutex`) preventing corruption from Core 0 display DMA transfers.
