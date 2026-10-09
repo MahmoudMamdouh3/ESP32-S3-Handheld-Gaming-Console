@@ -23,7 +23,7 @@ Engines are classified by their `engine_status` field in `AGENT_MANIFEST.json`. 
 | **Agnes** | NES | `.nes` | FIXED_UNVERIFIED | ✅ Yes |
 | **doomgeneric** | DOOM WAD | `.wad` | FIXED_UNVERIFIED | ✅ Yes |
 | **SMSPlus** | Sega Master System / Game Gear | `.sms`, `.gg` | FIXED_UNVERIFIED | ✅ Yes |
-| PCE-Stub | PC Engine / TurboGrafx-16 | `.pce` | STUB (Persistence Wired) | ⚠️ Scaffold + Save States / Battery RAM |
+| **PCE-Core** | PC Engine / TurboGrafx-16 | `.pce` | FIXED_UNVERIFIED | ✅ Yes (HuC6280 CPU + VDC/VCE in PSRAM) |
 | Stella-Stub | Atari 2600 | `.a26` | STUB | ⚠️ Blank screen only |
 | PICO-8-Stub | PICO-8 | `.p8` | STUB | ⚠️ Blank screen only |
 | Genesis-Stub | Sega Genesis / Mega Drive | `.gen`, `.md`, `.smd` | STUB | ⚠️ Solid background only |
