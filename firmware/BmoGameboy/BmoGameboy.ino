@@ -470,30 +470,87 @@ void loop() {
   } else if (currentState == STATE_IDLE_MASCOT) {
     const unsigned long idleStart = millis();
     Buttons::update();
-    
-    // Check if ANY button is pressed to wake BMO up
-    uint8_t btnMask = 0;
-    if (Buttons::get(Buttons::UP).pressed) btnMask |= (1 << 0);
-    if (Buttons::get(Buttons::DOWN).pressed) btnMask |= (1 << 1);
-    if (Buttons::get(Buttons::LEFT).pressed) btnMask |= (1 << 2);
-    if (Buttons::get(Buttons::RIGHT).pressed) btnMask |= (1 << 3);
-    if (Buttons::get(Buttons::A).pressed) btnMask |= (1 << 4);
-    if (Buttons::get(Buttons::B).pressed) btnMask |= (1 << 5);
-    if (Buttons::get(Buttons::SELECT).pressed) btnMask |= (1 << 6);
-    if (Buttons::get(Buttons::START).pressed) btnMask |= (1 << 7);
 
-    if (btnMask != 0 && canPress()) {
+    const auto& bUp    = Buttons::get(Buttons::UP);
+    const auto& bDown  = Buttons::get(Buttons::DOWN);
+    const auto& bLeft  = Buttons::get(Buttons::LEFT);
+    const auto& bRight = Buttons::get(Buttons::RIGHT);
+    const auto& bA     = Buttons::get(Buttons::A);
+    const auto& bB     = Buttons::get(Buttons::B);
+    const auto& bSel   = Buttons::get(Buttons::SELECT);
+    const auto& bStart = Buttons::get(Buttons::START);
+
+    // Gaze Direction Tracking from D-Pad
+    float gx = 0.0f;
+    float gy = 0.0f;
+    if (bLeft.pressed)  gx -= 0.85f;
+    if (bRight.pressed) gx += 0.85f;
+    if (bUp.pressed)    gy += 0.85f;
+    if (bDown.pressed)  gy -= 0.85f;
+
+    if (gx != 0.0f || gy != 0.0f) {
+      BmoFace::setGaze(gx, gy);
+      lastInputActivityMs = millis();
+
+      // Tickle detection: rapid direction toggling
+      static unsigned long lastDirChangeMs = 0;
+      static int dirToggleCount = 0;
+      static float lastGx = 0.0f;
+      if ((gx > 0.0f && lastGx < 0.0f) || (gx < 0.0f && lastGx > 0.0f)) {
+        if (millis() - lastDirChangeMs < 350) {
+          dirToggleCount++;
+          if (dirToggleCount >= 2) {
+            BmoFace::tickle(1.0f);
+            dirToggleCount = 0;
+          }
+        } else {
+          dirToggleCount = 0;
+        }
+        lastDirChangeMs = millis();
+      }
+      lastGx = gx;
+    }
+
+    // Interactive button triggers
+    if (bA.pressed && bA.changed) {
+      BmoFace::triggerWink();
+      lastInputActivityMs = millis();
+    } else if (bB.pressed && bB.changed) {
+      BmoFace::triggerBlush();
+      lastInputActivityMs = millis();
+    } else if (bSel.pressed && bSel.changed) {
+      BmoFace::setExpression(BmoFace::CONFUSED);
+      lastInputActivityMs = millis();
+    }
+
+    // Wake Up: START button or any button held for > 1 second
+    static unsigned long btnHoldStart = 0;
+    bool anyPressed = bUp.pressed || bDown.pressed || bLeft.pressed || bRight.pressed ||
+                      bA.pressed || bB.pressed || bSel.pressed || bStart.pressed;
+    if (anyPressed) {
+      if (btnHoldStart == 0) btnHoldStart = millis();
+    } else {
+      btnHoldStart = 0;
+    }
+
+    if ((bStart.pressed && bStart.changed) || (btnHoldStart != 0 && (millis() - btnHoldStart > 1000))) {
       currentState = STATE_CONSOLE_MENU;
       BmoFace::setExpression(BmoFace::HAPPY);
       lastInputActivityMs = millis();
       lastButtonMs = millis();
+      btnHoldStart = 0;
     } else {
       unsigned long idleSec = (millis() - lastInputActivityMs) / 1000;
-      DisplayEmu::drawIdleMascotScreen(idleSec, "PRESS ANY BUTTON TO WAKE UP BMO!");
+      if (idleSec > 45 && BmoFace::getExpression() != BmoFace::SLEEPING) {
+        BmoFace::setExpression(BmoFace::SLEEPING);
+      } else if (idleSec > 20 && idleSec <= 45 && BmoFace::getExpression() == BmoFace::IDLE) {
+        BmoFace::setExpression(BmoFace::SLEEPY);
+      }
+      DisplayEmu::drawIdleMascotScreen(idleSec, "D-PAD: LOOK/TICKLE | A: WINK | B: BLUSH | START: WAKE");
     }
-    
+
     const unsigned long elapsed = millis() - idleStart;
-    if (elapsed < 33) delay(33 - elapsed);
+    if (elapsed < 16) delay(16 - elapsed);
 
   } else if (currentState == STATE_GAME_MENU) {
     const unsigned long menuFrameStart = millis();
