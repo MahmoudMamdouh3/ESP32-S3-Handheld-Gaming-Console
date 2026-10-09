@@ -886,10 +886,10 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
     menuCanvas->setCursor(20, 224);
     menuCanvas->setTextColor(UI_YELLOW);
     menuCanvas->print("BUILT-IN GAMES ONLY - SD CARD NOT FOUND");
-  } else {
-    drawButtonPill(14,  220, "A",   "BROWSE", UI_CORAL,  UI_BLACK, UI_WHITE);
-    drawButtonPill(116, 220, "SEL", "SPECS",  UI_TEAL,   UI_BLACK, UI_WHITE);
-    drawButtonPill(212, 220, "< >", "SYSTEM", UI_YELLOW, UI_BLACK, UI_WHITE);
+    drawButtonPill(10,  220, "A",   "PLAY",   UI_CORAL,  UI_BLACK, UI_WHITE);
+    drawButtonPill(88,  220, "UP",  "BMO",    UI_MINT,   UI_BLACK, UI_WHITE);
+    drawButtonPill(160, 220, "SEL", "SPECS",  UI_TEAL,   UI_BLACK, UI_WHITE);
+    drawButtonPill(238, 220, "< >", "SYSTEM", UI_YELLOW, UI_BLACK, UI_WHITE);
   }
 
   writeMenuCanvas();
@@ -1599,20 +1599,39 @@ void DisplayEmu::drawIdleMascotScreen(unsigned long idleSeconds, const char* sta
   // 2026 Ultra-High-End Living BMO Screen: renders native 320x240 in Octal PSRAM
   BmoFace::renderFullScreen(menuCanvas->getBuffer(), 320, 240);
 
-  // Sleek floating title badge
-  menuCanvas->fillRect(40, 8, 240, 22, UI_DEEP_TEAL);
-  menuCanvas->drawRect(40, 8, 240, 22, UI_MINT);
-  menuCanvas->setFont(&FreeSans9pt7b);
-  const char* title = (idleSeconds > 40) ? "BMO IS SLEEPING..." : "BMO IS DREAMING...";
-  drawCentered(title, 24, UI_YELLOW);
+  if (BmoFace::hasSpeech()) {
+    // Render typewriter dialogue text inside the anti-aliased speech bubble
+    const char* quote = BmoFace::getCurrentQuote();
+    int visibleCount = BmoFace::getVisibleChars();
+    char displayBuf[64];
+    if (visibleCount > (int)sizeof(displayBuf) - 1) visibleCount = sizeof(displayBuf) - 1;
+    strncpy(displayBuf, quote, visibleCount);
+    displayBuf[visibleCount] = '\0';
+
+    menuCanvas->setFont();
+    menuCanvas->setTextColor(UI_BLACK);
+    int textW = visibleCount * 6;
+    int textX = max(36, 160 - textW / 2);
+    menuCanvas->setCursor(textX, 31);
+    menuCanvas->print(displayBuf);
+  } else {
+    // Sleek floating title badge
+    menuCanvas->fillRect(40, 8, 240, 22, UI_DEEP_TEAL);
+    menuCanvas->drawRect(40, 8, 240, 22, UI_MINT);
+    menuCanvas->setFont(&FreeSans9pt7b);
+    const char* title = BmoFace::isDancing() ? "♪ BMO DANCE PARTY! ♪" :
+                        (idleSeconds > 40) ? "BMO IS SLEEPING..." :
+                        (idleSeconds > 20) ? "BMO IS SLEEPY..." : "LIVING BMO COMPANION";
+    drawCentered(title, 24, UI_YELLOW);
+  }
 
   // Modern interactive controls footer
-  menuCanvas->fillRect(10, 212, 300, 22, UI_BLACK);
-  menuCanvas->drawRect(10, 212, 300, 22, UI_TEAL);
+  menuCanvas->fillRect(6, 214, 308, 22, UI_BLACK);
+  menuCanvas->drawRect(6, 214, 308, 22, UI_TEAL);
   menuCanvas->setFont();
   menuCanvas->setTextColor(UI_MINT);
-  const char* prompt = stateMessage ? stateMessage : "D-PAD: LOOK/TICKLE | A: WINK | B: BLUSH | START: WAKE";
-  menuCanvas->setCursor(centeredX(prompt, 320), 219);
+  const char* prompt = stateMessage ? stateMessage : "D-PAD:LOOK/PET  A:WINK  B:BLUSH  SEL:TALK  UP:DANCE  START:BACK";
+  menuCanvas->setCursor(centeredX(prompt, 320), 221);
   menuCanvas->print(prompt);
 
   writeMenuCanvas();

@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0.0",
-  "generated_at": "2026-10-09T14:09:14.934620",
+  "generated_at": "2026-10-09T14:25:22.609319",
   "target_mcu": {
     "chip": "ESP32-S3-N16R8",
     "cpu_arch": "Xtensa dual-core 32-bit LX7 @ 240MHz",
@@ -425,50 +425,50 @@
     {
       "name": "BMO_SDF_Procedural_Face_Render_Unculled",
       "iterations": 100,
-      "avg_latency_us": 1104.502,
-      "throughput_mops": 3.71,
+      "avg_latency_us": 1209.389,
+      "throughput_mops": 3.39,
       "description": "Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling."
     },
     {
       "name": "BMO_SDF_Procedural_Face_Render_Culled",
       "iterations": 200,
-      "avg_latency_us": 450.233,
-      "throughput_mops": 9.1,
+      "avg_latency_us": 491.083,
+      "throughput_mops": 8.34,
       "description": "Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction)."
     },
     {
       "name": "4Pixel_Coalesced_Aligned_Store_Kernel",
       "iterations": 50000,
-      "avg_latency_us": 2.192,
-      "throughput_mops": 13.69,
+      "avg_latency_us": 2.528,
+      "throughput_mops": 11.87,
       "description": "Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling."
     },
     {
       "name": "O1_Palette_Scanline_Transformation",
       "iterations": 10000,
-      "avg_latency_us": 4.088,
-      "throughput_mops": 58.71,
+      "avg_latency_us": 3.934,
+      "throughput_mops": 61.01,
       "description": "Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput."
     },
     {
       "name": "CPU_Emulation_Opcode_Dispatch",
       "iterations": 500000,
-      "avg_latency_us": 0.065,
-      "throughput_mops": 15.33,
+      "avg_latency_us": 0.074,
+      "throughput_mops": 13.43,
       "description": "Simulates CPU opcode fetch-decode-execute cycle dispatch throughput."
     },
     {
       "name": "Direct_GPIO_Atomic_Bitmask_Sampling",
       "iterations": 100000,
-      "avg_latency_us": 0.435,
-      "throughput_mops": 18.37,
+      "avg_latency_us": 0.495,
+      "throughput_mops": 16.16,
       "description": "Measures atomic 8-pin bitmask unpacking replacing 8 sequential digitalRead calls."
     },
     {
       "name": "SD_Catalog_O1_Query_And_Page_Jump",
       "iterations": 10000,
-      "avg_latency_us": 0.164,
-      "throughput_mops": 6.1,
+      "avg_latency_us": 0.165,
+      "throughput_mops": 6.05,
       "description": "Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations."
     }
   ],
@@ -740,19 +740,19 @@
     },
     "spawnParticle": {
       "file": "firmware/BmoGameboy/src/core/bmo_face.cpp",
-      "line": 255,
+      "line": 273,
       "signature": "static void spawnParticle(ParticleType type, float x, float y, float vx, float vy, float scale, float maxLife)",
       "is_iram": false
     },
     "updateParticles": {
       "file": "firmware/BmoGameboy/src/core/bmo_face.cpp",
-      "line": 272,
+      "line": 290,
       "signature": "static void updateParticles(float dt)",
       "is_iram": false
     },
     "renderMascotInternal": {
       "file": "firmware/BmoGameboy/src/core/bmo_face.cpp",
-      "line": 391,
+      "line": 419,
       "signature": "static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY, int destW, int destH)",
       "is_iram": false
     },
@@ -792,15 +792,81 @@
       "signature": "void triggerJoy();",
       "is_iram": false
     },
+    "say": {
+      "file": "firmware/BmoGameboy/src/core/bmo_face.h",
+      "line": 103,
+      "signature": "void say(const char* quote, unsigned long durationMs = 3500);",
+      "is_iram": false
+    },
+    "getCurrentQuote": {
+      "file": "firmware/BmoGameboy/src/core/bmo_face.h",
+      "line": 104,
+      "signature": "const char* getCurrentQuote();",
+      "is_iram": false
+    },
+    "getVisibleChars": {
+      "file": "firmware/BmoGameboy/src/core/bmo_face.h",
+      "line": 105,
+      "signature": "int getVisibleChars();",
+      "is_iram": false
+    },
+    "hasSpeech": {
+      "file": "firmware/BmoGameboy/src/core/bmo_face.h",
+      "line": 106,
+      "signature": "bool hasSpeech();",
+      "is_iram": false
+    },
+    "clearSpeech": {
+      "file": "firmware/BmoGameboy/src/core/bmo_face.h",
+      "line": 107,
+      "signature": "void clearSpeech();",
+      "is_iram": false
+    },
+    "triggerDance": {
+      "file": "firmware/BmoGameboy/src/core/bmo_face.h",
+      "line": 109,
+      "signature": "void triggerDance(float bpm = 125.0f);",
+      "is_iram": false
+    },
+    "stopDance": {
+      "file": "firmware/BmoGameboy/src/core/bmo_face.h",
+      "line": 110,
+      "signature": "void stopDance();",
+      "is_iram": false
+    },
+    "isDancing": {
+      "file": "firmware/BmoGameboy/src/core/bmo_face.h",
+      "line": 111,
+      "signature": "bool isDancing();",
+      "is_iram": false
+    },
+    "getBuddyLevel": {
+      "file": "firmware/BmoGameboy/src/core/bmo_face.h",
+      "line": 113,
+      "signature": "int getBuddyLevel();",
+      "is_iram": false
+    },
+    "getHappiness": {
+      "file": "firmware/BmoGameboy/src/core/bmo_face.h",
+      "line": 114,
+      "signature": "int getHappiness();",
+      "is_iram": false
+    },
+    "petCompanion": {
+      "file": "firmware/BmoGameboy/src/core/bmo_face.h",
+      "line": 115,
+      "signature": "void petCompanion();",
+      "is_iram": false
+    },
     "renderFullScreen": {
       "file": "firmware/BmoGameboy/src/core/bmo_face.h",
-      "line": 102,
+      "line": 119,
       "signature": "void renderFullScreen(uint16_t* dst, int width = 320, int height = 240);",
       "is_iram": false
     },
     "renderToBuffer": {
       "file": "firmware/BmoGameboy/src/core/bmo_face.h",
-      "line": 101,
+      "line": 118,
       "signature": "void renderToBuffer(uint16_t* dst, int stride, int x, int y, int w, int h);",
       "is_iram": false
     },
@@ -818,7 +884,7 @@
     },
     "getScreenBgColor": {
       "file": "firmware/BmoGameboy/src/core/bmo_face.h",
-      "line": 103,
+      "line": 120,
       "signature": "uint16_t getScreenBgColor();",
       "is_iram": false
     },
@@ -1280,13 +1346,13 @@
     },
     "DisplayEmu::waitForDisplay": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1622,
+      "line": 1641,
       "signature": "void DisplayEmu::waitForDisplay()",
       "is_iram": false
     },
     "DisplayEmu::isDisplayBusy": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1630,
+      "line": 1649,
       "signature": "bool DisplayEmu::isDisplayBusy()",
       "is_iram": false
     },
@@ -1341,7 +1407,7 @@
     "drawIdleMascotScreen": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
       "line": 43,
-      "signature": "void drawIdleMascotScreen(unsigned long idleSeconds, const char* stateMessage);",
+      "signature": "void drawIdleMascotScreen(unsigned long idleSeconds, const char* stateMessage = nullptr);",
       "is_iram": false
     },
     "sanitizeRomTitle": {
@@ -3190,8 +3256,8 @@
     "AGENT_KNOWLEDGE_GRAPH.json": {
       "path": "AGENT_KNOWLEDGE_GRAPH.json",
       "category": "OTHER",
-      "total_lines": 16645,
-      "sloc": 16645,
+      "total_lines": 16717,
+      "sloc": 16717,
       "comments": 0,
       "blanks": 0,
       "density_percent": 100.0,
@@ -7323,11 +7389,11 @@
     "CHANGELOG.md": {
       "path": "CHANGELOG.md",
       "category": "OTHER",
-      "total_lines": 364,
-      "sloc": 316,
+      "total_lines": 402,
+      "sloc": 352,
       "comments": 0,
-      "blanks": 48,
-      "density_percent": 86.8,
+      "blanks": 50,
+      "density_percent": 87.6,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -7575,11 +7641,11 @@
     "firmware/BmoGameboy/BmoGameboy.ino": {
       "path": "firmware/BmoGameboy/BmoGameboy.ino",
       "category": "FIRMWARE_TOP",
-      "total_lines": 979,
-      "sloc": 823,
+      "total_lines": 1011,
+      "sloc": 855,
       "comments": 62,
       "blanks": 94,
-      "density_percent": 84.1,
+      "density_percent": 84.6,
       "symbols": [],
       "pins_accessed": [
         "TFT_SCK",
@@ -7803,11 +7869,11 @@
     "firmware/BmoGameboy/src/core/bmo_face.cpp": {
       "path": "firmware/BmoGameboy/src/core/bmo_face.cpp",
       "category": "FIRMWARE_CORE",
-      "total_lines": 1005,
-      "sloc": 747,
-      "comments": 130,
-      "blanks": 128,
-      "density_percent": 74.3,
+      "total_lines": 1185,
+      "sloc": 895,
+      "comments": 141,
+      "blanks": 149,
+      "density_percent": 75.5,
       "symbols": [
         "init",
         "snap",
@@ -7824,11 +7890,11 @@
         "triggerBlush",
         "triggerJoy",
         "update",
-        "renderFullScreen",
-        "renderToBuffer",
-        "draw",
-        "draw",
-        "isDirty"
+        "say",
+        "getCurrentQuote",
+        "getVisibleChars",
+        "hasSpeech",
+        "clearSpeech"
       ],
       "pins_accessed": [],
       "includes": [
@@ -7843,11 +7909,11 @@
     "firmware/BmoGameboy/src/core/bmo_face.h": {
       "path": "firmware/BmoGameboy/src/core/bmo_face.h",
       "category": "FIRMWARE_CORE",
-      "total_lines": 106,
-      "sloc": 47,
-      "comments": 43,
-      "blanks": 16,
-      "density_percent": 44.3,
+      "total_lines": 124,
+      "sloc": 58,
+      "comments": 46,
+      "blanks": 20,
+      "density_percent": 46.8,
       "symbols": [
         "begin",
         "setExpression",
@@ -7860,9 +7926,15 @@
         "triggerWink",
         "triggerBlush",
         "triggerJoy",
-        "renderToBuffer",
-        "renderFullScreen",
-        "getScreenBgColor"
+        "say",
+        "getCurrentQuote",
+        "getVisibleChars",
+        "hasSpeech",
+        "clearSpeech",
+        "triggerDance",
+        "stopDance",
+        "isDancing",
+        "getBuddyLevel"
       ],
       "pins_accessed": [],
       "includes": [
@@ -7992,11 +8064,11 @@
     "firmware/BmoGameboy/src/core/display_emu.cpp": {
       "path": "firmware/BmoGameboy/src/core/display_emu.cpp",
       "category": "FIRMWARE_CORE",
-      "total_lines": 1635,
-      "sloc": 1322,
-      "comments": 110,
-      "blanks": 203,
-      "density_percent": 80.9,
+      "total_lines": 1654,
+      "sloc": 1339,
+      "comments": 111,
+      "blanks": 204,
+      "density_percent": 81.0,
       "symbols": [
         "__attribute__",
         "__attribute__",
@@ -16372,11 +16444,11 @@
     "tests/test_bmo_mascot_engine.py": {
       "path": "tests/test_bmo_mascot_engine.py",
       "category": "TESTS",
-      "total_lines": 151,
-      "sloc": 102,
-      "comments": 25,
-      "blanks": 24,
-      "density_percent": 67.5,
+      "total_lines": 208,
+      "sloc": 141,
+      "comments": 35,
+      "blanks": 32,
+      "density_percent": 67.8,
       "symbols": [],
       "pins_accessed": [],
       "includes": []

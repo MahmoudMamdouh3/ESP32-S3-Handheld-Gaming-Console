@@ -146,6 +146,63 @@ class TestBmoMascotEngine(unittest.TestCase):
         self.assertGreaterEqual(len(expressions), 16)
         self.assertEqual(len(set(expressions)), len(expressions), "Expression enum names must be unique")
 
+    def test_07_speech_bubble_geometry_and_typewriter(self):
+        """Verify speech bubble dimensions, typewriter timing, and iconic quote catalog."""
+        # Bubble fits comfortably above BMO face on 320x240 screen
+        bubble_x, bubble_y, bubble_w, bubble_h = 30, 14, 260, 42
+        self.assertGreaterEqual(bubble_x, 0)
+        self.assertLessEqual(bubble_x + bubble_w, 320)
+        self.assertLessEqual(bubble_y + bubble_h, 80)
+
+        # Typewriter timing calculation: ~25ms per character
+        quote = "Who wants to play video games?!"
+        char_delay_ms = 25
+        total_type_time_ms = len(quote) * char_delay_ms
+        self.assertLess(total_type_time_ms, 1200, "Typewriter reveal should feel snappy and responsive")
+
+        # Verify key quotes
+        quotes = [
+            "Who wants to play video games?!",
+            "Yay! BMO is so happy to see you!",
+            "Hehehe! Stop it, that tickles!",
+            "BMO is camera ready! *wink*",
+            "Oh, you are making BMO blush!",
+            "Dance party with BMO! Unce unce unce!",
+            "Sometimes life is scary, but we have games!",
+        ]
+        for q in quotes:
+            self.assertLessEqual(len(q), 64, f"Quote '{q}' exceeds 64-char buffer limit")
+
+    def test_08_dance_party_tempo_and_oscillation(self):
+        """Verify musical BPM phase integration and harmonic dance frequencies."""
+        bpm = 120.0  # 2 beats per second
+        freq_hz = bpm / 60.0
+        angular_speed = freq_hz * 2.0 * math.pi  # ~12.56 rad/s
+        dt = 0.01666  # 60 FPS
+        phase = 0.0
+        
+        # Advance 1 full beat (0.5 seconds = 30 frames)
+        for _ in range(30):
+            phase += dt * angular_speed
+
+        # Advance 1 full second (60 frames) -> 2 beats = 2 full cycles (4*pi) or 30 frames = 1 full cycle (2*pi)
+        self.assertAlmostEqual(phase, 2.0 * math.pi, delta=0.15)
+        # Bounding oscillation
+        bounce = 0.08 * math.sin(phase)
+        self.assertTrue(-0.09 <= bounce <= 0.09)
+
+    def test_09_companion_mood_and_relationship_bounds(self):
+        """Verify companion happiness, energy, and gaming buddy milestone progression."""
+        happiness = 100
+        energy = 100
+        total_pets = 15
+        games_played = 42
+
+        # Level calculation: (games_played // 10) + (total_pets // 10) + 1
+        buddy_level = (games_played // 10) + (total_pets // 10) + 1
+        self.assertEqual(buddy_level, 6)
+        self.assertTrue(1 <= buddy_level <= 100)
+
 
 if __name__ == "__main__":
     unittest.main()

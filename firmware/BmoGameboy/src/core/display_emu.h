@@ -40,7 +40,7 @@ namespace DisplayEmu {
   void drawConsoleIcon(RomType type, int x, int y, uint16_t primaryColor = 0);
 
   // Renders the Living BMO Mascot Ambient Screensaver
-  void drawIdleMascotScreen(unsigned long idleSeconds, const char* stateMessage);
+  void drawIdleMascotScreen(unsigned long idleSeconds, const char* stateMessage = nullptr);
 
   // Cleans and sanitizes ROM filenames for UI presentation (strips [!], (USA), extensions)
   void sanitizeRomTitle(const char* src, char* dst, size_t maxLen);

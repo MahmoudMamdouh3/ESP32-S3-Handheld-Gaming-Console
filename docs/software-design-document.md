@@ -52,7 +52,7 @@ The hardware is permanently soldered onto a custom perfboard. To eliminate guess
 | **Save States & Battery RAM** | Active | `src/core/save_manager.cpp/h` | Mandatory | Multi-slot save states (.s01-.s05) & battery RAM (.sav) on MicroSD with CRC32 verification |
 | **ROM Index Cache & Box Art** | Active | `src/core/box_art.cpp/h`, `src/core/rom_index.h` | Mandatory | Binary fast-cache (.bmo_index) < 15ms boot load & 64x64 raw/BMP cover art streaming |
 | **Baked ROMs** | Active (Flash) | `src/assets/rom_data.h` | Mandatory Fallback | 1MB Mario Deluxe + 1MB Zelda Ages in Flash `.rodata` partition |
-| **BMO Mascot Face** | Active | `src/core/bmo_face.cpp/h` | Built-in | Procedural 2D Signed Distance Field (SDF) math renderer in internal DRAM (32KB) |
+| **BMO Mascot Companion** | Active | `src/core/bmo_face.cpp/h` | Built-in | 2026 Living Mascot Companion: 320×240 native vector SDF canvas in Octal PSRAM (0 bytes DRAM), harmonic spring physics, vector speech bubble engine, 16-state emotion matrix, typewriter dialogue & dance party |
 | **Battery Monitor** | **Dormant** | `src/core/battery.cpp/h` | `FEATURE_BATTERY_MONITOR = 0` | Complete driver compiled to no-op; no physical divider on GPIO1 (prevents floating ADC bootloop) |
 | **I2S Audio DAC** | **Dormant** | `src/core/audio_i2s.cpp/h` | `FEATURE_AUDIO = 0` | Complete driver compiled to no-op; no MAX98357A DAC wired to GPIO 38-40 |
 | **FRAM Save Memory**| **Planned** | `src/core/fram_save.cpp/h` | Dormant | I2C FM24C save memory reserved on GPIO 43/44 (`I2C_SDA=43, I2C_SCL=44`) |
