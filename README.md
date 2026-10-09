@@ -1,6 +1,63 @@
-# ESP32-S3-Handheld-Gaming-Console
+<div align="center">
 
-A multi-platform retro gaming handheld console powered by the ESP32-S3 microcontroller, featuring a custom animated 2D Signed Distance Field (SDF) mascot face ("BMO") and support for Game Boy, Game Boy Color, NES, and DOOM.
+# 🎮 ESP32-S3 Handheld Gaming Console (BMO Edition)
+
+[![CI Validation](https://img.shields.io/badge/CI%20Validator-PASSING-brightgreen.svg)](scripts/validate_repo.py)
+[![ESP32-S3](https://img.shields.io/badge/SoC-ESP32--S3--N16R8-blue.svg)](https://www.espressif.com/)
+[![Flash](https://img.shields.io/badge/Flash-16MB%20QIO-orange.svg)]()
+[![PSRAM](https://img.shields.io/badge/PSRAM-8MB%20Octal-purple.svg)]()
+[![Display](https://img.shields.io/badge/Display-ST7789%20320x240%20IPS-teal.svg)]()
+[![Emulators](https://img.shields.io/badge/Emulators-14%20Cores-green.svg)]()
+
+A high-performance retro gaming handheld console powered by the **ESP32-S3**, featuring an authentic **Living 2D Vector BMO Mascot Companion** engine, a 14-core retro emulation suite (Game Boy, Game Boy Color, NES, Sega Master System, DOOM, and more), high-speed SD indexing, and Apple/Nintendo-inspired UI ergonomics.
+
+<br/>
+
+<img src="docs/assets/bmo_hardware_showcase.jpg" width="680" alt="BMO Handheld Gaming Console Hardware" />
+
+<br/>
+<br/>
+
+</div>
+
+## 📸 System Showcase & Visual Artifacts
+
+### 🤖 Living BMO Mascot Companion (2026 Edition)
+> Real-time procedural 2D Signed Distance Field (SDF) vector mascot with 2nd-order harmonic spring physics, dynamic typewriter speech bubbles, 16-expression emotion matrix, interactive tickling/petting, and 125 BPM musical dance party groove. Zero internal DRAM overhead (native 320×240 Octal PSRAM rendering).
+
+<div align="center">
+  <img src="docs/assets/bmo_living_companion.jpg" width="600" alt="Living BMO Mascot Companion UI with Typewriter Speech Bubble" />
+  <p><em>Living BMO Mascot Companion with organic typewriter speech bubbles, star rhythm sparkles, and Nintendo-style glanceable controls.</em></p>
+</div>
+
+---
+
+### 🕹️ Multi-System 3D Carousel Launcher & Apple/Nintendo Ergonomic UI
+> Smooth spatial navigation across 14 retro console architectures. Features Nintendo-grade glanceable physical button pills (`[A] PLAY`, `[UP] BMO`, `[SEL] SPECS`, `[< >] SYSTEM`), continuous scroll tracks, and ambient header mascot tracking.
+
+<div align="center">
+  <img src="docs/assets/bmo_carousel_menu.jpg" width="600" alt="Multi-System 3D Carousel Menu" />
+  <p><em>Multi-System Console Carousel Launcher featuring Nintendo-style physical button badges and glanceable specs.</em></p>
+</div>
+
+---
+
+### 📚 Retro Game Library & Box Art Browser
+> Instant catalog browsing supporting 10,000+ ROMs with sub-15ms boot cache indexing, real-time 64×64 cover art decompression, universal multi-console favorites starring (`★`), and animated BMO glance reactions.
+
+<div align="center">
+  <img src="docs/assets/bmo_game_library.jpg" width="600" alt="Game Library with Box Art and Favorites" />
+  <p><em>Retro Library with streaming cartridge cover art, favorited game badges, and spatial list scrollbar.</em></p>
+</div>
+
+---
+
+### ⚡ Physical Hardware & Operating States
+
+<div align="center">
+  <img src="docs/assets/hardware_and_states.png" width="680" alt="Physical Hardware Board and System Operating States" />
+  <p><em>Physical soldered ESP32-S3 perfboard hardware alongside core system states: Boot Splash, Console Carousel, Game Library, and In-Game Emulation.</em></p>
+</div>
 
 ---
 
