@@ -10,6 +10,7 @@
 #include <Adafruit_ST7789.h>
 #include <cstring>
 #include <cstdio>
+#include <cmath>
 #include <new>
 #include <Fonts/FreeSans9pt7b.h>
 #include <Fonts/FreeSans12pt7b.h>
@@ -343,7 +344,77 @@ namespace {
     menuCanvas->print(label);
   }
 
+  // ---------------------------------------------------------------------------
+  // Apple & Nintendo UI/UX Ergonomics State & Dynamic Island HUD
+  // ---------------------------------------------------------------------------
+  static float s_carouselOffset = 0.0f;
+  static float s_carouselVel = 0.0f;
+  static unsigned long s_lastCarouselUpdateMs = 0;
+
+  static char s_toastMessage[48] = {0};
+  static uint16_t s_toastBorderColor = 0xFFE0;
+  static unsigned long s_toastExpireMs = 0;
+  static float s_toastY = -28.0f;
+  static float s_toastVelY = 0.0f;
+  static unsigned long s_lastToastUpdateMs = 0;
+
+  static char s_alphaBadgeLetter = '\0';
+  static unsigned long s_alphaBadgeExpireMs = 0;
+
+  bool internalHasActiveToast() {
+    return (s_toastExpireMs > 0 && millis() < s_toastExpireMs) || (s_toastY > -27.0f);
+  }
+
+  void drawFloatingToastHUD() {
+    if (!menuCanvas || (s_toastExpireMs == 0 && s_toastY <= -27.0f)) return;
+
+    unsigned long nowMs = millis();
+    float dt = (s_lastToastUpdateMs > 0) ? (nowMs - s_lastToastUpdateMs) / 1000.0f : 0.01666f;
+    if (dt <= 0.0f || dt > 0.050f) dt = 0.01666f;
+    s_lastToastUpdateMs = nowMs;
+
+    float targetY = (millis() < s_toastExpireMs) ? 8.0f : -28.0f;
+    const float zeta = 0.75f;
+    const float omega = 24.0f;
+    float diff = s_toastY - targetY;
+    float acc = -2.0f * zeta * omega * s_toastVelY - (omega * omega) * diff;
+    s_toastVelY += acc * dt;
+    s_toastY += s_toastVelY * dt;
+
+    if (millis() >= s_toastExpireMs && s_toastY <= -26.0f) {
+      s_toastY = -28.0f;
+      s_toastVelY = 0.0f;
+      s_toastExpireMs = 0;
+      s_toastMessage[0] = '\0';
+      return;
+    }
+
+    int curY = (int)s_toastY;
+    if (curY + 22 <= 0) return;
+
+    // Apple Dynamic Island Pill: 230 x 22, rounded corners r=11, centered at X=45
+    const int toastW = 230;
+    const int toastH = 22;
+    const int toastX = 45;
+
+    menuCanvas->fillRoundRect(toastX, curY, toastW, toastH, 11, UI_BLACK);
+    menuCanvas->drawRoundRect(toastX, curY, toastW, toastH, 11, s_toastBorderColor);
+    menuCanvas->fillCircle(toastX + 12, curY + 11, 3, s_toastBorderColor);
+
+    menuCanvas->setFont();
+    menuCanvas->setTextColor(UI_WHITE);
+    int textLen = (int)strlen(s_toastMessage);
+    int textW = textLen * 6;
+    int textX = toastX + 18 + ((toastW - 24 - textW) / 2);
+    if (textX < toastX + 18) textX = toastX + 18;
+    menuCanvas->setCursor(textX, curY + 7);
+    menuCanvas->print(s_toastMessage);
+  }
+
   void writeMenuCanvas() {
+    if (internalHasActiveToast()) {
+      drawFloatingToastHUD();
+    }
     if (!menuCanvasArr[0] || !menuCanvasArr[1]) {
       if (menuCanvas) {
         SpiArbiter::lock();
@@ -810,14 +881,39 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
   menuCanvas->setTextColor(UI_MINT);
   menuCanvas->print(counterStr);
 
+  // Harmonic spring damper convergence for kinetic carousel glide
+  if (fabsf(s_carouselOffset) > 0.05f || fabsf(s_carouselVel) > 0.5f) {
+    unsigned long nowMs = millis();
+    float dt = (s_lastCarouselUpdateMs > 0) ? (nowMs - s_lastCarouselUpdateMs) / 1000.0f : 0.01666f;
+    if (dt <= 0.0f || dt > 0.050f) dt = 0.01666f;
+    s_lastCarouselUpdateMs = nowMs;
+
+    const float zeta = 0.72f;
+    const float omega = 22.0f;
+    float diff = s_carouselOffset;
+    float acc = -2.0f * zeta * omega * s_carouselVel - (omega * omega) * diff;
+    s_carouselVel += acc * dt;
+    s_carouselOffset += s_carouselVel * dt;
+
+    if (fabsf(s_carouselOffset) < 0.2f && fabsf(s_carouselVel) < 1.0f) {
+      s_carouselOffset = 0.0f;
+      s_carouselVel = 0.0f;
+    }
+  } else {
+    s_carouselOffset = 0.0f;
+    s_carouselVel = 0.0f;
+    s_lastCarouselUpdateMs = millis();
+  }
+  const int cardOffset = (int)s_carouselOffset;
+
   // Adjacent Carousel Card Tabs (Nintendo Switch Home style spatial depth)
-  menuCanvas->fillRoundRect(-18, 64, 40, 128, 8, UI_DEEP_TEAL);
-  menuCanvas->drawRoundRect(-18, 64, 40, 128, 8, UI_TEAL);
-  menuCanvas->fillRoundRect(298, 64, 40, 128, 8, UI_DEEP_TEAL);
-  menuCanvas->drawRoundRect(298, 64, 40, 128, 8, UI_TEAL);
+  menuCanvas->fillRoundRect(-18 + cardOffset, 64, 40, 128, 8, UI_DEEP_TEAL);
+  menuCanvas->drawRoundRect(-18 + cardOffset, 64, 40, 128, 8, UI_TEAL);
+  menuCanvas->fillRoundRect(298 + cardOffset, 64, 40, 128, 8, UI_DEEP_TEAL);
+  menuCanvas->drawRoundRect(298 + cardOffset, 64, 40, 128, 8, UI_TEAL);
 
   // Center Carousel Card (35, 54, 250, 148) — Exact 1:1 match to simulator!
-  const int cardX = 35;
+  const int cardX = 35 + cardOffset;
   const int cardY = 54;
   const int cardW = 250;
   const int cardH = 148;
@@ -886,6 +982,7 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
     menuCanvas->setCursor(20, 224);
     menuCanvas->setTextColor(UI_YELLOW);
     menuCanvas->print("BUILT-IN GAMES ONLY - SD CARD NOT FOUND");
+  } else {
     drawButtonPill(10,  220, "A",   "PLAY",   UI_CORAL,  UI_BLACK, UI_WHITE);
     drawButtonPill(88,  220, "UP",  "BMO",    UI_MINT,   UI_BLACK, UI_WHITE);
     drawButtonPill(160, 220, "SEL", "SPECS",  UI_TEAL,   UI_BLACK, UI_WHITE);
@@ -1214,6 +1311,27 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   drawButtonPill(78,  220, "B",   "BACK", UI_MINT,   UI_BLACK, UI_WHITE);
   drawButtonPill(146, 220, "SEL", isFav ? "★ UNSTAR" : "★ STAR", UI_YELLOW, UI_BLACK, UI_WHITE);
   drawButtonPill(245, 220, "< >", "A-Z",  UI_TEAL,   UI_BLACK, UI_WHITE);
+
+  // Quick A-Z Alphabetical Jump HUD Indicator (Apple watchOS fast-scroll index style)
+  if (s_alphaBadgeExpireMs > millis() && s_alphaBadgeLetter != '\0') {
+    const int cx = 270;
+    const int cy = 115;
+    const int r = 18;
+
+    menuCanvas->fillCircle(cx, cy, r + 1, UI_BLACK);
+    menuCanvas->fillCircle(cx, cy, r, UI_YELLOW);
+    menuCanvas->drawCircle(cx, cy, r, UI_WHITE);
+
+    menuCanvas->setFont(&FreeSans9pt7b);
+    menuCanvas->setTextColor(UI_BLACK);
+    char badgeStr[2] = { s_alphaBadgeLetter, '\0' };
+    int16_t bx, by;
+    uint16_t bw, bh;
+    menuCanvas->getTextBounds(badgeStr, 0, 0, &bx, &by, &bw, &bh);
+    menuCanvas->setCursor(cx - (bw / 2) - bx, cy - (bh / 2) - by);
+    menuCanvas->print(badgeStr);
+  }
+
   writeMenuCanvas();
 }
 
@@ -1291,11 +1409,8 @@ void DisplayEmu::drawPauseMenu(const char* romTitle, int currentSlot, bool hasSa
   }
 
   // Floating Pill Toast HUD (Apple Dynamic Island style)
-  if (statusToast && strlen(statusToast) > 0) {
-    menuCanvas->fillRoundRect(40, 10, 240, 22, 11, UI_YELLOW);
-    menuCanvas->drawRoundRect(40, 10, 240, 22, 11, UI_WHITE);
-    menuCanvas->setFont();
-    drawFittedCentered(statusToast, 24, 220, UI_BLACK);
+  if (statusToast && strlen(statusToast) > 0 && strcmp(s_toastMessage, statusToast) != 0) {
+    DisplayEmu::showToast(statusToast, UI_YELLOW, 1800);
   }
 
   menuCanvas->setTextColor(UI_MUTED);
@@ -1648,6 +1763,44 @@ void DisplayEmu::waitForDisplay() {
 
 bool DisplayEmu::isDisplayBusy() {
   return s_displayBusy;
+}
+
+// ---------------------------------------------------------------------------
+// Apple & Nintendo UI/UX Ergonomics Implementation
+// ---------------------------------------------------------------------------
+
+void DisplayEmu::showToast(const char* message, uint16_t borderColor, unsigned long durationMs) {
+  if (!message || message[0] == '\0') return;
+  strncpy(s_toastMessage, message, sizeof(s_toastMessage) - 1);
+  s_toastMessage[sizeof(s_toastMessage) - 1] = '\0';
+  s_toastBorderColor = borderColor;
+  s_toastExpireMs = millis() + durationMs;
+  s_toastY = -28.0f;
+  s_toastVelY = 220.0f;
+  s_lastToastUpdateMs = millis();
+}
+
+bool DisplayEmu::hasActiveToast() {
+  return internalHasActiveToast();
+}
+
+void DisplayEmu::triggerCarouselGlide(bool directionRight) {
+  if (directionRight) {
+    s_carouselOffset = 36.0f;
+    s_carouselVel = -240.0f;
+  } else {
+    s_carouselOffset = -36.0f;
+    s_carouselVel = 240.0f;
+  }
+  s_lastCarouselUpdateMs = millis();
+}
+
+void DisplayEmu::showAlphaBadge(char letter, unsigned long durationMs) {
+  if (letter >= 'a' && letter <= 'z') {
+    letter = letter - 'a' + 'A';
+  }
+  s_alphaBadgeLetter = letter;
+  s_alphaBadgeExpireMs = millis() + durationMs;
 }
 
 

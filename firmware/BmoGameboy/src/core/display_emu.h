@@ -32,6 +32,16 @@ namespace DisplayEmu {
   void drawPauseMenu(const char* romTitle, int currentSlot, bool hasSaveState,
                      bool hasBatterySave, int selectedOption, const char* statusToast = nullptr);
 
+  // Apple Dynamic Island / Floating Toast HUD System
+  void showToast(const char* message, uint16_t borderColor = 0xFFE0, unsigned long durationMs = 1800);
+  bool hasActiveToast();
+
+  // Kinetic Carousel Spring Physics (Nintendo Switch Elastic Snap)
+  void triggerCarouselGlide(bool directionRight);
+
+  // Quick A-Z Alphabetical Jump HUD Indicator
+  void showAlphaBadge(char letter, unsigned long durationMs = 800);
+
   // Renders the Hardware Self-Test & Diagnostics dashboard
   void drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeDram, uint32_t freePsram,
                                 uint32_t freeIram, uint8_t buttonMask);
