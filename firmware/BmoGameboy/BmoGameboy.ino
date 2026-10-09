@@ -368,12 +368,14 @@ void loop() {
         visibleGamesDirty = true;
         lastButtonMs = nowMs;
         BmoFace::setGaze(-0.70f, 0.0f); // BMO companion glances left with carousel
+        DisplayEmu::triggerCarouselGlide(false);
       }
       if (right) {
         selectedConsoleIndex = (selectedConsoleIndex + 1) % CONSOLE_COUNT;
         visibleGamesDirty = true;
         lastButtonMs = nowMs;
         BmoFace::setGaze(0.70f, 0.0f);  // BMO companion glances right with carousel
+        DisplayEmu::triggerCarouselGlide(true);
       }
       if (up) {
         currentState = STATE_IDLE_MASCOT;
@@ -610,8 +612,10 @@ void loop() {
         // Show BMO celebratory wink with sparkle burst when starring a game
         if (SDCard::isFavorite(romIdx)) {
           BmoFace::triggerWink();
+          DisplayEmu::showToast("★ ADDED TO FAVORITES", 0xFFE0, 1600);
         } else {
           BmoFace::setExpression(BmoFace::IDLE);
+          DisplayEmu::showToast("REMOVED FROM FAVORITES", 0x7BEF, 1600);
         }
         
         if (CONSOLES[selectedConsoleIndex] == ROM_FAVORITES) {
@@ -643,6 +647,10 @@ void loop() {
           }
         }
         selectedGameIndex = targetIdx;
+        const RomFile* newRom = selectedGame();
+        if (newRom && newRom->filename[0]) {
+          DisplayEmu::showAlphaBadge(newRom->filename[0], 800);
+        }
         lastButtonMs = millis();
       }
       if (right && visibleGameCount > 0) {
@@ -662,6 +670,10 @@ void loop() {
           }
         }
         selectedGameIndex = targetIdx;
+        const RomFile* newRom = selectedGame();
+        if (newRom && newRom->filename[0]) {
+          DisplayEmu::showAlphaBadge(newRom->filename[0], 800);
+        }
         lastButtonMs = millis();
       }
       if (up && visibleGameCount > 0) {

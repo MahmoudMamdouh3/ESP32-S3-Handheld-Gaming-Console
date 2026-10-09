@@ -5,6 +5,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Milestone 17.1] - 2026-10-09 (Apple & Nintendo UI/UX Ergonomics Phase: Harmonic Carousel Glide, Dynamic Island Floating HUD, and Fast A-Z Jump Indicator)
+### Added
+- **Kinetic Carousel Horizontal Spring Glide (`DisplayEmu::triggerCarouselGlide`)**:
+  - Implemented 2nd-order harmonic spring damper physics ($\zeta = 0.72$, $\omega_n = 22.0\text{ rad/s}$) on `s_carouselOffset` and `s_carouselVel`.
+  - Displaces card horizontally ($\pm 36\text{ px}$) on `LEFT`/`RIGHT` D-Pad input in `STATE_CONSOLE_MENU` with initial velocity $\mp 240\text{ px/s}$.
+  - Settles smoothly within 15–18 frames (~250–300 ms) with Nintendo Switch-style elastic recoil and zero jitter.
+  - Offsets adjacent carousel tabs (left and right) in synchrony for continuous depth perception.
+- **Apple Dynamic Island / Elevated Floating Toast HUD System (`DisplayEmu::showToast`, `DisplayEmu::hasActiveToast`)**:
+  - Implemented 2nd-order harmonic spring descent physics ($\zeta = 0.75$, $\omega_n = 24.0\text{ rad/s}$) from $Y = -28$ down to $Y = 8$.
+  - 230×22 glassmorphic rounded pill ($r = 11$, centered at $X = 45$) with dark interior, high-contrast colored border, companion status dot, and crisp centered typography.
+  - Automatically composited inside `DisplayEmu::writeMenuCanvas()` across all menus and overlays with 0 extra memory allocation.
+  - Wired into `STATE_GAME_MENU` favorite star toggling (`★ ADDED TO FAVORITES` / `REMOVED FROM FAVORITES`) and `STATE_PAUSE_MENU` quick saving/slot cycling.
+- **Alphabetical A–Z Jump Letter Badge (`DisplayEmu::showAlphaBadge`)**:
+  - Implemented glanceable circular floating indicator badge (center: $X = 270, Y = 115$, radius $18\text{ px}$) rendered in `drawGameSelectMenu`.
+  - Displays currently selected starting character with drop shadow and high-contrast typography during rapid alphabetical skipping (`LEFT`/`RIGHT` in `STATE_GAME_MENU`).
+- **Footer Glanceable Button Badges**:
+  - Fixed conditional rendering in `DisplayEmu::drawConsoleSelectMenu` ensuring glanceable button pills (`[A] PLAY`, `[UP] BMO`, `[SEL] SPECS`, `[< >] SYSTEM`) are displayed whenever the SD card is mounted.
+- **Unit Testing Suite Expansion (`tests/test_apple_nintendo_ui.py`)**:
+  - 4 comprehensive tests verifying 2nd-order harmonic spring convergence, toast HUD spring descent and overshoot margins, button pill geometry and screen boundary safety, and alphabetical badge coordinates.
+  - Expanded repository test suite to 71/71 passing unit tests.
+### Verified
+- `python scripts/validate_repo.py` → PASS (All 7 phases clean, Flash 33.3%, SRAM 65.4%).
+- `python -m unittest discover tests` → 71/71 tests OK.
+
+---
+
 ## [Milestone 17.0] - 2026-10-09 (Milestone 5.2.1: PC Engine HuC6280 CPU & VDC Scanline Core Integration)
 ### Added
 - **PC Engine / TurboGrafx-16 Real Engine Bringup (`src/vendor/pce/pce.c`, `src/vendor/pce/pce.h`)**:
