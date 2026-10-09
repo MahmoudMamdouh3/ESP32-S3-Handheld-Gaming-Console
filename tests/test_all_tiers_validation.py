@@ -68,12 +68,12 @@ REQUIRED_STREAM_METHODS = [
 
 # Engines known to be production-quality (real emulation logic)
 PRODUCTION_ENGINES = {
-    'emu_walnut', 'emu_peanut', 'emu_nes', 'emu_doom', 'emu_sms',
+    'emu_walnut', 'emu_peanut', 'emu_nes', 'emu_doom', 'emu_sms', 'emu_pce',
 }
 
 # Engines that are architectural stubs (render blank screen only)
 STUB_ENGINES = {
-    'emu_pce', 'emu_atari', 'emu_pico',
+    'emu_atari', 'emu_pico',
     'emu_genesis', 'emu_snes', 'emu_wswan',
     'emu_ngp', 'emu_lynx', 'emu_colem',
 }
@@ -190,7 +190,6 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
         production-ready emulators without reading the code.
         """
         stub_vendor_map = {
-            'emu_pce':     ('pce',     'pce.c'),
             'emu_atari':   ('stella',  'atari.c'),
             'emu_pico':    ('pico',    'pico.c'),
             'emu_genesis': ('genesis', 'genesis.c'),

@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0.0",
-  "generated_at": "2026-10-09T14:31:40.622749",
+  "generated_at": "2026-10-09T14:51:51.823948",
   "target_mcu": {
     "chip": "ESP32-S3-N16R8",
     "cpu_arch": "Xtensa dual-core 32-bit LX7 @ 240MHz",
@@ -425,50 +425,50 @@
     {
       "name": "BMO_SDF_Procedural_Face_Render_Unculled",
       "iterations": 100,
-      "avg_latency_us": 1184.508,
-      "throughput_mops": 3.46,
+      "avg_latency_us": 1177.121,
+      "throughput_mops": 3.48,
       "description": "Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling."
     },
     {
       "name": "BMO_SDF_Procedural_Face_Render_Culled",
       "iterations": 200,
-      "avg_latency_us": 476.599,
-      "throughput_mops": 8.59,
+      "avg_latency_us": 441.703,
+      "throughput_mops": 9.27,
       "description": "Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction)."
     },
     {
       "name": "4Pixel_Coalesced_Aligned_Store_Kernel",
       "iterations": 50000,
-      "avg_latency_us": 2.227,
-      "throughput_mops": 13.47,
+      "avg_latency_us": 2.726,
+      "throughput_mops": 11.01,
       "description": "Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling."
     },
     {
       "name": "O1_Palette_Scanline_Transformation",
       "iterations": 10000,
-      "avg_latency_us": 4.026,
-      "throughput_mops": 59.61,
+      "avg_latency_us": 4.373,
+      "throughput_mops": 54.89,
       "description": "Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput."
     },
     {
       "name": "CPU_Emulation_Opcode_Dispatch",
       "iterations": 500000,
-      "avg_latency_us": 0.071,
-      "throughput_mops": 14.06,
+      "avg_latency_us": 0.073,
+      "throughput_mops": 13.64,
       "description": "Simulates CPU opcode fetch-decode-execute cycle dispatch throughput."
     },
     {
       "name": "Direct_GPIO_Atomic_Bitmask_Sampling",
       "iterations": 100000,
-      "avg_latency_us": 0.426,
-      "throughput_mops": 18.8,
+      "avg_latency_us": 0.51,
+      "throughput_mops": 15.69,
       "description": "Measures atomic 8-pin bitmask unpacking replacing 8 sequential digitalRead calls."
     },
     {
       "name": "SD_Catalog_O1_Query_And_Page_Jump",
       "iterations": 10000,
-      "avg_latency_us": 0.164,
-      "throughput_mops": 6.08,
+      "avg_latency_us": 0.166,
+      "throughput_mops": 6.04,
       "description": "Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations."
     }
   ],
@@ -3256,8 +3256,8 @@
     "AGENT_KNOWLEDGE_GRAPH.json": {
       "path": "AGENT_KNOWLEDGE_GRAPH.json",
       "category": "OTHER",
-      "total_lines": 16717,
-      "sloc": 16717,
+      "total_lines": 16729,
+      "sloc": 16729,
       "comments": 0,
       "blanks": 0,
       "density_percent": 100.0,
@@ -7389,10 +7389,10 @@
     "CHANGELOG.md": {
       "path": "CHANGELOG.md",
       "category": "OTHER",
-      "total_lines": 402,
-      "sloc": 352,
+      "total_lines": 421,
+      "sloc": 369,
       "comments": 0,
-      "blanks": 50,
+      "blanks": 52,
       "density_percent": 87.6,
       "symbols": [],
       "pins_accessed": [],
@@ -12525,11 +12525,11 @@
     "firmware/BmoGameboy/src/vendor/pce/pce.c": {
       "path": "firmware/BmoGameboy/src/vendor/pce/pce.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 95,
-      "sloc": 71,
-      "comments": 9,
-      "blanks": 15,
-      "density_percent": 74.7,
+      "total_lines": 649,
+      "sloc": 489,
+      "comments": 87,
+      "blanks": 73,
+      "density_percent": 75.3,
       "symbols": [],
       "pins_accessed": [],
       "includes": [
@@ -12542,11 +12542,11 @@
     "firmware/BmoGameboy/src/vendor/pce/pce.h": {
       "path": "firmware/BmoGameboy/src/vendor/pce/pce.h",
       "category": "VENDOR_ENGINES",
-      "total_lines": 35,
-      "sloc": 27,
-      "comments": 1,
-      "blanks": 7,
-      "density_percent": 77.1,
+      "total_lines": 67,
+      "sloc": 50,
+      "comments": 6,
+      "blanks": 11,
+      "density_percent": 74.6,
       "symbols": [],
       "pins_accessed": [],
       "includes": [
@@ -16432,11 +16432,11 @@
     "tests/test_all_tiers_validation.py": {
       "path": "tests/test_all_tiers_validation.py",
       "category": "TESTS",
-      "total_lines": 334,
-      "sloc": 237,
+      "total_lines": 333,
+      "sloc": 236,
       "comments": 62,
       "blanks": 35,
-      "density_percent": 71.0,
+      "density_percent": 70.9,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -16461,6 +16461,18 @@
       "comments": 8,
       "blanks": 20,
       "density_percent": 75.2,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "tests/test_pce_emu.py": {
+      "path": "tests/test_pce_emu.py",
+      "category": "TESTS",
+      "total_lines": 110,
+      "sloc": 64,
+      "comments": 28,
+      "blanks": 18,
+      "density_percent": 58.2,
       "symbols": [],
       "pins_accessed": [],
       "includes": []

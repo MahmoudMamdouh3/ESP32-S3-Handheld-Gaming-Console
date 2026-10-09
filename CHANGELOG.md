@@ -5,6 +5,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Milestone 17.0] - 2026-10-09 (Milestone 5.2.1: PC Engine HuC6280 CPU & VDC Scanline Core Integration)
+### Added
+- **PC Engine / TurboGrafx-16 Real Engine Bringup (`src/vendor/pce/pce.c`, `src/vendor/pce/pce.h`)**:
+  - Replaced architectural blank-screen scaffold with functional Hudson Soft HuC6280 8-bit CPU interpreter (65C02 core + custom HuC instructions `CLA`, `CLX`, `CLY`, `SXY`, `SAX`, `SAY`, `ST0`, `ST1`, `ST2`, `TAM`, `TMA`, `BRA`, `CSL`, `CSH`).
+  - Implemented 8KB MPR memory banking across 21-bit physical address space, supporting HuCard ROMs, 8KB Work RAM, and 2KB Battery-backed Backup RAM.
+  - Implemented HuC6270 Video Display Controller (VDC) with background tile generator, 4-bitplane decoding from 64KB VRAM, and SATB hardware sprite rendering.
+  - Implemented HuC6260 Video Color Encoder (VCE) with 512-color BGR565 pre-swapped palette output directly streaming to ST7789 display.
+  - 262-scanline frame timing with ~455 CPU cycles/line, raster compare interrupts (RCR), and VBlank interrupts.
+  - 100% Octal PSRAM allocation (`MALLOC_CAP_SPIRAM`), consuming 0 bytes of internal DRAM.
+- **Master Platform Test Suite & Manifest Synchronization**:
+  - Created `tests/test_pce_emu.py` (6 unit tests) verifying copier header detection, MPR banking, VDC auto-increment, VCE color conversion, resolution budgeting, and save state serialization.
+  - Promoted `emu_pce` from `STUB_ENGINES` to `PRODUCTION_ENGINES` in `tests/test_all_tiers_validation.py`.
+  - Updated `AGENT_MANIFEST.json` and `docs/software-design-document.md` to classify PC Engine as a production core.
+### Verified
+- `python scripts/validate_repo.py` → PASS (All 7 phases clean).
+- `python -m unittest discover tests` → 67/67 tests OK.
+
+---
+
 ## [Milestone 16.2] - 2026-10-09 (Living BMO Mascot Companion Mode, Speech Bubbles, Typewriter Dialogue & Dance Party)
 ### Added
 - **Interactive Living Companion Mode (`STATE_IDLE_MASCOT` & `STATE_CONSOLE_MENU`)**:

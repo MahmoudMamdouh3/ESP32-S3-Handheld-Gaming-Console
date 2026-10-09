@@ -43,7 +43,7 @@
 - [x] 5. Added test coverage in `tests/test_save_manager.py` (52/52 tests passing).
 
 ### Milestone 5.2: Core Integration & Engine Bringup [IN PROGRESS]
-- [ ] 1. Bring up cycle-accurate PC Engine / TurboGrafx-16 HuC6280 CPU + VDC scanline engine in PSRAM replacing `PCE-Stub`.
+- [x] 1. Bring up cycle-accurate PC Engine / TurboGrafx-16 HuC6280 CPU + VDC scanline engine in PSRAM replacing `PCE-Stub`.
 - [ ] 2. Bring up cycle-accurate Genesis / Mega Drive core in PSRAM replacing `Genesis-Stub`.
 - [ ] 3. Bring up WonderSwan / Color core in PSRAM replacing `WonderSwan-Stub`.
 
