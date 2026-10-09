@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0.0",
-  "generated_at": "2026-10-09T15:07:56.742965",
+  "generated_at": "2026-10-09T15:18:28.064668",
   "target_mcu": {
     "chip": "ESP32-S3-N16R8",
     "cpu_arch": "Xtensa dual-core 32-bit LX7 @ 240MHz",
@@ -425,50 +425,50 @@
     {
       "name": "BMO_SDF_Procedural_Face_Render_Unculled",
       "iterations": 100,
-      "avg_latency_us": 1259.434,
-      "throughput_mops": 3.25,
+      "avg_latency_us": 1240.103,
+      "throughput_mops": 3.3,
       "description": "Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling."
     },
     {
       "name": "BMO_SDF_Procedural_Face_Render_Culled",
       "iterations": 200,
-      "avg_latency_us": 501.763,
-      "throughput_mops": 8.16,
+      "avg_latency_us": 488.984,
+      "throughput_mops": 8.38,
       "description": "Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction)."
     },
     {
       "name": "4Pixel_Coalesced_Aligned_Store_Kernel",
       "iterations": 50000,
-      "avg_latency_us": 2.537,
-      "throughput_mops": 11.83,
+      "avg_latency_us": 2.404,
+      "throughput_mops": 12.48,
       "description": "Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling."
     },
     {
       "name": "O1_Palette_Scanline_Transformation",
       "iterations": 10000,
-      "avg_latency_us": 3.729,
-      "throughput_mops": 64.36,
+      "avg_latency_us": 3.841,
+      "throughput_mops": 62.49,
       "description": "Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput."
     },
     {
       "name": "CPU_Emulation_Opcode_Dispatch",
       "iterations": 500000,
-      "avg_latency_us": 0.065,
-      "throughput_mops": 15.28,
+      "avg_latency_us": 0.07,
+      "throughput_mops": 14.33,
       "description": "Simulates CPU opcode fetch-decode-execute cycle dispatch throughput."
     },
     {
       "name": "Direct_GPIO_Atomic_Bitmask_Sampling",
       "iterations": 100000,
-      "avg_latency_us": 0.419,
-      "throughput_mops": 19.11,
+      "avg_latency_us": 0.512,
+      "throughput_mops": 15.62,
       "description": "Measures atomic 8-pin bitmask unpacking replacing 8 sequential digitalRead calls."
     },
     {
       "name": "SD_Catalog_O1_Query_And_Page_Jump",
       "iterations": 10000,
-      "avg_latency_us": 0.216,
-      "throughput_mops": 4.64,
+      "avg_latency_us": 0.157,
+      "throughput_mops": 6.39,
       "description": "Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations."
     }
   ],
@@ -2192,7 +2192,7 @@
     },
     "GenesisEmu::isRunning": {
       "file": "firmware/BmoGameboy/src/emulators/emu_genesis.cpp",
-      "line": 63,
+      "line": 64,
       "signature": "bool GenesisEmu::isRunning()",
       "is_iram": false
     },
@@ -3316,8 +3316,8 @@
     "AGENT_KNOWLEDGE_GRAPH.json": {
       "path": "AGENT_KNOWLEDGE_GRAPH.json",
       "category": "OTHER",
-      "total_lines": 16801,
-      "sloc": 16801,
+      "total_lines": 16815,
+      "sloc": 16815,
       "comments": 0,
       "blanks": 0,
       "density_percent": 100.0,
@@ -7449,11 +7449,11 @@
     "CHANGELOG.md": {
       "path": "CHANGELOG.md",
       "category": "OTHER",
-      "total_lines": 447,
-      "sloc": 393,
+      "total_lines": 468,
+      "sloc": 412,
       "comments": 0,
-      "blanks": 54,
-      "density_percent": 87.9,
+      "blanks": 56,
+      "density_percent": 88.0,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -8666,11 +8666,11 @@
     "firmware/BmoGameboy/src/emulators/emu_genesis.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_genesis.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 65,
-      "sloc": 56,
+      "total_lines": 66,
+      "sloc": 57,
       "comments": 0,
       "blanks": 9,
-      "density_percent": 86.2,
+      "density_percent": 86.4,
       "symbols": [
         "GenesisEmu::init",
         "GenesisEmu::update",
@@ -12495,26 +12495,28 @@
     "firmware/BmoGameboy/src/vendor/genesis/genesis.c": {
       "path": "firmware/BmoGameboy/src/vendor/genesis/genesis.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 35,
-      "sloc": 29,
-      "comments": 2,
-      "blanks": 4,
-      "density_percent": 82.9,
+      "total_lines": 785,
+      "sloc": 592,
+      "comments": 94,
+      "blanks": 99,
+      "density_percent": 75.4,
       "symbols": [],
       "pins_accessed": [],
       "includes": [
         "genesis.h",
-        "string.h"
+        "stdlib.h",
+        "string.h",
+        "esp_heap_caps.h"
       ]
     },
     "firmware/BmoGameboy/src/vendor/genesis/genesis.h": {
       "path": "firmware/BmoGameboy/src/vendor/genesis/genesis.h",
       "category": "VENDOR_ENGINES",
-      "total_lines": 35,
-      "sloc": 29,
-      "comments": 0,
-      "blanks": 6,
-      "density_percent": 82.9,
+      "total_lines": 65,
+      "sloc": 48,
+      "comments": 6,
+      "blanks": 11,
+      "density_percent": 73.8,
       "symbols": [],
       "pins_accessed": [],
       "includes": [
@@ -16533,6 +16535,18 @@
       "comments": 8,
       "blanks": 20,
       "density_percent": 75.2,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "tests/test_genesis_emu.py": {
+      "path": "tests/test_genesis_emu.py",
+      "category": "TESTS",
+      "total_lines": 167,
+      "sloc": 109,
+      "comments": 36,
+      "blanks": 22,
+      "density_percent": 65.3,
       "symbols": [],
       "pins_accessed": [],
       "includes": []

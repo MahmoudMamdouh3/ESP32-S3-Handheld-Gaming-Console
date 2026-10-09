@@ -26,7 +26,7 @@ Engines are classified by their `engine_status` field in `AGENT_MANIFEST.json`. 
 | **PCE-Core** | PC Engine / TurboGrafx-16 | `.pce` | FIXED_UNVERIFIED | ✅ Yes (HuC6280 CPU + VDC/VCE in PSRAM) |
 | Stella-Stub | Atari 2600 | `.a26` | STUB | ⚠️ Blank screen only |
 | PICO-8-Stub | PICO-8 | `.p8` | STUB | ⚠️ Blank screen only |
-| Genesis-Stub | Sega Genesis / Mega Drive | `.gen`, `.md`, `.smd` | STUB | ⚠️ Solid background only |
+| **Genesis-Core** | Sega Genesis / Mega Drive | `.gen`, `.md`, `.smd` | FIXED_UNVERIFIED | ✅ Yes (68000 CPU + VDP in PSRAM) |
 | SNES-Stub | Super Nintendo | `.sfc`, `.smc` | STUB | ⚠️ Blank screen only |
 | WonderSwan-Stub | Bandai WonderSwan / Color | `.ws`, `.wsc` | STUB | ⚠️ Blank screen only |
 | NGP-Stub | SNK Neo Geo Pocket / Color | `.ngp`, `.ngc` | STUB | ⚠️ Blank screen only |

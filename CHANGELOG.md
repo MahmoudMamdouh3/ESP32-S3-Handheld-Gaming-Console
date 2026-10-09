@@ -5,6 +5,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Milestone 17.2] - 2026-10-09 (Milestone 5.2.2: Sega Genesis / Mega Drive 68000 CPU & VDP Core Integration in PSRAM)
+### Added
+- **Sega Genesis / Mega Drive Real Engine Bringup (`src/vendor/genesis/genesis.c`, `src/vendor/genesis/genesis.h`)**:
+  - Replaced architectural blank-screen stub with functional Motorola 68000 16/32-bit CISC CPU interpreter running at 7.67 MHz NTSC clock.
+  - Implemented 68000 instruction decoding: data movement (`MOVE`, `MOVEA`, `MOVEQ`, `MOVEM`, `LEA`, `PEA`), arithmetic (`ADD`, `SUB`, `CMP`, `CLR`, `NEG`, `SWAP`), logic/bit tests (`AND`, `OR`, `EOR`, `NOT`, `TST`, `BTST`, `BSET`, `BCLR`), branches (`BRA`, `BSR`, `Bcc` all 14 conditions, `DBcc`), subroutines (`JMP`, `JSR`, `RTS`, `RTE`), and system controls (`STOP`, `NOP`).
+  - Implemented 24-bit memory bus: Cartridge ROM ($000000–$3FFFFF), Z80 RAM ($A00000–$A01FFF), I/O Ports ($A10000–$A1001F) with TH multiplexer controller support, VDP Ports ($C00000–$C00007), and 64KB Work RAM ($E00000–$FFFFFF).
+  - Implemented Yamaha YM7101 / 315-5313 VDP with Plane A (Scroll A), Plane B (Scroll B), Window, and hardware sprite generator (80 sprites, linked list, sizes 1×1 to 4×4 cells).
+  - Implemented 9-bit RGB CRAM color conversion with 64-entry pre-swapped BGR565 palette streaming directly to ST7789 display.
+  - 100% Octal PSRAM memory allocation (`GENESIS_MALLOC`), consuming 0 bytes of internal DRAM.
+  - Proper resource cleanup via `genesis_destroy()` invoked in `GenesisEmu::destroy()`.
+- **Master Platform Test Suite & Manifest Synchronization**:
+  - Created `tests/test_genesis_emu.py` (7 unit tests) verifying vector table extraction, 68000 memory bus decoding, VDP CRAM color math, VDP register command decoding, TH pin multiplexing, PSRAM memory budget (< 300 KB), and opcode table masks.
+  - Promoted `emu_genesis` from `STUB_ENGINES` to `PRODUCTION_ENGINES` in `tests/test_all_tiers_validation.py`.
+  - Updated `AGENT_MANIFEST.json` and `docs/software-design-document.md` to classify Sega Genesis as a production core (`fixed_unverified`).
+  - Total test suite expanded to **78/78 tests passing**.
+### Verified
+- `python scripts/validate_repo.py` → PASS (All 7 phases clean, Flash 33.4%, SRAM 65.4%).
+- `python -m unittest discover tests` → 78/78 tests OK.
+
+---
+
 ## [Milestone 17.1] - 2026-10-09 (Apple & Nintendo UI/UX Ergonomics Phase: Harmonic Carousel Glide, Dynamic Island Floating HUD, and Fast A-Z Jump Indicator)
 ### Added
 - **Kinetic Carousel Horizontal Spring Glide (`DisplayEmu::triggerCarouselGlide`)**:
