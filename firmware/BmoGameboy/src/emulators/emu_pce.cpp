@@ -3,6 +3,7 @@
 #include "../vendor/pce/pce.h"
 #include "../core/display_emu.h"
 #include "../core/buttons.h"
+#include "../core/save_manager.h"
 #include <Arduino.h>
 
 static pce_context_t* pce_ctx = nullptr;
@@ -60,3 +61,39 @@ void PceEmu::destroy() {
     pce_ctx = nullptr;
   }
 }
+
+bool PceEmu::saveBatteryRam(const char* romFilename) {
+  if (!pce_ctx || !romFilename) return false;
+  return SaveManager::saveBatteryRam(romFilename, pce_ctx->ram, sizeof(pce_ctx->ram));
+}
+
+bool PceEmu::loadBatteryRam(const char* romFilename) {
+  if (!pce_ctx || !romFilename) return false;
+  return SaveManager::loadBatteryRam(romFilename, pce_ctx->ram, sizeof(pce_ctx->ram));
+}
+
+bool PceEmu::saveState(const char* romFilename, int slot) {
+  if (!pce_ctx || !romFilename) return false;
+  return SaveManager::saveState(romFilename, slot, SaveManager::CORE_PCE,
+                                pce_ctx, sizeof(pce_context_t));
+}
+
+bool PceEmu::loadState(const char* romFilename, int slot) {
+  if (!pce_ctx || !romFilename) return false;
+  pce_context_t tempCtx;
+  size_t ctxSize = 0;
+  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_PCE,
+                                   &tempCtx, sizeof(tempCtx), &ctxSize);
+  if (ok && ctxSize == sizeof(pce_context_t)) {
+    const uint8_t* rom = pce_ctx->rom;
+    size_t rom_size = pce_ctx->rom_size;
+    uint16_t* fb = pce_ctx->framebuffer;
+    memcpy(pce_ctx, &tempCtx, sizeof(pce_context_t));
+    pce_ctx->rom = rom;
+    pce_ctx->rom_size = rom_size;
+    pce_ctx->framebuffer = fb;
+    return true;
+  }
+  return false;
+}
+

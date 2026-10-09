@@ -5,6 +5,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Milestone 15.0] - 2026-10-09 (Phase 5.1: Unified Core Architecture Contract & PCE Persistence)
+### Added
+- **Unified Core Contract (`EmulatorCoreContract`)**:
+  - Profiled 8MB Octal PSRAM budget and memory layouts across all Tier 1 and Tier 2 consoles, confirming system base footprint remains under 7% (< 525 KB) leaving > 7.4 MB headroom for ROMs and emulation states.
+  - Expanded `SaveManager::CoreId` enum with identifiers for all 14 console types (`CORE_PCE = 6`, `CORE_ATARI = 7`, `CORE_PICO8 = 8`, `CORE_GENESIS = 9`, `CORE_SNES = 10`, `CORE_WSWAN = 11`, `CORE_NGP = 12`, `CORE_LYNX = 13`, `CORE_COLEM = 14`).
+  - Standardized non-volatile save state and battery RAM persistence methods across emulator wrappers (`saveBatteryRam`, `loadBatteryRam`, `saveState`, `loadState`).
+- **PC Engine / TurboGrafx-16 Core Persistence Integration**:
+  - Implemented `saveBatteryRam`, `loadBatteryRam`, `saveState`, and `loadState` in `PceEmu` (`src/emulators/emu_pce.h`, `emu_pce.cpp`) targeting `SaveManager::CORE_PCE`.
+  - Wired PCE core into `BmoGameboy.ino` auto-save on exit (`autoSaveCurrentBatteryRam`), quick-save (`SELECT + A`), quick-load (`SELECT + B`), and transparent auto-load on ROM boot.
+- **Testing & Verification**:
+  - Added multi-core ID serialization tests and PCE 73KB context payload simulation to `tests/test_save_manager.py`.
+  - Unit test suite expanded to 52 passing tests (52/52 OK).
+### Verified
+- `python scripts/validate_repo.py` → PASS (All 7 phases clean, Flash 33.1%, SRAM 75.2%).
+- `python -m unittest discover tests` → 52/52 tests OK.
+
+---
+
 ## [Milestone 14.0] - 2026-10-09 (Phase 4: High-Speed Binary ROM Index Cache & 64×64 Box Art Cover Engine)
 ### Added
 - **Binary ROM Index Cache (`.bmo_index`)**:
