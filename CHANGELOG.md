@@ -5,6 +5,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Milestone 16.1] - 2026-10-09 (Apple & Nintendo UI/UX Ergonomic Polish & Glanceable Interface)
+### Added
+- **UI/UX Research & Architectural Synthesis (`docs/research_apple_nintendo_ui_ux.md`)**:
+  - Conducted extensive comparative analysis of Apple Human Interface Guidelines (spatial continuity, spring-damper momentum, layered depth hierarchy, non-intrusive floating HUDs) and Nintendo console UX principles ("Omocha" toy-like tactility, glanceable glyph ergonomics, character companionship).
+  - Identified 6 core weak points in the existing firmware and established an actionable upgrade roadmap.
+- **Nintendo-Grade Glanceable Button Glyph System (`DisplayEmu::drawButtonPill`)**:
+  - Replaced plain text instructions with rounded, physical-style button badges (`[A]` Coral, `[B]` Mint, `[SEL]` Teal, `[< >]` Yellow) with bold typography and instant glanceability.
+  - Implemented across console selection menu, game selection library, and museum screens.
+- **Library Scroll Track Indicator**:
+  - Implemented dynamic horizontal scroll track and active thumb pill in `drawGameSelectMenu`, providing instant spatial awareness across libraries of 500+ ROMs.
+- **Apple-Grade Floating Pill HUD (`DisplayEmu::drawPauseMenu`)**:
+  - Replaced modal text block with elevated rounded pill at $(X: 40, Y: 10, W: 240, H: 22)$ with high-contrast border and centered status message (`★ SAVED TO SLOT 1!`, `💾 BATTERY RAM SAVED!`), preserving footer control hints.
+- **Ambient Living Companion Integration in Menus**:
+  - Connected header mini BMO to active navigation: BMO gazes toward the focused console card in `drawConsoleSelectMenu`, looks down at active cover art in `drawGameSelectMenu`, glances left/right on carousel paging, and triggers a joyful wink with star sparkles when starring a favorite game.
+### Verified
+- `python scripts/validate_repo.py` → PASS (All 7 phases clean, Flash 33.2%, SRAM 65.3%).
+- `python -m unittest discover tests` → 58/58 tests OK.
+
+---
+
 ## [Milestone 16.0] - 2026-10-09 (Phase 6: Ultra-High-End Living BMO Mascot Engine - 2026 Edition)
 ### Added
 - **2026 Living BMO Mascot Engine (`BmoFace`)**:

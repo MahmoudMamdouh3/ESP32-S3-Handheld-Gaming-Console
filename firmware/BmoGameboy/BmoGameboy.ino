@@ -367,11 +367,13 @@ void loop() {
         selectedConsoleIndex = (selectedConsoleIndex - 1 + CONSOLE_COUNT) % CONSOLE_COUNT;
         visibleGamesDirty = true;
         lastButtonMs = nowMs;
+        BmoFace::setGaze(-0.70f, 0.0f); // BMO companion glances left with carousel
       }
       if (right || down) {
         selectedConsoleIndex = (selectedConsoleIndex + 1) % CONSOLE_COUNT;
         visibleGamesDirty = true;
         lastButtonMs = nowMs;
+        BmoFace::setGaze(0.70f, 0.0f);  // BMO companion glances right with carousel
       }
       if (select) {
         currentState = STATE_CONSOLE_MUSEUM;
@@ -573,11 +575,11 @@ void loop() {
         SDCard::toggleFavorite(romIdx);
         s_consoleCountsDirty = true;   // PERF-M3: Favorites badge in console menu needs refresh
         
-        // Show BMO happy reaction when starring a game
+        // Show BMO celebratory wink with sparkle burst when starring a game
         if (SDCard::isFavorite(romIdx)) {
-          BmoFace::setExpression(BmoFace::HAPPY);
+          BmoFace::triggerWink();
         } else {
-          BmoFace::setExpression(BmoFace::SURPRISED);
+          BmoFace::setExpression(BmoFace::IDLE);
         }
         
         if (CONSOLES[selectedConsoleIndex] == ROM_FAVORITES) {
