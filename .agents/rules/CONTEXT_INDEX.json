@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0.0",
-  "last_updated": "2026-10-09T13:37:22.226276",
+  "last_updated": "2026-10-09T13:45:46.787164",
   "task_decision_table": {
     "modify_gpio_or_pin": {
       "rules": [
@@ -290,7 +290,7 @@
     "35_bmo_face_contract.md": {
       "file": ".agents/rules/35_bmo_face_contract.md",
       "title": "BmoFace Mascot Subsystem Contract",
-      "lines": 73
+      "lines": 71
     },
     "36_bug_intake_protocol.md": {
       "file": ".agents/rules/36_bug_intake_protocol.md",

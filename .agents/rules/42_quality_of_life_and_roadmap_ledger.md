@@ -57,7 +57,7 @@ Every feature or tool in this ledger is categorized into one of four states:
 | **Procedural 2D SDF Expressions** | `[IMPLEMENTED]` | Anti-aliased mathematical face rendering (`IDLE`, `HAPPY`, `SURPRISED`, `SLEEPY`, `ERROR`). | `src/core/bmo_face` |
 | **Launch Celebration Expression** | `[IMPLEMENTED]` | Brief `HAPPY` expression beat on game launch before emulator handoff. | `BmoGameboy.ino` |
 | **Ambient Living Screensaver (`STATE_IDLE_MASCOT`)** | `[IMPLEMENTED]` | 30s inactivity auto-sleep transitioning to full-screen dreaming BMO mascot (`DisplayEmu::drawIdleMascotScreen`) with any-button wake up. | `BmoGameboy.ino`, `display_emu` |
-| **Interactive Tamagotchi Pet Mode** | `[BACKLOG / ROADMAP]` | Dedicated interactive mode where BMO reacts to button pokes, dizzy spins, and tickles. | `src/core/bmo_face` |
+| **Ultra-High-End Living BMO Mascot Engine** | `[IN DESIGN / PHASE 6]` | 60 FPS physics-driven companion (native 320×240 PSRAM vector canvas, harmonic spring dynamics, organic gaze saccades, sinusoidal breathing, blush pulsing, particle engine, and gamepad interactivity). | `src/core/bmo_face`, `display_emu` |
 | **Easter Egg / Konami Code Mini-Game** | `[BACKLOG / ROADMAP]` | Entering `↑ ↑ ↓ ↓ ← → ← → B A` in launcher unlocks built-in retro mini-game. | `BmoGameboy.ino` |
 
 ---

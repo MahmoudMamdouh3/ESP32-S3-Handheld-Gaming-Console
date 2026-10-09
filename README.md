@@ -24,7 +24,7 @@ A multi-platform retro gaming handheld console powered by the ESP32-S3 microcont
 
 ## Documentation Quick Links
 
-- [**Software Design Document (SDD v3.5)**](file:///e:/BMO%20Gameboy/docs/software-design-document.md) — Authoritative living architectural specification covering hardware ground truth, state machine, memory layout, rendering pipeline, emulator contracts, and AI governance.
+- [**Software Design Document (SDD v3.6)**](file:///e:/BMO%20Gameboy/docs/software-design-document.md) — Authoritative living architectural specification covering hardware ground truth, state machine, memory layout, rendering pipeline, emulator contracts, and AI governance.
 - [**Agent Quick-Start Primer**](file:///e:/BMO%20Gameboy/.agents/rules/31_quick_start_primer.md) — 90-second on-ramp and decision matrix for autonomous coding agents and human contributors.
 - [**Hardware Notes & Lessons Learned**](file:///e:/BMO%20Gameboy/docs/hardware-notes.md) — Board-level wiring, pin restrictions, and power notes.
 - [**Changelog**](file:///e:/BMO%20Gameboy/CHANGELOG.md) — Repository version history and milestone tracking.
@@ -80,11 +80,11 @@ repo-root/
 
 ### Build Command (Arduino CLI)
 ```powershell
-.\arduino-cli.exe compile --fqbn "esp32:esp32:esp32s3:FlashMode=opi,FlashSize=16M,PartitionScheme=custom,PSRAM=opi" firmware/BmoGameboy
+.\arduino-cli.exe compile --fqbn "esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi" firmware/BmoGameboy
 ```
 
 > [!IMPORTANT]
-> Always compile with `FlashMode=opi` and `PSRAM=opi`. Using QPI/QIO will cause flash cache faults and boot loops on the ESP32-S3-N16R8.
+> The module is an ESP32-S3-WROOM-1 (N16R8) with Quad SPI Flash and Octal SPI PSRAM. Always compile with `FlashMode=qio` and `PSRAM=opi`. Setting FlashMode to OPI will cause a black screen / flash cache fault.
 
 ---
 

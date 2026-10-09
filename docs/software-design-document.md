@@ -284,12 +284,13 @@ The BMO mascot face is rendered entirely via real-time **Procedural 2D Signed Di
   [ DisplayEmu::pushPixelsAt() SPI Blit ]
 ```
 
-### Technical Specification
-- **Zero Static Assets:** Facial features (eyes, pupils, blush, mouth curvature, expressions) are generated dynamically through algebraic distance functions.
-- **Dynamic Emotional States:** Supports 9 distinct expressions:
-  `IDLE`, `HAPPY`, `SURPRISED`, `SLEEPY`, `LOW_BATTERY`, `CHARGING`, `ERROR`, `SHUTDOWN`, `HIDDEN`.
-- **Continuous Parameter Interpolation:** Geometric parameters transition smoothly via continuous exponential decay (`val += (target - val) * 0.2f`), except `ERROR` which snaps instantaneously.
-- **Dirty Flag Caching:** `BmoFace::isDirty()` ensures SPI bus blits occur only when facial parameters animate or blink occurs, preserving the frame budget for menu rendering.
+### Technical Specification & Architecture (2026 Living Mascot Edition)
+- **Zero Static Assets & Native 320×240 Resolution:** Facial features (glossy oval eyes with moving specular catchlights, inner mouth cavity with tongue, glowing blush cheeks) are rendered natively in 320×240 Octal PSRAM (`MALLOC_CAP_SPIRAM`), consuming 0 bytes of internal DRAM.
+- **Analytic Subpixel Anti-Aliasing:** All geometric curves are evaluated with an exact 1.2-pixel `smoothstep()` AA filter band, eliminating jagged pixelation.
+- **Harmonic Spring Physics:** Real-time second-order harmonic oscillator dynamics ($\zeta \approx 0.72$, $\omega_n \approx 20\text{ rad/s}$) govern squash-and-stretch and facial morphs for authentic cartoon springiness.
+- **Organic Life Simulation:** Includes autonomous eye saccades, continuous sinusoidal breathing, multi-phase non-linear eyelid blinks, and ambient floating sleep particles.
+- **16-State Emotion Matrix:** Supports an expanded emotional palette (`IDLE_CONTENT`, `HAPPY_WINK`, `ECSTATIC_LAUGH`, `SURPRISED`, `CURIOSITY_LOOK`, `SLEEPY`, `DEEP_DREAMING`, `YAWNING`, `SMUG_COOL`, `MUSIC_GROOVING`, `LOVE_ENAMORED`, `DERP_PLAYFUL`, `DETERMINED`, `TICKLED_GIGGLE`, `GLITCH_CYBER`, `ERROR_PANIC`).
+- **Full Gamepad Interactivity:** Active in `STATE_IDLE_MASCOT` and dedicated interactive mode, responding dynamically to D-pad directional gaze, tickling wiggles, and button cheers.
 
 ---
 

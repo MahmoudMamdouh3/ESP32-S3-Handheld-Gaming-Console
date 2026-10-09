@@ -50,13 +50,11 @@ reference it rather than restate it.
 | `src/core/battery.cpp:63` | Low battery warning (`FEATURE_BATTERY_MONITOR=1`) | `LOW_BATTERY` |
 
 ## Memory & rendering contract
-- **Framebuffer:** 128×128 RGB565 in internal DRAM (32KB, `faceBuf`), statically
-  allocated at module level with 4-byte alignment. Zero heap allocations
-  (`malloc`/`new`) in `update()` or `draw()`.
-- **Wire Format:** Color output is packed as BGR565 byte-swapped via `packBGR565()`,
-  matching `DisplayEmu::uiColor` and `CLASSIC_PALETTE`.
-- **Non-blocking:** Zero `delay()` calls in `BmoFace::update()` or `draw()`.
-  All timing is driven by `millis()` and `micros()` deltas.
+- **Framebuffer Architecture:** Full 320×240 native canvas allocated in Octal PSRAM (`MALLOC_CAP_SPIRAM`, 153.6 KB), consuming 0 bytes of precious internal DRAM. Zero dynamic heap allocations inside `update()` or `draw()`.
+- **Analytic Subpixel AA:** Evaluated with ~1.2-pixel `smoothstep()` AA filter band over all geometric contours.
+- **Harmonic Spring-Damper Dynamics:** Facial features (squash-and-stretch, mouth opening, gaze tracking) utilize second-order mass-spring-damper differential equations with damping ratio $\zeta \approx 0.72$ and natural frequency $\omega_n \approx 20\text{ rad/s}$.
+- **Wire Format:** Color output is packed as BGR565 byte-swapped via `packBGR565()`, matching `DisplayEmu::uiColor` and `CLASSIC_PALETTE`.
+- **Non-blocking & 60 FPS Pacing:** Zero `delay()` calls in `BmoFace::update()` or `draw()`. All timing is driven by `millis()` and `micros()` deltas, streamed asynchronously via Core 0 DMA worker.
 
 ## Host-testability note
 The 2D SDF math (ellipses, parabolic mouth, smoothstep AA, easing) is pure

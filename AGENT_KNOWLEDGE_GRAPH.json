@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0.0",
-  "generated_at": "2026-10-09T13:37:22.226276",
+  "generated_at": "2026-10-09T13:45:46.787164",
   "target_mcu": {
     "chip": "ESP32-S3-N16R8",
     "cpu_arch": "Xtensa dual-core 32-bit LX7 @ 240MHz",
@@ -425,50 +425,50 @@
     {
       "name": "BMO_SDF_Procedural_Face_Render_Unculled",
       "iterations": 100,
-      "avg_latency_us": 1175.461,
-      "throughput_mops": 3.48,
+      "avg_latency_us": 1075.99,
+      "throughput_mops": 3.81,
       "description": "Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling."
     },
     {
       "name": "BMO_SDF_Procedural_Face_Render_Culled",
       "iterations": 200,
-      "avg_latency_us": 497.793,
-      "throughput_mops": 8.23,
+      "avg_latency_us": 438.171,
+      "throughput_mops": 9.35,
       "description": "Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction)."
     },
     {
       "name": "4Pixel_Coalesced_Aligned_Store_Kernel",
       "iterations": 50000,
-      "avg_latency_us": 2.342,
-      "throughput_mops": 12.81,
+      "avg_latency_us": 2.235,
+      "throughput_mops": 13.42,
       "description": "Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling."
     },
     {
       "name": "O1_Palette_Scanline_Transformation",
       "iterations": 10000,
-      "avg_latency_us": 3.925,
-      "throughput_mops": 61.15,
+      "avg_latency_us": 4.905,
+      "throughput_mops": 48.93,
       "description": "Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput."
     },
     {
       "name": "CPU_Emulation_Opcode_Dispatch",
       "iterations": 500000,
-      "avg_latency_us": 0.071,
-      "throughput_mops": 14.03,
+      "avg_latency_us": 0.069,
+      "throughput_mops": 14.5,
       "description": "Simulates CPU opcode fetch-decode-execute cycle dispatch throughput."
     },
     {
       "name": "Direct_GPIO_Atomic_Bitmask_Sampling",
       "iterations": 100000,
-      "avg_latency_us": 0.459,
-      "throughput_mops": 17.44,
+      "avg_latency_us": 0.41,
+      "throughput_mops": 19.51,
       "description": "Measures atomic 8-pin bitmask unpacking replacing 8 sequential digitalRead calls."
     },
     {
       "name": "SD_Catalog_O1_Query_And_Page_Jump",
       "iterations": 10000,
-      "avg_latency_us": 0.172,
-      "throughput_mops": 5.83,
+      "avg_latency_us": 0.156,
+      "throughput_mops": 6.41,
       "description": "Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations."
     }
   ],
@@ -651,7 +651,7 @@
     "35_bmo_face_contract.md": {
       "file": ".agents/rules/35_bmo_face_contract.md",
       "title": "BmoFace Mascot Subsystem Contract",
-      "lines": 73
+      "lines": 71
     },
     "36_bug_intake_protocol.md": {
       "file": ".agents/rules/36_bug_intake_protocol.md",
@@ -2988,11 +2988,11 @@
     ".agents/rules/35_bmo_face_contract.md": {
       "path": ".agents/rules/35_bmo_face_contract.md",
       "category": "AGENT_RULES",
-      "total_lines": 73,
-      "sloc": 66,
+      "total_lines": 71,
+      "sloc": 64,
       "comments": 0,
       "blanks": 7,
-      "density_percent": 90.4,
+      "density_percent": 90.1,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -7396,11 +7396,11 @@
     "docs/software-design-document.md": {
       "path": "docs/software-design-document.md",
       "category": "DOCUMENTATION",
-      "total_lines": 463,
-      "sloc": 378,
+      "total_lines": 464,
+      "sloc": 379,
       "comments": 0,
       "blanks": 85,
-      "density_percent": 81.6,
+      "density_percent": 81.7,
       "symbols": [],
       "pins_accessed": [
         "GPIO1",
@@ -12579,11 +12579,11 @@
     "IMPLEMENTATION_PLAN.md": {
       "path": "IMPLEMENTATION_PLAN.md",
       "category": "OTHER",
-      "total_lines": 51,
-      "sloc": 36,
+      "total_lines": 91,
+      "sloc": 68,
       "comments": 0,
-      "blanks": 15,
-      "density_percent": 70.6,
+      "blanks": 23,
+      "density_percent": 74.7,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
