@@ -3,9 +3,24 @@
 #include "../vendor/agnes/agnes.h"
 #include "../core/display_emu.h"
 #include "../core/buttons.h"
+#include "../core/save_manager.h"
 #include <Arduino.h>
 
+#include <esp_heap_caps.h>
+
 static agnes_t* agnes_ctx = nullptr;
+static uint8_t* s_nesStateBuf = nullptr;
+static size_t s_nesStateSize = 0;
+
+static uint8_t* getNesStateBuf() {
+  if (!s_nesStateBuf) {
+    s_nesStateSize = agnes_state_size();
+    if (s_nesStateSize > 0) {
+      s_nesStateBuf = (uint8_t*)heap_caps_malloc(s_nesStateSize, MALLOC_CAP_SPIRAM);
+    }
+  }
+  return s_nesStateBuf;
+}
 
 bool NesEmu::begin(const uint8_t* romData, size_t romSize) {
   if (agnes_ctx) {
@@ -60,4 +75,52 @@ void NesEmu::destroy() {
     agnes_destroy(agnes_ctx);
     agnes_ctx = nullptr;
   }
+  if (s_nesStateBuf) {
+    heap_caps_free(s_nesStateBuf);
+    s_nesStateBuf = nullptr;
+    s_nesStateSize = 0;
+  }
+}
+
+bool NesEmu::saveBatteryRam(const char* romFilename) {
+  if (!agnes_ctx || !romFilename) return false;
+  uint8_t* buf = getNesStateBuf();
+  if (!buf || s_nesStateSize == 0) return false;
+  agnes_dump_state(agnes_ctx, (agnes_state_t*)buf);
+  return SaveManager::saveBatteryRam(romFilename, buf, s_nesStateSize);
+}
+
+bool NesEmu::loadBatteryRam(const char* romFilename) {
+  if (!agnes_ctx || !romFilename) return false;
+  uint8_t* buf = getNesStateBuf();
+  if (!buf || s_nesStateSize == 0) return false;
+  size_t loadedSize = 0;
+  if (SaveManager::loadBatteryRam(romFilename, buf, s_nesStateSize, &loadedSize)) {
+    if (loadedSize == s_nesStateSize) {
+      return agnes_restore_state(agnes_ctx, (const agnes_state_t*)buf);
+    }
+  }
+  return false;
+}
+
+bool NesEmu::saveState(const char* romFilename, int slot) {
+  if (!agnes_ctx || !romFilename) return false;
+  uint8_t* buf = getNesStateBuf();
+  if (!buf || s_nesStateSize == 0) return false;
+  agnes_dump_state(agnes_ctx, (agnes_state_t*)buf);
+  return SaveManager::saveState(romFilename, slot, SaveManager::CORE_NES,
+                                buf, s_nesStateSize);
+}
+
+bool NesEmu::loadState(const char* romFilename, int slot) {
+  if (!agnes_ctx || !romFilename) return false;
+  uint8_t* buf = getNesStateBuf();
+  if (!buf || s_nesStateSize == 0) return false;
+  size_t stateSize = 0;
+  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_NES,
+                                   buf, s_nesStateSize, &stateSize);
+  if (ok && stateSize == s_nesStateSize) {
+    return agnes_restore_state(agnes_ctx, (const agnes_state_t*)buf);
+  }
+  return false;
 }

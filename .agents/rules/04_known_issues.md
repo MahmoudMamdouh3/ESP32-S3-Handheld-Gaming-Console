@@ -7,6 +7,14 @@
 
 ---
 
+## [PHASE-3-SAVES] - 2026-10-09 - Non-Volatile Multi-Slot Save States & Cartridge Battery RAM Persistence
+- RESOLVED: Non-volatile cartridge battery RAM (.sav) and 5-slot emulator state snapshots (.s01-.s05) implemented in `SaveManager`.
+- THREAD-SAFETY: All save/load operations protected by `SpiArbiter` mutex lock (`spiBusMutex`) preventing corruption from Core 0 display DMA transfers.
+- INTEGRITY: 60-byte binary header with `BMOSS01` magic and CRC32 payload validation prevents loading truncated or corrupted states.
+- IN-GAME UI: Quick pause modal menu (`STATE_PAUSE_MENU`) with hotkeys (`SELECT+START` menu, `SELECT+A` save, `SELECT+B` load, `SELECT+UP` save&quit).
+- Verified: validate_repo.py PASSED (all 7 phases clean, Flash 33.1%, SRAM 75.2%). unittest 36/36 OK. Guardian audit 0 Critical.
+---
+
 ## [PERF-Session-2] - 2026-09-18 - 10 Performance Fixes (heap_caps_free + O3 pragmas)
 - CRITICAL: heap_caps_free() fix in 8 emulator destroy() functions (peanut, walnut, genesis, snes, wswan, ngp, lynx, colem)
   - All had heap_caps_malloc(MALLOC_CAP_SPIRAM) paired with plain free() — allocator mismatch
@@ -106,9 +114,9 @@ The table below illustrates the hardware physics calculations modeled in `tools/
 | **Menu UI (Full Canvas)**| 320×240 | 320×240 | 153,600 B | **15.36 ms** | 60.00 | **1.31 ms (7.8%)** | 16.67 ms (100%) | 92.2% |
 
 ### BUS-01: Fullscreen 320×240 Menu Blit Sequential Bottleneck (PERF-19)
-- **Status:** `OPEN (PLANNED_DMA)`
-- **Impact:** Transmitting 153,600 bytes synchronously stalls Core 1 for 15.36 ms out of a 16.67 ms frame budget (92.2% SPI bus saturation).
-- **Remediation:** Implement double-buffered ping-pong DMA descriptors to overlap SPI pushing with SDF mascot face rendering.
+- **Status:** `RESOLVED_OPTIMIZED (DUAL_CORE_PIPELINE)`
+- **Impact:** Transmitting 153,600 bytes synchronously stalled Core 1 for 15.36 ms out of a 16.67 ms frame budget (92.2% SPI bus saturation).
+- **Remediation:** Implemented dedicated FreeRTOS Core 0 display worker task (`BMO_Display`), double-buffered Octal PSRAM canvases (`menuCanvasArr[2]`), and recursive FSPI bus arbiter (`SpiArbiter`) eliminating the Core 1 blocking stall (< 50 µs queue dispatch).
 
 ### BUS-02: Sega Genesis 320×224 Frame Time Pinch
 - **Status:** `OPEN (PLANNED_DMA)`
@@ -278,3 +286,4 @@ graph TD
 - **2026-08-31**: Repository-Wide Line-by-Line Benchmark & Known Limitations Overhaul: Audited all 782 files (1,354,395 total lines, 1,267,253 SLOC). Built and executed mathematical bus models, ELF symbol introspection, host microbenchmarks (61.4% BMO SDF speedup, 16.02 MOps/s direct GPIO sampling, 54.95 MOps/s palette transformation), expanded AST linter, and structured complete technical debt ledger (HARDWARE-01..05, BUS-01..05, MEM-01..06, EMU-01..15, PERF-01..25). (Agent Antigravity)
 - **2026-08-31**: System-Wide Quality of Life (QoL) & UI/UX Suite: Formalized Rule 42 (`42_quality_of_life_and_roadmap_ledger.md`) tracking system-wide features. Implemented centralized theme engine (`src/core/theme.h`), Title Sanitizer (`sanitizeRomTitle`), A-Z Alphabetical Quick-Jump in game launcher, Hardware Self-Test & Gamepad Diagnostics Screen (`STATE_DIAGNOSTICS`), dynamic DMG 4-color palette switcher (Pea Soup, BMO Teal, Pocket Gray, Light Cyan, Amber Phosphor) with real-time in-game switching (`SELECT + DOWN`), Fast-Forward acceleration (`SELECT + RIGHT`), web simulator touch controls and live palette previewer, and Guardian CLI commands (`budget` and `qol`). CI & test suite 100% verified (32/32 tests passing). (Agent Antigravity)
 - **2026-08-31**: Universal Multi-Console Favorites Engine, OnionUI BMO Theme & Virtual BMO Integration: Built multi-system Favorites playlist with real-time `SELECT` button toggling, joyful BMO mascot reactions, `/favorites.txt` SD persistence, and multi-core auto-dispatch across all 15 retro platforms. Extracted and integrated `virtual_bmo.h` (512KB pre-favorited official game with BMO Desktop, Guardians of Sunshine, and BMO Talk). Redesigned UI with authentic OnionUI BMO theme palette (Mint Screen `#CEF5E4`, Body Teal `#5FB49C`, D-Pad Yellow `#FFE033`). Updated web simulator. (Agent Antigravity)
+- **2026-10-09**: Phase 2 Dual-Core Display Pipeline: Implemented FreeRTOS Core 0 dedicated display worker task (`BMO_Display`), double-buffered Octal PSRAM canvases (`menuCanvasArr[2]`), and recursive FSPI bus arbiter mutex (`SpiArbiter`) resolving BUS-01 15.36 ms Core 1 stall. Verified via Guardian CI (32/32 tests, Flash 33.0%, SRAM 75.2%). (Agent Antigravity)

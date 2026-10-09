@@ -4,6 +4,7 @@
 #include "../core/display_emu.h"
 #include "../core/bmo_face.h"
 #include "../core/config.h"
+#include "../core/save_manager.h"
 #include <string.h>
 #include <Arduino.h>
 #include <esp_heap_caps.h>
@@ -241,4 +242,41 @@ void WalnutEmu::destroy() {
     heap_caps_free(cart_ram); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
     cart_ram = nullptr;
   }
+}
+
+bool WalnutEmu::saveBatteryRam(const char* romFilename) {
+  if (!cart_ram || !romFilename) return false;
+  return SaveManager::saveBatteryRam(romFilename, cart_ram, CART_RAM_SIZE);
+}
+
+bool WalnutEmu::loadBatteryRam(const char* romFilename) {
+  if (!cart_ram || !romFilename) return false;
+  return SaveManager::loadBatteryRam(romFilename, cart_ram, CART_RAM_SIZE);
+}
+
+bool WalnutEmu::saveState(const char* romFilename, int slot) {
+  if (!cart_ram || !romFilename) return false;
+  return SaveManager::saveState(romFilename, slot, SaveManager::CORE_GB_CGB,
+                                &gb, sizeof(gb), cart_ram, CART_RAM_SIZE);
+}
+
+bool WalnutEmu::loadState(const char* romFilename, int slot) {
+  if (!cart_ram || !romFilename) return false;
+  struct gb_s tempGb;
+  size_t gbSize = 0, ramSize = 0;
+  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_GB_CGB,
+                                   &tempGb, sizeof(tempGb), &gbSize,
+                                   cart_ram, CART_RAM_SIZE, &ramSize);
+  if (ok && gbSize == sizeof(struct gb_s)) {
+    tempGb.gb_rom_read = gb_rom_read;
+    tempGb.gb_rom_read_16bit = gb_rom_read16;
+    tempGb.gb_rom_read_32bit = gb_rom_read32;
+    tempGb.gb_cart_ram_read = gb_cart_ram_read;
+    tempGb.gb_cart_ram_write = gb_cart_ram_write;
+    tempGb.gb_error = gb_error;
+    tempGb.display.lcd_draw_line = lcd_draw_line;
+    memcpy(&gb, &tempGb, sizeof(gb));
+    return true;
+  }
+  return false;
 }

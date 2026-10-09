@@ -1,5 +1,6 @@
 #include "sd_card.h"
 #include "config.h"
+#include "spi_arbiter.h"
 #if FEATURE_SD_CARD
 #include <SD.h>
 #include <SPI.h>
@@ -99,14 +100,17 @@ bool SDCard::begin() {
 
   // PERF-01: Run SD card at 25 MHz standard high-speed clock (up from 4 MHz)
 #if FEATURE_SD_CARD
+  SpiArbiter::lock();
   if (!SD.begin(SD_CS, SPI, 25000000, "/sd")) {
     mounted = false;
+    SpiArbiter::unlock();
     // Do not reset numRoms to 0, because we have baked ROMs!
     return false;
   }
   mounted = true;
   scanRoms();
   loadFavorites();
+  SpiArbiter::unlock();
 #else
   mounted = false;
 #endif
@@ -119,9 +123,13 @@ bool SDCard::isMounted() {
 
 void SDCard::scanRoms() {
 #if FEATURE_SD_CARD
+  SpiArbiter::lock();
   // Do not reset numRoms to 0, we already added baked ROMs!
   File root = SD.open("/");
-  if (!root || !root.isDirectory()) return;
+  if (!root || !root.isDirectory()) {
+    SpiArbiter::unlock();
+    return;
+  }
 
   while (numRoms < maxCapacity) {
     File entry = root.openNextFile();
@@ -144,6 +152,7 @@ void SDCard::scanRoms() {
     entry.close();
   }
   root.close();
+  SpiArbiter::unlock();
 #endif
 }
 
@@ -200,23 +209,35 @@ int SDCard::getFavoritesCount() {
 void SDCard::saveFavorites() {
 #if FEATURE_SD_CARD
   if (!mounted) return;
+  SpiArbiter::lock();
   File f = SD.open("/favorites.txt", FILE_WRITE);
-  if (!f) return;
+  if (!f) {
+    SpiArbiter::unlock();
+    return;
+  }
   for (int i = 0; i < numRoms; ++i) {
     if (romList[i].isFavorite) {
       f.println(romList[i].filename);
     }
   }
   f.close();
+  SpiArbiter::unlock();
 #endif
 }
 
 void SDCard::loadFavorites() {
 #if FEATURE_SD_CARD
   if (!mounted) return;
-  if (!SD.exists("/favorites.txt")) return;
+  SpiArbiter::lock();
+  if (!SD.exists("/favorites.txt")) {
+    SpiArbiter::unlock();
+    return;
+  }
   File f = SD.open("/favorites.txt", FILE_READ);
-  if (!f) return;
+  if (!f) {
+    SpiArbiter::unlock();
+    return;
+  }
   // H-3 / L-5: Stack char[] instead of Arduino String — no heap alloc per line.
   char line[64];
   while (f.available()) {
@@ -239,6 +260,7 @@ void SDCard::loadFavorites() {
     }
   }
   f.close();
+  SpiArbiter::unlock();
 #endif
 }
 
@@ -272,12 +294,17 @@ uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
   // H-3: Stack buffer instead of Arduino String — avoids DRAM heap alloc on every ROM launch.
   char path[128];
   snprintf(path, sizeof(path), "/%s", filename);
+  SpiArbiter::lock();
   File file = SD.open(path, FILE_READ);
-  if (!file) return nullptr;
+  if (!file) {
+    SpiArbiter::unlock();
+    return nullptr;
+  }
 
   size_t size = file.size();
   if (size == 0) {
     file.close();
+    SpiArbiter::unlock();
     return nullptr;
   }
   *outSize = size;
@@ -286,6 +313,7 @@ uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
   uint8_t* buffer = (uint8_t*)heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
   if (!buffer) {
     file.close();
+    SpiArbiter::unlock();
     return nullptr;
   }
 
@@ -299,6 +327,7 @@ uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
   }
   
   file.close();
+  SpiArbiter::unlock();
   if (bytesRead != size) {
     // Never hand a truncated ROM to an emulator: it can fail much later with
     // a misleading crash or an out-of-bounds bank read.

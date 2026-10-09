@@ -13,4 +13,10 @@ namespace PeanutEmu {
   // Run one frame of the emulator (approx 16.7ms of game time).
   void runFrame();
   void destroy();
+
+  // Non-Volatile Battery RAM & Save State APIs
+  bool saveBatteryRam(const char* romFilename);
+  bool loadBatteryRam(const char* romFilename);
+  bool saveState(const char* romFilename, int slot);
+  bool loadState(const char* romFilename, int slot);
 }

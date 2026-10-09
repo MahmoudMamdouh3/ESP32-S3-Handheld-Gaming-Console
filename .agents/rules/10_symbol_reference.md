@@ -14,7 +14,7 @@ signatures, macro `#define`s, and top-level struct declarations from:
 `src/core/`, `src/emulators/`, `src/engine/*/`, `src/vendor/*/`.
 
 ## Staleness detection
-This file was last regenerated: **2026-08-31**.
+This file was last regenerated: **2026-10-09**.
 If any of the following files have a newer git commit date than that,
 this file is stale — grep live and update before making any symbol claims:
 - `src/emulators/emu_walnut.cpp/h`
@@ -33,6 +33,8 @@ this file is stale — grep live and update before making any symbol claims:
 - `src/emulators/emu_colem.cpp/h`
 - `src/core/display_emu.h`
 - `src/core/buttons.h`
+- `src/core/save_manager.h`
+- `src/core/spi_arbiter.h`
 - `src/core/sd_card.h`
 - `src/core/bmo_face.h`
 -`src/core/battery.h`
@@ -86,8 +88,40 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `DisplayEmu::startDirectWindow` | fn | `void startDirectWindow(int x, int y, int w, int h)` | Opens window & asserts SPI CS |
 | `DisplayEmu::writeWindowBytes` | fn | `void writeWindowBytes(const uint8_t* data, size_t len)` | Streams raw bytes to open window |
 | `DisplayEmu::endDirectWindow` | fn | `void endDirectWindow()` | Deasserts SPI CS |
+| `DisplayEmu::streamGBFrame` | fn | `void streamGBFrame(const uint16_t* gb_framebuffer)` | Streams 240x216 Game Boy frame asynchronously via Core 0 |
+| `DisplayEmu::streamRawFrameAsync` | fn | `void streamRawFrameAsync(const uint16_t* fb, int x, int y, int w, int h)` | Streams arbitrary 16-bit framebuffer asynchronously via Core 0 |
+| `DisplayEmu::drawPauseMenu` | fn | `void drawPauseMenu(const char* romTitle, int currentSlot, bool hasSaveState, bool hasBatterySave, int selectedOption, const char* statusToast = nullptr)` | Renders In-Game Quick Pause & Save State Overlay Menu |
+| `DisplayEmu::waitForDisplay` | fn | `void waitForDisplay()` | Blocks until Core 0 asynchronous display transfer completes |
+| `DisplayEmu::isDisplayBusy` | fn | `bool isDisplayBusy()` | Returns true if Core 0 display worker is currently streaming |
 | `DisplayEmu::CLASSIC_PALETTE` | const | `const uint16_t CLASSIC_PALETTE[4]` | Pre-swapped BGR565 green palette |
 | `DisplayEmu::NES_PALETTE` | const | `const uint16_t NES_PALETTE[64]` | Pre-swapped BGR565 NES palette |
+
+---
+
+## src/core/save_manager.h (SaveManager)
+| Symbol | Kind | Signature | Notes |
+|---|---|---|---|
+| `SaveManager::begin` | fn | `bool begin()` | Initializes `/saves` directory on MicroSD card |
+| `SaveManager::getActiveSlot` | fn | `int getActiveSlot()` | Returns currently selected save slot (1–5) |
+| `SaveManager::setActiveSlot` | fn | `void setActiveSlot(int slot)` | Sets active save slot (1–5) |
+| `SaveManager::cycleActiveSlot` | fn | `void cycleActiveSlot()` | Cycles active slot to next (1..5) |
+| `SaveManager::saveBatteryRam` | fn | `bool saveBatteryRam(const char* romFilename, const uint8_t* ram, size_t ramSize)` | Flushes raw battery RAM to `/saves/<rom>.sav` |
+| `SaveManager::loadBatteryRam` | fn | `bool loadBatteryRam(const char* romFilename, uint8_t* ram, size_t maxRamSize, size_t* outLoadedSize = nullptr)` | Loads battery RAM from `/saves/<rom>.sav` |
+| `SaveManager::hasBatteryRam` | fn | `bool hasBatteryRam(const char* romFilename)` | Checks if `.sav` file exists on SD card |
+| `SaveManager::saveState` | fn | `bool saveState(const char* romFilename, int slot, uint32_t coreId, const void* stateData, size_t stateSize, const uint8_t* ramData = nullptr, size_t ramSize = 0)` | Writes snapshot with CRC32 to `/saves/<rom>.s0<slot>` |
+| `SaveManager::loadState` | fn | `bool loadState(const char* romFilename, int slot, uint32_t expectedCoreId, void* stateData, size_t maxStateSize, size_t* outStateSize = nullptr, uint8_t* ramData = nullptr, size_t maxRamSize = 0, size_t* outRamSize = nullptr)` | Validates and restores snapshot from `/saves/<rom>.s0<slot>` |
+| `SaveManager::hasSaveState` | fn | `bool hasSaveState(const char* romFilename, int slot)` | Checks if save state exists for given slot |
+| `SaveManager::computeCRC32` | fn | `uint32_t computeCRC32(const uint8_t* data, size_t length, uint32_t crc = 0xFFFFFFFF)` | Fast IEEE 802.3 bitwise CRC32 calculation |
+| `SaveStateHeader` | struct | `struct SaveStateHeader { uint32_t magic, version, timestamp, coreId, stateSize, ramSize, crc32; char romTitle[32]; }` | Binary save state header descriptor |
+
+---
+
+## src/core/spi_arbiter.h (SpiArbiter)
+| Symbol | Kind | Signature | Notes |
+|---|---|---|---|
+| `SpiArbiter::init` | fn | `void init()` | Initializes recursive FreeRTOS SPI bus mutex |
+| `SpiArbiter::lock` | fn | `bool lock(TickType_t waitTicks = portMAX_DELAY)` | Acquires exclusive lock on shared FSPI bus |
+| `SpiArbiter::unlock` | fn | `void unlock()` | Releases exclusive lock on shared FSPI bus |
 
 ---
 

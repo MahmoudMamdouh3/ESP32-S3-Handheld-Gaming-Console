@@ -3,6 +3,7 @@
 #include "config.h"
 #include "battery.h"
 #include "theme.h"
+#include "spi_arbiter.h"
 #include <SPI.h>
 #include <Adafruit_ST7789.h>
 #include <cstring>
@@ -10,6 +11,10 @@
 #include <new>
 #include <Fonts/FreeSans9pt7b.h>
 #include <Fonts/FreeSans12pt7b.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/queue.h>
+#include <freertos/semphr.h>
 
 // No emulator headers should be included here to prevent ODR violations
 #include <esp_heap_caps.h>
@@ -27,11 +32,126 @@ public:
   }
 };
 
+static PSRAMCanvas* menuCanvasArr[2] = {nullptr, nullptr};
+static int activeDrawCanvas = 0;
 static PSRAMCanvas* menuCanvas = nullptr;
 
 
 namespace {
   Adafruit_ST7789 tft = Adafruit_ST7789(&SPI, TFT_CS, TFT_DC, TFT_RST);
+
+  struct color {
+    uint32_t b:8;
+    uint32_t g:8;
+    uint32_t r:8;
+    uint32_t a:8;
+  };
+  extern "C" struct color colors[256];
+
+  static uint16_t __attribute__((aligned(4))) s_nesRowBuf[256];
+  static uint16_t __attribute__((aligned(4))) s_doomLineBuf[320];
+  static uint16_t s_doomPalette[256];
+  static struct color s_lastColors[256];
+
+  static uint8_t* s_asyncEmuBuf[2] = {nullptr, nullptr};
+  static int s_activeEmuBuf = 0;
+
+  enum DisplayCmdType {
+    CMD_NONE = 0,
+    CMD_PUSH_CANVAS,
+    CMD_PUSH_FULLSCREEN,
+    CMD_STREAM_RAW16,
+    CMD_STREAM_NES,
+    CMD_STREAM_DOOM
+  };
+
+  struct DisplayTaskCmd {
+    DisplayCmdType type;
+    const void* buffer;
+    int16_t x;
+    int16_t y;
+    int16_t w;
+    int16_t h;
+  };
+
+  static QueueHandle_t s_displayQueue = nullptr;
+  static SemaphoreHandle_t s_displayDoneSem = nullptr;
+  static TaskHandle_t s_displayTaskHandle = nullptr;
+  static volatile bool s_displayBusy = false;
+
+  static void displayWorkerTask(void* pvParameters) {
+    DisplayTaskCmd cmd;
+    while (true) {
+      if (xQueueReceive(s_displayQueue, &cmd, portMAX_DELAY) == pdTRUE) {
+        s_displayBusy = true;
+        if ((cmd.type == CMD_PUSH_CANVAS || cmd.type == CMD_PUSH_FULLSCREEN) && cmd.buffer) {
+          SpiArbiter::lock();
+          tft.startWrite();
+          tft.setAddrWindow(0, 0, 320, 240);
+          SPI.writeBytes((const uint8_t*)cmd.buffer, 320 * 240 * 2);
+          tft.endWrite();
+          SpiArbiter::unlock();
+        } else if (cmd.type == CMD_STREAM_RAW16 && cmd.buffer) {
+          SpiArbiter::lock();
+          tft.startWrite();
+          tft.setAddrWindow(cmd.x, cmd.y, cmd.w, cmd.h);
+          SPI.writeBytes((const uint8_t*)cmd.buffer, (size_t)cmd.w * cmd.h * 2);
+          tft.endWrite();
+          SpiArbiter::unlock();
+        } else if (cmd.type == CMD_STREAM_NES && cmd.buffer) {
+          SpiArbiter::lock();
+          tft.startWrite();
+          tft.setAddrWindow(32, 0, 256, 240);
+          uint32_t* out32 = (uint32_t*)s_nesRowBuf;
+          const uint8_t* nesFb = (const uint8_t*)cmd.buffer;
+          for (int y = 0; y < 240; y++) {
+            const uint8_t* inRow = &nesFb[y * 256];
+            for (int x = 0; x < 256; x += 4) {
+              uint16_t p0 = DisplayEmu::NES_PALETTE[inRow[x]     & 0x3F];
+              uint16_t p1 = DisplayEmu::NES_PALETTE[inRow[x + 1] & 0x3F];
+              uint16_t p2 = DisplayEmu::NES_PALETTE[inRow[x + 2] & 0x3F];
+              uint16_t p3 = DisplayEmu::NES_PALETTE[inRow[x + 3] & 0x3F];
+              out32[(x >> 1)]     = (uint32_t)p0 | ((uint32_t)p1 << 16);
+              out32[(x >> 1) + 1] = (uint32_t)p2 | ((uint32_t)p3 << 16);
+            }
+            SPI.writeBytes((const uint8_t*)s_nesRowBuf, 256 * 2);
+          }
+          tft.endWrite();
+          SpiArbiter::unlock();
+        } else if (cmd.type == CMD_STREAM_DOOM && cmd.buffer) {
+          if (memcmp(s_lastColors, colors, sizeof(s_lastColors)) != 0) {
+            memcpy(s_lastColors, colors, sizeof(s_lastColors));
+            for (int i = 0; i < 256; ++i) {
+              const struct color c = colors[i];
+              const uint16_t p = ((c.r & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.b >> 3);
+              s_doomPalette[i] = (p >> 8) | (p << 8);
+            }
+          }
+          SpiArbiter::lock();
+          tft.startWrite();
+          tft.setAddrWindow(0, 20, 320, 200);
+          uint32_t* out32 = (uint32_t*)s_doomLineBuf;
+          const uint8_t* cmap = (const uint8_t*)cmd.buffer;
+          for (int y = 0; y < 200; y++) {
+            const uint8_t* inRow = &cmap[y * 320];
+            for (int x = 0; x < 320; x += 4) {
+              uint16_t p0 = s_doomPalette[inRow[x]];
+              uint16_t p1 = s_doomPalette[inRow[x + 1]];
+              uint16_t p2 = s_doomPalette[inRow[x + 2]];
+              uint16_t p3 = s_doomPalette[inRow[x + 3]];
+              out32[(x >> 1)]     = (uint32_t)p0 | ((uint32_t)p1 << 16);
+              out32[(x >> 1) + 1] = (uint32_t)p2 | ((uint32_t)p3 << 16);
+            }
+            SPI.writeBytes((const uint8_t*)s_doomLineBuf, 320 * 2);
+          }
+          tft.endWrite();
+          SpiArbiter::unlock();
+        }
+        s_displayBusy = false;
+        xSemaphoreGive(s_displayDoneSem);
+      }
+    }
+  }
   
   // Game Boy native is 160x144. Scaled 1.5x it becomes 240x216.
   // In Landscape mode, the display is 320x240.
@@ -207,10 +327,38 @@ namespace {
   }
 
   void writeMenuCanvas() {
-    tft.startWrite();
-    tft.setAddrWindow(0, 0, 320, 240);
-    SPI.writeBytes((const uint8_t*)menuCanvas->getBuffer(), 320 * 240 * 2);
-    tft.endWrite();
+    if (!menuCanvasArr[0] || !menuCanvasArr[1]) {
+      if (menuCanvas) {
+        SpiArbiter::lock();
+        tft.startWrite();
+        tft.setAddrWindow(0, 0, 320, 240);
+        SPI.writeBytes((const uint8_t*)menuCanvas->getBuffer(), 320 * 240 * 2);
+        tft.endWrite();
+        SpiArbiter::unlock();
+      }
+      return;
+    }
+
+    const uint16_t* drawnBuf = menuCanvasArr[activeDrawCanvas]->getBuffer();
+
+    if (s_displayTaskHandle && s_displayQueue) {
+      DisplayEmu::waitForDisplay();
+      xSemaphoreTake(s_displayDoneSem, 0);
+
+      DisplayTaskCmd cmd = { CMD_PUSH_CANVAS, drawnBuf, 0, 0, 320, 240 };
+      xQueueSend(s_displayQueue, &cmd, portMAX_DELAY);
+
+      // Ping-pong flip: switch active drawing target to the other canvas
+      activeDrawCanvas = 1 - activeDrawCanvas;
+      menuCanvas = menuCanvasArr[activeDrawCanvas];
+    } else {
+      SpiArbiter::lock();
+      tft.startWrite();
+      tft.setAddrWindow(0, 0, 320, 240);
+      SPI.writeBytes((const uint8_t*)drawnBuf, 320 * 240 * 2);
+      tft.endWrite();
+      SpiArbiter::unlock();
+    }
   }
 }
 
@@ -235,6 +383,34 @@ const uint16_t DisplayEmu::NES_PALETTE[64] = {
 };
 
 void DisplayEmu::begin() {
+  SpiArbiter::init();
+
+  if (!s_asyncEmuBuf[0]) {
+    s_asyncEmuBuf[0] = (uint8_t*)heap_caps_malloc(320 * 240 * 2, MALLOC_CAP_SPIRAM);
+    s_asyncEmuBuf[1] = (uint8_t*)heap_caps_malloc(320 * 240 * 2, MALLOC_CAP_SPIRAM);
+    s_activeEmuBuf = 0;
+  }
+
+  if (!s_displayQueue) {
+    s_displayQueue = xQueueCreate(1, sizeof(DisplayTaskCmd));
+  }
+  if (!s_displayDoneSem) {
+    s_displayDoneSem = xSemaphoreCreateBinary();
+    xSemaphoreGive(s_displayDoneSem);
+  }
+  if (!s_displayTaskHandle) {
+    xTaskCreatePinnedToCore(
+      displayWorkerTask,
+      "BMO_Display",
+      4096,
+      nullptr,
+      configMAX_PRIORITIES - 2,
+      &s_displayTaskHandle,
+      0 // Pin to Core 0
+    );
+  }
+
+  SpiArbiter::lock();
   tft.init(TFT_WIDTH, TFT_HEIGHT);
   tft.setSPISpeed(80000000); // 80 MHz SPI clock for max framerate
   tft.setRotation(3); // Flipped Landscape mode (270 degrees)
@@ -253,11 +429,16 @@ void DisplayEmu::begin() {
   SPI.endTransaction();
 
   tft.fillScreen(ST77XX_BLACK);
+  SpiArbiter::unlock();
+
   initMenuUI();
 }
 
 void DisplayEmu::clearScreen() {
+  waitForDisplay();
+  SpiArbiter::lock();
   tft.fillScreen(ST77XX_BLACK);
+  SpiArbiter::unlock();
 }
 
 // ---------------------------------------------------------------------------
@@ -277,6 +458,8 @@ void DisplayEmu::clearScreen() {
 // ---------------------------------------------------------------------------
 
 void DisplayEmu::startFrame() {
+  waitForDisplay();
+  SpiArbiter::lock();
   tft.startWrite();
   // Set the address window to exactly the Game Boy's scaled output region.
   // 240 pixels wide × 216 pixels tall, positioned at (OFFSET_X, OFFSET_Y).
@@ -287,6 +470,7 @@ void DisplayEmu::startFrame() {
 
 void DisplayEmu::endFrame() {
   tft.endWrite();
+  SpiArbiter::unlock();
 }
 
 // streamPixelRow: bare pixel data push — MUST be called inside startFrame/endFrame.
@@ -297,11 +481,54 @@ void DisplayEmu::streamPixelRow(const uint16_t* buf, int pixelCount) {
 }
 
 // ---------------------------------------------------------------------------
-// NES Rendering (PERF-07: Static aligned buffer + 32-bit store coalescing)
+// Phase 2: Asynchronous Emulator Frame Streaming Pipeline
 // ---------------------------------------------------------------------------
-static uint16_t __attribute__((aligned(4))) s_nesRowBuf[256];
+
+void DisplayEmu::streamRawFrameAsync(const uint16_t* fb, int x, int y, int w, int h) {
+  if (!fb || w <= 0 || h <= 0) return;
+  size_t byteCount = (size_t)w * h * 2;
+  if (byteCount > (320 * 240 * 2)) return;
+
+  if (s_displayTaskHandle && s_displayQueue && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
+    waitForDisplay();
+    xSemaphoreTake(s_displayDoneSem, 0);
+
+    uint8_t* dst = s_asyncEmuBuf[s_activeEmuBuf];
+    memcpy(dst, fb, byteCount);
+
+    DisplayTaskCmd cmd = { CMD_STREAM_RAW16, dst, (int16_t)x, (int16_t)y, (int16_t)w, (int16_t)h };
+    xQueueSend(s_displayQueue, &cmd, portMAX_DELAY);
+    s_activeEmuBuf = 1 - s_activeEmuBuf;
+  } else {
+    // Synchronous fallback
+    waitForDisplay();
+    SpiArbiter::lock();
+    tft.startWrite();
+    tft.setAddrWindow(x, y, w, h);
+    SPI.writeBytes((const uint8_t*)fb, byteCount);
+    tft.endWrite();
+    SpiArbiter::unlock();
+  }
+}
 
 void DisplayEmu::streamNESFrame(const uint8_t* nes_framebuffer) {
+  if (!nes_framebuffer) return;
+  if (s_displayTaskHandle && s_displayQueue && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
+    waitForDisplay();
+    xSemaphoreTake(s_displayDoneSem, 0);
+
+    uint8_t* dst = s_asyncEmuBuf[s_activeEmuBuf];
+    memcpy(dst, nes_framebuffer, 256 * 240);
+
+    DisplayTaskCmd cmd = { CMD_STREAM_NES, dst, 32, 0, 256, 240 };
+    xQueueSend(s_displayQueue, &cmd, portMAX_DELAY);
+    s_activeEmuBuf = 1 - s_activeEmuBuf;
+    return;
+  }
+
+  // Fallback synchronous blit
+  waitForDisplay();
+  SpiArbiter::lock();
   tft.startWrite();
   tft.setAddrWindow(32, 0, 256, 240); // Center 256x240 on 320x240 display
   
@@ -320,33 +547,36 @@ void DisplayEmu::streamNESFrame(const uint8_t* nes_framebuffer) {
   }
   
   tft.endWrite();
+  SpiArbiter::unlock();
 }
 
-// ---------------------------------------------------------------------------
-// DOOM Rendering (PERF-07/14: Static aligned buffer + 32-bit coalescing)
-// ---------------------------------------------------------------------------
-struct color {
-    uint32_t b:8;
-    uint32_t g:8;
-    uint32_t r:8;
-    uint32_t a:8;
-};
-extern "C" struct color colors[256];
-
-static uint16_t __attribute__((aligned(4))) s_doomLineBuf[320];
-
 void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
+  if (!cmap) return;
+  if (s_displayTaskHandle && s_displayQueue && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
+    waitForDisplay();
+    xSemaphoreTake(s_displayDoneSem, 0);
+
+    uint8_t* dst = s_asyncEmuBuf[s_activeEmuBuf];
+    memcpy(dst, cmap, 320 * 200);
+
+    DisplayTaskCmd cmd = { CMD_STREAM_DOOM, dst, 0, 20, 320, 200 };
+    xQueueSend(s_displayQueue, &cmd, portMAX_DELAY);
+    s_activeEmuBuf = 1 - s_activeEmuBuf;
+    return;
+  }
+
+  // Fallback synchronous blit
+  waitForDisplay();
+  SpiArbiter::lock();
   tft.startWrite();
   tft.setAddrWindow(0, 20, 320, 200);
 
-  static uint16_t doomPalette[256];
-  static struct color lastColors[256];
-  if (memcmp(lastColors, colors, sizeof(lastColors)) != 0) {
-    memcpy(lastColors, colors, sizeof(lastColors));
+  if (memcmp(s_lastColors, colors, sizeof(s_lastColors)) != 0) {
+    memcpy(s_lastColors, colors, sizeof(s_lastColors));
     for (int i = 0; i < 256; ++i) {
       const struct color c = colors[i];
       const uint16_t p = ((c.r & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.b >> 3);
-      doomPalette[i] = (p >> 8) | (p << 8);
+      s_doomPalette[i] = (p >> 8) | (p << 8);
     }
   }
 
@@ -354,10 +584,10 @@ void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
   for (int y = 0; y < 200; y++) {
     const uint8_t* inRow = &cmap[y * 320];
     for (int x = 0; x < 320; x += 4) {
-      uint16_t p0 = doomPalette[inRow[x]];
-      uint16_t p1 = doomPalette[inRow[x + 1]];
-      uint16_t p2 = doomPalette[inRow[x + 2]];
-      uint16_t p3 = doomPalette[inRow[x + 3]];
+      uint16_t p0 = s_doomPalette[inRow[x]];
+      uint16_t p1 = s_doomPalette[inRow[x + 1]];
+      uint16_t p2 = s_doomPalette[inRow[x + 2]];
+      uint16_t p3 = s_doomPalette[inRow[x + 3]];
       out32[(x >> 1)]     = (uint32_t)p0 | ((uint32_t)p1 << 16);
       out32[(x >> 1) + 1] = (uint32_t)p2 | ((uint32_t)p3 << 16);
     }
@@ -365,87 +595,62 @@ void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
   }
   
   tft.endWrite();
+  SpiArbiter::unlock();
 }
 
 void DisplayEmu::streamSMSFrame(const uint16_t* sms_framebuffer, bool isGameGear) {
-  tft.startWrite();
   if (isGameGear) {
-    tft.setAddrWindow(80, 48, 160, 144);
-    SPI.writeBytes((const uint8_t*)sms_framebuffer, 160 * 144 * 2);
+    streamRawFrameAsync(sms_framebuffer, 80, 48, 160, 144);
   } else {
-    tft.setAddrWindow(32, 24, 256, 192);
-    SPI.writeBytes((const uint8_t*)sms_framebuffer, 256 * 192 * 2);
+    streamRawFrameAsync(sms_framebuffer, 32, 24, 256, 192);
   }
-  tft.endWrite();
 }
 
 void DisplayEmu::streamPCEFrame(const uint16_t* pce_framebuffer) {
-  tft.startWrite();
-  tft.setAddrWindow(32, 0, 256, 240);
-  SPI.writeBytes((const uint8_t*)pce_framebuffer, 256 * 240 * 2);
-  tft.endWrite();
+  streamRawFrameAsync(pce_framebuffer, 32, 0, 256, 240);
 }
 
 void DisplayEmu::streamAtariFrame(const uint16_t* atari_framebuffer) {
-  tft.startWrite();
-  tft.setAddrWindow(80, 24, 160, 192);
-  SPI.writeBytes((const uint8_t*)atari_framebuffer, 160 * 192 * 2);
-  tft.endWrite();
+  streamRawFrameAsync(atari_framebuffer, 80, 24, 160, 192);
 }
 
 void DisplayEmu::streamPicoFrame(const uint16_t* pico_framebuffer) {
-  tft.startWrite();
-  tft.setAddrWindow(96, 56, 128, 128);
-  SPI.writeBytes((const uint8_t*)pico_framebuffer, 128 * 128 * 2);
-  tft.endWrite();
+  streamRawFrameAsync(pico_framebuffer, 96, 56, 128, 128);
 }
 
 void DisplayEmu::streamGenesisFrame(const uint16_t* genesis_framebuffer, int width, int height) {
-  tft.startWrite();
   // 320x224 centered vertically on 320x240 screen (yOffset = 8)
-  tft.setAddrWindow(0, 8, 320, 224);
-  SPI.writeBytes((const uint8_t*)genesis_framebuffer, 320 * 224 * 2);
-  tft.endWrite();
+  streamRawFrameAsync(genesis_framebuffer, 0, 8, 320, 224);
 }
 
 void DisplayEmu::streamSNESFrame(const uint16_t* snes_framebuffer, int width, int height) {
-  tft.startWrite();
   // 256x224 centered on 320x240 screen (xOffset = 32, yOffset = 8)
-  tft.setAddrWindow(32, 8, 256, 224);
-  SPI.writeBytes((const uint8_t*)snes_framebuffer, 256 * 224 * 2);
-  tft.endWrite();
+  streamRawFrameAsync(snes_framebuffer, 32, 8, 256, 224);
 }
 
 void DisplayEmu::streamWSwanFrame(const uint16_t* wswan_framebuffer, int width, int height) {
-  tft.startWrite();
   // 224x144 centered on 320x240 screen (xOffset = 48, yOffset = 48)
-  tft.setAddrWindow(48, 48, 224, 144);
-  SPI.writeBytes((const uint8_t*)wswan_framebuffer, 224 * 144 * 2);
-  tft.endWrite();
+  streamRawFrameAsync(wswan_framebuffer, 48, 48, 224, 144);
 }
 
 void DisplayEmu::streamNGPFrame(const uint16_t* ngp_framebuffer, int width, int height) {
-  tft.startWrite();
   // 160x152 centered on 320x240 screen (xOffset = 80, yOffset = 44)
-  tft.setAddrWindow(80, 44, 160, 152);
-  SPI.writeBytes((const uint8_t*)ngp_framebuffer, 160 * 152 * 2);
-  tft.endWrite();
+  streamRawFrameAsync(ngp_framebuffer, 80, 44, 160, 152);
 }
 
 void DisplayEmu::streamLynxFrame(const uint16_t* lynx_framebuffer, int width, int height) {
-  tft.startWrite();
   // 160x102 centered on 320x240 screen (xOffset = 80, yOffset = 69)
-  tft.setAddrWindow(80, 69, 160, 102);
-  SPI.writeBytes((const uint8_t*)lynx_framebuffer, 160 * 102 * 2);
-  tft.endWrite();
+  streamRawFrameAsync(lynx_framebuffer, 80, 69, 160, 102);
 }
 
 void DisplayEmu::streamColemFrame(const uint16_t* colem_framebuffer, int width, int height) {
-  tft.startWrite();
   // 256x192 centered on 320x240 screen (xOffset = 32, yOffset = 24)
-  tft.setAddrWindow(32, 24, 256, 192);
-  SPI.writeBytes((const uint8_t*)colem_framebuffer, 256 * 192 * 2);
-  tft.endWrite();
+  streamRawFrameAsync(colem_framebuffer, 32, 24, 256, 192);
+}
+
+void DisplayEmu::streamGBFrame(const uint16_t* gb_framebuffer) {
+  // 240x216 centered on 320x240 screen (xOffset = 40, yOffset = 12)
+  streamRawFrameAsync(gb_framebuffer, OFFSET_X, OFFSET_Y, 240, 216);
 }
 
 // ---------------------------------------------------------------------------
@@ -453,10 +658,13 @@ void DisplayEmu::streamColemFrame(const uint16_t* colem_framebuffer, int width, 
 // where no startFrame/endFrame context exists.
 // ---------------------------------------------------------------------------
 void DisplayEmu::pushPixels(int yOffset, const uint16_t* rowBuffer, int rowsToDraw) {
+  waitForDisplay();
+  SpiArbiter::lock();
   tft.startWrite();
   tft.setAddrWindow(OFFSET_X, OFFSET_Y + yOffset, 240, rowsToDraw);
   SPI.writeBytes((const uint8_t*)rowBuffer, 240 * rowsToDraw * 2);
   tft.endWrite();
+  SpiArbiter::unlock();
 }
 
 // pushPixelsRaw: used inside a caller-managed startWrite/endWrite block.
@@ -466,22 +674,24 @@ void DisplayEmu::pushPixelsRaw(int yOffset, const uint16_t* rowBuffer, int rowsT
 }
 
 void DisplayEmu::pushPixelsFullScreen(const uint16_t* buffer) {
-  tft.startWrite();
-  tft.setAddrWindow(0, 0, 320, 240);
-  SPI.writeBytes((const uint8_t*)buffer, 320 * 240 * 2);
-  tft.endWrite();
+  streamRawFrameAsync(buffer, 0, 0, 320, 240);
 }
 
 // pushPixelsAt: unrestricted single-region blit at any (x, y) on the full
 // 320×240 display.  Self-contained SPI transaction (startWrite/endWrite).
 void DisplayEmu::pushPixelsAt(int x, int y, int w, int h, const uint16_t* buf) {
+  waitForDisplay();
+  SpiArbiter::lock();
   tft.startWrite();
   tft.setAddrWindow(x, y, w, h);
   SPI.writeBytes((const uint8_t*)buf, (uint32_t)w * h * 2);
   tft.endWrite();
+  SpiArbiter::unlock();
 }
 
 void DisplayEmu::startDirectWindow(int x, int y, int w, int h) {
+  waitForDisplay();
+  SpiArbiter::lock();
   tft.startWrite();
   tft.setAddrWindow(x, y, w, h);
 }
@@ -492,23 +702,30 @@ void DisplayEmu::writeWindowBytes(const uint8_t* data, size_t len) {
 
 void DisplayEmu::endDirectWindow() {
   tft.endWrite();
+  SpiArbiter::unlock();
 }
 
 void DisplayEmu::initMenuUI() {
-  if (!menuCanvas) {
-    PSRAMCanvas* canvas = new (std::nothrow) PSRAMCanvas(320, 240);
+  if (!menuCanvasArr[0]) {
+    menuCanvasArr[0] = new (std::nothrow) PSRAMCanvas(320, 240);
+    menuCanvasArr[1] = new (std::nothrow) PSRAMCanvas(320, 240);
     // GFXcanvas16 does not throw on an allocation failure.  Keep the menu in
     // a safe no-op state instead of dereferencing a null framebuffer.
-    if (!canvas || !canvas->getBuffer()) {
-      delete canvas;
+    if (!menuCanvasArr[0] || !menuCanvasArr[0]->getBuffer() ||
+        !menuCanvasArr[1] || !menuCanvasArr[1]->getBuffer()) {
+      if (menuCanvasArr[0]) { delete menuCanvasArr[0]; menuCanvasArr[0] = nullptr; }
+      if (menuCanvasArr[1]) { delete menuCanvasArr[1]; menuCanvasArr[1] = nullptr; }
+      menuCanvas = nullptr;
       return;
     }
-    menuCanvas = canvas;
+    activeDrawCanvas = 0;
+    menuCanvas = menuCanvasArr[activeDrawCanvas];
   }
 }
 
 void DisplayEmu::cleanupMenuUI() {
   // PERF-04: Preserve menuCanvas in PSRAM across game launches to prevent fragmentation
+  waitForDisplay();
 }
 
 void DisplayEmu::drawBootSplash(bool pressAnyButtonBlink) {
@@ -968,6 +1185,92 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   writeMenuCanvas();
 }
 
+void DisplayEmu::drawPauseMenu(const char* romTitle, int currentSlot, bool hasSaveState,
+                               bool hasBatterySave, int selectedOption, const char* statusToast) {
+  if (!menuCanvas) return;
+  
+  menuCanvas->fillScreen(UI_BLACK);
+
+  // Outer modal card (w=270, h=212 centered on 320x240 display: x=25, y=14)
+  menuCanvas->fillRoundRect(25, 14, 270, 212, 12, UI_DEEP_TEAL);
+  menuCanvas->drawRoundRect(25, 14, 270, 212, 12, UI_TEAL);
+
+  // Header Title
+  menuCanvas->setFont(&FreeSans9pt7b);
+  drawCentered("BMO QUICK SAVE & PAUSE", 36, UI_MINT);
+
+  // Sanitized ROM title fitted in the card
+  char cleanTitle[48];
+  sanitizeRomTitle(romTitle ? romTitle : "Game", cleanTitle, sizeof(cleanTitle));
+  menuCanvas->setFont();
+  drawFittedCentered(cleanTitle, 48, 240, UI_YELLOW);
+
+  // Slot status pill at y=58 (w=220, h=18 centered at x=50)
+  menuCanvas->fillRoundRect(50, 58, 220, 18, 6, UI_BLACK);
+  menuCanvas->drawRoundRect(50, 58, 220, 18, 6, hasSaveState ? UI_MINT : UI_MUTED);
+
+  char slotStatus[48];
+  snprintf(slotStatus, sizeof(slotStatus), "ACTIVE SLOT: [ %d / 5 ]  %s", 
+           currentSlot, hasSaveState ? "[SAVED]" : "[EMPTY]");
+  menuCanvas->setTextColor(hasSaveState ? UI_MINT : UI_MUTED);
+  menuCanvas->setCursor(centeredX(slotStatus, 320), 63);
+  menuCanvas->print(slotStatus);
+
+  // Separator
+  menuCanvas->drawFastHLine(35, 82, 250, UI_TEAL);
+
+  // Options list
+  const char* options[6] = {
+    "RESUME GAME",
+    "QUICK SAVE TO ACTIVE SLOT",
+    "QUICK LOAD FROM ACTIVE SLOT",
+    "CYCLE NEXT SLOT (1 - 5)",
+    "SAVE BATTERY RAM (.SAV)",
+    "QUIT TO CONSOLE MENU"
+  };
+
+  const int startY = 88;
+  const int rowH = 18;
+
+  for (int i = 0; i < 6; i++) {
+    int optY = startY + i * rowH;
+    bool isSel = (i == selectedOption);
+
+    if (isSel) {
+      menuCanvas->fillRoundRect(35, optY - 2, 250, 16, 4, UI_TEAL);
+      menuCanvas->setTextColor(UI_BLACK);
+    } else {
+      menuCanvas->setTextColor(UI_WHITE);
+    }
+
+    char optStr[48];
+    if (i == 1) {
+      snprintf(optStr, sizeof(optStr), "%s SAVE [SLOT %d]", isSel ? ">" : " ", currentSlot);
+    } else if (i == 2) {
+      snprintf(optStr, sizeof(optStr), "%s LOAD [SLOT %d]%s", isSel ? ">" : " ", currentSlot, hasSaveState ? "" : " (N/A)");
+    } else if (i == 4) {
+      snprintf(optStr, sizeof(optStr), "%s SAVE BATTERY RAM (.SAV)%s", isSel ? ">" : " ", hasBatterySave ? " [OK]" : "");
+    } else {
+      snprintf(optStr, sizeof(optStr), "%s %s", isSel ? ">" : " ", options[i]);
+    }
+
+    menuCanvas->setCursor(42, optY + 2);
+    menuCanvas->print(optStr);
+  }
+
+  // Bottom Toast banner or Controls Hint
+  if (statusToast && strlen(statusToast) > 0) {
+    menuCanvas->fillRoundRect(35, 202, 250, 16, 4, UI_YELLOW);
+    menuCanvas->setTextColor(UI_BLACK);
+    drawFittedCentered(statusToast, 206, 240, UI_BLACK);
+  } else {
+    menuCanvas->setTextColor(UI_MUTED);
+    drawFittedCentered("UP/DOWN: MOVE   A: SELECT   B/START: RESUME", 206, 260, UI_MUTED);
+  }
+
+  writeMenuCanvas();
+}
+
 void DisplayEmu::showSDCardWarning() {
   tft.fillRect(40, 80, 240, 80, panelColor(22, 72, 72));
   tft.drawRect(42, 82, 236, 76, panelColor(255, 210, 66));
@@ -1317,5 +1620,18 @@ void DisplayEmu::drawIdleMascotScreen(unsigned long idleSeconds, const char* sta
   drawFooter(stateMessage ? stateMessage : "PRESS ANY BUTTON TO WAKE UP BMO!");
   writeMenuCanvas();
 }
+
+void DisplayEmu::waitForDisplay() {
+  if (s_displayTaskHandle && s_displayDoneSem) {
+    if (xSemaphoreTake(s_displayDoneSem, portMAX_DELAY) == pdTRUE) {
+      xSemaphoreGive(s_displayDoneSem);
+    }
+  }
+}
+
+bool DisplayEmu::isDisplayBusy() {
+  return s_displayBusy;
+}
+
 
 

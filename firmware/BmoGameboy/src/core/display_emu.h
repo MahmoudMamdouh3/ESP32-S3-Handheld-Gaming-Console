@@ -28,6 +28,10 @@ namespace DisplayEmu {
                           RomType console, bool sdMounted);
   void cleanupMenuUI();
 
+  // Renders the In-Game Quick Pause & Save State Overlay Menu
+  void drawPauseMenu(const char* romTitle, int currentSlot, bool hasSaveState,
+                     bool hasBatterySave, int selectedOption, const char* statusToast = nullptr);
+
   // Renders the Hardware Self-Test & Diagnostics dashboard
   void drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeDram, uint32_t freePsram,
                                 uint32_t freeIram, uint8_t buttonMask);
@@ -139,4 +143,19 @@ namespace DisplayEmu {
 
   // Classic Game Boy "Pea-Soup Green" palette in BGR565 (byte-swapped for SPI)
   extern const uint16_t CLASSIC_PALETTE[4];
+
+  // Streams a full 240x216 Game Boy frame asynchronously via Core 0
+  void streamGBFrame(const uint16_t* gb_framebuffer);
+
+  // Streams an arbitrary 16-bit raw framebuffer asynchronously via Core 0
+  void streamRawFrameAsync(const uint16_t* fb, int x, int y, int w, int h);
+
+  // ---------------------------------------------------------------------------
+  // Phase 2: Dual-Core Asynchronous Display Pipeline & Bus Arbiter
+  // ---------------------------------------------------------------------------
+  // Waits for any in-flight Core 0 asynchronous display blit to finish.
+  void waitForDisplay();
+
+  // Returns true if Core 0 display worker task is currently streaming pixels.
+  bool isDisplayBusy();
 }
