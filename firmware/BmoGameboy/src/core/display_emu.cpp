@@ -328,6 +328,21 @@ namespace {
     drawFittedCentered(text, 230, 300, UI_MUTED);
   }
 
+  // Nintendo-grade glanceable physical button glyphs
+  void drawButtonPill(int x, int y, const char* glyph, const char* label, uint16_t pillBg, uint16_t glyphCol, uint16_t labelCol) {
+    int gLen = strlen(glyph);
+    int pillW = gLen * 6 + 8;
+    menuCanvas->fillRoundRect(x, y, pillW, 14, 4, pillBg);
+    menuCanvas->setFont();
+    menuCanvas->setTextColor(glyphCol);
+    menuCanvas->setCursor(x + 4, y + 3);
+    menuCanvas->print(glyph);
+
+    menuCanvas->setTextColor(labelCol);
+    menuCanvas->setCursor(x + pillW + 4, y + 3);
+    menuCanvas->print(label);
+  }
+
   void writeMenuCanvas() {
     if (!menuCanvasArr[0] || !menuCanvasArr[1]) {
       if (menuCanvas) {
@@ -785,6 +800,7 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
   // Mini Living BMO Mascot Face in top-left (8, 5, 48, 30)
   BmoFace::renderToBuffer(menuCanvas->getBuffer(), 320, 8, 5, 48, 30);
   menuCanvas->drawRoundRect(8, 5, 48, 30, 4, UI_DEEP_TEAL);
+  BmoFace::setGaze(0.35f, -0.28f); // BMO companion gazes toward active console card
 
   // Top Right System Counter ("SYSTEM 1/16")
   menuCanvas->setFont();
@@ -793,6 +809,12 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
   menuCanvas->setCursor(220, 20);
   menuCanvas->setTextColor(UI_MINT);
   menuCanvas->print(counterStr);
+
+  // Adjacent Carousel Card Tabs (Nintendo Switch Home style spatial depth)
+  menuCanvas->fillRoundRect(-18, 64, 40, 128, 8, UI_DEEP_TEAL);
+  menuCanvas->drawRoundRect(-18, 64, 40, 128, 8, UI_TEAL);
+  menuCanvas->fillRoundRect(298, 64, 40, 128, 8, UI_DEEP_TEAL);
+  menuCanvas->drawRoundRect(298, 64, 40, 128, 8, UI_TEAL);
 
   // Center Carousel Card (35, 54, 250, 148) — Exact 1:1 match to simulator!
   const int cardX = 35;
@@ -856,15 +878,18 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
   menuCanvas->setCursor(298, 134);
   menuCanvas->print(">");
 
-  // Footer Instruction Bar (0, 214, 320, 26)
+  // Footer Action Bar with Nintendo-style glanceable badges
   menuCanvas->fillRect(0, 214, 320, 26, UI_DEEP_TEAL);
-  menuCanvas->setFont();
-  menuCanvas->setCursor(20, 224);
-  menuCanvas->setTextColor(UI_MINT);
+  menuCanvas->drawFastHLine(0, 213, 320, UI_TEAL);
   if (!sdMounted) {
+    menuCanvas->setFont();
+    menuCanvas->setCursor(20, 224);
+    menuCanvas->setTextColor(UI_YELLOW);
     menuCanvas->print("BUILT-IN GAMES ONLY - SD CARD NOT FOUND");
   } else {
-    menuCanvas->print("A: Browse Games  |  SELECT: Specs  |  < / >: Console");
+    drawButtonPill(14,  220, "A",   "BROWSE", UI_CORAL,  UI_BLACK, UI_WHITE);
+    drawButtonPill(116, 220, "SEL", "SPECS",  UI_TEAL,   UI_BLACK, UI_WHITE);
+    drawButtonPill(212, 220, "< >", "SYSTEM", UI_YELLOW, UI_BLACK, UI_WHITE);
   }
 
   writeMenuCanvas();
@@ -1170,8 +1195,25 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   char position[36];
   snprintf(position, sizeof(position), "%d / %d  [%s]", selectedIndex + 1, count, consoleBadge(actualType));
   drawCentered(position, 198, UI_DEEP_TEAL);
-  
-  drawFooter("◄/►: JUMP A-Z    A: PLAY    B: BACK    SELECT: ★ FAV");
+
+  // Library Scroll Track (Spatial positioning like Nintendo Switch / Apple watchOS list)
+  if (count > 1) {
+    const int trackX = 60;
+    const int trackW = 200;
+    const int trackY = 168;
+    menuCanvas->fillRect(trackX, trackY, trackW, 2, UI_DEEP_TEAL);
+    int thumbW = max(14, trackW / count);
+    int thumbX = trackX + (int)(((float)selectedIndex / (float)(count - 1)) * (float)(trackW - thumbW));
+    menuCanvas->fillRoundRect(thumbX, trackY - 1, thumbW, 4, 2, isFav ? UI_YELLOW : UI_MINT);
+  }
+
+  // Footer Action Bar with Nintendo-style glanceable badges
+  menuCanvas->fillRect(0, 214, 320, 26, UI_DEEP_TEAL);
+  menuCanvas->drawFastHLine(0, 213, 320, UI_TEAL);
+  drawButtonPill(8,   220, "A",   "PLAY", UI_CORAL,  UI_BLACK, UI_WHITE);
+  drawButtonPill(78,  220, "B",   "BACK", UI_MINT,   UI_BLACK, UI_WHITE);
+  drawButtonPill(146, 220, "SEL", isFav ? "★ UNSTAR" : "★ STAR", UI_YELLOW, UI_BLACK, UI_WHITE);
+  drawButtonPill(245, 220, "< >", "A-Z",  UI_TEAL,   UI_BLACK, UI_WHITE);
   writeMenuCanvas();
 }
 
@@ -1248,15 +1290,16 @@ void DisplayEmu::drawPauseMenu(const char* romTitle, int currentSlot, bool hasSa
     menuCanvas->print(optStr);
   }
 
-  // Bottom Toast banner or Controls Hint
+  // Floating Pill Toast HUD (Apple Dynamic Island style)
   if (statusToast && strlen(statusToast) > 0) {
-    menuCanvas->fillRoundRect(35, 202, 250, 16, 4, UI_YELLOW);
-    menuCanvas->setTextColor(UI_BLACK);
-    drawFittedCentered(statusToast, 206, 240, UI_BLACK);
-  } else {
-    menuCanvas->setTextColor(UI_MUTED);
-    drawFittedCentered("UP/DOWN: MOVE   A: SELECT   B/START: RESUME", 206, 260, UI_MUTED);
+    menuCanvas->fillRoundRect(40, 10, 240, 22, 11, UI_YELLOW);
+    menuCanvas->drawRoundRect(40, 10, 240, 22, 11, UI_WHITE);
+    menuCanvas->setFont();
+    drawFittedCentered(statusToast, 24, 220, UI_BLACK);
   }
+
+  menuCanvas->setTextColor(UI_MUTED);
+  drawFittedCentered("UP/DOWN: MOVE   A: SELECT   B/START: RESUME", 206, 260, UI_MUTED);
 
   writeMenuCanvas();
 }
