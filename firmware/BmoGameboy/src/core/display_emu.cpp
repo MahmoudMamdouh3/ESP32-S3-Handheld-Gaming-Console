@@ -4,6 +4,7 @@
 #include "battery.h"
 #include "theme.h"
 #include "spi_arbiter.h"
+#include "box_art.h"
 #include <SPI.h>
 #include <Adafruit_ST7789.h>
 #include <cstring>
@@ -1156,11 +1157,17 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   // Authentic BMO Mint & Teal Cover Card
   menuCanvas->fillRoundRect(81, 46, 158, 114, 12, UI_DEEP_TEAL);
   menuCanvas->drawRoundRect(81, 46, 158, 114, 12, isFav ? UI_YELLOW : UI_TEAL);
-  menuCanvas->fillRect(102, 62, 116, 52, UI_BLACK);
+
+  if (BoxArt::hasArt()) {
+    // Render 64x64 Retro Box Art centered on the cover card
+    BoxArt::draw(menuCanvas, 128, 54, true, isFav ? UI_YELLOW : UI_TEAL);
+  } else {
+    menuCanvas->fillRect(102, 62, 116, 52, UI_BLACK);
+    menuCanvas->setFont(&FreeSans12pt7b);
+    drawCentered(consoleBadge(actualType), 98, UI_YELLOW);
+  }
+
   menuCanvas->drawRoundRect(112, 126, 96, 18, 8, isFav ? UI_YELLOW : UI_TEAL);
-  
-  menuCanvas->setFont(&FreeSans12pt7b);
-  drawCentered(consoleBadge(actualType), 98, UI_YELLOW);
   
   menuCanvas->setFont();
   if (isFav) {

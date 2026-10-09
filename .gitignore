@@ -30,6 +30,7 @@ games/
 rom_data*.h
 
 rom_*.h
+!firmware/BmoGameboy/src/core/rom_index.h
 cover_*.h
 
 tools/zig/

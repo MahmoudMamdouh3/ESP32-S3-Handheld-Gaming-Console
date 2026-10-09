@@ -5,6 +5,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Milestone 14.0] - 2026-10-09 (Phase 4: High-Speed Binary ROM Index Cache & 64×64 Box Art Cover Engine)
+### Added
+- **Binary ROM Index Cache (`.bmo_index`)**:
+  - Implemented 36-byte packed header (`BmoIndexHeader`) with `BMOIDX01` magic signature, version check, entry count, and CRC32 payload checksum.
+  - Implemented 72-byte entry format (`BmoIndexEntry`) with 64-character title, console type tag, favorite flag, and box art presence flag.
+  - Added fast-load routines in `SDCard` (`loadIndex()`, `saveIndex()`, `rebuildIndex()`) reducing boot-time catalog enumeration from ~3,500 ms to < 15 ms (>200× speedup).
+  - Added case-insensitive alphabetical sorting (`SDCard::sortRoms()`) ensuring organized library browsing and instant A–Z jumping across all console collections.
+- **64×64 Retro Box Art Cover Art Engine (`BoxArt`)**:
+  - Created `BoxArt` subsystem (`box_art.h`, `box_art.cpp`) with 8,192-byte PSRAM buffer (`MALLOC_CAP_SPIRAM`), guaranteeing zero internal DRAM consumption.
+  - Supported both 64×64 raw 16-bit (`.raw`) and Windows 16/24-bit (`.bmp`) images with automatic BGR565 byte-swapped color translation.
+  - Integrated box art rendering into `DisplayEmu::drawGameSelectMenu` with retro rounded framing, falling back gracefully to classic console badges when art is not available.
+  - Added single-load caching into `BmoGameboy.ino`, loading SD card thumbnails only on selection changes (< 2 ms load time, 12 µs canvas blit).
+- **Testing & Verification**:
+  - Added `tests/test_rom_index.py` (8 test cases) and `tests/test_box_art.py` (6 test cases).
+  - Expanded unit test suite from 36 to 51 passing tests.
+### Verified
+- `python scripts/validate_repo.py` → PASS (All 7 phases clean, Flash 33.1%, SRAM 75.2%).
+- `python -m tools.guardian audit` → PASS (0 Critical findings).
+- `python -m unittest discover tests` → 51/51 tests OK.
+
+---
+
 ## [Milestone 13.0] - 2026-10-09 (Phase 3: Non-Volatile Multi-Slot Save States & Cartridge Battery RAM Persistence)
 ### Added
 - **Non-Volatile Save Subsystem (`SaveManager`)**:

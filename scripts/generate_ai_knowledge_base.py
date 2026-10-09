@@ -249,6 +249,20 @@ def build_knowledge_base():
                 "guardrails": ["Fact-check against hardware limits before executing", "Provide scientific pushback and alternatives", "No marketing hyperbole"],
                 "verification_command": "python scripts/validate_repo.py",
             },
+            "save_states_and_persistence": {
+                "intent_keywords": ["save", "save state", "slot", "restore", "pause menu", "battery ram", "persistence", "fram", "crc32"],
+                "mandatory_rules": ["19_security_and_data_integrity.md", "28_display_and_spi_contract.md", "15_performance_budgets.md"],
+                "primary_files": ["firmware/BmoGameboy/src/core/save_manager.h", "firmware/BmoGameboy/src/core/save_manager.cpp"],
+                "guardrails": ["Must write to .tmp before atomic rename", "Must verify CRC32 and coreId on restore", "Must acquire SpiArbiter"],
+                "verification_command": "python -m unittest discover tests && python scripts/validate_repo.py",
+            },
+            "binary_rom_index_and_box_art": {
+                "intent_keywords": ["rom index", "bmo_index", "cache", "box art", "cover art", "bmp", "raw", "catalog", "sort"],
+                "mandatory_rules": ["19_security_and_data_integrity.md", "15_performance_budgets.md", "28_display_and_spi_contract.md"],
+                "primary_files": ["firmware/BmoGameboy/src/core/rom_index.h", "firmware/BmoGameboy/src/core/box_art.h", "firmware/BmoGameboy/src/core/box_art.cpp", "firmware/BmoGameboy/src/core/sd_card.h", "firmware/BmoGameboy/src/core/sd_card.cpp"],
+                "guardrails": ["Allocate box art buffer strictly in PSRAM (8KB)", "Validate BMP 64x64 bounds", "Verify CRC32 of .bmo_index"],
+                "verification_command": "python -m unittest discover tests && python scripts/validate_repo.py",
+            },
         },
     }
 

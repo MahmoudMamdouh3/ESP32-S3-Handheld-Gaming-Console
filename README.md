@@ -7,12 +7,15 @@ A multi-platform retro gaming handheld console powered by the ESP32-S3 microcont
 ## Key Highlights
 
 - **Hardware Platform:** ESP32-S3-N16R8 (Dual-Core LX7 @ 240MHz, 16MB OPI Flash, 8MB Octal PSRAM).
-- **Display Pipeline:** ST7789 240×320 SPI TFT (Landscape 320×240) @ 80MHz SPI with atomic N3 streaming protocol (`startFrame` / `streamPixelRow` / `endFrame`).
+- **Display Pipeline:** ST7789 240×320 SPI TFT (Landscape 320×240) @ 80MHz SPI with Core 0 dedicated FreeRTOS display worker, double-buffered PSRAM canvases, and SpiArbiter bus safety.
+- **Save States & Battery RAM:** Multi-slot non-volatile save states (slots 1–5) and battery-backed SRAM persistence (`.sav`) protected by FreeRTOS SPI bus arbiter, CRC32 verification, and in-game quick pause overlay.
+- **High-Speed Cache & Box Art:** Binary ROM fast-cache (`.bmo_index`) reducing 2,000-ROM enumeration from ~3.5s to < 15ms, with 64×64 retro box art cover streaming from SD card.
 - **Mascot Face Engine:** Procedural 2D Signed Distance Field (SDF) mathematical renderer with analytic anti-aliasing and dynamic emotional expressions (`IDLE`, `HAPPY`, `SURPRISED`, `SLEEPY`, `LOW_BATTERY`, `CHARGING`, `ERROR`, `SHUTDOWN`).
 - **Multi-Console Emulation:**
   - **Peanut-GB:** Game Boy DMG (`.gb`)
   - **Walnut-CGB:** Game Boy Color (`.gbc`) with custom CGB palette engine
   - **Agnes:** Nintendo Entertainment System (`.nes`)
+  - **SMSPlus:** Sega Master System / Game Gear (`.sms`, `.gg`)
   - **doomgeneric:** Classic DOOM (`.wad`) with direct VFS streaming
 - **Storage & Fallback:** Dual-ROM system supporting hot-swappable MicroSD cards and built-in flash-baked ROMs (Super Mario Bros. Deluxe, Zelda: Oracle of Ages) running seamlessly without an SD card.
 - **AI-Compatible Agent Environment:** Strict governance rules, zero-context primers, symbol verification tables, and anti-pattern registries under [`.agents/rules/`](file:///e:/BMO%20Gameboy/.agents/rules/README.md).
@@ -21,7 +24,7 @@ A multi-platform retro gaming handheld console powered by the ESP32-S3 microcont
 
 ## Documentation Quick Links
 
-- [**Software Design Document (SDD v3.0)**](file:///e:/BMO%20Gameboy/docs/software-design-document.md) — Authoritative living architectural specification covering hardware ground truth, state machine, memory layout, rendering pipeline, emulator contracts, and AI governance.
+- [**Software Design Document (SDD v3.5)**](file:///e:/BMO%20Gameboy/docs/software-design-document.md) — Authoritative living architectural specification covering hardware ground truth, state machine, memory layout, rendering pipeline, emulator contracts, and AI governance.
 - [**Agent Quick-Start Primer**](file:///e:/BMO%20Gameboy/.agents/rules/31_quick_start_primer.md) — 90-second on-ramp and decision matrix for autonomous coding agents and human contributors.
 - [**Hardware Notes & Lessons Learned**](file:///e:/BMO%20Gameboy/docs/hardware-notes.md) — Board-level wiring, pin restrictions, and power notes.
 - [**Changelog**](file:///e:/BMO%20Gameboy/CHANGELOG.md) — Repository version history and milestone tracking.

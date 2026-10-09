@@ -21,6 +21,8 @@
 #include "src/core/bmo_face.h"
 #include "src/core/spi_arbiter.h"
 #include "src/core/save_manager.h"
+#include "src/core/box_art.h"
+#include "src/core/rom_index.h"
 #include <SPI.h>
 #include <rom/ets_sys.h>      // N7: ets_delay_us for tight hardware-timer spin
 #include <esp_heap_caps.h>    // BM2: IRAM usage reporting
@@ -378,6 +380,11 @@ void loop() {
         rebuildVisibleGames();
         currentState = STATE_GAME_MENU;
         BmoFace::setExpression(BmoFace::IDLE);
+        if (visibleGameCount > 0 && selectedGame()) {
+          BoxArt::load(selectedGame()->filename);
+        } else {
+          BoxArt::unload();
+        }
         lastButtonMs = nowMs;
       }
     }
@@ -512,9 +519,15 @@ void loop() {
         if (CONSOLES[selectedConsoleIndex] == ROM_FAVORITES) {
           visibleGamesDirty = true;
           rebuildVisibleGames();
+          if (visibleGameCount > 0 && selectedGame()) {
+            BoxArt::load(selectedGame()->filename);
+          } else {
+            BoxArt::unload();
+          }
         }
         lastButtonMs = millis();
       }
+      int prevGameIndex = selectedGameIndex;
       if (left && visibleGameCount > 0) {
         // Alphabetical reverse skip: find previous ROM with different starting letter
         const RomFile* cur = selectedGame();
@@ -561,11 +574,20 @@ void loop() {
         selectedGameIndex = (selectedGameIndex + 1) % visibleGameCount;
         lastButtonMs = millis();
       }
+      if (selectedGameIndex != prevGameIndex) {
+        if (visibleGameCount > 0 && selectedGame()) {
+          BoxArt::load(selectedGame()->filename);
+        } else {
+          BoxArt::unload();
+        }
+      }
       if (b) {
+        BoxArt::unload();
         currentState = STATE_CONSOLE_MENU;
         BmoFace::setExpression(BmoFace::IDLE);
         lastButtonMs = millis();
       } else if (a && visibleGameCount > 0) {
+        BoxArt::unload();
         const RomFile* selectedRom = selectedGame();
         if (!selectedRom) {
           currentState = STATE_CONSOLE_MENU;
