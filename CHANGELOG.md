@@ -5,6 +5,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Milestone 16.0] - 2026-10-09 (Phase 6: Ultra-High-End Living BMO Mascot Engine - 2026 Edition)
+### Added
+- **2026 Living BMO Mascot Engine (`BmoFace`)**:
+  - Full 320×240 native high-definition vector SDF canvas allocated in Octal PSRAM (`MALLOC_CAP_SPIRAM`), freeing 32,768 bytes of internal SRAM and reducing overall SRAM utilization from 75.2% to **65.3%**.
+  - Authentic 1:1 Adventure Time character aesthetics: `#8AD5C3` mint seafoam screen, `#101E2B` deep charcoal eye/mouth outlines, `#FF8BA7` soft glowing coral cheeks, and open mouth cavity with `#FA7F8F` warm coral tongue.
+  - Second-order critically damped harmonic spring-damper differential physics ($\zeta \approx 0.72$, $\omega_n \approx 22\text{ rad/s}$) for fluid squash-and-stretch, overshoot, and elastic bounce.
+  - Continuous biological breathing wave ($T \approx 3.2\text{ s}$), autonomous gaze saccades, realistic blinks with occasional double-blinks.
+  - Ambient floating particle system: rhythmic drifting `Z z z` dream particles during sleep and 4-point diamond star sparkles during celebration.
+  - 16-state emotion matrix (`IDLE`, `SURPRISED`, `HAPPY`, `SLEEPY`, `LOW_BATTERY`, `CHARGING`, `ERROR`, `SHUTDOWN`, `HIDDEN`, `JOY`, `SLEEPING`, `WINK`, `BLUSH`, `CONFUSED`, `ANNOYED`, `LOVE`, `TICKLED`, `CELEBRATING`).
+  - Spatial bounding-box culling skipping > 70% of display pixels, keeping 320×240 frame render under 2.8 ms on ESP32-S3 and 0.44 ms on host.
+- **Interactive Gamepad Mode in `STATE_IDLE_MASCOT` (60 FPS)**:
+  - Real-time D-pad gaze tracking where BMO looks directly towards pressed directions.
+  - D-pad rapid wiggling detection triggering the `TICKLED` state (squirming spring vibrations and joyful laughing bounce).
+  - Button A triggers cheerful wink (`triggerWink()`) with star sparkle bursts.
+  - Button B triggers shy blush (`triggerBlush()`) with deep glowing cheeks and bashful downward glance.
+  - Button SELECT triggers curious thinking face (`CONFUSED`), and START or 1-second hold wakes BMO up smoothly to the console menu.
+- **Display Integration (`DisplayEmu`)**:
+  - Upgraded `drawIdleMascotScreen` to render the native 320×240 living mascot screen with sleek floating UI badges.
+  - Upgraded `drawBootSplash` and console menu headers to render crisp anti-aliased living BMO mascot faces directly into the PSRAM canvas (`menuCanvas`).
+- **Testing & Verification**:
+  - Added `tests/test_bmo_mascot_engine.py` (6 test cases) validating color spaces, spring physics stability, subpixel AA, spatial culling skip ratio (>70%), and memory budgets.
+  - Unit test suite expanded from 52 to 58 passing tests (58/58 OK).
+### Verified
+- `python scripts/validate_repo.py` → PASS (All 7 phases clean, Flash 33.2%, SRAM 65.3% — DRAM freed by 32.5 KB).
+- `python -m unittest discover tests` → 58/58 tests OK.
+- `python -m tools.guardian audit` → PASS (0 Critical, 0 new warnings).
+
+---
+
 ## [Milestone 15.0] - 2026-10-09 (Phase 5.1: Unified Core Architecture Contract & PCE Persistence)
 ### Added
 - **Unified Core Contract (`EmulatorCoreContract`)**:

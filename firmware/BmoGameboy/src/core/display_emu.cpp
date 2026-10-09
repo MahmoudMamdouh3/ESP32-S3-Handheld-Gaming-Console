@@ -5,6 +5,7 @@
 #include "theme.h"
 #include "spi_arbiter.h"
 #include "box_art.h"
+#include "bmo_face.h"
 #include <SPI.h>
 #include <Adafruit_ST7789.h>
 #include <cstring>
@@ -737,22 +738,9 @@ void DisplayEmu::drawBootSplash(bool pressAnyButtonBlink) {
   const int cx = 160;
   const int cy = 76;
   
-  // Body Card (BMO Teal #5FB49C)
-  menuCanvas->fillRoundRect(cx - 60, cy - 40, 120, 80, 16, UI_TEAL);
-  menuCanvas->drawRoundRect(cx - 60, cy - 40, 120, 80, 16, UI_DEEP_TEAL);
-
-  // Black Dot Eyes
-  menuCanvas->fillCircle(cx - 25, cy - 8, 7, UI_BLACK);
-  menuCanvas->fillCircle(cx + 25, cy - 8, 7, UI_BLACK);
-
-  // Cheerful Smile
-  menuCanvas->drawCircle(cx, cy + 8, 10, UI_BLACK);
-  menuCanvas->drawCircle(cx, cy + 9, 10, UI_BLACK);
-  menuCanvas->fillRect(cx - 12, cy - 2, 24, 10, UI_TEAL);
-
-  // Rosy Cheeks (#E8175D / #F48FB1)
-  menuCanvas->fillCircle(cx - 40, cy + 2, 6, UI_CORAL);
-  menuCanvas->fillCircle(cx + 40, cy + 2, 6, UI_CORAL);
+  // Living BMO Mascot Face (w=120, h=80 centered on 320x240)
+  BmoFace::renderToBuffer(menuCanvas->getBuffer(), 320, cx - 60, cy - 40, 120, 80);
+  menuCanvas->drawRoundRect(cx - 61, cy - 41, 122, 82, 10, UI_DEEP_TEAL);
 
   // Title: "BMO GAMEBOY"
   menuCanvas->setFont(&FreeSans12pt7b);
@@ -794,14 +782,9 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
   // Top Header Bar: Dark Forest Teal (0, 0, 320, 42)
   menuCanvas->fillRect(0, 0, 320, 42, UI_DEEP_TEAL);
 
-  // Mini BMO Mascot Face in top-left (8, 5, 48, 30)
-  menuCanvas->fillRoundRect(8, 5, 48, 30, 6, UI_TEAL);
-  menuCanvas->fillCircle(20, 15, 2, UI_BLACK);
-  menuCanvas->fillCircle(36, 15, 2, UI_BLACK);
-  menuCanvas->drawCircle(28, 20, 4, UI_BLACK);
-  menuCanvas->fillRect(24, 15, 8, 4, UI_TEAL);
-  menuCanvas->fillCircle(14, 20, 2, UI_CORAL);
-  menuCanvas->fillCircle(42, 20, 2, UI_CORAL);
+  // Mini Living BMO Mascot Face in top-left (8, 5, 48, 30)
+  BmoFace::renderToBuffer(menuCanvas->getBuffer(), 320, 8, 5, 48, 30);
+  menuCanvas->drawRoundRect(8, 5, 48, 30, 4, UI_DEEP_TEAL);
 
   // Top Right System Counter ("SYSTEM 1/16")
   menuCanvas->setFont();
@@ -1569,64 +1552,29 @@ void DisplayEmu::drawConsoleIcon(RomType type, int x, int y, uint16_t primaryCol
 
 void DisplayEmu::drawIdleMascotScreen(unsigned long idleSeconds, const char* stateMessage) {
   if (!menuCanvas) return;
-  menuCanvas->fillScreen(UI_BLACK);
   
-  // Header bar
-  menuCanvas->fillRect(0, 0, 320, 32, UI_DEEP_TEAL);
+  // 2026 Ultra-High-End Living BMO Screen: renders native 320x240 in Octal PSRAM
+  BmoFace::renderFullScreen(menuCanvas->getBuffer(), 320, 240);
+
+  // Sleek floating title badge
+  menuCanvas->fillRect(40, 8, 240, 22, UI_DEEP_TEAL);
+  menuCanvas->drawRect(40, 8, 240, 22, UI_MINT);
   menuCanvas->setFont(&FreeSans9pt7b);
-  drawCentered("BMO IS DREAMING...", 22, UI_YELLOW);
+  const char* title = (idleSeconds > 40) ? "BMO IS SLEEPING..." : "BMO IS DREAMING...";
+  drawCentered(title, 24, UI_YELLOW);
 
-  // Large living BMO face
-  const int cx = 160;
-  const int cy = 110;
-  
-  // BMO Body Card
-  menuCanvas->fillRoundRect(cx - 70, cy - 50, 140, 100, 16, UI_TEAL);
-  menuCanvas->drawRoundRect(cx - 70, cy - 50, 140, 100, 16, UI_DEEP_TEAL);
-  
-  // Eyes
-  const unsigned long phase = (idleSeconds / 3) % 4;
-  if (phase == 0) {
-    menuCanvas->fillCircle(cx - 30, cy - 10, 7, UI_BLACK);
-    menuCanvas->fillCircle(cx + 30, cy - 10, 7, UI_BLACK);
-    menuCanvas->drawCircle(cx, cy + 12, 14, UI_BLACK);
-    menuCanvas->fillRect(cx - 16, cy - 2, 32, 14, UI_TEAL);
-  } else if (phase == 1) {
-    menuCanvas->fillRect(cx - 36, cy - 12, 14, 5, UI_BLACK);
-    menuCanvas->fillRect(cx + 22, cy - 12, 14, 5, UI_BLACK);
-    menuCanvas->drawFastHLine(cx - 10, cy + 15, 20, UI_BLACK);
-  } else if (phase == 2) {
-    menuCanvas->drawLine(cx - 36, cy - 6, cx - 29, cy - 14, UI_BLACK);
-    menuCanvas->drawLine(cx - 29, cy - 14, cx - 22, cy - 6, UI_BLACK);
-    menuCanvas->drawLine(cx + 22, cy - 6, cx + 29, cy - 14, UI_BLACK);
-    menuCanvas->drawLine(cx + 29, cy - 14, cx + 36, cy - 6, UI_BLACK);
-    menuCanvas->drawCircle(cx, cy + 10, 8, UI_BLACK);
-    menuCanvas->fillRect(cx - 10, cy + 2, 20, 8, UI_TEAL);
-  } else {
-    menuCanvas->fillCircle(cx - 30, cy - 10, 7, UI_BLACK);
-    menuCanvas->fillCircle(cx + 30, cy - 10, 7, UI_BLACK);
-    menuCanvas->fillCircle(cx, cy + 12, 12, UI_BLACK);
-    menuCanvas->fillRect(cx - 14, cy, 28, 12, UI_TEAL);
-  }
-
-  // Rosy cheeks
-  menuCanvas->fillCircle(cx - 48, cy + 2, 6, UI_CORAL);
-  menuCanvas->fillCircle(cx + 48, cy + 2, 6, UI_CORAL);
-
-  // Floating Z z z
+  // Modern interactive controls footer
+  menuCanvas->fillRect(10, 212, 300, 22, UI_BLACK);
+  menuCanvas->drawRect(10, 212, 300, 22, UI_TEAL);
   menuCanvas->setFont();
-  menuCanvas->setTextColor(UI_DEEP_TEAL);
-  menuCanvas->setCursor(cx + 80, cy - 35);
-  menuCanvas->print("Z");
-  menuCanvas->setCursor(cx + 92, cy - 48);
-  menuCanvas->print("z");
-  menuCanvas->setCursor(cx + 102, cy - 60);
-  menuCanvas->print("z");
+  menuCanvas->setTextColor(UI_MINT);
+  const char* prompt = stateMessage ? stateMessage : "D-PAD: LOOK/TICKLE | A: WINK | B: BLUSH | START: WAKE";
+  menuCanvas->setCursor(centeredX(prompt, 320), 219);
+  menuCanvas->print(prompt);
 
-  // Bottom prompt
-  drawFooter(stateMessage ? stateMessage : "PRESS ANY BUTTON TO WAKE UP BMO!");
   writeMenuCanvas();
 }
+
 
 void DisplayEmu::waitForDisplay() {
   if (s_displayTaskHandle && s_displayDoneSem) {
