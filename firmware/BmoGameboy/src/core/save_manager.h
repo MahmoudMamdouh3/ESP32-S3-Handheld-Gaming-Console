@@ -13,7 +13,16 @@ namespace SaveManager {
     CORE_GB_CGB = 2,
     CORE_NES    = 3,
     CORE_SMS    = 4,
-    CORE_DOOM   = 5
+    CORE_DOOM   = 5,
+    CORE_PCE    = 6,
+    CORE_ATARI  = 7,
+    CORE_PICO8  = 8,
+    CORE_GENESIS = 9,
+    CORE_SNES   = 10,
+    CORE_WSWAN  = 11,
+    CORE_NGP    = 12,
+    CORE_LYNX   = 13,
+    CORE_COLEM  = 14
   };
 
   struct SaveStateHeader {

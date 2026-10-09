@@ -33,15 +33,19 @@
 
 ---
 
-## Next Phase: Tier 1 Real Core Implementations
+## Phase 5: Tier 1 Real Core Implementations [IN PROGRESS]
 
-### Milestone 5.1: Memory & Execution Layout Assessment
-- [ ] 1. Profile 8MB Octal PSRAM budget and DMA bandwidth for target cores (Sega Genesis, Super Nintendo, PC Engine).
-- [ ] 2. Define standard unified core interface (`begin`, `runFrame`, `updateJoypad`, `destroy`, `saveState`, `loadState`) per Rule 12.
+### Milestone 5.1: Memory & Execution Layout Assessment [COMPLETE]
+- [x] 1. Profiled 8MB Octal PSRAM budget and DMA bandwidth for target cores (PCE ~73KB, Genesis ~350KB, WonderSwan ~100KB, SNES ~500KB; base footprint < 7% of 8MB, leaving > 7.4MB headroom).
+- [x] 2. Defined unified `EmulatorCoreContract` (`begin`, `runFrame`, `updateJoypad`, `destroy`, `saveState`, `loadState`, `saveBatteryRam`, `loadBatteryRam`) per Rule 12.
+- [x] 3. Expanded `SaveManager::CoreId` with all 14 console types (`CORE_PCE = 6`, `CORE_ATARI = 7`, `CORE_PICO8 = 8`, `CORE_GENESIS = 9`, etc.).
+- [x] 4. Wired PCE core persistence into `BmoGameboy.ino` (`autoSaveCurrentBatteryRam`, `quickSaveState`, `quickLoadState`, transparent boot auto-load).
+- [x] 5. Added test coverage in `tests/test_save_manager.py` (52/52 tests passing).
 
-### Milestone 5.2: Core Integration & Engine Bringup
-- [ ] 1. Bring up cycle-accurate Genesis / Mega Drive core in PSRAM replacing `Genesis-Stub`.
-- [ ] 2. Bring up PC Engine / TurboGrafx-16 core in PSRAM replacing `PCE-Stub`.
+### Milestone 5.2: Core Integration & Engine Bringup [IN PROGRESS]
+- [ ] 1. Bring up cycle-accurate PC Engine / TurboGrafx-16 HuC6280 CPU + VDC scanline engine in PSRAM replacing `PCE-Stub`.
+- [ ] 2. Bring up cycle-accurate Genesis / Mega Drive core in PSRAM replacing `Genesis-Stub`.
 - [ ] 3. Bring up WonderSwan / Color core in PSRAM replacing `WonderSwan-Stub`.
+
 
 

@@ -2,7 +2,7 @@
 **Project:** ESP32-S3-Handheld-Gaming-Console  
 **Target Platform:** ESP32-S3-N16R8 (16MB OPI Flash, 8MB Octal PSRAM)  
 **Target Display:** ST7789VW 2.4" SPI TFT (240×320 Physical, 320×240 Landscape Viewport)  
-**Document Version:** 3.5 (Technical Specification — Updated 2026-10-09)  
+**Document Version:** 3.6 (Technical Specification — Updated 2026-10-09)  
 **Status:** Approved Engineering Ground Truth  
 **Maintained By:** Firmware Engineering Team & Autonomous AI Agents  
 
@@ -23,7 +23,7 @@ Engines are classified by their `engine_status` field in `AGENT_MANIFEST.json`. 
 | **Agnes** | NES | `.nes` | FIXED_UNVERIFIED | ✅ Yes |
 | **doomgeneric** | DOOM WAD | `.wad` | FIXED_UNVERIFIED | ✅ Yes |
 | **SMSPlus** | Sega Master System / Game Gear | `.sms`, `.gg` | FIXED_UNVERIFIED | ✅ Yes |
-| PCE-Stub | PC Engine / TurboGrafx-16 | `.pce` | STUB | ⚠️ Blank screen only |
+| PCE-Stub | PC Engine / TurboGrafx-16 | `.pce` | STUB (Persistence Wired) | ⚠️ Scaffold + Save States / Battery RAM |
 | Stella-Stub | Atari 2600 | `.a26` | STUB | ⚠️ Blank screen only |
 | PICO-8-Stub | PICO-8 | `.p8` | STUB | ⚠️ Blank screen only |
 | Genesis-Stub | Sega Genesis / Mega Drive | `.gen`, `.md`, `.smd` | STUB | ⚠️ Solid background only |

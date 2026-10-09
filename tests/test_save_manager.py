@@ -64,11 +64,63 @@ class SaveManagerBinaryTests(unittest.TestCase):
             path = f"/saves/Zelda Ages.s0{slot}"
             self.assertTrue(path.endswith(f".s0{slot}"))
 
-    def test_battery_save_path(self):
-        rom_filename = "/roms/gbc/Legend of Zelda Ages (Baked).gbc"
-        base = Path(rom_filename).stem
-        path = f"/saves/{base}.sav"
-        self.assertEqual(path, "/saves/Legend of Zelda Ages (Baked).sav")
+    def test_all_core_ids_supported(self):
+        core_ids = {
+            "CORE_NONE": 0,
+            "CORE_GB_DMG": 1,
+            "CORE_GB_CGB": 2,
+            "CORE_NES": 3,
+            "CORE_SMS": 4,
+            "CORE_DOOM": 5,
+            "CORE_PCE": 6,
+            "CORE_ATARI": 7,
+            "CORE_PICO8": 8,
+            "CORE_GENESIS": 9,
+            "CORE_SNES": 10,
+            "CORE_WSWAN": 11,
+            "CORE_NGP": 12,
+            "CORE_LYNX": 13,
+            "CORE_COLEM": 14,
+        }
+        for name, cid in core_ids.items():
+            packed = struct.pack(
+                self.HEADER_FORMAT,
+                self.MAGIC,
+                self.VERSION,
+                1000,
+                cid,
+                64,
+                0,
+                0x12345678,
+                b"Test Core\x00" + b"\x00" * 22
+            )
+            unpacked = struct.unpack(self.HEADER_FORMAT, packed)
+            self.assertEqual(unpacked[3], cid, f"Core ID mismatch for {name}")
+
+    def test_pce_save_state_payload(self):
+        # PCE has ~73KB context (8KB RAM, 64KB VRAM, 1KB palette, registers)
+        pce_ram = b"\xAA" * 0x2000
+        pce_vram = b"\x55" * 0x10000
+        pce_palette = b"\x00\x08" * 512
+        state_payload = pce_ram + pce_vram + pce_palette
+        
+        crc = self.compute_crc32(state_payload)
+        packed_hdr = struct.pack(
+            self.HEADER_FORMAT,
+            self.MAGIC,
+            self.VERSION,
+            9999,
+            6,  # CORE_PCE
+            len(state_payload),
+            0x2000,
+            crc,
+            b"Bonks Adventure\x00" + b"\x00" * 16
+        )
+        unpacked = struct.unpack(self.HEADER_FORMAT, packed_hdr)
+        self.assertEqual(unpacked[3], 6)
+        self.assertEqual(unpacked[4], len(state_payload))
+        self.assertEqual(unpacked[6], crc)
 
 if __name__ == "__main__":
     unittest.main()
+

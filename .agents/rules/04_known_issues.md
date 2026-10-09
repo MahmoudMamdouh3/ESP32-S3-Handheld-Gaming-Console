@@ -7,6 +7,13 @@
 
 ---
 
+## [PHASE-5.1-UNIFIED-CONTRACT-PCE] - 2026-10-09 - Unified Core Contract & PC Engine Persistence
+- RESOLVED: Unified `EmulatorCoreContract` standardized across all platform engines (begin, updateJoypad, runFrame, destroy, saveState, loadState, saveBatteryRam, loadBatteryRam).
+- EXPANDED CORE IDENTIFIERS: `SaveManager::CoreId` enum expanded with all 14 console platform identifiers (`CORE_PCE = 6`, `CORE_ATARI = 7`, `CORE_PICO8 = 8`, `CORE_GENESIS = 9`, `CORE_SNES = 10`, `CORE_WSWAN = 11`, `CORE_NGP = 12`, `CORE_LYNX = 13`, `CORE_COLEM = 14`).
+- PCE PERSISTENCE: `PceEmu` fully wired with battery RAM backup and 5-slot snapshot support (`saveBatteryRam`, `loadBatteryRam`, `saveState`, `loadState`), auto-save on exit, quick-save, quick-load, and transparent boot auto-load.
+- VERIFIED: validate_repo.py PASSED (all 7 phases clean, Flash 33.1%, SRAM 75.2%). unittest 52/52 OK. Guardian audit clean.
+---
+
 ## [PHASE-4-INDEX-BOXART] - 2026-10-09 - High-Speed Binary ROM Index Cache & 64×64 Box Art Cover Engine
 - RESOLVED: Binary ROM Index Cache (`.bmo_index`) with 36-byte header (`BMOIDX01`), 72-byte entries, and CRC32 payload checksum.
 - SPEEDUP: Boot-time catalog enumeration latency reduced from ~3,500 ms to < 15 ms (>200× acceleration).

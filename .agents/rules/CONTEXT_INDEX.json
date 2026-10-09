@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0.0",
-  "last_updated": "2026-10-09T13:27:32.842266",
+  "last_updated": "2026-10-09T13:37:22.226276",
   "task_decision_table": {
     "modify_gpio_or_pin": {
       "rules": [
@@ -135,7 +135,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "6. Known Issues, Technical Debt & Hardware Limitations Registry",
-      "lines": 298
+      "lines": 305
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -165,7 +165,7 @@
     "10_symbol_reference.md": {
       "file": ".agents/rules/10_symbol_reference.md",
       "title": "Symbol Reference (Ground Truth for Names)",
-      "lines": 285
+      "lines": 301
     },
     "11_rules_meta.md": {
       "file": ".agents/rules/11_rules_meta.md",

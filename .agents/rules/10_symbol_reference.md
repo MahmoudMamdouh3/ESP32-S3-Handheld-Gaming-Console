@@ -245,6 +245,22 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `DoomEmu::begin` | fn | `bool begin(const char* wadPath)` | Starts doomgeneric core |
 | `DoomEmu::runFrame` | fn | `void runFrame()` | Runs 1 DOOM engine tick |
 | `DoomEmu::destroy` | fn | `void destroy()` | Shuts down doomgeneric core |
+| `SmsEmu::begin` | fn | `static bool begin(const uint8_t* romData, size_t romSize, bool isGameGear = false)` | Starts SMS/GG core |
+| `SmsEmu::updateJoypad` | fn | `static void updateJoypad()` | Syncs SMS controller state |
+| `SmsEmu::runFrame` | fn | `static void runFrame()` | Runs 1 SMS/GG frame |
+| `SmsEmu::destroy` | fn | `static void destroy()` | Shuts down SMS/GG core |
+| `SmsEmu::saveBatteryRam` | fn | `static bool saveBatteryRam(const char* romFilename)` | Flushes SMS battery RAM |
+| `SmsEmu::loadBatteryRam` | fn | `static bool loadBatteryRam(const char* romFilename)` | Restores SMS battery RAM |
+| `SmsEmu::saveState` | fn | `static bool saveState(const char* romFilename, int slot)` | Writes SMS save state |
+| `SmsEmu::loadState` | fn | `static bool loadState(const char* romFilename, int slot)` | Restores SMS save state |
+| `PceEmu::begin` | fn | `static bool begin(const uint8_t* romData, size_t romSize)` | Starts PC Engine / TG-16 core |
+| `PceEmu::updateJoypad` | fn | `static void updateJoypad()` | Syncs PCE joypad registers |
+| `PceEmu::runFrame` | fn | `static void runFrame()` | Runs 1 PCE frame |
+| `PceEmu::destroy` | fn | `static void destroy()` | Shuts down PCE core |
+| `PceEmu::saveBatteryRam` | fn | `static bool saveBatteryRam(const char* romFilename)` | Flushes PCE backup RAM |
+| `PceEmu::loadBatteryRam` | fn | `static bool loadBatteryRam(const char* romFilename)` | Restores PCE backup RAM |
+| `PceEmu::saveState` | fn | `static bool saveState(const char* romFilename, int slot)` | Writes PCE save state |
+| `PceEmu::loadState` | fn | `static bool loadState(const char* romFilename, int slot)` | Restores PCE save state |
 
 ---
 

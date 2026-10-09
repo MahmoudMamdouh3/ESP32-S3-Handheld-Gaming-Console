@@ -77,6 +77,8 @@ static void autoSaveCurrentBatteryRam() {
     NesEmu::saveBatteryRam(currentRomFilename);
   } else if (selectedEmulatorIndex == 4 || selectedEmulatorIndex == 5) {
     SmsEmu::saveBatteryRam(currentRomFilename);
+  } else if (selectedEmulatorIndex == 6) {
+    PceEmu::saveBatteryRam(currentRomFilename);
   }
 }
 
@@ -90,6 +92,8 @@ static bool quickSaveState(int slot) {
     return NesEmu::saveState(currentRomFilename, slot);
   } else if (selectedEmulatorIndex == 4 || selectedEmulatorIndex == 5) {
     return SmsEmu::saveState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 6) {
+    return PceEmu::saveState(currentRomFilename, slot);
   }
   return false;
 }
@@ -104,9 +108,12 @@ static bool quickLoadState(int slot) {
     return NesEmu::loadState(currentRomFilename, slot);
   } else if (selectedEmulatorIndex == 4 || selectedEmulatorIndex == 5) {
     return SmsEmu::loadState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 6) {
+    return PceEmu::loadState(currentRomFilename, slot);
   }
   return false;
 }
+
 
 static void destroyActiveEmulator() {
   if (selectedEmulatorIndex == 0) {
@@ -689,6 +696,8 @@ void loop() {
           NesEmu::loadBatteryRam(currentRomFilename);
         } else if (selectedEmulatorIndex == 4 || selectedEmulatorIndex == 5) {
           SmsEmu::loadBatteryRam(currentRomFilename);
+        } else if (selectedEmulatorIndex == 6) {
+          PceEmu::loadBatteryRam(currentRomFilename);
         }
 
         resetFrameStats();
