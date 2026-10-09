@@ -19,6 +19,8 @@
 #include "src/core/battery.h"
 #include "src/core/display_emu.h"
 #include "src/core/bmo_face.h"
+#include "src/core/spi_arbiter.h"
+#include "src/core/save_manager.h"
 #include <SPI.h>
 #include <rom/ets_sys.h>      // N7: ets_delay_us for tight hardware-timer spin
 #include <esp_heap_caps.h>    // BM2: IRAM usage reporting
@@ -29,6 +31,7 @@ enum SystemState {
   STATE_CONSOLE_MUSEUM,
   STATE_GAME_MENU,
   STATE_EMULATOR,
+  STATE_PAUSE_MENU,
   STATE_DIAGNOSTICS,
   STATE_IDLE_MASCOT
 };
@@ -58,6 +61,88 @@ static const int CONSOLE_COUNT = sizeof(CONSOLES) / sizeof(CONSOLES[0]);
 
 // Pointer to dynamically loaded ROM buffer in PSRAM
 uint8_t* currentRomBuffer = nullptr;
+char currentRomFilename[64] = "";
+static int pauseOption = 0;
+static char pauseToast[48] = "";
+
+static void autoSaveCurrentBatteryRam() {
+  if (currentRomFilename[0] == '\0') return;
+  if (selectedEmulatorIndex == 0) {
+    WalnutEmu::saveBatteryRam(currentRomFilename);
+  } else if (selectedEmulatorIndex == 1) {
+    PeanutEmu::saveBatteryRam(currentRomFilename);
+  } else if (selectedEmulatorIndex == 2) {
+    NesEmu::saveBatteryRam(currentRomFilename);
+  } else if (selectedEmulatorIndex == 4 || selectedEmulatorIndex == 5) {
+    SmsEmu::saveBatteryRam(currentRomFilename);
+  }
+}
+
+static bool quickSaveState(int slot) {
+  if (currentRomFilename[0] == '\0') return false;
+  if (selectedEmulatorIndex == 0) {
+    return WalnutEmu::saveState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 1) {
+    return PeanutEmu::saveState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 2) {
+    return NesEmu::saveState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 4 || selectedEmulatorIndex == 5) {
+    return SmsEmu::saveState(currentRomFilename, slot);
+  }
+  return false;
+}
+
+static bool quickLoadState(int slot) {
+  if (currentRomFilename[0] == '\0') return false;
+  if (selectedEmulatorIndex == 0) {
+    return WalnutEmu::loadState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 1) {
+    return PeanutEmu::loadState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 2) {
+    return NesEmu::loadState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 4 || selectedEmulatorIndex == 5) {
+    return SmsEmu::loadState(currentRomFilename, slot);
+  }
+  return false;
+}
+
+static void destroyActiveEmulator() {
+  if (selectedEmulatorIndex == 0) {
+    WalnutEmu::destroy();
+  } else if (selectedEmulatorIndex == 1) {
+    PeanutEmu::destroy();
+  } else if (selectedEmulatorIndex == 2) {
+    NesEmu::destroy();
+  } else if (selectedEmulatorIndex == 3) {
+    DoomEmu::destroy();
+  } else if (selectedEmulatorIndex == 4 || selectedEmulatorIndex == 5) {
+    SmsEmu::destroy();
+  } else if (selectedEmulatorIndex == 6) {
+    PceEmu::destroy();
+  } else if (selectedEmulatorIndex == 7) {
+    AtariEmu::destroy();
+  } else if (selectedEmulatorIndex == 8) {
+    PicoEmu::destroy();
+  } else if (selectedEmulatorIndex == 9) {
+    GenesisEmu::destroy();
+  } else if (selectedEmulatorIndex == 10) {
+    SNESEmu::destroy();
+  } else if (selectedEmulatorIndex == 11) {
+    WSwanEmu::destroy();
+  } else if (selectedEmulatorIndex == 12) {
+    NGPEmu::destroy();
+  } else if (selectedEmulatorIndex == 13) {
+    LynxEmu::destroy();
+  } else if (selectedEmulatorIndex == 14) {
+    ColemEmu::destroy();
+  }
+  
+  if (currentRomBuffer) {
+    SDCard::freeRom(currentRomBuffer);
+    currentRomBuffer = nullptr;
+  }
+  currentRomFilename[0] = '\0';
+}
 
 // P3: Timestamp-based debounce — non-blocking replacement for delay(200).
 static const unsigned long DEBOUNCE_MS = 200;
@@ -165,7 +250,8 @@ void setup() {
   LOG_INFO_STR("Milestone 4: Game Selection UI");
   LOG_INFO("Features: SD=%d, Audio=%d, Battery=%d", FEATURE_SD_CARD, FEATURE_AUDIO, FEATURE_BATTERY_MONITOR);
 
-  // Initialize shared SPI bus before any device uses it.
+  // Initialize shared SPI bus arbiter before any device uses it.
+  SpiArbiter::init();
   SPI.begin(TFT_SCK, SD_MISO, TFT_MOSI, -1);
 
   #ifdef ENABLE_UNIT_TESTS
@@ -196,6 +282,7 @@ void setup() {
     LOG_ERROR_STR("Failed to mount SD card!");
   } else {
     LOG_INFO("SD Card mounted. Found %d ROMs.", SDCard::getRomCount());
+    SaveManager::begin();
   }
 
   // BM2: Report IRAM free size so we can verify IRAM_ATTR budget usage.
@@ -210,8 +297,8 @@ void setup() {
 
 void loop() {
   Battery::update();
-  // PERF-H5: Face is HIDDEN during emulation and never drawn; skip update() overhead.
-  if (currentState != STATE_EMULATOR) {
+  // PERF-H5: Face is HIDDEN during emulation/pause and never drawn; skip update() overhead.
+  if (currentState != STATE_EMULATOR && currentState != STATE_PAUSE_MENU) {
     BmoFace::update();
   }
 
@@ -568,6 +655,19 @@ void loop() {
         }
         
         currentRomBuffer = romData; // Track it globally so we can free it later
+        strncpy(currentRomFilename, selectedRom->filename, sizeof(currentRomFilename) - 1);
+        currentRomFilename[sizeof(currentRomFilename) - 1] = '\0';
+
+        // Transparent Auto-Load Battery RAM (.sav)
+        if (selectedEmulatorIndex == 0) {
+          WalnutEmu::loadBatteryRam(currentRomFilename);
+        } else if (selectedEmulatorIndex == 1) {
+          PeanutEmu::loadBatteryRam(currentRomFilename);
+        } else if (selectedEmulatorIndex == 2) {
+          NesEmu::loadBatteryRam(currentRomFilename);
+        } else if (selectedEmulatorIndex == 4 || selectedEmulatorIndex == 5) {
+          SmsEmu::loadBatteryRam(currentRomFilename);
+        }
 
         resetFrameStats();
         currentState = STATE_EMULATOR;
@@ -595,9 +695,37 @@ void loop() {
 
     Buttons::update();
     bool select = Buttons::get(Buttons::SELECT).pressed;
+    bool start  = Buttons::get(Buttons::START).pressed && Buttons::get(Buttons::START).changed;
     bool up     = Buttons::get(Buttons::UP).pressed;
     bool down   = Buttons::get(Buttons::DOWN).pressed && Buttons::get(Buttons::DOWN).changed;
     bool right  = Buttons::get(Buttons::RIGHT).pressed;
+    bool btnA   = Buttons::get(Buttons::A).pressed && Buttons::get(Buttons::A).changed;
+    bool btnB   = Buttons::get(Buttons::B).pressed && Buttons::get(Buttons::B).changed;
+
+    // In-Game Quick Pause & Save State Overlay Menu: SELECT + START
+    if (select && start) {
+      currentState = STATE_PAUSE_MENU;
+      pauseOption = 0;
+      pauseToast[0] = '\0';
+      delay(200);
+      return;
+    }
+
+    // Quick Save Hotkey: SELECT + A
+    if (select && btnA) {
+      int slot = SaveManager::getActiveSlot();
+      quickSaveState(slot);
+      delay(200);
+      return;
+    }
+
+    // Quick Load Hotkey: SELECT + B
+    if (select && btnB) {
+      int slot = SaveManager::getActiveSlot();
+      quickLoadState(slot);
+      delay(200);
+      return;
+    }
 
     // Runtime DMG Palette Switcher: SELECT + DOWN
     if (select && down && (selectedEmulatorIndex == 0 || selectedEmulatorIndex == 1)) {
@@ -606,40 +734,8 @@ void loop() {
 
     // Return to menu: SELECT + UP
     if (select && up) {
-      if (selectedEmulatorIndex == 0) {
-        WalnutEmu::destroy();
-      } else if (selectedEmulatorIndex == 1) {
-        PeanutEmu::destroy();
-      } else if (selectedEmulatorIndex == 2) {
-        NesEmu::destroy();
-      } else if (selectedEmulatorIndex == 3) {
-        DoomEmu::destroy();
-      } else if (selectedEmulatorIndex == 4 || selectedEmulatorIndex == 5) {
-        SmsEmu::destroy();
-      } else if (selectedEmulatorIndex == 6) {
-        PceEmu::destroy();
-      } else if (selectedEmulatorIndex == 7) {
-        AtariEmu::destroy();
-      } else if (selectedEmulatorIndex == 8) {
-        PicoEmu::destroy();
-      } else if (selectedEmulatorIndex == 9) {
-        GenesisEmu::destroy();
-      } else if (selectedEmulatorIndex == 10) {
-        SNESEmu::destroy();
-      } else if (selectedEmulatorIndex == 11) {
-        WSwanEmu::destroy();
-      } else if (selectedEmulatorIndex == 12) {
-        NGPEmu::destroy();
-      } else if (selectedEmulatorIndex == 13) {
-        LynxEmu::destroy();
-      } else if (selectedEmulatorIndex == 14) {
-        ColemEmu::destroy();
-      }
-      
-      if (currentRomBuffer) {
-        SDCard::freeRom(currentRomBuffer);
-        currentRomBuffer = nullptr;
-      }
+      autoSaveCurrentBatteryRam();
+      destroyActiveEmulator();
 
       currentState = STATE_CONSOLE_MENU;
       BmoFace::setExpression(BmoFace::IDLE);
@@ -729,5 +825,65 @@ void loop() {
       lastTime = now;
       resetFrameStats();
     }
+  } else if (currentState == STATE_PAUSE_MENU) {
+    Buttons::update();
+    bool up    = Buttons::get(Buttons::UP).pressed && Buttons::get(Buttons::UP).changed;
+    bool down  = Buttons::get(Buttons::DOWN).pressed && Buttons::get(Buttons::DOWN).changed;
+    bool btnA  = Buttons::get(Buttons::A).pressed && Buttons::get(Buttons::A).changed;
+    bool btnB  = Buttons::get(Buttons::B).pressed && Buttons::get(Buttons::B).changed;
+    bool start = Buttons::get(Buttons::START).pressed && Buttons::get(Buttons::START).changed;
+
+    if (up) {
+      pauseOption = (pauseOption + 5) % 6;
+      pauseToast[0] = '\0';
+    } else if (down) {
+      pauseOption = (pauseOption + 1) % 6;
+      pauseToast[0] = '\0';
+    } else if (btnB || start) {
+      currentState = STATE_EMULATOR;
+      delay(200);
+      return;
+    } else if (btnA) {
+      int slot = SaveManager::getActiveSlot();
+      if (pauseOption == 0) {
+        currentState = STATE_EMULATOR;
+        delay(200);
+        return;
+      } else if (pauseOption == 1) {
+        if (quickSaveState(slot)) {
+          snprintf(pauseToast, sizeof(pauseToast), "SAVED TO SLOT %d!", slot);
+        } else {
+          snprintf(pauseToast, sizeof(pauseToast), "SAVE FAILED!");
+        }
+      } else if (pauseOption == 2) {
+        if (quickLoadState(slot)) {
+          currentState = STATE_EMULATOR;
+          delay(200);
+          return;
+        } else {
+          snprintf(pauseToast, sizeof(pauseToast), "SLOT %d EMPTY!", slot);
+        }
+      } else if (pauseOption == 3) {
+        SaveManager::cycleActiveSlot();
+        snprintf(pauseToast, sizeof(pauseToast), "ACTIVE SLOT: %d", SaveManager::getActiveSlot());
+      } else if (pauseOption == 4) {
+        autoSaveCurrentBatteryRam();
+        snprintf(pauseToast, sizeof(pauseToast), "BATTERY RAM SAVED!");
+      } else if (pauseOption == 5) {
+        autoSaveCurrentBatteryRam();
+        destroyActiveEmulator();
+        currentState = STATE_CONSOLE_MENU;
+        BmoFace::setExpression(BmoFace::IDLE);
+        delay(300);
+        return;
+      }
+    }
+
+    int currentSlot = SaveManager::getActiveSlot();
+    bool hasSave = SaveManager::hasSaveState(currentRomFilename, currentSlot);
+    bool hasBatt = SaveManager::hasBatteryRam(currentRomFilename);
+
+    DisplayEmu::drawPauseMenu(currentRomFilename, currentSlot, hasSave, hasBatt, pauseOption, pauseToast);
+    delay(30);
   }
 }

@@ -3,6 +3,7 @@
 #include "../vendor/smsplus/sms.h"
 #include "../core/display_emu.h"
 #include "../core/buttons.h"
+#include "../core/save_manager.h"
 #include <Arduino.h>
 
 static sms_context_t* sms_ctx = nullptr;
@@ -65,4 +66,39 @@ void SmsEmu::destroy() {
     sms_destroy(sms_ctx);
     sms_ctx = nullptr;
   }
+}
+
+bool SmsEmu::saveBatteryRam(const char* romFilename) {
+  if (!sms_ctx || !romFilename) return false;
+  return SaveManager::saveBatteryRam(romFilename, sms_ctx->cart_ram, sizeof(sms_ctx->cart_ram));
+}
+
+bool SmsEmu::loadBatteryRam(const char* romFilename) {
+  if (!sms_ctx || !romFilename) return false;
+  return SaveManager::loadBatteryRam(romFilename, sms_ctx->cart_ram, sizeof(sms_ctx->cart_ram));
+}
+
+bool SmsEmu::saveState(const char* romFilename, int slot) {
+  if (!sms_ctx || !romFilename) return false;
+  return SaveManager::saveState(romFilename, slot, SaveManager::CORE_SMS,
+                                sms_ctx, sizeof(sms_context_t));
+}
+
+bool SmsEmu::loadState(const char* romFilename, int slot) {
+  if (!sms_ctx || !romFilename) return false;
+  sms_context_t tempCtx;
+  size_t ctxSize = 0;
+  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_SMS,
+                                   &tempCtx, sizeof(tempCtx), &ctxSize);
+  if (ok && ctxSize == sizeof(sms_context_t)) {
+    const uint8_t* rom = sms_ctx->rom;
+    size_t rom_size = sms_ctx->rom_size;
+    uint16_t* fb = sms_ctx->framebuffer;
+    memcpy(sms_ctx, &tempCtx, sizeof(sms_context_t));
+    sms_ctx->rom = rom;
+    sms_ctx->rom_size = rom_size;
+    sms_ctx->framebuffer = fb;
+    return true;
+  }
+  return false;
 }

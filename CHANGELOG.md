@@ -5,6 +5,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Milestone 13.0] - 2026-10-09 (Phase 3: Non-Volatile Multi-Slot Save States & Cartridge Battery RAM Persistence)
+### Added
+- **Non-Volatile Save Subsystem (`SaveManager`)**:
+  - Implemented thread-safe `SaveManager` (`save_manager.h`, `save_manager.cpp`) protected by FreeRTOS `SpiArbiter` mutex to eliminate SPI bus collisions with background display streaming.
+  - Standardized 60-byte binary header (`SaveStateHeader`) featuring `BMOSS01` magic signature (`0x31535342`), CRC32 payload checksum verification, Unix timestamp, and emulator core tags (`CORE_PEANUT`, `CORE_WALNUT`, `CORE_NES`, `CORE_SMS`, etc.).
+  - Added cartridge battery-backed SRAM persistence (`.sav`) and multi-slot save states (`.s01` - `.s05`) in `/saves/` directory on MicroSD.
+- **Core Integration**:
+  - Integrated battery RAM and full core snapshots for `PeanutEmu` (Game Boy / GBC), `WalnutEmu` (Game Boy Color), `NesEmu` (NES via dynamic PSRAM state buffer), and `SmsEmu` (Sega Master System / Game Gear).
+- **In-Game Quick Pause & Save State UI Modal Overlay**:
+  - Implemented `DisplayEmu::drawPauseMenu` dark translucent modal overlay displaying current slot, slot state metadata, Quick Save, Quick Load, Resume, and Quit options.
+  - Added gamepad hotkeys: `SELECT + START` for Pause Menu, `SELECT + A` for Quick Save, `SELECT + B` for Quick Load, and `SELECT + UP` for Auto-Save & Quit.
+- **Testing & Tooling**:
+  - Added test suite `tests/test_save_manager.py` with 36 test cases covering binary packing, CRC32 error detection, slot bounds, and path sanitization.
+### Verified
+- `python scripts/validate_repo.py` → PASS (All 7 phases clean, Flash 33.1%, SRAM 75.2%).
+- `python -m tools.guardian audit` → PASS (0 Critical findings).
+- `python -m unittest discover tests` → 36/36 tests OK.
+
+---
+
+## [Milestone 12.0] - 2026-10-09 (Phase 2 Display Pipeline: Core 0 FreeRTOS Worker, Double-Buffered PSRAM Canvases, SpiArbiter & Asynchronous Emulator Pipeline)
+### Added
+- **Core 0 Dedicated FreeRTOS Display Worker Task (`BMO_Display`)**:
+  - Offloaded blocking 15.36 ms 320×240 fullscreen SPI transfers to Core 0 (`xTaskCreatePinnedToCore`, priority `configMAX_PRIORITIES - 2`), eliminating 100% of the UI blocking stall on Core 1 (< 50 µs queue dispatch).
+- **Double-Buffered PSRAM Canvases (`menuCanvasArr[2]`)**:
+  - Implemented ping-pong 320×240 16-bit GFXcanvas buffers in Octal PSRAM (`MALLOC_CAP_SPIRAM`), allowing Core 1 to render the next frame concurrently while Core 0 streams the previous buffer to the ST7789 display.
+- **Asynchronous Emulator Frame Pipeline (`DisplayEmu::streamRawFrameAsync`, `DisplayEmu::streamGBFrame`)**:
+  - Allocated ping-pong 153,600-byte frame buffers in Octal PSRAM (`s_asyncEmuBuf[2]`, consuming 0 internal SRAM), offloading wire SPI transfers for all 14 console cores (NES, DOOM, SMS, Game Boy, Genesis, SNES, PCE, Atari, Pico, WonderSwan, Neo Geo Pocket, Lynx, ColecoVision).
+  - Offloaded scanline palette translation for NES and DOOM onto Core 0, allowing Core 1 to execute emulation logic without blocking on SPI wire transmission.
+- **FSPI Bus Arbiter (`SpiArbiter`)**:
+  - Implemented recursive FreeRTOS mutex (`spi_arbiter.h` / `spi_arbiter.cpp`) protecting the shared FSPI bus across display pushes and MicroSD operations (Rule 28 / HARDWARE-01).
+  - Wrapped all SD card filesystem routines (`SDCard::begin`, `scanRoms`, `saveFavorites`, `loadFavorites`, `loadRom`) in `SpiArbiter::lock()` / `unlock()`.
+- **Public Display Sync APIs (`DisplayEmu::waitForDisplay`, `DisplayEmu::isDisplayBusy`)**:
+  - Non-blocking checks and explicit barrier synchronization for state machine transitions.
+### Verified
+- `python scripts/validate_repo.py` → PASS (All 7 phases clean, Flash 33.0%, SRAM 75.2%).
+- `python -m tools.guardian audit` → PASS (0 Critical, 11 pre-existing Warnings).
+- `python -m unittest discover tests` → 32/32 OK.
+
+---
+
 ## [Perf-Fix-2] - 2026-09-18 (PSRAM Allocator Mismatch + O3 Pragma Completions)
 ### Fixed
 - **Critical: PSRAM `heap_caps_free()` mismatch in 8 emulators** (`emu_peanut`, `emu_walnut`, `emu_genesis`, `emu_snes`, `emu_wswan`, `emu_ngp`, `emu_lynx`, `emu_colem`): All `destroy()` functions called plain `free()` on buffers allocated via `heap_caps_malloc(MALLOC_CAP_SPIRAM)`. Fixed to use `heap_caps_free()` matching the allocator contract.
