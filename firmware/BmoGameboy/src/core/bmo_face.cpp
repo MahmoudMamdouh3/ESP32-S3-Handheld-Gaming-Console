@@ -790,7 +790,7 @@ void begin() {
     if (!s_psramFaceBuf) {
       LOG_ERROR_STR("[BmoFace] FATAL: Failed to allocate mascot canvas in Octal PSRAM!");
     } else {
-      LOG_INFO("[BmoFace] Living Mascot 320x240 canvas allocated in Octal PSRAM (%d bytes)",
+      LOG_INFO("[BmoFace] Animated Mascot 320x240 canvas allocated in Octal PSRAM (%d bytes)",
                FACE_FB_W * FACE_FB_H * (int)sizeof(uint16_t));
     }
   }

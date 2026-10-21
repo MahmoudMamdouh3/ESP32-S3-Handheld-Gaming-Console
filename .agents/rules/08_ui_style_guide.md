@@ -5,6 +5,10 @@ widget style from scratch, and avoid the "default Adafruit_GFX look"
 after hardware-notes.md section 8's UI performance lesson already pushed
 the project away from it once.
 
+See [DESIGN.md](file:///DESIGN.md) for the complete design system specification,
+token matrix, and typography scale, and [.agents/rules/44_anti_ai_ui_design_standards.md](file:///e:/BMO%20Gameboy/.agents/rules/44_anti_ai_ui_design_standards.md)
+for anti-AI visual guidelines.
+
 ## Central theme file
 - All colors, spacing constants, and font references MUST live in one
   file (`src/core/theme.h` — create it if it doesn't exist yet, and

@@ -14,7 +14,7 @@ RULES_DIR = REPO_ROOT / '.agents' / 'rules'
 def generate_consolidated_rules(output_path: Path) -> Path:
     rule_files = sorted([f for f in RULES_DIR.glob('*.md') if f.name != 'README.md'])
 
-    header = f"""# BMO Handheld Gaming Console — Consolidated Ruleset (v7)
+    header = f"""# BMO Handheld Gaming Console — Consolidated Ruleset (v8)
 **Target Platform:** ESP32-S3-N16R8 (Dual-Core LX7 @ 240MHz, 16MB QIO Flash, 8MB Octal PSRAM)  
 **Display:** ST7789VW 240×320 SPI TFT (Landscape 320×240)  
 **Document Status:** Complete Consolidated Ground Truth ({len(rule_files)} Rule Files)  

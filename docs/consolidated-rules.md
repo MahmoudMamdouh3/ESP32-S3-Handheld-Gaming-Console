@@ -1,7 +1,7 @@
-# BMO Handheld Gaming Console — Consolidated Ruleset (v7)
+# BMO Handheld Gaming Console — Consolidated Ruleset (v8)
 **Target Platform:** ESP32-S3-N16R8 (Dual-Core LX7 @ 240MHz, 16MB QIO Flash, 8MB Octal PSRAM)  
 **Display:** ST7789VW 240×320 SPI TFT (Landscape 320×240)  
-**Document Status:** Complete Consolidated Ground Truth (44 Rule Files)  
+**Document Status:** Complete Consolidated Ground Truth (45 Rule Files)  
 **Purpose:** Single-file compilation for external architectural and code review.
 
 ---
@@ -51,6 +51,7 @@
 - [41. Engineering Communication, Critical Pushback & Toolchain Autonomy](#41-engineering-communication-critical-pushback--toolchain-autonomy)
 - [42. Quality of Life (QoL), UI/UX & System Roadmap Ledger](#42-quality-of-life-qol-uiux--system-roadmap-ledger)
 - [43. Mandatory Ban on AI Jargon, Buzzwords, and Marketing Filler](#43-mandatory-ban-on-ai-jargon-buzzwords-and-marketing-filler)
+- [44. Anti-AI UI & Visual Craft Standards](#44-anti-ai-ui--visual-craft-standards)
 
 
 ---
@@ -238,7 +239,18 @@ Routine bug fixes not touching hardware/architecture, or pure refactors that don
 
 ---
 
-## Latest Agent Handoff — 2026-10-21 (AI Development Environment & Harness v8 Overhaul)
+## Latest Agent Handoff — 2026-10-21 (Phase F: Design System, Anti-AI-Slop Craft Standards & UI Auditor)
+
+This is the current repository handoff. Read this section before continuing from an earlier changelog entry.
+
+- **Phase F — Design System, Anti-AI-Slop Craft Standards & UI Auditor:**
+  1. **Canonical Design Specification (`DESIGN.md`):** Authored a single-file design standard synthesizing OnionUI BMO aesthetic and physical handheld ergonomics (derived from `Awesome DESIGN.md`, `Google DESIGN.md`, `Open Design`, `UI/UX Pro Max Skill`). Defined 1:1 color token matrix between ST7789 display (BGR565 byte-swapped) and Web Simulator CSS custom properties, 8px base grid, 4px sub-grid, minimum targets ($44\times 44\text{ pt}$), typography ladder, and second-order harmonic spring motion dynamics ($\zeta = 0.72$, $\omega_n = 22.0\text{ rad/s}$).
+  2. **Anti-AI Craft Standards (`.agents/rules/44_anti_ai_ui_design_standards.md`):** Established Rule 44 prohibiting AI visual anti-patterns: card nesting, generic purple/indigo gradients, low-contrast text (< 4.5:1 WCAG AA), missing keyboard focus or tactile active states, ungridded margins, and inlined raw hex colors. Re-enforced physical hardware invariant: menu selection states must use `drawRoundRect` outlines rather than `fillRoundRect` full fills, saving $6.3\text{ ms}$ per frame.
+  3. **Dedicated UI Design Auditor (`tools/guardian/core/ui_auditor.py`, `python -m tools.guardian ui-audit`):** Automated static scanner checking firmware drawing calls for raw inline hexes, simulator CSS for card nesting, missing `:focus-visible` states, and odd off-grid spacing. Verifies exact token parity between `theme.h` and `simulator.css`. Added unit tests `test_17_ui_auditor_clean_baseline` and `test_18_ui_auditor_catches_violations` in `test_guardian.py`.
+  4. **CI & Toolchain Integration (`scripts/validate_repo.py` Phase 8, `tools/guardian/cli.py`):** Added Phase 8 (`Phase 8: UI Design System & Anti-AI-Slop`) to repository CI validator `scripts/validate_repo.py`. Added UI audit step to `guardian audit`, `doctor`, and `patch-check`. Updated `scripts/bundle_rules.py` to Ruleset v8 consolidating all 44 rules into `docs/consolidated-rules.md`.
+  5. **Web Simulator Keyboard Accessibility & Firmware Tokens (`tools/bmo_simulator/simulator.css`, `firmware/BmoGameboy/src/core/theme.h`):** Added high-contrast `:focus-visible` outline rings to `.control-pill`, `.dpad-btn`, `.round-btn`, `.pill-btn`, and form inputs. Added `makePanelColor()`, `PANEL_DEEP_TEAL`, `PANEL_DPAD_YELLOW`, `TEXT_SIZE_SMALL`, `TEXT_SIZE_BODY`, `TEXT_SIZE_TITLE`, `TARGET_TOUCH_MIN`, and `TARGET_EMBEDDED_MIN` to `Theme::`.
+
+## Previous Handoff — 2026-10-21 (AI Development Environment & Harness v8 Overhaul)
 
 This is the current repository handoff. Read this section before continuing from an earlier changelog entry.
 
@@ -907,6 +919,10 @@ widget style from scratch, and avoid the "default Adafruit_GFX look"
 (flat black background, default font, filled rectangles) creeping back in
 after hardware-notes.md section 8's UI performance lesson already pushed
 the project away from it once.
+
+See [DESIGN.md](file:///DESIGN.md) for the complete design system specification,
+token matrix, and typography scale, and [.agents/rules/44_anti_ai_ui_design_standards.md](file:///e:/BMO%20Gameboy/.agents/rules/44_anti_ai_ui_design_standards.md)
+for anti-AI visual guidelines.
 
 ## Central theme file
 - All colors, spacing constants, and font references MUST live in one
@@ -2503,6 +2519,7 @@ python -m tools.guardian export-harness <destination_dir>
 | Save states, SD storage, or cover art | `19_security_and_data_integrity.md`, `src/core/save_manager.h`, `src/core/box_art.h`, `src/core/rom_index.h` |
 | AI Knowledge base, rules, or Guardian CLI | `40_ai_knowledge_graph_and_indexing_protocol.md` & `42_quality_of_life_and_roadmap_ledger.md` |
 | Writing comments, docs, or commit messages | `43_no_ai_jargon_and_buzzwords.md` & `05_git_workflow.md` |
+| UI, theme tokens, menus, or simulator styles | `DESIGN.md`, `08_ui_style_guide.md`, & `44_anti_ai_ui_design_standards.md` |
 | Ending session / committing & pushing | `05_git_workflow.md`, `33_agent_handoff_and_optimization_cycle.md`, & `04_known_issues.md` |
 
 ---
@@ -3510,3 +3527,83 @@ Always replace vague adjectives with exact technical facts, measurements, or alg
    - Scans tracked `.md`, `.c`, `.cpp`, `.h`, `.ino`, `.py`, and `.js` files for banned buzzwords and emits `BUZZWORD_VIOLATION` errors.
 2. **Git Commit Hook (`.git/hooks/commit-msg`):**
    - Rejects any commit message containing banned buzzwords before the commit is recorded.
+
+---
+
+<!-- Section: 44_anti_ai_ui_design_standards.md -->
+
+# 44. Anti-AI UI & Visual Craft Standards
+
+**Purpose:** Eliminate generic AI-generated visual patterns, nested container sprawl, low-contrast text, missing interactive states, and ungridded layout drift. Enforces strict physical console ergonomics, token parity, and accessible design across both the embedded ST7789 display and the Web Simulator.
+
+---
+
+## 1. Scope & Authority
+
+This rule governs all user interface development in the repository, including:
+1. **Firmware Display Logic:** [`firmware/BmoGameboy/src/core/display_emu.cpp`](file:///firmware/BmoGameboy/src/core/display_emu.cpp), [`display_emu.h`](file:///firmware/BmoGameboy/src/core/display_emu.h), [`bmo_face.cpp`](file:///firmware/BmoGameboy/src/core/bmo_face.cpp), [`theme.h`](file:///firmware/BmoGameboy/src/core/theme.h).
+2. **Web Simulator Frontend:** [`tools/bmo_simulator/index.html`](file:///tools/bmo_simulator/index.html), [`simulator.css`](file:///tools/bmo_simulator/simulator.css), [`simulator.js`](file:///tools/bmo_simulator/simulator.js).
+3. **Design Specification:** [`DESIGN.md`](file:///DESIGN.md).
+
+---
+
+## 2. Prohibited AI Visual Anti-Patterns
+
+Any code review or commit containing the following anti-patterns will be rejected:
+
+### Anti-Pattern 1: Card-in-Card Nesting Syndrome
+- **Prohibited:** Placing container cards inside other container cards (e.g., a card with borders inside a card with borders).
+- **Required:** Use whitespace, structural typography, or subtle single-pixel divider lines to delineate sub-sections.
+
+### Anti-Pattern 2: Generic Purple / Indigo Gradient Backgrounds
+- **Prohibited:** Applying generic multi-stop purple/indigo radial or angular gradient meshes.
+- **Required:** Surfaces must be grounded in the intentional BMO palette tokens (`Theme::BMO_DARK_FOREST`, `Theme::BMO_DEEP_TEAL`, or `--bg-primary: #0b0f19`).
+
+### Anti-Pattern 3: Low-Contrast Muted Text (WCAG Violation)
+- **Prohibited:** Dark gray text on black, or light mint text on bright yellow backgrounds that fail WCAG 2.1 AA.
+- **Required:** Every text element must achieve at least $4.5:1$ contrast ratio against its direct background ($3:1$ for headers $> 18\text{ px}$).
+
+### Anti-Pattern 4: Missing Keyboard Focus & Tactile Active States
+- **Prohibited:** Clickable buttons, pills, and d-pads that lack `:focus-visible` outline rings or lack tactile mechanical depression on `:active`.
+- **Required:** 
+  - Keyboard focus: `outline: 2px solid var(--accent-gold); outline-offset: 2px;`.
+  - Active press: `transform: translateY(2px)` with shadow collapse.
+
+### Anti-Pattern 5: Arbitrary Off-Grid Dimensions
+- **Prohibited:** Margins, paddings, gaps, and widths using arbitrary odd pixel amounts like `7px`, `11px`, `13px`, `17px`, `19px`.
+- **Required:** All layout dimensions must strictly adhere to the 8px base grid or 4px sub-grid (`4px`, `8px`, `12px`, `16px`, `24px`, `32px`, `48px`).
+
+### Anti-Pattern 6: Inlined Raw Hex Color Literals
+- **Prohibited:** Writing raw hex literals (`0x1A4B`, `0xFFE0`, `#5FB49C`) directly inside view drawing methods or component rules.
+- **Required:** Consume named tokens from `Theme::` in `theme.h` for C++ or CSS variables from `:root` in `simulator.css`.
+
+---
+
+## 3. Physical Handheld Performance Invariants
+
+### 1. Selection State Outline Rule (Rule 08)
+On the physical ST7789 TFT display, list and menu selection cursors MUST use `drawRoundRect()` outline rectangles. `fillRoundRect()` is strictly forbidden for selection highlighting.
+- **Measured Cost:** Full rectangular fill blocks the SPI bus for $8.4\text{ ms}$; outline stroke takes $2.1\text{ ms}$, preserving the 60 Hz frame budget.
+
+### 2. Damped Spring Motion Mechanics
+Dynamic animations (carousel slides, toast HUD drops) MUST be driven by second-order harmonic spring-damper equations:
+$$\ddot{x} + 2\zeta\omega_n \dot{x} + \omega_n^2 (x - x_{\text{target}}) = 0$$
+- Damping ratio $\zeta = 0.72$
+- Natural frequency $\omega_n = 22.0\text{ rad/s}$
+- Blocking `delay()` inside any animation loop is strictly forbidden.
+
+---
+
+## 4. Verification Checklist Before Concluding Any UI Task
+
+1. Run the dedicated UI auditor:
+   ```bash
+   python -m tools.guardian ui-audit
+   ```
+2. Verify token parity between `firmware/BmoGameboy/src/core/theme.h` and `tools/bmo_simulator/simulator.css`.
+3. Check all interactive controls in the Web Simulator for `:focus-visible` accessibility.
+4. Verify that no raw hex color literals were introduced into C++ display drawing functions.
+5. Execute the full repository CI validator:
+   ```bash
+   python scripts/validate_repo.py
+   ```

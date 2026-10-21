@@ -51,3 +51,4 @@
 | [`41_engineering_communication_and_critical_pushback.md`](file:///e:/BMO%20Gameboy/.agents/rules/41_engineering_communication_and_critical_pushback.md) | Engineering communication, fact-checking & critical pushback | All sessions |
 | [`42_quality_of_life_and_roadmap_ledger.md`](file:///e:/BMO%20Gameboy/.agents/rules/42_quality_of_life_and_roadmap_ledger.md) | Quality of Life (QoL), UI/UX and system roadmap ledger | Feature planning |
 | [`43_no_ai_jargon_and_buzzwords.md`](file:///e:/BMO%20Gameboy/.agents/rules/43_no_ai_jargon_and_buzzwords.md) | Strict ban on AI buzzwords, marketing filler, and hype adjectives | **Always** |
+| [`44_anti_ai_ui_design_standards.md`](file:///e:/BMO%20Gameboy/.agents/rules/44_anti_ai_ui_design_standards.md) | Anti-AI UI & visual craft standards, design tokens, contrast & motion | UI/Display tasks |

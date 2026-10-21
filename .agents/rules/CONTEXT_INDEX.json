@@ -1,6 +1,6 @@
 {
   "schema_version": "2.1.0",
-  "last_updated": "2026-10-21T18:40:44.966575",
+  "last_updated": "2026-10-21T19:50:14.189885",
   "task_decision_table": {
     "modify_gpio_or_pin": {
       "rules": [
@@ -136,7 +136,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "6. Known Issues, Technical Debt & Hardware Limitations Registry",
-      "lines": 413
+      "lines": 424
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -156,7 +156,7 @@
     "08_ui_style_guide.md": {
       "file": ".agents/rules/08_ui_style_guide.md",
       "title": "UI & Visual Style Guide",
-      "lines": 49
+      "lines": 53
     },
     "09_testing_infrastructure.md": {
       "file": ".agents/rules/09_testing_infrastructure.md",
@@ -271,7 +271,7 @@
     "31_quick_start_primer.md": {
       "file": ".agents/rules/31_quick_start_primer.md",
       "title": "31. Quick-Start Primer (Zero-Context Agent On-Ramp)",
-      "lines": 87
+      "lines": 88
     },
     "32_modular_core_template.md": {
       "file": ".agents/rules/32_modular_core_template.md",
@@ -332,6 +332,11 @@
       "file": ".agents/rules/43_no_ai_jargon_and_buzzwords.md",
       "title": "43. Mandatory Ban on AI Jargon, Buzzwords, and Marketing Filler",
       "lines": 50
+    },
+    "44_anti_ai_ui_design_standards.md": {
+      "file": ".agents/rules/44_anti_ai_ui_design_standards.md",
+      "title": "44. Anti-AI UI & Visual Craft Standards",
+      "lines": 75
     }
   }
 }

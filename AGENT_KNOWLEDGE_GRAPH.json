@@ -1,6 +1,6 @@
 {
   "schema_version": "2.2.0",
-  "generated_at": "2026-10-21T18:40:44.966575",
+  "generated_at": "2026-10-21T19:50:14.189885",
   "target_mcu": {
     "chip": "ESP32-S3-N16R8",
     "cpu_arch": "Xtensa dual-core 32-bit LX7 @ 240MHz",
@@ -437,50 +437,50 @@
     {
       "name": "BMO_SDF_Procedural_Face_Render_Unculled",
       "iterations": 100,
-      "avg_latency_us": 1575.111,
-      "throughput_mops": 2.6,
+      "avg_latency_us": 1156.253,
+      "throughput_mops": 3.54,
       "description": "Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling."
     },
     {
       "name": "BMO_SDF_Procedural_Face_Render_Culled",
       "iterations": 200,
-      "avg_latency_us": 559.128,
-      "throughput_mops": 7.33,
+      "avg_latency_us": 484.293,
+      "throughput_mops": 8.46,
       "description": "Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction)."
     },
     {
       "name": "4Pixel_Coalesced_Aligned_Store_Kernel",
       "iterations": 50000,
-      "avg_latency_us": 3.619,
-      "throughput_mops": 8.29,
+      "avg_latency_us": 2.495,
+      "throughput_mops": 12.03,
       "description": "Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling."
     },
     {
       "name": "O1_Palette_Scanline_Transformation",
       "iterations": 10000,
-      "avg_latency_us": 7.025,
-      "throughput_mops": 34.16,
+      "avg_latency_us": 4.075,
+      "throughput_mops": 58.9,
       "description": "Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput."
     },
     {
       "name": "CPU_Emulation_Opcode_Dispatch",
       "iterations": 500000,
-      "avg_latency_us": 0.08,
-      "throughput_mops": 12.48,
+      "avg_latency_us": 0.064,
+      "throughput_mops": 15.65,
       "description": "Simulates CPU opcode fetch-decode-execute cycle dispatch throughput."
     },
     {
       "name": "Direct_GPIO_Atomic_Bitmask_Sampling",
       "iterations": 100000,
-      "avg_latency_us": 0.553,
-      "throughput_mops": 14.47,
+      "avg_latency_us": 0.511,
+      "throughput_mops": 15.66,
       "description": "Measures atomic 8-pin bitmask unpacking (GPIO 4,5,6,7,16,17,18,21) replacing 8 digitalRead calls."
     },
     {
       "name": "SD_Catalog_O1_Query_And_Page_Jump",
       "iterations": 10000,
-      "avg_latency_us": 0.186,
-      "throughput_mops": 5.36,
+      "avg_latency_us": 0.173,
+      "throughput_mops": 5.78,
       "description": "Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations."
     }
   ],
@@ -508,7 +508,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "6. Known Issues, Technical Debt & Hardware Limitations Registry",
-      "lines": 413
+      "lines": 424
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -528,7 +528,7 @@
     "08_ui_style_guide.md": {
       "file": ".agents/rules/08_ui_style_guide.md",
       "title": "UI & Visual Style Guide",
-      "lines": 49
+      "lines": 53
     },
     "09_testing_infrastructure.md": {
       "file": ".agents/rules/09_testing_infrastructure.md",
@@ -643,7 +643,7 @@
     "31_quick_start_primer.md": {
       "file": ".agents/rules/31_quick_start_primer.md",
       "title": "31. Quick-Start Primer (Zero-Context Agent On-Ramp)",
-      "lines": 87
+      "lines": 88
     },
     "32_modular_core_template.md": {
       "file": ".agents/rules/32_modular_core_template.md",
@@ -704,6 +704,11 @@
       "file": ".agents/rules/43_no_ai_jargon_and_buzzwords.md",
       "title": "43. Mandatory Ban on AI Jargon, Buzzwords, and Marketing Filler",
       "lines": 50
+    },
+    "44_anti_ai_ui_design_standards.md": {
+      "file": ".agents/rules/44_anti_ai_ui_design_standards.md",
+      "title": "44. Anti-AI UI & Visual Craft Standards",
+      "lines": 75
     }
   },
   "symbol_registry": {
@@ -9923,11 +9928,11 @@
     ".agents/rules/04_known_issues.md": {
       "path": ".agents/rules/04_known_issues.md",
       "category": "AGENT_RULES",
-      "total_lines": 413,
-      "sloc": 349,
+      "total_lines": 424,
+      "sloc": 357,
       "comments": 0,
-      "blanks": 64,
-      "density_percent": 84.5,
+      "blanks": 67,
+      "density_percent": 84.2,
       "symbols": [],
       "pins_accessed": [
         "TFT_SCLK",
@@ -9991,11 +9996,11 @@
     ".agents/rules/08_ui_style_guide.md": {
       "path": ".agents/rules/08_ui_style_guide.md",
       "category": "AGENT_RULES",
-      "total_lines": 49,
-      "sloc": 44,
+      "total_lines": 53,
+      "sloc": 47,
       "comments": 0,
-      "blanks": 5,
-      "density_percent": 89.8,
+      "blanks": 6,
+      "density_percent": 88.7,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -10306,11 +10311,11 @@
     ".agents/rules/31_quick_start_primer.md": {
       "path": ".agents/rules/31_quick_start_primer.md",
       "category": "AGENT_RULES",
-      "total_lines": 87,
-      "sloc": 71,
+      "total_lines": 88,
+      "sloc": 72,
       "comments": 0,
       "blanks": 16,
-      "density_percent": 81.6,
+      "density_percent": 81.8,
       "symbols": [],
       "pins_accessed": [
         "GPIO1",
@@ -10494,11 +10499,23 @@
       "pins_accessed": [],
       "includes": []
     },
+    ".agents/rules/44_anti_ai_ui_design_standards.md": {
+      "path": ".agents/rules/44_anti_ai_ui_design_standards.md",
+      "category": "AGENT_RULES",
+      "total_lines": 75,
+      "sloc": 55,
+      "comments": 0,
+      "blanks": 20,
+      "density_percent": 73.3,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
     ".agents/rules/CONTEXT_INDEX.json": {
       "path": ".agents/rules/CONTEXT_INDEX.json",
       "category": "AGENT_RULES",
-      "total_lines": 337,
-      "sloc": 337,
+      "total_lines": 342,
+      "sloc": 342,
       "comments": 0,
       "blanks": 0,
       "density_percent": 100.0,
@@ -10509,11 +10526,11 @@
     ".agents/rules/README.md": {
       "path": ".agents/rules/README.md",
       "category": "AGENT_RULES",
-      "total_lines": 53,
-      "sloc": 51,
+      "total_lines": 54,
+      "sloc": 52,
       "comments": 0,
       "blanks": 2,
-      "density_percent": 96.2,
+      "density_percent": 96.3,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -10535,8 +10552,8 @@
     "AGENT_KNOWLEDGE_GRAPH.json": {
       "path": "AGENT_KNOWLEDGE_GRAPH.json",
       "category": "OTHER",
-      "total_lines": 18314,
-      "sloc": 18314,
+      "total_lines": 18355,
+      "sloc": 18355,
       "comments": 0,
       "blanks": 0,
       "density_percent": 100.0,
@@ -10632,11 +10649,11 @@
     "AGENTS.md": {
       "path": "AGENTS.md",
       "category": "OTHER",
-      "total_lines": 18,
-      "sloc": 15,
+      "total_lines": 19,
+      "sloc": 16,
       "comments": 0,
       "blanks": 3,
-      "density_percent": 83.3,
+      "density_percent": 84.2,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -10644,10 +10661,10 @@
     "CHANGELOG.md": {
       "path": "CHANGELOG.md",
       "category": "OTHER",
-      "total_lines": 635,
-      "sloc": 564,
+      "total_lines": 663,
+      "sloc": 589,
       "comments": 0,
-      "blanks": 71,
+      "blanks": 74,
       "density_percent": 88.8,
       "symbols": [],
       "pins_accessed": [
@@ -10655,6 +10672,18 @@
         "TFT_DC",
         "FEATURE_PROFILER"
       ],
+      "includes": []
+    },
+    "DESIGN.md": {
+      "path": "DESIGN.md",
+      "category": "OTHER",
+      "total_lines": 178,
+      "sloc": 137,
+      "comments": 0,
+      "blanks": 41,
+      "density_percent": 77.0,
+      "symbols": [],
+      "pins_accessed": [],
       "includes": []
     },
     "diagram.json": {
@@ -10672,11 +10701,11 @@
     "docs/consolidated-rules.md": {
       "path": "docs/consolidated-rules.md",
       "category": "DOCUMENTATION",
-      "total_lines": 3512,
-      "sloc": 2798,
-      "comments": 44,
-      "blanks": 670,
-      "density_percent": 79.7,
+      "total_lines": 3609,
+      "sloc": 2867,
+      "comments": 45,
+      "blanks": 697,
+      "density_percent": 79.4,
       "symbols": [],
       "pins_accessed": [
         "GPIO1",
@@ -10767,8 +10796,8 @@
     "docs/performance_report.md": {
       "path": "docs/performance_report.md",
       "category": "DOCUMENTATION",
-      "total_lines": 499,
-      "sloc": 477,
+      "total_lines": 502,
+      "sloc": 480,
       "comments": 0,
       "blanks": 22,
       "density_percent": 95.6,
@@ -11831,11 +11860,11 @@
     "firmware/BmoGameboy/src/core/theme.h": {
       "path": "firmware/BmoGameboy/src/core/theme.h",
       "category": "FIRMWARE_CORE",
-      "total_lines": 111,
-      "sloc": 75,
-      "comments": 22,
-      "blanks": 14,
-      "density_percent": 67.6,
+      "total_lines": 131,
+      "sloc": 87,
+      "comments": 26,
+      "blanks": 18,
+      "density_percent": 66.4,
       "symbols": [],
       "pins_accessed": [],
       "includes": [
@@ -17849,11 +17878,11 @@
     "scripts/validate_repo.py": {
       "path": "scripts/validate_repo.py",
       "category": "SCRIPTS",
-      "total_lines": 527,
-      "sloc": 400,
-      "comments": 55,
-      "blanks": 72,
-      "density_percent": 75.9,
+      "total_lines": 544,
+      "sloc": 411,
+      "comments": 58,
+      "blanks": 75,
+      "density_percent": 75.6,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
@@ -18071,11 +18100,11 @@
     "tools/guardian/cli.py": {
       "path": "tools/guardian/cli.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 1144,
-      "sloc": 928,
-      "comments": 49,
-      "blanks": 167,
-      "density_percent": 81.1,
+      "total_lines": 1195,
+      "sloc": 968,
+      "comments": 52,
+      "blanks": 175,
+      "density_percent": 81.0,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
@@ -18154,11 +18183,11 @@
     "tools/guardian/core/doc_verifier.py": {
       "path": "tools/guardian/core/doc_verifier.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 240,
-      "sloc": 206,
+      "total_lines": 242,
+      "sloc": 208,
       "comments": 11,
       "blanks": 23,
-      "density_percent": 85.8,
+      "density_percent": 86.0,
       "symbols": [],
       "pins_accessed": [
         "PIN_DRIFT",
@@ -18226,6 +18255,18 @@
       "pins_accessed": [],
       "includes": []
     },
+    "tools/guardian/core/ui_auditor.py": {
+      "path": "tools/guardian/core/ui_auditor.py",
+      "category": "GUARDIAN_TOOLCHAIN",
+      "total_lines": 261,
+      "sloc": 207,
+      "comments": 15,
+      "blanks": 39,
+      "density_percent": 79.3,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
     "tools/guardian/tests/__init__.py": {
       "path": "tools/guardian/tests/__init__.py",
       "category": "GUARDIAN_TOOLCHAIN",
@@ -18241,11 +18282,11 @@
     "tools/guardian/tests/test_guardian.py": {
       "path": "tools/guardian/tests/test_guardian.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 270,
-      "sloc": 213,
-      "comments": 18,
-      "blanks": 39,
-      "density_percent": 78.9,
+      "total_lines": 320,
+      "sloc": 252,
+      "comments": 23,
+      "blanks": 45,
+      "density_percent": 78.8,
       "symbols": [],
       "pins_accessed": [
         "TFT_CS"

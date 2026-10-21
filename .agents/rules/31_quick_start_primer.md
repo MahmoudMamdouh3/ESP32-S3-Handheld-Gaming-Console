@@ -66,6 +66,7 @@ python -m tools.guardian export-harness <destination_dir>
 | Save states, SD storage, or cover art | `19_security_and_data_integrity.md`, `src/core/save_manager.h`, `src/core/box_art.h`, `src/core/rom_index.h` |
 | AI Knowledge base, rules, or Guardian CLI | `40_ai_knowledge_graph_and_indexing_protocol.md` & `42_quality_of_life_and_roadmap_ledger.md` |
 | Writing comments, docs, or commit messages | `43_no_ai_jargon_and_buzzwords.md` & `05_git_workflow.md` |
+| UI, theme tokens, menus, or simulator styles | `DESIGN.md`, `08_ui_style_guide.md`, & `44_anti_ai_ui_design_standards.md` |
 | Ending session / committing & pushing | `05_git_workflow.md`, `33_agent_handoff_and_optimization_cycle.md`, & `04_known_issues.md` |
 
 ---

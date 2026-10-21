@@ -44,6 +44,7 @@ from .core.doc_verifier import DocTruthVerifier
 from .core.elf_analyzer import ElfAnalyzer
 from .core.host_bench import HostBenchmarkSuite
 from .core.report_gen import ReportGenerator
+from .core.ui_auditor import UiAuditor
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FIRMWARE_DIR = REPO_ROOT / "firmware" / "BmoGameboy"
@@ -179,12 +180,23 @@ def cmd_audit(args) -> int:
     else:
         print(f"  Cppcheck toolchain detected: {cppcheck.is_available()} (use --cppcheck for deep analysis)")
 
+    # 6. UI/UX Design System & Anti-AI-Slop Audit
+    print("\n[6/6] Auditing UI/UX Design System, Accessibility & Token Parity...")
+    ui_auditor = UiAuditor(REPO_ROOT)
+    ui_report = ui_auditor.run_all_checks()
+    print(f"  Audited {ui_report.total_checks} UI design system checks across firmware and simulator.")
+    if not ui_report.is_clean:
+        for issue in ui_report.issues:
+            print(f"    [{issue.category}] {issue.file_path}:{issue.line_number} -- {issue.message}")
+    else:
+        print("  UI design tokens, focus states, and spacing grid: COMPLIANT")
+
     print("\n" + "=" * 70)
     cppcheck_errors = [f for f in cppcheck_findings if f.severity == "error"]
-    if critical or cppcheck_errors:
+    if critical or cppcheck_errors or not ui_report.is_clean:
         print(
             f" AUDIT RESULT: FAIL -- {len(critical)} Critical AST violations, "
-            f"{len(cppcheck_errors)} Cppcheck errors."
+            f"{len(cppcheck_errors)} Cppcheck errors, {len(ui_report.issues)} UI audit issues."
         )
         return 1
     print(" AUDIT RESULT: PASS -- Clean Performance & Quality Baseline.")
@@ -692,8 +704,20 @@ def cmd_doctor(args) -> int:
     else:
         print(f"  [PASS] 0 Critical AST violations ({len(findings)} advisory/warnings)")
 
-    # 5. Check Toolchain Availability
-    print("\n[5/5] Checking Local Developer & Verification Toolchains...")
+    # 5. Check UI Design System & Token Parity
+    print("\n[5/6] Verifying UI Design Tokens, Focus States & Token Parity...")
+    ui_auditor = UiAuditor(REPO_ROOT)
+    ui_report = ui_auditor.run_all_checks()
+    if not ui_report.is_clean:
+        print(f"  [FAIL] {len(ui_report.issues)} UI design system issue(s):")
+        for u in ui_report.issues:
+            print(f"    - [{u.category}] {u.file_path}:{u.line_number}: {u.message}")
+        issues += len(ui_report.issues)
+    else:
+        print("  [PASS] 0 UI design system, accessibility, or token parity issues.")
+
+    # 6. Check Toolchain Availability
+    print("\n[6/6] Checking Local Developer & Verification Toolchains...")
     arduino_cli = REPO_ROOT / "arduino-cli.exe"
     vcvars = Path(r"C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat")
     if not vcvars.exists():
@@ -878,6 +902,31 @@ def cmd_benchmark_ai(args) -> int:
         print(" AI WORKFLOW BENCHMARK: 100.0% PASS across all 5 dimensions.")
         return 0
     return 1
+
+
+def cmd_ui_audit(args) -> int:
+    """Audits UI/UX design tokens, accessibility, and anti-AI-slop rules per DESIGN.md & Rule 44."""
+    print("=" * 70)
+    print(" BMO GUARDIAN UI-AUDIT -- Anti-AI-Slop & Design System Verifier")
+    print("=" * 70)
+
+    auditor = UiAuditor(REPO_ROOT)
+    report = auditor.run_all_checks()
+
+    print(f"\nAudit completed across {report.total_checks} checks:")
+    print(f"  * Firmware Display Sources  : {len(auditor.CORE_FIRMWARE_UI_FILES)} files audited")
+    print(f"  * Simulator CSS & Controls  : tools/bmo_simulator/simulator.css audited")
+    print(f"  * Design Token Parity       : {len(auditor.CORE_TOKENS)} core tokens verified")
+
+    if not report.is_clean:
+        print(f"\n[FAIL] {len(report.issues)} UI design or accessibility issue(s) detected:")
+        for issue in report.issues:
+            print(f"  - [{issue.category}] {issue.file_path}:{issue.line_number} -- {issue.message}")
+        print("\nRefer to DESIGN.md and .agents/rules/44_anti_ai_ui_design_standards.md for required fixes.")
+        return 1
+
+    print("\n[PASS] UI-AUDIT CLEAN: All design tokens, focus states, and layout rules compliant.")
+    return 0
 
 
 def cmd_patch_check(args) -> int:
@@ -1098,6 +1147,7 @@ def main() -> int:
 
     subparsers.add_parser("verify", help="Fast all-in-one verification gate (AST lint + DocTruth + all unit tests)")
     subparsers.add_parser("benchmark-ai", help="Run quantitative AI-first workflow grounding & routing benchmark")
+    subparsers.add_parser("ui-audit", help="Audit UI/UX design tokens, accessibility, and anti-AI-slop rules")
 
     p_patch = subparsers.add_parser("patch-check", help="Pre-flight validator for code changes (AST, brace balance, buzzwords)")
     p_patch.add_argument("--files", nargs="*", help="Specific source files to check (defaults to uncommitted git files)")
@@ -1130,6 +1180,7 @@ def main() -> int:
         "explain": cmd_explain,
         "verify": cmd_verify,
         "benchmark-ai": cmd_benchmark_ai,
+        "ui-audit": cmd_ui_audit,
         "patch-check": cmd_patch_check,
         "export-harness": cmd_export_harness,
     }

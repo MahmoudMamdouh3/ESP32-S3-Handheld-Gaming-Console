@@ -7,7 +7,18 @@
 
 ---
 
-## Latest Agent Handoff — 2026-10-21 (AI Development Environment & Harness v8 Overhaul)
+## Latest Agent Handoff — 2026-10-21 (Phase F: Design System, Anti-AI-Slop Craft Standards & UI Auditor)
+
+This is the current repository handoff. Read this section before continuing from an earlier changelog entry.
+
+- **Phase F — Design System, Anti-AI-Slop Craft Standards & UI Auditor:**
+  1. **Canonical Design Specification (`DESIGN.md`):** Authored a single-file design standard synthesizing OnionUI BMO aesthetic and physical handheld ergonomics (derived from `Awesome DESIGN.md`, `Google DESIGN.md`, `Open Design`, `UI/UX Pro Max Skill`). Defined 1:1 color token matrix between ST7789 display (BGR565 byte-swapped) and Web Simulator CSS custom properties, 8px base grid, 4px sub-grid, minimum targets ($44\times 44\text{ pt}$), typography ladder, and second-order harmonic spring motion dynamics ($\zeta = 0.72$, $\omega_n = 22.0\text{ rad/s}$).
+  2. **Anti-AI Craft Standards (`.agents/rules/44_anti_ai_ui_design_standards.md`):** Established Rule 44 prohibiting AI visual anti-patterns: card nesting, generic purple/indigo gradients, low-contrast text (< 4.5:1 WCAG AA), missing keyboard focus or tactile active states, ungridded margins, and inlined raw hex colors. Re-enforced physical hardware invariant: menu selection states must use `drawRoundRect` outlines rather than `fillRoundRect` full fills, saving $6.3\text{ ms}$ per frame.
+  3. **Dedicated UI Design Auditor (`tools/guardian/core/ui_auditor.py`, `python -m tools.guardian ui-audit`):** Automated static scanner checking firmware drawing calls for raw inline hexes, simulator CSS for card nesting, missing `:focus-visible` states, and odd off-grid spacing. Verifies exact token parity between `theme.h` and `simulator.css`. Added unit tests `test_17_ui_auditor_clean_baseline` and `test_18_ui_auditor_catches_violations` in `test_guardian.py`.
+  4. **CI & Toolchain Integration (`scripts/validate_repo.py` Phase 8, `tools/guardian/cli.py`):** Added Phase 8 (`Phase 8: UI Design System & Anti-AI-Slop`) to repository CI validator `scripts/validate_repo.py`. Added UI audit step to `guardian audit`, `doctor`, and `patch-check`. Updated `scripts/bundle_rules.py` to Ruleset v8 consolidating all 44 rules into `docs/consolidated-rules.md`.
+  5. **Web Simulator Keyboard Accessibility & Firmware Tokens (`tools/bmo_simulator/simulator.css`, `firmware/BmoGameboy/src/core/theme.h`):** Added high-contrast `:focus-visible` outline rings to `.control-pill`, `.dpad-btn`, `.round-btn`, `.pill-btn`, and form inputs. Added `makePanelColor()`, `PANEL_DEEP_TEAL`, `PANEL_DPAD_YELLOW`, `TEXT_SIZE_SMALL`, `TEXT_SIZE_BODY`, `TEXT_SIZE_TITLE`, `TARGET_TOUCH_MIN`, and `TARGET_EMBEDDED_MIN` to `Theme::`.
+
+## Previous Handoff — 2026-10-21 (AI Development Environment & Harness v8 Overhaul)
 
 This is the current repository handoff. Read this section before continuing from an earlier changelog entry.
 
