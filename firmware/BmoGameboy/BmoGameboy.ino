@@ -82,6 +82,22 @@ static void autoSaveCurrentBatteryRam() {
     SmsEmu::saveBatteryRam(currentRomFilename);
   } else if (selectedEmulatorIndex == 6) {
     PceEmu::saveBatteryRam(currentRomFilename);
+  } else if (selectedEmulatorIndex == 7) {
+    AtariEmu::saveBatteryRam(currentRomFilename);
+  } else if (selectedEmulatorIndex == 8) {
+    PicoEmu::saveBatteryRam(currentRomFilename);
+  } else if (selectedEmulatorIndex == 9) {
+    GenesisEmu::saveBatteryRam(currentRomFilename);
+  } else if (selectedEmulatorIndex == 10) {
+    SNESEmu::saveBatteryRam(currentRomFilename);
+  } else if (selectedEmulatorIndex == 11) {
+    WSwanEmu::saveBatteryRam(currentRomFilename);
+  } else if (selectedEmulatorIndex == 12) {
+    NGPEmu::saveBatteryRam(currentRomFilename);
+  } else if (selectedEmulatorIndex == 13) {
+    LynxEmu::saveBatteryRam(currentRomFilename);
+  } else if (selectedEmulatorIndex == 14) {
+    ColemEmu::saveBatteryRam(currentRomFilename);
   }
 }
 
@@ -97,6 +113,22 @@ static bool quickSaveState(int slot) {
     return SmsEmu::saveState(currentRomFilename, slot);
   } else if (selectedEmulatorIndex == 6) {
     return PceEmu::saveState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 7) {
+    return AtariEmu::saveState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 8) {
+    return PicoEmu::saveState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 9) {
+    return GenesisEmu::saveState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 10) {
+    return SNESEmu::saveState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 11) {
+    return WSwanEmu::saveState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 12) {
+    return NGPEmu::saveState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 13) {
+    return LynxEmu::saveState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 14) {
+    return ColemEmu::saveState(currentRomFilename, slot);
   }
   return false;
 }
@@ -113,6 +145,22 @@ static bool quickLoadState(int slot) {
     return SmsEmu::loadState(currentRomFilename, slot);
   } else if (selectedEmulatorIndex == 6) {
     return PceEmu::loadState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 7) {
+    return AtariEmu::loadState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 8) {
+    return PicoEmu::loadState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 9) {
+    return GenesisEmu::loadState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 10) {
+    return SNESEmu::loadState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 11) {
+    return WSwanEmu::loadState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 12) {
+    return NGPEmu::loadState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 13) {
+    return LynxEmu::loadState(currentRomFilename, slot);
+  } else if (selectedEmulatorIndex == 14) {
+    return ColemEmu::loadState(currentRomFilename, slot);
   }
   return false;
 }
@@ -309,6 +357,7 @@ void setup() {
 
 void loop() {
   Battery::update();
+  Buttons::setGameplayMode(currentState == STATE_EMULATOR);
   // PERF-H5: Face is HIDDEN during emulation/pause and never drawn; skip update() overhead.
   if (currentState != STATE_EMULATOR && currentState != STATE_PAUSE_MENU) {
     BmoFace::update();
@@ -526,6 +575,32 @@ void loop() {
         lastDirChangeMs = millis();
       }
       lastGx = gx;
+    }
+
+    // Konami Code Easter Egg: UP, UP, DOWN, DOWN, LEFT, RIGHT, LEFT, RIGHT, B, A
+    static const int kKonamiSeq[10] = {
+      Buttons::UP, Buttons::UP, Buttons::DOWN, Buttons::DOWN,
+      Buttons::LEFT, Buttons::RIGHT, Buttons::LEFT, Buttons::RIGHT,
+      Buttons::B, Buttons::A
+    };
+    static int s_konamiStep = 0;
+    for (int bi = 0; bi < Buttons::count(); ++bi) {
+      const auto& bs = Buttons::get(bi);
+      if (bs.pressed && bs.changed) {
+        if (bi == kKonamiSeq[s_konamiStep]) {
+          s_konamiStep++;
+          if (s_konamiStep == 10) {
+            s_konamiStep = 0;
+            BmoFace::triggerDance(140.0f);
+            BmoFace::triggerWink();
+            BmoFace::say("KONAMI CODE! +30 LIVES FOR BMO!", 4500);
+            DisplayEmu::showToast("★ KONAMI CODE UNLOCKED! ★", 0xFFE0, 2500);
+          }
+        } else {
+          s_konamiStep = (bi == kKonamiSeq[0]) ? 1 : 0;
+        }
+        break;
+      }
     }
 
     // Interactive button triggers
@@ -792,6 +867,7 @@ void loop() {
         currentRomBuffer = romData; // Track it globally so we can free it later
         strncpy(currentRomFilename, selectedRom->filename, sizeof(currentRomFilename) - 1);
         currentRomFilename[sizeof(currentRomFilename) - 1] = '\0';
+        SDCard::recordRecentLaunch(currentRomFilename);
 
         // Transparent Auto-Load Battery RAM (.sav)
         if (selectedEmulatorIndex == 0) {
@@ -804,6 +880,22 @@ void loop() {
           SmsEmu::loadBatteryRam(currentRomFilename);
         } else if (selectedEmulatorIndex == 6) {
           PceEmu::loadBatteryRam(currentRomFilename);
+        } else if (selectedEmulatorIndex == 7) {
+          AtariEmu::loadBatteryRam(currentRomFilename);
+        } else if (selectedEmulatorIndex == 8) {
+          PicoEmu::loadBatteryRam(currentRomFilename);
+        } else if (selectedEmulatorIndex == 9) {
+          GenesisEmu::loadBatteryRam(currentRomFilename);
+        } else if (selectedEmulatorIndex == 10) {
+          SNESEmu::loadBatteryRam(currentRomFilename);
+        } else if (selectedEmulatorIndex == 11) {
+          WSwanEmu::loadBatteryRam(currentRomFilename);
+        } else if (selectedEmulatorIndex == 12) {
+          NGPEmu::loadBatteryRam(currentRomFilename);
+        } else if (selectedEmulatorIndex == 13) {
+          LynxEmu::loadBatteryRam(currentRomFilename);
+        } else if (selectedEmulatorIndex == 14) {
+          ColemEmu::loadBatteryRam(currentRomFilename);
         }
 
         resetFrameStats();
@@ -869,6 +961,12 @@ void loop() {
     // Runtime DMG Palette Switcher: SELECT + DOWN
     if (select && down && (selectedEmulatorIndex == 0 || selectedEmulatorIndex == 1)) {
       DisplayEmu::cycleDmgPalette();
+    }
+
+    // Toggle Rapid Auto-Fire Turbo: SELECT + LEFT
+    bool leftEdge = Buttons::get(Buttons::LEFT).pressed && Buttons::get(Buttons::LEFT).changed;
+    if (select && leftEdge) {
+      Buttons::toggleTurbo();
     }
 
     // Return to menu: SELECT + UP

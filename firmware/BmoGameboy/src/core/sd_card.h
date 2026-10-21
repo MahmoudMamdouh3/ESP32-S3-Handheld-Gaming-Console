@@ -53,6 +53,13 @@ public:
   static bool saveIndex();
   static void rebuildIndex();
   static void sortRoms();
+
+  // Recently Played History Playlist API (tracks last 10 launched games)
+  static void recordRecentLaunch(const char* filename);
+  static int getRecentCount();
+  static const char* getRecentFilename(int index);
+  static void loadRecentHistory();
+  static void saveRecentHistory();
   
   // Dynamically load a ROM file entirely into PSRAM
   // Returns pointer to PSRAM buffer (must be free'd via freeRom) or nullptr on failure.

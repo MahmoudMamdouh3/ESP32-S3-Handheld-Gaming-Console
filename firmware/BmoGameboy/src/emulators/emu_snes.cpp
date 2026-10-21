@@ -3,6 +3,7 @@
 #include "../vendor/snes/snes.h"
 #include "../core/display_emu.h"
 #include "../core/buttons.h"
+#include "../core/save_manager.h"
 #include "../core/config.h"
 #include <esp_heap_caps.h>
 #include <string.h>
@@ -50,12 +51,13 @@ void SNESEmu::update() {
 
 void SNESEmu::destroy() {
   running = false;
+  snes_destroy(&snesState);
   if (snesFb) {
-    heap_caps_free(snesFb); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
+    heap_caps_free(snesFb);
     snesFb = nullptr;
   }
   if (snesWram) {
-    heap_caps_free(snesWram); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
+    heap_caps_free(snesWram);
     snesWram = nullptr;
   }
   memset(&snesState, 0, sizeof(snesState));
@@ -63,4 +65,46 @@ void SNESEmu::destroy() {
 
 bool SNESEmu::isRunning() {
   return running;
+}
+
+bool SNESEmu::saveBatteryRam(const char* romFilename) {
+  if (!running || !snesState.sram || !romFilename) return false;
+  return SaveManager::saveBatteryRam(romFilename, snesState.sram, 32 * 1024);
+}
+
+bool SNESEmu::loadBatteryRam(const char* romFilename) {
+  if (!running || !snesState.sram || !romFilename) return false;
+  return SaveManager::loadBatteryRam(romFilename, snesState.sram, 32 * 1024);
+}
+
+bool SNESEmu::saveState(const char* romFilename, int slot) {
+  if (!running || !snesWram || !romFilename) return false;
+  return SaveManager::saveState(romFilename, slot, SaveManager::CORE_SNES,
+                                &snesState, sizeof(snes_t), snesWram, 128 * 1024);
+}
+
+bool SNESEmu::loadState(const char* romFilename, int slot) {
+  if (!running || !snesWram || !romFilename) return false;
+  snes_t tempState;
+  size_t stateSize = 0, ramSize = 0;
+  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_SNES,
+                                   &tempState, sizeof(tempState), &stateSize,
+                                   snesWram, 128 * 1024, &ramSize);
+  if (ok && stateSize == sizeof(snes_t)) {
+    uint8_t* rom = snesState.rom;
+    uint32_t rom_size = snesState.rom_size;
+    uint8_t* wram = snesState.wram;
+    uint8_t* vram = snesState.vram;
+    uint8_t* sram = snesState.sram;
+    uint16_t* fb = snesState.framebuffer;
+    memcpy(&snesState, &tempState, sizeof(snes_t));
+    snesState.rom = rom;
+    snesState.rom_size = rom_size;
+    snesState.wram = wram;
+    snesState.vram = vram;
+    snesState.sram = sram;
+    snesState.framebuffer = fb;
+    return true;
+  }
+  return false;
 }

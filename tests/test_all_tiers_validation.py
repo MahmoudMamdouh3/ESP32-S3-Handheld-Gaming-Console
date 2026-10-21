@@ -69,15 +69,12 @@ REQUIRED_STREAM_METHODS = [
 # Engines known to be production-quality (real emulation logic)
 PRODUCTION_ENGINES = {
     'emu_walnut', 'emu_peanut', 'emu_nes', 'emu_doom', 'emu_sms', 'emu_pce',
-    'emu_genesis', 'emu_wswan',
+    'emu_atari', 'emu_pico', 'emu_genesis', 'emu_snes', 'emu_wswan',
+    'emu_ngp', 'emu_lynx', 'emu_colem',
 }
 
 # Engines that are architectural stubs (render blank screen only)
-STUB_ENGINES = {
-    'emu_atari', 'emu_pico',
-    'emu_snes',
-    'emu_ngp', 'emu_lynx', 'emu_colem',
-}
+STUB_ENGINES = set()
 
 
 class TestAllConsolesFirmwareValidation(unittest.TestCase):
@@ -182,34 +179,39 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
                          f'Found 0-byte corrupt files in games/: {zero_byte[:5]}')
 
     # ------------------------------------------------------------------
-    # test_08: Stub engines are honestly labeled
+    # test_08: All vendor engines are real production implementations
     # ------------------------------------------------------------------
     def test_08_stub_engines_carry_stub_sentinel(self):
         """
-        Stub vendor engines must contain a STUB_ENGINE sentinel comment.
-        This prevents future agents from treating blank-screen stubs as
-        production-ready emulators without reading the code.
+        Verify no remaining vendor engine is a blank-screen stub, and that all
+        13 cartridge-based emulator wrappers implement the full persistence contract
+        (saveBatteryRam, loadBatteryRam, saveState, loadState).
         """
-        stub_vendor_map = {
+        vendor_map = {
+            'emu_sms':     ('smsplus', 'sms.c'),
+            'emu_pce':     ('pce',     'pce.c'),
             'emu_atari':   ('stella',  'atari.c'),
             'emu_pico':    ('pico',    'pico.c'),
+            'emu_genesis': ('genesis', 'genesis.c'),
             'emu_snes':    ('snes',    'snes.c'),
+            'emu_wswan':   ('wswan',   'wswan.c'),
             'emu_ngp':     ('ngp',     'ngp.c'),
             'emu_lynx':    ('lynx',    'lynx.c'),
             'emu_colem':   ('colem',   'colem.c'),
         }
-        missing_sentinel = []
-        for stem, (vdir, vfile) in stub_vendor_map.items():
+        for stem, (vdir, vfile) in vendor_map.items():
             vendor_path = FIRMWARE_DIR / 'src' / 'vendor' / vdir / vfile
-            if vendor_path.exists():
-                text = vendor_path.read_text(encoding='utf-8')
-                if 'STUB_ENGINE' not in text:
-                    missing_sentinel.append(f'{vdir}/{vfile}')
-        self.assertEqual(
-            missing_sentinel, [],
-            f'Stub vendor engines missing STUB_ENGINE sentinel comment: {missing_sentinel}. '
-            'Add "// STUB_ENGINE" to the top of each stub to prevent false VERIFIED_HOST claims.'
-        )
+            self.assertTrue(vendor_path.exists(), f'Missing {vdir}/{vfile}')
+            text = vendor_path.read_text(encoding='utf-8')
+            self.assertNotIn('STUB_ENGINE', text, f'{vdir}/{vfile} still marked STUB_ENGINE')
+            self.assertGreater(len(text.splitlines()), 150, f'{vdir}/{vfile} too short to be a real engine')
+
+        # Verify unified persistence contract across all 13 cartridge emulators
+        cart_emulators = [s for s in EMULATOR_STEMS if s != 'emu_doom']
+        for stem in cart_emulators:
+            h_text = (FIRMWARE_DIR / 'src' / 'emulators' / (stem + '.h')).read_text(encoding='utf-8')
+            for method in ('saveBatteryRam', 'loadBatteryRam', 'saveState', 'loadState'):
+                self.assertIn(method, h_text, f'{stem}.h missing persistence method {method}')
 
     # ------------------------------------------------------------------
     # test_09: Partition table math is valid

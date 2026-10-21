@@ -5,6 +5,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Phase 5.2 Complete: All 14 Real Emulator Engines, Unified 14-Core Persistence & QoL Backlog] - 2026-10-21
+### Added (Phase A — 6 Remaining Emulator Engines Replaced with Real CPU + Video/I/O Cores; 0 Stubs Remaining)
+- **Atari 2600 (`src/vendor/stella/atari.h`, `src/vendor/stella/atari.c`)**:
+  - Implemented MOS 6507 CPU interpreter (13-bit address space `$0000-$1FFF`, full 6502 ALU/branch/stack/addressing modes), MOS 6532 RIOT (`$0080-$00FF` 128B zero-page RAM, `SWCHA`/`SWCHB`, interval timer `TIM1T/TIM8T/TIM64T/T1024T`/`INTIM`), F8/F6/F4 bankswitching (`$1FF4-$1FFB`), and Atari TIA scanline renderer (`WSYNC`, Playfield `PF0/PF1/PF2` reflect/score modes, `GRP0/GRP1`, `M0/M1`, `BL`, `HMOVE`) into 160×192 PSRAM BGR565 framebuffer.
+- **ColecoVision / SG-1000 (`src/vendor/colem/colem.h`, `src/vendor/colem/colem.c`)**:
+  - Implemented Zilog Z80A CPU interpreter (3.58 MHz, `$0066` VBlank NMI, `$6000-$7FFF` 8KB RAM, `$8000-$FFFF` Cart ROM, `$A0-$BF` VDP ports, `$80/$C0/$E0/$FC` keypad/joystick strobes) and Texas Instruments TMS9918A VDP (16KB VRAM, Graphics Mode 1 & Mode 2 with 3 screen thirds, 32 hardware sprites 8×8/16×16, 16-color NTSC BGR565 palette) into 256×192 PSRAM framebuffer.
+- **Atari Lynx (`src/vendor/lynx/lynx.h`, `src/vendor/lynx/lynx.c`)**:
+  - Implemented WDC 65SC02 CMOS CPU interpreter (4 MHz, 64KB unified RAM, CMOS opcodes `BRA`, `STZ`, `INC A`, `DEC A`, `PHX/PLX/PHY/PLY`, `(zp)`), Mikey (`$FD00-$FDFF` 16-color RGB444 palette cache, `DISPADRL/H` `$FD94-$FD95` 4bpp video DMA scanout 160×102), and Suzy (`$FC00-$FCFF` 16×16 hardware multiply at `$FC52-$FC63`, `JOYSW` `$FCB0` input, and linked Sprite Control Block SCB blitter on `SPRGO` `$FC91`).
+- **SNK Neo Geo Pocket Color (`src/vendor/ngp/ngp.h`, `src/vendor/ngp/ngp.c`)**:
+  - Implemented Toshiba TLCS-900/H 32-bit CISC CPU interpreter (`XWA..XSP`, 24-bit bus `$004000-$007FFF` Work RAM, `$006F82` Joypad, `$008000-$00BFFF` K1GE/K2GE Video ASIC, `$200000` Cart ROM) and K1GE/K2GE 160×152 scanline renderer (Scroll Plane 1 `$9000`, Scroll Plane 2 `$9800`, 64 hardware sprites `$8800`, 512 2bpp character tiles `$A000-$BFFF`, 12-bit RGB444 palette RAM `$8200-$83FF`).
+- **Super Nintendo / SFC (`src/vendor/snes/snes.h`, `src/vendor/snes/snes.c`)**:
+  - Implemented WDC 65C816 16-bit CPU interpreter (8/16-bit `M`/`X` mode flags, `XCE`, `REP`, `SEP`, `JSL/RTL`, `JML`, 24-bit `PBR:PC` and `DBR:Addr` LoROM bus), 8-channel General Purpose DMA (`$420B` `MDMAEN`), and S-PPU 256×224 scanline renderer (64KB VRAM + 32KB SRAM + 128KB WRAM in Octal PSRAM, CGRAM 256-color BGR555 to pre-swapped BGR565 `palette_cache`, BG Modes 0/1 2bpp & 4bpp tilemaps, and 128 OAM 4bpp sprites).
+- **PICO-8 Fantasy Console (`src/vendor/pico/pico.h`, `src/vendor/pico/pico.c`)**:
+  - Implemented 32KB PICO-8 RAM map (`$0000-$1FFF` sprite sheet, `$2000-$2FFF` map, `$3000` flags, `$5F00` draw state/palettes/clip/camera, `$5F4C` input, `$6000-$7FFF` 128×128 4bpp screen), C graphics primitives (`pico_cls`, `pico_pset`, `pico_pget`, `pico_rectfill`, `pico_circfill`, `pico_spr`, `pico_map`), `.p8` text section parser (`__gfx__`, `__map__`, `__gff__`), and compact draw command stream runner at `$4300`.
+
+### Added (Phase B — Unified 14-Core Persistence Contract)
+- **`src/emulators/emu_*.h` & `.cpp`, `BmoGameboy.ino`**:
+  - Implemented `saveBatteryRam`, `loadBatteryRam`, `saveState`, and `loadState` across `AtariEmu`, `PicoEmu`, `GenesisEmu`, `SNESEmu`, `WSwanEmu`, `NGPEmu`, `LynxEmu`, and `ColemEmu` (preserving live PSRAM pointers during state restore).
+  - Wired all 13 cartridge emulators into `autoSaveCurrentBatteryRam()`, `quickSaveState()`, `quickLoadState()`, and boot auto-load in `BmoGameboy.ino`.
+
+### Added (Phase C — Quality-of-Life Backlog Features & Tests)
+- **Per-Core Button Remap (A/B Swap) & Auto-Fire Turbo (`src/core/buttons.h`, `src/core/buttons.cpp`, `BmoGameboy.ino`)**:
+  - Added `Buttons::setGameplayMode`, `setSwapAB`, `isSwapAB`, `toggleSwapAB`, `setTurboEnabled`, `isTurboEnabled`, `toggleTurbo`, and `SELECT + LEFT` in-game hotkey.
+- **Recently Played History Playlist (`src/core/sd_card.h`, `src/core/sd_card.cpp`, `BmoGameboy.ino`)**:
+  - Added `SDCard::recordRecentLaunch`, `getRecentCount`, `getRecentFilename`, `loadRecentHistory`, `saveRecentHistory` backed by `/history.txt` on MicroSD.
+- **In-Game Screenshot Dump (`src/core/save_manager.h`, `src/core/save_manager.cpp`)**:
+  - Added `SaveManager::saveScreenshotBmp()` writing 24-bit BMP screenshots to `/screenshots/<game>_<ms>.bmp` under `SpiArbiter::lock()`.
+- **Konami Code Easter Egg (`BmoGameboy.ino`)**:
+  - Added `kKonamiSeq` (`UP, UP, DOWN, DOWN, LEFT, RIGHT, LEFT, RIGHT, B, A`) detector in `STATE_IDLE_MASCOT` triggering BMO's party dance, wink, and toast.
+- **Test Suite Expansion (`tests/test_new_cores_and_qol.py`, `tests/test_all_tiers_validation.py`)**:
+  - Added 15 unit tests verifying all 6 new emulator cores, unified persistence, and QoL features (`113/113` total unit tests passing).
+### Verification
+- `python scripts/validate_repo.py`: `VALIDATION PASSED in 94491 ms — all phases clean` (`Flash: 5,687,672 / 16,777,216 bytes (33.9%)`, `SRAM: 218,784 / 327,680 bytes (66.8%)`, `372 files, 1503 symbols`).
+- `python -m tools.guardian verify`: `Ran 113 tests in 8.392s` / `OK` (`0 Critical violations`).
+
+---
+
 ## [Full Repo Objective Audit, Firmware Bug Fixes & God-Tier AI Harness Overhaul] - 2026-10-21
 ### Fixed (Firmware & Emulator Engines)
 - **`src/core/bmo_face.cpp`**:
