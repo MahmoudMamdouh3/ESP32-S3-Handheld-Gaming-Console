@@ -1,6 +1,6 @@
 {
   "schema_version": "2.1.0",
-  "generated_at": "2026-10-21T16:07:32.690632",
+  "generated_at": "2026-10-21T16:54:57.413588",
   "target_mcu": {
     "chip": "ESP32-S3-N16R8",
     "cpu_arch": "Xtensa dual-core 32-bit LX7 @ 240MHz",
@@ -145,7 +145,7 @@
       "name": "Atari 2600",
       "core": "Stella Core",
       "tier": 1,
-      "status": "stub",
+      "status": "active",
       "res": "160x192",
       "ext": [
         ".a26",
@@ -157,7 +157,7 @@
       "name": "PICO-8",
       "core": "PICO-8 Core",
       "tier": 1,
-      "status": "stub",
+      "status": "active",
       "res": "128x128",
       "ext": [
         ".p8",
@@ -182,7 +182,7 @@
       "name": "Super Nintendo",
       "core": "SNES Core",
       "tier": 2,
-      "status": "stub",
+      "status": "active",
       "res": "256x224",
       "ext": [
         ".sfc",
@@ -206,7 +206,7 @@
       "name": "Neo Geo Pocket",
       "core": "NGP Core",
       "tier": 2,
-      "status": "stub",
+      "status": "active",
       "res": "160x152",
       "ext": [
         ".ngp",
@@ -218,7 +218,7 @@
       "name": "Atari Lynx",
       "core": "Lynx Core",
       "tier": 2,
-      "status": "stub",
+      "status": "active",
       "res": "160x102",
       "ext": [
         ".lnx"
@@ -229,7 +229,7 @@
       "name": "ColecoVision",
       "core": "Coleco Core",
       "tier": 2,
-      "status": "stub",
+      "status": "active",
       "res": "256x192",
       "ext": [
         ".col",
@@ -436,50 +436,50 @@
     {
       "name": "BMO_SDF_Procedural_Face_Render_Unculled",
       "iterations": 100,
-      "avg_latency_us": 1420.875,
-      "throughput_mops": 2.88,
+      "avg_latency_us": 1487.374,
+      "throughput_mops": 2.75,
       "description": "Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling."
     },
     {
       "name": "BMO_SDF_Procedural_Face_Render_Culled",
       "iterations": 200,
-      "avg_latency_us": 652.535,
-      "throughput_mops": 6.28,
+      "avg_latency_us": 705.63,
+      "throughput_mops": 5.8,
       "description": "Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction)."
     },
     {
       "name": "4Pixel_Coalesced_Aligned_Store_Kernel",
       "iterations": 50000,
-      "avg_latency_us": 3.563,
-      "throughput_mops": 8.42,
+      "avg_latency_us": 3.231,
+      "throughput_mops": 9.28,
       "description": "Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling."
     },
     {
       "name": "O1_Palette_Scanline_Transformation",
       "iterations": 10000,
-      "avg_latency_us": 5.311,
-      "throughput_mops": 45.19,
+      "avg_latency_us": 7.115,
+      "throughput_mops": 33.73,
       "description": "Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput."
     },
     {
       "name": "CPU_Emulation_Opcode_Dispatch",
       "iterations": 500000,
-      "avg_latency_us": 0.086,
-      "throughput_mops": 11.64,
+      "avg_latency_us": 0.129,
+      "throughput_mops": 7.74,
       "description": "Simulates CPU opcode fetch-decode-execute cycle dispatch throughput."
     },
     {
       "name": "Direct_GPIO_Atomic_Bitmask_Sampling",
       "iterations": 100000,
-      "avg_latency_us": 0.632,
-      "throughput_mops": 12.65,
+      "avg_latency_us": 0.894,
+      "throughput_mops": 8.95,
       "description": "Measures atomic 8-pin bitmask unpacking replacing 8 sequential digitalRead calls."
     },
     {
       "name": "SD_Catalog_O1_Query_And_Page_Jump",
       "iterations": 10000,
-      "avg_latency_us": 0.221,
-      "throughput_mops": 4.53,
+      "avg_latency_us": 0.4,
+      "throughput_mops": 2.5,
       "description": "Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations."
     }
   ],
@@ -507,7 +507,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "6. Known Issues, Technical Debt & Hardware Limitations Registry",
-      "lines": 371
+      "lines": 388
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -537,7 +537,7 @@
     "10_symbol_reference.md": {
       "file": ".agents/rules/10_symbol_reference.md",
       "title": "Symbol Reference (Ground Truth for Names)",
-      "lines": 301
+      "lines": 370
     },
     "11_rules_meta.md": {
       "file": ".agents/rules/11_rules_meta.md",
@@ -709,67 +709,67 @@
     },
     "quickSaveState": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 88,
+      "line": 104,
       "signature": "static bool quickSaveState(int slot)",
       "is_iram": false
     },
     "quickLoadState": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 104,
+      "line": 136,
       "signature": "static bool quickLoadState(int slot)",
       "is_iram": false
     },
     "destroyActiveEmulator": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 121,
+      "line": 169,
       "signature": "static void destroyActiveEmulator()",
       "is_iram": false
     },
     "canPress": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 163,
+      "line": 211,
       "signature": "inline bool canPress()",
       "is_iram": false
     },
     "recordFrameTime": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 177,
+      "line": 225,
       "signature": "static inline void recordFrameTime(unsigned long us)",
       "is_iram": false
     },
     "resetFrameStats": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 184,
+      "line": 232,
       "signature": "static void resetFrameStats()",
       "is_iram": false
     },
     "countGamesForConsole": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 198,
+      "line": 246,
       "signature": "static int countGamesForConsole(RomType type)",
       "is_iram": false
     },
     "rebuildVisibleGames": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 203,
+      "line": 251,
       "signature": "static void rebuildVisibleGames()",
       "is_iram": false
     },
     "selectedGame": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 237,
+      "line": 285,
       "signature": "static const RomFile* selectedGame()",
       "is_iram": false
     },
     "setup": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 249,
+      "line": 297,
       "signature": "void setup()",
       "is_iram": false
     },
     "loop": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 310,
+      "line": 358,
       "signature": "void loop()",
       "is_iram": false
     },
@@ -1093,19 +1093,61 @@
     },
     "Buttons::begin": {
       "file": "firmware/BmoGameboy/src/core/buttons.cpp",
-      "line": 28,
+      "line": 34,
       "signature": "void Buttons::begin()",
+      "is_iram": false
+    },
+    "Buttons::setGameplayMode": {
+      "file": "firmware/BmoGameboy/src/core/buttons.cpp",
+      "line": 40,
+      "signature": "void Buttons::setGameplayMode(bool inGame)",
+      "is_iram": false
+    },
+    "Buttons::setSwapAB": {
+      "file": "firmware/BmoGameboy/src/core/buttons.cpp",
+      "line": 44,
+      "signature": "void Buttons::setSwapAB(bool swap)",
+      "is_iram": false
+    },
+    "Buttons::isSwapAB": {
+      "file": "firmware/BmoGameboy/src/core/buttons.cpp",
+      "line": 48,
+      "signature": "bool Buttons::isSwapAB()",
+      "is_iram": false
+    },
+    "Buttons::toggleSwapAB": {
+      "file": "firmware/BmoGameboy/src/core/buttons.cpp",
+      "line": 52,
+      "signature": "bool Buttons::toggleSwapAB()",
+      "is_iram": false
+    },
+    "Buttons::setTurboEnabled": {
+      "file": "firmware/BmoGameboy/src/core/buttons.cpp",
+      "line": 57,
+      "signature": "void Buttons::setTurboEnabled(bool enabled, uint8_t periodFrames)",
+      "is_iram": false
+    },
+    "Buttons::isTurboEnabled": {
+      "file": "firmware/BmoGameboy/src/core/buttons.cpp",
+      "line": 62,
+      "signature": "bool Buttons::isTurboEnabled()",
+      "is_iram": false
+    },
+    "Buttons::toggleTurbo": {
+      "file": "firmware/BmoGameboy/src/core/buttons.cpp",
+      "line": 66,
+      "signature": "bool Buttons::toggleTurbo()",
       "is_iram": false
     },
     "Buttons::update": {
       "file": "firmware/BmoGameboy/src/core/buttons.cpp",
-      "line": 34,
+      "line": 71,
       "signature": "void Buttons::update()",
       "is_iram": false
     },
     "Buttons::count": {
       "file": "firmware/BmoGameboy/src/core/buttons.cpp",
-      "line": 58,
+      "line": 115,
       "signature": "int Buttons::count()",
       "is_iram": false
     },
@@ -1113,6 +1155,48 @@
       "file": "firmware/BmoGameboy/src/core/buttons.h",
       "line": 34,
       "signature": "int count();",
+      "is_iram": false
+    },
+    "setGameplayMode": {
+      "file": "firmware/BmoGameboy/src/core/buttons.h",
+      "line": 40,
+      "signature": "void setGameplayMode(bool inGame);",
+      "is_iram": false
+    },
+    "setSwapAB": {
+      "file": "firmware/BmoGameboy/src/core/buttons.h",
+      "line": 41,
+      "signature": "void setSwapAB(bool swap);",
+      "is_iram": false
+    },
+    "isSwapAB": {
+      "file": "firmware/BmoGameboy/src/core/buttons.h",
+      "line": 42,
+      "signature": "bool isSwapAB();",
+      "is_iram": false
+    },
+    "toggleSwapAB": {
+      "file": "firmware/BmoGameboy/src/core/buttons.h",
+      "line": 43,
+      "signature": "bool toggleSwapAB();",
+      "is_iram": false
+    },
+    "setTurboEnabled": {
+      "file": "firmware/BmoGameboy/src/core/buttons.h",
+      "line": 45,
+      "signature": "void setTurboEnabled(bool enabled, uint8_t periodFrames = 4);",
+      "is_iram": false
+    },
+    "isTurboEnabled": {
+      "file": "firmware/BmoGameboy/src/core/buttons.h",
+      "line": 46,
+      "signature": "bool isTurboEnabled();",
+      "is_iram": false
+    },
+    "toggleTurbo": {
+      "file": "firmware/BmoGameboy/src/core/buttons.h",
+      "line": 47,
+      "signature": "bool toggleTurbo();",
       "is_iram": false
     },
     "__attribute__": {
@@ -1902,15 +1986,15 @@
       "is_iram": false
     },
     "saveBatteryRam": {
-      "file": "firmware/BmoGameboy/src/emulators/emu_walnut.h",
-      "line": 18,
-      "signature": "bool saveBatteryRam(const char* romFilename);",
+      "file": "firmware/BmoGameboy/src/emulators/emu_wswan.h",
+      "line": 12,
+      "signature": "static bool saveBatteryRam(const char* romFilename);",
       "is_iram": false
     },
     "loadBatteryRam": {
-      "file": "firmware/BmoGameboy/src/emulators/emu_walnut.h",
-      "line": 19,
-      "signature": "bool loadBatteryRam(const char* romFilename);",
+      "file": "firmware/BmoGameboy/src/emulators/emu_wswan.h",
+      "line": 13,
+      "signature": "static bool loadBatteryRam(const char* romFilename);",
       "is_iram": false
     },
     "hasBatteryRam": {
@@ -1931,6 +2015,12 @@
       "signature": "bool getSaveStateHeader(const char* romFilename, int slot, SaveStateHeader* outHeader);",
       "is_iram": false
     },
+    "saveScreenshotBmp": {
+      "file": "firmware/BmoGameboy/src/core/save_manager.h",
+      "line": 72,
+      "signature": "bool saveScreenshotBmp(const char* romFilename, const uint16_t* bgr565Buffer, int width, int height);",
+      "is_iram": false
+    },
     "compareRoms": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
       "line": 53,
@@ -1945,97 +2035,127 @@
     },
     "SDCard::isMounted": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 137,
+      "line": 138,
       "signature": "bool SDCard::isMounted()",
       "is_iram": false
     },
     "SDCard::sortRoms": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 141,
+      "line": 142,
       "signature": "void SDCard::sortRoms()",
       "is_iram": false
     },
     "SDCard::loadIndex": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 147,
+      "line": 148,
       "signature": "bool SDCard::loadIndex()",
       "is_iram": false
     },
     "SDCard::saveIndex": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 218,
+      "line": 219,
       "signature": "bool SDCard::saveIndex()",
       "is_iram": false
     },
     "SDCard::rebuildIndex": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 265,
+      "line": 266,
       "signature": "void SDCard::rebuildIndex()",
       "is_iram": false
     },
     "SDCard::scanRoms": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 290,
+      "line": 291,
       "signature": "void SDCard::scanRoms()",
       "is_iram": false
     },
     "SDCard::getRomCount": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 341,
+      "line": 342,
       "signature": "int SDCard::getRomCount()",
       "is_iram": false
     },
     "SDCard::getRomCountForType": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 345,
+      "line": 346,
       "signature": "int SDCard::getRomCountForType(RomType type)",
       "is_iram": false
     },
     "SDCard::getRomInfo": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 353,
+      "line": 354,
       "signature": "const RomFile* SDCard::getRomInfo(int index)",
       "is_iram": false
     },
     "SDCard::isFavorite": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 363,
+      "line": 364,
       "signature": "bool SDCard::isFavorite(const char* filename)",
       "is_iram": false
     },
     "SDCard::toggleFavorite": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 373,
+      "line": 374,
       "signature": "void SDCard::toggleFavorite(int index)",
+      "is_iram": false
+    },
+    "SDCard::recordRecentLaunch": {
+      "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
+      "line": 393,
+      "signature": "void SDCard::recordRecentLaunch(const char* filename)",
+      "is_iram": false
+    },
+    "SDCard::getRecentCount": {
+      "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
+      "line": 411,
+      "signature": "int SDCard::getRecentCount()",
+      "is_iram": false
+    },
+    "SDCard::getRecentFilename": {
+      "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
+      "line": 415,
+      "signature": "const char* SDCard::getRecentFilename(int index)",
+      "is_iram": false
+    },
+    "SDCard::saveRecentHistory": {
+      "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
+      "line": 420,
+      "signature": "void SDCard::saveRecentHistory()",
+      "is_iram": false
+    },
+    "SDCard::loadRecentHistory": {
+      "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
+      "line": 435,
+      "signature": "void SDCard::loadRecentHistory()",
       "is_iram": false
     },
     "SDCard::getFavoritesCount": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 386,
+      "line": 467,
       "signature": "int SDCard::getFavoritesCount()",
       "is_iram": false
     },
     "SDCard::saveFavorites": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 391,
+      "line": 472,
       "signature": "void SDCard::saveFavorites()",
       "is_iram": false
     },
     "SDCard::loadFavorites": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 410,
+      "line": 491,
       "signature": "void SDCard::loadFavorites()",
       "is_iram": false
     },
     "SDCard::loadRom": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 449,
+      "line": 530,
       "signature": "uint8_t* SDCard::loadRom(const char* filename, size_t* outSize)",
       "is_iram": false
     },
     "SDCard::freeRom": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 526,
+      "line": 607,
       "signature": "void SDCard::freeRom(uint8_t* buffer)",
       "is_iram": false
     },
@@ -2123,15 +2243,45 @@
       "signature": "static void sortRoms();",
       "is_iram": false
     },
-    "loadRom": {
+    "recordRecentLaunch": {
+      "file": "firmware/BmoGameboy/src/core/sd_card.h",
+      "line": 58,
+      "signature": "static void recordRecentLaunch(const char* filename);",
+      "is_iram": false
+    },
+    "getRecentCount": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
       "line": 59,
+      "signature": "static int getRecentCount();",
+      "is_iram": false
+    },
+    "getRecentFilename": {
+      "file": "firmware/BmoGameboy/src/core/sd_card.h",
+      "line": 60,
+      "signature": "static const char* getRecentFilename(int index);",
+      "is_iram": false
+    },
+    "loadRecentHistory": {
+      "file": "firmware/BmoGameboy/src/core/sd_card.h",
+      "line": 61,
+      "signature": "static void loadRecentHistory();",
+      "is_iram": false
+    },
+    "saveRecentHistory": {
+      "file": "firmware/BmoGameboy/src/core/sd_card.h",
+      "line": 62,
+      "signature": "static void saveRecentHistory();",
+      "is_iram": false
+    },
+    "loadRom": {
+      "file": "firmware/BmoGameboy/src/core/sd_card.h",
+      "line": 66,
       "signature": "static uint8_t* loadRom(const char* filename, size_t* outSize);",
       "is_iram": false
     },
     "freeRom": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 60,
+      "line": 67,
       "signature": "static void freeRom(uint8_t* buffer);",
       "is_iram": false
     },
@@ -2167,26 +2317,50 @@
     },
     "AtariEmu::begin": {
       "file": "firmware/BmoGameboy/src/emulators/emu_atari.cpp",
-      "line": 10,
+      "line": 12,
       "signature": "bool AtariEmu::begin(const uint8_t* romData, size_t romSize)",
       "is_iram": false
     },
     "AtariEmu::updateJoypad": {
       "file": "firmware/BmoGameboy/src/emulators/emu_atari.cpp",
-      "line": 29,
+      "line": 31,
       "signature": "void AtariEmu::updateJoypad()",
       "is_iram": false
     },
     "AtariEmu::runFrame": {
       "file": "firmware/BmoGameboy/src/emulators/emu_atari.cpp",
-      "line": 43,
+      "line": 45,
       "signature": "void AtariEmu::runFrame()",
       "is_iram": false
     },
     "AtariEmu::destroy": {
       "file": "firmware/BmoGameboy/src/emulators/emu_atari.cpp",
-      "line": 54,
+      "line": 56,
       "signature": "void AtariEmu::destroy()",
+      "is_iram": false
+    },
+    "AtariEmu::saveBatteryRam": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_atari.cpp",
+      "line": 63,
+      "signature": "bool AtariEmu::saveBatteryRam(const char* romFilename)",
+      "is_iram": false
+    },
+    "AtariEmu::loadBatteryRam": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_atari.cpp",
+      "line": 68,
+      "signature": "bool AtariEmu::loadBatteryRam(const char* romFilename)",
+      "is_iram": false
+    },
+    "AtariEmu::saveState": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_atari.cpp",
+      "line": 73,
+      "signature": "bool AtariEmu::saveState(const char* romFilename, int slot)",
+      "is_iram": false
+    },
+    "AtariEmu::loadState": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_atari.cpp",
+      "line": 79,
+      "signature": "bool AtariEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "updateJoypad": {
@@ -2207,28 +2381,64 @@
       "signature": "static void destroy();",
       "is_iram": false
     },
+    "saveState": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_wswan.h",
+      "line": 14,
+      "signature": "static bool saveState(const char* romFilename, int slot);",
+      "is_iram": false
+    },
+    "loadState": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_wswan.h",
+      "line": 15,
+      "signature": "static bool loadState(const char* romFilename, int slot);",
+      "is_iram": false
+    },
     "ColemEmu::init": {
       "file": "firmware/BmoGameboy/src/emulators/emu_colem.cpp",
-      "line": 18,
+      "line": 19,
       "signature": "bool ColemEmu::init(uint8_t* romData, size_t romSize)",
       "is_iram": false
     },
     "ColemEmu::update": {
       "file": "firmware/BmoGameboy/src/emulators/emu_colem.cpp",
-      "line": 36,
+      "line": 37,
       "signature": "void ColemEmu::update()",
       "is_iram": false
     },
     "ColemEmu::destroy": {
       "file": "firmware/BmoGameboy/src/emulators/emu_colem.cpp",
-      "line": 51,
+      "line": 53,
       "signature": "void ColemEmu::destroy()",
       "is_iram": false
     },
     "ColemEmu::isRunning": {
       "file": "firmware/BmoGameboy/src/emulators/emu_colem.cpp",
-      "line": 68,
+      "line": 70,
       "signature": "bool ColemEmu::isRunning()",
+      "is_iram": false
+    },
+    "ColemEmu::saveBatteryRam": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_colem.cpp",
+      "line": 74,
+      "signature": "bool ColemEmu::saveBatteryRam(const char* romFilename)",
+      "is_iram": false
+    },
+    "ColemEmu::loadBatteryRam": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_colem.cpp",
+      "line": 79,
+      "signature": "bool ColemEmu::loadBatteryRam(const char* romFilename)",
+      "is_iram": false
+    },
+    "ColemEmu::saveState": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_colem.cpp",
+      "line": 84,
+      "signature": "bool ColemEmu::saveState(const char* romFilename, int slot)",
+      "is_iram": false
+    },
+    "ColemEmu::loadState": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_colem.cpp",
+      "line": 90,
+      "signature": "bool ColemEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "isRunning": {
@@ -2299,50 +2509,98 @@
     },
     "GenesisEmu::init": {
       "file": "firmware/BmoGameboy/src/emulators/emu_genesis.cpp",
-      "line": 17,
+      "line": 18,
       "signature": "bool GenesisEmu::init(uint8_t* romData, size_t romSize)",
       "is_iram": false
     },
     "GenesisEmu::update": {
       "file": "firmware/BmoGameboy/src/emulators/emu_genesis.cpp",
-      "line": 34,
+      "line": 35,
       "signature": "void GenesisEmu::update()",
       "is_iram": false
     },
     "GenesisEmu::destroy": {
       "file": "firmware/BmoGameboy/src/emulators/emu_genesis.cpp",
-      "line": 50,
+      "line": 51,
       "signature": "void GenesisEmu::destroy()",
       "is_iram": false
     },
     "GenesisEmu::isRunning": {
       "file": "firmware/BmoGameboy/src/emulators/emu_genesis.cpp",
-      "line": 64,
+      "line": 65,
       "signature": "bool GenesisEmu::isRunning()",
+      "is_iram": false
+    },
+    "GenesisEmu::saveBatteryRam": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_genesis.cpp",
+      "line": 69,
+      "signature": "bool GenesisEmu::saveBatteryRam(const char* romFilename)",
+      "is_iram": false
+    },
+    "GenesisEmu::loadBatteryRam": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_genesis.cpp",
+      "line": 74,
+      "signature": "bool GenesisEmu::loadBatteryRam(const char* romFilename)",
+      "is_iram": false
+    },
+    "GenesisEmu::saveState": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_genesis.cpp",
+      "line": 79,
+      "signature": "bool GenesisEmu::saveState(const char* romFilename, int slot)",
+      "is_iram": false
+    },
+    "GenesisEmu::loadState": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_genesis.cpp",
+      "line": 85,
+      "signature": "bool GenesisEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "LynxEmu::init": {
       "file": "firmware/BmoGameboy/src/emulators/emu_lynx.cpp",
-      "line": 17,
+      "line": 18,
       "signature": "bool LynxEmu::init(uint8_t* romData, size_t romSize)",
       "is_iram": false
     },
     "LynxEmu::update": {
       "file": "firmware/BmoGameboy/src/emulators/emu_lynx.cpp",
-      "line": 34,
+      "line": 35,
       "signature": "void LynxEmu::update()",
       "is_iram": false
     },
     "LynxEmu::destroy": {
       "file": "firmware/BmoGameboy/src/emulators/emu_lynx.cpp",
-      "line": 50,
+      "line": 51,
       "signature": "void LynxEmu::destroy()",
       "is_iram": false
     },
     "LynxEmu::isRunning": {
       "file": "firmware/BmoGameboy/src/emulators/emu_lynx.cpp",
-      "line": 63,
+      "line": 64,
       "signature": "bool LynxEmu::isRunning()",
+      "is_iram": false
+    },
+    "LynxEmu::saveBatteryRam": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_lynx.cpp",
+      "line": 68,
+      "signature": "bool LynxEmu::saveBatteryRam(const char* romFilename)",
+      "is_iram": false
+    },
+    "LynxEmu::loadBatteryRam": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_lynx.cpp",
+      "line": 73,
+      "signature": "bool LynxEmu::loadBatteryRam(const char* romFilename)",
+      "is_iram": false
+    },
+    "LynxEmu::saveState": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_lynx.cpp",
+      "line": 78,
+      "signature": "bool LynxEmu::saveState(const char* romFilename, int slot)",
+      "is_iram": false
+    },
+    "LynxEmu::loadState": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_lynx.cpp",
+      "line": 84,
+      "signature": "bool LynxEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "getNesStateBuf": {
@@ -2399,40 +2657,52 @@
       "signature": "bool NesEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
-    "saveState": {
-      "file": "firmware/BmoGameboy/src/emulators/emu_walnut.h",
-      "line": 20,
-      "signature": "bool saveState(const char* romFilename, int slot);",
-      "is_iram": false
-    },
-    "loadState": {
-      "file": "firmware/BmoGameboy/src/emulators/emu_walnut.h",
-      "line": 21,
-      "signature": "bool loadState(const char* romFilename, int slot);",
-      "is_iram": false
-    },
     "NGPEmu::init": {
       "file": "firmware/BmoGameboy/src/emulators/emu_ngp.cpp",
-      "line": 17,
+      "line": 18,
       "signature": "bool NGPEmu::init(uint8_t* romData, size_t romSize, bool isColor)",
       "is_iram": false
     },
     "NGPEmu::update": {
       "file": "firmware/BmoGameboy/src/emulators/emu_ngp.cpp",
-      "line": 34,
+      "line": 35,
       "signature": "void NGPEmu::update()",
       "is_iram": false
     },
     "NGPEmu::destroy": {
       "file": "firmware/BmoGameboy/src/emulators/emu_ngp.cpp",
-      "line": 50,
+      "line": 51,
       "signature": "void NGPEmu::destroy()",
       "is_iram": false
     },
     "NGPEmu::isRunning": {
       "file": "firmware/BmoGameboy/src/emulators/emu_ngp.cpp",
-      "line": 63,
+      "line": 64,
       "signature": "bool NGPEmu::isRunning()",
+      "is_iram": false
+    },
+    "NGPEmu::saveBatteryRam": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_ngp.cpp",
+      "line": 68,
+      "signature": "bool NGPEmu::saveBatteryRam(const char* romFilename)",
+      "is_iram": false
+    },
+    "NGPEmu::loadBatteryRam": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_ngp.cpp",
+      "line": 73,
+      "signature": "bool NGPEmu::loadBatteryRam(const char* romFilename)",
+      "is_iram": false
+    },
+    "NGPEmu::saveState": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_ngp.cpp",
+      "line": 78,
+      "signature": "bool NGPEmu::saveState(const char* romFilename, int slot)",
+      "is_iram": false
+    },
+    "NGPEmu::loadState": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_ngp.cpp",
+      "line": 84,
+      "signature": "bool NGPEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "PceEmu::begin": {
@@ -2539,26 +2809,50 @@
     },
     "PicoEmu::begin": {
       "file": "firmware/BmoGameboy/src/emulators/emu_pico.cpp",
-      "line": 10,
+      "line": 12,
       "signature": "bool PicoEmu::begin(const uint8_t* romData, size_t romSize)",
       "is_iram": false
     },
     "PicoEmu::updateJoypad": {
       "file": "firmware/BmoGameboy/src/emulators/emu_pico.cpp",
-      "line": 29,
+      "line": 31,
       "signature": "void PicoEmu::updateJoypad()",
       "is_iram": false
     },
     "PicoEmu::runFrame": {
       "file": "firmware/BmoGameboy/src/emulators/emu_pico.cpp",
-      "line": 45,
+      "line": 47,
       "signature": "void PicoEmu::runFrame()",
       "is_iram": false
     },
     "PicoEmu::destroy": {
       "file": "firmware/BmoGameboy/src/emulators/emu_pico.cpp",
-      "line": 56,
+      "line": 58,
       "signature": "void PicoEmu::destroy()",
+      "is_iram": false
+    },
+    "PicoEmu::saveBatteryRam": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_pico.cpp",
+      "line": 65,
+      "signature": "bool PicoEmu::saveBatteryRam(const char* romFilename)",
+      "is_iram": false
+    },
+    "PicoEmu::loadBatteryRam": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_pico.cpp",
+      "line": 71,
+      "signature": "bool PicoEmu::loadBatteryRam(const char* romFilename)",
+      "is_iram": false
+    },
+    "PicoEmu::saveState": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_pico.cpp",
+      "line": 76,
+      "signature": "bool PicoEmu::saveState(const char* romFilename, int slot)",
+      "is_iram": false
+    },
+    "PicoEmu::loadState": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_pico.cpp",
+      "line": 82,
+      "signature": "bool PicoEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "SmsEmu::begin": {
@@ -2611,26 +2905,50 @@
     },
     "SNESEmu::init": {
       "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
-      "line": 17,
+      "line": 18,
       "signature": "bool SNESEmu::init(uint8_t* romData, size_t romSize)",
       "is_iram": false
     },
     "SNESEmu::update": {
       "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
-      "line": 34,
+      "line": 35,
       "signature": "void SNESEmu::update()",
       "is_iram": false
     },
     "SNESEmu::destroy": {
       "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
-      "line": 51,
+      "line": 52,
       "signature": "void SNESEmu::destroy()",
       "is_iram": false
     },
     "SNESEmu::isRunning": {
       "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
-      "line": 64,
+      "line": 66,
       "signature": "bool SNESEmu::isRunning()",
+      "is_iram": false
+    },
+    "SNESEmu::saveBatteryRam": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
+      "line": 70,
+      "signature": "bool SNESEmu::saveBatteryRam(const char* romFilename)",
+      "is_iram": false
+    },
+    "SNESEmu::loadBatteryRam": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
+      "line": 75,
+      "signature": "bool SNESEmu::loadBatteryRam(const char* romFilename)",
+      "is_iram": false
+    },
+    "SNESEmu::saveState": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
+      "line": 80,
+      "signature": "bool SNESEmu::saveState(const char* romFilename, int slot)",
+      "is_iram": false
+    },
+    "SNESEmu::loadState": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
+      "line": 86,
+      "signature": "bool SNESEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "WalnutEmu::begin": {
@@ -2683,26 +3001,50 @@
     },
     "WSwanEmu::init": {
       "file": "firmware/BmoGameboy/src/emulators/emu_wswan.cpp",
-      "line": 17,
+      "line": 18,
       "signature": "bool WSwanEmu::init(uint8_t* romData, size_t romSize, bool isColor)",
       "is_iram": false
     },
     "WSwanEmu::update": {
       "file": "firmware/BmoGameboy/src/emulators/emu_wswan.cpp",
-      "line": 34,
+      "line": 35,
       "signature": "void WSwanEmu::update()",
       "is_iram": false
     },
     "WSwanEmu::destroy": {
       "file": "firmware/BmoGameboy/src/emulators/emu_wswan.cpp",
-      "line": 50,
+      "line": 51,
       "signature": "void WSwanEmu::destroy()",
       "is_iram": false
     },
     "WSwanEmu::isRunning": {
       "file": "firmware/BmoGameboy/src/emulators/emu_wswan.cpp",
-      "line": 64,
+      "line": 65,
       "signature": "bool WSwanEmu::isRunning()",
+      "is_iram": false
+    },
+    "WSwanEmu::saveBatteryRam": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_wswan.cpp",
+      "line": 69,
+      "signature": "bool WSwanEmu::saveBatteryRam(const char* romFilename)",
+      "is_iram": false
+    },
+    "WSwanEmu::loadBatteryRam": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_wswan.cpp",
+      "line": 74,
+      "signature": "bool WSwanEmu::loadBatteryRam(const char* romFilename)",
+      "is_iram": false
+    },
+    "WSwanEmu::saveState": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_wswan.cpp",
+      "line": 79,
+      "signature": "bool WSwanEmu::saveState(const char* romFilename, int slot)",
+      "is_iram": false
+    },
+    "WSwanEmu::loadState": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_wswan.cpp",
+      "line": 85,
+      "signature": "bool WSwanEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "__gb_read": {
@@ -3635,21 +3977,75 @@
       "signature": "bool agnes_next_frame(agnes_t *agnes);",
       "is_iram": false
     },
+    "colem_rgb_to_bgr565": {
+      "file": "firmware/BmoGameboy/src/vendor/colem/colem.c",
+      "line": 38,
+      "signature": "static inline uint16_t colem_rgb_to_bgr565(uint8_t r, uint8_t g, uint8_t b)",
+      "is_iram": false
+    },
+    "colem_is_cart_header": {
+      "file": "firmware/BmoGameboy/src/vendor/colem/colem.c",
+      "line": 43,
+      "signature": "static bool colem_is_cart_header(const colem_t* emu)",
+      "is_iram": false
+    },
+    "colem_read8": {
+      "file": "firmware/BmoGameboy/src/vendor/colem/colem.c",
+      "line": 50,
+      "signature": "static uint8_t colem_read8(colem_t* emu, uint16_t addr)",
+      "is_iram": false
+    },
+    "colem_write8": {
+      "file": "firmware/BmoGameboy/src/vendor/colem/colem.c",
+      "line": 86,
+      "signature": "static void colem_write8(colem_t* emu, uint16_t addr, uint8_t val)",
+      "is_iram": false
+    },
+    "colem_read16": {
+      "file": "firmware/BmoGameboy/src/vendor/colem/colem.c",
+      "line": 94,
+      "signature": "static inline uint16_t colem_read16(colem_t* emu, uint16_t addr)",
+      "is_iram": false
+    },
+    "colem_write16": {
+      "file": "firmware/BmoGameboy/src/vendor/colem/colem.c",
+      "line": 98,
+      "signature": "static inline void colem_write16(colem_t* emu, uint16_t addr, uint16_t val)",
+      "is_iram": false
+    },
+    "colem_io_read": {
+      "file": "firmware/BmoGameboy/src/vendor/colem/colem.c",
+      "line": 103,
+      "signature": "static uint8_t colem_io_read(colem_t* emu, uint8_t port)",
+      "is_iram": false
+    },
+    "colem_io_write": {
+      "file": "firmware/BmoGameboy/src/vendor/colem/colem.c",
+      "line": 144,
+      "signature": "static void colem_io_write(colem_t* emu, uint8_t port, uint8_t val)",
+      "is_iram": false
+    },
+    "colem_render_scanline": {
+      "file": "firmware/BmoGameboy/src/vendor/colem/colem.c",
+      "line": 177,
+      "signature": "static void colem_render_scanline(colem_t* emu, int line)",
+      "is_iram": false
+    },
     "colem_init": {
       "file": "firmware/BmoGameboy/src/vendor/colem/colem.h",
-      "line": 21,
+      "line": 36,
       "signature": "void colem_init(colem_t* emu, uint8_t* rom, uint32_t rom_size, uint8_t* ram, uint8_t* vram, uint16_t* fb);",
       "is_iram": false
     },
     "colem_set_joystick": {
       "file": "firmware/BmoGameboy/src/vendor/colem/colem.h",
-      "line": 23,
+      "line": 38,
       "signature": "void colem_set_joystick(colem_t* emu, uint16_t joy);",
       "is_iram": false
     },
     "colem_step_frame": {
       "file": "firmware/BmoGameboy/src/vendor/colem/colem.h",
-      "line": 22,
+      "line": 37,
       "signature": "void colem_step_frame(colem_t* emu);",
       "is_iram": false
     },
@@ -8519,39 +8915,189 @@
       "signature": "void genesis_step_frame(genesis_t* emu);",
       "is_iram": false
     },
+    "lynx_rgb444_to_bgr565": {
+      "file": "firmware/BmoGameboy/src/vendor/lynx/lynx.c",
+      "line": 26,
+      "signature": "static inline uint16_t lynx_rgb444_to_bgr565(uint8_t r4, uint8_t g4, uint8_t b4)",
+      "is_iram": false
+    },
+    "lynx_set_zn": {
+      "file": "firmware/BmoGameboy/src/vendor/lynx/lynx.c",
+      "line": 34,
+      "signature": "static inline void lynx_set_zn(lynx_t* emu, uint8_t val)",
+      "is_iram": false
+    },
+    "lynx_update_palette": {
+      "file": "firmware/BmoGameboy/src/vendor/lynx/lynx.c",
+      "line": 40,
+      "signature": "static void lynx_update_palette(lynx_t* emu, uint8_t idx)",
+      "is_iram": false
+    },
+    "lynx_execute_scb": {
+      "file": "firmware/BmoGameboy/src/vendor/lynx/lynx.c",
+      "line": 50,
+      "signature": "static void lynx_execute_scb(lynx_t* emu)",
+      "is_iram": false
+    },
+    "lynx_read8": {
+      "file": "firmware/BmoGameboy/src/vendor/lynx/lynx.c",
+      "line": 93,
+      "signature": "static uint8_t lynx_read8(lynx_t* emu, uint16_t addr)",
+      "is_iram": false
+    },
+    "lynx_write8": {
+      "file": "firmware/BmoGameboy/src/vendor/lynx/lynx.c",
+      "line": 133,
+      "signature": "static void lynx_write8(lynx_t* emu, uint16_t addr, uint8_t val)",
+      "is_iram": false
+    },
+    "lynx_read16": {
+      "file": "firmware/BmoGameboy/src/vendor/lynx/lynx.c",
+      "line": 173,
+      "signature": "static inline uint16_t lynx_read16(lynx_t* emu, uint16_t addr)",
+      "is_iram": false
+    },
+    "lynx_push8": {
+      "file": "firmware/BmoGameboy/src/vendor/lynx/lynx.c",
+      "line": 177,
+      "signature": "static inline void lynx_push8(lynx_t* emu, uint8_t val)",
+      "is_iram": false
+    },
+    "lynx_pop8": {
+      "file": "firmware/BmoGameboy/src/vendor/lynx/lynx.c",
+      "line": 182,
+      "signature": "static inline uint8_t lynx_pop8(lynx_t* emu)",
+      "is_iram": false
+    },
+    "lynx_adc": {
+      "file": "firmware/BmoGameboy/src/vendor/lynx/lynx.c",
+      "line": 187,
+      "signature": "static void lynx_adc(lynx_t* emu, uint8_t val)",
+      "is_iram": false
+    },
+    "lynx_sbc": {
+      "file": "firmware/BmoGameboy/src/vendor/lynx/lynx.c",
+      "line": 196,
+      "signature": "static void lynx_sbc(lynx_t* emu, uint8_t val)",
+      "is_iram": false
+    },
+    "lynx_cmp": {
+      "file": "firmware/BmoGameboy/src/vendor/lynx/lynx.c",
+      "line": 200,
+      "signature": "static void lynx_cmp(lynx_t* emu, uint8_t reg, uint8_t val)",
+      "is_iram": false
+    },
+    "lynx_cpu_step": {
+      "file": "firmware/BmoGameboy/src/vendor/lynx/lynx.c",
+      "line": 207,
+      "signature": "static int lynx_cpu_step(lynx_t* emu)",
+      "is_iram": false
+    },
     "lynx_init": {
       "file": "firmware/BmoGameboy/src/vendor/lynx/lynx.h",
-      "line": 21,
+      "line": 32,
       "signature": "void lynx_init(lynx_t* emu, uint8_t* rom, uint32_t rom_size, uint8_t* ram, uint16_t* fb);",
       "is_iram": false
     },
     "lynx_set_buttons": {
       "file": "firmware/BmoGameboy/src/vendor/lynx/lynx.h",
-      "line": 23,
+      "line": 34,
       "signature": "void lynx_set_buttons(lynx_t* emu, uint8_t buttons);",
       "is_iram": false
     },
     "lynx_step_frame": {
       "file": "firmware/BmoGameboy/src/vendor/lynx/lynx.h",
-      "line": 22,
+      "line": 33,
       "signature": "void lynx_step_frame(lynx_t* emu);",
+      "is_iram": false
+    },
+    "ngp_rgb444_to_bgr565": {
+      "file": "firmware/BmoGameboy/src/vendor/ngp/ngp.c",
+      "line": 26,
+      "signature": "static inline uint16_t ngp_rgb444_to_bgr565(uint16_t c12)",
+      "is_iram": false
+    },
+    "ngp_read8": {
+      "file": "firmware/BmoGameboy/src/vendor/ngp/ngp.c",
+      "line": 34,
+      "signature": "static uint8_t ngp_read8(ngp_t* emu, uint32_t addr)",
+      "is_iram": false
+    },
+    "ngp_write8": {
+      "file": "firmware/BmoGameboy/src/vendor/ngp/ngp.c",
+      "line": 55,
+      "signature": "static void ngp_write8(ngp_t* emu, uint32_t addr, uint8_t val)",
+      "is_iram": false
+    },
+    "ngp_read16": {
+      "file": "firmware/BmoGameboy/src/vendor/ngp/ngp.c",
+      "line": 74,
+      "signature": "static inline uint16_t ngp_read16(ngp_t* emu, uint32_t addr)",
+      "is_iram": false
+    },
+    "ngp_read32": {
+      "file": "firmware/BmoGameboy/src/vendor/ngp/ngp.c",
+      "line": 78,
+      "signature": "static inline uint32_t ngp_read32(ngp_t* emu, uint32_t addr)",
+      "is_iram": false
+    },
+    "ngp_write16": {
+      "file": "firmware/BmoGameboy/src/vendor/ngp/ngp.c",
+      "line": 82,
+      "signature": "static inline void ngp_write16(ngp_t* emu, uint32_t addr, uint16_t val)",
+      "is_iram": false
+    },
+    "ngp_write32": {
+      "file": "firmware/BmoGameboy/src/vendor/ngp/ngp.c",
+      "line": 87,
+      "signature": "static inline void ngp_write32(ngp_t* emu, uint32_t addr, uint32_t val)",
+      "is_iram": false
+    },
+    "ngp_set_sz8": {
+      "file": "firmware/BmoGameboy/src/vendor/ngp/ngp.c",
+      "line": 92,
+      "signature": "static inline void ngp_set_sz8(ngp_t* emu, uint8_t v)",
+      "is_iram": false
+    },
+    "ngp_set_sz16": {
+      "file": "firmware/BmoGameboy/src/vendor/ngp/ngp.c",
+      "line": 98,
+      "signature": "static inline void ngp_set_sz16(ngp_t* emu, uint16_t v)",
+      "is_iram": false
+    },
+    "ngp_cpu_step": {
+      "file": "firmware/BmoGameboy/src/vendor/ngp/ngp.c",
+      "line": 104,
+      "signature": "static int ngp_cpu_step(ngp_t* emu)",
+      "is_iram": false
+    },
+    "ngp_render_plane": {
+      "file": "firmware/BmoGameboy/src/vendor/ngp/ngp.c",
+      "line": 290,
+      "signature": "static void ngp_render_plane(ngp_t* emu, uint16_t* dst, int line, uint16_t map_off, uint8_t scx, uint8_t scy, uint8_t pal_base)",
+      "is_iram": false
+    },
+    "ngp_render_scanline": {
+      "file": "firmware/BmoGameboy/src/vendor/ngp/ngp.c",
+      "line": 319,
+      "signature": "static void ngp_render_scanline(ngp_t* emu, int line)",
       "is_iram": false
     },
     "ngp_init": {
       "file": "firmware/BmoGameboy/src/vendor/ngp/ngp.h",
-      "line": 22,
+      "line": 28,
       "signature": "void ngp_init(ngp_t* emu, uint8_t* rom, uint32_t rom_size, uint8_t* ram, uint16_t* fb, bool is_color);",
       "is_iram": false
     },
     "ngp_set_joypad": {
       "file": "firmware/BmoGameboy/src/vendor/ngp/ngp.h",
-      "line": 24,
+      "line": 30,
       "signature": "void ngp_set_joypad(ngp_t* emu, uint8_t pad);",
       "is_iram": false
     },
     "ngp_step_frame": {
       "file": "firmware/BmoGameboy/src/vendor/ngp/ngp.h",
-      "line": 23,
+      "line": 29,
       "signature": "void ngp_step_frame(ngp_t* emu);",
       "is_iram": false
     },
@@ -8641,37 +9187,103 @@
     },
     "pico_rgb_to_bgr565": {
       "file": "firmware/BmoGameboy/src/vendor/pico/pico.c",
-      "line": 36,
+      "line": 48,
       "signature": "static inline uint16_t pico_rgb_to_bgr565(uint8_t r, uint8_t g, uint8_t b)",
+      "is_iram": false
+    },
+    "pico_hex_nibble": {
+      "file": "firmware/BmoGameboy/src/vendor/pico/pico.c",
+      "line": 53,
+      "signature": "static inline int pico_hex_nibble(char c)",
+      "is_iram": false
+    },
+    "pico_reset_draw_state": {
+      "file": "firmware/BmoGameboy/src/vendor/pico/pico.c",
+      "line": 60,
+      "signature": "static void pico_reset_draw_state(pico_context_t* ctx)",
+      "is_iram": false
+    },
+    "pico_cls": {
+      "file": "firmware/BmoGameboy/src/vendor/pico/pico.h",
+      "line": 29,
+      "signature": "void pico_cls(pico_context_t* ctx, uint8_t col);",
+      "is_iram": false
+    },
+    "pico_pset": {
+      "file": "firmware/BmoGameboy/src/vendor/pico/pico.h",
+      "line": 30,
+      "signature": "void pico_pset(pico_context_t* ctx, int x, int y, uint8_t col);",
+      "is_iram": false
+    },
+    "pico_pget": {
+      "file": "firmware/BmoGameboy/src/vendor/pico/pico.h",
+      "line": 31,
+      "signature": "uint8_t pico_pget(const pico_context_t* ctx, int x, int y);",
+      "is_iram": false
+    },
+    "pico_rectfill": {
+      "file": "firmware/BmoGameboy/src/vendor/pico/pico.h",
+      "line": 32,
+      "signature": "void pico_rectfill(pico_context_t* ctx, int x0, int y0, int x1, int y1, uint8_t col);",
+      "is_iram": false
+    },
+    "pico_circfill": {
+      "file": "firmware/BmoGameboy/src/vendor/pico/pico.h",
+      "line": 33,
+      "signature": "void pico_circfill(pico_context_t* ctx, int cx, int cy, int r, uint8_t col);",
+      "is_iram": false
+    },
+    "pico_spr": {
+      "file": "firmware/BmoGameboy/src/vendor/pico/pico.h",
+      "line": 34,
+      "signature": "void pico_spr(pico_context_t* ctx, int n, int x, int y, bool flip_x, bool flip_y);",
+      "is_iram": false
+    },
+    "pico_map": {
+      "file": "firmware/BmoGameboy/src/vendor/pico/pico.h",
+      "line": 35,
+      "signature": "void pico_map(pico_context_t* ctx, int cel_x, int cel_y, int sx, int sy, int cel_w, int cel_h);",
       "is_iram": false
     },
     "pico_create": {
       "file": "firmware/BmoGameboy/src/vendor/pico/pico.h",
-      "line": 21,
+      "line": 22,
       "signature": "pico_context_t* pico_create(void);",
       "is_iram": false
     },
     "pico_destroy": {
       "file": "firmware/BmoGameboy/src/vendor/pico/pico.h",
-      "line": 22,
+      "line": 23,
       "signature": "void pico_destroy(pico_context_t* ctx);",
+      "is_iram": false
+    },
+    "pico_parse_p8_section": {
+      "file": "firmware/BmoGameboy/src/vendor/pico/pico.c",
+      "line": 200,
+      "signature": "static void pico_parse_p8_section(pico_context_t* ctx, const char* tag, uint16_t ram_dest, size_t max_bytes, bool swap_nibbles)",
       "is_iram": false
     },
     "pico_load_cart": {
       "file": "firmware/BmoGameboy/src/vendor/pico/pico.h",
-      "line": 23,
+      "line": 24,
       "signature": "bool pico_load_cart(pico_context_t* ctx, const uint8_t* data, size_t size);",
       "is_iram": false
     },
     "pico_set_input": {
       "file": "firmware/BmoGameboy/src/vendor/pico/pico.h",
-      "line": 24,
+      "line": 25,
       "signature": "void pico_set_input(pico_context_t* ctx, uint8_t joypad);",
+      "is_iram": false
+    },
+    "pico_step_bytecode": {
+      "file": "firmware/BmoGameboy/src/vendor/pico/pico.c",
+      "line": 260,
+      "signature": "static void pico_step_bytecode(pico_context_t* ctx)",
       "is_iram": false
     },
     "pico_run_frame": {
       "file": "firmware/BmoGameboy/src/vendor/pico/pico.h",
-      "line": 25,
+      "line": 26,
       "signature": "void pico_run_frame(pico_context_t* ctx);",
       "is_iram": false
     },
@@ -8753,57 +9365,273 @@
       "signature": "void sms_run_frame(sms_context_t* ctx);",
       "is_iram": false
     },
+    "snes_bgr555_to_bgr565_swapped": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 37,
+      "signature": "static inline uint16_t snes_bgr555_to_bgr565_swapped(uint16_t c15)",
+      "is_iram": false
+    },
+    "snes_m8": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 45,
+      "signature": "static inline bool snes_m8(const snes_t* emu)",
+      "is_iram": false
+    },
+    "snes_x8": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 49,
+      "signature": "static inline bool snes_x8(const snes_t* emu)",
+      "is_iram": false
+    },
+    "snes_set_zn8": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 53,
+      "signature": "static inline void snes_set_zn8(snes_t* emu, uint8_t v)",
+      "is_iram": false
+    },
+    "snes_set_zn16": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 59,
+      "signature": "static inline void snes_set_zn16(snes_t* emu, uint16_t v)",
+      "is_iram": false
+    },
+    "snes_vram_step": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 65,
+      "signature": "static inline uint16_t snes_vram_step(uint8_t vmain)",
+      "is_iram": false
+    },
+    "snes_read8": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 112,
+      "signature": "static uint8_t snes_read8(snes_t* emu, uint32_t addr24)",
+      "is_iram": false
+    },
+    "snes_write8": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 174,
+      "signature": "static void snes_write8(snes_t* emu, uint32_t addr24, uint8_t val)",
+      "is_iram": false
+    },
+    "snes_run_dma": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 76,
+      "signature": "static void snes_run_dma(snes_t* emu, uint8_t channels)",
+      "is_iram": false
+    },
+    "snes_read16": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 256,
+      "signature": "static inline uint16_t snes_read16(snes_t* emu, uint32_t addr24)",
+      "is_iram": false
+    },
+    "snes_write16": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 260,
+      "signature": "static inline void snes_write16(snes_t* emu, uint32_t addr24, uint16_t val)",
+      "is_iram": false
+    },
+    "snes_fetch8": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 265,
+      "signature": "static inline uint8_t snes_fetch8(snes_t* emu)",
+      "is_iram": false
+    },
+    "snes_fetch16": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 271,
+      "signature": "static inline uint16_t snes_fetch16(snes_t* emu)",
+      "is_iram": false
+    },
+    "snes_push8": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 277,
+      "signature": "static inline void snes_push8(snes_t* emu, uint8_t v)",
+      "is_iram": false
+    },
+    "snes_pop8": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 283,
+      "signature": "static inline uint8_t snes_pop8(snes_t* emu)",
+      "is_iram": false
+    },
+    "snes_push16": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 289,
+      "signature": "static inline void snes_push16(snes_t* emu, uint16_t v)",
+      "is_iram": false
+    },
+    "snes_pop16": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 294,
+      "signature": "static inline uint16_t snes_pop16(snes_t* emu)",
+      "is_iram": false
+    },
+    "snes_cpu_step": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 300,
+      "signature": "static int snes_cpu_step(snes_t* emu)",
+      "is_iram": false
+    },
+    "snes_render_bg_layer": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 526,
+      "signature": "static void snes_render_bg_layer(snes_t* emu, uint16_t* dst, int line, int bg_idx, bool is_4bpp)",
+      "is_iram": false
+    },
+    "snes_render_scanline": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
+      "line": 567,
+      "signature": "static void snes_render_scanline(snes_t* emu, int line)",
+      "is_iram": false
+    },
     "snes_init": {
       "file": "firmware/BmoGameboy/src/vendor/snes/snes.h",
-      "line": 24,
+      "line": 48,
       "signature": "void snes_init(snes_t* emu, uint8_t* rom, uint32_t rom_size, uint8_t* wram, uint16_t* fb);",
+      "is_iram": false
+    },
+    "snes_destroy": {
+      "file": "firmware/BmoGameboy/src/vendor/snes/snes.h",
+      "line": 49,
+      "signature": "void snes_destroy(snes_t* emu);",
       "is_iram": false
     },
     "snes_set_pad": {
       "file": "firmware/BmoGameboy/src/vendor/snes/snes.h",
-      "line": 26,
+      "line": 51,
       "signature": "void snes_set_pad(snes_t* emu, uint8_t pad);",
       "is_iram": false
     },
     "snes_step_frame": {
       "file": "firmware/BmoGameboy/src/vendor/snes/snes.h",
-      "line": 25,
+      "line": 50,
       "signature": "void snes_step_frame(snes_t* emu);",
       "is_iram": false
     },
     "atari_rgb_to_bgr565": {
       "file": "firmware/BmoGameboy/src/vendor/stella/atari.c",
-      "line": 17,
+      "line": 38,
       "signature": "static inline uint16_t atari_rgb_to_bgr565(uint8_t r, uint8_t g, uint8_t b)",
+      "is_iram": false
+    },
+    "atari_set_zn": {
+      "file": "firmware/BmoGameboy/src/vendor/stella/atari.c",
+      "line": 43,
+      "signature": "static inline void atari_set_zn(atari_context_t* ctx, uint8_t val)",
+      "is_iram": false
+    },
+    "atari_hm_delta": {
+      "file": "firmware/BmoGameboy/src/vendor/stella/atari.c",
+      "line": 49,
+      "signature": "static inline int8_t atari_hm_delta(uint8_t hm)",
+      "is_iram": false
+    },
+    "atari_check_bankswitch": {
+      "file": "firmware/BmoGameboy/src/vendor/stella/atari.c",
+      "line": 54,
+      "signature": "static void atari_check_bankswitch(atari_context_t* ctx, uint16_t addr13)",
+      "is_iram": false
+    },
+    "atari_read8": {
+      "file": "firmware/BmoGameboy/src/vendor/stella/atari.c",
+      "line": 64,
+      "signature": "static uint8_t atari_read8(atari_context_t* ctx, uint16_t addr)",
+      "is_iram": false
+    },
+    "atari_write8": {
+      "file": "firmware/BmoGameboy/src/vendor/stella/atari.c",
+      "line": 121,
+      "signature": "static void atari_write8(atari_context_t* ctx, uint16_t addr, uint8_t val)",
+      "is_iram": false
+    },
+    "atari_read16": {
+      "file": "firmware/BmoGameboy/src/vendor/stella/atari.c",
+      "line": 172,
+      "signature": "static inline uint16_t atari_read16(atari_context_t* ctx, uint16_t addr)",
+      "is_iram": false
+    },
+    "atari_push8": {
+      "file": "firmware/BmoGameboy/src/vendor/stella/atari.c",
+      "line": 176,
+      "signature": "static inline void atari_push8(atari_context_t* ctx, uint8_t val)",
+      "is_iram": false
+    },
+    "atari_pop8": {
+      "file": "firmware/BmoGameboy/src/vendor/stella/atari.c",
+      "line": 181,
+      "signature": "static inline uint8_t atari_pop8(atari_context_t* ctx)",
+      "is_iram": false
+    },
+    "atari_adc": {
+      "file": "firmware/BmoGameboy/src/vendor/stella/atari.c",
+      "line": 186,
+      "signature": "static void atari_adc(atari_context_t* ctx, uint8_t val)",
+      "is_iram": false
+    },
+    "atari_sbc": {
+      "file": "firmware/BmoGameboy/src/vendor/stella/atari.c",
+      "line": 196,
+      "signature": "static void atari_sbc(atari_context_t* ctx, uint8_t val)",
+      "is_iram": false
+    },
+    "atari_cmp": {
+      "file": "firmware/BmoGameboy/src/vendor/stella/atari.c",
+      "line": 200,
+      "signature": "static void atari_cmp(atari_context_t* ctx, uint8_t reg, uint8_t val)",
+      "is_iram": false
+    },
+    "atari_step_riot": {
+      "file": "firmware/BmoGameboy/src/vendor/stella/atari.c",
+      "line": 207,
+      "signature": "static void atari_step_riot(atari_context_t* ctx, int cycles)",
+      "is_iram": false
+    },
+    "atari_cpu_step": {
+      "file": "firmware/BmoGameboy/src/vendor/stella/atari.c",
+      "line": 223,
+      "signature": "static int atari_cpu_step(atari_context_t* ctx)",
+      "is_iram": false
+    },
+    "atari_get_playfield_bit": {
+      "file": "firmware/BmoGameboy/src/vendor/stella/atari.c",
+      "line": 376,
+      "signature": "static bool atari_get_playfield_bit(const atari_context_t* ctx, int pf_col)",
+      "is_iram": false
+    },
+    "atari_render_scanline": {
+      "file": "firmware/BmoGameboy/src/vendor/stella/atari.c",
+      "line": 393,
+      "signature": "static void atari_render_scanline(atari_context_t* ctx, int y)",
       "is_iram": false
     },
     "atari_create": {
       "file": "firmware/BmoGameboy/src/vendor/stella/atari.h",
-      "line": 26,
+      "line": 40,
       "signature": "atari_context_t* atari_create(void);",
       "is_iram": false
     },
     "atari_destroy": {
       "file": "firmware/BmoGameboy/src/vendor/stella/atari.h",
-      "line": 27,
+      "line": 41,
       "signature": "void atari_destroy(atari_context_t* ctx);",
       "is_iram": false
     },
     "atari_load_rom": {
       "file": "firmware/BmoGameboy/src/vendor/stella/atari.h",
-      "line": 28,
+      "line": 42,
       "signature": "bool atari_load_rom(atari_context_t* ctx, const uint8_t* rom, size_t size);",
       "is_iram": false
     },
     "atari_set_input": {
       "file": "firmware/BmoGameboy/src/vendor/stella/atari.h",
-      "line": 29,
+      "line": 43,
       "signature": "void atari_set_input(atari_context_t* ctx, uint8_t joypad);",
       "is_iram": false
     },
     "atari_run_frame": {
       "file": "firmware/BmoGameboy/src/vendor/stella/atari.h",
-      "line": 30,
+      "line": 44,
       "signature": "void atari_run_frame(atari_context_t* ctx);",
       "is_iram": false
     },
@@ -8975,11 +9803,11 @@
     ".agents/rules/04_known_issues.md": {
       "path": ".agents/rules/04_known_issues.md",
       "category": "AGENT_RULES",
-      "total_lines": 371,
-      "sloc": 308,
+      "total_lines": 388,
+      "sloc": 323,
       "comments": 0,
-      "blanks": 63,
-      "density_percent": 83.0,
+      "blanks": 65,
+      "density_percent": 83.2,
       "symbols": [],
       "pins_accessed": [
         "TFT_SCLK",
@@ -9067,11 +9895,11 @@
     ".agents/rules/10_symbol_reference.md": {
       "path": ".agents/rules/10_symbol_reference.md",
       "category": "AGENT_RULES",
-      "total_lines": 301,
-      "sloc": 268,
+      "total_lines": 370,
+      "sloc": 337,
       "comments": 0,
       "blanks": 33,
-      "density_percent": 89.0,
+      "density_percent": 91.1,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_SD_CARD",
@@ -9567,8 +10395,8 @@
     "AGENT_KNOWLEDGE_GRAPH.json": {
       "path": "AGENT_KNOWLEDGE_GRAPH.json",
       "category": "OTHER",
-      "total_lines": 17032,
-      "sloc": 17032,
+      "total_lines": 18051,
+      "sloc": 18051,
       "comments": 0,
       "blanks": 0,
       "density_percent": 100.0,
@@ -9674,10 +10502,10 @@
     "CHANGELOG.md": {
       "path": "CHANGELOG.md",
       "category": "OTHER",
-      "total_lines": 551,
-      "sloc": 487,
+      "total_lines": 588,
+      "sloc": 520,
       "comments": 0,
-      "blanks": 64,
+      "blanks": 68,
       "density_percent": 88.4,
       "symbols": [],
       "pins_accessed": [
@@ -9960,11 +10788,11 @@
     "firmware/BmoGameboy/BmoGameboy.ino": {
       "path": "firmware/BmoGameboy/BmoGameboy.ino",
       "category": "FIRMWARE_TOP",
-      "total_lines": 1034,
-      "sloc": 878,
-      "comments": 62,
-      "blanks": 94,
-      "density_percent": 84.9,
+      "total_lines": 1132,
+      "sloc": 972,
+      "comments": 64,
+      "blanks": 96,
+      "density_percent": 85.9,
       "symbols": [
         "autoSaveCurrentBatteryRam",
         "quickSaveState",
@@ -10288,13 +11116,20 @@
     "firmware/BmoGameboy/src/core/buttons.cpp": {
       "path": "firmware/BmoGameboy/src/core/buttons.cpp",
       "category": "FIRMWARE_CORE",
-      "total_lines": 66,
-      "sloc": 51,
-      "comments": 5,
-      "blanks": 10,
-      "density_percent": 77.3,
+      "total_lines": 123,
+      "sloc": 96,
+      "comments": 7,
+      "blanks": 20,
+      "density_percent": 78.0,
       "symbols": [
         "Buttons::begin",
+        "Buttons::setGameplayMode",
+        "Buttons::setSwapAB",
+        "Buttons::isSwapAB",
+        "Buttons::toggleSwapAB",
+        "Buttons::setTurboEnabled",
+        "Buttons::isTurboEnabled",
+        "Buttons::toggleTurbo",
         "Buttons::update",
         "Buttons::count"
       ],
@@ -10317,15 +11152,22 @@
     "firmware/BmoGameboy/src/core/buttons.h": {
       "path": "firmware/BmoGameboy/src/core/buttons.h",
       "category": "FIRMWARE_CORE",
-      "total_lines": 38,
-      "sloc": 16,
-      "comments": 14,
-      "blanks": 8,
-      "density_percent": 42.1,
+      "total_lines": 48,
+      "sloc": 23,
+      "comments": 15,
+      "blanks": 10,
+      "density_percent": 47.9,
       "symbols": [
         "begin",
         "update",
-        "count"
+        "count",
+        "setGameplayMode",
+        "setSwapAB",
+        "isSwapAB",
+        "toggleSwapAB",
+        "setTurboEnabled",
+        "isTurboEnabled",
+        "toggleTurbo"
       ],
       "pins_accessed": [],
       "includes": [
@@ -10580,11 +11422,11 @@
     "firmware/BmoGameboy/src/core/save_manager.cpp": {
       "path": "firmware/BmoGameboy/src/core/save_manager.cpp",
       "category": "FIRMWARE_CORE",
-      "total_lines": 402,
-      "sloc": 329,
+      "total_lines": 487,
+      "sloc": 404,
       "comments": 7,
-      "blanks": 66,
-      "density_percent": 81.8,
+      "blanks": 76,
+      "density_percent": 83.0,
       "symbols": [
         "computeCRC32",
         "extractBaseName",
@@ -10598,7 +11440,8 @@
         "loadBatteryRam",
         "hasBatteryRam",
         "hasSaveState",
-        "getSaveStateHeader"
+        "getSaveStateHeader",
+        "saveScreenshotBmp"
       ],
       "pins_accessed": [
         "FEATURE_SD_CARD"
@@ -10618,11 +11461,11 @@
     "firmware/BmoGameboy/src/core/save_manager.h": {
       "path": "firmware/BmoGameboy/src/core/save_manager.h",
       "category": "FIRMWARE_CORE",
-      "total_lines": 70,
-      "sloc": 53,
-      "comments": 6,
-      "blanks": 11,
-      "density_percent": 75.7,
+      "total_lines": 73,
+      "sloc": 54,
+      "comments": 7,
+      "blanks": 12,
+      "density_percent": 74.0,
       "symbols": [
         "begin",
         "getActiveSlot",
@@ -10635,7 +11478,8 @@
         "getSaveStateHeader",
         "computeCRC32",
         "getBatterySavePath",
-        "getSaveStatePath"
+        "getSaveStatePath",
+        "saveScreenshotBmp"
       ],
       "pins_accessed": [],
       "includes": [
@@ -10646,11 +11490,11 @@
     "firmware/BmoGameboy/src/core/sd_card.cpp": {
       "path": "firmware/BmoGameboy/src/core/sd_card.cpp",
       "category": "FIRMWARE_CORE",
-      "total_lines": 540,
-      "sloc": 458,
+      "total_lines": 621,
+      "sloc": 533,
       "comments": 19,
-      "blanks": 63,
-      "density_percent": 84.8,
+      "blanks": 69,
+      "density_percent": 85.8,
       "symbols": [
         "compareRoms",
         "SDCard::begin",
@@ -10666,11 +11510,12 @@
         "SDCard::isFavorite",
         "SDCard::isFavorite",
         "SDCard::toggleFavorite",
-        "SDCard::getFavoritesCount",
-        "SDCard::saveFavorites",
-        "SDCard::loadFavorites",
-        "SDCard::loadRom",
-        "SDCard::freeRom"
+        "SDCard::recordRecentLaunch",
+        "SDCard::getRecentCount",
+        "SDCard::getRecentFilename",
+        "SDCard::saveRecentHistory",
+        "SDCard::loadRecentHistory",
+        "SDCard::getFavoritesCount"
       ],
       "pins_accessed": [
         "FEATURE_SD_CARD",
@@ -10697,11 +11542,11 @@
     "firmware/BmoGameboy/src/core/sd_card.h": {
       "path": "firmware/BmoGameboy/src/core/sd_card.h",
       "category": "FIRMWARE_CORE",
-      "total_lines": 62,
-      "sloc": 49,
-      "comments": 5,
-      "blanks": 8,
-      "density_percent": 79.0,
+      "total_lines": 69,
+      "sloc": 54,
+      "comments": 6,
+      "blanks": 9,
+      "density_percent": 78.3,
       "symbols": [
         "begin",
         "isMounted",
@@ -10719,8 +11564,10 @@
         "saveIndex",
         "rebuildIndex",
         "sortRoms",
-        "loadRom",
-        "freeRom"
+        "recordRecentLaunch",
+        "getRecentCount",
+        "getRecentFilename",
+        "loadRecentHistory"
       ],
       "pins_accessed": [],
       "includes": [
@@ -10790,16 +11637,20 @@
     "firmware/BmoGameboy/src/emulators/emu_atari.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_atari.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 59,
-      "sloc": 47,
+      "total_lines": 96,
+      "sloc": 80,
       "comments": 1,
-      "blanks": 11,
-      "density_percent": 79.7,
+      "blanks": 15,
+      "density_percent": 83.3,
       "symbols": [
         "AtariEmu::begin",
         "AtariEmu::updateJoypad",
         "AtariEmu::runFrame",
-        "AtariEmu::destroy"
+        "AtariEmu::destroy",
+        "AtariEmu::saveBatteryRam",
+        "AtariEmu::loadBatteryRam",
+        "AtariEmu::saveState",
+        "AtariEmu::loadState"
       ],
       "pins_accessed": [],
       "includes": [
@@ -10807,22 +11658,28 @@
         "../vendor/stella/atari.h",
         "../core/display_emu.h",
         "../core/buttons.h",
-        "Arduino.h"
+        "../core/save_manager.h",
+        "Arduino.h",
+        "string.h"
       ]
     },
     "firmware/BmoGameboy/src/emulators/emu_atari.h": {
       "path": "firmware/BmoGameboy/src/emulators/emu_atari.h",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 12,
-      "sloc": 10,
+      "total_lines": 17,
+      "sloc": 14,
       "comments": 0,
-      "blanks": 2,
-      "density_percent": 83.3,
+      "blanks": 3,
+      "density_percent": 82.4,
       "symbols": [
         "begin",
         "updateJoypad",
         "runFrame",
-        "destroy"
+        "destroy",
+        "saveBatteryRam",
+        "loadBatteryRam",
+        "saveState",
+        "loadState"
       ],
       "pins_accessed": [],
       "includes": [
@@ -10833,16 +11690,20 @@
     "firmware/BmoGameboy/src/emulators/emu_colem.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_colem.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 70,
-      "sloc": 61,
+      "total_lines": 112,
+      "sloc": 99,
       "comments": 0,
-      "blanks": 9,
-      "density_percent": 87.1,
+      "blanks": 13,
+      "density_percent": 88.4,
       "symbols": [
         "ColemEmu::init",
         "ColemEmu::update",
         "ColemEmu::destroy",
-        "ColemEmu::isRunning"
+        "ColemEmu::isRunning",
+        "ColemEmu::saveBatteryRam",
+        "ColemEmu::loadBatteryRam",
+        "ColemEmu::saveState",
+        "ColemEmu::loadState"
       ],
       "pins_accessed": [],
       "includes": [
@@ -10850,6 +11711,7 @@
         "../vendor/colem/colem.h",
         "../core/display_emu.h",
         "../core/buttons.h",
+        "../core/save_manager.h",
         "../core/config.h",
         "esp_heap_caps.h",
         "string.h"
@@ -10858,16 +11720,20 @@
     "firmware/BmoGameboy/src/emulators/emu_colem.h": {
       "path": "firmware/BmoGameboy/src/emulators/emu_colem.h",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 11,
-      "sloc": 10,
+      "total_lines": 16,
+      "sloc": 14,
       "comments": 0,
-      "blanks": 1,
-      "density_percent": 90.9,
+      "blanks": 2,
+      "density_percent": 87.5,
       "symbols": [
         "init",
         "update",
         "destroy",
-        "isRunning"
+        "isRunning",
+        "saveBatteryRam",
+        "loadBatteryRam",
+        "saveState",
+        "loadState"
       ],
       "pins_accessed": [],
       "includes": [
@@ -10933,16 +11799,20 @@
     "firmware/BmoGameboy/src/emulators/emu_genesis.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_genesis.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 66,
-      "sloc": 57,
+      "total_lines": 113,
+      "sloc": 100,
       "comments": 0,
-      "blanks": 9,
-      "density_percent": 86.4,
+      "blanks": 13,
+      "density_percent": 88.5,
       "symbols": [
         "GenesisEmu::init",
         "GenesisEmu::update",
         "GenesisEmu::destroy",
-        "GenesisEmu::isRunning"
+        "GenesisEmu::isRunning",
+        "GenesisEmu::saveBatteryRam",
+        "GenesisEmu::loadBatteryRam",
+        "GenesisEmu::saveState",
+        "GenesisEmu::loadState"
       ],
       "pins_accessed": [],
       "includes": [
@@ -10950,6 +11820,7 @@
         "../vendor/genesis/genesis.h",
         "../core/display_emu.h",
         "../core/buttons.h",
+        "../core/save_manager.h",
         "../core/config.h",
         "esp_heap_caps.h",
         "string.h"
@@ -10958,16 +11829,20 @@
     "firmware/BmoGameboy/src/emulators/emu_genesis.h": {
       "path": "firmware/BmoGameboy/src/emulators/emu_genesis.h",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 11,
-      "sloc": 10,
+      "total_lines": 16,
+      "sloc": 14,
       "comments": 0,
-      "blanks": 1,
-      "density_percent": 90.9,
+      "blanks": 2,
+      "density_percent": 87.5,
       "symbols": [
         "init",
         "update",
         "destroy",
-        "isRunning"
+        "isRunning",
+        "saveBatteryRam",
+        "loadBatteryRam",
+        "saveState",
+        "loadState"
       ],
       "pins_accessed": [],
       "includes": [
@@ -10978,16 +11853,20 @@
     "firmware/BmoGameboy/src/emulators/emu_lynx.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_lynx.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 65,
-      "sloc": 56,
+      "total_lines": 104,
+      "sloc": 91,
       "comments": 0,
-      "blanks": 9,
-      "density_percent": 86.2,
+      "blanks": 13,
+      "density_percent": 87.5,
       "symbols": [
         "LynxEmu::init",
         "LynxEmu::update",
         "LynxEmu::destroy",
-        "LynxEmu::isRunning"
+        "LynxEmu::isRunning",
+        "LynxEmu::saveBatteryRam",
+        "LynxEmu::loadBatteryRam",
+        "LynxEmu::saveState",
+        "LynxEmu::loadState"
       ],
       "pins_accessed": [],
       "includes": [
@@ -10995,6 +11874,7 @@
         "../vendor/lynx/lynx.h",
         "../core/display_emu.h",
         "../core/buttons.h",
+        "../core/save_manager.h",
         "../core/config.h",
         "esp_heap_caps.h",
         "string.h"
@@ -11003,16 +11883,20 @@
     "firmware/BmoGameboy/src/emulators/emu_lynx.h": {
       "path": "firmware/BmoGameboy/src/emulators/emu_lynx.h",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 11,
-      "sloc": 10,
+      "total_lines": 16,
+      "sloc": 14,
       "comments": 0,
-      "blanks": 1,
-      "density_percent": 90.9,
+      "blanks": 2,
+      "density_percent": 87.5,
       "symbols": [
         "init",
         "update",
         "destroy",
-        "isRunning"
+        "isRunning",
+        "saveBatteryRam",
+        "loadBatteryRam",
+        "saveState",
+        "loadState"
       ],
       "pins_accessed": [],
       "includes": [
@@ -11077,16 +11961,20 @@
     "firmware/BmoGameboy/src/emulators/emu_ngp.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_ngp.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 65,
-      "sloc": 56,
+      "total_lines": 104,
+      "sloc": 91,
       "comments": 0,
-      "blanks": 9,
-      "density_percent": 86.2,
+      "blanks": 13,
+      "density_percent": 87.5,
       "symbols": [
         "NGPEmu::init",
         "NGPEmu::update",
         "NGPEmu::destroy",
-        "NGPEmu::isRunning"
+        "NGPEmu::isRunning",
+        "NGPEmu::saveBatteryRam",
+        "NGPEmu::loadBatteryRam",
+        "NGPEmu::saveState",
+        "NGPEmu::loadState"
       ],
       "pins_accessed": [],
       "includes": [
@@ -11094,6 +11982,7 @@
         "../vendor/ngp/ngp.h",
         "../core/display_emu.h",
         "../core/buttons.h",
+        "../core/save_manager.h",
         "../core/config.h",
         "esp_heap_caps.h",
         "string.h"
@@ -11102,16 +11991,20 @@
     "firmware/BmoGameboy/src/emulators/emu_ngp.h": {
       "path": "firmware/BmoGameboy/src/emulators/emu_ngp.h",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 11,
-      "sloc": 10,
+      "total_lines": 16,
+      "sloc": 14,
       "comments": 0,
-      "blanks": 1,
-      "density_percent": 90.9,
+      "blanks": 2,
+      "density_percent": 87.5,
       "symbols": [
         "init",
         "update",
         "destroy",
-        "isRunning"
+        "isRunning",
+        "saveBatteryRam",
+        "loadBatteryRam",
+        "saveState",
+        "loadState"
       ],
       "pins_accessed": [],
       "includes": [
@@ -11236,16 +12129,20 @@
     "firmware/BmoGameboy/src/emulators/emu_pico.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_pico.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 61,
-      "sloc": 49,
-      "comments": 1,
-      "blanks": 11,
-      "density_percent": 80.3,
+      "total_lines": 102,
+      "sloc": 85,
+      "comments": 2,
+      "blanks": 15,
+      "density_percent": 83.3,
       "symbols": [
         "PicoEmu::begin",
         "PicoEmu::updateJoypad",
         "PicoEmu::runFrame",
-        "PicoEmu::destroy"
+        "PicoEmu::destroy",
+        "PicoEmu::saveBatteryRam",
+        "PicoEmu::loadBatteryRam",
+        "PicoEmu::saveState",
+        "PicoEmu::loadState"
       ],
       "pins_accessed": [],
       "includes": [
@@ -11253,22 +12150,28 @@
         "../vendor/pico/pico.h",
         "../core/display_emu.h",
         "../core/buttons.h",
-        "Arduino.h"
+        "../core/save_manager.h",
+        "Arduino.h",
+        "string.h"
       ]
     },
     "firmware/BmoGameboy/src/emulators/emu_pico.h": {
       "path": "firmware/BmoGameboy/src/emulators/emu_pico.h",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 12,
-      "sloc": 10,
+      "total_lines": 17,
+      "sloc": 14,
       "comments": 0,
-      "blanks": 2,
-      "density_percent": 83.3,
+      "blanks": 3,
+      "density_percent": 82.4,
       "symbols": [
         "begin",
         "updateJoypad",
         "runFrame",
-        "destroy"
+        "destroy",
+        "saveBatteryRam",
+        "loadBatteryRam",
+        "saveState",
+        "loadState"
       ],
       "pins_accessed": [],
       "includes": [
@@ -11331,16 +12234,20 @@
     "firmware/BmoGameboy/src/emulators/emu_snes.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 66,
-      "sloc": 57,
+      "total_lines": 110,
+      "sloc": 97,
       "comments": 0,
-      "blanks": 9,
-      "density_percent": 86.4,
+      "blanks": 13,
+      "density_percent": 88.2,
       "symbols": [
         "SNESEmu::init",
         "SNESEmu::update",
         "SNESEmu::destroy",
-        "SNESEmu::isRunning"
+        "SNESEmu::isRunning",
+        "SNESEmu::saveBatteryRam",
+        "SNESEmu::loadBatteryRam",
+        "SNESEmu::saveState",
+        "SNESEmu::loadState"
       ],
       "pins_accessed": [],
       "includes": [
@@ -11348,6 +12255,7 @@
         "../vendor/snes/snes.h",
         "../core/display_emu.h",
         "../core/buttons.h",
+        "../core/save_manager.h",
         "../core/config.h",
         "esp_heap_caps.h",
         "string.h"
@@ -11356,16 +12264,20 @@
     "firmware/BmoGameboy/src/emulators/emu_snes.h": {
       "path": "firmware/BmoGameboy/src/emulators/emu_snes.h",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 11,
-      "sloc": 10,
+      "total_lines": 16,
+      "sloc": 14,
       "comments": 0,
-      "blanks": 1,
-      "density_percent": 90.9,
+      "blanks": 2,
+      "density_percent": 87.5,
       "symbols": [
         "init",
         "update",
         "destroy",
-        "isRunning"
+        "isRunning",
+        "saveBatteryRam",
+        "loadBatteryRam",
+        "saveState",
+        "loadState"
       ],
       "pins_accessed": [],
       "includes": [
@@ -11437,16 +12349,20 @@
     "firmware/BmoGameboy/src/emulators/emu_wswan.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_wswan.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 66,
-      "sloc": 57,
+      "total_lines": 107,
+      "sloc": 94,
       "comments": 0,
-      "blanks": 9,
-      "density_percent": 86.4,
+      "blanks": 13,
+      "density_percent": 87.9,
       "symbols": [
         "WSwanEmu::init",
         "WSwanEmu::update",
         "WSwanEmu::destroy",
-        "WSwanEmu::isRunning"
+        "WSwanEmu::isRunning",
+        "WSwanEmu::saveBatteryRam",
+        "WSwanEmu::loadBatteryRam",
+        "WSwanEmu::saveState",
+        "WSwanEmu::loadState"
       ],
       "pins_accessed": [],
       "includes": [
@@ -11454,6 +12370,7 @@
         "../vendor/wswan/wswan.h",
         "../core/display_emu.h",
         "../core/buttons.h",
+        "../core/save_manager.h",
         "../core/config.h",
         "esp_heap_caps.h",
         "string.h"
@@ -11462,16 +12379,20 @@
     "firmware/BmoGameboy/src/emulators/emu_wswan.h": {
       "path": "firmware/BmoGameboy/src/emulators/emu_wswan.h",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 11,
-      "sloc": 10,
+      "total_lines": 16,
+      "sloc": 14,
       "comments": 0,
-      "blanks": 1,
-      "density_percent": 90.9,
+      "blanks": 2,
+      "density_percent": 87.5,
       "symbols": [
         "init",
         "update",
         "destroy",
-        "isRunning"
+        "isRunning",
+        "saveBatteryRam",
+        "loadBatteryRam",
+        "saveState",
+        "loadState"
       ],
       "pins_accessed": [],
       "includes": [
@@ -11643,12 +12564,21 @@
     "firmware/BmoGameboy/src/vendor/colem/colem.c": {
       "path": "firmware/BmoGameboy/src/vendor/colem/colem.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 32,
-      "sloc": 26,
-      "comments": 2,
-      "blanks": 4,
-      "density_percent": 81.2,
+      "total_lines": 400,
+      "sloc": 343,
+      "comments": 26,
+      "blanks": 31,
+      "density_percent": 85.8,
       "symbols": [
+        "colem_rgb_to_bgr565",
+        "colem_is_cart_header",
+        "colem_read8",
+        "colem_write8",
+        "colem_read16",
+        "colem_write16",
+        "colem_io_read",
+        "colem_io_write",
+        "colem_render_scanline",
         "colem_init",
         "colem_set_joystick",
         "colem_step_frame"
@@ -11662,11 +12592,11 @@
     "firmware/BmoGameboy/src/vendor/colem/colem.h": {
       "path": "firmware/BmoGameboy/src/vendor/colem/colem.h",
       "category": "VENDOR_ENGINES",
-      "total_lines": 29,
-      "sloc": 23,
-      "comments": 0,
-      "blanks": 6,
-      "density_percent": 79.3,
+      "total_lines": 44,
+      "sloc": 33,
+      "comments": 3,
+      "blanks": 8,
+      "density_percent": 75.0,
       "symbols": [
         "colem_init",
         "colem_step_frame",
@@ -16014,12 +16944,25 @@
     "firmware/BmoGameboy/src/vendor/lynx/lynx.c": {
       "path": "firmware/BmoGameboy/src/vendor/lynx/lynx.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 35,
-      "sloc": 28,
-      "comments": 3,
-      "blanks": 4,
-      "density_percent": 80.0,
+      "total_lines": 368,
+      "sloc": 302,
+      "comments": 22,
+      "blanks": 44,
+      "density_percent": 82.1,
       "symbols": [
+        "lynx_rgb444_to_bgr565",
+        "lynx_set_zn",
+        "lynx_update_palette",
+        "lynx_execute_scb",
+        "lynx_read8",
+        "lynx_write8",
+        "lynx_read16",
+        "lynx_push8",
+        "lynx_pop8",
+        "lynx_adc",
+        "lynx_sbc",
+        "lynx_cmp",
+        "lynx_cpu_step",
         "lynx_init",
         "lynx_set_buttons",
         "lynx_step_frame"
@@ -16033,11 +16976,11 @@
     "firmware/BmoGameboy/src/vendor/lynx/lynx.h": {
       "path": "firmware/BmoGameboy/src/vendor/lynx/lynx.h",
       "category": "VENDOR_ENGINES",
-      "total_lines": 29,
-      "sloc": 23,
-      "comments": 0,
-      "blanks": 6,
-      "density_percent": 79.3,
+      "total_lines": 40,
+      "sloc": 30,
+      "comments": 2,
+      "blanks": 8,
+      "density_percent": 75.0,
       "symbols": [
         "lynx_init",
         "lynx_step_frame",
@@ -16052,12 +16995,24 @@
     "firmware/BmoGameboy/src/vendor/ngp/ngp.c": {
       "path": "firmware/BmoGameboy/src/vendor/ngp/ngp.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 34,
-      "sloc": 28,
-      "comments": 2,
-      "blanks": 4,
-      "density_percent": 82.4,
+      "total_lines": 430,
+      "sloc": 365,
+      "comments": 31,
+      "blanks": 34,
+      "density_percent": 84.9,
       "symbols": [
+        "ngp_rgb444_to_bgr565",
+        "ngp_read8",
+        "ngp_write8",
+        "ngp_read16",
+        "ngp_read32",
+        "ngp_write16",
+        "ngp_write32",
+        "ngp_set_sz8",
+        "ngp_set_sz16",
+        "ngp_cpu_step",
+        "ngp_render_plane",
+        "ngp_render_scanline",
         "ngp_init",
         "ngp_set_joypad",
         "ngp_step_frame"
@@ -16071,11 +17026,11 @@
     "firmware/BmoGameboy/src/vendor/ngp/ngp.h": {
       "path": "firmware/BmoGameboy/src/vendor/ngp/ngp.h",
       "category": "VENDOR_ENGINES",
-      "total_lines": 30,
-      "sloc": 24,
-      "comments": 0,
-      "blanks": 6,
-      "density_percent": 80.0,
+      "total_lines": 36,
+      "sloc": 27,
+      "comments": 2,
+      "blanks": 7,
+      "density_percent": 75.0,
       "symbols": [
         "ngp_init",
         "ngp_step_frame",
@@ -16194,17 +17149,28 @@
     "firmware/BmoGameboy/src/vendor/pico/pico.c": {
       "path": "firmware/BmoGameboy/src/vendor/pico/pico.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 92,
-      "sloc": 75,
-      "comments": 6,
-      "blanks": 11,
-      "density_percent": 81.5,
+      "total_lines": 296,
+      "sloc": 243,
+      "comments": 24,
+      "blanks": 29,
+      "density_percent": 82.1,
       "symbols": [
         "pico_rgb_to_bgr565",
+        "pico_hex_nibble",
+        "pico_reset_draw_state",
+        "pico_cls",
+        "pico_pset",
+        "pico_pget",
+        "pico_rectfill",
+        "pico_circfill",
+        "pico_spr",
+        "pico_map",
         "pico_create",
         "pico_destroy",
+        "pico_parse_p8_section",
         "pico_load_cart",
         "pico_set_input",
+        "pico_step_bytecode",
         "pico_run_frame"
       ],
       "pins_accessed": [],
@@ -16218,17 +17184,24 @@
     "firmware/BmoGameboy/src/vendor/pico/pico.h": {
       "path": "firmware/BmoGameboy/src/vendor/pico/pico.h",
       "category": "VENDOR_ENGINES",
-      "total_lines": 29,
-      "sloc": 23,
-      "comments": 0,
-      "blanks": 6,
-      "density_percent": 79.3,
+      "total_lines": 39,
+      "sloc": 31,
+      "comments": 1,
+      "blanks": 7,
+      "density_percent": 79.5,
       "symbols": [
         "pico_create",
         "pico_destroy",
         "pico_load_cart",
         "pico_set_input",
-        "pico_run_frame"
+        "pico_run_frame",
+        "pico_cls",
+        "pico_pset",
+        "pico_pget",
+        "pico_rectfill",
+        "pico_circfill",
+        "pico_spr",
+        "pico_map"
       ],
       "pins_accessed": [],
       "includes": [
@@ -16293,32 +17266,52 @@
     "firmware/BmoGameboy/src/vendor/snes/snes.c": {
       "path": "firmware/BmoGameboy/src/vendor/snes/snes.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 38,
-      "sloc": 31,
-      "comments": 3,
-      "blanks": 4,
-      "density_percent": 81.6,
+      "total_lines": 688,
+      "sloc": 592,
+      "comments": 26,
+      "blanks": 70,
+      "density_percent": 86.0,
       "symbols": [
-        "snes_init",
-        "snes_set_pad",
-        "snes_step_frame"
+        "snes_bgr555_to_bgr565_swapped",
+        "snes_m8",
+        "snes_x8",
+        "snes_set_zn8",
+        "snes_set_zn16",
+        "snes_vram_step",
+        "snes_read8",
+        "snes_write8",
+        "snes_run_dma",
+        "snes_read8",
+        "snes_write8",
+        "snes_read16",
+        "snes_write16",
+        "snes_fetch8",
+        "snes_fetch16",
+        "snes_push8",
+        "snes_pop8",
+        "snes_push16",
+        "snes_pop16",
+        "snes_cpu_step"
       ],
       "pins_accessed": [],
       "includes": [
         "snes.h",
-        "string.h"
+        "stdlib.h",
+        "string.h",
+        "esp_heap_caps.h"
       ]
     },
     "firmware/BmoGameboy/src/vendor/snes/snes.h": {
       "path": "firmware/BmoGameboy/src/vendor/snes/snes.h",
       "category": "VENDOR_ENGINES",
-      "total_lines": 32,
-      "sloc": 26,
-      "comments": 0,
-      "blanks": 6,
-      "density_percent": 81.2,
+      "total_lines": 57,
+      "sloc": 46,
+      "comments": 3,
+      "blanks": 8,
+      "density_percent": 80.7,
       "symbols": [
         "snes_init",
+        "snes_destroy",
         "snes_step_frame",
         "snes_set_pad"
       ],
@@ -16331,18 +17324,32 @@
     "firmware/BmoGameboy/src/vendor/stella/atari.c": {
       "path": "firmware/BmoGameboy/src/vendor/stella/atari.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 89,
-      "sloc": 70,
-      "comments": 7,
-      "blanks": 12,
-      "density_percent": 78.7,
+      "total_lines": 557,
+      "sloc": 448,
+      "comments": 45,
+      "blanks": 64,
+      "density_percent": 80.4,
       "symbols": [
         "atari_rgb_to_bgr565",
+        "atari_set_zn",
+        "atari_hm_delta",
+        "atari_check_bankswitch",
+        "atari_read8",
+        "atari_write8",
+        "atari_read16",
+        "atari_push8",
+        "atari_pop8",
+        "atari_adc",
+        "atari_sbc",
+        "atari_cmp",
+        "atari_step_riot",
+        "atari_cpu_step",
+        "atari_get_playfield_bit",
+        "atari_render_scanline",
         "atari_create",
         "atari_destroy",
         "atari_load_rom",
-        "atari_set_input",
-        "atari_run_frame"
+        "atari_set_input"
       ],
       "pins_accessed": [],
       "includes": [
@@ -16355,11 +17362,11 @@
     "firmware/BmoGameboy/src/vendor/stella/atari.h": {
       "path": "firmware/BmoGameboy/src/vendor/stella/atari.h",
       "category": "VENDOR_ENGINES",
-      "total_lines": 34,
-      "sloc": 26,
-      "comments": 1,
-      "blanks": 7,
-      "density_percent": 76.5,
+      "total_lines": 48,
+      "sloc": 36,
+      "comments": 3,
+      "blanks": 9,
+      "density_percent": 75.0,
       "symbols": [
         "atari_create",
         "atari_destroy",
@@ -16538,11 +17545,11 @@
     "scripts/generate_ai_knowledge_base.py": {
       "path": "scripts/generate_ai_knowledge_base.py",
       "category": "SCRIPTS",
-      "total_lines": 405,
-      "sloc": 356,
+      "total_lines": 408,
+      "sloc": 359,
       "comments": 16,
       "blanks": 33,
-      "density_percent": 87.9,
+      "density_percent": 88.0,
       "symbols": [],
       "pins_accessed": [
         "GPIO1",
@@ -16686,11 +17693,11 @@
     "tests/test_all_tiers_validation.py": {
       "path": "tests/test_all_tiers_validation.py",
       "category": "TESTS",
-      "total_lines": 332,
+      "total_lines": 334,
       "sloc": 235,
-      "comments": 62,
-      "blanks": 35,
-      "density_percent": 70.8,
+      "comments": 63,
+      "blanks": 36,
+      "density_percent": 70.4,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
@@ -16742,6 +17749,18 @@
       "comments": 36,
       "blanks": 22,
       "density_percent": 65.3,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "tests/test_new_cores_and_qol.py": {
+      "path": "tests/test_new_cores_and_qol.py",
+      "category": "TESTS",
+      "total_lines": 194,
+      "sloc": 138,
+      "comments": 15,
+      "blanks": 41,
+      "density_percent": 71.1,
       "symbols": [],
       "pins_accessed": [],
       "includes": []

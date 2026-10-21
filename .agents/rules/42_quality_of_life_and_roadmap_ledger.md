@@ -27,9 +27,9 @@ Every feature or tool in this ledger is categorized into one of four states:
 | **In-Game Quick Pause Overlay** | `[IMPLEMENTED]` | Non-blocking pause modal (`SELECT + START`) providing in-game options without full reset. | `src/core/display_emu`, `BmoGameboy.ino` |
 | **DMG Runtime Palette Switcher** | `[IMPLEMENTED]` | On-the-fly switching between Classic Green, BMO Teal, Pocket Gray, Light Cyan, and Amber palettes. | `src/core/theme.h`, `src/emulators/` |
 | **Fast-Forward Turbo Mode** | `[IMPLEMENTED]` | Bypasses 16.7ms frame pacing while holding `SELECT + RIGHT` to accelerate RPG dialog/grinding. | `BmoGameboy.ino` |
-| **In-Game Screenshot Dump** | `[BACKLOG / ROADMAP]` | Captures 320×240 BGR565 framebuffer to `/screenshots/<game>_<timestamp>.bmp` on MicroSD. | `src/core/sd_card`, `display_emu` |
-| **Multi-Slot Save States (1–5)** | `[IMPLEMENTED]` | Quick save / load state snapshots to SD `/saves/` with CRC32 verification and pause menu. | `src/core/save_manager`, `display_emu` |
-| **Per-Core Button Remap & Turbo** | `[BACKLOG / ROADMAP]` | Custom A/B button orientation and auto-fire turbo rate per console. | `src/core/buttons` |
+| **In-Game Screenshot Dump** | `[IMPLEMENTED]` | Captures BGR565 framebuffer to `/screenshots/<game>_<timestamp>.bmp` on MicroSD via `SaveManager::saveScreenshotBmp`. | `src/core/save_manager` |
+| **Multi-Slot Save States (1–5)** | `[IMPLEMENTED]` | Quick save / load state snapshots to SD `/saves/` with CRC32 verification and pause menu across all 13 cartridge cores. | `src/core/save_manager`, `src/emulators/` |
+| **Per-Core Button Remap & Turbo** | `[IMPLEMENTED]` | Custom A/B button orientation swap (`Buttons::setSwapAB`) and auto-fire turbo (`SELECT + LEFT` / `Buttons::toggleTurbo`). | `src/core/buttons`, `BmoGameboy.ino` |
 | **Custom Console Bezels (1:1 Mode)** | `[BACKLOG / ROADMAP]` | Pixel-perfect 160×144 rendering surrounded by authentic styled console artwork. | `src/core/display_emu` |
 
 ---
@@ -48,7 +48,7 @@ Every feature or tool in this ledger is categorized into one of four states:
 | **1:1 Carousel Card UI & Hardware Silhouettes** | `[IMPLEMENTED]` | 1:1 replica of web simulator carousel card with dedicated retro hardware silhouette pixel-art per system. | `src/core/display_emu`, `theme.h` |
 | **Retro Pixel-Art Dynamic Battery Indicator** | `[IMPLEMENTED]` | Pixel-art battery shell with color-changing fill bars (Green > 50%, Gold 20-50%, Pulsing Red < 20%, Cyan Charge Pulse). | `display_emu`, `tools/bmo_simulator` |
 | **Binary ROM Fast-Cache (`.bmo_index`)**| `[IMPLEMENTED]` | Binary cache reducing 2,000-ROM SD boot enumeration from ~3.5s to < 15ms. | `src/core/sd_card`, `src/core/rom_index` |
-| **Recently Played History Playlist** | `[BACKLOG / ROADMAP]` | Dynamic playlist tracking last 10 games launched. | `src/core/sd_card` |
+| **Recently Played History Playlist** | `[IMPLEMENTED]` | Dynamic playlist tracking last 10 games launched (`SDCard::recordRecentLaunch`, persisted to `/history.txt`). | `src/core/sd_card`, `BmoGameboy.ino` |
 | **Box Art / Screenshot Preview** | `[IMPLEMENTED]` | Renders 64×64 cover thumbnail next to selected ROM from `/boxart/` or `/covers/`. | `src/core/box_art`, `src/core/display_emu` |
 | **Folder Hierarchy Navigation** | `[BACKLOG / ROADMAP]` | Directory traversal for categorized ROM sets (e.g. `/roms/gb/rpg/`). | `src/core/sd_card` |
 
@@ -61,8 +61,8 @@ Every feature or tool in this ledger is categorized into one of four states:
 | **Procedural 2D SDF Expressions** | `[IMPLEMENTED]` | Anti-aliased mathematical face rendering (`IDLE`, `HAPPY`, `SURPRISED`, `SLEEPY`, `ERROR`). | `src/core/bmo_face` |
 | **Launch Celebration Expression** | `[IMPLEMENTED]` | Brief `HAPPY` expression beat on game launch before emulator handoff. | `BmoGameboy.ino` |
 | **Ambient Living Screensaver (`STATE_IDLE_MASCOT`)** | `[IMPLEMENTED]` | 30s inactivity auto-sleep transitioning to full-screen dreaming BMO mascot (`DisplayEmu::drawIdleMascotScreen`) with any-button wake up. | `BmoGameboy.ino`, `display_emu` |
-| **Ultra-High-End Living BMO Mascot Engine** | `[IN DESIGN / PHASE 6]` | 60 FPS physics-driven companion (native 320×240 PSRAM vector canvas, harmonic spring dynamics, organic gaze saccades, sinusoidal breathing, blush pulsing, particle engine, and gamepad interactivity). | `src/core/bmo_face`, `display_emu` |
-| **Easter Egg / Konami Code Mini-Game** | `[BACKLOG / ROADMAP]` | Entering `↑ ↑ ↓ ↓ ← → ← → B A` in launcher unlocks built-in retro mini-game. | `BmoGameboy.ino` |
+| **Ultra-High-End Living BMO Mascot Engine** | `[IMPLEMENTED]` | 60 FPS physics-driven companion (native 320×240 PSRAM vector canvas, harmonic spring dynamics, organic gaze saccades, sinusoidal breathing, blush pulsing, particle engine, and gamepad interactivity). | `src/core/bmo_face`, `display_emu` |
+| **Easter Egg / Konami Code Mini-Game** | `[IMPLEMENTED]` | Entering `↑ ↑ ↓ ↓ ← → ← → B A` in `STATE_IDLE_MASCOT` triggers BMO's celebratory dance party, wink, and "+30 LIVES" Easter egg toast. | `BmoGameboy.ino` |
 
 ---
 

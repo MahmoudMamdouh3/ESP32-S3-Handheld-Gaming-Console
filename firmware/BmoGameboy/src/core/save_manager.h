@@ -67,4 +67,7 @@ namespace SaveManager {
   // Path resolution helpers
   void getBatterySavePath(const char* romFilename, char* outPath, size_t maxLen);
   void getSaveStatePath(const char* romFilename, int slot, char* outPath, size_t maxLen);
+
+  // In-Game Screenshot Dump (.bmp on MicroSD /screenshots/)
+  bool saveScreenshotBmp(const char* romFilename, const uint16_t* bgr565Buffer, int width, int height);
 }

@@ -35,4 +35,14 @@ namespace Buttons {
 
   // Read-only access to a button's current state by index.
   const ButtonState &get(int index);
+
+  // Per-Core Button Remap (A/B Swap) & Auto-Fire Turbo Controls
+  void setGameplayMode(bool inGame);
+  void setSwapAB(bool swap);
+  bool isSwapAB();
+  bool toggleSwapAB();
+
+  void setTurboEnabled(bool enabled, uint8_t periodFrames = 4);
+  bool isTurboEnabled();
+  bool toggleTurbo();
 }

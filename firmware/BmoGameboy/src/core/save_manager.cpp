@@ -399,4 +399,89 @@ namespace SaveManager {
 #endif
   }
 
+  bool saveScreenshotBmp(const char* romFilename, const uint16_t* bgr565Buffer, int width, int height) {
+    if (!romFilename || !bgr565Buffer || width <= 0 || height <= 0 || width > 320 || height > 240) {
+      return false;
+    }
+#if FEATURE_SD_CARD
+    if (!SDCard::isMounted()) return false;
+
+    char base[32];
+    extractBaseName(romFilename, base, sizeof(base));
+    char path[96];
+    snprintf(path, sizeof(path), "/screenshots/%s_%lu.bmp", base, (unsigned long)millis());
+
+    DisplayEmu::waitForDisplay();
+    SpiArbiter::lock();
+
+    if (!SD.exists("/screenshots")) {
+      SD.mkdir("/screenshots");
+    }
+
+    File f = SD.open(path, FILE_WRITE);
+    if (!f) {
+      SpiArbiter::unlock();
+      return false;
+    }
+
+    const uint32_t rowStride = (uint32_t)((width * 3 + 3) & ~3);
+    const uint32_t dataSize  = rowStride * (uint32_t)height;
+    const uint32_t fileSize  = 54U + dataSize;
+
+    uint8_t header[54];
+    memset(header, 0, sizeof(header));
+    header[0] = 'B';
+    header[1] = 'M';
+    header[2] = (uint8_t)(fileSize & 0xFF);
+    header[3] = (uint8_t)((fileSize >> 8) & 0xFF);
+    header[4] = (uint8_t)((fileSize >> 16) & 0xFF);
+    header[5] = (uint8_t)((fileSize >> 24) & 0xFF);
+    header[10] = 54;
+    header[14] = 40;
+    header[18] = (uint8_t)(width & 0xFF);
+    header[19] = (uint8_t)((width >> 8) & 0xFF);
+    header[22] = (uint8_t)(height & 0xFF);
+    header[23] = (uint8_t)((height >> 8) & 0xFF);
+    header[26] = 1;
+    header[28] = 24;
+    header[34] = (uint8_t)(dataSize & 0xFF);
+    header[35] = (uint8_t)((dataSize >> 8) & 0xFF);
+    header[36] = (uint8_t)((dataSize >> 16) & 0xFF);
+    header[37] = (uint8_t)((dataSize >> 24) & 0xFF);
+
+    if (f.write(header, sizeof(header)) != sizeof(header)) {
+      f.close();
+      SpiArbiter::unlock();
+      return false;
+    }
+
+    uint8_t rowBuf[320 * 3];
+    memset(rowBuf, 0, sizeof(rowBuf));
+    for (int y = height - 1; y >= 0; --y) {
+      const uint16_t* srcRow = &bgr565Buffer[y * width];
+      for (int x = 0; x < width; ++x) {
+        uint16_t raw = srcRow[x];
+        uint16_t unswapped = (uint16_t)(((raw & 0xFF) << 8) | ((raw >> 8) & 0xFF));
+        uint8_t b = (uint8_t)((unswapped >> 8) & 0xF8);
+        uint8_t g = (uint8_t)((unswapped >> 3) & 0xFC);
+        uint8_t r = (uint8_t)((unswapped << 3) & 0xF8);
+        rowBuf[x * 3 + 0] = b;
+        rowBuf[x * 3 + 1] = g;
+        rowBuf[x * 3 + 2] = r;
+      }
+      if (f.write(rowBuf, rowStride) != rowStride) {
+        f.close();
+        SpiArbiter::unlock();
+        return false;
+      }
+    }
+
+    f.close();
+    SpiArbiter::unlock();
+    return true;
+#else
+    return false;
+#endif
+  }
+
 }

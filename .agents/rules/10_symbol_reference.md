@@ -14,7 +14,7 @@ signatures, macro `#define`s, and top-level struct declarations from:
 `src/core/`, `src/emulators/`, `src/engine/*/`, `src/vendor/*/`.
 
 ## Staleness detection
-This file was last regenerated: **2026-10-09**.
+This file was last regenerated: **2026-10-21**.
 If any of the following files have a newer git commit date than that,
 this file is stale — grep live and update before making any symbol claims:
 - `src/emulators/emu_walnut.cpp/h`
@@ -113,7 +113,8 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `SaveManager::saveState` | fn | `bool saveState(const char* romFilename, int slot, uint32_t coreId, const void* stateData, size_t stateSize, const uint8_t* ramData = nullptr, size_t ramSize = 0)` | Writes snapshot with CRC32 to `/saves/<rom>.s0<slot>` |
 | `SaveManager::loadState` | fn | `bool loadState(const char* romFilename, int slot, uint32_t expectedCoreId, void* stateData, size_t maxStateSize, size_t* outStateSize = nullptr, uint8_t* ramData = nullptr, size_t maxRamSize = 0, size_t* outRamSize = nullptr)` | Validates and restores snapshot from `/saves/<rom>.s0<slot>` |
 | `SaveManager::hasSaveState` | fn | `bool hasSaveState(const char* romFilename, int slot)` | Checks if save state exists for given slot |
-| `SaveManager::computeCRC32` | fn | `uint32_t computeCRC32(const uint8_t* data, size_t length, uint32_t crc = 0xFFFFFFFF)` | Fast IEEE 802.3 bitwise CRC32 calculation |
+| `SaveManager::computeCRC32` | fn | `uint32_t computeCRC32(const uint8_t* data, size_t length, uint32_t crc = 0xFFFFFFFF)` | Fast IEEE 802.3 4-bit nibble lookup CRC32 calculation |
+| `SaveManager::saveScreenshotBmp` | fn | `bool saveScreenshotBmp(const char* romFilename, const uint16_t* bgr565Buffer, int width, int height)` | Writes 24-bit BMP screenshot to `/screenshots/<rom>_<ms>.bmp` |
 | `SaveStateHeader` | struct | `struct SaveStateHeader { uint32_t magic, version, timestamp, coreId, stateSize, ramSize, crc32; char romTitle[32]; }` | Binary save state header descriptor |
 
 ---
@@ -134,6 +135,13 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `Buttons::update` | fn | `void update()` | Reads GPIO_IN_REG atomically, updates state |
 | `Buttons::count` | fn | `int count()` | Returns number of buttons (8) |
 | `Buttons::get` | fn | `const ButtonState& get(int index)` | Returns ButtonState struct |
+| `Buttons::setGameplayMode` | fn | `void setGameplayMode(bool inGame)` | Enables/disables in-game A/B remap and auto-fire turbo |
+| `Buttons::setSwapAB` | fn | `void setSwapAB(bool swap)` | Sets A/B button orientation swap |
+| `Buttons::isSwapAB` | fn | `bool isSwapAB()` | Returns true if A/B swap is active |
+| `Buttons::toggleSwapAB` | fn | `bool toggleSwapAB()` | Toggles A/B button swap |
+| `Buttons::setTurboEnabled` | fn | `void setTurboEnabled(bool enabled, uint8_t periodFrames = 4)` | Configures rapid auto-fire turbo cadence |
+| `Buttons::isTurboEnabled` | fn | `bool isTurboEnabled()` | Returns true if auto-fire turbo is active |
+| `Buttons::toggleTurbo` | fn | `bool toggleTurbo()` | Toggles rapid auto-fire turbo |
 | `Buttons::gb_joypad_state` | var | `uint8_t gb_joypad_state` | Active-low joypad bitmask (0=pressed) |
 | `Buttons::Index` | enum | `enum Index : int { UP, DOWN, LEFT, RIGHT, A, B, START, SELECT }` | Button indices |
 | `ButtonState` | struct | `struct ButtonState { const char* name; uint8_t pin; bool pressed; bool changed; }` | Button state info |
@@ -158,6 +166,11 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `SDCard::saveIndex` | fn | `bool saveIndex()` | Writes binary cached ROM list to /.bmo_index |
 | `SDCard::rebuildIndex` | fn | `void rebuildIndex()` | Deletes cached index and forces full directory rescanning |
 | `SDCard::sortRoms` | fn | `void sortRoms()` | Sorts scanned ROM entries alphabetically case-insensitively |
+| `SDCard::recordRecentLaunch` | fn | `void recordRecentLaunch(const char* filename)` | Pushes game to top of 10-item history & persists to `/history.txt` |
+| `SDCard::getRecentCount` | fn | `int getRecentCount()` | Returns count of recently played games (0..10) |
+| `SDCard::getRecentFilename` | fn | `const char* getRecentFilename(int index)` | Returns recently played filename at `index` |
+| `SDCard::loadRecentHistory` | fn | `void loadRecentHistory()` | Loads `/history.txt` on SD mount |
+| `SDCard::saveRecentHistory` | fn | `void saveRecentHistory()` | Persists recent history to `/history.txt` |
 | `SDCard::loadRom` | fn | `uint8_t* loadRom(const char* filename, size_t* outSize)` | Loads ROM to PSRAM (or returns .rodata) |
 | `SDCard::freeRom` | fn | `void freeRom(uint8_t* buffer)` | Frees PSRAM ROM (safe for .rodata) |
 | `RomType` | enum | `enum RomType { ROM_FAVORITES, ROM_GB, ROM_GBC, ROM_NES, ... }` | 16-platform console enum |
@@ -261,6 +274,62 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `PceEmu::loadBatteryRam` | fn | `static bool loadBatteryRam(const char* romFilename)` | Restores PCE backup RAM |
 | `PceEmu::saveState` | fn | `static bool saveState(const char* romFilename, int slot)` | Writes PCE save state |
 | `PceEmu::loadState` | fn | `static bool loadState(const char* romFilename, int slot)` | Restores PCE save state |
+| `AtariEmu::begin` | fn | `static bool begin(const uint8_t* romData, size_t romSize)` | Starts Atari 2600 (MOS 6507 + TIA + RIOT) core |
+| `AtariEmu::runFrame` | fn | `static void runFrame()` | Runs 1 Atari 2600 frame |
+| `AtariEmu::destroy` | fn | `static void destroy()` | Shuts down Atari 2600 core |
+| `AtariEmu::saveBatteryRam` | fn | `static bool saveBatteryRam(const char* romFilename)` | Flushes Atari RIOT RAM |
+| `AtariEmu::loadBatteryRam` | fn | `static bool loadBatteryRam(const char* romFilename)` | Restores Atari RIOT RAM |
+| `AtariEmu::saveState` | fn | `static bool saveState(const char* romFilename, int slot)` | Writes Atari save state |
+| `AtariEmu::loadState` | fn | `static bool loadState(const char* romFilename, int slot)` | Restores Atari save state |
+| `PicoEmu::begin` | fn | `static bool begin(const uint8_t* romData, size_t romSize)` | Starts PICO-8 Fantasy Console core |
+| `PicoEmu::runFrame` | fn | `static void runFrame()` | Runs 1 PICO-8 frame |
+| `PicoEmu::destroy` | fn | `static void destroy()` | Shuts down PICO-8 core |
+| `PicoEmu::saveBatteryRam` | fn | `static bool saveBatteryRam(const char* romFilename)` | Flushes PICO-8 persistent cart data ($5E00-$5EFF) |
+| `PicoEmu::loadBatteryRam` | fn | `static bool loadBatteryRam(const char* romFilename)` | Restores PICO-8 persistent cart data |
+| `PicoEmu::saveState` | fn | `static bool saveState(const char* romFilename, int slot)` | Writes PICO-8 save state |
+| `PicoEmu::loadState` | fn | `static bool loadState(const char* romFilename, int slot)` | Restores PICO-8 save state |
+| `GenesisEmu::init` | fn | `static bool init(uint8_t* romData, size_t romSize)` | Starts Sega Genesis 68000 + VDP core |
+| `GenesisEmu::update` | fn | `static void update()` | Runs 1 Genesis frame |
+| `GenesisEmu::destroy` | fn | `static void destroy()` | Shuts down Genesis core |
+| `GenesisEmu::saveBatteryRam` | fn | `static bool saveBatteryRam(const char* romFilename)` | Flushes Genesis Work/Save RAM |
+| `GenesisEmu::loadBatteryRam` | fn | `static bool loadBatteryRam(const char* romFilename)` | Restores Genesis Work/Save RAM |
+| `GenesisEmu::saveState` | fn | `static bool saveState(const char* romFilename, int slot)` | Writes Genesis save state |
+| `GenesisEmu::loadState` | fn | `static bool loadState(const char* romFilename, int slot)` | Restores Genesis save state |
+| `SNESEmu::init` | fn | `static bool init(uint8_t* romData, size_t romSize)` | Starts SNES 65C816 + S-PPU core |
+| `SNESEmu::update` | fn | `static void update()` | Runs 1 SNES frame |
+| `SNESEmu::destroy` | fn | `static void destroy()` | Shuts down SNES core |
+| `SNESEmu::saveBatteryRam` | fn | `static bool saveBatteryRam(const char* romFilename)` | Flushes SNES 32KB Cartridge SRAM |
+| `SNESEmu::loadBatteryRam` | fn | `static bool loadBatteryRam(const char* romFilename)` | Restores SNES 32KB Cartridge SRAM |
+| `SNESEmu::saveState` | fn | `static bool saveState(const char* romFilename, int slot)` | Writes SNES save state |
+| `SNESEmu::loadState` | fn | `static bool loadState(const char* romFilename, int slot)` | Restores SNES save state |
+| `WSwanEmu::init` | fn | `static bool init(uint8_t* romData, size_t romSize, bool isColor)` | Starts Bandai WonderSwan V30MZ core |
+| `WSwanEmu::update` | fn | `static void update()` | Runs 1 WonderSwan frame |
+| `WSwanEmu::destroy` | fn | `static void destroy()` | Shuts down WonderSwan core |
+| `WSwanEmu::saveBatteryRam` | fn | `static bool saveBatteryRam(const char* romFilename)` | Flushes WonderSwan 64KB Cartridge SRAM |
+| `WSwanEmu::loadBatteryRam` | fn | `static bool loadBatteryRam(const char* romFilename)` | Restores WonderSwan 64KB Cartridge SRAM |
+| `WSwanEmu::saveState` | fn | `static bool saveState(const char* romFilename, int slot)` | Writes WonderSwan save state |
+| `WSwanEmu::loadState` | fn | `static bool loadState(const char* romFilename, int slot)` | Restores WonderSwan save state |
+| `NGPEmu::init` | fn | `static bool init(uint8_t* romData, size_t romSize, bool isColor)` | Starts SNK Neo Geo Pocket TLCS-900/H + K2GE core |
+| `NGPEmu::update` | fn | `static void update()` | Runs 1 Neo Geo Pocket frame |
+| `NGPEmu::destroy` | fn | `static void destroy()` | Shuts down Neo Geo Pocket core |
+| `NGPEmu::saveBatteryRam` | fn | `static bool saveBatteryRam(const char* romFilename)` | Flushes NGP Work RAM |
+| `NGPEmu::loadBatteryRam` | fn | `static bool loadBatteryRam(const char* romFilename)` | Restores NGP Work RAM |
+| `NGPEmu::saveState` | fn | `static bool saveState(const char* romFilename, int slot)` | Writes NGP save state |
+| `NGPEmu::loadState` | fn | `static bool loadState(const char* romFilename, int slot)` | Restores NGP save state |
+| `LynxEmu::init` | fn | `static bool init(uint8_t* romData, size_t romSize)` | Starts Atari Lynx 65SC02 + Mikey/Suzy core |
+| `LynxEmu::update` | fn | `static void update()` | Runs 1 Atari Lynx frame |
+| `LynxEmu::destroy` | fn | `static void destroy()` | Shuts down Atari Lynx core |
+| `LynxEmu::saveBatteryRam` | fn | `static bool saveBatteryRam(const char* romFilename)` | Flushes Atari Lynx save RAM |
+| `LynxEmu::loadBatteryRam` | fn | `static bool loadBatteryRam(const char* romFilename)` | Restores Atari Lynx save RAM |
+| `LynxEmu::saveState` | fn | `static bool saveState(const char* romFilename, int slot)` | Writes Atari Lynx save state |
+| `LynxEmu::loadState` | fn | `static bool loadState(const char* romFilename, int slot)` | Restores Atari Lynx save state |
+| `ColemEmu::init` | fn | `static bool init(uint8_t* romData, size_t romSize)` | Starts ColecoVision / SG-1000 Z80A + TMS9918A core |
+| `ColemEmu::update` | fn | `static void update()` | Runs 1 ColecoVision frame |
+| `ColemEmu::destroy` | fn | `static void destroy()` | Shuts down ColecoVision core |
+| `ColemEmu::saveBatteryRam` | fn | `static bool saveBatteryRam(const char* romFilename)` | Flushes ColecoVision Work RAM |
+| `ColemEmu::loadBatteryRam` | fn | `static bool loadBatteryRam(const char* romFilename)` | Restores ColecoVision Work RAM |
+| `ColemEmu::saveState` | fn | `static bool saveState(const char* romFilename, int slot)` | Writes ColecoVision save state |
+| `ColemEmu::loadState` | fn | `static bool loadState(const char* romFilename, int slot)` | Restores ColecoVision save state |
 
 ---
 

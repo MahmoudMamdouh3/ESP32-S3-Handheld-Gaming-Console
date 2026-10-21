@@ -2,14 +2,31 @@
 
 > **System Target:** ESP32-S3-N16R8 (240MHz Xtensa LX7 dual-core, 16MB Quad SPI Flash, 8MB Octal PSRAM).  
 > **Physical Peripherals:** ST7789VW 240×320 IPS TFT (80MHz FSPI), MicroSD Slot (25MHz SPI), 8× GPIO Tactile Buttons.  
-> **Repository Scope:** The latest generated manifest records 371 first-party source/rule/test files (excluding `.venv` and external `zig` toolchain), 1,365 indexed symbols, Flash 33.4% (`5,605,280` bytes), and SRAM 65.7% (`215,200` bytes) as of 2026-10-21.
-> **Verification Status:** Firmware compile (`FlashMode=qio, PSRAM=opi`), repository validator (`validate_repo.py`), all 96 unit + Guardian tests (`guardian verify`), `guardian doctor`, and full-source `guardian cppcheck` (`46 total, 0 errors`) all passed with exit code 0 in this session.
+> **Repository Scope:** The latest generated manifest records 372 first-party source/rule/test files (excluding `.venv` and external `zig` toolchain), 1,503 indexed symbols across all 14 production emulator engines (`0` stubs remaining), Flash 33.9% (`5,687,672` bytes), and SRAM 66.8% (`218,784` bytes) as of 2026-10-21.
+> **Verification Status:** Firmware compile (`FlashMode=qio, PSRAM=opi`), repository validator (`validate_repo.py`), all 113 unit + Guardian tests (`guardian verify`), `guardian doctor`, and full-source `guardian cppcheck` (`0 errors`) all passed with exit code 0 in this session.
 
 ---
 
-## Latest Agent Handoff — 2026-10-21 (Full Line-by-Line Objective Audit & AI Harness Overhaul)
+## Latest Agent Handoff — 2026-10-21 (Phase 5.2 Complete: All 14 Real Emulator Engines, Unified 14-Core Persistence & QoL Backlog Complete)
 
 This is the current repository handoff. Read this section before continuing from an earlier changelog entry.
+
+- **Phase A — All 6 Remaining Stub Emulator Engines Replaced with Real CPU + Video/I/O Implementations (`0` Stubs Remaining; 14/14 Real Engines):**
+  1. **Atari 2600 (`src/vendor/stella/atari.h` & `atari.c`):** Implemented MOS 6507 CPU interpreter (13-bit address space `$0000-$1FFF`, full 6502 ALU/branch/stack/addressing modes), MOS 6532 RIOT (`$0080-$00FF` 128B zero-page RAM, `SWCHA`/`SWCHB`, interval timer `TIM1T/TIM8T/TIM64T/T1024T`/`INTIM`), F8/F6/F4 bankswitching (`$1FF4-$1FFB`), and Atari TIA scanline renderer (`WSYNC`, Playfield `PF0/PF1/PF2` reflect/score modes, `GRP0/GRP1`, `M0/M1`, `BL`, `HMOVE`) into 160×192 PSRAM BGR565 framebuffer.
+  2. **ColecoVision / SG-1000 (`src/vendor/colem/colem.h` & `colem.c`):** Implemented Zilog Z80A CPU interpreter (3.58 MHz, `$0066` VBlank NMI, `$6000-$7FFF` 8KB RAM, `$8000-$FFFF` Cart ROM, `$A0-$BF` VDP ports, `$80/$C0/$E0/$FC` keypad/joystick strobes) and Texas Instruments TMS9918A VDP (16KB VRAM, Graphics Mode 1 & Mode 2 with 3 screen thirds, 32 hardware sprites 8×8/16×16, 16-color NTSC BGR565 palette) into 256×192 PSRAM framebuffer.
+  3. **Atari Lynx (`src/vendor/lynx/lynx.h` & `lynx.c`):** Implemented WDC 65SC02 CMOS CPU interpreter (4 MHz, 64KB unified RAM, CMOS opcodes `BRA`, `STZ`, `INC A`, `DEC A`, `PHX/PLX/PHY/PLY`, `(zp)`), Mikey (`$FD00-$FDFF` 16-color RGB444 palette cache, `DISPADRL/H` `$FD94-$FD95` 4bpp video DMA scanout 160×102), and Suzy (`$FC00-$FCFF` 16×16 hardware multiply at `$FC52-$FC63`, `JOYSW` `$FCB0` input, and linked Sprite Control Block SCB blitter on `SPRGO` `$FC91`).
+  4. **SNK Neo Geo Pocket Color (`src/vendor/ngp/ngp.h` & `ngp.c`):** Implemented Toshiba TLCS-900/H 32-bit CISC CPU interpreter (`XWA..XSP`, 24-bit bus `$004000-$007FFF` Work RAM, `$006F82` Joypad, `$008000-$00BFFF` K1GE/K2GE Video ASIC, `$200000` Cart ROM) and K1GE/K2GE 160×152 scanline renderer (Scroll Plane 1 `$9000`, Scroll Plane 2 `$9800`, 64 hardware sprites `$8800`, 512 2bpp character tiles `$A000-$BFFF`, 12-bit RGB444 palette RAM `$8200-$83FF`).
+  5. **Super Nintendo / SFC (`src/vendor/snes/snes.h` & `snes.c`):** Implemented WDC 65C816 16-bit CPU interpreter (8/16-bit `M`/`X` mode flags, `XCE`, `REP`, `SEP`, `JSL/RTL`, `JML`, 24-bit `PBR:PC` and `DBR:Addr` LoROM bus), 8-channel General Purpose DMA (`$420B` `MDMAEN`), and S-PPU 256×224 scanline renderer (64KB VRAM + 32KB SRAM + 128KB WRAM in Octal PSRAM, CGRAM 256-color BGR555 to pre-swapped BGR565 `palette_cache`, BG Modes 0/1 2bpp & 4bpp tilemaps, and 128 OAM 4bpp sprites).
+  6. **PICO-8 Fantasy Console (`src/vendor/pico/pico.h` & `pico.c`):** Implemented 32KB PICO-8 RAM map (`$0000-$1FFF` sprite sheet, `$2000-$2FFF` map, `$3000` flags, `$5F00` draw state/palettes/clip/camera, `$5F4C` input, `$6000-$7FFF` 128×128 4bpp screen), C graphics primitives (`pico_cls`, `pico_pset`, `pico_pget`, `pico_rectfill`, `pico_circfill`, `pico_spr`, `pico_map`), `.p8` text section parser (`__gfx__`, `__map__`, `__gff__`), and compact draw command stream runner at `$4300`.
+- **Phase B — Unified 14-Core Persistence Contract (`src/emulators/emu_*.h` & `.cpp`, `BmoGameboy.ino`):**
+  - Added `saveBatteryRam`, `loadBatteryRam`, `saveState`, and `loadState` across `AtariEmu`, `PicoEmu`, `GenesisEmu`, `SNESEmu`, `WSwanEmu`, `NGPEmu`, `LynxEmu`, and `ColemEmu` (preserving live PSRAM heap pointers during `loadState`), and wired all 13 cartridge emulators into `autoSaveCurrentBatteryRam()`, `quickSaveState()`, `quickLoadState()`, and boot auto-load in `BmoGameboy.ino`.
+- **Phase C — Quality-of-Life (QoL) Backlog Features (`src/core/buttons.*`, `src/core/sd_card.*`, `src/core/save_manager.*`, `BmoGameboy.ino`):**
+  - **Per-Core Button Remap (A/B Swap) & Auto-Fire Turbo:** `Buttons::setGameplayMode`, `setSwapAB`, `toggleSwapAB`, `setTurboEnabled`, `toggleTurbo` + `SELECT + LEFT` in-game hotkey.
+  - **Recently Played History Playlist:** `SDCard::recordRecentLaunch`, `getRecentCount`, `getRecentFilename`, `loadRecentHistory`, `saveRecentHistory` persisted in `/history.txt` on MicroSD.
+  - **In-Game Screenshot Dump:** `SaveManager::saveScreenshotBmp()` writing 24-bit BMP images to `/screenshots/<game>_<ms>.bmp` under `SpiArbiter::lock()`.
+  - **Konami Code Easter Egg:** `UP, UP, DOWN, DOWN, LEFT, RIGHT, LEFT, RIGHT, B, A` detector in `STATE_IDLE_MASCOT` triggering BMO's party dance, wink, and toast.
+
+## Previous Handoff — 2026-10-21 (Full Line-by-Line Objective Audit & AI Harness Overhaul)
 
 - **Objective Line-by-Line Audit Summary (Disregarding Prior Unverified Claims):**
   A full, line-by-line audit of the entire repository (`firmware/`, `tools/guardian/`, `scripts/`, `tests/`, `.agents/rules/`) uncovered critical bugs, false data, and severe performance bottlenecks in **both** the firmware and the AI Safeguard / Harness system:

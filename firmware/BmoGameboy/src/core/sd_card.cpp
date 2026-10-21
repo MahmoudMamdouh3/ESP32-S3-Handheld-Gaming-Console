@@ -127,6 +127,7 @@ bool SDCard::begin() {
   mounted = true;
   scanRoms();
   loadFavorites();
+  loadRecentHistory();
   SpiArbiter::unlock();
 #else
   mounted = false;
@@ -381,6 +382,86 @@ void SDCard::toggleFavorite(int index) {
     s_favoritesCount++;
   }
   saveFavorites();
+}
+
+namespace {
+  static constexpr int MAX_RECENT_HISTORY = 10;
+  static char s_recentHistory[MAX_RECENT_HISTORY][64];
+  static int s_recentCount = 0;
+}
+
+void SDCard::recordRecentLaunch(const char* filename) {
+  if (!filename || filename[0] == '\0') return;
+  int existing = -1;
+  for (int i = 0; i < s_recentCount; ++i) {
+    if (strcmp(s_recentHistory[i], filename) == 0) {
+      existing = i;
+      break;
+    }
+  }
+  int limit = (existing >= 0) ? existing : ((s_recentCount < MAX_RECENT_HISTORY) ? s_recentCount++ : (MAX_RECENT_HISTORY - 1));
+  for (int i = limit; i > 0; --i) {
+    memcpy(s_recentHistory[i], s_recentHistory[i - 1], 64);
+  }
+  strncpy(s_recentHistory[0], filename, 63);
+  s_recentHistory[0][63] = '\0';
+  saveRecentHistory();
+}
+
+int SDCard::getRecentCount() {
+  return s_recentCount;
+}
+
+const char* SDCard::getRecentFilename(int index) {
+  if (index < 0 || index >= s_recentCount) return nullptr;
+  return s_recentHistory[index];
+}
+
+void SDCard::saveRecentHistory() {
+#if FEATURE_SD_CARD
+  if (!mounted) return;
+  SpiArbiter::lock();
+  File f = SD.open("/history.txt", FILE_WRITE);
+  if (f) {
+    for (int i = 0; i < s_recentCount; ++i) {
+      f.println(s_recentHistory[i]);
+    }
+    f.close();
+  }
+  SpiArbiter::unlock();
+#endif
+}
+
+void SDCard::loadRecentHistory() {
+  s_recentCount = 0;
+#if FEATURE_SD_CARD
+  if (!mounted) return;
+  SpiArbiter::lock();
+  if (!SD.exists("/history.txt")) {
+    SpiArbiter::unlock();
+    return;
+  }
+  File f = SD.open("/history.txt", FILE_READ);
+  if (!f) {
+    SpiArbiter::unlock();
+    return;
+  }
+  char line[64];
+  while (f.available() && s_recentCount < MAX_RECENT_HISTORY) {
+    int len = f.readBytesUntil('\n', line, (int)sizeof(line) - 1);
+    line[len] = '\0';
+    while (len > 0 && (line[len - 1] == '\r' || line[len - 1] == ' ')) {
+      line[--len] = '\0';
+    }
+    if (len > 0) {
+      strncpy(s_recentHistory[s_recentCount], line, 63);
+      s_recentHistory[s_recentCount][63] = '\0';
+      s_recentCount++;
+    }
+  }
+  f.close();
+  SpiArbiter::unlock();
+#endif
 }
 
 int SDCard::getFavoritesCount() {

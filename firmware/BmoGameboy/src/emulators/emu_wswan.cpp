@@ -3,6 +3,7 @@
 #include "../vendor/wswan/wswan.h"
 #include "../core/display_emu.h"
 #include "../core/buttons.h"
+#include "../core/save_manager.h"
 #include "../core/config.h"
 #include <esp_heap_caps.h>
 #include <string.h>
@@ -51,11 +52,11 @@ void WSwanEmu::destroy() {
   running = false;
   wswan_destroy(&wswanState);
   if (wswanFb) {
-    heap_caps_free(wswanFb); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
+    heap_caps_free(wswanFb);
     wswanFb = nullptr;
   }
   if (wswanRam) {
-    heap_caps_free(wswanRam); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
+    heap_caps_free(wswanRam);
     wswanRam = nullptr;
   }
   memset(&wswanState, 0, sizeof(wswanState));
@@ -63,4 +64,44 @@ void WSwanEmu::destroy() {
 
 bool WSwanEmu::isRunning() {
   return running;
+}
+
+bool WSwanEmu::saveBatteryRam(const char* romFilename) {
+  if (!running || !wswanState.sram || !romFilename) return false;
+  return SaveManager::saveBatteryRam(romFilename, wswanState.sram, 64 * 1024);
+}
+
+bool WSwanEmu::loadBatteryRam(const char* romFilename) {
+  if (!running || !wswanState.sram || !romFilename) return false;
+  return SaveManager::loadBatteryRam(romFilename, wswanState.sram, 64 * 1024);
+}
+
+bool WSwanEmu::saveState(const char* romFilename, int slot) {
+  if (!running || !wswanRam || !romFilename) return false;
+  return SaveManager::saveState(romFilename, slot, SaveManager::CORE_WSWAN,
+                                &wswanState, sizeof(wswan_t), wswanRam, 64 * 1024);
+}
+
+bool WSwanEmu::loadState(const char* romFilename, int slot) {
+  if (!running || !wswanRam || !romFilename) return false;
+  wswan_t tempState;
+  size_t stateSize = 0, ramSize = 0;
+  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_WSWAN,
+                                   &tempState, sizeof(tempState), &stateSize,
+                                   wswanRam, 64 * 1024, &ramSize);
+  if (ok && stateSize == sizeof(wswan_t)) {
+    uint8_t* rom = wswanState.rom;
+    uint32_t rom_size = wswanState.rom_size;
+    uint8_t* iram = wswanState.internal_ram;
+    uint8_t* sram = wswanState.sram;
+    uint16_t* fb = wswanState.framebuffer;
+    memcpy(&wswanState, &tempState, sizeof(wswan_t));
+    wswanState.rom = rom;
+    wswanState.rom_size = rom_size;
+    wswanState.internal_ram = iram;
+    wswanState.sram = sram;
+    wswanState.framebuffer = fb;
+    return true;
+  }
+  return false;
 }
