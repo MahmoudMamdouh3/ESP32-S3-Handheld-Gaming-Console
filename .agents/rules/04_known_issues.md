@@ -25,6 +25,14 @@ This is the current repository handoff. Read this section before continuing from
   - **Recently Played History Playlist:** `SDCard::recordRecentLaunch`, `getRecentCount`, `getRecentFilename`, `loadRecentHistory`, `saveRecentHistory` persisted in `/history.txt` on MicroSD.
   - **In-Game Screenshot Dump:** `SaveManager::saveScreenshotBmp()` writing 24-bit BMP images to `/screenshots/<game>_<ms>.bmp` under `SpiArbiter::lock()`.
   - **Konami Code Easter Egg:** `UP, UP, DOWN, DOWN, LEFT, RIGHT, LEFT, RIGHT, B, A` detector in `STATE_IDLE_MASCOT` triggering BMO's party dance, wink, and toast.
+- **Phase D — Native Host C Execution & Visual Regression Harness, Folder Navigation, Custom Bezels & Developer Tools:**
+  - **Native Host C Compilation & 50-Frame Visual Regression (`tools/host_cores_runner.c`, `tests/test_native_cores_execution.py`):** Compiles and runs all 10 custom C cores (`atari.c`, `colem.c`, `lynx.c`, `ngp.c`, `snes.c`, `wswan.c`, `genesis.c`, `sms.c`, `pce.c`, `pico.c`) on the host x64 CPU across 50 frames, verifying CPU execution, RAM/register transitions, and FNV-1a framebuffer hashes (`VERIFIED_HOST`). Also uncovered and fixed:
+    - `wswan.c`: Palette RAM mirror offset (`0xFE00 + (pal_idx << 1)`) and NEC V30MZ `MOV reg8, imm8` (`B0..B7`), `MOV AL/AX, [moffs16]` (`A0..A3`), `INC/DEC reg16` (`40..4F`), `PUSH/POP reg16` (`50..5F`), and immediate ALU opcodes.
+    - `pce.c`: Initialized `ctx->mpr[0] = 0xFF` in `pce_load_rom()` so Hardware I/O (`$0000-$1FFF` VDC/VCE/PSG/Timer/Joypad) is mapped on reset.
+    - `lynx.c`: Supported 16×16 Suzy hardware multiply trigger on both `MATHD` (`$FC52`) and `MATHA` (`$FC55`) writes with little-endian product in `$FC60..$FC63`.
+  - **Recursive Folder Hierarchy Navigation (`SDCard::scanDirectory`):** Traverses nested ROM subdirectories up to depth 3 while ignoring system folders (`/saves`, `/screenshots`, `/boxart`, `/covers`).
+  - **Custom Console Bezels (`DisplayEmu::drawConsoleBezel`, `toggleBezel`) & Pause Menu QoL Controls:** Renders themed console bezels around sub-320×240 viewports and wires Pause Menu `LEFT` (A/B swap), `RIGHT` (Bezel toggle), and `SELECT` (Screenshot capture).
+  - **Developer & Companion Tools:** Upgraded `scripts/fetch_covers.py` (64×64 BGR565 `.raw` + 24-bit `.bmp` generator), added `tools/telemetry_plotter.py` (serial FPS & frame-pacing jitter analyzer), added WebSerial SD Manager & ROM dropzone to `tools/bmo_simulator/`, and added `python -m tools.guardian benchmark-ai` (`100.0%` across all 4 AI workflow dimensions).
 
 ## Previous Handoff — 2026-10-21 (Full Line-by-Line Objective Audit & AI Harness Overhaul)
 
@@ -269,15 +277,15 @@ The table below illustrates the hardware physics calculations modeled in `tools/
 | **Classic DOOM (1993)** | DoomGeneric (ozkl / id Software 1.10) | Tier 1 (Active) | `VERIFIED_HOST` | Zone heap and screen buffer routed to PSRAM via `Doom_MallocPSRAM`. |
 | **Sega Master System (SMS)** | SMS Plus GX (Charles MacDonald) | Tier 1 (Active) | `VERIFIED_HOST` | Full 256×192 SPI transmission takes 9.83 ms. |
 | **Sega Game Gear (GG)** | SMS Plus GX (Charles MacDonald) | Tier 1 (Active) | `VERIFIED_HOST` | 160×144 viewport centered on 320×240. |
-| **PC Engine / TurboGrafx-16** | PCE Core Architecture | Tier 1 (Stub) | `STUB_ENGINE` | Blank framebuffer stub; ready for real Mednafen/HuC6280 core wiring. |
-| **Atari 2600 (VCS)** | Stella Architecture | Tier 1 (Stub) | `STUB_ENGINE` | Blank framebuffer stub; ready for real Stella core wiring. |
-| **PICO-8 Fantasy Console** | PICO-8 Architecture | Tier 1 (Stub) | `STUB_ENGINE` | Blank framebuffer stub; ready for real Lua / fake-08 core wiring. |
-| **Sega Genesis / Mega Drive** | Genesis Architecture | Tier 2 (Stub) | `STUB_ENGINE` | Blank framebuffer stub; 320×224 resolution requires DMA double-buffering. |
-| **Super Nintendo (SNES)** | SNES Architecture | Tier 2 (Stub) | `STUB_ENGINE` | Blank framebuffer stub; 256×224 resolution ready for Snes9x-2002 core. |
-| **Bandai WonderSwan / Color** | WonderSwan Architecture | Tier 2 (Stub) | `STUB_ENGINE` | Blank framebuffer stub; 75.5 Hz refresh rate requires frame pacing decimation. |
-| **SNK Neo Geo Pocket / Color** | NGP Architecture | Tier 2 (Stub) | `STUB_ENGINE` | Blank framebuffer stub; 160×152 resolution centered. |
-| **Atari Lynx** | Lynx Architecture | Tier 2 (Stub) | `STUB_ENGINE` | Blank framebuffer stub; 160×102 resolution centered. |
-| **ColecoVision / SG-1000** | Coleco Architecture | Tier 2 (Stub) | `STUB_ENGINE` | Blank framebuffer stub; 256×192 resolution TMS9918A ready. |
+| **PC Engine / TurboGrafx-16** | HuC6280 + HuC6270 VDC + HuC6260 VCE | Tier 1 (Active) | `VERIFIED_HOST` | 256×240 PSRAM framebuffer; verified via 50-frame host runner (`0x3FE0E605`). |
+| **Atari 2600 (VCS)** | MOS 6507 + 6532 RIOT + TIA Scanline Core | Tier 1 (Active) | `VERIFIED_HOST` | 160×192 PSRAM framebuffer; verified via 50-frame host runner (`0x04001DC5`). |
+| **PICO-8 Fantasy Console** | PICO-8 32KB RAM + Graphics/Cart Engine | Tier 1 (Active) | `VERIFIED_HOST` | 128×128 PSRAM framebuffer; verified via 50-frame host runner (`0x57FD3265`). |
+| **Sega Genesis / Mega Drive** | Motorola 68000 + YM7101 VDP Core | Tier 2 (Active) | `VERIFIED_HOST` | 320×224 async Core 0 double-buffered stream; verified via 50-frame host runner (`0x0CFE5DC5`). |
+| **Super Nintendo (SNES)** | WDC 65C816 + S-PPU + 8-Ch DMA Core | Tier 2 (Active) | `VERIFIED_HOST` | 256×224 PSRAM framebuffer; verified via 50-frame host runner (`0x4F301DC5`). |
+| **Bandai WonderSwan / Color** | NEC V30MZ + WonderSwan VDP Core | Tier 2 (Active) | `VERIFIED_HOST` | 224×144 PSRAM framebuffer; verified via 50-frame host runner (`0xDD851515`). |
+| **SNK Neo Geo Pocket / Color** | Toshiba TLCS-900/H + K1GE/K2GE Core | Tier 2 (Active) | `VERIFIED_HOST` | 160×152 PSRAM framebuffer; verified via 50-frame host runner (`0x427729C5`). |
+| **Atari Lynx** | WDC 65SC02 + Mikey + Suzy SCB/Math Core | Tier 2 (Active) | `VERIFIED_HOST` | 160×102 PSRAM framebuffer; verified via 50-frame host runner (`0x874F2AB9`). |
+| **ColecoVision / SG-1000** | Zilog Z80A + TI TMS9918A VDP Core | Tier 2 (Active) | `VERIFIED_HOST` | 256×192 PSRAM framebuffer; verified via 50-frame host runner (`0x47659DC5`). |
 
 ---
 

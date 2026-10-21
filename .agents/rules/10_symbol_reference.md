@@ -70,6 +70,11 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `DisplayEmu::getDmgPaletteIndex` | fn | `int getDmgPaletteIndex()` | Gets current DMG palette index |
 | `DisplayEmu::cycleDmgPalette` | fn | `void cycleDmgPalette()` | Cycles through available DMG palettes |
 | `DisplayEmu::getActiveDmgPalette` | fn | `const uint16_t* getActiveDmgPalette()` | Returns active DMG palette 4-color array |
+| `DisplayEmu::setBezelEnabled` | fn | `void setBezelEnabled(bool enabled)` | Enables or disables custom console viewport bezels |
+| `DisplayEmu::isBezelEnabled` | fn | `bool isBezelEnabled()` | Returns true if console bezels are enabled |
+| `DisplayEmu::toggleBezel` | fn | `bool toggleBezel()` | Toggles console bezel rendering on/off |
+| `DisplayEmu::drawConsoleBezel` | fn | `void drawConsoleBezel(int consoleIndex)` | Draws custom console bezel border around active viewport |
+| `DisplayEmu::getLastFramebuffer` | fn | `const uint16_t* getLastFramebuffer(int* outWidth, int* outHeight)` | Returns most recently streamed BGR565 framebuffer and dimensions |
 | `DisplayEmu::startFrame` | fn | `void startFrame()` | Asserts CS & sets 240x216 window once |
 | `DisplayEmu::endFrame` | fn | `void endFrame()` | Deasserts CS |
 | `DisplayEmu::streamPixelRow` | fn | `void streamPixelRow(const uint16_t* buf, int pixelCount)` | Streams scanline without CS toggle |
@@ -154,6 +159,7 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `SDCard::begin` | fn | `bool begin()` | Mounts SD & registers baked flash ROMs |
 | `SDCard::isMounted` | fn | `bool isMounted()` | Returns true if SD card is mounted |
 | `SDCard::scanRoms` | fn | `void scanRoms()` | Populates romList from SD card |
+| `SDCard::scanDirectory` | fn | `void scanDirectory(const char* dirPath, int depth, bool hasArtDirs)` | Recursively scans categorized ROM subdirectories up to depth 3 |
 | `SDCard::getRomCount` | fn | `int getRomCount()` | Returns total ROM count (baked + SD) |
 | `SDCard::getRomCountForType` | fn | `int getRomCountForType(RomType type)` | Returns cached ROM count for specific console (O(1)) |
 | `SDCard::getRomInfo` | fn | `const RomFile* getRomInfo(int index)` | Returns RomFile pointer |

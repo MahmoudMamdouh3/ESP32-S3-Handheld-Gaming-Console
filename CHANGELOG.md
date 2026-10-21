@@ -36,9 +36,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Added `kKonamiSeq` (`UP, UP, DOWN, DOWN, LEFT, RIGHT, LEFT, RIGHT, B, A`) detector in `STATE_IDLE_MASCOT` triggering BMO's party dance, wink, and toast.
 - **Test Suite Expansion (`tests/test_new_cores_and_qol.py`, `tests/test_all_tiers_validation.py`)**:
   - Added 15 unit tests verifying all 6 new emulator cores, unified persistence, and QoL features (`113/113` total unit tests passing).
+### Added (Phase D — Native Host C Execution & Visual Regression, Folder Hierarchy Navigation, Custom Console Bezels & Developer Tools)
+- **Native Host C Compilation & 50-Frame Visual Regression (`tools/host_cores_runner.c`, `tests/test_native_cores_execution.py`)**:
+  - Compiles and executes all 10 custom C emulator cores (`atari.c`, `colem.c`, `lynx.c`, `ngp.c`, `snes.c`, `wswan.c`, `genesis.c`, `sms.c`, `pce.c`, `pico.c`) on the host x64 CPU across 50 frames, verifying CPU execution, RAM/register transitions, and deterministic FNV-1a framebuffer hashes (`VERIFIED_HOST`).
+  - Fixed `wswan.c` color palette mirror offset (`0xFE00 + (pal_idx << 1)`) and expanded NEC V30MZ instruction decoding (`MOV reg8, imm8` `B0..B7`, `MOV AL/AX, [moffs16]` `A0..A3`, `INC/DEC reg16` `40..4F`, `PUSH/POP reg16` `50..5F`, and immediate ALU opcodes `04/2C/34/3C`).
+  - Fixed `pce.c` reset `MPR0` mapping (`ctx->mpr[0] = 0xFF`) so Hardware I/O (`$0000-$1FFF` VDC/VCE/PSG/Timer/Joypad) is mapped on power-on.
+  - Updated `lynx.c` Suzy 16×16 hardware multiply trigger on both `MATHD` (`$FC52`) and `MATHA` (`$FC55`) writes with little-endian product in `$FC60..$FC63`.
+- **Recursive Folder Hierarchy Navigation (`src/core/sd_card.h`, `src/core/sd_card.cpp`, `src/core/display_emu.cpp`)**:
+  - Added `SDCard::scanDirectory(dirPath, depth, hasArtDirs)` supporting recursive ROM folder discovery up to depth 3 while ignoring system directories (`/saves`, `/screenshots`, `/boxart`, `/covers`), sorting by basename, and stripping path prefixes in `DisplayEmu::sanitizeRomTitle`.
+- **Custom Console Bezels (`1:1 Mode`) & Pause Menu QoL Controls (`src/core/display_emu.h`, `src/core/display_emu.cpp`, `BmoGameboy.ino`)**:
+  - Added `DisplayEmu::setBezelEnabled`, `isBezelEnabled`, `toggleBezel`, `drawConsoleBezel`, and `getLastFramebuffer`.
+  - Wired Pause Menu `LEFT` (A/B swap), `RIGHT` (Console Bezel toggle), and `SELECT` (Screenshot BMP capture).
+- **Developer, Telemetry & Companion Tools (`scripts/fetch_covers.py`, `tools/telemetry_plotter.py`, `tools/bmo_simulator/`, `tools/guardian/cli.py`)**:
+  - Refactored `scripts/fetch_covers.py` into a clean CLI/library generating 64×64 BGR565 `.raw` (8,192 B) and 24-bit `.bmp` covers plus Libretro Thumbnail URLs.
+  - Created `tools/telemetry_plotter.py` for serial telemetry parsing, p50/p95/p99 frame latency, jitter analysis, and ASCII/JSON plotting.
+  - Added WebSerial SD Manager (`connectWebSerial`, `ingestUploadedRoms`) and drag-and-drop ROM loader to `tools/bmo_simulator/`.
+  - Added `python -m tools.guardian benchmark-ai` achieving 100.0% across intent routing, hardware pin ground-truth, symbol grounding, and production core coverage.
 ### Verification
-- `python scripts/validate_repo.py`: `VALIDATION PASSED in 94491 ms — all phases clean` (`Flash: 5,687,672 / 16,777,216 bytes (33.9%)`, `SRAM: 218,784 / 327,680 bytes (66.8%)`, `372 files, 1503 symbols`).
-- `python -m tools.guardian verify`: `Ran 113 tests in 8.392s` / `OK` (`0 Critical violations`).
+- `python scripts/validate_repo.py`: `VALIDATION PASSED — all phases clean`.
+- `python -m tools.guardian verify`: `120 tests` — `OK` (`0 Critical violations`).
+- `python -m tools.guardian benchmark-ai`: `100.0% PASS across all 4 dimensions`.
 
 ---
 

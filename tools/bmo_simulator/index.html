@@ -240,6 +240,22 @@
         </div>
       </div>
 
+      <!-- WebSerial SD Manager & ROM Dropzone Card -->
+      <div class="panel-card" id="webserial-sd-manager">
+        <div class="card-header">
+          <div class="card-title">🔌 WebSerial SD Manager</div>
+          <div class="badge-counter" id="webserial-status">Offline</div>
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+          <button class="control-pill" id="btn-webserial-connect">Connect USB-C (WebSerial)</button>
+          <label class="control-pill" for="rom-file-upload" style="cursor: pointer;">+ Load ROM / .P8</label>
+          <input type="file" id="rom-file-upload" accept=".gb,.gbc,.nes,.sfc,.smc,.sms,.gg,.pce,.a26,.p8,.gen,.md,.ws,.wsc,.ngp,.ngc,.lnx,.col,.wad" style="display: none;" multiple>
+        </div>
+        <div id="webserial-log" style="margin-top: 8px; font-family: monospace; font-size: 11px; opacity: 0.85;">
+          Drop ROM files anywhere or connect ESP32-S3 via WebSerial (115200 baud).
+        </div>
+      </div>
+
     </aside>
 
   </main>

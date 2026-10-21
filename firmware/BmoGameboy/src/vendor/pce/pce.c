@@ -584,10 +584,12 @@ bool pce_load_rom(pce_context_t* ctx, const uint8_t* rom, size_t size) {
     ctx->rom = rom;
     ctx->rom_size = size;
 
-    // HuC6280 hardware reset maps MPR7 ($E000-$FFFF) to ROM bank 0x00 and MPR1 ($2000-$3FFF) to Work RAM 0xF8
+    // HuC6280 hardware reset maps MPR0 ($0000-$1FFF) to Hardware I/O (0xFF),
+    // MPR1 ($2000-$3FFF) to Work RAM (0xF8), and MPR7 ($E000-$FFFF) to ROM bank 0x00
     for (int i = 0; i < 7; i++) {
         ctx->mpr[i] = (uint8_t)i;
     }
+    ctx->mpr[0] = 0xFF;
     ctx->mpr[1] = 0xF8;
     ctx->mpr[7] = 0x00;
 
