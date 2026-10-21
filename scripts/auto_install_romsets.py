@@ -15,8 +15,9 @@ import zipfile
 import shutil
 from pathlib import Path
 
-DEFAULT_DEST = Path(r"E:\BMO Gameboy\games")
-CACHE_DIR = Path(r"E:\BMO Gameboy\.rom_cache")
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_DEST = REPO_ROOT / "games"
+CACHE_DIR = REPO_ROOT / ".rom_cache"
 
 ROM_PACKS = [
     {

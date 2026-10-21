@@ -243,7 +243,7 @@ static void genesis_write16(genesis_t* emu, uint32_t addr, uint16_t val) {
             if ((val & 0x80) && (emu->vdp_regs[1] & 0x10)) {
                 uint32_t len = ((uint32_t)emu->vdp_regs[20] << 8) | emu->vdp_regs[19];
                 if (len == 0) len = 0x10000;
-                uint32_t src = ((uint32_t)emu->vdp_regs[23] << 17) |
+                uint32_t src = ((uint32_t)(emu->vdp_regs[23] & 0x7F) << 17) |
                                ((uint32_t)emu->vdp_regs[22] << 9) |
                                ((uint32_t)emu->vdp_regs[21] << 1);
                 for (uint32_t i = 0; i < len; i++) {
@@ -403,6 +403,7 @@ static int genesis_cpu_step(genesis_t* emu) {
     // BRA / BSR / Bcc
     if ((op & 0xF000) == 0x6000) {
         uint8_t cc = (op >> 8) & 0x0F;
+        uint32_t base_pc = emu->pc; // PC of extension word (instruction_addr + 2)
         int32_t disp = (int8_t)(op & 0xFF);
         if (disp == 0) {
             disp = (int16_t)genesis_read16(emu, emu->pc);
@@ -410,18 +411,18 @@ static int genesis_cpu_step(genesis_t* emu) {
         }
         if (cc == 0) {
             // BRA
-            emu->pc = emu->pc - 2 + disp;
+            emu->pc = base_pc + disp;
             return 10;
         } else if (cc == 1) {
             // BSR
             emu->a[7] -= 4;
             genesis_write32(emu, emu->a[7], emu->pc);
-            emu->pc = emu->pc - 2 + disp;
+            emu->pc = base_pc + disp;
             return 18;
         } else {
             // Bcc
             if (test_cc(emu, cc)) {
-                emu->pc = emu->pc - 2 + disp;
+                emu->pc = base_pc + disp;
                 return 10;
             }
             return 8;

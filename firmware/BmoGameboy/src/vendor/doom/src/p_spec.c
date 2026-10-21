@@ -361,7 +361,10 @@ P_FindNextHighestFloor
                         "Vanilla will crash here");
             }
 
-            heightlist[h++] = other->floorheight;
+            if (h < MAX_ADJOINING_SECTORS)
+            {
+                heightlist[h++] = other->floorheight;
+            }
         }
     }
     

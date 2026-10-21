@@ -19,6 +19,7 @@ def run_python_compile_check():
 
 def run_repo_scan():
     for path in sorted(REPO_ROOT.rglob('*')):
+        if any(p in {'.git', '.venv', 'venv', 'zig', 'arduino-cli-bin', '.rom_cache', 'games', 'roms', 'resources', '__pycache__', 'scratch', 'build', 'legacy_headers'} for p in path.parts): continue
         if path.is_file() and path.suffix.lower() in {'.py', '.md', '.h', '.cpp', '.ino'}:
             path.read_text(encoding='utf-8', errors='ignore')
 

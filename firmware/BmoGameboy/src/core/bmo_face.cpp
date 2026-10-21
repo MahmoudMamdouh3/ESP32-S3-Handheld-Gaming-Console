@@ -419,10 +419,11 @@ static inline void evaluateMouthCavity(float px, float py, float width, float cu
 static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY, int destW, int destH) {
   if (!dst || destW <= 0 || destH <= 0) return;
 
-  const uint16_t bgColor = (s_expr == BmoFace::SLEEPING) ? COL_DUSK_BG : COL_MINT_BG;
-  const float bgR = (float)((bgColor >> 11) & 0x1F) / 31.0f; // BGR swapped
-  const float bgG = (float)((bgColor >> 5)  & 0x3F) / 63.0f;
-  const float bgB = (float)(bgColor & 0x1F)         / 31.0f;
+  const bool isSleepingBg = (s_expr == BmoFace::SLEEPING);
+  const uint16_t bgColor = isSleepingBg ? COL_DUSK_BG : COL_MINT_BG;
+  const float baseBgR = isSleepingBg ? (111.0f / 255.0f) : (138.0f / 255.0f);
+  const float baseBgG = isSleepingBg ? (184.0f / 255.0f) : (213.0f / 255.0f);
+  const float baseBgB = isSleepingBg ? (167.0f / 255.0f) : (195.0f / 255.0f);
 
   // Anti-aliasing band: 1.25 screen pixels mapped into normalized [-1, 1] units
   const float aaStepX = (2.0f / (float)destW) * 1.25f;
@@ -454,11 +455,14 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
   const float cheekCy      =  eyeOffY - eyeH * 0.82f;
   const float cheekR       =  0.13f;
 
-  // Fast background clear of the destination box
+  // Fast background clear of the destination box (alignment-safe 32-bit stores)
+  const uint32_t bgDword = ((uint32_t)bgColor << 16) | (uint32_t)bgColor;
   for (int r = 0; r < destH; ++r) {
     uint16_t* row = &dst[(destY + r) * stride + destX];
-    uint32_t bgDword = ((uint32_t)bgColor << 16) | (uint32_t)bgColor;
     int c = 0;
+    if (c < destW && (((uintptr_t)&row[c]) & 3u) != 0) {
+      row[c++] = bgColor;
+    }
     for (; c <= destW - 2; c += 2) {
       *(uint32_t*)&row[c] = bgDword;
     }
@@ -522,9 +526,9 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
       }
 
       float nx = -1.0f + 2.0f * ((float)px + 0.5f) / (float)destW;
-      float cr = 138.0f / 255.0f;
-      float cg = 213.0f / 255.0f;
-      float cb = 195.0f / 255.0f;
+      float cr = baseBgR;
+      float cg = baseBgG;
+      float cb = baseBgB;
 
       // 0. Speech Bubble Layer (Rounded Card + Tail)
       if (inBubble) {
@@ -744,11 +748,12 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
 
         float pAlpha = smoothstepf(aaBand, 0.0f, -dPart) * alpha;
         if (pAlpha > 0.01f) {
-          uint16_t orig = row[x];
-          // BGR unpacked
-          float r = (float)((orig >> 11) & 0x1F) / 31.0f;
-          float g = (float)((orig >> 5)  & 0x3F) / 63.0f;
-          float b = (float)(orig & 0x1F)         / 31.0f;
+          uint16_t origSwapped = row[x];
+          uint16_t origBgr = (uint16_t)((origSwapped >> 8) | (origSwapped << 8));
+          // Unpack byte-swapped BGR565: bits 15..11 = B, bits 10..5 = G, bits 4..0 = R
+          float r = (float)(origBgr & 0x1F)         / 31.0f;
+          float g = (float)((origBgr >> 5)  & 0x3F) / 63.0f;
+          float b = (float)((origBgr >> 11) & 0x1F) / 31.0f;
 
           if (s_particles[i].type == PARTICLE_SPARKLE) {
             r = lerpf(r, 1.0f, pAlpha);

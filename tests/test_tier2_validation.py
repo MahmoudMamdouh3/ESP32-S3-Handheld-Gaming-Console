@@ -9,7 +9,7 @@ import os
 import unittest
 from pathlib import Path
 
-WORKSPACE = Path(r"E:\BMO Gameboy")
+WORKSPACE = Path(__file__).resolve().parents[1]
 FIRMWARE_DIR = WORKSPACE / "firmware" / "BmoGameboy"
 
 class TestTier2FirmwareValidation(unittest.TestCase):

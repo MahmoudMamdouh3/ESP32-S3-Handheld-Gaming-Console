@@ -69,12 +69,14 @@ struct atexit_listentry_s
 };
 
 static atexit_listentry_t *exit_funcs = NULL;
+static byte *s_zonemem_base = NULL;
 
 void I_AtExit(atexit_func_t func, boolean run_on_error)
 {
     atexit_listentry_t *entry;
 
     entry = malloc(sizeof(*entry));
+    if (entry == NULL) return;
 
     entry->func = func;
     entry->run_on_error = run_on_error;
@@ -135,6 +137,26 @@ static byte *AutoAllocMemory(int *size, int default_ram, int min_ram)
     return zonemem;
 }
 
+void I_ShutdownZone(void)
+{
+    while (exit_funcs != NULL)
+    {
+        atexit_listentry_t *next = exit_funcs->next;
+        free(exit_funcs);
+        exit_funcs = next;
+    }
+    if (s_zonemem_base != NULL)
+    {
+#if defined(ESP32) || defined(ARDUINO)
+        extern void Doom_FreePSRAM(void* ptr);
+        Doom_FreePSRAM(s_zonemem_base);
+#else
+        free(s_zonemem_base);
+#endif
+        s_zonemem_base = NULL;
+    }
+}
+
 byte *I_ZoneBase (int *size)
 {
     byte *zonemem;
@@ -161,6 +183,7 @@ byte *I_ZoneBase (int *size)
     }
 
     zonemem = AutoAllocMemory(size, default_ram, min_ram);
+    s_zonemem_base = zonemem;
 
     printf("zone memory: %p, %x allocated for zone\n", 
            zonemem, *size);
@@ -289,6 +312,7 @@ static char *EscapeShellString(char *string)
 
     // In the worst case, every character might be escaped.
     result = malloc(strlen(string) * 2 + 3);
+    if (result == NULL) return NULL;
     r = result;
 
     // Enclosing quotes.

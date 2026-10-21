@@ -400,6 +400,158 @@ def cmd_qol(args) -> int:
     return 0
 
 
+def cmd_doctor(args) -> int:
+    """One-command environment, hardware pin sync, and guardrail health check for AI agents."""
+    import json
+    import shutil
+    from scripts.generate_ai_knowledge_base import parse_config_h
+
+    print("=" * 70)
+    print(" BMO GUARDIAN DOCTOR -- AI Harness & Hardware Safety Preflight")
+    print("=" * 70)
+
+    issues = 0
+    cfg_path = FIRMWARE_DIR / "src" / "core" / "config.h"
+    cfg = parse_config_h(cfg_path)
+
+    # 1. Check Hard Stops in config.h
+    print("\n[1/4] Verifying Hardware Hard Stops in src/core/config.h...")
+    if cfg.get("FEATURE_BATTERY_MONITOR", 0) != 0:
+        print("  [FAIL] FEATURE_BATTERY_MONITOR != 0 (Floating GPIO1 bootloop hazard!)")
+        issues += 1
+    else:
+        print("  [PASS] FEATURE_BATTERY_MONITOR == 0 (Safe)")
+
+    if cfg.get("FEATURE_AUDIO", 0) != 0:
+        print("  [FAIL] FEATURE_AUDIO != 0 (Floating I2S DMA hazard!)")
+        issues += 1
+    else:
+        print("  [PASS] FEATURE_AUDIO == 0 (Safe)")
+
+    # 2. Check Knowledge Graph Sync against config.h
+    print("\n[2/4] Verifying AI Knowledge Graph Synchronization...")
+    kg_path = REPO_ROOT / "AGENT_KNOWLEDGE_GRAPH.json"
+    if not kg_path.exists():
+        print("  [WARN] AGENT_KNOWLEDGE_GRAPH.json missing — regenerating...")
+        from scripts.generate_ai_knowledge_base import build_knowledge_base
+        build_knowledge_base()
+    try:
+        kg = json.loads(kg_path.read_text(encoding="utf-8"))
+        btn_pins = kg.get("hardware_pins", {}).get("buttons", {})
+        if btn_pins.get("btn_start") != cfg.get("BTN_START", 18) or btn_pins.get("btn_a") != cfg.get("BTN_A", 16):
+            print("  [FAIL] AGENT_KNOWLEDGE_GRAPH.json pin map out of sync with config.h!")
+            issues += 1
+        else:
+            print(f"  [PASS] Pin map synchronized with config.h (TFT_CS={cfg.get('TFT_CS')}, SD_CS={cfg.get('SD_CS')}, BTN_A={cfg.get('BTN_A')}, BTN_START={cfg.get('BTN_START')})")
+    except Exception as exc:
+        print(f"  [FAIL] Could not parse AGENT_KNOWLEDGE_GRAPH.json: {exc}")
+        issues += 1
+
+    # 3. Check AST Linter Criticals
+    print("\n[3/4] Running Embedded AST Linter Critical Check...")
+    linter = FirmwareAstLinter(FIRMWARE_DIR)
+    findings = linter.lint_all()
+    criticals = [f for f in findings if f.severity == "CRITICAL"]
+    if criticals:
+        print(f"  [FAIL] {len(criticals)} Critical AST violations found:")
+        for c in criticals:
+            print(f"    - [{c.rule_id}] {c.file_path.name}:{c.line_number}: {c.message}")
+        issues += len(criticals)
+    else:
+        print(f"  [PASS] 0 Critical AST violations ({len(findings)} advisory/warnings)")
+
+    # 4. Check Toolchain Availability
+    print("\n[4/4] Checking Local Developer & Verification Toolchains...")
+    arduino_cli = REPO_ROOT / "arduino-cli.exe"
+    zig_bin = REPO_ROOT / "tools" / "zig" / "zig.exe"
+    if not zig_bin.exists():
+        zig_candidates = list((REPO_ROOT / "tools" / "zig").glob("**/zig.exe")) if (REPO_ROOT / "tools" / "zig").exists() else []
+        if zig_candidates:
+            zig_bin = zig_candidates[0]
+    cppcheck = CppcheckRunner(REPO_ROOT)
+    print(f"  * arduino-cli : {'READY' if arduino_cli.exists() or shutil.which('arduino-cli') else 'NOT FOUND'}")
+    print(f"  * zig cc      : {'READY' if zig_bin.exists() or shutil.which('zig') else 'NOT FOUND'}")
+    print(f"  * cppcheck    : {'READY' if cppcheck.is_available() else 'NOT FOUND'}")
+
+    print("\n" + "=" * 70)
+    if issues == 0:
+        print(" DOCTOR RESULT: HEALTHY (0 blocking issues). Ready for agent work.")
+        return 0
+    print(f" DOCTOR RESULT: {issues} ISSUE(S) DETECTED. Fix before proceeding.")
+    return 1
+
+
+def cmd_explain(args) -> int:
+    """Instant context card for any file or symbol (for weak/small-context AI models)."""
+    import json
+    target = args.target.strip().replace("\\", "/")
+    kg_path = REPO_ROOT / "AGENT_KNOWLEDGE_GRAPH.json"
+    if not kg_path.exists():
+        from scripts.generate_ai_knowledge_base import build_knowledge_base
+        build_knowledge_base()
+    kg = json.loads(kg_path.read_text(encoding="utf-8"))
+    files_index = kg.get("files_index", {})
+    symbols = kg.get("symbol_registry", {})
+
+    print("=" * 70)
+    print(f" BMO AI CONTEXT EXPLAINER: \"{target}\"")
+    print("=" * 70)
+
+    matched_files = [k for k in files_index if target.lower() in k.lower()]
+    if matched_files:
+        for rel_p in matched_files[:5]:
+            info = files_index[rel_p]
+            stem = Path(rel_p).name
+            reverse_deps = [
+                other_p for other_p, other_info in files_index.items()
+                if any(stem in inc for inc in other_info.get("includes", []))
+            ]
+            print(f"\n📄 FILE: {rel_p} [{info.get('category')}]")
+            print(f"   * Metrics  : {info.get('total_lines')} lines ({info.get('sloc')} SLOC, {info.get('comments')} comments, {info.get('density_percent')}% density)")
+            print(f"   * Includes : {', '.join(info.get('includes', [])[:8]) or 'None'}")
+            print(f"   * Pins/Cfg : {', '.join(info.get('pins_accessed', [])) or 'None'}")
+            print(f"   * Symbols  : {', '.join(info.get('symbols', [])[:12]) or 'None'}")
+            print(f"   * Used By  : {', '.join(reverse_deps[:8]) or 'Entrypoint / Leaf'}")
+        print("=" * 70)
+        return 0
+
+    # Fallback to symbol lookup
+    args.symbol = target
+    return cmd_lookup(args)
+
+
+def cmd_verify(args) -> int:
+    """Fast all-in-one verification gate (<2s): AST lint + unit tests + Guardian tests."""
+    import unittest
+
+    print("=" * 70)
+    print(" BMO GUARDIAN FAST VERIFY -- AST Lint + Unit Test Gate")
+    print("=" * 70)
+
+    linter = FirmwareAstLinter(FIRMWARE_DIR)
+    findings = linter.lint_all()
+    criticals = [f for f in findings if f.severity == "CRITICAL"]
+    if criticals:
+        print(f"[FAIL] {len(criticals)} Critical AST violations found:")
+        for c in criticals:
+            print(f"  * [{c.rule_id}] {c.file_path.name}:{c.line_number} -- {c.message}")
+        return 1
+    print(f"[PASS] AST Linter: 0 Critical violations ({len(findings)} warnings).")
+
+    suite = unittest.TestSuite()
+    suite.addTests(unittest.TestLoader().discover(str(REPO_ROOT / "tests"), pattern="test_*.py"))
+    suite.addTests(unittest.TestLoader().discover(str(REPO_ROOT / "tools" / "guardian" / "tests"), pattern="test_*.py"))
+
+    runner = unittest.TextTestRunner(verbosity=1)
+    result = runner.run(suite)
+    if not result.wasSuccessful():
+        print("[FAIL] Unit test suite failed.")
+        return 1
+
+    print("[PASS] All repository and Guardian unit tests succeeded.")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="BMO Guardian Performance & Ground-Truth Suite")
     subparsers = parser.add_subparsers(dest="command", help="Available subcommands")
@@ -443,6 +595,16 @@ def main() -> int:
     # qol
     subparsers.add_parser("qol", help="View the system-wide Quality of Life (QoL) and UI/UX roadmap ledger")
 
+    # doctor
+    subparsers.add_parser("doctor", help="One-command health, hardware pin sync, and guardrail preflight check")
+
+    # explain
+    p_explain = subparsers.add_parser("explain", help="Instant context card for any file or symbol (dependencies, pins, symbols)")
+    p_explain.add_argument("target", help="File path substring or symbol name to explain")
+
+    # verify
+    subparsers.add_parser("verify", help="Fast all-in-one verification gate (AST lint + all unit tests)")
+
     args = parser.parse_args()
     if not args.command:
         parser.print_help()
@@ -460,6 +622,9 @@ def main() -> int:
         "lookup": cmd_lookup,
         "budget": cmd_budget,
         "qol": cmd_qol,
+        "doctor": cmd_doctor,
+        "explain": cmd_explain,
+        "verify": cmd_verify,
     }
 
     handler = commands.get(args.command)

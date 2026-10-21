@@ -11,7 +11,7 @@ import sys
 import unittest
 from pathlib import Path
 
-WORKSPACE = Path(r"E:\BMO Gameboy")
+WORKSPACE = Path(__file__).resolve().parents[1]
 FIRMWARE_DIR = WORKSPACE / "firmware" / "BmoGameboy"
 GAMES_DIR = WORKSPACE / "games"
 
@@ -60,7 +60,7 @@ class TestTier1FirmwareValidation(unittest.TestCase):
             "PicoEmu::destroy()",
             "WalnutEmu::destroy()",
             "PeanutEmu::destroy()",
-            "NESEmu::destroy()",
+            "NesEmu::destroy()",
             "DoomEmu::destroy()",
         ]
         for d in required_destroys:

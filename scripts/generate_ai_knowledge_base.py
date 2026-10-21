@@ -21,6 +21,29 @@ from tools.guardian.core.elf_analyzer import ElfAnalyzer
 from tools.guardian.core.host_bench import HostBenchmarkSuite
 
 
+def parse_config_h(config_path: Path) -> Dict[str, int]:
+    """Parses ground-truth #define integer constants directly from src/core/config.h."""
+    defines: Dict[str, int] = {}
+    if not config_path.exists():
+        return defines
+    content = config_path.read_text(encoding="utf-8", errors="ignore")
+    for line in content.splitlines():
+        clean = line.strip()
+        m = re.match(r"^#define\s+([A-Z0-9_]+)\s+(\d+)\b", clean)
+        if m:
+            defines[m.group(1)] = int(m.group(2))
+    return defines
+
+
+def detect_engine_status(vendor_rel_path: str) -> str:
+    """Inspects vendor engine source to determine 'production' vs 'stub' without stale dicts."""
+    p = FIRMWARE_DIR / vendor_rel_path
+    if not p.exists():
+        return "stub"
+    head = p.read_text(encoding="utf-8", errors="ignore")[:512]
+    return "stub" if "STUB_ENGINE" in head else "production"
+
+
 def build_knowledge_base():
     print("=" * 70)
     print(" BMO AI KNOWLEDGE BASE & AST INDEX COMPILER")
@@ -65,13 +88,19 @@ def build_knowledge_base():
                 if clean.startswith("#include"):
                     inc = clean.replace("#include", "").strip().strip('<>"')
                     includes.append(inc)
-                # Pin matches (e.g. GPIO, PIN_, TFT_, SD_)
-                for pin_match in re.findall(r"\b(PIN_[A-Z0-9_]+|TFT_[A-Z0-9_]+|SD_[A-Z0-9_]+|BUTTON_[A-Z0-9_]+|GPIO\d+)\b", clean):
+                # Pin matches (e.g. GPIO, PIN_, TFT_, SD_, BTN_, BUTTON_, I2S_, I2C_, BATTERY_, FEATURE_)
+                for pin_match in re.findall(
+                    r"\b(PIN_[A-Z0-9_]+|TFT_[A-Z0-9_]+|SD_[A-Z0-9_]+|BTN_[A-Z0-9_]+|BUTTON_[A-Z0-9_]+|I2S_[A-Z0-9_]+|I2C_[A-Z0-9_]+|BATTERY_[A-Z0-9_]+|FEATURE_[A-Z0-9_]+|GPIO\d+)\b",
+                    clean,
+                ):
                     if pin_match not in pins_accessed:
                         pins_accessed.append(pin_match)
                 # Function / Class definition matches (C/C++)
-                if fs.category in {"FIRMWARE_CORE", "EMULATOR_WRAPPERS", "ENGINE_GBC"}:
-                    fn_match = re.match(r"^(?:static\s+)?(?:void|bool|int|uint\d+_t|size_t|const\s+[a-zA-Z0-9_]+[\*\&]?)\s+([a-zA-Z0-9_]+::[a-zA-Z0-9_]+|[a-zA-Z0-9_]+)\s*\([^;]*\)\s*(?:const)?\s*\{?", clean)
+                if fs.category in {"FIRMWARE_CORE", "EMULATOR_WRAPPERS", "ENGINE_GBC", "FIRMWARE_TOP", "VENDOR_ENGINES"}:
+                    fn_match = re.match(
+                        r"^(?:static\s+)?(?:inline\s+)?(?:void|bool|int|uint\d+_t|int\d+_t|size_t|const\s+[a-zA-Z0-9_]+[\*\&]?|[a-zA-Z0-9_]+_t\*?)\s+([a-zA-Z0-9_]+::[a-zA-Z0-9_]+|[a-zA-Z0-9_]+)\s*\([^;]*\)\s*(?:const)?\s*\{?",
+                        clean,
+                    )
                     if fn_match and not clean.startswith("if") and not clean.startswith("for") and not clean.startswith("while") and not clean.startswith("return"):
                         sym_name = fn_match.group(1)
                         symbols_in_file.append(sym_name)
@@ -115,33 +144,44 @@ def build_knowledge_base():
         except Exception:
             pass
 
-    # 4. Construct Multi-Console Platform Matrix
+    # 4. Construct Multi-Console Platform Matrix dynamically from vendor sources
+    cfg = parse_config_h(FIRMWARE_DIR / "src" / "core" / "config.h")
+    pce_status = "active" if detect_engine_status("src/vendor/pce/pce.c") == "production" else "stub"
+    gen_status = "active" if detect_engine_status("src/vendor/genesis/genesis.c") == "production" else "stub"
+    ws_status  = "active" if detect_engine_status("src/vendor/wswan/wswan.c") == "production" else "stub"
+    a26_status = "active" if detect_engine_status("src/vendor/stella/atari.c") == "production" else "stub"
+    p8_status  = "active" if detect_engine_status("src/vendor/pico/pico.c") == "production" else "stub"
+    snes_status = "active" if detect_engine_status("src/vendor/snes/snes.c") == "production" else "stub"
+    ngp_status = "active" if detect_engine_status("src/vendor/ngp/ngp.c") == "production" else "stub"
+    lnx_status = "active" if detect_engine_status("src/vendor/lynx/lynx.c") == "production" else "stub"
+    col_status = "active" if detect_engine_status("src/vendor/colem/colem.c") == "production" else "stub"
+
     platform_matrix = {
         "gb": {"name": "Game Boy DMG", "core": "Peanut-GB", "tier": 1, "status": "active", "res": "240x216 (3:2)", "ext": [".gb"], "fps": 59.73},
         "gbc": {"name": "Game Boy Color", "core": "Walnut-CGB", "tier": 1, "status": "active", "res": "240x216 (3:2)", "ext": [".gbc"], "fps": 59.73},
         "nes": {"name": "Nintendo NES", "core": "Agnes", "tier": 1, "status": "active", "res": "256x240", "ext": [".nes"], "fps": 60.10},
-        "sms": {"name": "Sega Master System", "core": "SMS Plus GX", "tier": 1, "status": "active", "res": "256x192", "ext": [".sms"], "fps": 59.92},
-        "gg": {"name": "Sega Game Gear", "core": "SMS Plus GX", "tier": 1, "status": "active", "res": "160x144", "ext": [".gg"], "fps": 59.92},
+        "sms": {"name": "Sega Master System", "core": "SMS Z80+VDP Core", "tier": 1, "status": "active", "res": "256x192", "ext": [".sms"], "fps": 59.92},
+        "gg": {"name": "Sega Game Gear", "core": "SMS Z80+VDP Core", "tier": 1, "status": "active", "res": "160x144", "ext": [".gg"], "fps": 59.92},
         "doom": {"name": "Classic DOOM", "core": "DoomGeneric", "tier": 1, "status": "active", "res": "320x200", "ext": [".wad"], "fps": 35.00},
-        "pce": {"name": "PC Engine / TG-16", "core": "PCE Core", "tier": 1, "status": "stub", "res": "256x240", "ext": [".pce"], "fps": 59.82},
-        "a26": {"name": "Atari 2600", "core": "Stella Core", "tier": 1, "status": "stub", "res": "160x192", "ext": [".a26", ".bin"], "fps": 60.00},
-        "p8": {"name": "PICO-8", "core": "PICO-8 Core", "tier": 1, "status": "stub", "res": "128x128", "ext": [".p8", ".png"], "fps": 30.00},
-        "gen": {"name": "Sega Genesis", "core": "Genesis Core", "tier": 2, "status": "stub", "res": "320x224", "ext": [".gen", ".md"], "fps": 59.92},
-        "snes": {"name": "Super Nintendo", "core": "SNES Core", "tier": 2, "status": "stub", "res": "256x224", "ext": [".sfc", ".smc"], "fps": 60.10},
-        "ws": {"name": "Bandai WonderSwan", "core": "WonderSwan Core", "tier": 2, "status": "stub", "res": "224x144", "ext": [".ws", ".wsc"], "fps": 75.47},
-        "ngp": {"name": "Neo Geo Pocket", "core": "NGP Core", "tier": 2, "status": "stub", "res": "160x152", "ext": [".ngp", ".ngc"], "fps": 59.73},
-        "lnx": {"name": "Atari Lynx", "core": "Lynx Core", "tier": 2, "status": "stub", "res": "160x102", "ext": [".lnx"], "fps": 75.00},
-        "col": {"name": "ColecoVision", "core": "Coleco Core", "tier": 2, "status": "stub", "res": "256x192", "ext": [".col", ".sg"], "fps": 60.00},
+        "pce": {"name": "PC Engine / TG-16", "core": "PCE HuC6280+VDC Core", "tier": 1, "status": pce_status, "res": "256x240", "ext": [".pce"], "fps": 59.82},
+        "a26": {"name": "Atari 2600", "core": "Stella Core", "tier": 1, "status": a26_status, "res": "160x192", "ext": [".a26", ".bin"], "fps": 60.00},
+        "p8": {"name": "PICO-8", "core": "PICO-8 Core", "tier": 1, "status": p8_status, "res": "128x128", "ext": [".p8", ".png"], "fps": 30.00},
+        "gen": {"name": "Sega Genesis", "core": "Genesis 68000+VDP Core", "tier": 2, "status": gen_status, "res": "320x224", "ext": [".gen", ".md", ".smd"], "fps": 59.92},
+        "snes": {"name": "Super Nintendo", "core": "SNES Core", "tier": 2, "status": snes_status, "res": "256x224", "ext": [".sfc", ".smc"], "fps": 60.10},
+        "ws": {"name": "Bandai WonderSwan", "core": "WonderSwan V30MZ+VDC Core", "tier": 2, "status": ws_status, "res": "224x144", "ext": [".ws", ".wsc"], "fps": 75.47},
+        "ngp": {"name": "Neo Geo Pocket", "core": "NGP Core", "tier": 2, "status": ngp_status, "res": "160x152", "ext": [".ngp", ".ngc"], "fps": 59.73},
+        "lnx": {"name": "Atari Lynx", "core": "Lynx Core", "tier": 2, "status": lnx_status, "res": "160x102", "ext": [".lnx"], "fps": 75.00},
+        "col": {"name": "ColecoVision", "core": "Coleco Core", "tier": 2, "status": col_status, "res": "256x192", "ext": [".col", ".sg"], "fps": 60.00},
     }
 
-    # 5. Build Knowledge Graph Data Structure
+    # 5. Build Knowledge Graph Data Structure (Hardware Pins Sourced Directly From config.h)
     knowledge_graph = {
-        "schema_version": "2.0.0",
+        "schema_version": "2.1.0",
         "generated_at": now_iso,
         "target_mcu": {
             "chip": "ESP32-S3-N16R8",
             "cpu_arch": "Xtensa dual-core 32-bit LX7 @ 240MHz",
-            "flash": "16MB Octal SPI (OPI 80MHz)",
+            "flash": "16MB Quad SPI (QIO 80MHz)",
             "psram": "8MB Octal SPI (OPI 80MHz)",
             "internal_sram_dram_bytes": 327680,
             "dram_used_bytes": elf_res.dram_used_bytes,
@@ -150,12 +190,46 @@ def build_knowledge_base():
         "hard_stops": [
             {"id": "HARD_STOP_1", "rule": "Never read GPIO1 or set FEATURE_BATTERY_MONITOR != 0 (no divider soldered, prevents bootloop)."},
             {"id": "HARD_STOP_2", "rule": "Never set FEATURE_AUDIO != 0 (no I2S DAC soldered, prevents DMA hang)."},
-            {"id": "HARD_STOP_3", "rule": "Never change Octal SPI Flash/PSRAM settings in Arduino CLI (requires OPI 80MHz)."},
+            {"id": "HARD_STOP_3", "rule": "Never set FlashMode to OPI (requires FlashMode=qio, PSRAM=opi) or touch PSRAM pins GPIO 33-37 / strapping pins GPIO 0, 3, 45, 46."},
         ],
         "hardware_pins": {
-            "display": {"tft_mosi": 11, "tft_sclk": 13, "tft_cs": 10, "tft_dc": 9, "tft_rst": 14, "tft_bl": 48, "bus": "Shared 80MHz FSPI"},
-            "sd_card": {"sd_mosi": 11, "sd_miso": 12, "sd_sclk": 13, "sd_cs": 13, "clock_hz": 25000000},
-            "buttons": {"up": 4, "down": 5, "left": 6, "right": 7, "a": 15, "b": 16, "start": 0, "select": 14, "mode": "INPUT_PULLUP (Active LOW)"},
+            "display": {
+                "tft_mosi": cfg.get("TFT_MOSI", 11),
+                "tft_sck": cfg.get("TFT_SCK", 12),
+                "tft_cs": cfg.get("TFT_CS", 10),
+                "tft_dc": cfg.get("TFT_DC", 8),
+                "tft_rst": cfg.get("TFT_RST", 9),
+                "bus": "Shared 80MHz FSPI",
+            },
+            "sd_card": {
+                "sd_mosi": cfg.get("TFT_MOSI", 11),
+                "sd_miso": cfg.get("SD_MISO", 15),
+                "sd_sck": cfg.get("TFT_SCK", 12),
+                "sd_cs": cfg.get("SD_CS", 13),
+                "clock_hz": 25000000,
+            },
+            "buttons": {
+                "btn_up": cfg.get("BTN_UP", 4),
+                "btn_down": cfg.get("BTN_DOWN", 5),
+                "btn_left": cfg.get("BTN_LEFT", 6),
+                "btn_right": cfg.get("BTN_RIGHT", 7),
+                "btn_a": cfg.get("BTN_A", 16),
+                "btn_b": cfg.get("BTN_B", 17),
+                "btn_start": cfg.get("BTN_START", 18),
+                "btn_select": cfg.get("BTN_SELECT", 21),
+                "mode": "INPUT_PULLUP (Active LOW)",
+            },
+            "dormant_reserved": {
+                "battery_adc_pin": cfg.get("BATTERY_ADC_PIN", 1),
+                "i2s_bclk": cfg.get("I2S_BCLK", 38),
+                "i2s_lrc": cfg.get("I2S_LRC", 39),
+                "i2s_din": cfg.get("I2S_DIN", 40),
+                "i2c_sda": cfg.get("I2C_SDA", 43),
+                "i2c_scl": cfg.get("I2C_SCL", 44),
+                "feature_sd_card": cfg.get("FEATURE_SD_CARD", 1),
+                "feature_battery_monitor": cfg.get("FEATURE_BATTERY_MONITOR", 0),
+                "feature_audio": cfg.get("FEATURE_AUDIO", 0),
+            },
         },
         "platforms_matrix": platform_matrix,
         "bus_physics_model": [
@@ -277,7 +351,7 @@ def build_knowledge_base():
     dt_path.write_text(json.dumps(decision_tree, indent=2), encoding="utf-8")
     print(f"  * Generated: {dt_path} ({len(decision_tree['tasks'])} intent pathways)")
 
-    # Synchronize AGENT_MANIFEST.json
+    # Synchronize AGENT_MANIFEST.json dynamically from vendor sources
     manifest_path = REPO_ROOT / "AGENT_MANIFEST.json"
     emulators_list = [
         {"name": "Game Boy DMG", "wrapper": "src/emulators/emu_peanut.cpp", "engine_status": "production", "extensions": [".gb"]},
@@ -285,15 +359,15 @@ def build_knowledge_base():
         {"name": "Nintendo Entertainment System", "wrapper": "src/emulators/emu_nes.cpp", "engine_status": "production", "extensions": [".nes"]},
         {"name": "Classic DOOM", "wrapper": "src/emulators/emu_doom.cpp", "engine_status": "production", "extensions": [".wad"]},
         {"name": "Sega Master System", "wrapper": "src/emulators/emu_sms.cpp", "engine_status": "production", "extensions": [".sms", ".gg"]},
-        {"name": "PC Engine", "wrapper": "src/emulators/emu_pce.cpp", "engine_status": "stub", "extensions": [".pce"]},
-        {"name": "Atari 2600", "wrapper": "src/emulators/emu_atari.cpp", "engine_status": "stub", "extensions": [".a26"]},
-        {"name": "PICO-8", "wrapper": "src/emulators/emu_pico.cpp", "engine_status": "stub", "extensions": [".p8"]},
-        {"name": "Sega Genesis", "wrapper": "src/emulators/emu_genesis.cpp", "engine_status": "stub", "extensions": [".gen", ".md", ".smd"]},
-        {"name": "Super Nintendo", "wrapper": "src/emulators/emu_snes.cpp", "engine_status": "stub", "extensions": [".sfc", ".smc"]},
-        {"name": "Bandai WonderSwan", "wrapper": "src/emulators/emu_wswan.cpp", "engine_status": "stub", "extensions": [".ws", ".wsc"]},
-        {"name": "Neo Geo Pocket", "wrapper": "src/emulators/emu_ngp.cpp", "engine_status": "stub", "extensions": [".ngp", ".ngc"]},
-        {"name": "Atari Lynx", "wrapper": "src/emulators/emu_lynx.cpp", "engine_status": "stub", "extensions": [".lnx"]},
-        {"name": "ColecoVision", "wrapper": "src/emulators/emu_colem.cpp", "engine_status": "stub", "extensions": [".col", ".sg"]},
+        {"name": "PC Engine", "wrapper": "src/emulators/emu_pce.cpp", "engine_status": detect_engine_status("src/vendor/pce/pce.c"), "extensions": [".pce"]},
+        {"name": "Atari 2600", "wrapper": "src/emulators/emu_atari.cpp", "engine_status": detect_engine_status("src/vendor/stella/atari.c"), "extensions": [".a26"]},
+        {"name": "PICO-8", "wrapper": "src/emulators/emu_pico.cpp", "engine_status": detect_engine_status("src/vendor/pico/pico.c"), "extensions": [".p8"]},
+        {"name": "Sega Genesis", "wrapper": "src/emulators/emu_genesis.cpp", "engine_status": detect_engine_status("src/vendor/genesis/genesis.c"), "extensions": [".gen", ".md", ".smd"]},
+        {"name": "Super Nintendo", "wrapper": "src/emulators/emu_snes.cpp", "engine_status": detect_engine_status("src/vendor/snes/snes.c"), "extensions": [".sfc", ".smc"]},
+        {"name": "Bandai WonderSwan", "wrapper": "src/emulators/emu_wswan.cpp", "engine_status": detect_engine_status("src/vendor/wswan/wswan.c"), "extensions": [".ws", ".wsc"]},
+        {"name": "Neo Geo Pocket", "wrapper": "src/emulators/emu_ngp.cpp", "engine_status": detect_engine_status("src/vendor/ngp/ngp.c"), "extensions": [".ngp", ".ngc"]},
+        {"name": "Atari Lynx", "wrapper": "src/emulators/emu_lynx.cpp", "engine_status": detect_engine_status("src/vendor/lynx/lynx.c"), "extensions": [".lnx"]},
+        {"name": "ColecoVision", "wrapper": "src/emulators/emu_colem.cpp", "engine_status": detect_engine_status("src/vendor/colem/colem.c"), "extensions": [".col", ".sg"]},
     ]
     manifest_data = {
         "manifest_version": "2.0.0",

@@ -35,9 +35,11 @@ class CppcheckRunner:
         if which_bin:
             return which_bin
         
-        # Check python scripts path
+        # Check python scripts path and standard Windows install locations dynamically
+        import sys
         candidates = [
-            Path(r"C:\Users\mahmo\AppData\Local\Programs\Python\Python310\Scripts\cppcheck.exe"),
+            Path(sys.executable).resolve().parent / "Scripts" / "cppcheck.exe",
+            Path.home() / "AppData" / "Local" / "Programs" / "Python" / "Python310" / "Scripts" / "cppcheck.exe",
             Path(r"C:\Program Files\Cppcheck\cppcheck.exe"),
         ]
         for c in candidates:

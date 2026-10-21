@@ -40,6 +40,11 @@ class FirmwareAstLinter:
         self.firmware_dir = firmware_dir
         self.repo_root = firmware_dir.parents[1] if firmware_dir.name == "BmoGameboy" else firmware_dir
 
+    EXCLUDED_DIRS = {
+        ".git", ".venv", "venv", "zig", "arduino-cli-bin", ".rom_cache",
+        "games", "roms", "resources", "__pycache__", "scratch", "build", "legacy_headers"
+    }
+
     def get_repo_line_stats(self) -> List[FileLineStats]:
         """Calculates precise line-by-line statistics across every single file in the repository."""
         stats: List[FileLineStats] = []
@@ -47,9 +52,9 @@ class FirmwareAstLinter:
         target_suffixes = {".c", ".cpp", ".h", ".hpp", ".ino", ".py", ".md", ".json", ".csv"}
         
         for path in sorted(self.repo_root.rglob("*")):
-            if not path.is_file():
+            if self.EXCLUDED_DIRS.intersection(path.parts):
                 continue
-            if ".git" in path.parts or ".rom_cache" in path.parts or "games" in path.parts or "__pycache__" in path.parts:
+            if not path.is_file():
                 continue
             suffix = path.suffix.lower()
             if suffix not in target_suffixes:
@@ -354,6 +359,26 @@ class FirmwareAstLinter:
                                 line_content=clean,
                                 message="Unaligned 16-bit pointer dereference in ROM memory path.",
                                 suggested_fix="Use explicit byte-wise little-endian reconstruction: `b0 | (b1 << 8)`.",
+                            )
+                        )
+
+        # Rule 9: Check for forbidden Octal PSRAM (GPIO 33-37) or Strapping (GPIO 0, 3, 45, 46) pin definitions in config.h
+        if rel_path_str.endswith("config.h"):
+            for idx, line in enumerate(lines, 1):
+                clean = line.strip()
+                m_pin = re.match(r"^#define\s+(BTN_[A-Z0-9_]+|TFT_[A-Z0-9_]+|SD_[A-Z0-9_]+)\s+(\d+)\b", clean)
+                if m_pin:
+                    pin_macro, pin_num = m_pin.group(1), int(m_pin.group(2))
+                    if pin_num in {0, 3, 33, 34, 35, 36, 37, 45, 46}:
+                        findings.append(
+                            LintFinding(
+                                rule_id="FORBIDDEN_STRAPPING_OR_PSRAM_GPIO",
+                                severity="CRITICAL",
+                                file_path=path,
+                                line_number=idx,
+                                line_content=clean,
+                                message=f"{pin_macro} assigned to reserved strapping/PSRAM GPIO {pin_num}.",
+                                suggested_fix="Assign to a safe GPIO per .agents/rules/01_hardware.md.",
                             )
                         )
 

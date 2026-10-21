@@ -15,7 +15,7 @@ import re
 import unittest
 from pathlib import Path
 
-WORKSPACE    = Path(r'E:\BMO Gameboy')
+WORKSPACE    = Path(__file__).resolve().parents[1]
 FIRMWARE_DIR = WORKSPACE / 'firmware' / 'BmoGameboy'
 GAMES_DIR    = WORKSPACE / 'games'
 
@@ -69,13 +69,13 @@ REQUIRED_STREAM_METHODS = [
 # Engines known to be production-quality (real emulation logic)
 PRODUCTION_ENGINES = {
     'emu_walnut', 'emu_peanut', 'emu_nes', 'emu_doom', 'emu_sms', 'emu_pce',
-    'emu_genesis',
+    'emu_genesis', 'emu_wswan',
 }
 
 # Engines that are architectural stubs (render blank screen only)
 STUB_ENGINES = {
     'emu_atari', 'emu_pico',
-    'emu_snes', 'emu_wswan',
+    'emu_snes',
     'emu_ngp', 'emu_lynx', 'emu_colem',
 }
 
@@ -194,7 +194,6 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
             'emu_atari':   ('stella',  'atari.c'),
             'emu_pico':    ('pico',    'pico.c'),
             'emu_snes':    ('snes',    'snes.c'),
-            'emu_wswan':   ('wswan',   'wswan.c'),
             'emu_ngp':     ('ngp',     'ngp.c'),
             'emu_lynx':    ('lynx',    'lynx.c'),
             'emu_colem':   ('colem',   'colem.c'),

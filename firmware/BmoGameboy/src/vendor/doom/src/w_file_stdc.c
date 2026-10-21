@@ -29,13 +29,24 @@ typedef struct
 } stdc_wad_file_t;
 
 extern wad_file_class_t stdc_wad_file;
+#if defined(ESP32) || defined(ARDUINO)
+extern void Doom_SpiLock(void);
+extern void Doom_SpiUnlock(void);
+#define DOOM_SPI_LOCK()   Doom_SpiLock()
+#define DOOM_SPI_UNLOCK() Doom_SpiUnlock()
+#else
+#define DOOM_SPI_LOCK()   ((void)0)
+#define DOOM_SPI_UNLOCK() ((void)0)
+#endif
 
 static wad_file_t *W_StdC_OpenFile(char *path)
 {
     stdc_wad_file_t *result;
     FILE *fstream;
 
+    DOOM_SPI_LOCK();
     fstream = fopen(path, "rb");
+    DOOM_SPI_UNLOCK();
 
     if (fstream == NULL)
     {
@@ -47,7 +58,9 @@ static wad_file_t *W_StdC_OpenFile(char *path)
     result = Z_Malloc(sizeof(stdc_wad_file_t), PU_STATIC, 0);
     result->wad.file_class = &stdc_wad_file;
     result->wad.mapped = NULL;
+    DOOM_SPI_LOCK();
     result->wad.length = M_FileLength(fstream);
+    DOOM_SPI_UNLOCK();
     result->fstream = fstream;
 
     return &result->wad;
@@ -59,7 +72,9 @@ static void W_StdC_CloseFile(wad_file_t *wad)
 
     stdc_wad = (stdc_wad_file_t *) wad;
 
+    DOOM_SPI_LOCK();
     fclose(stdc_wad->fstream);
+    DOOM_SPI_UNLOCK();
     Z_Free(stdc_wad);
 }
 
@@ -76,11 +91,13 @@ size_t W_StdC_Read(wad_file_t *wad, unsigned int offset,
 
     // Jump to the specified position in the file.
 
+    DOOM_SPI_LOCK();
     fseek(stdc_wad->fstream, offset, SEEK_SET);
 
     // Read into the buffer.
 
     result = fread(buffer, 1, buffer_len, stdc_wad->fstream);
+    DOOM_SPI_UNLOCK();
 
     return result;
 }

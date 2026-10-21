@@ -31,9 +31,10 @@ bool BoxArt::init() {
 }
 
 void BoxArt::unload() {
+  const bool hadArt = s_hasArt;
   s_cachedRomName[0] = '\0';
   s_hasArt = false;
-  if (s_boxArtBuf) {
+  if (hadArt && s_boxArtBuf) {
     memset(s_boxArtBuf, 0, BUFFER_SIZE);
   }
 }

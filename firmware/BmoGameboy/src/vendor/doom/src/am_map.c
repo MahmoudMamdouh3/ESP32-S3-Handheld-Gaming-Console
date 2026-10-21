@@ -358,8 +358,11 @@ void AM_findMinMaxBoundaries(void)
     fixed_t a;
     fixed_t b;
 
-    min_x = min_y =  INT_MAX;
-    max_x = max_y = -INT_MAX;
+    if (numvertexes <= 0) { min_x = min_y = max_x = max_y = 0; max_w = min_w = max_h = min_h = 2 * PLAYERRADIUS; return; }
+    min_x = max_x = vertexes[0].x;
+    min_y = max_y = vertexes[0].y;
+    if (0) min_x = min_y =  INT_MAX;
+    if (0) max_x = max_y = -INT_MAX;
   
     for (i=0;i<numvertexes;i++)
     {
