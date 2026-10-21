@@ -1,195 +1,125 @@
 # Codebase Map — Ground Truth for Architecture
-Purpose: an agent starting a new session should be able to read this ONE
-file and understand the whole system before touching anything. Updated
-whenever structure changes.
+Purpose: An agent starting a session can read this file to understand the directory layout, runtime state machine, 14-core emulator routing, flash partition table, and SPI/PSRAM architecture before touching code.
 
-Last updated: 2026-10-09 (Antigravity)
+Last updated: 2026-10-21
 
 ---
 
 ## Directory tree (verified, current)
-```
+```text
 repo-root/
-├── AGENTS.md                      <- entry point, points here (Ruleset v4)
-├── README.md                      <- user-facing project summary
-├── AGENT_MANIFEST.json            <- machine-readable hardware & build manifest
-├── IMPLEMENTATION_PLAN.md         <- historical plan, status=COMPLETE, safe to ignore
-├── partitions.csv                 <- WARNING: see Flash Partitions below
-├── .agents/rules/                 <- agent ruleset (34 rules + CONTEXT_INDEX.json)
+├── AGENTS.md                      <- Entry point for AI coding agents (Ruleset v8)
+├── README.md                      <- Project overview, pinout, and build instructions
+├── CHANGELOG.md                   <- Chronological version history
+├── AGENT_MANIFEST.json            <- Auto-generated hardware & 14-core build manifest
+├── AGENT_DECISION_TREE.json       <- Auto-generated task intent router
+├── AGENT_KNOWLEDGE_GRAPH.json     <- Auto-generated AST, symbol, and pin graph
+├── .agents/rules/                 <- Modular agent ruleset + CONTEXT_INDEX.json
 ├── docs/
-│   ├── software-design-document.md  <- Living architectural specification (v3.0 Ground Truth)
-│   └── hardware-notes.md
+│   ├── software-design-document.md <- Architectural specification
+│   ├── performance_report.md       <- Guardian performance & memory report
+│   └── hardware-notes.md           <- Board wiring & electrical notes
 ├── firmware/BmoGameboy/
-│   ├── BmoGameboy.ino             <- ONLY setup(), loop(), state machine
-│   ├── partitions.csv             <- custom partition table (8MB app0)
+│   ├── BmoGameboy.ino             <- Main state machine, loop(), pause menu, frame pacing
+│   ├── partitions.csv             <- Custom 16MB flash partition table (8MB app0)
 │   └── src/
-│       ├── core/                  <- hardware drivers, always compiled
-│       │   ├── config.h           <- single source of truth for all pins + FEATURE flags
-│       │   ├── display_emu.cpp/h  <- ST7789 SPI driver + all render APIs
-│       │   ├── buttons.cpp/h      <- GPIO polling, joypad bitmask
-│       │   ├── sd_card.cpp/h      <- SD + baked ROM registration
-│       │   ├── bmo_face.cpp/h     <- procedural SDF mascot renderer
+│       ├── core/                  <- Hardware drivers & system services
+│       │   ├── config.h           <- Single source of truth for all GPIO pins + FEATURE flags
+│       │   ├── display_emu.cpp/h  <- ST7789 80MHz SPI driver, Core 0 worker, bezel & UI renderers
+│       │   ├── buttons.cpp/h      <- Atomic GPIO_IN_REG polling, A/B remap, auto-fire turbo
+│       │   ├── sd_card.cpp/h      <- Recursive SD scanner, .bmo_index cache, favorites, history
+│       │   ├── bmo_face.cpp/h     <- Procedural 2D SDF mascot renderer (320x240 PSRAM)
 │       │   ├── spi_arbiter.cpp/h  <- FreeRTOS FSPI bus mutex arbiter
-│       │   ├── save_manager.cpp/h <- Multi-slot save states & battery RAM
-│       │   ├── box_art.cpp/h      <- 64x64 raw/BMP cover art streaming engine
-│       │   ├── rom_index.h        <- Binary ROM index cache (.bmo_index)
+│       │   ├── save_manager.cpp/h <- 5-slot save states, .sav battery RAM, 24-bit .bmp screenshots
+│       │   ├── box_art.cpp/h      <- 64x64 .raw/.bmp cover art loader in PSRAM
+│       │   ├── rom_index.h        <- Binary ROM index cache (.bmo_index) structures
 │       │   ├── battery.cpp/h      <- DORMANT (FEATURE_BATTERY_MONITOR=0)
 │       │   ├── audio_i2s.cpp/h    <- DORMANT (FEATURE_AUDIO=0)
-│       │   └── fram_save.cpp/h    <- DORMANT (not wired, no FEATURE flag yet)
-│       ├── emulators/             <- thin glue wrappers, one per console
-│       │   ├── emu_peanut.cpp/h   <- GB (.gb)   -> peanut_gb engine
-│       │   ├── emu_walnut.cpp/h   <- GBC (.gbc) -> walnut_cgb engine
-│       │   ├── emu_nes.cpp/h      <- NES (.nes)  -> agnes engine
-│       │   └── emu_doom.cpp/h     <- DOOM (.wad) -> doomgeneric engine
-│       ├── engine/
-│       │   └── walnut_cgb/
-│       │       └── walnut_cgb.h   <- GBC engine (9937 lines, header-only)
-│       ├── vendor/
-│       │   ├── peanut_gb/         <- peanut_gb.h + peanut_gb_config.h
-│       │   ├── agnes/             <- agnes.h + agnes.c (NES)
-│       │   └── doom/              <- doomgeneric (DOOM)
-│       ├── assets/
-│       │   ├── bmo_assets.h       <- extern declarations for face bitmaps
-│       │   ├── rom_data.h         <- legacy single-ROM header (tobu_tobu_girl), UNUSED in live build
-│       │   └── roms/
-│       │       ├── mario_deluxe.h   <- 1MB GBC ROM baked as C array
-│       │       ├── zelda_ages.h     <- 1MB GBC ROM baked as C array
-│       │       ├── aladdin.h        <- 1MB GBC ROM baked as C array
-│       │       └── lego_racers.h    <- 1MB GBC ROM baked as C array
-│       └── tests/
-│           └── unit_tests.cpp     <- on-device test suite (requires ENABLE_UNIT_TESTS)
+│       │   └── fram_save.cpp/h    <- DORMANT (optional I2C FRAM)
+│       ├── emulators/             <- 14 thin C++ glue wrappers (one per console)
+│       │   ├── emu_walnut.cpp/h   <- Game Boy Color (.gbc)
+│       │   ├── emu_peanut.cpp/h   <- Game Boy DMG (.gb)
+│       │   ├── emu_nes.cpp/h      <- NES (.nes)
+│       │   ├── emu_doom.cpp/h     <- Classic DOOM (.wad)
+│       │   ├── emu_sms.cpp/h      <- Sega Master System / Game Gear (.sms, .gg)
+│       │   ├── emu_pce.cpp/h      <- PC Engine / TurboGrafx-16 (.pce)
+│       │   ├── emu_atari.cpp/h    <- Atari 2600 (.a26)
+│       │   ├── emu_pico.cpp/h     <- PICO-8 (.p8)
+│       │   ├── emu_genesis.cpp/h  <- Sega Genesis / Mega Drive (.gen, .md, .smd)
+│       │   ├── emu_snes.cpp/h     <- Super Nintendo (.sfc, .smc)
+│       │   ├── emu_wswan.cpp/h    <- Bandai WonderSwan / Color (.ws, .wsc)
+│       │   ├── emu_ngp.cpp/h      <- Neo Geo Pocket / Color (.ngp, .ngc)
+│       │   ├── emu_lynx.cpp/h     <- Atari Lynx (.lnx)
+│       │   └── emu_colem.cpp/h    <- ColecoVision (.col, .sg)
+│       ├── engine/walnut_cgb/     <- Header-only GBC engine (walnut_cgb.h)
+│       ├── vendor/                <- 13 C emulator engines (peanut_gb, agnes, doom, smsplus, pce, stella, pico, genesis, snes, wswan, ngp, lynx, colem)
+│       ├── assets/                <- Baked flash ROM C headers (mario_deluxe.h, zelda_ages.h, aladdin.h, lego_racers.h, virtual_bmo.h)
+│       └── tests/unit_tests.cpp   <- On-device test suite
 ├── tools/
-│   ├── host_test.cpp              <- desktop CPU-correctness harness (Zig compiler)
-│   └── convert.py                 <- ROM-to-C-header converter
-└── scripts/
-    ├── process_games.py           <- ROM validation + C header generation
-    ├── validate_repo.py           <- Python syntax check + ROM integrity
-    └── (others)                   <- benchmark, color calc, fetch covers
+│   ├── host_cores_runner.c        <- Native x64 10-core 50-frame execution & FNV-1a harness
+│   ├── host_test.cpp              <- Native x64 Walnut-CGB Blargg CPU test harness
+│   ├── telemetry_plotter.py       <- Serial frame-time & jitter analyzer
+│   ├── bmo_simulator/             <- Browser 320x240 simulator + WebSerial SD manager
+│   └── guardian/                  <- AI Guardian CLI (audit, verify, doctor, prompt-pack, diff-audit, route, lookup)
+├── scripts/
+│   ├── validate_repo.py           <- 8-phase CI build & doc-truth validator
+│   ├── generate_ai_knowledge_base.py <- Knowledge graph & decision tree compiler
+│   ├── fetch_covers.py            <- 64x64 BGR565 .raw/.bmp cover generator
+│   ├── convert_roms.py            <- ROM binary to .rodata C header converter
+│   └── test_runner.py             <- Baked ROM header checksum verifier
+└── tests/                         <- Python & native x64 C unit test suite (120+ tests)
 ```
 
 ---
 
-## The state machine (BmoGameboy.ino)
-Three states. THIS is the entire runtime control flow:
-```
-STATE_CONSOLE_MENU  -> user picks console (GB/GBC/NES/DOOM)
-      |
-      | A button
-      v
-STATE_GAME_MENU     -> user picks ROM file
-      |
-      | A button
-      v
-STATE_EMULATOR      -> one emulator runs, SELECT+UP exits back to CONSOLE_MENU
-```
-**KEY FACT:** `BmoFace::update()` and `Battery::update()` run every loop() tick
-regardless of state. Emulator cores do NOT call them — only menu states do.
+## Runtime State Machine (`BmoGameboy.ino`)
+Six states govern runtime control flow:
+- `STATE_CONSOLE_MENU` — Console carousel selector (14 systems + Konami Code easter egg). `A` enters `STATE_GAME_MENU`; `SELECT` enters `STATE_CONSOLE_SPECS`; `UP` enters `STATE_IDLE_MASCOT`.
+- `STATE_CONSOLE_SPECS` — Displays hardware history & specs for the selected console.
+- `STATE_GAME_MENU` — ROM browser with 64×64 box art, recursive folders, A–Z jump, and favorites (`SELECT`). `A` launches game into `STATE_EMULATOR`.
+- `STATE_EMULATOR` — Active emulator frame loop (`runFrame()`). Holding `START + SELECT` opens `STATE_PAUSE_MENU`.
+- `STATE_PAUSE_MENU` — In-game overlay: Resume, Save State (Slots 0–4), Load State (Slots 0–4), Exit to Menu (auto-saves `.sav`, calls `teardownCurrentEmulator()`, frees ROM), plus `LEFT` (A/B swap), `RIGHT` (1:1 console bezel toggle), and `SELECT` (`.bmp` screenshot capture).
+- `STATE_IDLE_MASCOT` — Interactive 320×240 BMO companion mode (expressions, dialogue bubbles, dance mode).
 
 ---
 
-## Emulator routing (sd_card.h RomType enum -> BmoGameboy.ino)
-| Extension | RomType | selectedEmulatorIndex | Engine | destroy() called on exit? |
+## 14-Core Emulator Routing (`sd_card.h` -> `BmoGameboy.ino`)
+| Extension(s) | `RomType` | `selectedEmulatorIndex` | Wrapper | Native Res |
 |---|---|---|---|---|
-| `.gb`  | ROM_GB  | 1 | PeanutEmu (peanut_gb.h) | YES (wired in BmoGameboy.ino) |
-| `.gbc` | ROM_GBC | 0 | WalnutEmu (walnut_cgb.h) | YES (wired in BmoGameboy.ino) |
-| `.nes` | ROM_NES | 2 | NesEmu (agnes) | YES |
-| `.wad` | ROM_WAD | 3 | DoomEmu (doomgeneric) | YES (no-op) |
-
-DOOM does NOT load ROM into PSRAM — it reads WAD directly from SD via fopen().
-All others load full ROM into PSRAM via `SDCard::loadRom()`.
-
----
-
-## Baked ROMs (always available, no SD card needed)
-Registered in `SDCard::begin()` and `SDCard::loadRom()` in sd_card.cpp.
-| Name in romList | Header | Size | Registered? |
-|---|---|---|---|
-| Super Mario Bros Deluxe (Baked).gbc | mario_deluxe.h | 1MB | YES |
-| Legend of Zelda Ages (Baked).gbc | zelda_ages.h | 1MB | YES |
-| Aladdin (Baked).gbc | aladdin.h | 1MB | YES |
-| Lego Racers (Baked).gbc | lego_racers.h | 1MB | YES |
-
-Note: Header files are ~6MB of formatted C text on disk, but each compiles
-to exactly 1,048,576 bytes (1MB) in flash .rodata. All 4 baked ROMs consume
-~4.98MB total firmware binary space, well within the 8MB app0 partition limit.
+| `.gbc` | `ROM_GBC` | `0` | `WalnutEmu` (`emu_walnut`) | 160×144 (scaled 240×216) |
+| `.gb` | `ROM_GB` | `1` | `PeanutEmu` (`emu_peanut`) | 160×144 (scaled 240×216) |
+| `.nes` | `ROM_NES` | `2` | `NesEmu` (`emu_nes`) | 256×240 |
+| `.wad` | `ROM_WAD` | `3` | `DoomEmu` (`emu_doom`) | 320×200 |
+| `.sms`, `.gg` | `ROM_SMS`, `ROM_GG` | `4`, `5` | `SmsEmu` (`emu_sms`) | 256×192 / 160×144 |
+| `.pce` | `ROM_PCE` | `6` | `PceEmu` (`emu_pce`) | 256×240 |
+| `.a26` | `ROM_ATARI` | `7` | `AtariEmu` (`emu_atari`) | 160×192 |
+| `.p8` | `ROM_PICO8` | `8` | `PicoEmu` (`emu_pico`) | 128×128 |
+| `.gen`, `.md`, `.smd` | `ROM_GENESIS` | `9` | `GenesisEmu` (`emu_genesis`) | 320×224 |
+| `.sfc`, `.smc` | `ROM_SNES` | `10` | `SNESEmu` (`emu_snes`) | 256×224 |
+| `.ws`, `.wsc` | `ROM_WSWAN` | `11` | `WSwanEmu` (`emu_wswan`) | 224×144 |
+| `.ngp`, `.ngc` | `ROM_NGP` | `12` | `NGPEmu` (`emu_ngp`) | 160×152 |
+| `.lnx` | `ROM_LYNX` | `13` | `LynxEmu` (`emu_lynx`) | 160×102 |
+| `.col`, `.sg` | `ROM_COLEM` | `14` | `ColemEmu` (`emu_colem`) | 256×192 |
 
 ---
 
-## Flash partition layout (partitions.csv)
+## Flash Partition Layout (`partitions.csv`)
 | Name | Type | Offset | Size | Purpose |
 |---|---|---|---|---|
-| nvs | data/nvs | 0x9000 | 20KB | NVS storage |
-| otadata | data/ota | 0xE000 | 8KB | OTA metadata |
-| app0 | app/ota_0 | 0x10000 | **8MB** | Firmware + baked ROMs |
-| ffat | data/fat | 0x810000 | ~7.9MB | FatFS (unused currently) |
-
-The 8MB app0 is NON-STANDARD. The standard Arduino ESP32 partition schemes
-use 1.3MB or 1.9MB for app. This custom partition is required because the
-baked ROM headers (mario, zelda) alone consume ~10MB of raw C source which
-compiles down to ~2MB of .rodata in flash. If the custom partitions.csv is
-lost or overwritten, the firmware will not fit and will fail to flash.
+| `nvs` | `data/nvs` | `0x9000` | 20KB | NVS storage |
+| `otadata` | `data/ota` | `0xE000` | 8KB | OTA metadata |
+| `app0` | `app/ota_0` | `0x10000` | **8MB** | Firmware + 5 baked ROMs (`5.69 MB` used, `33.9%` of 16MB flash) |
+| `ffat` | `data/fat` | `0x810000` | ~7.9MB | FatFS partition |
 
 ---
 
-## SPI bus sharing (critical — do not add new SPI devices without reading this)
-The TFT display and SD card SHARE the SPI bus:
-- SCK: GPIO12, MOSI: GPIO11 (shared)
-- TFT CS: GPIO10, SD CS: GPIO13, MISO: GPIO15 (SD only)
-- Bus initialized once in setup() via `SPI.begin(TFT_SCK, SD_MISO, TFT_MOSI, -1)`
-- SD card uses a slower 4MHz init transaction; display runs at 80MHz during frames
-- startFrame()/endFrame() hold the SPI bus open for an entire 144-scanline frame
-  -- NO SD card reads can happen during an active frame render
-- DOOM is the only engine that calls fread() during gameplay; it holds the SPI bus
-  between DG_DrawFrame() calls; this is why DOOM latency spikes appear in the log
+## SPI Bus Sharing & Display Format
+- Shared FSPI bus: `TFT_SCK` (`12`), `TFT_MOSI` (`11`), `TFT_CS` (`10`), `TFT_DC` (`8`), `TFT_RST` (`9`), `SD_CS` (`13`), `SD_MISO` (`15`).
+- All SPI transactions on Core 0 (`vDisplayTask`) and Core 1 (`SDCard`, `SaveManager`, `BoxArt`) are serialized via `SpiArbiter::lock()`.
+- Display wire pixel format is **BGR565 byte-swapped** (`swapBytes()`).
 
 ---
 
-## Display coordinate system
-- Physical display: 320px wide × 240px tall (landscape, rotation=3)
-- Game Boy viewport: 240×216, centered at OFFSET_X=40, OFFSET_Y=12
-- NES viewport: 256×240, centered at x=32 (full height)
-- DOOM viewport: 320×200, y-offset=20 (20px letterbox top/bottom)
-- Full-screen blit (BMO face, menus): 0,0 to 320,240
-- Pixel format ON THE WIRE: BGR565 byte-swapped (big-endian on wire)
-  -- `SPI.writeBytes()` sends LSB first; ST7789 expects MSB first per byte
-  -- All emulator palettes must be pre-swapped; use the swapBytes() helper
-
----
-
-## Buttons joypad bitmask (gb_joypad_state)
-Active-low: 0=pressed, 1=released (same as Game Boy hardware).
-| Bit | Button | Config pin |
-|---|---|---|
-| 0 | A | GPIO16 |
-| 1 | B | GPIO17 |
-| 2 | SELECT | GPIO21 |
-| 3 | START | GPIO18 |
-| 4 | RIGHT | GPIO7 |
-| 5 | LEFT | GPIO6 |
-| 6 | UP | GPIO4 |
-| 7 | DOWN | GPIO5 |
-
-Buttons::update() reads ALL button GPIO with a single REG_READ(GPIO_IN_REG)
-call (all button pins are < GPIO32). Do not add buttons on GPIO >= 32 without
-changing the read logic.
-
----
-
-## PSRAM allocation map (current, approximate worst case)
-| Allocator | Size | Notes |
-|---|---|---|
-| WalnutEmu cart_ram | 128KB | lazy-allocated on first begin(), freed on destroy() |
-| PeanutEmu cart_ram | 128KB | same pattern |
-| DisplayEmu menuCanvas | 320×240×2 = 150KB | freed on cleanupMenuUI() |
-| SDCard ROM buffer | up to 4MB | freed on SDCard::freeRom() |
-| DOOM heap | large | internally managed by doomgeneric |
-| Total worst case | ~4.5MB+ | 8MB ceiling; fragmentation possible |
-
----
-
-## Known dormant/aspirational features (do NOT enable without physical hardware)
-| Feature | Flag | Why dormant |
-|---|---|---|
-| Battery monitor | FEATURE_BATTERY_MONITOR=0 | No voltage divider soldered |
-| I2S audio | FEATURE_AUDIO=0 | No MAX98357A DAC wired |
-| FRAM save | (no flag yet) | No I2C FRAM wired |
+## Buttons Joypad Bitmask (`Buttons::gb_joypad_state`)
+Active-low (`0` = pressed, `1` = released), sampled atomically once per frame via `REG_READ(GPIO_IN_REG)`:
+- Bit 0: `BTN_A` (`16`), Bit 1: `BTN_B` (`17`), Bit 2: `BTN_SELECT` (`21`), Bit 3: `BTN_START` (`18`), Bit 4: `BTN_RIGHT` (`7`), Bit 5: `BTN_LEFT` (`6`), Bit 6: `BTN_UP` (`4`), Bit 7: `BTN_DOWN` (`5`).

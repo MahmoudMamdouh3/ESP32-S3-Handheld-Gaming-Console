@@ -1,61 +1,55 @@
 # 31. Quick-Start Primer (Zero-Context Agent On-Ramp)
-Purpose: Any AI agent or developer starting a session with zero prior memory can read this ONE page in 90 seconds and safely navigate the repository without breaking hardware or hallucinating APIs.
+Purpose: Any AI agent or developer starting a session with zero prior memory can read this single page in 90 seconds and safely navigate the repository without breaking hardware or hallucinating APIs.
 
 ---
 
 ## 1. What Is This Repository? (3 Core Facts)
-1. **Target Hardware:** ESP32-S3-N16R8 (16MB Flash, 8MB Octal PSRAM) running on a permanent perfboard.
-2. **Current Physical State:** USB-C powered, ST7789 240x320 SPI display, 8 GPIO tactile buttons, MicroSD card. **No battery divider, no I2S audio DAC physically soldered.**
-3. **Firmware Purpose:** Multi-console retro handheld (Game Boy, GBC, NES, DOOM) with a procedural 2D SDF animated mascot face ("BMO").
+1. **Target Hardware:** ESP32-S3-N16R8 (16MB Quad SPI Flash, 8MB Octal SPI PSRAM) soldered on a permanent perfboard.
+2. **Current Physical State:** USB-C powered, ST7789 320×240 landscape SPI display, 8 GPIO tactile buttons, MicroSD card. **No battery divider, no I2S audio DAC physically soldered.**
+3. **Firmware Purpose:** 14-core retro gaming handheld (GB, GBC, NES, SMS/GG, Genesis, SNES, PCE, Atari 2600, Lynx, WonderSwan, NGP, ColecoVision, PICO-8, DOOM) + 320×240 procedural SDF BMO mascot companion.
 
 ---
 
 ## 2. The 3 Absolute Hard Stops (Never Violate)
 1. **NEVER read GPIO1 or enable `FEATURE_BATTERY_MONITOR` (must stay `0`).** Floating ADC on GPIO1 causes bootloops.
 2. **NEVER enable `FEATURE_AUDIO` (must stay `0`).** No physical I2S DAC is wired.
-3. **NEVER set Flash Mode to OPI in Arduino IDE (requires `Flash Mode: QIO 80MHz` + `PSRAM: OPI PSRAM`).** OPI Flash mode bricks boot on this Quad-Flash module.
+3. **NEVER set Flash Mode to OPI (requires `FlashMode=qio,PSRAM=opi`).** OPI Flash mode bricks boot on this Quad-Flash module. Never assign peripherals to strapping pins (`0, 3, 45, 46`) or Octal PSRAM pins (`33–37`).
 
 ---
 
-## 3. Architecture in 30 Seconds
+## 3. Instant AI Context Harness (Run Before Editing)
+Instead of reading dozens of files manually, generate a self-contained context packet for your exact task:
+```powershell
+# 1. Generate a complete task context card (target files, live C++ signatures, pins, guardrails)
+python -m tools.guardian prompt-pack "<describe your task>"
+
+# 2. Look up any function, struct, or hardware pin
+python -m tools.guardian lookup "<symbol_or_pin>"
+
+# 3. Audit your uncommitted diff before committing
+python -m tools.guardian diff-audit
+```
+
+---
+
+## 4. Architecture in 30 Seconds
 - **Main State Machine ([`BmoGameboy.ino`](file:///e:/BMO%20Gameboy/firmware/BmoGameboy/BmoGameboy.ino)):**
-  - `STATE_CONSOLE_MENU` -> `STATE_GAME_MENU` -> `STATE_EMULATOR`.
-  - In-game quick pause menu (`STATE_PAUSE_MENU`) on `SELECT + START` with 5-slot save states (`SaveManager`).
-  - Exiting emulator (`SELECT + UP`) auto-saves to Slot 1, invokes `destroy()` on active core, and frees PSRAM.
+  - `STATE_CONSOLE_MENU` -> `STATE_GAME_MENU` -> `STATE_EMULATOR` (plus `STATE_CONSOLE_SPECS`, `STATE_PAUSE_MENU`, `STATE_IDLE_MASCOT`).
+  - Holding `START + SELECT` in-game opens `STATE_PAUSE_MENU` (Resume, Save/Load State Slots 0–4, `LEFT` = A/B swap, `RIGHT` = 1:1 console bezel, `SELECT` = 24-bit `.bmp` screenshot, Exit = auto-save `.sav` + `teardownCurrentEmulator()` + `SDCard::freeRom()`).
 - **Display Streaming & Thread Safety:**
-  - Display is in Landscape (`320x240`). Game Boy is centered (`240x216`, `OFFSET_X=40, OFFSET_Y=12`).
-  - Wire format: **BGR565 byte-swapped**.
-  - Non-blocking Core 0 dedicated FreeRTOS worker (`vDisplayTask`) eliminates 15.36ms SPI blocking stalls.
-  - `SpiArbiter` mutex protects shared FSPI bus across display streaming and MicroSD card operations.
+  - Landscape `320×240`, wire format **BGR565 byte-swapped** (`swapBytes()`).
+  - Core 0 runs dedicated FreeRTOS display worker (`vDisplayTask`); Core 1 runs emulation and UI.
+  - `SpiArbiter::lock()` protects the shared FSPI bus (`TFT_SCK=12`, `TFT_MOSI=11`) across display and MicroSD I/O.
 - **Storage, Cache & Box Art:**
-  - Fast binary index cache (`/.bmo_index`) reduces SD enumeration to < 15ms.
-  - `BoxArt` engine streams 64x64 raw/BMP cover art into PSRAM with zero DRAM consumption.
+  - Recursive SD folder scan (depth 3) + binary cache (`/.bmo_index`), favorites (`/.favorites.txt`), and history (`/history.txt`).
+  - `BoxArt` streams 64×64 `.raw`/`.bmp` cover art into PSRAM (8,192 B, 0 internal DRAM).
 - **Button Polling:**
-  - `Buttons::update()` called once per frame. Maintains `Buttons::gb_joypad_state` (0=pressed). Emulators read bitmask branchlessly.
-- **Flash & Partition Table:**
-  - Custom `partitions.csv` allocates an **8MB `app0`** partition for firmware + baked ROMs (`mario_deluxe.h`, `zelda_ages.h`).
+  - `Buttons::update()` samples all 8 active-low buttons atomically via `REG_READ(GPIO_IN_REG)` (`BTN_UP=4, BTN_DOWN=5, BTN_LEFT=6, BTN_RIGHT=7, BTN_A=16, BTN_B=17, BTN_START=18, BTN_SELECT=21`).
 
 ---
 
-## 4. Where Is Code Located?
-| Path | Contents |
-| :--- | :--- |
-| `firmware/BmoGameboy/BmoGameboy.ino` | `setup()`, `loop()`, state machine dispatch, frame pacing |
-| `firmware/BmoGameboy/src/core/` | Hardware drivers & storage (`config.h`, `display_emu`, `buttons`, `sd_card`, `spi_arbiter`, `save_manager`, `box_art`, `rom_index`, `bmo_face`, dormant `battery`/`audio_i2s`) |
-| `firmware/BmoGameboy/src/emulators/` | Thin C++ glue wrappers (`emu_peanut`, `emu_walnut`, `emu_nes`, `emu_doom`) |
-| `firmware/BmoGameboy/src/engine/` | Walnut GBC emulator engine (`walnut_cgb.h`) |
-| `firmware/BmoGameboy/src/vendor/` | Pristine vendor engines (`peanut_gb`, `agnes`, `doom`) |
-| `firmware/BmoGameboy/src/assets/roms/` | Baked flash ROM C headers |
-| `tools/host_test.cpp` | Host desktop CPU verification harness (Zig compiler) |
-| `.agents/rules/` | Agent governance rules (symbol reference, hardware pin map, incident logs) |
-
----
-
-## 5. Task Decision Table: "I Want To Do X → Read File Y First"
-> [!TIP]
-> **Instant Zero-Shot CLI Router:** Run `python -m tools.guardian route "<your task>"` or `python -m tools.guardian lookup "<symbol>"` for instantaneous directions without searching!
-
-| If your task touches... | You MUST read this rule file first: |
+## 5. Task Decision Table: "I Want To Do X -> Read File Y First"
+| If your task touches... | Read this rule file first: |
 | :--- | :--- |
 | Any pin, GPIO, or hardware component | `01_hardware.md` & `src/core/config.h` |
 | Display rendering, colors, scaling, or SPI | `28_display_and_spi_contract.md` & `15_performance_budgets.md` |
@@ -64,28 +58,23 @@ Purpose: Any AI agent or developer starting a session with zero prior memory can
 | Citing any function or variable name | `10_symbol_reference.md` or `python -m tools.guardian lookup "<name>"` |
 | Performance benchmarks or profiling | `39_performance_and_benchmark_framework.md` & `tools/guardian/` |
 | Save states, SD storage, or cover art | `19_security_and_data_integrity.md`, `src/core/save_manager.h`, `src/core/box_art.h`, `src/core/rom_index.h` |
-| AI Knowledge base & indexing | `40_ai_knowledge_graph_and_indexing_protocol.md` |
-| AI agent environment, Guardian, or developer-utility improvements | `04_known_issues.md`, `33_agent_handoff_and_optimization_cycle.md`, `40_ai_knowledge_graph_and_indexing_protocol.md`, `42_quality_of_life_and_roadmap_ledger.md` |
-| Modifying vendor `#define` flags | `24_vendor_flag_safety.md` |
-| AI guardrails, anti-hallucination, invariants | `34_ai_agent_sandbox_and_guardrails.md` |
-| Ending session / logging handoffs | `33_agent_handoff_and_optimization_cycle.md` & `04_known_issues.md` |
-| Writing commit messages or status reports | `05_git_workflow.md` & `06_verification_standards.md` |
-| Investigating an unexpected bug | `04_known_issues.md` & `30_common_agent_mistakes.md` |
+| AI Knowledge base, rules, or Guardian CLI | `40_ai_knowledge_graph_and_indexing_protocol.md` & `42_quality_of_life_and_roadmap_ledger.md` |
+| Ending session / committing & pushing | `05_git_workflow.md`, `33_agent_handoff_and_optimization_cycle.md`, & `04_known_issues.md` |
 
 ---
 
-## 6. How To Build & Hand Off Cleanly
-1. **Run AI Guardian CI Validation:**
+## 6. How To Verify, Commit & Hand Off Cleanly
+1. **Fast Verification Gate (< 15s):**
+   ```powershell
+   python -m tools.guardian verify
+   python -m tools.guardian diff-audit
+   ```
+2. **Full 8-Phase CI + ESP32-S3 Binary Compile Gate:**
    ```powershell
    python scripts/validate_repo.py
-   python -m unittest discover tests
    ```
-2. **Verified Firmware Build Command:**
+3. **Update Logs:** Add a concise dated entry in `.agents/rules/04_known_issues.md` and `CHANGELOG.md`.
+4. **Commit with Mandatory Two-Part Message (`-m "subject" -m "bullet body"`):**
    ```powershell
-   .\arduino-cli.exe compile --fqbn "esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi" firmware/BmoGameboy
+   git commit -m "type(scope): concise summary" -m "- Detailed bullet 1`n- Detailed bullet 2`n- Verified: validate_repo.py PASS"
    ```
-3. Run compilation / tests before claiming completion.
-4. Update `04_known_issues.md` and `CHANGELOG.md` with a one-line dated entry.
-5. Use the mandatory two-header final report format:
-   - `## Verified by me this session`
-   - `## Waiting on you`

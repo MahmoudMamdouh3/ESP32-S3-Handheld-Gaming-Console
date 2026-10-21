@@ -1,67 +1,35 @@
 # Git & Commit Discipline
 
 ## Commit granularity
-- One logical change per commit. "Logical" means: if you'd describe it
-  with an "and" that isn't a shared cause (e.g. "fixed the pointer cast
-  AND renumbered the docs"), it's two commits.
-- Always checkpoint-commit BEFORE starting risky/multi-step work, so any
-  session is revertable to a known-good point. This is not optional and
-  is not the same commit as the work itself.
-- Never combine a hardware-behavior change with a docs-only change in one
-  commit — they have different review/verification needs.
+- One logical change per commit.
+- Always checkpoint-commit BEFORE starting risky/multi-step work so any session is revertable to a known-good point.
 
-## Commit message format (Conventional Commits)
-`type(scope): summary`, where type is one of:
-`fix | feat | docs | test | refactor | chore | perf`
-- scope is the module touched (e.g. `emu_walnut`, `rules`, `sd_card`, `guardian`).
-- Summary must be concise, objective, and technical. **Never use hyperbolic marketing words** (e.g. "groundbreaking", "amazing", "ultimate", "state-of-the-art", "production grade", "overkill").
-- Body (optional, below the summary line) must state verification status
-  using the vocabulary in 06_verification_standards.md — e.g. "Verified:
-  host-test suite full pass (11/11). Hardware: unverified."
-- If the commit closes or changes a 04_known_issues.md entry, reference it:
-  `Refs: KI-1`.
+## Mandatory Two-Part Commit Message Format (`-m "subject" -m "bullet body"`)
+Every commit MUST provide **both** a concise subject line (`-m "type(scope): summary"`) AND a detailed bullet-point body (`-m "- bullet 1\n- bullet 2\n- Verified: ..."`). Single-line commit messages are rejected by the `.git/hooks/commit-msg` hook.
+
+1. **Subject line (`-m "type(scope): summary"`):**
+   - `type`: `fix | feat | docs | test | refactor | chore | perf`
+   - `scope`: module touched (e.g. `emu_walnut`, `rules`, `sd_card`, `guardian`)
+   - Summary must be concise, objective, and technical. **Never use marketing filler** (`groundbreaking`, `amazing`, `ultimate`, `state-of-the-art`, `production grade`, `overkill`).
+2. **Detailed body (`-m "- ..."`):**
+   - Must contain bullet points (`- ...`) explaining every file/subsystem changed and why.
+   - Must state exact verification results (e.g. `- Verified: validate_repo.py PASS (Flash 33.9%, SRAM 66.8%), 120/120 unit tests`).
+   - Example:
+     ```powershell
+     git commit -m "feat(guardian): add cross-document pin verifier and prompt-pack CLI" -m "- Added DocTruthVerifier in tools/guardian/core/doc_verifier.py to catch pin/symbol drift across docs and rules
+     - Added prompt-pack and diff-audit subcommands to tools/guardian/cli.py
+     - Fixed ElfAnalyzer sketch ELF path discovery in tools/guardian/core/elf_analyzer.py
+     - Verified: python scripts/validate_repo.py PASS, 125/125 unit tests"
+     ```
 
 ## Tags for hardware-verified states
-- After a human confirms a PASS on real hardware per a handoff checklist,
-  tag that commit: `git tag hw-verified-YYYYMMDD-<short-feature>`. This
-  gives every future agent a guaranteed-good rollback point that isn't
-  just "compiles" but "was seen working on the actual board." List active
-  tags at the top of 04_known_issues.md so agents don't have to `git tag
-  -l` and guess which one is relevant.
+- After a human confirms a PASS on real hardware per a handoff checklist, tag that commit: `git tag hw-verified-YYYYMMDD-<short-feature>`.
+- List active tags at the top of `04_known_issues.md`.
 
 ## Branching
-- Default to committing directly to `main` for docs-only, test-only, or
-  low-risk changes.
-- For anything that changes CPU/memory-safety-critical code (emulator
-  cores, pointer arithmetic, ISR/timer code) or touches a HARD STOP
-  category from 00_hard_stops.md, create a short-lived branch
-  (`fix/<topic>` or `feat/<topic>`), do the work, and only merge to `main`
-  after the verification steps in 06_verification_standards.md pass. Say
-  explicitly whether you branched and why if you didn't.
+- Default to committing directly to `main` for docs-only, test-only, or verified changes.
+- For experimental changes touching `00_hard_stops.md` categories, create a short-lived branch (`fix/<topic>` or `feat/<topic>`) and merge only after `python scripts/validate_repo.py` passes.
 
 ## What never gets committed
-- Anything already excluded by .gitignore (ROMs, generated ROM headers).
-- Downloaded toolchains (e.g. a Zig binary fetched for host_test) — commit
-  a documented, pinned VERSION reference in 02_architecture.md instead, not
-  the binary itself.
-- Build output directories, host_test binaries, `.o`/`.elf`/`.bin` files.
-- Anything from Part A of a prompt that Part A told you to correct — i.e.
-  never commit an overclaimed result before it's actually true.
-
-## Review gate before committing actual work
-The existing checkpoint-commit-before-starting rule stays automatic — no
-review needed for that, it's a safety net.
-For the commit that represents COMPLETED work, before running `git
-commit`: show me the exact `git diff --stat` (file list) and the proposed
-commit message, and wait for an explicit yes before committing, IF any of
-these apply:
-- Any new file over 1MB is being added.
-- Any new binary, executable, or downloaded-toolchain file is being added
-  (this is exactly how the Zig binary ended up in history last time — a
-  review step here would have caught it before the commit, not after).
-- The change touches anything in a 00_hard_stops.md category.
-- The change involves rewriting git history (filter-repo, rebase -i,
-  amend of an already-old commit).
-Routine docs-only or single-file low-risk commits don't need this gate —
-use judgment, but the binary/size/hard-stop triggers above are not
-judgment calls, they always require the review step.
+- Anything excluded by `.gitignore` (ROM archives, build directories, `.elf`/`.bin`/`.exe` outputs).
+- Downloaded compiler toolchains or binary blobs.

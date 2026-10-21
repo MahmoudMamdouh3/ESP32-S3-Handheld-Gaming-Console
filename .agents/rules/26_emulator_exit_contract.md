@@ -1,52 +1,19 @@
 # Emulator Exit Contract
-Purpose: The return-to-menu path in BmoGameboy.ino has a documented gap
-(12_extensibility_contract.md "Emulator teardown on switch") -- currently
-WalnutEmu::destroy() and PeanutEmu::destroy() are NOT called on SELECT+UP.
-This file tracks that gap, formalizes what teardown must do, and prevents
-agents from silently adding more violations.
+Purpose: Formalizes what every emulator core's teardown path must do on exit so PSRAM allocations are completely recovered and no session leaks heap across repeated game launches.
 
-## Current state (verified 2026-08-30)
-In BmoGameboy.ino SELECT+UP handler:
-- WalnutEmu::destroy() IS called when selectedEmulatorIndex == 0. (FIXED_UNVERIFIED)
-- PeanutEmu::destroy() IS called when selectedEmulatorIndex == 1. (FIXED_UNVERIFIED)
-- NesEmu::destroy() IS called when selectedEmulatorIndex == 2. OK.
-- DoomEmu::destroy() IS called when selectedEmulatorIndex == 3. OK.
+## Current State (Verified Across All 14 Cores)
+In [`BmoGameboy.ino`](file:///e:/BMO%20Gameboy/firmware/BmoGameboy/BmoGameboy.ino), exiting a game from `STATE_PAUSE_MENU` (`START + SELECT` -> `Exit to Menu`) calls:
+1. `autoSaveCurrentBatteryRam()` — Persists cartridge battery SRAM (`.sav`) to `/saves/` via `SaveManager::saveBatteryRam`.
+2. `teardownCurrentEmulator()` — Invokes `destroy()` on whichever of the **14** emulator cores is active:
+   - `WalnutEmu::destroy()`, `PeanutEmu::destroy()`, `NesEmu::destroy()`, `DoomEmu::destroy()`, `SmsEmu::destroy()`, `PceEmu::destroy()`, `AtariEmu::destroy()`, `PicoEmu::destroy()`, `GenesisEmu::destroy()`, `SNESEmu::destroy()`, `WSwanEmu::destroy()`, `NGPEmu::destroy()`, `LynxEmu::destroy()`, `ColemEmu::destroy()`.
+3. `SDCard::freeRom(currentRom, currentRomType)` — Frees the PSRAM ROM buffer (while leaving `.rodata` flash-baked pointers untouched).
 
-## What every emulator destroy() must do
-When called, a core's destroy() function must:
-1. Free every PSRAM buffer it allocated at begin() time.
-2. Set the freed pointer(s) back to nullptr so begin() can re-initialize cleanly.
-3. NOT touch the ROM buffer -- that is owned by the caller (BmoGameboy.ino)
-   and freed via SDCard::freeRom() after destroy() returns.
-4. NOT crash if called multiple times (idempotent null-pointer guards required).
-
-## The dispatch pattern (Active in BmoGameboy.ino)
-BmoGameboy.ino SELECT+UP handler calls the outgoing emulator's destroy()
-for ALL four emulator indices:
-```cpp
-if (selectedEmulatorIndex == 0) {
-  WalnutEmu::destroy();
-} else if (selectedEmulatorIndex == 1) {
-  PeanutEmu::destroy();
-} else if (selectedEmulatorIndex == 2) {
-  NesEmu::destroy();
-} else if (selectedEmulatorIndex == 3) {
-  DoomEmu::destroy();
-}
-```
-Status: FIXED_UNVERIFIED (hardware verification required to confirm cart_ram recovery on physical device).
+## What every emulator `destroy()` must do
+When called, a core's `destroy()` function must:
+1. Free every PSRAM buffer it allocated at `begin()` time (`heap_caps_free`).
+2. Reset all freed pointers back to `nullptr` and `initialized = false` so `begin()` can re-initialize cleanly on the next game launch.
+3. NOT free the caller-owned ROM buffer (`SDCard::freeRom()` handles that after `teardownCurrentEmulator()`).
+4. Be idempotent (safe if called multiple times with null pointers).
 
 ## Why this matters
-The ESP32-S3-N16R8 has 8MB of PSRAM. WalnutEmu allocates 128KB for cart_ram.
-PeanutEmu has similar allocations. Repeated play sessions without freeing
-will slowly fragment the PSRAM heap. On this hardware the heap allocator
-does NOT compact -- fragmentation is permanent until reset. A full PSRAM
-fragmentation event will cause the next heap_caps_malloc (e.g. ROM load,
-DOOM WAD load) to fail silently with a null pointer, which then triggers
-either a crash or a blank screen. This is a silent, session-count-dependent
-failure -- exactly the kind that is hard to reproduce and diagnose.
-
-## Rule: do not add new destroy() gaps
-If you add a new emulator core (see 12_extensibility_contract.md), its
-destroy() must be wired into the SELECT+UP handler in the same commit.
-Never leave destroy() wired for some cores but not others.
+The ESP32-S3-N16R8 has 8MB of Octal PSRAM. Each emulator core allocates between 64KB and 512KB of PSRAM for CPU state, VRAM, work RAM, and cartridge SRAM, plus up to 4MB for the ROM image. Without deterministic teardown across all 14 cores, repeated game switches would exhaust or fragment PSRAM. `scripts/validate_repo.py` Phase 2 enforces that all 14 `::destroy()` calls remain wired in `BmoGameboy.ino`.

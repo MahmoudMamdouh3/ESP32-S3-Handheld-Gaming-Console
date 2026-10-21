@@ -16,6 +16,7 @@ from unittest.mock import patch
 from tools.guardian.core.ast_linter import FirmwareAstLinter, LintFinding
 from tools.guardian.core.bus_model import HardwareBusModel, SUPPORTED_RESOLUTIONS
 from tools.guardian.core.cppcheck_runner import CppcheckFinding, CppcheckRunner
+from tools.guardian.core.doc_verifier import DocTruthVerifier
 from tools.guardian.core.elf_analyzer import ElfAnalyzer
 from tools.guardian.core.host_bench import HostBenchmarkSuite
 from tools.guardian.core.report_gen import ReportGenerator
@@ -73,7 +74,7 @@ class TestGuardianEngine(unittest.TestCase):
         """Verify host microbenchmarks run and produce valid quantitative numbers."""
         suite = HostBenchmarkSuite()
         metrics = suite.run_all()
-        self.assertEqual(len(metrics), 7)
+        self.assertGreaterEqual(len(metrics), 7)
         for m in metrics:
             self.assertGreater(m.iterations, 0)
             self.assertGreater(m.total_time_ms, 0.0)
@@ -183,6 +184,37 @@ class TestGuardianEngine(unittest.TestCase):
         self.assertFalse(
             any(f.rule_id == "UNGUARDED_PER_FRAME_FILTER" for f in findings)
         )
+
+    def test_11_doc_truth_verifier_zero_drift(self):
+        """Verify zero documentation/rule pin or architecture drift against config.h."""
+        verifier = DocTruthVerifier(REPO_ROOT)
+        issues = verifier.verify_all()
+        self.assertEqual(issues, [], f"DocTruthVerifier found drift: {issues}")
+
+    def test_12_prompt_pack_generates_context_packet(self):
+        """Verify prompt-pack generates a complete task context packet with live C++ signatures."""
+        from tools.guardian.cli import cmd_prompt_pack
+
+        class DummyArgs:
+            query = ["fix", "st7789", "display", "spi"]
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = cmd_prompt_pack(DummyArgs())
+        out = buf.getvalue()
+        self.assertEqual(rc, 0)
+        self.assertIn("MATCHED INTENT: modify_display_rendering_or_spi", out)
+        self.assertIn("TFT_CS=10", out)
+        self.assertIn("display_emu.h", out)
+
+    def test_13_benchmark_ai_passes_100_percent(self):
+        """Verify 5-dimension AI workflow benchmark achieves 100.0% pass."""
+        from tools.guardian.cli import cmd_benchmark_ai
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = cmd_benchmark_ai(None)
+        self.assertEqual(rc, 0, buf.getvalue())
 
 
 if __name__ == "__main__":

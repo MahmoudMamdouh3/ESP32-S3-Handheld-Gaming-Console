@@ -1,8 +1,8 @@
 # BMO Handheld Console — Complete Line-by-Line Benchmark & Architecture Audit
-**Generated:** 2026-08-31 15:09:18  
+**Generated:** 2026-10-21 17:59:20  
 **Target MCU:** ESP32-S3-N16R8 (240MHz Xtensa LX7, 16MB OPI Flash, 8MB Octal PSRAM)  
 **Display:** ST7789VW 2.4" TFT on Shared 80MHz FSPI  
-**Total Repository Files Audited:** 786 files (1,371,522 total lines, 1,284,285 SLOC)  
+**Total Repository Files Audited:** 376 files (443,764 total lines, 409,045 SLOC)  
 **Ground-Truth Quality Gate:** PASS (Zero Critical Violations)
 
 ---
@@ -11,12 +11,12 @@
 
 | Metric | Measured Value | Hardware Budget | Utilization | Health Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **Internal SRAM (DRAM)** | 244,352 bytes | 327,680 bytes | 74.6% | ⚠️ TIGHT (74.6%) |
-| **Flash Storage (app0)** | 5,002,020 bytes | 16,777,216 bytes | 29.8% | ✅ OK (Headroom 70.2%) |
+| **Internal SRAM (DRAM)** | 218,816 bytes | 327,680 bytes | 66.8% | ✅ OK |
+| **Flash Storage (app0)** | 5,692,909 bytes | 16,777,216 bytes | 33.9% | ✅ OK (Headroom 70.2%) |
 | **Static PSRAM** | 0 bytes | 8,388,608 bytes | 0.0% | ✅ OK |
 | **Dynamic PSRAM Allocation** | 16,384 ROM slots (1.05MB) | 8,388,608 bytes | 12.5% | ✅ OK (7.3MB Free) |
 | **AST Critical Findings** | 0 | 0 allowed | - | ✅ PASS (0 Critical) |
-| **AST Warnings** | 10 | < 15 allowed | - | ✅ OK |
+| **AST Warnings** | 13 | < 15 allowed | - | ⚠️ REVIEW |
 | **Cppcheck Violations** | 0 | 0 critical | - | ✅ CLEAN |
 
 ---
@@ -56,363 +56,138 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | File Path | Category | Total Lines | SLOC | Comments | Blanks | Code Density |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | `.agents/rules/00_hard_stops.md` | `AGENT_RULES` | 6 | 6 | 0 | 0 | 100.0% |
-| `.agents/rules/01_hardware.md` | `AGENT_RULES` | 47 | 41 | 0 | 6 | 87.2% |
-| `.agents/rules/02_architecture.md` | `AGENT_RULES` | 19 | 17 | 0 | 2 | 89.5% |
+| `.agents/rules/01_hardware.md` | `AGENT_RULES` | 58 | 50 | 0 | 8 | 86.2% |
+| `.agents/rules/02_architecture.md` | `AGENT_RULES` | 25 | 23 | 0 | 2 | 92.0% |
 | `.agents/rules/03_conventions.md` | `AGENT_RULES` | 63 | 53 | 0 | 10 | 84.1% |
-| `.agents/rules/04_known_issues.md` | `AGENT_RULES` | 252 | 203 | 0 | 49 | 80.6% |
-| `.agents/rules/05_git_workflow.md` | `AGENT_RULES` | 66 | 60 | 0 | 6 | 90.9% |
-| `.agents/rules/06_verification_standards.md` | `AGENT_RULES` | 121 | 104 | 0 | 17 | 86.0% |
+| `.agents/rules/04_known_issues.md` | `AGENT_RULES` | 410 | 343 | 0 | 67 | 83.7% |
+| `.agents/rules/05_git_workflow.md` | `AGENT_RULES` | 35 | 29 | 0 | 6 | 82.9% |
+| `.agents/rules/06_verification_standards.md` | `AGENT_RULES` | 118 | 101 | 0 | 17 | 85.6% |
 | `.agents/rules/07_task_protocol.md` | `AGENT_RULES` | 86 | 80 | 0 | 6 | 93.0% |
 | `.agents/rules/08_ui_style_guide.md` | `AGENT_RULES` | 49 | 44 | 0 | 5 | 89.8% |
-| `.agents/rules/09_testing_infrastructure.md` | `AGENT_RULES` | 60 | 54 | 0 | 6 | 90.0% |
-| `.agents/rules/10_symbol_reference.md` | `AGENT_RULES` | 195 | 172 | 0 | 23 | 88.2% |
+| `.agents/rules/09_testing_infrastructure.md` | `AGENT_RULES` | 20 | 17 | 0 | 3 | 85.0% |
+| `.agents/rules/10_symbol_reference.md` | `AGENT_RULES` | 376 | 343 | 0 | 33 | 91.2% |
 | `.agents/rules/11_rules_meta.md` | `AGENT_RULES` | 22 | 21 | 0 | 1 | 95.5% |
 | `.agents/rules/12_extensibility_contract.md` | `AGENT_RULES` | 42 | 38 | 0 | 4 | 90.5% |
 | `.agents/rules/13_code_style.md` | `AGENT_RULES` | 27 | 21 | 0 | 6 | 77.8% |
 | `.agents/rules/14_error_handling_and_fault_isolation.md` | `AGENT_RULES` | 25 | 20 | 0 | 5 | 80.0% |
-| `.agents/rules/15_performance_budgets.md` | `AGENT_RULES` | 33 | 27 | 0 | 6 | 81.8% |
+| `.agents/rules/15_performance_budgets.md` | `AGENT_RULES` | 51 | 42 | 0 | 9 | 82.4% |
 | `.agents/rules/16_logging_and_diagnostics.md` | `AGENT_RULES` | 20 | 15 | 0 | 5 | 75.0% |
 | `.agents/rules/17_release_and_versioning.md` | `AGENT_RULES` | 25 | 20 | 0 | 5 | 80.0% |
-| `.agents/rules/18_dependency_and_vendor_sync.md` | `AGENT_RULES` | 31 | 25 | 0 | 6 | 80.6% |
-| `.agents/rules/19_security_and_data_integrity.md` | `AGENT_RULES` | 18 | 14 | 0 | 4 | 77.8% |
+| `.agents/rules/18_dependency_and_vendor_sync.md` | `AGENT_RULES` | 34 | 28 | 0 | 6 | 82.4% |
+| `.agents/rules/19_security_and_data_integrity.md` | `AGENT_RULES` | 34 | 26 | 0 | 8 | 76.5% |
 | `.agents/rules/20_multi_agent_protocol.md` | `AGENT_RULES` | 19 | 15 | 0 | 4 | 78.9% |
 | `.agents/rules/21_documentation_standards.md` | `AGENT_RULES` | 19 | 15 | 0 | 4 | 78.9% |
 | `.agents/rules/22_review_checklist.md` | `AGENT_RULES` | 14 | 12 | 0 | 2 | 85.7% |
 | `.agents/rules/23_incident_postmortem_log.md` | `AGENT_RULES` | 35 | 29 | 0 | 6 | 82.9% |
 | `.agents/rules/24_vendor_flag_safety.md` | `AGENT_RULES` | 78 | 68 | 0 | 10 | 87.2% |
 | `.agents/rules/25_game_compatibility_ledger.md` | `AGENT_RULES` | 52 | 44 | 0 | 8 | 84.6% |
-| `.agents/rules/26_emulator_exit_contract.md` | `AGENT_RULES` | 52 | 47 | 0 | 5 | 90.4% |
-| `.agents/rules/27_codebase_map.md` | `AGENT_RULES` | 191 | 166 | 0 | 25 | 86.9% |
-| `.agents/rules/28_display_and_spi_contract.md` | `AGENT_RULES` | 73 | 66 | 0 | 7 | 90.4% |
+| `.agents/rules/26_emulator_exit_contract.md` | `AGENT_RULES` | 19 | 16 | 0 | 3 | 84.2% |
+| `.agents/rules/27_codebase_map.md` | `AGENT_RULES` | 125 | 112 | 0 | 13 | 89.6% |
+| `.agents/rules/28_display_and_spi_contract.md` | `AGENT_RULES` | 85 | 76 | 0 | 9 | 89.4% |
 | `.agents/rules/29_adding_a_baked_rom.md` | `AGENT_RULES` | 80 | 67 | 0 | 13 | 83.8% |
 | `.agents/rules/30_common_agent_mistakes.md` | `AGENT_RULES` | 170 | 129 | 0 | 41 | 75.9% |
-| `.agents/rules/31_quick_start_primer.md` | `AGENT_RULES` | 79 | 67 | 0 | 12 | 84.8% |
+| `.agents/rules/31_quick_start_primer.md` | `AGENT_RULES` | 80 | 66 | 0 | 14 | 82.5% |
 | `.agents/rules/32_modular_core_template.md` | `AGENT_RULES` | 128 | 96 | 0 | 32 | 75.0% |
 | `.agents/rules/33_agent_handoff_and_optimization_cycle.md` | `AGENT_RULES` | 59 | 44 | 0 | 15 | 74.6% |
-| `.agents/rules/34_ai_agent_sandbox_and_guardrails.md` | `AGENT_RULES` | 44 | 32 | 0 | 12 | 72.7% |
-| `.agents/rules/35_bmo_face_contract.md` | `AGENT_RULES` | 73 | 66 | 0 | 7 | 90.4% |
+| `.agents/rules/34_ai_agent_sandbox_and_guardrails.md` | `AGENT_RULES` | 51 | 37 | 0 | 14 | 72.5% |
+| `.agents/rules/35_bmo_face_contract.md` | `AGENT_RULES` | 71 | 64 | 0 | 7 | 90.1% |
 | `.agents/rules/36_bug_intake_protocol.md` | `AGENT_RULES` | 68 | 60 | 0 | 8 | 88.2% |
 | `.agents/rules/37_rom_governance_and_flash_budget.md` | `AGENT_RULES` | 59 | 53 | 0 | 6 | 89.8% |
 | `.agents/rules/38_mandatory_documentation_update.md` | `AGENT_RULES` | 96 | 74 | 0 | 22 | 77.1% |
 | `.agents/rules/39_performance_and_benchmark_framework.md` | `AGENT_RULES` | 70 | 51 | 0 | 19 | 72.9% |
-| `.agents/rules/CONTEXT_INDEX.json` | `AGENT_RULES` | 280 | 280 | 0 | 0 | 100.0% |
-| `.agents/rules/README.md` | `AGENT_RULES` | 48 | 46 | 0 | 2 | 95.8% |
-| `AGENT_DECISION_TREE.json` | `OTHER` | 183 | 183 | 0 | 0 | 100.0% |
-| `AGENT_KNOWLEDGE_GRAPH.json` | `OTHER` | 15,452 | 15,452 | 0 | 0 | 100.0% |
-| `AGENT_MANIFEST.json` | `OTHER` | 186 | 186 | 0 | 0 | 100.0% |
-| `AGENTS.md` | `OTHER` | 19 | 15 | 0 | 4 | 78.9% |
-| `assets/legacy_headers/cover_aladdin.h` | `OTHER` | 1,010 | 1,009 | 0 | 1 | 99.9% |
-| `assets/legacy_headers/cover_amazingspiderman.h` | `OTHER` | 1,009 | 1,008 | 0 | 1 | 99.9% |
-| `assets/legacy_headers/cover_cpu.h` | `OTHER` | 1,009 | 1,008 | 0 | 1 | 99.9% |
-| `assets/legacy_headers/cover_grandtheftauto2.h` | `OTHER` | 1,010 | 1,009 | 0 | 1 | 99.9% |
-| `assets/legacy_headers/cover_hotdog.h` | `OTHER` | 1,010 | 1,009 | 0 | 1 | 99.9% |
-| `assets/legacy_headers/cover_kirby2.h` | `OTHER` | 1,009 | 1,008 | 0 | 1 | 99.9% |
-| `assets/legacy_headers/cover_legendofzeldatheoracleofseasons.h` | `OTHER` | 1,010 | 1,009 | 0 | 1 | 99.9% |
-| `assets/legacy_headers/cover_legoracers.h` | `OTHER` | 1,010 | 1,009 | 0 | 1 | 99.9% |
-| `assets/legacy_headers/cover_sneakysnakes.h` | `OTHER` | 1,009 | 1,008 | 0 | 1 | 99.9% |
-| `assets/legacy_headers/cover_supermariobrosdeluxe.h` | `OTHER` | 1,010 | 1,009 | 0 | 1 | 99.9% |
-| `assets/legacy_headers/cover_supermarioland.h` | `OTHER` | 1,009 | 1,008 | 0 | 1 | 99.9% |
-| `assets/legacy_headers/cover_tetris2.h` | `OTHER` | 1,009 | 1,008 | 0 | 1 | 99.9% |
-| `assets/legacy_headers/cover_tobu.h` | `OTHER` | 1,009 | 1,008 | 0 | 1 | 99.9% |
-| `assets/legacy_headers/cover_zeldala.h` | `OTHER` | 1,009 | 1,008 | 0 | 1 | 99.9% |
-| `assets/legacy_headers/rom_aladdin.h` | `OTHER` | 65,547 | 65,546 | 0 | 1 | 100.0% |
-| `assets/legacy_headers/rom_data_test.h` | `OTHER` | 3,288 | 3,286 | 0 | 2 | 99.9% |
-| `assets/legacy_headers/rom_grandtheftauto2.h` | `OTHER` | 131,083 | 131,082 | 0 | 1 | 100.0% |
-| `assets/legacy_headers/rom_hotdog.h` | `OTHER` | 65,547 | 65,546 | 0 | 1 | 100.0% |
-| `assets/legacy_headers/rom_kirby2.h` | `OTHER` | 26,225 | 26,224 | 0 | 1 | 100.0% |
-| `assets/legacy_headers/rom_legendofzeldatheoracleofseasons.h` | `OTHER` | 65,547 | 65,546 | 0 | 1 | 100.0% |
-| `assets/legacy_headers/rom_legoracers.h` | `OTHER` | 65,547 | 65,546 | 0 | 1 | 100.0% |
-| `assets/legacy_headers/rom_sneakysnakes.h` | `OTHER` | 6,564 | 6,563 | 0 | 1 | 100.0% |
-| `assets/legacy_headers/rom_spiderman.h` | `OTHER` | 3,287 | 3,286 | 0 | 1 | 100.0% |
-| `assets/legacy_headers/rom_supermariobrosdeluxe.h` | `OTHER` | 65,547 | 65,546 | 0 | 1 | 100.0% |
-| `assets/legacy_headers/rom_supermarioland.h` | `OTHER` | 3,287 | 3,286 | 0 | 1 | 100.0% |
-| `assets/legacy_headers/rom_tetris2.h` | `OTHER` | 6,564 | 6,563 | 0 | 1 | 100.0% |
-| `assets/legacy_headers/rom_zeldala.h` | `OTHER` | 26,225 | 26,224 | 0 | 1 | 100.0% |
-| `build/arduino-audit/build.options.json` | `OTHER` | 9 | 9 | 0 | 0 | 100.0% |
-| `build/arduino-audit/build_opt.h` | `OTHER` | 0 | 0 | 0 | 0 | 0.0% |
-| `build/arduino-audit/compile_commands.json` | `OTHER` | 8,481 | 8,481 | 0 | 0 | 100.0% |
-| `build/arduino-audit/partitions.csv` | `OTHER` | 5 | 5 | 0 | 0 | 100.0% |
-| `build/arduino-audit/sketch/03_emulator.ino.cpp` | `OTHER` | 375 | 293 | 35 | 47 | 78.1% |
-| `build/arduino-audit/sketch/agnes.c` | `OTHER` | 2,588 | 2,175 | 95 | 318 | 84.0% |
-| `build/arduino-audit/sketch/agnes.h` | `OTHER` | 88 | 51 | 21 | 16 | 58.0% |
-| `build/arduino-audit/sketch/aladdin.h` | `OTHER` | 65,542 | 65,542 | 0 | 0 | 100.0% |
-| `build/arduino-audit/sketch/buttons.cpp` | `OTHER` | 67 | 52 | 5 | 10 | 77.6% |
-| `build/arduino-audit/sketch/buttons.h` | `OTHER` | 39 | 17 | 14 | 8 | 43.6% |
-| `build/arduino-audit/sketch/config.h` | `OTHER` | 42 | 19 | 18 | 5 | 45.2% |
-| `build/arduino-audit/sketch/display_emu.cpp` | `OTHER` | 421 | 309 | 61 | 51 | 73.4% |
-| `build/arduino-audit/sketch/display_emu.h` | `OTHER` | 69 | 24 | 32 | 13 | 34.8% |
-| `build/arduino-audit/sketch/emu_doom.cpp` | `OTHER` | 130 | 87 | 20 | 23 | 66.9% |
-| `build/arduino-audit/sketch/emu_doom.h` | `OTHER` | 16 | 9 | 4 | 3 | 56.2% |
-| `build/arduino-audit/sketch/emu_nes.cpp` | `OTHER` | 63 | 47 | 5 | 11 | 74.6% |
-| `build/arduino-audit/sketch/emu_nes.h` | `OTHER` | 13 | 11 | 0 | 2 | 84.6% |
-| `build/arduino-audit/sketch/emu_peanut.cpp` | `OTHER` | 152 | 102 | 22 | 28 | 67.1% |
-| `build/arduino-audit/sketch/emu_peanut.h` | `OTHER` | 16 | 8 | 4 | 4 | 50.0% |
-| `build/arduino-audit/sketch/emu_walnut.cpp` | `OTHER` | 215 | 126 | 54 | 35 | 58.6% |
-| `build/arduino-audit/sketch/emu_walnut.h` | `OTHER` | 16 | 8 | 4 | 4 | 50.0% |
-| `build/arduino-audit/sketch/lego_racers.h` | `OTHER` | 65,542 | 65,542 | 0 | 0 | 100.0% |
-| `build/arduino-audit/sketch/mario_deluxe.h` | `OTHER` | 65,542 | 65,542 | 0 | 0 | 100.0% |
-| `build/arduino-audit/sketch/peanut_gb.h` | `OTHER` | 4,057 | 2,862 | 568 | 627 | 70.5% |
-| `build/arduino-audit/sketch/peanut_gb_config.h` | `OTHER` | 9 | 4 | 4 | 1 | 44.4% |
-| `build/arduino-audit/sketch/sd_card.cpp` | `OTHER` | 146 | 116 | 10 | 20 | 79.5% |
-| `build/arduino-audit/sketch/sd_card.h` | `OTHER` | 33 | 25 | 3 | 5 | 75.8% |
-| `build/arduino-audit/sketch/src/doom/am_map.c` | `OTHER` | 1,356 | 971 | 162 | 223 | 71.6% |
-| `build/arduino-audit/sketch/src/doom/am_map.h` | `OTHER` | 50 | 14 | 24 | 12 | 28.0% |
-| `build/arduino-audit/sketch/src/doom/config.h` | `OTHER` | 101 | 34 | 34 | 33 | 33.7% |
-| `build/arduino-audit/sketch/src/doom/d_englsh.h` | `OTHER` | 694 | 523 | 65 | 106 | 75.4% |
-| `build/arduino-audit/sketch/src/doom/d_event.c` | `OTHER` | 64 | 23 | 27 | 14 | 35.9% |
-| `build/arduino-audit/sketch/src/doom/d_event.h` | `OTHER` | 138 | 44 | 66 | 28 | 31.9% |
-| `build/arduino-audit/sketch/src/doom/d_items.c` | `OTHER` | 129 | 78 | 38 | 13 | 60.5% |
-| `build/arduino-audit/sketch/src/doom/d_items.h` | `OTHER` | 42 | 15 | 18 | 9 | 35.7% |
-| `build/arduino-audit/sketch/src/doom/d_iwad.c` | `OTHER` | 849 | 510 | 133 | 206 | 60.1% |
-| `build/arduino-audit/sketch/src/doom/d_iwad.h` | `OTHER` | 53 | 29 | 16 | 8 | 54.7% |
-| `build/arduino-audit/sketch/src/doom/d_loop.c` | `OTHER` | 827 | 465 | 169 | 193 | 56.2% |
-| `build/arduino-audit/sketch/src/doom/d_loop.h` | `OTHER` | 82 | 24 | 34 | 24 | 29.3% |
-| `build/arduino-audit/sketch/src/doom/d_main.c` | `OTHER` | 1,846 | 1,090 | 418 | 338 | 59.0% |
-| `build/arduino-audit/sketch/src/doom/d_main.h` | `OTHER` | 51 | 12 | 24 | 15 | 23.5% |
-| `build/arduino-audit/sketch/src/doom/d_mode.c` | `OTHER` | 210 | 151 | 28 | 31 | 71.9% |
-| `build/arduino-audit/sketch/src/doom/d_mode.h` | `OTHER` | 99 | 59 | 24 | 16 | 59.6% |
-| `build/arduino-audit/sketch/src/doom/d_net.c` | `OTHER` | 282 | 159 | 61 | 62 | 56.4% |
-| `build/arduino-audit/sketch/src/doom/d_player.h` | `OTHER` | 210 | 83 | 77 | 50 | 39.5% |
-| `build/arduino-audit/sketch/src/doom/d_textur.h` | `OTHER` | 44 | 11 | 22 | 11 | 25.0% |
-| `build/arduino-audit/sketch/src/doom/d_think.h` | `OTHER` | 69 | 20 | 29 | 20 | 29.0% |
-| `build/arduino-audit/sketch/src/doom/d_ticcmd.h` | `OTHER` | 57 | 18 | 26 | 13 | 31.6% |
-| `build/arduino-audit/sketch/src/doom/deh_main.h` | `OTHER` | 49 | 20 | 19 | 10 | 40.8% |
-| `build/arduino-audit/sketch/src/doom/deh_misc.h` | `OTHER` | 84 | 56 | 17 | 11 | 66.7% |
-| `build/arduino-audit/sketch/src/doom/deh_str.h` | `OTHER` | 48 | 19 | 17 | 12 | 39.6% |
-| `build/arduino-audit/sketch/src/doom/doom.h` | `OTHER` | 43 | 5 | 27 | 11 | 11.6% |
-| `build/arduino-audit/sketch/src/doom/doomdata.h` | `OTHER` | 214 | 94 | 70 | 50 | 43.9% |
-| `build/arduino-audit/sketch/src/doom/doomdef.c` | `OTHER` | 29 | 2 | 20 | 7 | 6.9% |
-| `build/arduino-audit/sketch/src/doom/doomdef.h` | `OTHER` | 169 | 87 | 48 | 34 | 51.5% |
-| `build/arduino-audit/sketch/src/doom/doomfeatures.h` | `OTHER` | 41 | 7 | 22 | 12 | 17.1% |
-| `build/arduino-audit/sketch/src/doom/doomgeneric.c` | `OTHER` | 28 | 16 | 1 | 11 | 57.1% |
-| `build/arduino-audit/sketch/src/doom/doomgeneric.h` | `OTHER` | 50 | 33 | 1 | 16 | 66.0% |
-| `build/arduino-audit/sketch/src/doom/doomkeys.h` | `OTHER` | 98 | 62 | 23 | 13 | 63.3% |
-| `build/arduino-audit/sketch/src/doom/doomstat.c` | `OTHER` | 36 | 8 | 19 | 9 | 22.2% |
-| `build/arduino-audit/sketch/src/doom/doomstat.h` | `OTHER` | 282 | 78 | 108 | 96 | 27.7% |
-| `build/arduino-audit/sketch/src/doom/doomtype.h` | `OTHER` | 107 | 41 | 36 | 30 | 38.3% |
-| `build/arduino-audit/sketch/src/doom/dstrings.c` | `OTHER` | 74 | 38 | 22 | 14 | 51.4% |
-| `build/arduino-audit/sketch/src/doom/dstrings.h` | `OTHER` | 42 | 9 | 22 | 11 | 21.4% |
-| `build/arduino-audit/sketch/src/doom/dummy.c` | `OTHER` | 54 | 9 | 30 | 15 | 16.7% |
-| `build/arduino-audit/sketch/src/doom/f_finale.c` | `OTHER` | 719 | 529 | 77 | 113 | 73.6% |
-| `build/arduino-audit/sketch/src/doom/f_finale.h` | `OTHER` | 46 | 10 | 23 | 13 | 21.7% |
-| `build/arduino-audit/sketch/src/doom/f_wipe.c` | `OTHER` | 295 | 221 | 31 | 43 | 74.9% |
-| `build/arduino-audit/sketch/src/doom/f_wipe.h` | `OTHER` | 64 | 30 | 22 | 12 | 46.9% |
-| `build/arduino-audit/sketch/src/doom/g_game.c` | `OTHER` | 2,304 | 1,573 | 317 | 414 | 68.3% |
-| `build/arduino-audit/sketch/src/doom/g_game.h` | `OTHER` | 81 | 30 | 28 | 23 | 37.0% |
-| `build/arduino-audit/sketch/src/doom/gusconf.c` | `OTHER` | 272 | 191 | 24 | 57 | 70.2% |
-| `build/arduino-audit/sketch/src/doom/gusconf.h` | `OTHER` | 30 | 8 | 16 | 6 | 26.7% |
-| `build/arduino-audit/sketch/src/doom/hu_lib.c` | `OTHER` | 348 | 253 | 32 | 63 | 72.7% |
-| `build/arduino-audit/sketch/src/doom/hu_lib.h` | `OTHER` | 183 | 78 | 59 | 46 | 42.6% |
-| `build/arduino-audit/sketch/src/doom/hu_stuff.c` | `OTHER` | 642 | 494 | 51 | 97 | 76.9% |
-| `build/arduino-audit/sketch/src/doom/hu_stuff.h` | `OTHER` | 60 | 22 | 23 | 15 | 36.7% |
-| `build/arduino-audit/sketch/src/doom/i_cdmus.c` | `OTHER` | 244 | 160 | 31 | 53 | 65.6% |
-| `build/arduino-audit/sketch/src/doom/i_cdmus.h` | `OTHER` | 42 | 21 | 15 | 6 | 50.0% |
-| `build/arduino-audit/sketch/src/doom/i_endoom.c` | `OTHER` | 102 | 49 | 26 | 27 | 48.0% |
-| `build/arduino-audit/sketch/src/doom/i_endoom.h` | `OTHER` | 30 | 5 | 19 | 6 | 16.7% |
-| `build/arduino-audit/sketch/src/doom/i_input.c` | `OTHER` | 342 | 134 | 173 | 35 | 39.2% |
-| `build/arduino-audit/sketch/src/doom/i_joystick.c` | `OTHER` | 360 | 255 | 38 | 67 | 70.8% |
-| `build/arduino-audit/sketch/src/doom/i_joystick.h` | `OTHER` | 71 | 22 | 33 | 16 | 31.0% |
-| `build/arduino-audit/sketch/src/doom/i_scale.c` | `OTHER` | 1,453 | 890 | 225 | 338 | 61.3% |
-| `build/arduino-audit/sketch/src/doom/i_scale.h` | `OTHER` | 54 | 22 | 20 | 12 | 40.7% |
-| `build/arduino-audit/sketch/src/doom/i_sound.c` | `OTHER` | 421 | 285 | 62 | 74 | 67.7% |
-| `build/arduino-audit/sketch/src/doom/i_sound.h` | `OTHER` | 257 | 105 | 71 | 81 | 40.9% |
-| `build/arduino-audit/sketch/src/doom/i_swap.h` | `OTHER` | 74 | 35 | 18 | 21 | 47.3% |
-| `build/arduino-audit/sketch/src/doom/i_system.c` | `OTHER` | 579 | 348 | 112 | 119 | 60.1% |
-| `build/arduino-audit/sketch/src/doom/i_system.h` | `OTHER` | 85 | 20 | 37 | 28 | 23.5% |
-| `build/arduino-audit/sketch/src/doom/i_timer.c` | `OTHER` | 97 | 37 | 32 | 28 | 38.1% |
-| `build/arduino-audit/sketch/src/doom/i_timer.h` | `OTHER` | 43 | 10 | 23 | 10 | 23.3% |
-| `build/arduino-audit/sketch/src/doom/i_video.c` | `OTHER` | 496 | 310 | 74 | 112 | 62.5% |
-| `build/arduino-audit/sketch/src/doom/i_video.h` | `OTHER` | 176 | 64 | 65 | 47 | 36.4% |
-| `build/arduino-audit/sketch/src/doom/icon.c` | `OTHER` | 263 | 261 | 0 | 2 | 99.2% |
-| `build/arduino-audit/sketch/src/doom/info.c` | `OTHER` | 4,663 | 4,493 | 21 | 149 | 96.4% |
-| `build/arduino-audit/sketch/src/doom/info.h` | `OTHER` | 1,332 | 1,297 | 21 | 14 | 97.4% |
-| `build/arduino-audit/sketch/src/doom/m_argv.c` | `OTHER` | 266 | 151 | 52 | 63 | 56.8% |
-| `build/arduino-audit/sketch/src/doom/m_argv.h` | `OTHER` | 50 | 12 | 26 | 12 | 24.0% |
-| `build/arduino-audit/sketch/src/doom/m_bbox.c` | `OTHER` | 55 | 22 | 20 | 13 | 40.0% |
-| `build/arduino-audit/sketch/src/doom/m_bbox.h` | `OTHER` | 48 | 19 | 19 | 10 | 39.6% |
-| `build/arduino-audit/sketch/src/doom/m_cheat.c` | `OTHER` | 90 | 39 | 32 | 19 | 43.3% |
-| `build/arduino-audit/sketch/src/doom/m_cheat.h` | `OTHER` | 63 | 25 | 23 | 15 | 39.7% |
-| `build/arduino-audit/sketch/src/doom/m_config.c` | `OTHER` | 2,129 | 616 | 948 | 565 | 28.9% |
-| `build/arduino-audit/sketch/src/doom/m_config.h` | `OTHER` | 40 | 17 | 17 | 6 | 42.5% |
-| `build/arduino-audit/sketch/src/doom/m_controls.c` | `OTHER` | 399 | 270 | 57 | 72 | 67.7% |
-| `build/arduino-audit/sketch/src/doom/m_controls.h` | `OTHER` | 169 | 122 | 17 | 30 | 72.2% |
-| `build/arduino-audit/sketch/src/doom/m_fixed.c` | `OTHER` | 63 | 25 | 21 | 17 | 39.7% |
-| `build/arduino-audit/sketch/src/doom/m_fixed.h` | `OTHER` | 40 | 9 | 20 | 11 | 22.5% |
-| `build/arduino-audit/sketch/src/doom/m_menu.c` | `OTHER` | 2,126 | 1,503 | 250 | 373 | 70.7% |
-| `build/arduino-audit/sketch/src/doom/m_menu.h` | `OTHER` | 62 | 12 | 33 | 17 | 19.4% |
-| `build/arduino-audit/sketch/src/doom/m_misc.c` | `OTHER` | 537 | 336 | 87 | 114 | 62.6% |
-| `build/arduino-audit/sketch/src/doom/m_misc.h` | `OTHER` | 52 | 28 | 17 | 7 | 53.8% |
-| `build/arduino-audit/sketch/src/doom/m_random.c` | `OTHER` | 66 | 38 | 22 | 6 | 57.6% |
-| `build/arduino-audit/sketch/src/doom/m_random.h` | `OTHER` | 40 | 8 | 21 | 11 | 20.0% |
-| `build/arduino-audit/sketch/src/doom/memio.c` | `OTHER` | 198 | 123 | 27 | 48 | 62.1% |
-| `build/arduino-audit/sketch/src/doom/memio.h` | `OTHER` | 39 | 19 | 14 | 6 | 48.7% |
-| `build/arduino-audit/sketch/src/doom/mus2mid.c` | `OTHER` | 738 | 505 | 76 | 157 | 68.4% |
-| `build/arduino-audit/sketch/src/doom/mus2mid.h` | `OTHER` | 10 | 7 | 0 | 3 | 70.0% |
-| `build/arduino-audit/sketch/src/doom/net_client.h` | `OTHER` | 53 | 30 | 15 | 8 | 56.6% |
-| `build/arduino-audit/sketch/src/doom/net_dedicated.h` | `OTHER` | 26 | 5 | 16 | 5 | 19.2% |
-| `build/arduino-audit/sketch/src/doom/net_defs.h` | `OTHER` | 249 | 149 | 46 | 54 | 59.8% |
-| `build/arduino-audit/sketch/src/doom/net_gui.h` | `OTHER` | 30 | 6 | 18 | 6 | 20.0% |
-| `build/arduino-audit/sketch/src/doom/net_io.h` | `OTHER` | 37 | 15 | 16 | 6 | 40.5% |
-| `build/arduino-audit/sketch/src/doom/net_loop.h` | `OTHER` | 28 | 7 | 16 | 5 | 25.0% |
-| `build/arduino-audit/sketch/src/doom/net_packet.h` | `OTHER` | 45 | 19 | 16 | 10 | 42.2% |
-| `build/arduino-audit/sketch/src/doom/net_query.h` | `OTHER` | 45 | 20 | 16 | 9 | 44.4% |
-| `build/arduino-audit/sketch/src/doom/net_sdl.h` | `OTHER` | 27 | 6 | 16 | 5 | 22.2% |
-| `build/arduino-audit/sketch/src/doom/net_server.h` | `OTHER` | 43 | 9 | 21 | 13 | 20.9% |
-| `build/arduino-audit/sketch/src/doom/p_ceilng.c` | `OTHER` | 325 | 227 | 47 | 51 | 69.8% |
-| `build/arduino-audit/sketch/src/doom/p_doors.c` | `OTHER` | 779 | 572 | 83 | 124 | 73.4% |
-| `build/arduino-audit/sketch/src/doom/p_enemy.c` | `OTHER` | 2,007 | 1,342 | 238 | 427 | 66.9% |
-| `build/arduino-audit/sketch/src/doom/p_floor.c` | `OTHER` | 547 | 430 | 54 | 63 | 78.6% |
-| `build/arduino-audit/sketch/src/doom/p_inter.c` | `OTHER` | 923 | 644 | 115 | 164 | 69.8% |
-| `build/arduino-audit/sketch/src/doom/p_inter.h` | `OTHER` | 31 | 5 | 17 | 9 | 16.1% |
-| `build/arduino-audit/sketch/src/doom/p_lights.c` | `OTHER` | 351 | 202 | 72 | 77 | 57.5% |
-| `build/arduino-audit/sketch/src/doom/p_local.h` | `OTHER` | 298 | 156 | 66 | 76 | 52.3% |
-| `build/arduino-audit/sketch/src/doom/p_map.c` | `OTHER` | 1,449 | 829 | 304 | 316 | 57.2% |
-| `build/arduino-audit/sketch/src/doom/p_maputl.c` | `OTHER` | 1,002 | 652 | 161 | 189 | 65.1% |
-| `build/arduino-audit/sketch/src/doom/p_mobj.c` | `OTHER` | 1,050 | 655 | 184 | 211 | 62.4% |
-| `build/arduino-audit/sketch/src/doom/p_mobj.h` | `OTHER` | 285 | 78 | 161 | 46 | 27.4% |
-| `build/arduino-audit/sketch/src/doom/p_plats.c` | `OTHER` | 305 | 219 | 29 | 57 | 71.8% |
-| `build/arduino-audit/sketch/src/doom/p_pspr.c` | `OTHER` | 889 | 538 | 173 | 178 | 60.5% |
-| `build/arduino-audit/sketch/src/doom/p_pspr.h` | `OTHER` | 72 | 22 | 35 | 15 | 30.6% |
-| `build/arduino-audit/sketch/src/doom/p_saveg.c` | `OTHER` | 1,892 | 976 | 435 | 481 | 51.6% |
-| `build/arduino-audit/sketch/src/doom/p_saveg.h` | `OTHER` | 63 | 22 | 24 | 17 | 34.9% |
-| `build/arduino-audit/sketch/src/doom/p_setup.c` | `OTHER` | 856 | 548 | 134 | 174 | 64.0% |
-| `build/arduino-audit/sketch/src/doom/p_setup.h` | `OTHER` | 38 | 11 | 19 | 8 | 28.9% |
-| `build/arduino-audit/sketch/src/doom/p_sight.c` | `OTHER` | 351 | 205 | 75 | 71 | 58.4% |
-| `build/arduino-audit/sketch/src/doom/p_spec.c` | `OTHER` | 1,490 | 909 | 307 | 274 | 61.0% |
-| `build/arduino-audit/sketch/src/doom/p_spec.h` | `OTHER` | 638 | 381 | 75 | 182 | 59.7% |
-| `build/arduino-audit/sketch/src/doom/p_switch.c` | `OTHER` | 649 | 426 | 111 | 112 | 65.6% |
-| `build/arduino-audit/sketch/src/doom/p_telept.c` | `OTHER` | 134 | 70 | 35 | 29 | 52.2% |
-| `build/arduino-audit/sketch/src/doom/p_tick.c` | `OTHER` | 152 | 64 | 53 | 35 | 42.1% |
-| `build/arduino-audit/sketch/src/doom/p_tick.h` | `OTHER` | 34 | 5 | 20 | 9 | 14.7% |
-| `build/arduino-audit/sketch/src/doom/p_user.c` | `OTHER` | 380 | 220 | 73 | 87 | 57.9% |
-| `build/arduino-audit/sketch/src/doom/r_bsp.c` | `OTHER` | 574 | 330 | 122 | 122 | 57.5% |
-| `build/arduino-audit/sketch/src/doom/r_bsp.h` | `OTHER` | 62 | 24 | 19 | 19 | 38.7% |
-| `build/arduino-audit/sketch/src/doom/r_data.c` | `OTHER` | 913 | 544 | 167 | 202 | 59.6% |
-| `build/arduino-audit/sketch/src/doom/r_data.h` | `OTHER` | 52 | 15 | 25 | 12 | 28.8% |
-| `build/arduino-audit/sketch/src/doom/r_defs.h` | `OTHER` | 449 | 165 | 155 | 129 | 36.7% |
-| `build/arduino-audit/sketch/src/doom/r_draw.c` | `OTHER` | 976 | 555 | 216 | 205 | 56.9% |
-| `build/arduino-audit/sketch/src/doom/r_draw.h` | `OTHER` | 105 | 41 | 33 | 31 | 39.0% |
-| `build/arduino-audit/sketch/src/doom/r_local.h` | `OTHER` | 46 | 14 | 24 | 8 | 30.4% |
-| `build/arduino-audit/sketch/src/doom/r_main.c` | `OTHER` | 915 | 578 | 155 | 182 | 63.2% |
-| `build/arduino-audit/sketch/src/doom/r_main.h` | `OTHER` | 161 | 73 | 45 | 43 | 45.3% |
-| `build/arduino-audit/sketch/src/doom/r_plane.c` | `OTHER` | 447 | 279 | 84 | 84 | 62.4% |
-| `build/arduino-audit/sketch/src/doom/r_plane.h` | `OTHER` | 77 | 38 | 18 | 21 | 49.4% |
-| `build/arduino-audit/sketch/src/doom/r_segs.c` | `OTHER` | 744 | 508 | 103 | 133 | 68.3% |
-| `build/arduino-audit/sketch/src/doom/r_segs.h` | `OTHER` | 34 | 9 | 17 | 8 | 26.5% |
-| `build/arduino-audit/sketch/src/doom/r_sky.c` | `OTHER` | 53 | 11 | 31 | 11 | 20.8% |
-| `build/arduino-audit/sketch/src/doom/r_sky.h` | `OTHER` | 38 | 9 | 20 | 9 | 23.7% |
-| `build/arduino-audit/sketch/src/doom/r_state.h` | `OTHER` | 128 | 50 | 36 | 42 | 39.1% |
-| `build/arduino-audit/sketch/src/doom/r_things.c` | `OTHER` | 983 | 606 | 171 | 206 | 61.6% |
-| `build/arduino-audit/sketch/src/doom/r_things.h` | `OTHER` | 66 | 29 | 20 | 17 | 43.9% |
-| `build/arduino-audit/sketch/src/doom/s_sound.c` | `OTHER` | 671 | 432 | 108 | 131 | 64.4% |
-| `build/arduino-audit/sketch/src/doom/s_sound.h` | `OTHER` | 90 | 21 | 42 | 27 | 23.3% |
-| `build/arduino-audit/sketch/src/doom/sha1.c` | `OTHER` | 320 | 240 | 49 | 31 | 75.0% |
-| `build/arduino-audit/sketch/src/doom/sha1.h` | `OTHER` | 41 | 18 | 16 | 7 | 43.9% |
-| `build/arduino-audit/sketch/src/doom/sounds.c` | `OTHER` | 230 | 193 | 25 | 12 | 83.9% |
-| `build/arduino-audit/sketch/src/doom/sounds.h` | `OTHER` | 228 | 192 | 26 | 10 | 84.2% |
-| `build/arduino-audit/sketch/src/doom/st_lib.c` | `OTHER` | 285 | 187 | 35 | 63 | 65.6% |
-| `build/arduino-audit/sketch/src/doom/st_lib.h` | `OTHER` | 210 | 92 | 60 | 58 | 43.8% |
-| `build/arduino-audit/sketch/src/doom/st_stuff.c` | `OTHER` | 1,417 | 904 | 216 | 297 | 63.8% |
-| `build/arduino-audit/sketch/src/doom/st_stuff.h` | `OTHER` | 90 | 37 | 31 | 22 | 41.1% |
-| `build/arduino-audit/sketch/src/doom/statdump.c` | `OTHER` | 393 | 240 | 52 | 101 | 61.1% |
-| `build/arduino-audit/sketch/src/doom/statdump.h` | `OTHER` | 24 | 6 | 11 | 7 | 25.0% |
-| `build/arduino-audit/sketch/src/doom/tables.c` | `OTHER` | 2,228 | 2,174 | 37 | 17 | 97.6% |
-| `build/arduino-audit/sketch/src/doom/tables.h` | `OTHER` | 97 | 27 | 44 | 26 | 27.8% |
-| `build/arduino-audit/sketch/src/doom/v_patch.h` | `OTHER` | 51 | 18 | 25 | 8 | 35.3% |
-| `build/arduino-audit/sketch/src/doom/v_video.c` | `OTHER` | 933 | 618 | 139 | 176 | 66.2% |
-| `build/arduino-audit/sketch/src/doom/v_video.h` | `OTHER` | 109 | 35 | 40 | 34 | 32.1% |
-| `build/arduino-audit/sketch/src/doom/w_checksum.c` | `OTHER` | 88 | 49 | 21 | 18 | 55.7% |
-| `build/arduino-audit/sketch/src/doom/w_checksum.h` | `OTHER` | 28 | 6 | 17 | 5 | 21.4% |
-| `build/arduino-audit/sketch/src/doom/w_file.c` | `OTHER` | 96 | 45 | 32 | 19 | 46.9% |
-| `build/arduino-audit/sketch/src/doom/w_file.h` | `OTHER` | 79 | 24 | 31 | 24 | 30.4% |
-| `build/arduino-audit/sketch/src/doom/w_file_stdc.c` | `OTHER` | 97 | 50 | 22 | 25 | 51.5% |
-| `build/arduino-audit/sketch/src/doom/w_main.c` | `OTHER` | 199 | 88 | 66 | 45 | 44.2% |
-| `build/arduino-audit/sketch/src/doom/w_main.h` | `OTHER` | 25 | 5 | 16 | 4 | 20.0% |
-| `build/arduino-audit/sketch/src/doom/w_merge.h` | `OTHER` | 45 | 10 | 23 | 12 | 22.2% |
-| `build/arduino-audit/sketch/src/doom/w_wad.c` | `OTHER` | 613 | 354 | 124 | 135 | 57.7% |
-| `build/arduino-audit/sketch/src/doom/w_wad.h` | `OTHER` | 79 | 32 | 24 | 23 | 40.5% |
-| `build/arduino-audit/sketch/src/doom/wi_stuff.c` | `OTHER` | 1,830 | 1,216 | 210 | 404 | 66.4% |
-| `build/arduino-audit/sketch/src/doom/wi_stuff.h` | `OTHER` | 49 | 15 | 24 | 10 | 30.6% |
-| `build/arduino-audit/sketch/src/doom/z_zone.c` | `OTHER` | 489 | 279 | 89 | 121 | 57.1% |
-| `build/arduino-audit/sketch/src/doom/z_zone.h` | `OTHER` | 74 | 30 | 29 | 15 | 40.5% |
-| `build/arduino-audit/sketch/unit_tests.cpp` | `OTHER` | 127 | 88 | 15 | 24 | 69.3% |
-| `build/arduino-audit/sketch/unit_tests.h` | `OTHER` | 6 | 3 | 2 | 1 | 50.0% |
-| `build/arduino-audit/sketch/walnut_cgb.h` | `OTHER` | 9,936 | 7,707 | 886 | 1,343 | 77.6% |
-| `build/arduino-audit/sketch/zelda_ages.h` | `OTHER` | 65,542 | 65,542 | 0 | 0 | 100.0% |
-| `CHANGELOG.md` | `OTHER` | 176 | 146 | 0 | 30 | 83.0% |
-| `convert.py` | `OTHER` | 16 | 15 | 0 | 1 | 93.8% |
+| `.agents/rules/40_ai_knowledge_graph_and_indexing_protocol.md` | `AGENT_RULES` | 76 | 59 | 0 | 17 | 77.6% |
+| `.agents/rules/41_engineering_communication_and_critical_pushback.md` | `AGENT_RULES` | 80 | 60 | 0 | 20 | 75.0% |
+| `.agents/rules/42_quality_of_life_and_roadmap_ledger.md` | `AGENT_RULES` | 120 | 90 | 0 | 30 | 75.0% |
+| `.agents/rules/CONTEXT_INDEX.json` | `AGENT_RULES` | 331 | 331 | 0 | 0 | 100.0% |
+| `.agents/rules/README.md` | `AGENT_RULES` | 52 | 50 | 0 | 2 | 96.2% |
+| `AGENT_DECISION_TREE.json` | `OTHER` | 272 | 272 | 0 | 0 | 100.0% |
+| `AGENT_KNOWLEDGE_GRAPH.json` | `OTHER` | 18,189 | 18,189 | 0 | 0 | 100.0% |
+| `AGENT_MANIFEST.json` | `OTHER` | 308 | 308 | 0 | 0 | 100.0% |
+| `AGENTS.md` | `OTHER` | 17 | 14 | 0 | 3 | 82.4% |
+| `CHANGELOG.md` | `OTHER` | 625 | 554 | 0 | 71 | 88.6% |
 | `diagram.json` | `OTHER` | 18 | 18 | 0 | 0 | 100.0% |
-| `docs/consolidated-rules.md` | `DOCUMENTATION` | 2,435 | 1,951 | 38 | 446 | 80.1% |
+| `docs/consolidated-rules.md` | `DOCUMENTATION` | 3,446 | 2,750 | 43 | 653 | 79.8% |
 | `docs/hardware-notes.md` | `DOCUMENTATION` | 162 | 112 | 0 | 50 | 69.1% |
-| `docs/performance_and_benchmarking.md` | `DOCUMENTATION` | 107 | 85 | 0 | 22 | 79.4% |
-| `docs/performance_report.md` | `DOCUMENTATION` | 74 | 60 | 0 | 14 | 81.1% |
+| `docs/performance_and_benchmarking.md` | `DOCUMENTATION` | 113 | 89 | 0 | 24 | 78.8% |
+| `docs/performance_report.md` | `DOCUMENTATION` | 874 | 856 | 0 | 18 | 97.9% |
 | `docs/project-rules.md` | `DOCUMENTATION` | 5 | 3 | 0 | 2 | 60.0% |
-| `docs/software-design-document.md` | `DOCUMENTATION` | 457 | 372 | 0 | 85 | 81.4% |
+| `docs/research_apple_nintendo_ui_ux.md` | `DOCUMENTATION` | 130 | 103 | 0 | 27 | 79.2% |
+| `docs/research_embedded_ui_frameworks_unevaluated.md` | `DOCUMENTATION` | 57 | 48 | 0 | 9 | 84.2% |
+| `docs/software-design-document.md` | `DOCUMENTATION` | 465 | 380 | 0 | 85 | 81.7% |
 | `docs/wiring/01-display-and-buttons.md` | `DOCUMENTATION` | 52 | 40 | 0 | 12 | 76.9% |
 | `docs/wiring/02-sd-card.md` | `DOCUMENTATION` | 54 | 43 | 0 | 11 | 79.6% |
 | `firmware/03_emulator/build/esp32.esp32.esp32s3/build.options.json` | `OTHER` | 9 | 9 | 0 | 0 | 100.0% |
 | `firmware/03_emulator/build/esp32.esp32.esp32s3/partitions.csv` | `OTHER` | 5 | 5 | 0 | 0 | 100.0% |
-| `firmware/BmoGameboy/BmoGameboy.ino` | `FIRMWARE_TOP` | 545 | 444 | 42 | 59 | 81.5% |
+| `firmware/BmoGameboy/BmoGameboy.ino` | `FIRMWARE_TOP` | 1,160 | 1,000 | 64 | 96 | 86.2% |
 | `firmware/BmoGameboy/partitions.csv` | `FIRMWARE_TOP` | 5 | 5 | 0 | 0 | 100.0% |
 | `firmware/BmoGameboy/src/assets/bmo_assets.h` | `BAKED_ROMS` | 17 | 13 | 2 | 2 | 76.5% |
-| `firmware/BmoGameboy/src/assets/rom_data.h` | `BAKED_ROMS` | 13,119 | 13,117 | 0 | 2 | 100.0% |
-| `firmware/BmoGameboy/src/assets/roms/aladdin.h` | `BAKED_ROMS` | 65,541 | 65,541 | 0 | 0 | 100.0% |
-| `firmware/BmoGameboy/src/assets/roms/lego_racers.h` | `BAKED_ROMS` | 65,541 | 65,541 | 0 | 0 | 100.0% |
-| `firmware/BmoGameboy/src/assets/roms/mario_deluxe.h` | `BAKED_ROMS` | 65,541 | 65,541 | 0 | 0 | 100.0% |
-| `firmware/BmoGameboy/src/assets/roms/zelda_ages.h` | `BAKED_ROMS` | 65,541 | 65,541 | 0 | 0 | 100.0% |
+| `firmware/BmoGameboy/src/assets/rom_data.h` | `BAKED_ROMS` | 13,120 | 13,120 | 0 | 0 | 100.0% |
+| `firmware/BmoGameboy/src/assets/roms/aladdin.h` | `BAKED_ROMS` | 65,542 | 65,542 | 0 | 0 | 100.0% |
+| `firmware/BmoGameboy/src/assets/roms/lego_racers.h` | `BAKED_ROMS` | 65,542 | 65,542 | 0 | 0 | 100.0% |
+| `firmware/BmoGameboy/src/assets/roms/mario_deluxe.h` | `BAKED_ROMS` | 65,542 | 65,542 | 0 | 0 | 100.0% |
+| `firmware/BmoGameboy/src/assets/roms/virtual_bmo.h` | `BAKED_ROMS` | 32,776 | 32,776 | 0 | 0 | 100.0% |
+| `firmware/BmoGameboy/src/assets/roms/zelda_ages.h` | `BAKED_ROMS` | 65,542 | 65,542 | 0 | 0 | 100.0% |
 | `firmware/BmoGameboy/src/core/audio_i2s.cpp` | `FIRMWARE_CORE` | 63 | 51 | 2 | 10 | 81.0% |
 | `firmware/BmoGameboy/src/core/audio_i2s.h` | `FIRMWARE_CORE` | 9 | 7 | 1 | 1 | 77.8% |
 | `firmware/BmoGameboy/src/core/battery.cpp` | `FIRMWARE_CORE` | 79 | 68 | 2 | 9 | 86.1% |
 | `firmware/BmoGameboy/src/core/battery.h` | `FIRMWARE_CORE` | 18 | 9 | 4 | 5 | 50.0% |
-| `firmware/BmoGameboy/src/core/bmo_face.cpp` | `FIRMWARE_CORE` | 528 | 302 | 154 | 72 | 57.2% |
-| `firmware/BmoGameboy/src/core/bmo_face.h` | `FIRMWARE_CORE` | 85 | 29 | 43 | 13 | 34.1% |
-| `firmware/BmoGameboy/src/core/buttons.cpp` | `FIRMWARE_CORE` | 66 | 51 | 5 | 10 | 77.3% |
-| `firmware/BmoGameboy/src/core/buttons.h` | `FIRMWARE_CORE` | 38 | 16 | 14 | 8 | 42.1% |
+| `firmware/BmoGameboy/src/core/bmo_face.cpp` | `FIRMWARE_CORE` | 1,190 | 900 | 141 | 149 | 75.6% |
+| `firmware/BmoGameboy/src/core/bmo_face.h` | `FIRMWARE_CORE` | 124 | 58 | 46 | 20 | 46.8% |
+| `firmware/BmoGameboy/src/core/box_art.cpp` | `FIRMWARE_CORE` | 282 | 224 | 13 | 45 | 79.4% |
+| `firmware/BmoGameboy/src/core/box_art.h` | `FIRMWARE_CORE` | 36 | 22 | 7 | 7 | 61.1% |
+| `firmware/BmoGameboy/src/core/buttons.cpp` | `FIRMWARE_CORE` | 123 | 96 | 7 | 20 | 78.0% |
+| `firmware/BmoGameboy/src/core/buttons.h` | `FIRMWARE_CORE` | 48 | 23 | 15 | 10 | 47.9% |
 | `firmware/BmoGameboy/src/core/config.h` | `FIRMWARE_CORE` | 109 | 63 | 31 | 15 | 57.8% |
-| `firmware/BmoGameboy/src/core/display_emu.cpp` | `FIRMWARE_CORE` | 793 | 650 | 65 | 78 | 82.0% |
-| `firmware/BmoGameboy/src/core/display_emu.h` | `FIRMWARE_CORE` | 119 | 39 | 51 | 29 | 32.8% |
+| `firmware/BmoGameboy/src/core/display_emu.cpp` | `FIRMWARE_CORE` | 1,893 | 1,534 | 121 | 238 | 81.0% |
+| `firmware/BmoGameboy/src/core/display_emu.h` | `FIRMWARE_CORE` | 178 | 64 | 69 | 45 | 36.0% |
 | `firmware/BmoGameboy/src/core/fram_save.cpp` | `FIRMWARE_CORE` | 74 | 55 | 5 | 14 | 74.3% |
 | `firmware/BmoGameboy/src/core/fram_save.h` | `FIRMWARE_CORE` | 13 | 8 | 2 | 3 | 61.5% |
 | `firmware/BmoGameboy/src/core/profiler.cpp` | `FIRMWARE_CORE` | 102 | 82 | 1 | 19 | 80.4% |
 | `firmware/BmoGameboy/src/core/profiler.h` | `FIRMWARE_CORE` | 64 | 40 | 11 | 13 | 62.5% |
-| `firmware/BmoGameboy/src/core/sd_card.cpp` | `FIRMWARE_CORE` | 217 | 178 | 11 | 28 | 82.0% |
-| `firmware/BmoGameboy/src/core/sd_card.h` | `FIRMWARE_CORE` | 45 | 36 | 3 | 6 | 80.0% |
-| `firmware/BmoGameboy/src/emulators/emu_atari.cpp` | `EMULATOR_WRAPPERS` | 59 | 47 | 1 | 11 | 79.7% |
-| `firmware/BmoGameboy/src/emulators/emu_atari.h` | `EMULATOR_WRAPPERS` | 12 | 10 | 0 | 2 | 83.3% |
-| `firmware/BmoGameboy/src/emulators/emu_colem.cpp` | `EMULATOR_WRAPPERS` | 70 | 61 | 0 | 9 | 87.1% |
-| `firmware/BmoGameboy/src/emulators/emu_colem.h` | `EMULATOR_WRAPPERS` | 11 | 10 | 0 | 1 | 90.9% |
-| `firmware/BmoGameboy/src/emulators/emu_doom.cpp` | `EMULATOR_WRAPPERS` | 139 | 92 | 23 | 24 | 66.2% |
+| `firmware/BmoGameboy/src/core/rom_index.h` | `FIRMWARE_CORE` | 33 | 25 | 2 | 6 | 75.8% |
+| `firmware/BmoGameboy/src/core/save_manager.cpp` | `FIRMWARE_CORE` | 487 | 404 | 7 | 76 | 83.0% |
+| `firmware/BmoGameboy/src/core/save_manager.h` | `FIRMWARE_CORE` | 73 | 54 | 7 | 12 | 74.0% |
+| `firmware/BmoGameboy/src/core/sd_card.cpp` | `FIRMWARE_CORE` | 680 | 586 | 19 | 75 | 86.2% |
+| `firmware/BmoGameboy/src/core/sd_card.h` | `FIRMWARE_CORE` | 70 | 55 | 6 | 9 | 78.6% |
+| `firmware/BmoGameboy/src/core/spi_arbiter.cpp` | `FIRMWARE_CORE` | 22 | 18 | 0 | 4 | 81.8% |
+| `firmware/BmoGameboy/src/core/spi_arbiter.h` | `FIRMWARE_CORE` | 27 | 9 | 14 | 4 | 33.3% |
+| `firmware/BmoGameboy/src/core/theme.h` | `FIRMWARE_CORE` | 111 | 75 | 22 | 14 | 67.6% |
+| `firmware/BmoGameboy/src/emulators/emu_atari.cpp` | `EMULATOR_WRAPPERS` | 96 | 80 | 1 | 15 | 83.3% |
+| `firmware/BmoGameboy/src/emulators/emu_atari.h` | `EMULATOR_WRAPPERS` | 17 | 14 | 0 | 3 | 82.4% |
+| `firmware/BmoGameboy/src/emulators/emu_colem.cpp` | `EMULATOR_WRAPPERS` | 112 | 99 | 0 | 13 | 88.4% |
+| `firmware/BmoGameboy/src/emulators/emu_colem.h` | `EMULATOR_WRAPPERS` | 16 | 14 | 0 | 2 | 87.5% |
+| `firmware/BmoGameboy/src/emulators/emu_doom.cpp` | `EMULATOR_WRAPPERS` | 171 | 119 | 25 | 27 | 69.6% |
 | `firmware/BmoGameboy/src/emulators/emu_doom.h` | `EMULATOR_WRAPPERS` | 15 | 8 | 4 | 3 | 53.3% |
-| `firmware/BmoGameboy/src/emulators/emu_genesis.cpp` | `EMULATOR_WRAPPERS` | 65 | 56 | 0 | 9 | 86.2% |
-| `firmware/BmoGameboy/src/emulators/emu_genesis.h` | `EMULATOR_WRAPPERS` | 11 | 10 | 0 | 1 | 90.9% |
-| `firmware/BmoGameboy/src/emulators/emu_lynx.cpp` | `EMULATOR_WRAPPERS` | 65 | 56 | 0 | 9 | 86.2% |
-| `firmware/BmoGameboy/src/emulators/emu_lynx.h` | `EMULATOR_WRAPPERS` | 11 | 10 | 0 | 1 | 90.9% |
-| `firmware/BmoGameboy/src/emulators/emu_nes.cpp` | `EMULATOR_WRAPPERS` | 63 | 47 | 5 | 11 | 74.6% |
-| `firmware/BmoGameboy/src/emulators/emu_nes.h` | `EMULATOR_WRAPPERS` | 12 | 10 | 0 | 2 | 83.3% |
-| `firmware/BmoGameboy/src/emulators/emu_ngp.cpp` | `EMULATOR_WRAPPERS` | 65 | 56 | 0 | 9 | 86.2% |
-| `firmware/BmoGameboy/src/emulators/emu_ngp.h` | `EMULATOR_WRAPPERS` | 11 | 10 | 0 | 1 | 90.9% |
-| `firmware/BmoGameboy/src/emulators/emu_pce.cpp` | `EMULATOR_WRAPPERS` | 62 | 50 | 1 | 11 | 80.6% |
-| `firmware/BmoGameboy/src/emulators/emu_pce.h` | `EMULATOR_WRAPPERS` | 12 | 10 | 0 | 2 | 83.3% |
-| `firmware/BmoGameboy/src/emulators/emu_peanut.cpp` | `EMULATOR_WRAPPERS` | 176 | 121 | 24 | 31 | 68.8% |
-| `firmware/BmoGameboy/src/emulators/emu_peanut.h` | `EMULATOR_WRAPPERS` | 16 | 8 | 4 | 4 | 50.0% |
-| `firmware/BmoGameboy/src/emulators/emu_pico.cpp` | `EMULATOR_WRAPPERS` | 61 | 49 | 1 | 11 | 80.3% |
-| `firmware/BmoGameboy/src/emulators/emu_pico.h` | `EMULATOR_WRAPPERS` | 12 | 10 | 0 | 2 | 83.3% |
-| `firmware/BmoGameboy/src/emulators/emu_sms.cpp` | `EMULATOR_WRAPPERS` | 65 | 52 | 2 | 11 | 80.0% |
-| `firmware/BmoGameboy/src/emulators/emu_sms.h` | `EMULATOR_WRAPPERS` | 12 | 10 | 0 | 2 | 83.3% |
-| `firmware/BmoGameboy/src/emulators/emu_snes.cpp` | `EMULATOR_WRAPPERS` | 66 | 57 | 0 | 9 | 86.4% |
-| `firmware/BmoGameboy/src/emulators/emu_snes.h` | `EMULATOR_WRAPPERS` | 11 | 10 | 0 | 1 | 90.9% |
-| `firmware/BmoGameboy/src/emulators/emu_walnut.cpp` | `EMULATOR_WRAPPERS` | 244 | 149 | 58 | 37 | 61.1% |
-| `firmware/BmoGameboy/src/emulators/emu_walnut.h` | `EMULATOR_WRAPPERS` | 16 | 8 | 4 | 4 | 50.0% |
-| `firmware/BmoGameboy/src/emulators/emu_wswan.cpp` | `EMULATOR_WRAPPERS` | 65 | 56 | 0 | 9 | 86.2% |
-| `firmware/BmoGameboy/src/emulators/emu_wswan.h` | `EMULATOR_WRAPPERS` | 11 | 10 | 0 | 1 | 90.9% |
+| `firmware/BmoGameboy/src/emulators/emu_genesis.cpp` | `EMULATOR_WRAPPERS` | 113 | 100 | 0 | 13 | 88.5% |
+| `firmware/BmoGameboy/src/emulators/emu_genesis.h` | `EMULATOR_WRAPPERS` | 16 | 14 | 0 | 2 | 87.5% |
+| `firmware/BmoGameboy/src/emulators/emu_lynx.cpp` | `EMULATOR_WRAPPERS` | 104 | 91 | 0 | 13 | 87.5% |
+| `firmware/BmoGameboy/src/emulators/emu_lynx.h` | `EMULATOR_WRAPPERS` | 16 | 14 | 0 | 2 | 87.5% |
+| `firmware/BmoGameboy/src/emulators/emu_nes.cpp` | `EMULATOR_WRAPPERS` | 126 | 104 | 5 | 17 | 82.5% |
+| `firmware/BmoGameboy/src/emulators/emu_nes.h` | `EMULATOR_WRAPPERS` | 18 | 14 | 1 | 3 | 77.8% |
+| `firmware/BmoGameboy/src/emulators/emu_ngp.cpp` | `EMULATOR_WRAPPERS` | 104 | 91 | 0 | 13 | 87.5% |
+| `firmware/BmoGameboy/src/emulators/emu_ngp.h` | `EMULATOR_WRAPPERS` | 16 | 14 | 0 | 2 | 87.5% |
+| `firmware/BmoGameboy/src/emulators/emu_pce.cpp` | `EMULATOR_WRAPPERS` | 99 | 82 | 1 | 16 | 82.8% |
+| `firmware/BmoGameboy/src/emulators/emu_pce.h` | `EMULATOR_WRAPPERS` | 19 | 14 | 1 | 4 | 73.7% |
+| `firmware/BmoGameboy/src/emulators/emu_peanut.cpp` | `EMULATOR_WRAPPERS` | 222 | 162 | 24 | 36 | 73.0% |
+| `firmware/BmoGameboy/src/emulators/emu_peanut.h` | `EMULATOR_WRAPPERS` | 22 | 12 | 5 | 5 | 54.5% |
+| `firmware/BmoGameboy/src/emulators/emu_pico.cpp` | `EMULATOR_WRAPPERS` | 102 | 85 | 2 | 15 | 83.3% |
+| `firmware/BmoGameboy/src/emulators/emu_pico.h` | `EMULATOR_WRAPPERS` | 17 | 14 | 0 | 3 | 82.4% |
+| `firmware/BmoGameboy/src/emulators/emu_sms.cpp` | `EMULATOR_WRAPPERS` | 104 | 84 | 5 | 15 | 80.8% |
+| `firmware/BmoGameboy/src/emulators/emu_sms.h` | `EMULATOR_WRAPPERS` | 18 | 14 | 1 | 3 | 77.8% |
+| `firmware/BmoGameboy/src/emulators/emu_snes.cpp` | `EMULATOR_WRAPPERS` | 110 | 97 | 0 | 13 | 88.2% |
+| `firmware/BmoGameboy/src/emulators/emu_snes.h` | `EMULATOR_WRAPPERS` | 16 | 14 | 0 | 2 | 87.5% |
+| `firmware/BmoGameboy/src/emulators/emu_walnut.cpp` | `EMULATOR_WRAPPERS` | 282 | 183 | 58 | 41 | 64.9% |
+| `firmware/BmoGameboy/src/emulators/emu_walnut.h` | `EMULATOR_WRAPPERS` | 22 | 12 | 5 | 5 | 54.5% |
+| `firmware/BmoGameboy/src/emulators/emu_wswan.cpp` | `EMULATOR_WRAPPERS` | 107 | 94 | 0 | 13 | 87.9% |
+| `firmware/BmoGameboy/src/emulators/emu_wswan.h` | `EMULATOR_WRAPPERS` | 16 | 14 | 0 | 2 | 87.5% |
 | `firmware/BmoGameboy/src/engine/walnut_cgb/walnut_cgb.h` | `ENGINE_GBC` | 9,938 | 7,706 | 889 | 1,343 | 77.5% |
 | `firmware/BmoGameboy/src/tests/unit_tests.cpp` | `FIRMWARE_TOP` | 157 | 106 | 23 | 28 | 67.5% |
 | `firmware/BmoGameboy/src/tests/unit_tests.h` | `FIRMWARE_TOP` | 5 | 2 | 2 | 1 | 40.0% |
 | `firmware/BmoGameboy/src/vendor/agnes/agnes.c` | `VENDOR_ENGINES` | 2,594 | 2,180 | 96 | 318 | 84.0% |
 | `firmware/BmoGameboy/src/vendor/agnes/agnes.h` | `VENDOR_ENGINES` | 87 | 50 | 21 | 16 | 57.5% |
-| `firmware/BmoGameboy/src/vendor/colem/colem.c` | `VENDOR_ENGINES` | 32 | 26 | 2 | 4 | 81.2% |
-| `firmware/BmoGameboy/src/vendor/colem/colem.h` | `VENDOR_ENGINES` | 29 | 23 | 0 | 6 | 79.3% |
-| `firmware/BmoGameboy/src/vendor/doom/src/am_map.c` | `VENDOR_ENGINES` | 1,355 | 970 | 162 | 223 | 71.6% |
+| `firmware/BmoGameboy/src/vendor/colem/colem.c` | `VENDOR_ENGINES` | 400 | 343 | 26 | 31 | 85.8% |
+| `firmware/BmoGameboy/src/vendor/colem/colem.h` | `VENDOR_ENGINES` | 44 | 33 | 3 | 8 | 75.0% |
+| `firmware/BmoGameboy/src/vendor/doom/src/am_map.c` | `VENDOR_ENGINES` | 1,358 | 973 | 162 | 223 | 71.6% |
 | `firmware/BmoGameboy/src/vendor/doom/src/am_map.h` | `VENDOR_ENGINES` | 49 | 13 | 24 | 12 | 26.5% |
 | `firmware/BmoGameboy/src/vendor/doom/src/config.h` | `VENDOR_ENGINES` | 100 | 33 | 34 | 33 | 33.0% |
 | `firmware/BmoGameboy/src/vendor/doom/src/d_englsh.h` | `VENDOR_ENGINES` | 693 | 522 | 65 | 106 | 75.3% |
@@ -441,8 +216,8 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `firmware/BmoGameboy/src/vendor/doom/src/doomdef.c` | `VENDOR_ENGINES` | 28 | 1 | 20 | 7 | 3.6% |
 | `firmware/BmoGameboy/src/vendor/doom/src/doomdef.h` | `VENDOR_ENGINES` | 168 | 86 | 48 | 34 | 51.2% |
 | `firmware/BmoGameboy/src/vendor/doom/src/doomfeatures.h` | `VENDOR_ENGINES` | 40 | 6 | 22 | 12 | 15.0% |
-| `firmware/BmoGameboy/src/vendor/doom/src/doomgeneric.c` | `VENDOR_ENGINES` | 32 | 20 | 1 | 11 | 62.5% |
-| `firmware/BmoGameboy/src/vendor/doom/src/doomgeneric.h` | `VENDOR_ENGINES` | 49 | 32 | 1 | 16 | 65.3% |
+| `firmware/BmoGameboy/src/vendor/doom/src/doomgeneric.c` | `VENDOR_ENGINES` | 53 | 41 | 1 | 11 | 77.4% |
+| `firmware/BmoGameboy/src/vendor/doom/src/doomgeneric.h` | `VENDOR_ENGINES` | 50 | 33 | 1 | 16 | 66.0% |
 | `firmware/BmoGameboy/src/vendor/doom/src/doomkeys.h` | `VENDOR_ENGINES` | 97 | 61 | 23 | 13 | 62.9% |
 | `firmware/BmoGameboy/src/vendor/doom/src/doomstat.c` | `VENDOR_ENGINES` | 35 | 7 | 19 | 9 | 20.0% |
 | `firmware/BmoGameboy/src/vendor/doom/src/doomstat.h` | `VENDOR_ENGINES` | 281 | 77 | 108 | 96 | 27.4% |
@@ -474,7 +249,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `firmware/BmoGameboy/src/vendor/doom/src/i_sound.c` | `VENDOR_ENGINES` | 420 | 284 | 62 | 74 | 67.6% |
 | `firmware/BmoGameboy/src/vendor/doom/src/i_sound.h` | `VENDOR_ENGINES` | 256 | 104 | 71 | 81 | 40.6% |
 | `firmware/BmoGameboy/src/vendor/doom/src/i_swap.h` | `VENDOR_ENGINES` | 73 | 34 | 18 | 21 | 46.6% |
-| `firmware/BmoGameboy/src/vendor/doom/src/i_system.c` | `VENDOR_ENGINES` | 583 | 352 | 112 | 119 | 60.4% |
+| `firmware/BmoGameboy/src/vendor/doom/src/i_system.c` | `VENDOR_ENGINES` | 607 | 375 | 112 | 120 | 61.8% |
 | `firmware/BmoGameboy/src/vendor/doom/src/i_system.h` | `VENDOR_ENGINES` | 84 | 19 | 37 | 28 | 22.6% |
 | `firmware/BmoGameboy/src/vendor/doom/src/i_timer.c` | `VENDOR_ENGINES` | 96 | 36 | 32 | 28 | 37.5% |
 | `firmware/BmoGameboy/src/vendor/doom/src/i_timer.h` | `VENDOR_ENGINES` | 42 | 9 | 23 | 10 | 21.4% |
@@ -489,7 +264,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `firmware/BmoGameboy/src/vendor/doom/src/m_bbox.h` | `VENDOR_ENGINES` | 47 | 18 | 19 | 10 | 38.3% |
 | `firmware/BmoGameboy/src/vendor/doom/src/m_cheat.c` | `VENDOR_ENGINES` | 89 | 38 | 32 | 19 | 42.7% |
 | `firmware/BmoGameboy/src/vendor/doom/src/m_cheat.h` | `VENDOR_ENGINES` | 62 | 24 | 23 | 15 | 38.7% |
-| `firmware/BmoGameboy/src/vendor/doom/src/m_config.c` | `VENDOR_ENGINES` | 2,128 | 615 | 948 | 565 | 28.9% |
+| `firmware/BmoGameboy/src/vendor/doom/src/m_config.c` | `VENDOR_ENGINES` | 2,129 | 616 | 948 | 565 | 28.9% |
 | `firmware/BmoGameboy/src/vendor/doom/src/m_config.h` | `VENDOR_ENGINES` | 39 | 16 | 17 | 6 | 41.0% |
 | `firmware/BmoGameboy/src/vendor/doom/src/m_controls.c` | `VENDOR_ENGINES` | 398 | 269 | 57 | 72 | 67.6% |
 | `firmware/BmoGameboy/src/vendor/doom/src/m_controls.h` | `VENDOR_ENGINES` | 168 | 121 | 17 | 30 | 72.0% |
@@ -525,7 +300,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `firmware/BmoGameboy/src/vendor/doom/src/p_local.h` | `VENDOR_ENGINES` | 297 | 155 | 66 | 76 | 52.2% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_map.c` | `VENDOR_ENGINES` | 1,448 | 828 | 304 | 316 | 57.2% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_maputl.c` | `VENDOR_ENGINES` | 1,001 | 651 | 161 | 189 | 65.0% |
-| `firmware/BmoGameboy/src/vendor/doom/src/p_mobj.c` | `VENDOR_ENGINES` | 1,049 | 654 | 184 | 211 | 62.3% |
+| `firmware/BmoGameboy/src/vendor/doom/src/p_mobj.c` | `VENDOR_ENGINES` | 1,060 | 663 | 186 | 211 | 62.5% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_mobj.h` | `VENDOR_ENGINES` | 284 | 77 | 161 | 46 | 27.1% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_plats.c` | `VENDOR_ENGINES` | 304 | 218 | 29 | 57 | 71.7% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_pspr.c` | `VENDOR_ENGINES` | 888 | 537 | 173 | 178 | 60.5% |
@@ -535,7 +310,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `firmware/BmoGameboy/src/vendor/doom/src/p_setup.c` | `VENDOR_ENGINES` | 855 | 547 | 134 | 174 | 64.0% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_setup.h` | `VENDOR_ENGINES` | 37 | 10 | 19 | 8 | 27.0% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_sight.c` | `VENDOR_ENGINES` | 350 | 204 | 75 | 71 | 58.3% |
-| `firmware/BmoGameboy/src/vendor/doom/src/p_spec.c` | `VENDOR_ENGINES` | 1,489 | 908 | 307 | 274 | 61.0% |
+| `firmware/BmoGameboy/src/vendor/doom/src/p_spec.c` | `VENDOR_ENGINES` | 1,492 | 911 | 307 | 274 | 61.1% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_spec.h` | `VENDOR_ENGINES` | 637 | 380 | 75 | 182 | 59.7% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_switch.c` | `VENDOR_ENGINES` | 648 | 425 | 111 | 112 | 65.6% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_telept.c` | `VENDOR_ENGINES` | 133 | 69 | 35 | 29 | 51.9% |
@@ -578,269 +353,84 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `firmware/BmoGameboy/src/vendor/doom/src/v_patch.h` | `VENDOR_ENGINES` | 50 | 17 | 25 | 8 | 34.0% |
 | `firmware/BmoGameboy/src/vendor/doom/src/v_video.c` | `VENDOR_ENGINES` | 932 | 617 | 139 | 176 | 66.2% |
 | `firmware/BmoGameboy/src/vendor/doom/src/v_video.h` | `VENDOR_ENGINES` | 108 | 34 | 40 | 34 | 31.5% |
-| `firmware/BmoGameboy/src/vendor/doom/src/w_checksum.c` | `VENDOR_ENGINES` | 87 | 48 | 21 | 18 | 55.2% |
+| `firmware/BmoGameboy/src/vendor/doom/src/w_checksum.c` | `VENDOR_ENGINES` | 95 | 55 | 22 | 18 | 57.9% |
 | `firmware/BmoGameboy/src/vendor/doom/src/w_checksum.h` | `VENDOR_ENGINES` | 27 | 5 | 17 | 5 | 18.5% |
 | `firmware/BmoGameboy/src/vendor/doom/src/w_file.c` | `VENDOR_ENGINES` | 95 | 44 | 32 | 19 | 46.3% |
 | `firmware/BmoGameboy/src/vendor/doom/src/w_file.h` | `VENDOR_ENGINES` | 78 | 23 | 31 | 24 | 29.5% |
-| `firmware/BmoGameboy/src/vendor/doom/src/w_file_stdc.c` | `VENDOR_ENGINES` | 96 | 49 | 22 | 25 | 51.0% |
+| `firmware/BmoGameboy/src/vendor/doom/src/w_file_stdc.c` | `VENDOR_ENGINES` | 113 | 66 | 22 | 25 | 58.4% |
 | `firmware/BmoGameboy/src/vendor/doom/src/w_main.c` | `VENDOR_ENGINES` | 198 | 87 | 66 | 45 | 43.9% |
 | `firmware/BmoGameboy/src/vendor/doom/src/w_main.h` | `VENDOR_ENGINES` | 24 | 4 | 16 | 4 | 16.7% |
 | `firmware/BmoGameboy/src/vendor/doom/src/w_merge.h` | `VENDOR_ENGINES` | 44 | 9 | 23 | 12 | 20.5% |
-| `firmware/BmoGameboy/src/vendor/doom/src/w_wad.c` | `VENDOR_ENGINES` | 612 | 353 | 124 | 135 | 57.7% |
+| `firmware/BmoGameboy/src/vendor/doom/src/w_wad.c` | `VENDOR_ENGINES` | 653 | 393 | 124 | 136 | 60.2% |
 | `firmware/BmoGameboy/src/vendor/doom/src/w_wad.h` | `VENDOR_ENGINES` | 78 | 31 | 24 | 23 | 39.7% |
 | `firmware/BmoGameboy/src/vendor/doom/src/wi_stuff.c` | `VENDOR_ENGINES` | 1,829 | 1,215 | 210 | 404 | 66.4% |
 | `firmware/BmoGameboy/src/vendor/doom/src/wi_stuff.h` | `VENDOR_ENGINES` | 48 | 14 | 24 | 10 | 29.2% |
 | `firmware/BmoGameboy/src/vendor/doom/src/z_zone.c` | `VENDOR_ENGINES` | 488 | 278 | 89 | 121 | 57.0% |
 | `firmware/BmoGameboy/src/vendor/doom/src/z_zone.h` | `VENDOR_ENGINES` | 73 | 29 | 29 | 15 | 39.7% |
-| `firmware/BmoGameboy/src/vendor/genesis/genesis.c` | `VENDOR_ENGINES` | 35 | 29 | 2 | 4 | 82.9% |
-| `firmware/BmoGameboy/src/vendor/genesis/genesis.h` | `VENDOR_ENGINES` | 35 | 29 | 0 | 6 | 82.9% |
-| `firmware/BmoGameboy/src/vendor/lynx/lynx.c` | `VENDOR_ENGINES` | 35 | 28 | 3 | 4 | 80.0% |
-| `firmware/BmoGameboy/src/vendor/lynx/lynx.h` | `VENDOR_ENGINES` | 29 | 23 | 0 | 6 | 79.3% |
-| `firmware/BmoGameboy/src/vendor/ngp/ngp.c` | `VENDOR_ENGINES` | 34 | 28 | 2 | 4 | 82.4% |
-| `firmware/BmoGameboy/src/vendor/ngp/ngp.h` | `VENDOR_ENGINES` | 30 | 24 | 0 | 6 | 80.0% |
-| `firmware/BmoGameboy/src/vendor/pce/pce.c` | `VENDOR_ENGINES` | 95 | 71 | 9 | 15 | 74.7% |
-| `firmware/BmoGameboy/src/vendor/pce/pce.h` | `VENDOR_ENGINES` | 35 | 27 | 1 | 7 | 77.1% |
+| `firmware/BmoGameboy/src/vendor/genesis/genesis.c` | `VENDOR_ENGINES` | 786 | 593 | 94 | 99 | 75.4% |
+| `firmware/BmoGameboy/src/vendor/genesis/genesis.h` | `VENDOR_ENGINES` | 65 | 48 | 6 | 11 | 73.8% |
+| `firmware/BmoGameboy/src/vendor/lynx/lynx.c` | `VENDOR_ENGINES` | 368 | 302 | 22 | 44 | 82.1% |
+| `firmware/BmoGameboy/src/vendor/lynx/lynx.h` | `VENDOR_ENGINES` | 40 | 30 | 2 | 8 | 75.0% |
+| `firmware/BmoGameboy/src/vendor/ngp/ngp.c` | `VENDOR_ENGINES` | 430 | 365 | 31 | 34 | 84.9% |
+| `firmware/BmoGameboy/src/vendor/ngp/ngp.h` | `VENDOR_ENGINES` | 36 | 27 | 2 | 7 | 75.0% |
+| `firmware/BmoGameboy/src/vendor/pce/pce.c` | `VENDOR_ENGINES` | 658 | 497 | 88 | 73 | 75.5% |
+| `firmware/BmoGameboy/src/vendor/pce/pce.h` | `VENDOR_ENGINES` | 67 | 50 | 6 | 11 | 74.6% |
 | `firmware/BmoGameboy/src/vendor/peanut_gb/peanut_gb.h` | `VENDOR_ENGINES` | 4,056 | 2,861 | 568 | 627 | 70.5% |
 | `firmware/BmoGameboy/src/vendor/peanut_gb/peanut_gb_config.h` | `VENDOR_ENGINES` | 8 | 3 | 4 | 1 | 37.5% |
-| `firmware/BmoGameboy/src/vendor/pico/pico.c` | `VENDOR_ENGINES` | 92 | 75 | 6 | 11 | 81.5% |
-| `firmware/BmoGameboy/src/vendor/pico/pico.h` | `VENDOR_ENGINES` | 29 | 23 | 0 | 6 | 79.3% |
-| `firmware/BmoGameboy/src/vendor/smsplus/sms.c` | `VENDOR_ENGINES` | 202 | 159 | 17 | 26 | 78.7% |
-| `firmware/BmoGameboy/src/vendor/smsplus/sms.h` | `VENDOR_ENGINES` | 55 | 44 | 3 | 8 | 80.0% |
-| `firmware/BmoGameboy/src/vendor/snes/snes.c` | `VENDOR_ENGINES` | 38 | 31 | 3 | 4 | 81.6% |
-| `firmware/BmoGameboy/src/vendor/snes/snes.h` | `VENDOR_ENGINES` | 32 | 26 | 0 | 6 | 81.2% |
-| `firmware/BmoGameboy/src/vendor/stella/atari.c` | `VENDOR_ENGINES` | 89 | 70 | 7 | 12 | 78.7% |
-| `firmware/BmoGameboy/src/vendor/stella/atari.h` | `VENDOR_ENGINES` | 34 | 26 | 1 | 7 | 76.5% |
-| `firmware/BmoGameboy/src/vendor/wswan/wswan.c` | `VENDOR_ENGINES` | 33 | 27 | 2 | 4 | 81.8% |
-| `firmware/BmoGameboy/src/vendor/wswan/wswan.h` | `VENDOR_ENGINES` | 32 | 26 | 0 | 6 | 81.2% |
-| `IMPLEMENTATION_PLAN.md` | `OTHER` | 41 | 28 | 0 | 13 | 68.3% |
-| `README.md` | `OTHER` | 111 | 89 | 0 | 22 | 80.2% |
-| `report_guardian.md` | `OTHER` | 871 | 853 | 0 | 18 | 97.9% |
-| `scratch/doomgeneric/doomgeneric/am_map.c` | `OTHER` | 1,355 | 970 | 162 | 223 | 71.6% |
-| `scratch/doomgeneric/doomgeneric/am_map.h` | `OTHER` | 49 | 13 | 24 | 12 | 26.5% |
-| `scratch/doomgeneric/doomgeneric/config.h` | `OTHER` | 100 | 33 | 34 | 33 | 33.0% |
-| `scratch/doomgeneric/doomgeneric/d_englsh.h` | `OTHER` | 693 | 522 | 65 | 106 | 75.3% |
-| `scratch/doomgeneric/doomgeneric/d_event.c` | `OTHER` | 63 | 22 | 27 | 14 | 34.9% |
-| `scratch/doomgeneric/doomgeneric/d_event.h` | `OTHER` | 137 | 43 | 66 | 28 | 31.4% |
-| `scratch/doomgeneric/doomgeneric/d_items.c` | `OTHER` | 128 | 77 | 38 | 13 | 60.2% |
-| `scratch/doomgeneric/doomgeneric/d_items.h` | `OTHER` | 41 | 14 | 18 | 9 | 34.1% |
-| `scratch/doomgeneric/doomgeneric/d_iwad.c` | `OTHER` | 848 | 509 | 133 | 206 | 60.0% |
-| `scratch/doomgeneric/doomgeneric/d_iwad.h` | `OTHER` | 52 | 28 | 16 | 8 | 53.8% |
-| `scratch/doomgeneric/doomgeneric/d_loop.c` | `OTHER` | 826 | 464 | 169 | 193 | 56.2% |
-| `scratch/doomgeneric/doomgeneric/d_loop.h` | `OTHER` | 81 | 23 | 34 | 24 | 28.4% |
-| `scratch/doomgeneric/doomgeneric/d_main.c` | `OTHER` | 1,845 | 1,089 | 418 | 338 | 59.0% |
-| `scratch/doomgeneric/doomgeneric/d_main.h` | `OTHER` | 50 | 11 | 24 | 15 | 22.0% |
-| `scratch/doomgeneric/doomgeneric/d_mode.c` | `OTHER` | 209 | 150 | 28 | 31 | 71.8% |
-| `scratch/doomgeneric/doomgeneric/d_mode.h` | `OTHER` | 98 | 58 | 24 | 16 | 59.2% |
-| `scratch/doomgeneric/doomgeneric/d_net.c` | `OTHER` | 281 | 158 | 61 | 62 | 56.2% |
-| `scratch/doomgeneric/doomgeneric/d_player.h` | `OTHER` | 209 | 82 | 77 | 50 | 39.2% |
-| `scratch/doomgeneric/doomgeneric/d_textur.h` | `OTHER` | 43 | 10 | 22 | 11 | 23.3% |
-| `scratch/doomgeneric/doomgeneric/d_think.h` | `OTHER` | 68 | 19 | 29 | 20 | 27.9% |
-| `scratch/doomgeneric/doomgeneric/d_ticcmd.h` | `OTHER` | 56 | 17 | 26 | 13 | 30.4% |
-| `scratch/doomgeneric/doomgeneric/deh_main.h` | `OTHER` | 48 | 19 | 19 | 10 | 39.6% |
-| `scratch/doomgeneric/doomgeneric/deh_misc.h` | `OTHER` | 83 | 55 | 17 | 11 | 66.3% |
-| `scratch/doomgeneric/doomgeneric/deh_str.h` | `OTHER` | 47 | 18 | 17 | 12 | 38.3% |
-| `scratch/doomgeneric/doomgeneric/doom.h` | `OTHER` | 42 | 4 | 27 | 11 | 9.5% |
-| `scratch/doomgeneric/doomgeneric/doomdata.h` | `OTHER` | 213 | 93 | 70 | 50 | 43.7% |
-| `scratch/doomgeneric/doomgeneric/doomdef.c` | `OTHER` | 28 | 1 | 20 | 7 | 3.6% |
-| `scratch/doomgeneric/doomgeneric/doomdef.h` | `OTHER` | 168 | 86 | 48 | 34 | 51.2% |
-| `scratch/doomgeneric/doomgeneric/doomfeatures.h` | `OTHER` | 40 | 6 | 22 | 12 | 15.0% |
-| `scratch/doomgeneric/doomgeneric/doomgeneric.c` | `OTHER` | 27 | 15 | 1 | 11 | 55.6% |
-| `scratch/doomgeneric/doomgeneric/doomgeneric.h` | `OTHER` | 49 | 31 | 1 | 17 | 63.3% |
-| `scratch/doomgeneric/doomgeneric/doomgeneric_allegro.c` | `OTHER` | 453 | 319 | 16 | 118 | 70.4% |
-| `scratch/doomgeneric/doomgeneric/doomgeneric_emscripten.c` | `OTHER` | 220 | 184 | 5 | 31 | 83.6% |
-| `scratch/doomgeneric/doomgeneric/doomgeneric_linuxvt.c` | `OTHER` | 528 | 412 | 39 | 77 | 78.0% |
-| `scratch/doomgeneric/doomgeneric/doomgeneric_sdl.c` | `OTHER` | 211 | 173 | 9 | 29 | 82.0% |
-| `scratch/doomgeneric/doomgeneric/doomgeneric_soso.c` | `OTHER` | 277 | 217 | 6 | 54 | 78.3% |
-| `scratch/doomgeneric/doomgeneric/doomgeneric_sosox.c` | `OTHER` | 248 | 197 | 3 | 48 | 79.4% |
-| `scratch/doomgeneric/doomgeneric/doomgeneric_win.c` | `OTHER` | 210 | 171 | 2 | 37 | 81.4% |
-| `scratch/doomgeneric/doomgeneric/doomgeneric_xlib.c` | `OTHER` | 213 | 161 | 7 | 45 | 75.6% |
-| `scratch/doomgeneric/doomgeneric/doomkeys.h` | `OTHER` | 97 | 61 | 23 | 13 | 62.9% |
-| `scratch/doomgeneric/doomgeneric/doomstat.c` | `OTHER` | 35 | 7 | 19 | 9 | 20.0% |
-| `scratch/doomgeneric/doomgeneric/doomstat.h` | `OTHER` | 281 | 77 | 108 | 96 | 27.4% |
-| `scratch/doomgeneric/doomgeneric/doomtype.h` | `OTHER` | 104 | 40 | 35 | 29 | 38.5% |
-| `scratch/doomgeneric/doomgeneric/dstrings.c` | `OTHER` | 73 | 37 | 22 | 14 | 50.7% |
-| `scratch/doomgeneric/doomgeneric/dstrings.h` | `OTHER` | 41 | 8 | 22 | 11 | 19.5% |
-| `scratch/doomgeneric/doomgeneric/dummy.c` | `OTHER` | 53 | 8 | 30 | 15 | 15.1% |
-| `scratch/doomgeneric/doomgeneric/f_finale.c` | `OTHER` | 718 | 528 | 77 | 113 | 73.5% |
-| `scratch/doomgeneric/doomgeneric/f_finale.h` | `OTHER` | 45 | 9 | 23 | 13 | 20.0% |
-| `scratch/doomgeneric/doomgeneric/f_wipe.c` | `OTHER` | 294 | 220 | 31 | 43 | 74.8% |
-| `scratch/doomgeneric/doomgeneric/f_wipe.h` | `OTHER` | 63 | 29 | 22 | 12 | 46.0% |
-| `scratch/doomgeneric/doomgeneric/g_game.c` | `OTHER` | 2,303 | 1,572 | 317 | 414 | 68.3% |
-| `scratch/doomgeneric/doomgeneric/g_game.h` | `OTHER` | 80 | 29 | 28 | 23 | 36.2% |
-| `scratch/doomgeneric/doomgeneric/gusconf.c` | `OTHER` | 271 | 190 | 24 | 57 | 70.1% |
-| `scratch/doomgeneric/doomgeneric/gusconf.h` | `OTHER` | 29 | 7 | 16 | 6 | 24.1% |
-| `scratch/doomgeneric/doomgeneric/hu_lib.c` | `OTHER` | 347 | 252 | 32 | 63 | 72.6% |
-| `scratch/doomgeneric/doomgeneric/hu_lib.h` | `OTHER` | 182 | 77 | 59 | 46 | 42.3% |
-| `scratch/doomgeneric/doomgeneric/hu_stuff.c` | `OTHER` | 641 | 493 | 51 | 97 | 76.9% |
-| `scratch/doomgeneric/doomgeneric/hu_stuff.h` | `OTHER` | 59 | 21 | 23 | 15 | 35.6% |
-| `scratch/doomgeneric/doomgeneric/i_allegromusic.c` | `OTHER` | 308 | 192 | 38 | 78 | 62.3% |
-| `scratch/doomgeneric/doomgeneric/i_allegrosound.c` | `OTHER` | 433 | 255 | 73 | 105 | 58.9% |
-| `scratch/doomgeneric/doomgeneric/i_cdmus.c` | `OTHER` | 243 | 159 | 31 | 53 | 65.4% |
-| `scratch/doomgeneric/doomgeneric/i_cdmus.h` | `OTHER` | 41 | 20 | 15 | 6 | 48.8% |
-| `scratch/doomgeneric/doomgeneric/i_endoom.c` | `OTHER` | 101 | 48 | 26 | 27 | 47.5% |
-| `scratch/doomgeneric/doomgeneric/i_endoom.h` | `OTHER` | 29 | 4 | 19 | 6 | 13.8% |
-| `scratch/doomgeneric/doomgeneric/i_input.c` | `OTHER` | 341 | 133 | 173 | 35 | 39.0% |
-| `scratch/doomgeneric/doomgeneric/i_joystick.c` | `OTHER` | 359 | 254 | 38 | 67 | 70.8% |
-| `scratch/doomgeneric/doomgeneric/i_joystick.h` | `OTHER` | 70 | 21 | 33 | 16 | 30.0% |
-| `scratch/doomgeneric/doomgeneric/i_scale.c` | `OTHER` | 1,452 | 889 | 225 | 338 | 61.2% |
-| `scratch/doomgeneric/doomgeneric/i_scale.h` | `OTHER` | 53 | 21 | 20 | 12 | 39.6% |
-| `scratch/doomgeneric/doomgeneric/i_sdlmusic.c` | `OTHER` | 1,316 | 887 | 177 | 252 | 67.4% |
-| `scratch/doomgeneric/doomgeneric/i_sdlsound.c` | `OTHER` | 1,076 | 616 | 195 | 265 | 57.2% |
-| `scratch/doomgeneric/doomgeneric/i_sound.c` | `OTHER` | 420 | 284 | 62 | 74 | 67.6% |
-| `scratch/doomgeneric/doomgeneric/i_sound.h` | `OTHER` | 256 | 104 | 71 | 81 | 40.6% |
-| `scratch/doomgeneric/doomgeneric/i_swap.h` | `OTHER` | 73 | 34 | 18 | 21 | 46.6% |
-| `scratch/doomgeneric/doomgeneric/i_system.c` | `OTHER` | 578 | 347 | 112 | 119 | 60.0% |
-| `scratch/doomgeneric/doomgeneric/i_system.h` | `OTHER` | 84 | 19 | 37 | 28 | 22.6% |
-| `scratch/doomgeneric/doomgeneric/i_timer.c` | `OTHER` | 96 | 36 | 32 | 28 | 37.5% |
-| `scratch/doomgeneric/doomgeneric/i_timer.h` | `OTHER` | 42 | 9 | 23 | 10 | 21.4% |
-| `scratch/doomgeneric/doomgeneric/i_video.c` | `OTHER` | 495 | 309 | 74 | 112 | 62.4% |
-| `scratch/doomgeneric/doomgeneric/i_video.h` | `OTHER` | 175 | 63 | 65 | 47 | 36.0% |
-| `scratch/doomgeneric/doomgeneric/icon.c` | `OTHER` | 262 | 260 | 0 | 2 | 99.2% |
-| `scratch/doomgeneric/doomgeneric/info.c` | `OTHER` | 4,662 | 4,492 | 21 | 149 | 96.4% |
-| `scratch/doomgeneric/doomgeneric/info.h` | `OTHER` | 1,331 | 1,296 | 21 | 14 | 97.4% |
-| `scratch/doomgeneric/doomgeneric/m_argv.c` | `OTHER` | 265 | 150 | 52 | 63 | 56.6% |
-| `scratch/doomgeneric/doomgeneric/m_argv.h` | `OTHER` | 49 | 11 | 26 | 12 | 22.4% |
-| `scratch/doomgeneric/doomgeneric/m_bbox.c` | `OTHER` | 54 | 21 | 20 | 13 | 38.9% |
-| `scratch/doomgeneric/doomgeneric/m_bbox.h` | `OTHER` | 47 | 18 | 19 | 10 | 38.3% |
-| `scratch/doomgeneric/doomgeneric/m_cheat.c` | `OTHER` | 89 | 38 | 32 | 19 | 42.7% |
-| `scratch/doomgeneric/doomgeneric/m_cheat.h` | `OTHER` | 62 | 24 | 23 | 15 | 38.7% |
-| `scratch/doomgeneric/doomgeneric/m_config.c` | `OTHER` | 2,128 | 615 | 948 | 565 | 28.9% |
-| `scratch/doomgeneric/doomgeneric/m_config.h` | `OTHER` | 39 | 16 | 17 | 6 | 41.0% |
-| `scratch/doomgeneric/doomgeneric/m_controls.c` | `OTHER` | 398 | 269 | 57 | 72 | 67.6% |
-| `scratch/doomgeneric/doomgeneric/m_controls.h` | `OTHER` | 168 | 121 | 17 | 30 | 72.0% |
-| `scratch/doomgeneric/doomgeneric/m_fixed.c` | `OTHER` | 62 | 24 | 21 | 17 | 38.7% |
-| `scratch/doomgeneric/doomgeneric/m_fixed.h` | `OTHER` | 39 | 8 | 20 | 11 | 20.5% |
-| `scratch/doomgeneric/doomgeneric/m_menu.c` | `OTHER` | 2,125 | 1,502 | 250 | 373 | 70.7% |
-| `scratch/doomgeneric/doomgeneric/m_menu.h` | `OTHER` | 61 | 11 | 33 | 17 | 18.0% |
-| `scratch/doomgeneric/doomgeneric/m_misc.c` | `OTHER` | 536 | 335 | 87 | 114 | 62.5% |
-| `scratch/doomgeneric/doomgeneric/m_misc.h` | `OTHER` | 51 | 27 | 17 | 7 | 52.9% |
-| `scratch/doomgeneric/doomgeneric/m_random.c` | `OTHER` | 65 | 37 | 22 | 6 | 56.9% |
-| `scratch/doomgeneric/doomgeneric/m_random.h` | `OTHER` | 39 | 7 | 21 | 11 | 17.9% |
-| `scratch/doomgeneric/doomgeneric/memio.c` | `OTHER` | 197 | 122 | 27 | 48 | 61.9% |
-| `scratch/doomgeneric/doomgeneric/memio.h` | `OTHER` | 38 | 18 | 14 | 6 | 47.4% |
-| `scratch/doomgeneric/doomgeneric/mus2mid.c` | `OTHER` | 737 | 504 | 76 | 157 | 68.4% |
-| `scratch/doomgeneric/doomgeneric/mus2mid.h` | `OTHER` | 9 | 6 | 0 | 3 | 66.7% |
-| `scratch/doomgeneric/doomgeneric/net_client.h` | `OTHER` | 52 | 29 | 15 | 8 | 55.8% |
-| `scratch/doomgeneric/doomgeneric/net_dedicated.h` | `OTHER` | 25 | 4 | 16 | 5 | 16.0% |
-| `scratch/doomgeneric/doomgeneric/net_defs.h` | `OTHER` | 248 | 148 | 46 | 54 | 59.7% |
-| `scratch/doomgeneric/doomgeneric/net_gui.h` | `OTHER` | 29 | 5 | 18 | 6 | 17.2% |
-| `scratch/doomgeneric/doomgeneric/net_io.h` | `OTHER` | 36 | 14 | 16 | 6 | 38.9% |
-| `scratch/doomgeneric/doomgeneric/net_loop.h` | `OTHER` | 27 | 6 | 16 | 5 | 22.2% |
-| `scratch/doomgeneric/doomgeneric/net_packet.h` | `OTHER` | 44 | 18 | 16 | 10 | 40.9% |
-| `scratch/doomgeneric/doomgeneric/net_query.h` | `OTHER` | 44 | 19 | 16 | 9 | 43.2% |
-| `scratch/doomgeneric/doomgeneric/net_sdl.h` | `OTHER` | 26 | 5 | 16 | 5 | 19.2% |
-| `scratch/doomgeneric/doomgeneric/net_server.h` | `OTHER` | 42 | 8 | 21 | 13 | 19.0% |
-| `scratch/doomgeneric/doomgeneric/p_ceilng.c` | `OTHER` | 324 | 226 | 47 | 51 | 69.8% |
-| `scratch/doomgeneric/doomgeneric/p_doors.c` | `OTHER` | 778 | 571 | 83 | 124 | 73.4% |
-| `scratch/doomgeneric/doomgeneric/p_enemy.c` | `OTHER` | 2,006 | 1,341 | 238 | 427 | 66.8% |
-| `scratch/doomgeneric/doomgeneric/p_floor.c` | `OTHER` | 546 | 429 | 54 | 63 | 78.6% |
-| `scratch/doomgeneric/doomgeneric/p_inter.c` | `OTHER` | 922 | 643 | 115 | 164 | 69.7% |
-| `scratch/doomgeneric/doomgeneric/p_inter.h` | `OTHER` | 30 | 4 | 17 | 9 | 13.3% |
-| `scratch/doomgeneric/doomgeneric/p_lights.c` | `OTHER` | 350 | 201 | 72 | 77 | 57.4% |
-| `scratch/doomgeneric/doomgeneric/p_local.h` | `OTHER` | 297 | 155 | 66 | 76 | 52.2% |
-| `scratch/doomgeneric/doomgeneric/p_map.c` | `OTHER` | 1,448 | 828 | 304 | 316 | 57.2% |
-| `scratch/doomgeneric/doomgeneric/p_maputl.c` | `OTHER` | 1,001 | 651 | 161 | 189 | 65.0% |
-| `scratch/doomgeneric/doomgeneric/p_mobj.c` | `OTHER` | 1,049 | 654 | 184 | 211 | 62.3% |
-| `scratch/doomgeneric/doomgeneric/p_mobj.h` | `OTHER` | 284 | 77 | 161 | 46 | 27.1% |
-| `scratch/doomgeneric/doomgeneric/p_plats.c` | `OTHER` | 304 | 218 | 29 | 57 | 71.7% |
-| `scratch/doomgeneric/doomgeneric/p_pspr.c` | `OTHER` | 888 | 537 | 173 | 178 | 60.5% |
-| `scratch/doomgeneric/doomgeneric/p_pspr.h` | `OTHER` | 71 | 21 | 35 | 15 | 29.6% |
-| `scratch/doomgeneric/doomgeneric/p_saveg.c` | `OTHER` | 1,891 | 975 | 435 | 481 | 51.6% |
-| `scratch/doomgeneric/doomgeneric/p_saveg.h` | `OTHER` | 62 | 21 | 24 | 17 | 33.9% |
-| `scratch/doomgeneric/doomgeneric/p_setup.c` | `OTHER` | 855 | 547 | 134 | 174 | 64.0% |
-| `scratch/doomgeneric/doomgeneric/p_setup.h` | `OTHER` | 37 | 10 | 19 | 8 | 27.0% |
-| `scratch/doomgeneric/doomgeneric/p_sight.c` | `OTHER` | 350 | 204 | 75 | 71 | 58.3% |
-| `scratch/doomgeneric/doomgeneric/p_spec.c` | `OTHER` | 1,489 | 908 | 307 | 274 | 61.0% |
-| `scratch/doomgeneric/doomgeneric/p_spec.h` | `OTHER` | 637 | 380 | 75 | 182 | 59.7% |
-| `scratch/doomgeneric/doomgeneric/p_switch.c` | `OTHER` | 648 | 425 | 111 | 112 | 65.6% |
-| `scratch/doomgeneric/doomgeneric/p_telept.c` | `OTHER` | 133 | 69 | 35 | 29 | 51.9% |
-| `scratch/doomgeneric/doomgeneric/p_tick.c` | `OTHER` | 151 | 63 | 53 | 35 | 41.7% |
-| `scratch/doomgeneric/doomgeneric/p_tick.h` | `OTHER` | 33 | 4 | 20 | 9 | 12.1% |
-| `scratch/doomgeneric/doomgeneric/p_user.c` | `OTHER` | 379 | 219 | 73 | 87 | 57.8% |
-| `scratch/doomgeneric/doomgeneric/r_bsp.c` | `OTHER` | 573 | 329 | 122 | 122 | 57.4% |
-| `scratch/doomgeneric/doomgeneric/r_bsp.h` | `OTHER` | 61 | 23 | 19 | 19 | 37.7% |
-| `scratch/doomgeneric/doomgeneric/r_data.c` | `OTHER` | 912 | 543 | 167 | 202 | 59.5% |
-| `scratch/doomgeneric/doomgeneric/r_data.h` | `OTHER` | 51 | 14 | 25 | 12 | 27.5% |
-| `scratch/doomgeneric/doomgeneric/r_defs.h` | `OTHER` | 448 | 164 | 155 | 129 | 36.6% |
-| `scratch/doomgeneric/doomgeneric/r_draw.c` | `OTHER` | 975 | 554 | 216 | 205 | 56.8% |
-| `scratch/doomgeneric/doomgeneric/r_draw.h` | `OTHER` | 104 | 40 | 33 | 31 | 38.5% |
-| `scratch/doomgeneric/doomgeneric/r_local.h` | `OTHER` | 45 | 13 | 24 | 8 | 28.9% |
-| `scratch/doomgeneric/doomgeneric/r_main.c` | `OTHER` | 891 | 556 | 155 | 180 | 62.4% |
-| `scratch/doomgeneric/doomgeneric/r_main.h` | `OTHER` | 160 | 72 | 45 | 43 | 45.0% |
-| `scratch/doomgeneric/doomgeneric/r_plane.c` | `OTHER` | 446 | 278 | 84 | 84 | 62.3% |
-| `scratch/doomgeneric/doomgeneric/r_plane.h` | `OTHER` | 76 | 37 | 18 | 21 | 48.7% |
-| `scratch/doomgeneric/doomgeneric/r_segs.c` | `OTHER` | 743 | 507 | 103 | 133 | 68.2% |
-| `scratch/doomgeneric/doomgeneric/r_segs.h` | `OTHER` | 33 | 8 | 17 | 8 | 24.2% |
-| `scratch/doomgeneric/doomgeneric/r_sky.c` | `OTHER` | 52 | 10 | 31 | 11 | 19.2% |
-| `scratch/doomgeneric/doomgeneric/r_sky.h` | `OTHER` | 37 | 8 | 20 | 9 | 21.6% |
-| `scratch/doomgeneric/doomgeneric/r_state.h` | `OTHER` | 127 | 49 | 36 | 42 | 38.6% |
-| `scratch/doomgeneric/doomgeneric/r_things.c` | `OTHER` | 982 | 605 | 171 | 206 | 61.6% |
-| `scratch/doomgeneric/doomgeneric/r_things.h` | `OTHER` | 65 | 28 | 20 | 17 | 43.1% |
-| `scratch/doomgeneric/doomgeneric/s_sound.c` | `OTHER` | 670 | 431 | 108 | 131 | 64.3% |
-| `scratch/doomgeneric/doomgeneric/s_sound.h` | `OTHER` | 89 | 20 | 42 | 27 | 22.5% |
-| `scratch/doomgeneric/doomgeneric/sha1.c` | `OTHER` | 319 | 239 | 49 | 31 | 74.9% |
-| `scratch/doomgeneric/doomgeneric/sha1.h` | `OTHER` | 40 | 17 | 16 | 7 | 42.5% |
-| `scratch/doomgeneric/doomgeneric/sounds.c` | `OTHER` | 229 | 192 | 25 | 12 | 83.8% |
-| `scratch/doomgeneric/doomgeneric/sounds.h` | `OTHER` | 227 | 191 | 26 | 10 | 84.1% |
-| `scratch/doomgeneric/doomgeneric/st_lib.c` | `OTHER` | 284 | 186 | 35 | 63 | 65.5% |
-| `scratch/doomgeneric/doomgeneric/st_lib.h` | `OTHER` | 209 | 91 | 60 | 58 | 43.5% |
-| `scratch/doomgeneric/doomgeneric/st_stuff.c` | `OTHER` | 1,416 | 903 | 216 | 297 | 63.8% |
-| `scratch/doomgeneric/doomgeneric/st_stuff.h` | `OTHER` | 89 | 36 | 31 | 22 | 40.4% |
-| `scratch/doomgeneric/doomgeneric/statdump.c` | `OTHER` | 392 | 239 | 52 | 101 | 61.0% |
-| `scratch/doomgeneric/doomgeneric/statdump.h` | `OTHER` | 23 | 5 | 11 | 7 | 21.7% |
-| `scratch/doomgeneric/doomgeneric/tables.c` | `OTHER` | 2,227 | 2,173 | 37 | 17 | 97.6% |
-| `scratch/doomgeneric/doomgeneric/tables.h` | `OTHER` | 96 | 26 | 44 | 26 | 27.1% |
-| `scratch/doomgeneric/doomgeneric/v_patch.h` | `OTHER` | 50 | 17 | 25 | 8 | 34.0% |
-| `scratch/doomgeneric/doomgeneric/v_video.c` | `OTHER` | 932 | 617 | 139 | 176 | 66.2% |
-| `scratch/doomgeneric/doomgeneric/v_video.h` | `OTHER` | 108 | 34 | 40 | 34 | 31.5% |
-| `scratch/doomgeneric/doomgeneric/w_checksum.c` | `OTHER` | 87 | 48 | 21 | 18 | 55.2% |
-| `scratch/doomgeneric/doomgeneric/w_checksum.h` | `OTHER` | 27 | 5 | 17 | 5 | 18.5% |
-| `scratch/doomgeneric/doomgeneric/w_file.c` | `OTHER` | 95 | 44 | 32 | 19 | 46.3% |
-| `scratch/doomgeneric/doomgeneric/w_file.h` | `OTHER` | 78 | 23 | 31 | 24 | 29.5% |
-| `scratch/doomgeneric/doomgeneric/w_file_stdc.c` | `OTHER` | 96 | 49 | 22 | 25 | 51.0% |
-| `scratch/doomgeneric/doomgeneric/w_main.c` | `OTHER` | 198 | 87 | 66 | 45 | 43.9% |
-| `scratch/doomgeneric/doomgeneric/w_main.h` | `OTHER` | 24 | 4 | 16 | 4 | 16.7% |
-| `scratch/doomgeneric/doomgeneric/w_merge.h` | `OTHER` | 44 | 9 | 23 | 12 | 20.5% |
-| `scratch/doomgeneric/doomgeneric/w_wad.c` | `OTHER` | 612 | 353 | 124 | 135 | 57.7% |
-| `scratch/doomgeneric/doomgeneric/w_wad.h` | `OTHER` | 78 | 31 | 24 | 23 | 39.7% |
-| `scratch/doomgeneric/doomgeneric/wi_stuff.c` | `OTHER` | 1,829 | 1,215 | 210 | 404 | 66.4% |
-| `scratch/doomgeneric/doomgeneric/wi_stuff.h` | `OTHER` | 48 | 14 | 24 | 10 | 29.2% |
-| `scratch/doomgeneric/doomgeneric/z_zone.c` | `OTHER` | 488 | 278 | 89 | 121 | 57.0% |
-| `scratch/doomgeneric/doomgeneric/z_zone.h` | `OTHER` | 73 | 29 | 29 | 15 | 39.7% |
-| `scratch/doomgeneric/README.md` | `OTHER` | 67 | 51 | 0 | 16 | 76.1% |
-| `scripts/auto_install_romsets.py` | `SCRIPTS` | 292 | 250 | 11 | 31 | 85.6% |
-| `scripts/benchmark_repo.py` | `SCRIPTS` | 29 | 20 | 0 | 9 | 69.0% |
+| `firmware/BmoGameboy/src/vendor/pico/pico.c` | `VENDOR_ENGINES` | 296 | 243 | 24 | 29 | 82.1% |
+| `firmware/BmoGameboy/src/vendor/pico/pico.h` | `VENDOR_ENGINES` | 39 | 31 | 1 | 7 | 79.5% |
+| `firmware/BmoGameboy/src/vendor/smsplus/sms.c` | `VENDOR_ENGINES` | 375 | 325 | 22 | 28 | 86.7% |
+| `firmware/BmoGameboy/src/vendor/smsplus/sms.h` | `VENDOR_ENGINES` | 56 | 45 | 3 | 8 | 80.4% |
+| `firmware/BmoGameboy/src/vendor/snes/snes.c` | `VENDOR_ENGINES` | 688 | 592 | 26 | 70 | 86.0% |
+| `firmware/BmoGameboy/src/vendor/snes/snes.h` | `VENDOR_ENGINES` | 57 | 46 | 3 | 8 | 80.7% |
+| `firmware/BmoGameboy/src/vendor/stella/atari.c` | `VENDOR_ENGINES` | 557 | 448 | 45 | 64 | 80.4% |
+| `firmware/BmoGameboy/src/vendor/stella/atari.h` | `VENDOR_ENGINES` | 48 | 36 | 3 | 9 | 75.0% |
+| `firmware/BmoGameboy/src/vendor/wswan/wswan.c` | `VENDOR_ENGINES` | 592 | 437 | 75 | 80 | 73.8% |
+| `firmware/BmoGameboy/src/vendor/wswan/wswan.h` | `VENDOR_ENGINES` | 53 | 38 | 5 | 10 | 71.7% |
+| `README.md` | `OTHER` | 170 | 126 | 0 | 44 | 74.1% |
+| `scripts/auto_install_romsets.py` | `SCRIPTS` | 293 | 251 | 11 | 31 | 85.7% |
+| `scripts/benchmark_repo.py` | `SCRIPTS` | 30 | 21 | 0 | 9 | 70.0% |
 | `scripts/bundle_rules.py` | `SCRIPTS` | 54 | 32 | 7 | 15 | 59.3% |
-| `scripts/color_calc.py` | `SCRIPTS` | 40 | 19 | 15 | 6 | 47.5% |
-| `scripts/convert_roms.py` | `SCRIPTS` | 36 | 31 | 0 | 5 | 86.1% |
-| `scripts/fetch_covers.py` | `SCRIPTS` | 85 | 76 | 0 | 9 | 89.4% |
-| `scripts/generate_ai_knowledge_base.py` | `SCRIPTS` | 293 | 251 | 14 | 28 | 85.7% |
+| `scripts/color_calc.py` | `SCRIPTS` | 52 | 37 | 4 | 11 | 71.2% |
+| `scripts/convert_roms.py` | `SCRIPTS` | 66 | 52 | 3 | 11 | 78.8% |
+| `scripts/fetch_covers.py` | `SCRIPTS` | 169 | 134 | 9 | 26 | 79.3% |
+| `scripts/generate_ai_knowledge_base.py` | `SCRIPTS` | 430 | 385 | 12 | 33 | 89.5% |
+| `scripts/install_git_hooks.py` | `SCRIPTS` | 59 | 42 | 8 | 9 | 71.2% |
 | `scripts/process_games.py` | `SCRIPTS` | 139 | 116 | 0 | 23 | 83.5% |
 | `scripts/repo_tools.py` | `SCRIPTS` | 31 | 22 | 0 | 9 | 71.0% |
-| `scripts/test_runner.py` | `SCRIPTS` | 34 | 27 | 1 | 6 | 79.4% |
-| `scripts/validate_repo.py` | `SCRIPTS` | 496 | 379 | 51 | 66 | 76.4% |
-| `test_compile/Adafruit_ST7789.h` | `OTHER` | 9 | 9 | 0 | 0 | 100.0% |
-| `test_compile/Arduino.h` | `OTHER` | 5 | 5 | 0 | 0 | 100.0% |
-| `test_compile/SPI.h` | `OTHER` | 2 | 2 | 0 | 0 | 100.0% |
-| `tests/test_all_tiers_validation.py` | `TESTS` | 334 | 237 | 62 | 35 | 71.0% |
+| `scripts/test_runner.py` | `SCRIPTS` | 59 | 41 | 3 | 15 | 69.5% |
+| `scripts/validate_repo.py` | `SCRIPTS` | 527 | 400 | 55 | 72 | 75.9% |
+| `tests/test_all_tiers_validation.py` | `TESTS` | 334 | 235 | 63 | 36 | 70.4% |
+| `tests/test_apple_nintendo_ui.py` | `TESTS` | 84 | 60 | 11 | 13 | 71.4% |
+| `tests/test_bmo_mascot_engine.py` | `TESTS` | 208 | 141 | 35 | 32 | 67.8% |
+| `tests/test_box_art.py` | `TESTS` | 113 | 85 | 8 | 20 | 75.2% |
+| `tests/test_genesis_emu.py` | `TESTS` | 167 | 109 | 36 | 22 | 65.3% |
+| `tests/test_native_cores_execution.py` | `TESTS` | 150 | 128 | 3 | 19 | 85.3% |
+| `tests/test_new_cores_and_qol.py` | `TESTS` | 194 | 138 | 15 | 41 | 71.1% |
+| `tests/test_pce_emu.py` | `TESTS` | 110 | 64 | 28 | 18 | 58.2% |
 | `tests/test_repo_tools.py` | `TESTS` | 71 | 53 | 4 | 14 | 74.6% |
+| `tests/test_rom_index.py` | `TESTS` | 175 | 124 | 23 | 28 | 70.9% |
+| `tests/test_save_manager.py` | `TESTS` | 126 | 106 | 2 | 18 | 84.1% |
 | `tests/test_tier1_validation.py` | `TESTS` | 126 | 98 | 13 | 15 | 77.8% |
 | `tests/test_tier2_validation.py` | `TESTS` | 98 | 78 | 10 | 10 | 79.6% |
+| `tests/test_wswan_emu.py` | `TESTS` | 126 | 88 | 21 | 17 | 69.8% |
 | `tools/bmo_simulator/run_simulator.py` | `TOOLS` | 39 | 29 | 3 | 7 | 74.4% |
-| `tools/convert.py` | `TOOLS` | 14 | 14 | 0 | 0 | 100.0% |
 | `tools/guardian/__init__.py` | `GUARDIAN_TOOLCHAIN` | 5 | 2 | 2 | 1 | 40.0% |
 | `tools/guardian/__main__.py` | `GUARDIAN_TOOLCHAIN` | 8 | 4 | 2 | 2 | 50.0% |
-| `tools/guardian/cli.py` | `GUARDIAN_TOOLCHAIN` | 236 | 169 | 21 | 46 | 71.6% |
+| `tools/guardian/cli.py` | `GUARDIAN_TOOLCHAIN` | 955 | 768 | 40 | 147 | 80.4% |
 | `tools/guardian/core/__init__.py` | `GUARDIAN_TOOLCHAIN` | 26 | 22 | 2 | 2 | 84.6% |
-| `tools/guardian/core/ast_linter.py` | `GUARDIAN_TOOLCHAIN` | 358 | 308 | 14 | 36 | 86.0% |
+| `tools/guardian/core/ast_linter.py` | `GUARDIAN_TOOLCHAIN` | 452 | 396 | 17 | 39 | 87.6% |
 | `tools/guardian/core/bus_model.py` | `GUARDIAN_TOOLCHAIN` | 278 | 245 | 11 | 22 | 88.1% |
-| `tools/guardian/core/cppcheck_runner.py` | `GUARDIAN_TOOLCHAIN` | 102 | 81 | 7 | 14 | 79.4% |
-| `tools/guardian/core/elf_analyzer.py` | `GUARDIAN_TOOLCHAIN` | 211 | 177 | 8 | 26 | 83.9% |
-| `tools/guardian/core/host_bench.py` | `GUARDIAN_TOOLCHAIN` | 283 | 215 | 19 | 49 | 76.0% |
+| `tools/guardian/core/cppcheck_runner.py` | `GUARDIAN_TOOLCHAIN` | 121 | 99 | 6 | 16 | 81.8% |
+| `tools/guardian/core/doc_verifier.py` | `GUARDIAN_TOOLCHAIN` | 161 | 134 | 10 | 17 | 83.2% |
+| `tools/guardian/core/elf_analyzer.py` | `GUARDIAN_TOOLCHAIN` | 213 | 184 | 3 | 26 | 86.4% |
+| `tools/guardian/core/host_bench.py` | `GUARDIAN_TOOLCHAIN` | 297 | 251 | 11 | 35 | 84.5% |
 | `tools/guardian/core/report_gen.py` | `GUARDIAN_TOOLCHAIN` | 243 | 220 | 3 | 20 | 90.5% |
 | `tools/guardian/tests/__init__.py` | `GUARDIAN_TOOLCHAIN` | 3 | 1 | 2 | 0 | 33.3% |
-| `tools/guardian/tests/test_guardian.py` | `GUARDIAN_TOOLCHAIN` | 111 | 81 | 14 | 16 | 73.0% |
+| `tools/guardian/tests/test_guardian.py` | `GUARDIAN_TOOLCHAIN` | 221 | 173 | 17 | 31 | 78.3% |
+| `tools/host_cores_runner.c` | `TOOLS` | 401 | 348 | 7 | 46 | 86.8% |
 | `tools/host_test.cpp` | `TOOLS` | 123 | 99 | 2 | 22 | 80.5% |
+| `tools/telemetry_plotter.py` | `TOOLS` | 170 | 138 | 6 | 26 | 81.2% |
 
 ---
 
@@ -848,17 +438,17 @@ Exhaustive line-by-line statistics across every single file in the repository:
 
 | Benchmark Kernel | Iterations | Total Time | Avg Latency | Throughput | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **BMO_SDF_Procedural_Face_Render_Unculled** | 100 | 127.16 ms | 1271.569 µs | 3.22 MOps/s | Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling. |
-| **BMO_SDF_Procedural_Face_Render_Culled** | 200 | 98.06 ms | 490.284 µs | 8.35 MOps/s | Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction). |
-| **4Pixel_Coalesced_Aligned_Store_Kernel** | 50,000 | 123.63 ms | 2.473 µs | 12.13 MOps/s | Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling. |
-| **O1_Palette_Scanline_Transformation** | 10,000 | 44.78 ms | 4.478 µs | 53.60 MOps/s | Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput. |
-| **CPU_Emulation_Opcode_Dispatch** | 500,000 | 36.69 ms | 0.073 µs | 13.63 MOps/s | Simulates CPU opcode fetch-decode-execute cycle dispatch throughput. |
-| **Direct_GPIO_Atomic_Bitmask_Sampling** | 100,000 | 47.23 ms | 0.472 µs | 16.94 MOps/s | Measures atomic 8-pin bitmask unpacking replacing 8 sequential digitalRead calls. |
-| **SD_Catalog_O1_Query_And_Page_Jump** | 10,000 | 1.71 ms | 0.171 µs | 5.84 MOps/s | Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations. |
+| **BMO_SDF_Procedural_Face_Render_Unculled** | 100 | 119.47 ms | 1194.661 µs | 3.43 MOps/s | Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling. |
+| **BMO_SDF_Procedural_Face_Render_Culled** | 200 | 96.71 ms | 483.541 µs | 8.47 MOps/s | Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction). |
+| **4Pixel_Coalesced_Aligned_Store_Kernel** | 50,000 | 114.27 ms | 2.285 µs | 13.13 MOps/s | Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling. |
+| **O1_Palette_Scanline_Transformation** | 10,000 | 41.88 ms | 4.188 µs | 57.31 MOps/s | Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput. |
+| **CPU_Emulation_Opcode_Dispatch** | 500,000 | 36.20 ms | 0.072 µs | 13.81 MOps/s | Simulates CPU opcode fetch-decode-execute cycle dispatch throughput. |
+| **Direct_GPIO_Atomic_Bitmask_Sampling** | 100,000 | 46.81 ms | 0.468 µs | 17.09 MOps/s | Measures atomic 8-pin bitmask unpacking (GPIO 4,5,6,7,16,17,18,21) replacing 8 digitalRead calls. |
+| **SD_Catalog_O1_Query_And_Page_Jump** | 10,000 | 1.55 ms | 0.155 µs | 6.45 MOps/s | Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations. |
 
 ---
 
-## 5. Static AST & Anti-Pattern Linter Findings (10 total)
+## 5. Static AST & Anti-Pattern Linter Findings (13 total)
 
 | Severity | Rule ID | File : Line | Issue Description | Suggested Action |
 | :--- | :--- | :--- | :--- | :--- |
@@ -866,9 +456,44 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `d_iwad.c:346` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
 | `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `d_iwad.c:762` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
 | `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `d_main.c:1124` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
-| `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `i_system.c:77` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
-| `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `i_system.c:291` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
-| `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `i_system.c:343` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
+| `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `i_system.c:78` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
+| `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `i_system.c:314` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
+| `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `i_system.c:367` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
 | `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `m_config.c:2045` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
 | `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `p_saveg.c:70` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
 | `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `v_video.c:757` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
+| `🟡 WARNING` | `STACK_ALLOCATED_SCANLINE_BUFFER` | `ngp.h:22` | Large scanline buffer allocated on stack in hot path. | Make static module-level or 4-byte aligned DRAM/PSRAM buffer. |
+| `🟡 WARNING` | `STACK_ALLOCATED_SCANLINE_BUFFER` | `snes.h:43` | Large scanline buffer allocated on stack in hot path. | Make static module-level or 4-byte aligned DRAM/PSRAM buffer. |
+| `🟡 WARNING` | `STACK_ALLOCATED_SCANLINE_BUFFER` | `wswan.h:40` | Large scanline buffer allocated on stack in hot path. | Make static module-level or 4-byte aligned DRAM/PSRAM buffer. |
+
+---
+
+## 6. Top Memory Consuming Symbols (Xtensa ESP32-S3 ELF)
+
+### Largest Code Functions
+| Size (Bytes) | Function Symbol | Section |
+| :--- | :--- | :--- |
+| 30,792 | `WGB::__gb_step_cpu(WGB::gb_s*)` | `text` |
+| 19,653 | `(anonymous namespace)::renderMascotInternal(unsigned short*, int, int, int, int, int)` | `text` |
+| 16,667 | `atari_cpu_step` | `text` |
+| 16,500 | `colem_step_frame` | `text` |
+| 15,184 | `PGB::__gb_step_cpu(PGB::gb_s*)` | `text` |
+| 12,322 | `snes_cpu_step` | `text` |
+| 11,413 | `_vfprintf_r` | `text` |
+| 11,222 | `_svfprintf_r` | `text` |
+| 9,910 | `WGB::__gb_draw_line(WGB::gb_s*)` | `text` |
+| 8,765 | `__ssvfscanf_r` | `text` |
+
+### Largest Data Objects
+| Size (Bytes) | Object Symbol | Section |
+| :--- | :--- | :--- |
+| 1,048,576 | `aladdin_rom` | `data_or_bss` |
+| 1,048,576 | `zelda_ages_rom` | `data_or_bss` |
+| 1,048,576 | `lego_racers_rom` | `data_or_bss` |
+| 1,048,576 | `mario_deluxe_rom` | `data_or_bss` |
+| 524,288 | `virtual_bmo_rom` | `data_or_bss` |
+| 49,972 | `(anonymous namespace)::gb` | `data_or_bss` |
+| 40,960 | `finesine` | `data_or_bss` |
+| 27,076 | `states` | `data_or_bss` |
+| 17,408 | `ticdata` | `data_or_bss` |
+| 16,916 | `(anonymous namespace)::gb` | `data_or_bss` |

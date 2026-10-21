@@ -7,7 +7,7 @@ missing compiler optimizations, IRAM/DRAM misplacements, line density metrics, a
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import List
 
 
 @dataclass
@@ -40,72 +40,39 @@ class FirmwareAstLinter:
         self.firmware_dir = firmware_dir
         self.repo_root = firmware_dir.parents[1] if firmware_dir.name == "BmoGameboy" else firmware_dir
 
-    EXCLUDED_DIRS = {
+    EXCLUDED_TOP_DIRS = {
         ".git", ".venv", "venv", "zig", "arduino-cli-bin", ".rom_cache",
-        "games", "roms", "resources", "__pycache__", "scratch", "build", "legacy_headers"
+        "games", "roms", "resources", "scratch", "build", "BMO asperite files", "test_compile"
     }
+    EXCLUDED_ANY_DIRS = {"__pycache__", "legacy_headers", ".git"}
+
+    def _is_excluded(self, path: Path) -> bool:
+        try:
+            rel_parts = path.relative_to(self.repo_root).parts
+        except ValueError:
+            rel_parts = path.parts
+        if not rel_parts:
+            return True
+        if rel_parts[0] in self.EXCLUDED_TOP_DIRS:
+            return True
+        if self.EXCLUDED_ANY_DIRS.intersection(rel_parts):
+            return True
+        return False
 
     def get_repo_line_stats(self) -> List[FileLineStats]:
-        """Calculates precise line-by-line statistics across every single file in the repository."""
+        """Calculates line statistics across all tracked source and documentation files in the repository."""
         stats: List[FileLineStats] = []
-        
         target_suffixes = {".c", ".cpp", ".h", ".hpp", ".ino", ".py", ".md", ".json", ".csv"}
-        
+
         for path in sorted(self.repo_root.rglob("*")):
-            if self.EXCLUDED_DIRS.intersection(path.parts):
-                continue
-            if not path.is_file():
+            if self._is_excluded(path) or not path.is_file():
                 continue
             suffix = path.suffix.lower()
             if suffix not in target_suffixes:
                 continue
 
-            try:
-                content = path.read_text(encoding="utf-8", errors="ignore")
-            except Exception:
-                continue
-
-            lines = content.splitlines()
-            total = len(lines)
-            blanks = sum(1 for l in lines if not l.strip())
-            comments = 0
-            sloc = 0
-            
-            in_block_comment = False
-            for line in lines:
-                s = line.strip()
-                if not s:
-                    continue
-                if suffix in {".c", ".cpp", ".h", ".hpp", ".ino"}:
-                    if in_block_comment:
-                        comments += 1
-                        if "*/" in s:
-                            in_block_comment = False
-                    elif s.startswith("/*"):
-                        comments += 1
-                        if "*/" not in s:
-                            in_block_comment = True
-                    elif s.startswith("//"):
-                        comments += 1
-                    else:
-                        sloc += 1
-                elif suffix == ".py":
-                    if s.startswith("#"):
-                        comments += 1
-                    elif '"""' in s or "'''" in s:
-                        comments += 1
-                    else:
-                        sloc += 1
-                elif suffix == ".md":
-                    if s.startswith("<!--"):
-                        comments += 1
-                    else:
-                        sloc += 1
-                else:
-                    sloc += 1
-
             rel_path = str(path.relative_to(self.repo_root)).replace("\\", "/")
-            
+
             cat = "OTHER"
             if rel_path.startswith("firmware/BmoGameboy/src/core"):
                 cat = "FIRMWARE_CORE"
@@ -132,8 +99,75 @@ class FirmwareAstLinter:
             elif rel_path.startswith("docs"):
                 cat = "DOCUMENTATION"
 
-            density = (sloc / total * 100.0) if total > 0 else 0.0
+            # Fast path for multi-megabyte baked ROM C array headers (> 256 KB)
+            try:
+                file_size = path.stat().st_size
+            except OSError:
+                continue
 
+            if cat == "BAKED_ROMS" and file_size > 262144:
+                try:
+                    raw = path.read_bytes()
+                    total = raw.count(b"\n") + 1
+                except Exception:
+                    continue
+                stats.append(
+                    FileLineStats(
+                        file_path=path,
+                        rel_path=rel_path,
+                        category=cat,
+                        total_lines=total,
+                        sloc=total,
+                        comment_lines=0,
+                        blank_lines=0,
+                        code_density_percent=100.0,
+                    )
+                )
+                continue
+
+            try:
+                content = path.read_text(encoding="utf-8", errors="ignore")
+            except Exception:
+                continue
+
+            lines = content.splitlines()
+            total = len(lines)
+            blanks = sum(1 for l in lines if not l.strip())
+            comments = 0
+            sloc = 0
+
+            in_block_comment = False
+            for line in lines:
+                s = line.strip()
+                if not s:
+                    continue
+                if suffix in {".c", ".cpp", ".h", ".hpp", ".ino"}:
+                    if in_block_comment:
+                        comments += 1
+                        if "*/" in s:
+                            in_block_comment = False
+                    elif s.startswith("/*"):
+                        comments += 1
+                        if "*/" not in s:
+                            in_block_comment = True
+                    elif s.startswith("//"):
+                        comments += 1
+                    else:
+                        sloc += 1
+                elif suffix == ".py":
+                    if s.startswith("#") or '"""' in s or "'''" in s:
+                        comments += 1
+                    else:
+                        sloc += 1
+                elif suffix == ".md":
+                    if s.startswith("<!--"):
+                        comments += 1
+                    else:
+                        sloc += 1
+                else:
+                    sloc += 1
+
+            density = (sloc / total * 100.0) if total > 0 else 0.0
             stats.append(
                 FileLineStats(
                     file_path=path,
@@ -151,17 +185,19 @@ class FirmwareAstLinter:
 
     def lint_all(self) -> List[LintFinding]:
         findings: List[LintFinding] = []
-        
-        # Scan all C, C++, H, and INO files in firmware
+
         for path in sorted(self.firmware_dir.rglob("*")):
             if not path.is_file():
                 continue
             suffix = path.suffix.lower()
             if suffix not in {".c", ".cpp", ".h", ".hpp", ".ino"}:
                 continue
-                
+            rel_str = str(path.relative_to(self.firmware_dir)).replace("\\", "/")
+            # Skip multi-megabyte baked ROM hex arrays during AST lint
+            if rel_str.startswith("src/assets/") and path.stat().st_size > 262144:
+                continue
             findings.extend(self.lint_file(path))
-            
+
         return findings
 
     def lint_file(self, path: Path) -> List[LintFinding]:
@@ -172,7 +208,10 @@ class FirmwareAstLinter:
             return findings
 
         lines = content.splitlines()
-        rel_path = path.relative_to(self.firmware_dir)
+        try:
+            rel_path = path.relative_to(self.firmware_dir)
+        except ValueError:
+            rel_path = path
         rel_path_str = str(rel_path).replace("\\", "/")
 
         # Rule 1: Check for naked Serial.print in emulator wrappers
@@ -202,7 +241,7 @@ class FirmwareAstLinter:
                 if s and not s.startswith("//") and not s.startswith("/*"):
                     first_non_comment = s
                     break
-            if not first_non_comment.startswith('#pragma GCC optimize'):
+            if not first_non_comment.startswith("#pragma GCC optimize"):
                 findings.append(
                     LintFinding(
                         rule_id="MISSING_GCC_OPTIMIZE_PRAGMA",
@@ -210,8 +249,8 @@ class FirmwareAstLinter:
                         file_path=path,
                         line_number=1,
                         line_content=lines[0] if lines else "",
-                        message="Emulator wrapper missing #pragma GCC optimize(\"O3,unroll-loops\").",
-                        suggested_fix="Add `#pragma GCC optimize(\"O3,unroll-loops\")` to top of file.",
+                        message='Emulator wrapper missing #pragma GCC optimize("O3,unroll-loops").',
+                        suggested_fix='Add `#pragma GCC optimize("O3,unroll-loops")` to top of file.',
                     )
                 )
 
@@ -222,7 +261,7 @@ class FirmwareAstLinter:
             if clean.startswith("//") or clean.startswith("/*") or clean.startswith("#define"):
                 continue
             if "#else" in clean:
-                if idx > 2 and ("Doom_MallocPSRAM" in lines[idx-2] or "heap_caps_malloc" in lines[idx-2]):
+                if idx > 2 and ("Doom_MallocPSRAM" in lines[idx - 2] or "heap_caps_malloc" in lines[idx - 2]):
                     in_host_fallback = True
             elif "#endif" in clean:
                 in_host_fallback = False
@@ -281,7 +320,7 @@ class FirmwareAstLinter:
                         )
                     )
                 if idx > loop_idx and "rebuildVisibleGames()" in clean:
-                    prev_lines = " ".join(lines[max(0, idx-3):idx])
+                    prev_lines = " ".join(lines[max(0, idx - 3) : idx])
                     if "visibleGamesDirty" not in prev_lines and "visibleGamesDirty" not in clean:
                         findings.append(
                             LintFinding(
@@ -294,6 +333,18 @@ class FirmwareAstLinter:
                                 suggested_fix="Gate with a `visibleGamesDirty` boolean flag.",
                             )
                         )
+                if re.search(r"\bdigitalRead\s*\(", clean):
+                    findings.append(
+                        LintFinding(
+                            rule_id="DIRECT_DIGITAL_READ_IN_HOT_PATH",
+                            severity="CRITICAL",
+                            file_path=path,
+                            line_number=idx,
+                            line_content=clean,
+                            message="Direct digitalRead() in BmoGameboy.ino bypasses atomic REG_READ(GPIO_IN_REG) button polling.",
+                            suggested_fix="Use Buttons::isPressed(), Buttons::justPressed(), or Buttons::gb_joypad_state.",
+                        )
+                    )
 
         # Rule 6: Check for hard stop flags in config.h
         if rel_path_str.endswith("config.h"):
@@ -381,5 +432,21 @@ class FirmwareAstLinter:
                                 suggested_fix="Assign to a safe GPIO per .agents/rules/01_hardware.md.",
                             )
                         )
+
+        # Rule 10: Check that any src/core/*.cpp file calling SD.open / SD.mkdir / SD.remove uses SpiArbiter
+        if "src/core/" in rel_path_str and rel_path_str.endswith(".cpp"):
+            has_sd_io = any(re.search(r"\bSD\.(open|mkdir|remove|exists)\s*\(", l) for l in lines if not l.strip().startswith("//"))
+            if has_sd_io and "SpiArbiter::lock()" not in content:
+                findings.append(
+                    LintFinding(
+                        rule_id="UNARBITRATED_SD_IO_IN_CORE",
+                        severity="CRITICAL",
+                        file_path=path,
+                        line_number=1,
+                        line_content="SD.* operation without SpiArbiter::lock()",
+                        message="SD card filesystem operation in core driver without SpiArbiter::lock() mutex protection.",
+                        suggested_fix="Acquire `SpiArbiter::lock()` before SD I/O and `SpiArbiter::unlock()` after.",
+                    )
+                )
 
         return findings

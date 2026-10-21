@@ -465,6 +465,22 @@ def check_rules_and_manifest_integrity():
 
 
 # ---------------------------------------------------------------------------
+# Phase 7 — Cross-Document & Rule Truth Parity
+# ---------------------------------------------------------------------------
+
+def check_doc_truth_parity():
+    issues = []
+    try:
+        from tools.guardian.core.doc_verifier import DocTruthVerifier
+        drift = DocTruthVerifier(REPO_ROOT).verify_all()
+        for d in drift:
+            issues.append(f'[{d.category}] {d.file_path}:{d.line_number}: {d.message}')
+    except Exception as exc:
+        issues.append(f'DocTruthVerifier failed: {exc}')
+    return issues
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -476,6 +492,7 @@ PHASES = [
     ('Phase 4: Structural Soundness',       check_structural_soundness),
     ('Phase 5: ROM Archive Health',         check_game_data),
     ('Phase 6: Rules & Manifest Integrity', check_rules_and_manifest_integrity),
+    ('Phase 7: Cross-Doc & Rule Truth',     check_doc_truth_parity),
 ]
 
 

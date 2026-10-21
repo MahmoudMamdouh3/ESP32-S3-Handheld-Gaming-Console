@@ -1,14 +1,15 @@
 {
-  "schema_version": "2.1.0",
-  "generated_at": "2026-10-21T17:31:53.728499",
+  "schema_version": "2.2.0",
+  "generated_at": "2026-10-21T18:01:21.058583",
   "target_mcu": {
     "chip": "ESP32-S3-N16R8",
     "cpu_arch": "Xtensa dual-core 32-bit LX7 @ 240MHz",
     "flash": "16MB Quad SPI (QIO 80MHz)",
     "psram": "8MB Octal SPI (OPI 80MHz)",
     "internal_sram_dram_bytes": 327680,
-    "dram_used_bytes": 244352,
-    "flash_used_bytes": 5002020
+    "iram_used_bytes": 77824,
+    "dram_used_bytes": 218816,
+    "flash_used_bytes": 5692909
   },
   "hard_stops": [
     {
@@ -436,50 +437,50 @@
     {
       "name": "BMO_SDF_Procedural_Face_Render_Unculled",
       "iterations": 100,
-      "avg_latency_us": 1837.643,
-      "throughput_mops": 2.23,
+      "avg_latency_us": 1400.209,
+      "throughput_mops": 2.93,
       "description": "Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling."
     },
     {
       "name": "BMO_SDF_Procedural_Face_Render_Culled",
       "iterations": 200,
-      "avg_latency_us": 665.354,
-      "throughput_mops": 6.16,
+      "avg_latency_us": 596.06,
+      "throughput_mops": 6.87,
       "description": "Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction)."
     },
     {
       "name": "4Pixel_Coalesced_Aligned_Store_Kernel",
       "iterations": 50000,
-      "avg_latency_us": 2.942,
-      "throughput_mops": 10.2,
+      "avg_latency_us": 2.869,
+      "throughput_mops": 10.46,
       "description": "Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling."
     },
     {
       "name": "O1_Palette_Scanline_Transformation",
       "iterations": 10000,
-      "avg_latency_us": 5.793,
-      "throughput_mops": 41.43,
+      "avg_latency_us": 6.452,
+      "throughput_mops": 37.2,
       "description": "Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput."
     },
     {
       "name": "CPU_Emulation_Opcode_Dispatch",
       "iterations": 500000,
-      "avg_latency_us": 0.09,
-      "throughput_mops": 11.08,
+      "avg_latency_us": 0.076,
+      "throughput_mops": 13.14,
       "description": "Simulates CPU opcode fetch-decode-execute cycle dispatch throughput."
     },
     {
       "name": "Direct_GPIO_Atomic_Bitmask_Sampling",
       "iterations": 100000,
-      "avg_latency_us": 0.539,
-      "throughput_mops": 14.85,
-      "description": "Measures atomic 8-pin bitmask unpacking replacing 8 sequential digitalRead calls."
+      "avg_latency_us": 0.699,
+      "throughput_mops": 11.45,
+      "description": "Measures atomic 8-pin bitmask unpacking (GPIO 4,5,6,7,16,17,18,21) replacing 8 digitalRead calls."
     },
     {
       "name": "SD_Catalog_O1_Query_And_Page_Jump",
       "iterations": 10000,
-      "avg_latency_us": 0.23,
-      "throughput_mops": 4.35,
+      "avg_latency_us": 0.38,
+      "throughput_mops": 2.63,
       "description": "Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations."
     }
   ],
@@ -497,7 +498,7 @@
     "02_architecture.md": {
       "file": ".agents/rules/02_architecture.md",
       "title": "4. Toolchain & Build Configuration",
-      "lines": 26
+      "lines": 25
     },
     "03_conventions.md": {
       "file": ".agents/rules/03_conventions.md",
@@ -507,12 +508,12 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "6. Known Issues, Technical Debt & Hardware Limitations Registry",
-      "lines": 396
+      "lines": 410
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
       "title": "Git & Commit Discipline",
-      "lines": 67
+      "lines": 35
     },
     "06_verification_standards.md": {
       "file": ".agents/rules/06_verification_standards.md",
@@ -532,7 +533,7 @@
     "09_testing_infrastructure.md": {
       "file": ".agents/rules/09_testing_infrastructure.md",
       "title": "Testing Infrastructure",
-      "lines": 60
+      "lines": 20
     },
     "10_symbol_reference.md": {
       "file": ".agents/rules/10_symbol_reference.md",
@@ -617,12 +618,12 @@
     "26_emulator_exit_contract.md": {
       "file": ".agents/rules/26_emulator_exit_contract.md",
       "title": "Emulator Exit Contract",
-      "lines": 52
+      "lines": 19
     },
     "27_codebase_map.md": {
       "file": ".agents/rules/27_codebase_map.md",
       "title": "Codebase Map \u2014 Ground Truth for Architecture",
-      "lines": 195
+      "lines": 125
     },
     "28_display_and_spi_contract.md": {
       "file": ".agents/rules/28_display_and_spi_contract.md",
@@ -642,7 +643,7 @@
     "31_quick_start_primer.md": {
       "file": ".agents/rules/31_quick_start_primer.md",
       "title": "31. Quick-Start Primer (Zero-Context Agent On-Ramp)",
-      "lines": 91
+      "lines": 80
     },
     "32_modular_core_template.md": {
       "file": ".agents/rules/32_modular_core_template.md",
@@ -771,6 +772,42 @@
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
       "line": 358,
       "signature": "void loop()",
+      "is_iram": false
+    },
+    "tobu_tobu_girl_rom": {
+      "file": "firmware/BmoGameboy/src/assets/rom_data.h",
+      "line": 9,
+      "signature": "const unsigned char tobu_tobu_girl_rom[] PROGMEM =",
+      "is_iram": false
+    },
+    "aladdin_rom": {
+      "file": "firmware/BmoGameboy/src/assets/roms/aladdin.h",
+      "line": 3,
+      "signature": "const uint8_t aladdin_rom[] __attribute__((section(\".rodata\"))) __attribute__((aligned(4))) =",
+      "is_iram": false
+    },
+    "lego_racers_rom": {
+      "file": "firmware/BmoGameboy/src/assets/roms/lego_racers.h",
+      "line": 3,
+      "signature": "const uint8_t lego_racers_rom[] __attribute__((section(\".rodata\"))) __attribute__((aligned(4))) =",
+      "is_iram": false
+    },
+    "mario_deluxe_rom": {
+      "file": "firmware/BmoGameboy/src/assets/roms/mario_deluxe.h",
+      "line": 3,
+      "signature": "const uint8_t mario_deluxe_rom[] __attribute__((section(\".rodata\"))) __attribute__((aligned(4))) =",
+      "is_iram": false
+    },
+    "virtual_bmo_rom": {
+      "file": "firmware/BmoGameboy/src/assets/roms/virtual_bmo.h",
+      "line": 6,
+      "signature": "const uint8_t virtual_bmo_rom[] __attribute__((section(\".rodata\"))) __attribute__((aligned(4))) =",
+      "is_iram": false
+    },
+    "zelda_ages_rom": {
+      "file": "firmware/BmoGameboy/src/assets/roms/zelda_ages.h",
+      "line": 3,
+      "signature": "const uint8_t zelda_ages_rom[] __attribute__((section(\".rodata\"))) __attribute__((aligned(4))) =",
       "is_iram": false
     },
     "begin": {
@@ -9854,15 +9891,15 @@
     ".agents/rules/02_architecture.md": {
       "path": ".agents/rules/02_architecture.md",
       "category": "AGENT_RULES",
-      "total_lines": 26,
+      "total_lines": 25,
       "sloc": 23,
       "comments": 0,
-      "blanks": 3,
-      "density_percent": 88.5,
+      "blanks": 2,
+      "density_percent": 92.0,
       "symbols": [],
       "pins_accessed": [
-        "GPIO12",
-        "GPIO11"
+        "TFT_SCK",
+        "TFT_MOSI"
       ],
       "includes": []
     },
@@ -9881,11 +9918,11 @@
     ".agents/rules/04_known_issues.md": {
       "path": ".agents/rules/04_known_issues.md",
       "category": "AGENT_RULES",
-      "total_lines": 396,
-      "sloc": 331,
+      "total_lines": 410,
+      "sloc": 343,
       "comments": 0,
-      "blanks": 65,
-      "density_percent": 83.6,
+      "blanks": 67,
+      "density_percent": 83.7,
       "symbols": [],
       "pins_accessed": [
         "TFT_SCLK",
@@ -9913,11 +9950,11 @@
     ".agents/rules/05_git_workflow.md": {
       "path": ".agents/rules/05_git_workflow.md",
       "category": "AGENT_RULES",
-      "total_lines": 67,
-      "sloc": 61,
+      "total_lines": 35,
+      "sloc": 29,
       "comments": 0,
       "blanks": 6,
-      "density_percent": 91.0,
+      "density_percent": 82.9,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -9961,11 +9998,11 @@
     ".agents/rules/09_testing_infrastructure.md": {
       "path": ".agents/rules/09_testing_infrastructure.md",
       "category": "AGENT_RULES",
-      "total_lines": 60,
-      "sloc": 54,
+      "total_lines": 20,
+      "sloc": 17,
       "comments": 0,
-      "blanks": 6,
-      "density_percent": 90.0,
+      "blanks": 3,
+      "density_percent": 85.0,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -10173,11 +10210,11 @@
     ".agents/rules/26_emulator_exit_contract.md": {
       "path": ".agents/rules/26_emulator_exit_contract.md",
       "category": "AGENT_RULES",
-      "total_lines": 52,
-      "sloc": 47,
+      "total_lines": 19,
+      "sloc": 16,
       "comments": 0,
-      "blanks": 5,
-      "density_percent": 90.4,
+      "blanks": 3,
+      "density_percent": 84.2,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -10185,32 +10222,30 @@
     ".agents/rules/27_codebase_map.md": {
       "path": ".agents/rules/27_codebase_map.md",
       "category": "AGENT_RULES",
-      "total_lines": 195,
-      "sloc": 170,
+      "total_lines": 125,
+      "sloc": 112,
       "comments": 0,
-      "blanks": 25,
-      "density_percent": 87.2,
+      "blanks": 13,
+      "density_percent": 89.6,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
         "FEATURE_AUDIO",
-        "GPIO12",
-        "GPIO11",
-        "GPIO10",
-        "GPIO13",
-        "GPIO15",
         "TFT_SCK",
-        "SD_MISO",
         "TFT_MOSI",
-        "GPIO16",
-        "GPIO17",
-        "GPIO21",
-        "GPIO18",
-        "GPIO7",
-        "GPIO6",
-        "GPIO4",
-        "GPIO5",
-        "GPIO32"
+        "TFT_CS",
+        "TFT_DC",
+        "TFT_RST",
+        "SD_CS",
+        "SD_MISO",
+        "BTN_A",
+        "BTN_B",
+        "BTN_SELECT",
+        "BTN_START",
+        "BTN_RIGHT",
+        "BTN_LEFT",
+        "BTN_UP",
+        "BTN_DOWN"
       ],
       "includes": []
     },
@@ -10266,16 +10301,26 @@
     ".agents/rules/31_quick_start_primer.md": {
       "path": ".agents/rules/31_quick_start_primer.md",
       "category": "AGENT_RULES",
-      "total_lines": 91,
-      "sloc": 78,
+      "total_lines": 80,
+      "sloc": 66,
       "comments": 0,
-      "blanks": 13,
-      "density_percent": 85.7,
+      "blanks": 14,
+      "density_percent": 82.5,
       "symbols": [],
       "pins_accessed": [
         "GPIO1",
         "FEATURE_BATTERY_MONITOR",
-        "FEATURE_AUDIO"
+        "FEATURE_AUDIO",
+        "TFT_SCK",
+        "TFT_MOSI",
+        "BTN_UP",
+        "BTN_DOWN",
+        "BTN_LEFT",
+        "BTN_RIGHT",
+        "BTN_A",
+        "BTN_B",
+        "BTN_START",
+        "BTN_SELECT"
       ],
       "includes": []
     },
@@ -10435,8 +10480,8 @@
     ".agents/rules/CONTEXT_INDEX.json": {
       "path": ".agents/rules/CONTEXT_INDEX.json",
       "category": "AGENT_RULES",
-      "total_lines": 331,
-      "sloc": 331,
+      "total_lines": 332,
+      "sloc": 332,
       "comments": 0,
       "blanks": 0,
       "density_percent": 100.0,
@@ -10447,11 +10492,11 @@
     ".agents/rules/README.md": {
       "path": ".agents/rules/README.md",
       "category": "AGENT_RULES",
-      "total_lines": 51,
-      "sloc": 49,
+      "total_lines": 52,
+      "sloc": 50,
       "comments": 0,
       "blanks": 2,
-      "density_percent": 96.1,
+      "density_percent": 96.2,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -10459,8 +10504,8 @@
     "AGENT_DECISION_TREE.json": {
       "path": "AGENT_DECISION_TREE.json",
       "category": "OTHER",
-      "total_lines": 272,
-      "sloc": 272,
+      "total_lines": 287,
+      "sloc": 287,
       "comments": 0,
       "blanks": 0,
       "density_percent": 100.0,
@@ -10473,8 +10518,8 @@
     "AGENT_KNOWLEDGE_GRAPH.json": {
       "path": "AGENT_KNOWLEDGE_GRAPH.json",
       "category": "OTHER",
-      "total_lines": 18189,
-      "sloc": 18189,
+      "total_lines": 18309,
+      "sloc": 18309,
       "comments": 0,
       "blanks": 0,
       "density_percent": 100.0,
@@ -10505,12 +10550,12 @@
         "I2S_DIN",
         "I2C_SDA",
         "I2C_SCL",
-        "GPIO12",
-        "GPIO11",
         "TFT_SCLK",
         "TFT_BL",
         "GPIO0",
+        "GPIO11",
         "GPIO15",
+        "GPIO12",
         "GPIO10",
         "GPIO13",
         "BATTERY_PIN",
@@ -10549,15 +10594,17 @@
         "FEATURE_MULTIPLAYER",
         "FEATURE_DEHACKED",
         "FEATURE_WAD_MERGE",
-        "FEATURE_SOUND"
+        "FEATURE_SOUND",
+        "PIN_DRIFT",
+        "PIN_MACROS"
       ],
       "includes": []
     },
     "AGENT_MANIFEST.json": {
       "path": "AGENT_MANIFEST.json",
       "category": "OTHER",
-      "total_lines": 308,
-      "sloc": 308,
+      "total_lines": 309,
+      "sloc": 309,
       "comments": 0,
       "blanks": 0,
       "density_percent": 100.0,
@@ -10568,11 +10615,11 @@
     "AGENTS.md": {
       "path": "AGENTS.md",
       "category": "OTHER",
-      "total_lines": 19,
-      "sloc": 15,
+      "total_lines": 17,
+      "sloc": 14,
       "comments": 0,
-      "blanks": 4,
-      "density_percent": 78.9,
+      "blanks": 3,
+      "density_percent": 82.4,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -10580,29 +10627,17 @@
     "CHANGELOG.md": {
       "path": "CHANGELOG.md",
       "category": "OTHER",
-      "total_lines": 605,
-      "sloc": 537,
+      "total_lines": 625,
+      "sloc": 554,
       "comments": 0,
-      "blanks": 68,
-      "density_percent": 88.8,
+      "blanks": 71,
+      "density_percent": 88.6,
       "symbols": [],
       "pins_accessed": [
         "TFT_SCLK",
         "TFT_DC",
         "FEATURE_PROFILER"
       ],
-      "includes": []
-    },
-    "convert.py": {
-      "path": "convert.py",
-      "category": "OTHER",
-      "total_lines": 16,
-      "sloc": 15,
-      "comments": 0,
-      "blanks": 1,
-      "density_percent": 93.8,
-      "symbols": [],
-      "pins_accessed": [],
       "includes": []
     },
     "diagram.json": {
@@ -10620,11 +10655,11 @@
     "docs/consolidated-rules.md": {
       "path": "docs/consolidated-rules.md",
       "category": "DOCUMENTATION",
-      "total_lines": 2435,
-      "sloc": 1951,
-      "comments": 38,
-      "blanks": 446,
-      "density_percent": 80.1,
+      "total_lines": 3446,
+      "sloc": 2750,
+      "comments": 43,
+      "blanks": 653,
+      "density_percent": 79.8,
       "symbols": [],
       "pins_accessed": [
         "GPIO1",
@@ -10652,20 +10687,15 @@
         "I2C_SCL",
         "FEATURE_BATTERY_MONITOR",
         "FEATURE_AUDIO",
-        "GPIO12",
+        "TFT_SCLK",
+        "TFT_BL",
+        "GPIO0",
         "GPIO11",
+        "GPIO15",
+        "GPIO12",
         "GPIO10",
         "GPIO13",
-        "GPIO15",
-        "GPIO16",
-        "GPIO17",
-        "GPIO21",
-        "GPIO18",
-        "GPIO7",
-        "GPIO6",
-        "GPIO4",
-        "GPIO5",
-        "GPIO32"
+        "BATTERY_PIN"
       ],
       "includes": [
         "../assets/roms/<name>.h",
@@ -10720,11 +10750,11 @@
     "docs/performance_report.md": {
       "path": "docs/performance_report.md",
       "category": "DOCUMENTATION",
-      "total_lines": 874,
-      "sloc": 856,
+      "total_lines": 499,
+      "sloc": 477,
       "comments": 0,
-      "blanks": 18,
-      "density_percent": 97.9,
+      "blanks": 22,
+      "density_percent": 95.6,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -10863,6 +10893,30 @@
       ],
       "includes": []
     },
+    "firmware/03_emulator/build/esp32.esp32.esp32s3/build.options.json": {
+      "path": "firmware/03_emulator/build/esp32.esp32.esp32s3/build.options.json",
+      "category": "OTHER",
+      "total_lines": 9,
+      "sloc": 9,
+      "comments": 0,
+      "blanks": 0,
+      "density_percent": 100.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "firmware/03_emulator/build/esp32.esp32.esp32s3/partitions.csv": {
+      "path": "firmware/03_emulator/build/esp32.esp32.esp32s3/partitions.csv",
+      "category": "OTHER",
+      "total_lines": 5,
+      "sloc": 5,
+      "comments": 0,
+      "blanks": 0,
+      "density_percent": 100.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
     "firmware/BmoGameboy/BmoGameboy.ino": {
       "path": "firmware/BmoGameboy/BmoGameboy.ino",
       "category": "FIRMWARE_TOP",
@@ -10940,15 +10994,98 @@
     "firmware/BmoGameboy/src/assets/rom_data.h": {
       "path": "firmware/BmoGameboy/src/assets/rom_data.h",
       "category": "BAKED_ROMS",
-      "total_lines": 13119,
-      "sloc": 13117,
+      "total_lines": 13120,
+      "sloc": 13120,
       "comments": 0,
-      "blanks": 2,
+      "blanks": 0,
       "density_percent": 100.0,
-      "symbols": [],
+      "symbols": [
+        "tobu_tobu_girl_rom"
+      ],
       "pins_accessed": [],
       "includes": [
         "pgmspace.h"
+      ]
+    },
+    "firmware/BmoGameboy/src/assets/roms/aladdin.h": {
+      "path": "firmware/BmoGameboy/src/assets/roms/aladdin.h",
+      "category": "BAKED_ROMS",
+      "total_lines": 65542,
+      "sloc": 65542,
+      "comments": 0,
+      "blanks": 0,
+      "density_percent": 100.0,
+      "symbols": [
+        "aladdin_rom"
+      ],
+      "pins_accessed": [],
+      "includes": [
+        "stdint.h"
+      ]
+    },
+    "firmware/BmoGameboy/src/assets/roms/lego_racers.h": {
+      "path": "firmware/BmoGameboy/src/assets/roms/lego_racers.h",
+      "category": "BAKED_ROMS",
+      "total_lines": 65542,
+      "sloc": 65542,
+      "comments": 0,
+      "blanks": 0,
+      "density_percent": 100.0,
+      "symbols": [
+        "lego_racers_rom"
+      ],
+      "pins_accessed": [],
+      "includes": [
+        "stdint.h"
+      ]
+    },
+    "firmware/BmoGameboy/src/assets/roms/mario_deluxe.h": {
+      "path": "firmware/BmoGameboy/src/assets/roms/mario_deluxe.h",
+      "category": "BAKED_ROMS",
+      "total_lines": 65542,
+      "sloc": 65542,
+      "comments": 0,
+      "blanks": 0,
+      "density_percent": 100.0,
+      "symbols": [
+        "mario_deluxe_rom"
+      ],
+      "pins_accessed": [],
+      "includes": [
+        "stdint.h"
+      ]
+    },
+    "firmware/BmoGameboy/src/assets/roms/virtual_bmo.h": {
+      "path": "firmware/BmoGameboy/src/assets/roms/virtual_bmo.h",
+      "category": "BAKED_ROMS",
+      "total_lines": 32776,
+      "sloc": 32776,
+      "comments": 0,
+      "blanks": 0,
+      "density_percent": 100.0,
+      "symbols": [
+        "virtual_bmo_rom"
+      ],
+      "pins_accessed": [],
+      "includes": [
+        "stdint.h",
+        "stddef.h"
+      ]
+    },
+    "firmware/BmoGameboy/src/assets/roms/zelda_ages.h": {
+      "path": "firmware/BmoGameboy/src/assets/roms/zelda_ages.h",
+      "category": "BAKED_ROMS",
+      "total_lines": 65542,
+      "sloc": 65542,
+      "comments": 0,
+      "blanks": 0,
+      "density_percent": 100.0,
+      "symbols": [
+        "zelda_ages_rom"
+      ],
+      "pins_accessed": [],
+      "includes": [
+        "stdint.h"
       ]
     },
     "firmware/BmoGameboy/src/core/audio_i2s.cpp": {
@@ -17512,43 +17649,38 @@
         "stdbool.h"
       ]
     },
-    "IMPLEMENTATION_PLAN.md": {
-      "path": "IMPLEMENTATION_PLAN.md",
-      "category": "OTHER",
-      "total_lines": 91,
-      "sloc": 68,
-      "comments": 0,
-      "blanks": 23,
-      "density_percent": 74.7,
-      "symbols": [],
-      "pins_accessed": [],
-      "includes": []
-    },
     "README.md": {
       "path": "README.md",
       "category": "OTHER",
-      "total_lines": 169,
-      "sloc": 125,
+      "total_lines": 170,
+      "sloc": 126,
       "comments": 0,
       "blanks": 44,
-      "density_percent": 74.0,
+      "density_percent": 74.1,
       "symbols": [],
       "pins_accessed": [
+        "TFT_MOSI",
+        "TFT_SCK",
+        "TFT_CS",
+        "TFT_DC",
+        "TFT_RST",
+        "SD_CS",
+        "SD_MISO",
+        "BTN_UP",
+        "BTN_DOWN",
+        "BTN_LEFT",
+        "BTN_RIGHT",
+        "BTN_A",
+        "BTN_B",
+        "BTN_START",
+        "BTN_SELECT",
+        "BATTERY_ADC_PIN",
+        "I2S_BCLK",
+        "I2S_LRC",
+        "I2S_DIN",
         "FEATURE_BATTERY_MONITOR",
         "FEATURE_AUDIO"
       ],
-      "includes": []
-    },
-    "report_guardian.md": {
-      "path": "report_guardian.md",
-      "category": "OTHER",
-      "total_lines": 871,
-      "sloc": 853,
-      "comments": 0,
-      "blanks": 18,
-      "density_percent": 97.9,
-      "symbols": [],
-      "pins_accessed": [],
       "includes": []
     },
     "scripts/auto_install_romsets.py": {
@@ -17590,11 +17722,11 @@
     "scripts/color_calc.py": {
       "path": "scripts/color_calc.py",
       "category": "SCRIPTS",
-      "total_lines": 40,
-      "sloc": 19,
-      "comments": 15,
-      "blanks": 6,
-      "density_percent": 47.5,
+      "total_lines": 52,
+      "sloc": 37,
+      "comments": 4,
+      "blanks": 11,
+      "density_percent": 71.2,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -17602,11 +17734,11 @@
     "scripts/convert_roms.py": {
       "path": "scripts/convert_roms.py",
       "category": "SCRIPTS",
-      "total_lines": 36,
-      "sloc": 31,
-      "comments": 0,
-      "blanks": 5,
-      "density_percent": 86.1,
+      "total_lines": 66,
+      "sloc": 52,
+      "comments": 3,
+      "blanks": 11,
+      "density_percent": 78.8,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -17626,11 +17758,11 @@
     "scripts/generate_ai_knowledge_base.py": {
       "path": "scripts/generate_ai_knowledge_base.py",
       "category": "SCRIPTS",
-      "total_lines": 408,
-      "sloc": 359,
-      "comments": 16,
+      "total_lines": 430,
+      "sloc": 385,
+      "comments": 12,
       "blanks": 33,
-      "density_percent": 88.0,
+      "density_percent": 89.5,
       "symbols": [],
       "pins_accessed": [
         "GPIO1",
@@ -17664,11 +17796,11 @@
     "scripts/install_git_hooks.py": {
       "path": "scripts/install_git_hooks.py",
       "category": "SCRIPTS",
-      "total_lines": 45,
-      "sloc": 29,
-      "comments": 6,
-      "blanks": 10,
-      "density_percent": 64.4,
+      "total_lines": 59,
+      "sloc": 42,
+      "comments": 8,
+      "blanks": 9,
+      "density_percent": 71.2,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -17700,11 +17832,11 @@
     "scripts/test_runner.py": {
       "path": "scripts/test_runner.py",
       "category": "SCRIPTS",
-      "total_lines": 36,
-      "sloc": 29,
-      "comments": 1,
-      "blanks": 6,
-      "density_percent": 80.6,
+      "total_lines": 59,
+      "sloc": 41,
+      "comments": 3,
+      "blanks": 15,
+      "density_percent": 69.5,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -17712,63 +17844,16 @@
     "scripts/validate_repo.py": {
       "path": "scripts/validate_repo.py",
       "category": "SCRIPTS",
-      "total_lines": 510,
-      "sloc": 389,
-      "comments": 52,
-      "blanks": 69,
-      "density_percent": 76.3,
+      "total_lines": 527,
+      "sloc": 400,
+      "comments": 55,
+      "blanks": 72,
+      "density_percent": 75.9,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
         "FEATURE_AUDIO"
       ],
-      "includes": []
-    },
-    "test_compile/Adafruit_ST7789.h": {
-      "path": "test_compile/Adafruit_ST7789.h",
-      "category": "OTHER",
-      "total_lines": 9,
-      "sloc": 9,
-      "comments": 0,
-      "blanks": 0,
-      "density_percent": 100.0,
-      "symbols": [],
-      "pins_accessed": [
-        "TFT_CS",
-        "TFT_DC",
-        "TFT_RST",
-        "TFT_WIDTH",
-        "TFT_HEIGHT"
-      ],
-      "includes": [
-        "stdint.h"
-      ]
-    },
-    "test_compile/Arduino.h": {
-      "path": "test_compile/Arduino.h",
-      "category": "OTHER",
-      "total_lines": 5,
-      "sloc": 5,
-      "comments": 0,
-      "blanks": 0,
-      "density_percent": 100.0,
-      "symbols": [],
-      "pins_accessed": [],
-      "includes": [
-        "stdint.h",
-        "stddef.h"
-      ]
-    },
-    "test_compile/SPI.h": {
-      "path": "test_compile/SPI.h",
-      "category": "OTHER",
-      "total_lines": 2,
-      "sloc": 2,
-      "comments": 0,
-      "blanks": 0,
-      "density_percent": 100.0,
-      "symbols": [],
-      "pins_accessed": [],
       "includes": []
     },
     "tests/test_all_tiers_validation.py": {
@@ -17954,18 +18039,6 @@
       "pins_accessed": [],
       "includes": []
     },
-    "tools/convert.py": {
-      "path": "tools/convert.py",
-      "category": "TOOLS",
-      "total_lines": 14,
-      "sloc": 14,
-      "comments": 0,
-      "blanks": 0,
-      "density_percent": 100.0,
-      "symbols": [],
-      "pins_accessed": [],
-      "includes": []
-    },
     "tools/guardian/__init__.py": {
       "path": "tools/guardian/__init__.py",
       "category": "GUARDIAN_TOOLCHAIN",
@@ -17993,25 +18066,31 @@
     "tools/guardian/cli.py": {
       "path": "tools/guardian/cli.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 736,
-      "sloc": 562,
-      "comments": 51,
-      "blanks": 123,
-      "density_percent": 76.4,
+      "total_lines": 955,
+      "sloc": 768,
+      "comments": 40,
+      "blanks": 147,
+      "density_percent": 80.4,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
-        "GPIO1",
         "FEATURE_AUDIO",
-        "BTN_START",
-        "BTN_A",
+        "TFT_MOSI",
+        "TFT_SCK",
         "TFT_CS",
-        "SD_CS",
         "TFT_DC",
         "TFT_RST",
+        "SD_CS",
         "SD_MISO",
+        "BTN_UP",
+        "BTN_DOWN",
+        "BTN_LEFT",
+        "BTN_RIGHT",
+        "BTN_A",
         "BTN_B",
-        "BTN_SELECT"
+        "BTN_START",
+        "BTN_SELECT",
+        "GPIO1"
       ],
       "includes": []
     },
@@ -18030,11 +18109,11 @@
     "tools/guardian/core/ast_linter.py": {
       "path": "tools/guardian/core/ast_linter.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 385,
-      "sloc": 332,
-      "comments": 15,
-      "blanks": 38,
-      "density_percent": 86.2,
+      "total_lines": 452,
+      "sloc": 396,
+      "comments": 17,
+      "blanks": 39,
+      "density_percent": 87.6,
       "symbols": [],
       "pins_accessed": [
         "SD_SPI_SPEED_SUBOPTIMAL",
@@ -18067,14 +18146,53 @@
       "pins_accessed": [],
       "includes": []
     },
+    "tools/guardian/core/doc_verifier.py": {
+      "path": "tools/guardian/core/doc_verifier.py",
+      "category": "GUARDIAN_TOOLCHAIN",
+      "total_lines": 161,
+      "sloc": 134,
+      "comments": 10,
+      "blanks": 17,
+      "density_percent": 83.2,
+      "symbols": [],
+      "pins_accessed": [
+        "PIN_DRIFT",
+        "PIN_MACROS",
+        "TFT_SCK",
+        "TFT_MOSI",
+        "TFT_RST",
+        "TFT_DC",
+        "TFT_CS",
+        "SD_MISO",
+        "SD_CS",
+        "BTN_UP",
+        "BTN_DOWN",
+        "BTN_LEFT",
+        "BTN_RIGHT",
+        "BTN_A",
+        "BTN_B",
+        "BTN_START",
+        "BTN_SELECT",
+        "BATTERY_ADC_PIN",
+        "I2S_BCLK",
+        "I2S_LRC",
+        "I2S_DIN",
+        "I2C_SDA",
+        "I2C_SCL",
+        "FEATURE_SD_CARD",
+        "FEATURE_AUDIO",
+        "FEATURE_BATTERY_MONITOR"
+      ],
+      "includes": []
+    },
     "tools/guardian/core/elf_analyzer.py": {
       "path": "tools/guardian/core/elf_analyzer.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 211,
-      "sloc": 177,
-      "comments": 8,
+      "total_lines": 213,
+      "sloc": 184,
+      "comments": 3,
       "blanks": 26,
-      "density_percent": 83.9,
+      "density_percent": 86.4,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -18082,11 +18200,11 @@
     "tools/guardian/core/host_bench.py": {
       "path": "tools/guardian/core/host_bench.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 283,
-      "sloc": 215,
-      "comments": 19,
-      "blanks": 49,
-      "density_percent": 76.0,
+      "total_lines": 297,
+      "sloc": 251,
+      "comments": 11,
+      "blanks": 35,
+      "density_percent": 84.5,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -18118,13 +18236,15 @@
     "tools/guardian/tests/test_guardian.py": {
       "path": "tools/guardian/tests/test_guardian.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 189,
-      "sloc": 150,
-      "comments": 14,
-      "blanks": 25,
-      "density_percent": 79.4,
+      "total_lines": 221,
+      "sloc": 173,
+      "comments": 17,
+      "blanks": 31,
+      "density_percent": 78.3,
       "symbols": [],
-      "pins_accessed": [],
+      "pins_accessed": [
+        "TFT_CS"
+      ],
       "includes": []
     },
     "tools/host_cores_runner.c": {

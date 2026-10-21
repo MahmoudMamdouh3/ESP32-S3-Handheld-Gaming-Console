@@ -1,6 +1,6 @@
 {
-  "schema_version": "2.0.0",
-  "last_updated": "2026-10-21T17:31:53.728499",
+  "schema_version": "2.1.0",
+  "last_updated": "2026-10-21T18:01:21.058583",
   "task_decision_table": {
     "modify_gpio_or_pin": {
       "rules": [
@@ -9,6 +9,7 @@
       ],
       "files": [
         "firmware/BmoGameboy/src/core/config.h",
+        "firmware/BmoGameboy/src/core/buttons.h",
         "firmware/BmoGameboy/src/core/buttons.cpp"
       ]
     },
@@ -61,14 +62,14 @@
       ],
       "files": [
         "tools/guardian/",
-        "report_guardian.md"
+        "docs/performance_report.md"
       ]
     },
     "session_handoff_and_logging": {
       "rules": [
         "33_agent_handoff_and_optimization_cycle.md",
-        "06_verification_standards.md",
-        "41_engineering_communication_and_critical_pushback.md"
+        "05_git_workflow.md",
+        "06_verification_standards.md"
       ],
       "files": [
         ".agents/rules/04_known_issues.md",
@@ -125,7 +126,7 @@
     "02_architecture.md": {
       "file": ".agents/rules/02_architecture.md",
       "title": "4. Toolchain & Build Configuration",
-      "lines": 26
+      "lines": 25
     },
     "03_conventions.md": {
       "file": ".agents/rules/03_conventions.md",
@@ -135,12 +136,12 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "6. Known Issues, Technical Debt & Hardware Limitations Registry",
-      "lines": 396
+      "lines": 410
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
       "title": "Git & Commit Discipline",
-      "lines": 67
+      "lines": 35
     },
     "06_verification_standards.md": {
       "file": ".agents/rules/06_verification_standards.md",
@@ -160,7 +161,7 @@
     "09_testing_infrastructure.md": {
       "file": ".agents/rules/09_testing_infrastructure.md",
       "title": "Testing Infrastructure",
-      "lines": 60
+      "lines": 20
     },
     "10_symbol_reference.md": {
       "file": ".agents/rules/10_symbol_reference.md",
@@ -245,12 +246,12 @@
     "26_emulator_exit_contract.md": {
       "file": ".agents/rules/26_emulator_exit_contract.md",
       "title": "Emulator Exit Contract",
-      "lines": 52
+      "lines": 19
     },
     "27_codebase_map.md": {
       "file": ".agents/rules/27_codebase_map.md",
       "title": "Codebase Map \u2014 Ground Truth for Architecture",
-      "lines": 195
+      "lines": 125
     },
     "28_display_and_spi_contract.md": {
       "file": ".agents/rules/28_display_and_spi_contract.md",
@@ -270,7 +271,7 @@
     "31_quick_start_primer.md": {
       "file": ".agents/rules/31_quick_start_primer.md",
       "title": "31. Quick-Start Primer (Zero-Context Agent On-Ramp)",
-      "lines": 91
+      "lines": 80
     },
     "32_modular_core_template.md": {
       "file": ".agents/rules/32_modular_core_template.md",

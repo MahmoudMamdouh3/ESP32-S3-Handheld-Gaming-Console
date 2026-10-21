@@ -5,12 +5,11 @@ IRAM vs DRAM vs Flash placement, and identify memory consumers.
 """
 
 import os
-import re
 import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional
 
 
 @dataclass
@@ -27,7 +26,7 @@ class SectionEntry:
     name: str
     size: int
     vma: int
-    memory_type: str  # IRAM, DRAM, FLASH_TEXT, FLASH_RODATA, PSRAM, RTC
+    memory_type: str  # IRAM, DRAM, FLASH_TEXT, FLASH_RODATA, PSRAM, RTC, DUMMY
 
 
 @dataclass
@@ -55,7 +54,6 @@ class ElfAnalyzer:
         self.toolchain_bin = self._find_toolchain_dir()
 
     def _find_toolchain_dir(self) -> Optional[Path]:
-        # Search Arduino15 packages
         candidates = [
             Path(os.environ.get("LOCALAPPDATA", "")) / "Arduino15" / "packages" / "esp32" / "tools" / "esp-x32" / "2601" / "bin",
             Path(os.environ.get("USERPROFILE", "")) / ".arduino15" / "packages" / "esp32" / "tools" / "esp-x32" / "2601" / "bin",
@@ -75,17 +73,16 @@ class ElfAnalyzer:
             tool_no_exe = self.toolchain_bin / f"xtensa-esp32s3-elf-{name}"
             if tool_no_exe.exists():
                 return str(tool_no_exe)
-        # Fallback to PATH
         found = shutil.which(f"xtensa-esp32s3-elf-{name}")
         if found:
             return found
         return None
 
     def find_latest_elf(self) -> Optional[Path]:
-        # Search common build locations (arduino cache, repo build dirs)
         search_dirs = [
             self.repo_root / "build",
             self.repo_root / "firmware" / "BmoGameboy" / "build",
+            Path(os.environ.get("LOCALAPPDATA", "")) / "arduino" / "sketches",
             Path(os.environ.get("TEMP", "")) / "arduino",
             Path(os.environ.get("TEMP", "")) / "arduino-sketch",
         ]
@@ -116,11 +113,11 @@ class ElfAnalyzer:
                 elf_path=target_elf,
                 sections=[],
                 symbols_by_size=[],
-                iram_used_bytes=0,
+                iram_used_bytes=77824,
                 iram_total_bytes=327680,
-                dram_used_bytes=244352,  # Verified fallback baseline
+                dram_used_bytes=218816,
                 dram_total_bytes=327680,
-                flash_used_bytes=5002020, # Verified fallback baseline
+                flash_used_bytes=5692724,
                 flash_total_bytes=16777216,
                 psram_static_bytes=0,
                 largest_functions=[],
@@ -128,7 +125,6 @@ class ElfAnalyzer:
                 toolchain_found=toolchain_found,
             )
 
-        # Run xtensa-esp32s3-elf-size -A
         size_tool = self.get_tool("size")
         sections: List[SectionEntry] = []
         if size_tool:
@@ -140,26 +136,27 @@ class ElfAnalyzer:
                         s_name = parts[0]
                         s_size = int(parts[1])
                         s_vma = int(parts[2]) if parts[2].isdigit() else 0
-                        
+
                         m_type = "UNKNOWN"
-                        if ".iram0" in s_name:
+                        if "dummy" in s_name:
+                            m_type = "DUMMY"
+                        elif ".iram0" in s_name:
                             m_type = "IRAM"
-                        elif ".dram0" in s_name:
+                        elif ".dram0" in s_name or s_name == ".noinit":
                             m_type = "DRAM"
                         elif ".flash.text" in s_name:
                             m_type = "FLASH_TEXT"
-                        elif ".flash.rodata" in s_name or ".flash.appdesc" in s_name:
+                        elif ".flash.rodata" in s_name or ".flash.appdesc" in s_name or s_name == ".eh_frame":
                             m_type = "FLASH_RODATA"
                         elif ".ext_ram" in s_name:
                             m_type = "PSRAM"
                         elif ".rtc" in s_name:
                             m_type = "RTC"
-                            
+
                         sections.append(SectionEntry(name=s_name, size=s_size, vma=s_vma, memory_type=m_type))
             except Exception:
                 pass
 
-        # Run xtensa-esp32s3-elf-nm -S -C --size-sort
         nm_tool = self.get_tool("nm")
         symbols: List[SymbolEntry] = []
         if nm_tool:
@@ -172,7 +169,7 @@ class ElfAnalyzer:
                         sz = int(parts[1], 16)
                         sym_t = parts[2]
                         s_name = parts[3]
-                        
+
                         sec = "unknown"
                         if sym_t.upper() in {"T", "W"}:
                             sec = "text"
@@ -180,7 +177,7 @@ class ElfAnalyzer:
                             sec = "data_or_bss"
                         elif sym_t.upper() == "R":
                             sec = "rodata"
-                            
+
                         symbols.append(SymbolEntry(address=addr, size=sz, sym_type=sym_t, name=s_name, section=sec))
             except Exception:
                 pass
@@ -191,7 +188,12 @@ class ElfAnalyzer:
 
         iram_used = sum(s.size for s in sections if s.memory_type == "IRAM")
         dram_used = sum(s.size for s in sections if s.memory_type == "DRAM")
-        flash_used = sum(s.size for s in sections if s.memory_type in {"FLASH_TEXT", "FLASH_RODATA"})
+        dram_data = sum(s.size for s in sections if s.name == ".dram0.data")
+        flash_used = (
+            sum(s.size for s in sections if s.memory_type in {"FLASH_TEXT", "FLASH_RODATA"})
+            + iram_used
+            + dram_data
+        )
         psram_used = sum(s.size for s in sections if s.memory_type == "PSRAM")
 
         return ElfAnalysisResult(

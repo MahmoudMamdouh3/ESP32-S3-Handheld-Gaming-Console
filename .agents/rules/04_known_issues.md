@@ -7,9 +7,23 @@
 
 ---
 
-## Latest Agent Handoff — 2026-10-21 (Phase 5.2 Complete: All 14 Real Emulator Engines, Unified 14-Core Persistence & QoL Backlog Complete)
+## Latest Agent Handoff — 2026-10-21 (AI Development Environment & Harness v8 Overhaul)
 
 This is the current repository handoff. Read this section before continuing from an earlier changelog entry.
+
+- **Phase E — AI Development Environment & Harness v8 Overhaul (`tools/guardian/`, `scripts/`, `.agents/rules/`):**
+  1. **Deleted Obsolete Clutter & Broken Scripts:** Removed root `convert.py`, `tools/convert.py`, `IMPLEMENTATION_PLAN.md`, `report_guardian.md`, `test_compile/`, and the partial `tools/zig/` directory. Refactored `scripts/convert_roms.py`, `scripts/color_calc.py`, and `scripts/test_runner.py` to remove import-time side effects and verify all 6 baked ROM headers (`rom_data.h`, `aladdin.h`, `lego_racers.h`, `mario_deluxe.h`, `virtual_bmo.h`, `zelda_ages.h`).
+  2. **Fixed Real Bugs in Guardian Core (`elf_analyzer.py`, `ast_linter.py`, `host_bench.py`, `generate_ai_knowledge_base.py`):**
+     - `ElfAnalyzer`: Added `%LOCALAPPDATA%/arduino/sketches` discovery and excluded `.dummy` linker sections so `profile-elf` and `AGENT_KNOWLEDGE_GRAPH.json` report real compiled ELF metrics (`77,824 B` IRAM, `218,816 B` DRAM, `5,692,724 B` Flash, top 20 functions) instead of static fallback constants.
+     - `FirmwareAstLinter` & `generate_ai_knowledge_base.py`: Fixed `EXCLUDED_DIRS` top-level vs nested path matching so `firmware/BmoGameboy/src/assets/roms/` is indexed while skipping slow regex scans over 27.7 MB of C hex byte lines; added AST rules for `DIRECT_DIGITAL_READ_IN_HOT_PATH` and `UNARBITRATED_SD_IO_IN_CORE`.
+     - `HostBenchmarkSuite`: Fixed GPIO bitmask shifts to match `config.h` (`4, 5, 6, 7, 16, 17, 18, 21`) and integrated native x64 10-core 500-frame C benchmark execution (`Native_C_10_Cores_500_Frames`).
+  3. **Added Cross-Document & Rule Truth Verifier (`tools/guardian/core/doc_verifier.py`, `validate_repo.py` Phase 7):** Automatically verifies that `README.md`, `AGENTS.md`, `docs/`, and `.agents/rules/` match `config.h` pin macros, valid paths, and all 14 emulator wrappers. Updated `02_architecture.md`, `05_git_workflow.md`, `09_testing_infrastructure.md`, `26_emulator_exit_contract.md`, `27_codebase_map.md`, `31_quick_start_primer.md`, and `.agents/rules/README.md` (`0` drift issues).
+  4. **Added `guardian prompt-pack` and `guardian diff-audit` & Enforced Multi-Line Bullet Commits:**
+     - `python -m tools.guardian prompt-pack "<task>"`: Generates a self-contained task context packet with matched intent, `config.h` pins, live C/C++ public header signatures, guardrails, and execution steps for any AI model.
+     - `python -m tools.guardian diff-audit`: Audits uncommitted git changes for AST criticals, doc drift, and changelog updates.
+     - `scripts/install_git_hooks.py`: Removed duplicate knowledge-base build from `pre-commit` and added `.git/hooks/commit-msg` enforcing two-part commit messages (`-m "subject" -m "- bullet points"`).
+
+## Previous Handoff — 2026-10-21 (Phase 5.2 Complete: All 14 Real Emulator Engines, Unified 14-Core Persistence & QoL Backlog Complete)
 
 - **Phase A — All 6 Remaining Stub Emulator Engines Replaced with Real CPU + Video/I/O Implementations (`0` Stubs Remaining; 14/14 Real Engines):**
   1. **Atari 2600 (`src/vendor/stella/atari.h` & `atari.c`):** Implemented MOS 6507 CPU interpreter (13-bit address space `$0000-$1FFF`, full 6502 ALU/branch/stack/addressing modes), MOS 6532 RIOT (`$0080-$00FF` 128B zero-page RAM, `SWCHA`/`SWCHB`, interval timer `TIM1T/TIM8T/TIM64T/T1024T`/`INTIM`), F8/F6/F4 bankswitching (`$1FF4-$1FFB`), and Atari TIA scanline renderer (`WSYNC`, Playfield `PF0/PF1/PF2` reflect/score modes, `GRP0/GRP1`, `M0/M1`, `BL`, `HMOVE`) into 160×192 PSRAM BGR565 framebuffer.

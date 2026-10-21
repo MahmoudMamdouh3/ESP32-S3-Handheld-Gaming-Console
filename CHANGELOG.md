@@ -5,6 +5,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Phase E: AI Development Environment & Harness v8 Overhaul] - 2026-10-21
+### Added
+- **Cross-Document & Rule Truth Verifier (`tools/guardian/core/doc_verifier.py`, `scripts/validate_repo.py` Phase 7)**:
+  - Automatically verifies that `README.md`, `AGENTS.md`, `docs/`, and `.agents/rules/` match live `config.h` pin macros, valid file paths, and all 14 emulator wrappers.
+- **Self-Contained Task Context Packet Generator (`python -m tools.guardian prompt-pack "<task>"`)**:
+  - Generates a compact (< 3,000 token) context packet for any AI model containing matched task intent, `config.h` pins, live C/C++ public header signatures, guardrails, and verification steps.
+- **Pre-Commit Diff Auditor (`python -m tools.guardian diff-audit`)**:
+  - Audits uncommitted git changes for AST critical violations, documentation/rule drift, and changelog updates.
+- **Commit-Msg Git Hook (`scripts/install_git_hooks.py`, `.git/hooks/commit-msg`)**:
+  - Enforces structured two-part commit messages (`-m "type(scope): summary" -m "- bullet points"`) per `.agents/rules/05_git_workflow.md`.
+
+### Fixed & Removed
+- **Guardian Core Fixes (`elf_analyzer.py`, `ast_linter.py`, `host_bench.py`, `generate_ai_knowledge_base.py`)**:
+  - Fixed `ElfAnalyzer.find_latest_elf()` to discover `BmoGameboy.ino.elf` under `%LOCALAPPDATA%/arduino/sketches` and exclude `.dummy` linker sections (`DRAM: 218,816 B`, `IRAM: 77,824 B`, `Flash: 5,692,724 B`).
+  - Fixed `FirmwareAstLinter` `EXCLUDED_TOP_DIRS` matching so `firmware/BmoGameboy/src/assets/roms/` is indexed while skipping slow regex scans over 27.7 MB of C hex byte lines; added `DIRECT_DIGITAL_READ_IN_HOT_PATH` and `UNARBITRATED_SD_IO_IN_CORE` rules.
+  - Updated `HostBenchmarkSuite` GPIO bitmask shifts to match `config.h` (`4, 5, 6, 7, 16, 17, 18, 21`) and integrated native x64 10-core 500-frame C benchmark execution (`Native_C_10_Cores_500_Frames`).
+  - Removed duplicate `convert.py`, `tools/convert.py`, `IMPLEMENTATION_PLAN.md`, `report_guardian.md`, `test_compile/`, and partial `tools/zig/` directory; refactored `scripts/convert_roms.py`, `scripts/color_calc.py`, and `scripts/test_runner.py`.
+
+---
+
 ## [Phase 5.2 Complete: All 14 Real Emulator Engines, Unified 14-Core Persistence & QoL Backlog] - 2026-10-21
 ### Added (Phase A — 6 Remaining Emulator Engines Replaced with Real CPU + Video/I/O Cores; 0 Stubs Remaining)
 - **Atari 2600 (`src/vendor/stella/atari.h`, `src/vendor/stella/atari.c`)**:

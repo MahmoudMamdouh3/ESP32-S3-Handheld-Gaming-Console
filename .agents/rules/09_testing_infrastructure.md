@@ -1,60 +1,20 @@
 # Testing Infrastructure
-Formalizes the host-side test harness introduced for Walnut-CGB
-verification so it's a standing part of the project, not a one-off.
+Formalizes the host-side native C/C++ test harnesses and Python verification suites so CPU-execution correctness, framebuffer rendering, and hardware invariants can be verified without a physical board.
 
 ## Layout
-- `tools/host_test.cpp` — host-side (desktop) test harness. Compiles
-  vendor cores standalone via the same namespace-wrap pattern used for
-  the on-device `.cpp` wrappers (02_architecture.md), so CPU-execution
-  correctness can be tested WITHOUT a physical board.
-- Toolchain used to compile it (compiler + exact version) MUST be pinned
-  and documented in 02_architecture.md's toolchain section — "downloaded
-  X to make this work" in a session is not reproducible for the next
-  agent or the next machine. State the exact acquisition method too
-  (package manager, direct download URL + version).
+- [`tools/host_cores_runner.c`](file:///e:/BMO%20Gameboy/tools/host_cores_runner.c) — Native x64 C test harness that compiles and links all 10 custom C emulator cores (`atari.c`, `colem.c`, `lynx.c`, `ngp.c`, `snes.c`, `wswan.c`, `genesis.c`, `sms.c`, `pce.c`, `pico.c`), loads real machine-code test ROMs, executes 50 frames per core (500 frames total), verifies CPU register/RAM transitions, and checks deterministic FNV-1a BGR565 framebuffer hashes. Executed automatically by [`tests/test_native_cores_execution.py`](file:///e:/BMO%20Gameboy/tests/test_native_cores_execution.py).
+- [`tools/host_test.cpp`](file:///e:/BMO%20Gameboy/tools/host_test.cpp) — Host-side C++ test harness for `walnut_cgb.h` running Blargg's Game Boy CPU instruction test (`firmware/BmoGameboy/src/assets/roms/tests/cpu_instrs.gb`).
+- [`scripts/test_runner.py`](file:///e:/BMO%20Gameboy/scripts/test_runner.py) — Verifies the Game Boy / GBC cartridge header checksum (`0x0134..0x014D`) across all 6 baked ROM C headers in `firmware/BmoGameboy/src/assets/`.
+- **Host Compiler:** Microsoft Visual C++ (`cl.exe` via `vcvars64.bat`, Visual Studio 2022 / v18 Community) or system `gcc`/`clang`.
 
-## Test ROM ledger (required — do not add a ROM without this)
-Maintain a table (in this file or a linked LICENSES.md) of every test ROM
-in use: name, source URL, license, and which sub-tests/instruction
-categories it covers. Entry format:
+## Test ROM Ledger
 | ROM | License | Source | Covers |
 |---|---|---|---|
 | `cpu_instrs.gb` (Blargg) | Public Domain | https://github.com/retrio/gb-test-roms | 11 sub-tests covering Game Boy CPU instruction correctness and timing |
-This is required before `03_conventions.md` section 9 logging is
-considered complete — that section says a ROM must be logged before being
-added; this table is where.
+| Synthetic 10-Core Machine Code Suite | MIT (In-tree in `tools/host_cores_runner.c`) | `tools/host_cores_runner.c` | 6507/TIA, Z80/TMS9928A, 65SC02/Suzy, TLCS-900H/K2GE, 65C816/PPU, V30MZ/VDP, M68000/VDP, Z80/SMS-VDP, HuC6280/VDC, PICO-8 VM |
 
 ## What "passing" means, per suite
-For any multi-part test ROM (Blargg-style, Mooneye-style), define the
-suite's own completion signal explicitly here once (e.g. "Blargg
-cpu_instrs.gb: individual sub-tests print `NN:ok`; full suite success is
-the literal string `Passed` printed after all sub-tests complete") so
-no future agent has to infer or guess when a run actually finished vs.
-timed out. See 06_verification_standards.md for the rule that partial
-sub-test completion is `IN_PROGRESS`, not `VERIFIED_HOST`.
-
-## Resource budgets
-If a test harness uses a frame/cycle/time budget, that budget must be
-generous enough for the slowest defined sub-test to reach its own
-completion signal, and the run must FAIL LOUDLY (not silently truncate)
-if the budget is exceeded before completion — the harness should print
-something unambiguous like `TIMEOUT: budget exceeded before suite
-completion`, not just stop.
-
-## When to run this
-Per 03_conventions.md section 8: any change to memory architecture or
-core drivers already requires `UnitTests::runAll()`. Extend that: any
-change to a vendor emulator core's CPU-execution path (opcode handlers,
-memory read/write callbacks, register logic) requires a full host_test
-run to designed completion before the change can be marked anything
-better than `FIXED_UNVERIFIED`.
-
-## Hardware-in-the-loop handoff format
-When a change needs physical confirmation, always produce a checklist
-with: exact file to copy and where; exact build flags (cross-reference
-00_hard_stops.md's OPI/partition requirements verbatim, don't paraphrase
-them from memory); an explicit, unambiguous PASS description; an explicit
-FAIL description. This is the format already used successfully for the
-Walnut-CGB handoff — keep using it, just make sure the PASS bar quoted in
-the checklist matches what the host-side harness actually confirmed to
-have run (see Part A of this session).
+- **`tests/test_native_cores_execution.py` (`tools/host_cores_runner.c`)**: Compiles all 10 C cores cleanly with 0 errors, executes 50 frames per core, and outputs `SUMMARY|10/10 PASS` with non-blank BGR565 framebuffers and verified CPU state transitions.
+- **`tools/host_test.cpp` (`cpu_instrs.gb`)**: Outputs `Passed all tests` over the emulated Game Boy serial link within the 8,000-frame budget. Partial sub-test completion is `IN_PROGRESS`, not `VERIFIED_HOST`.
+- **`python -m tools.guardian verify`**: Runs the embedded AST linter (0 critical violations) and all Python + native C unit tests (`120+` tests).
+- **`python scripts/validate_repo.py`**: Runs all 7 CI phases including full `arduino-cli` ESP32-S3 binary compilation (`FlashMode=qio, PSRAM=opi`) and `DocTruthVerifier` doc-to-code parity checks.
