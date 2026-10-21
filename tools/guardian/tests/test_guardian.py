@@ -20,6 +20,7 @@ from tools.guardian.core.doc_verifier import DocTruthVerifier
 from tools.guardian.core.elf_analyzer import ElfAnalyzer
 from tools.guardian.core.host_bench import HostBenchmarkSuite
 from tools.guardian.core.report_gen import ReportGenerator
+from tools.guardian.core.ui_auditor import UiAuditor
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 FIRMWARE_DIR = REPO_ROOT / "firmware" / "BmoGameboy"
@@ -264,6 +265,55 @@ class TestGuardianEngine(unittest.TestCase):
             self.assertTrue((dest_path / ".agents" / "rules" / "43_no_ai_jargon_and_buzzwords.md").exists())
             self.assertTrue((dest_path / "tools" / "guardian" / "cli.py").exists())
             self.assertTrue((dest_path / "scripts" / "install_git_hooks.py").exists())
+
+    def test_17_ui_auditor_clean_baseline(self):
+        """Verify repository UI assets satisfy DESIGN.md & Rule 44 standards cleanly."""
+        auditor = UiAuditor(REPO_ROOT)
+        report = auditor.run_all_checks()
+        self.assertTrue(report.is_clean, f"UI Auditor failed with issues: {report.issues}")
+        self.assertEqual(len(report.issues), 0)
+        self.assertGreaterEqual(report.total_checks, 10)
+
+    def test_18_ui_auditor_catches_violations(self):
+        """Verify UiAuditor catches hardcoded hexes, missing focus, and token drift."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fw_core = root / "firmware" / "BmoGameboy" / "src" / "core"
+            fw_core.mkdir(parents=True)
+            sim_dir = root / "tools" / "bmo_simulator"
+            sim_dir.mkdir(parents=True)
+
+            # 1. Missing focus & nested cards in simulator.css
+            bad_css = (
+                ":root {\n"
+                "  --screen-mint: #wronghex;\n"
+                "}\n"
+                ".panel-card .panel-card { margin: 13px; }\n"
+                ".control-pill { padding: 4px; }\n"
+            )
+            (sim_dir / "simulator.css").write_text(bad_css, encoding="utf-8")
+
+            # 2. Hardcoded hex in firmware display code
+            bad_cpp = (
+                "#include <stdint.h>\n"
+                "void drawTest() {\n"
+                "  tft.fillRect(0, 0, 10, 10, 0xFFE0);\n"
+                "}\n"
+            )
+            (fw_core / "display_emu.cpp").write_text(bad_cpp, encoding="utf-8")
+
+            # 3. theme.h with standard token
+            (fw_core / "theme.h").write_text("constexpr uint16_t BMO_SCREEN_MINT = 0x7EF9;\n", encoding="utf-8")
+
+            auditor = UiAuditor(root)
+            report = auditor.run_all_checks()
+            self.assertFalse(report.is_clean)
+            cats = {i.category for i in report.issues}
+            self.assertIn("HARDCODED_COLOR", cats)
+            self.assertIn("CARD_NESTING", cats)
+            self.assertIn("MISSING_FOCUS", cats)
+            self.assertIn("TOKEN_PARITY", cats)
+            self.assertIn("OFF_GRID_SPACING", cats)
 
 
 if __name__ == "__main__":

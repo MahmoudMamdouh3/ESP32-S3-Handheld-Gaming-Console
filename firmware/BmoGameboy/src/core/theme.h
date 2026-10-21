@@ -30,6 +30,26 @@ namespace Theme {
     return swapBytes(bgr565);
   }
 
+  // Helper for direct Adafruit_SPITFT calls (non-swapped BGR565)
+  constexpr uint16_t makePanelColor(uint8_t r, uint8_t g, uint8_t b) {
+    return ((uint16_t)(b & 0xF8) << 8)
+         | ((uint16_t)(g & 0xFC) << 3)
+         | ((uint16_t)r >> 3);
+  }
+
+  // Direct panel colors for tft.drawRect/fillRect
+  constexpr uint16_t PANEL_DEEP_TEAL   = makePanelColor(26, 75, 66);
+  constexpr uint16_t PANEL_DPAD_YELLOW = makePanelColor(255, 224, 51);
+
+  // Standard Text Sizes per Rule 08
+  constexpr uint8_t TEXT_SIZE_SMALL = 1;
+  constexpr uint8_t TEXT_SIZE_BODY  = 1;
+  constexpr uint8_t TEXT_SIZE_TITLE = 2;
+
+  // Minimum Target Dimensions (pixels)
+  constexpr int TARGET_TOUCH_MIN    = 44; // Web simulator pointer targets
+  constexpr int TARGET_EMBEDDED_MIN = 24; // Physical LCD button pills
+
   // -------------------------------------------------------------------------
   // Authentic OnionUI BMO Theme Palette
   // -------------------------------------------------------------------------

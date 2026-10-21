@@ -356,7 +356,7 @@ namespace {
   static unsigned long s_lastCarouselUpdateMs = 0;
 
   static char s_toastMessage[48] = {0};
-  static uint16_t s_toastBorderColor = 0xFFE0;
+  static uint16_t s_toastBorderColor = Theme::BMO_DPAD_YELLOW;
   static unsigned long s_toastExpireMs = 0;
   static float s_toastY = -28.0f;
   static float s_toastVelY = 0.0f;
@@ -833,7 +833,7 @@ void DisplayEmu::drawBootSplash(bool pressAnyButtonBlink) {
   const int cx = 160;
   const int cy = 76;
   
-  // Living BMO Mascot Face (w=120, h=80 centered on 320x240)
+  // Animated BMO Mascot Face (w=120, h=80 centered on 320x240)
   BmoFace::renderToBuffer(menuCanvas->getBuffer(), 320, cx - 60, cy - 40, 120, 80);
   menuCanvas->drawRoundRect(cx - 61, cy - 41, 122, 82, 10, UI_DEEP_TEAL);
 
@@ -1430,10 +1430,10 @@ void DisplayEmu::drawPauseMenu(const char* romTitle, int currentSlot, bool hasSa
 void DisplayEmu::showSDCardWarning() {
   waitForDisplay();
   SpiArbiter::lock();
-  tft.fillRect(40, 80, 240, 80, panelColor(22, 72, 72));
-  tft.drawRect(42, 82, 236, 76, panelColor(255, 210, 66));
+  tft.fillRect(40, 80, 240, 80, Theme::PANEL_DEEP_TEAL);
+  tft.drawRect(42, 82, 236, 76, Theme::PANEL_DPAD_YELLOW);
   tft.setFont(&FreeSans9pt7b);
-  tft.setTextColor(panelColor(255, 210, 66));
+  tft.setTextColor(Theme::PANEL_DPAD_YELLOW);
   tft.setCursor(55, 115);
   tft.print("SD CARD REQUIRED");
   tft.setCursor(55, 135);

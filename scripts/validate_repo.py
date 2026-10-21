@@ -481,18 +481,35 @@ def check_doc_truth_parity():
 
 
 # ---------------------------------------------------------------------------
+# Phase 8 — UI/UX Design System & Anti-AI-Slop Standards
+# ---------------------------------------------------------------------------
+
+def check_ui_design_system():
+    issues = []
+    try:
+        from tools.guardian.core.ui_auditor import UiAuditor
+        report = UiAuditor(REPO_ROOT).run_all_checks()
+        for issue in report.issues:
+            issues.append(f'[{issue.category}] {issue.file_path}:{issue.line_number}: {issue.message}')
+    except Exception as exc:
+        issues.append(f'UiAuditor failed: {exc}')
+    return issues
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
 PHASES = [
-    ('Phase 0: Binary Compilation Gate',    check_arduino_compile),
-    ('Phase 1: Python Syntax',              check_python_files),
-    ('Phase 2: Firmware Safety Guardrails', check_firmware_safety_guardrails),
-    ('Phase 3: Flash Budget (static)',      check_flash_budget_static),
-    ('Phase 4: Structural Soundness',       check_structural_soundness),
-    ('Phase 5: ROM Archive Health',         check_game_data),
-    ('Phase 6: Rules & Manifest Integrity', check_rules_and_manifest_integrity),
-    ('Phase 7: Cross-Doc & Rule Truth',     check_doc_truth_parity),
+    ('Phase 0: Binary Compilation Gate',       check_arduino_compile),
+    ('Phase 1: Python Syntax',                 check_python_files),
+    ('Phase 2: Firmware Safety Guardrails',    check_firmware_safety_guardrails),
+    ('Phase 3: Flash Budget (static)',         check_flash_budget_static),
+    ('Phase 4: Structural Soundness',          check_structural_soundness),
+    ('Phase 5: ROM Archive Health',            check_game_data),
+    ('Phase 6: Rules & Manifest Integrity',    check_rules_and_manifest_integrity),
+    ('Phase 7: Cross-Doc & Rule Truth',        check_doc_truth_parity),
+    ('Phase 8: UI Design System & Anti-AI-Slop', check_ui_design_system),
 ]
 
 

@@ -5,6 +5,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Phase F: Design System, Anti-AI-Slop Craft Standards & UI Auditor] - 2026-10-21
+### Added
+- **Design System Root Specification (`DESIGN.md`)**:
+  - Authored comprehensive, single-file design standard synthesizing OnionUI BMO aesthetic and physical handheld console ergonomics (derived from `Awesome DESIGN.md`, `Google DESIGN.md`, `Open Design`, `UI/UX Pro Max Skill`).
+  - Defined 1:1 color token matrix between physical ST7789 display (BGR565 byte-swapped for SPI DMA) and Web Simulator CSS custom properties.
+  - Specified 8px base grid, 4px sub-grid, touch/pointer minimum targets ($44\times 44\text{ pt}$), typography ladder (`Press Start 2P`, `Outfit`, `JetBrains Mono`), and component interaction states.
+  - Formalized second-order harmonic spring-damper motion dynamics ($\zeta = 0.72$, $\omega_n = 22.0\text{ rad/s}$) from `Taste Skill` and `GSAP Skills`.
+- **Anti-AI UI Craft Standards (`.agents/rules/44_anti_ai_ui_design_standards.md`)**:
+  - Established Rule 44 prohibiting AI visual anti-patterns: card-in-card nesting syndrome, generic purple/indigo gradients, low-contrast text (< 4.5:1 WCAG AA), missing keyboard focus or tactile active states, ungridded margins, and inlined raw hex colors.
+  - Re-enforced physical hardware invariants: menu selection states must use `drawRoundRect` outline strokes rather than `fillRoundRect` full fills, saving $6.3\text{ ms}$ per frame.
+- **Dedicated UI Design Auditor (`tools/guardian/core/ui_auditor.py`, `python -m tools.guardian ui-audit`)**:
+  - Implemented automated static scanner verifying firmware drawing calls for raw inline hexes, simulator CSS for card nesting, missing `:focus-visible` states, and odd off-grid spacing.
+  - Verifies exact design token parity between `firmware/BmoGameboy/src/core/theme.h` and `tools/bmo_simulator/simulator.css`.
+  - Added unit test coverage in `tools/guardian/tests/test_guardian.py` (`test_17_ui_auditor_clean_baseline`, `test_18_ui_auditor_catches_violations`).
+- **CI & Doctor Integration (`scripts/validate_repo.py` Phase 8, `tools/guardian/cli.py`)**:
+  - Added Phase 8 (`Phase 8: UI Design System & Anti-AI-Slop`) to repository CI validator `scripts/validate_repo.py`.
+  - Added UI audit step to `python -m tools.guardian audit`, `doctor`, and `patch-check`.
+  - Updated `scripts/bundle_rules.py` to Ruleset v8 consolidating all 44 rules into `docs/consolidated-rules.md`.
+
+### Enhanced
+- **Web Simulator Keyboard Accessibility (`tools/bmo_simulator/simulator.css`)**:
+  - Added high-contrast `:focus-visible` styles with 2px offset rings to `.control-pill`, `.dpad-btn`, `.round-btn`, `.pill-btn`, and global form inputs.
+- **Firmware Theme Constants (`firmware/BmoGameboy/src/core/theme.h`, `display_emu.cpp`, `bmo_face.cpp`)**:
+  - Added `makePanelColor()`, `PANEL_DEEP_TEAL`, `PANEL_DPAD_YELLOW`, `TEXT_SIZE_SMALL`, `TEXT_SIZE_BODY`, `TEXT_SIZE_TITLE`, `TARGET_TOUCH_MIN`, and `TARGET_EMBEDDED_MIN` to `Theme::`.
+  - Replaced hardcoded panel colors in `DisplayEmu::showSDCardWarning()` and replaced "Living Mascot" terminology with "Animated Mascot".
+
+---
+
 ## [Phase E: AI Development Environment & Harness v8 Overhaul] - 2026-10-21
 ### Added
 - **Cross-Document & Rule Truth Verifier (`tools/guardian/core/doc_verifier.py`, `scripts/validate_repo.py` Phase 7)**:

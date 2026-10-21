@@ -56,6 +56,8 @@ class DocTruthVerifier:
         ".agents/rules/06_verification_standards.md",
         ".agents/rules/41_engineering_communication_and_critical_pushback.md",
         ".agents/rules/43_no_ai_jargon_and_buzzwords.md",
+        ".agents/rules/44_anti_ai_ui_design_standards.md",
+        "DESIGN.md",
         "docs/consolidated-rules.md",
         "tools/guardian/core/doc_verifier.py",
         "tools/guardian/tests/test_guardian.py",
