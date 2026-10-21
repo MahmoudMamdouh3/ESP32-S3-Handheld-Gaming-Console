@@ -1,25 +1,25 @@
 // PERF-FIX: O3,unroll-loops applied to all hot-path compute files (rule 39_performance_and_benchmark_framework.md §2.4)
 #pragma GCC optimize("O3,unroll-loops")
 // -----------------------------------------------------------------------
-// bmo_face.cpp  –  2026 Ultra-High-End Living BMO Mascot Engine.
+// bmo_face.cpp  –  BMO 2D SDF Mascot Face Renderer.
 //
-// State-of-the-art procedural mascot simulation engine for ESP32-S3:
-//   - 1:1 Adventure Time Authentic Character Design:
+// Procedural 2D SDF mascot renderer for ESP32-S3:
+//   - Character Design:
 //     * Mint Seafoam Screen (#8AD5C3) & Charcoal Navy features (#101E2B).
 //     * Vertical capsule eyes with gaze-driven specular catchlights.
 //     * Soft glowing coral blush cheeks (#FF8BA7) with Gaussian falloff.
 //     * Expressive open mouth cavity with warm coral tongue (#FA7F8F).
-//   - Physics-driven Organic Motion:
+//   - Spring-Damper Motion:
 //     * 2nd-order critically damped harmonic spring-damper differential
 //       physics for squash-and-stretch, cartoon overshoot, and bounce.
-//     * Autonomous biological breathing oscillation (T ~ 3.2s).
-//     * Micro-saccade eye gaze wandering and realistic non-linear blinks.
-//   - Rich 16-State Emotion Matrix + Interactive Gamepad Controls:
+//     * Autonomous breathing oscillation (T ~ 3.2s).
+//     * Micro-saccade eye gaze wandering and non-linear blinks.
+//   - 16-State Emotion Matrix + Gamepad Controls:
 //     * IDLE, HAPPY, JOY, SURPRISED, SAD, SLEEPY, SLEEPING, WINK, BLUSH,
 //       CONFUSED, ANNOYED, LOVE, TICKLED, CELEBRATING, LOW_BATTERY, ERROR.
 //     * Real-time D-pad gaze tracking, D-pad tickle squirming, A wink, B blush.
-//   - Octal PSRAM Native High-Definition Rendering:
-//     * Native 320×240 resolution allocated in PSRAM (0 bytes DRAM used!).
+//   - Octal PSRAM 320x240 Rendering:
+//     * Native 320×240 resolution allocated in PSRAM (0 bytes DRAM used).
 //     * Analytic 1.2-pixel subpixel anti-aliasing via smoothstep().
 //     * Spatial bounding-box culling skipping >70% of pixels (<2.8ms frame time).
 // -----------------------------------------------------------------------
@@ -1072,7 +1072,7 @@ void update() {
 }
 
 // ---------------------------------------------------------------------------
-// Living Companion Dialogue, Dance & Mood System
+// Dialogue, Dance & Mood System
 // ---------------------------------------------------------------------------
 void say(const char* quote, unsigned long durationMs) {
   if (!quote) return;

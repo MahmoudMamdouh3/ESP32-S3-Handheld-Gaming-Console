@@ -9,7 +9,7 @@
 The `tools.guardian` framework is the single authoritative tool for evaluating performance and memory safety in this repository:
 
 ```bash
-# Run full brutal ground-truth audit (AST linter, bus model, ELF breakdown, microbenchmarks)
+# Run full ground-truth audit (AST linter, bus model, ELF breakdown, microbenchmarks)
 python -m tools.guardian audit
 
 # Calculate hardware bus limits and CPU compute budgets per console resolution

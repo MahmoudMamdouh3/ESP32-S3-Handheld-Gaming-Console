@@ -44,7 +44,7 @@ class ReportGenerator:
         md: List[str] = [
             f"# BMO Handheld Console — Complete Line-by-Line Benchmark & Architecture Audit",
             f"**Generated:** {now}  ",
-            f"**Target MCU:** ESP32-S3-N16R8 (240MHz Xtensa LX7, 16MB OPI Flash, 8MB Octal PSRAM)  ",
+            f"**Target MCU:** ESP32-S3-N16R8 (240MHz Xtensa LX7, 16MB QIO Flash, 8MB Octal PSRAM)  ",
             f"**Display:** ST7789VW 2.4\" TFT on Shared 80MHz FSPI  ",
             f"**Total Repository Files Audited:** {len(file_stats) if file_stats else 0} files ({total_lines_repo:,} total lines, {total_sloc_repo:,} SLOC)  ",
             f"**Ground-Truth Quality Gate:** {'FAIL (Critical Violations Found)' if critical_count > 0 else 'PASS (Zero Critical Violations)'}",

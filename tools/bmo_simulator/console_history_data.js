@@ -151,7 +151,7 @@ const CONSOLE_HISTORY_DATABASE = {
       sound: "Custom 6-Channel Wavetable Stereo Audio (Custom 5-bit wavetable synthesis)"
     },
     historicalSignificance:
-      "PC Engine released in 1987 in Japan (outselling the Famicom for a period) on revolutionary credit-card-sized HuCards. " +
+      "PC Engine released in 1987 in Japan (outselling the Famicom for a period) on compact credit-card-sized HuCards. " +
       "It paired an ultra-fast 7.16 MHz CPU with a true 16-bit graphics processor capable of nearly 500 simultaneous colors, " +
       "delivering stunning arcade conversions and the premier home shoot-'em-up library.",
     engineeringConstraints:
@@ -249,7 +249,7 @@ const CONSOLE_HISTORY_DATABASE = {
     },
     historicalSignificance:
       "The Genesis defined 1990s cool and sparked the golden age of the Console Wars. " +
-      "Its Motorola 68000 CPU enabled lightning-fast gameplay, complex physics simulation (Sonic's momentum engine), " +
+      "Its Motorola 68000 CPU enabled fast gameplay, complex physics simulation (Sonic's momentum engine), " +
       "and iconic gritty FM synth basslines that gave birth to electronic music in video games.",
     engineeringConstraints:
       "Yuji Naka utilized the 68000's speed to develop full-loop track curvature and 60fps velocity physics in Sonic. " +
@@ -348,7 +348,7 @@ const CONSOLE_HISTORY_DATABASE = {
       "It pioneered network deathmatches, modding via open WAD (Where's All the Data) architecture, and revolutionized software distribution.",
     engineeringConstraints:
       "Carmack achieved 35 FPS on humble 386/486 CPUs by pre-computing BSP trees to eliminate hidden surface calculations " +
-      "and column-based vertical texture mapping. Running full DOOM on our ESP32-S3 microcontroller is a testament to this engineering elegance.",
+      "and column-based vertical texture mapping, allowing DOOM to run within tight CPU and memory budgets.",
     hallmarkGames: [
       { title: "DOOM", year: 1993, significance: "The landmark FPS that transformed gaming culture, multiplayer LAN, and 3D graphics." },
       { title: "DOOM II: Hell on Earth", year: 1994, significance: "Introduced the Super Shotgun, expanded monster rosters, and urban level layouts." },

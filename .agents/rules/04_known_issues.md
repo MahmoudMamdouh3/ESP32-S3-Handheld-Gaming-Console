@@ -21,7 +21,10 @@ This is the current repository handoff. Read this section before continuing from
   4. **Added `guardian prompt-pack` and `guardian diff-audit` & Enforced Multi-Line Bullet Commits:**
      - `python -m tools.guardian prompt-pack "<task>"`: Generates a self-contained task context packet with matched intent, `config.h` pins, live C/C++ public header signatures, guardrails, and execution steps for any AI model.
      - `python -m tools.guardian diff-audit`: Audits uncommitted git changes for AST criticals, doc drift, and changelog updates.
-     - `scripts/install_git_hooks.py`: Removed duplicate knowledge-base build from `pre-commit` and added `.git/hooks/commit-msg` enforcing two-part commit messages (`-m "subject" -m "- bullet points"`).
+     - `scripts/install_git_hooks.py`: Removed duplicate knowledge-base build from `pre-commit` and added `.git/hooks/commit-msg` enforcing two-part commit messages (`-m "subject" -m "- bullet points"`) and rejecting banned AI buzzwords.
+  5. **Added Rule 43 (`43_no_ai_jargon_and_buzzwords.md`) & Repo-Wide Buzzword Cleanup:**
+     - Enforced strict ban on AI buzzwords and marketing filler in `DocTruthVerifier.verify_no_buzzwords()` (`BUZZWORD_VIOLATION`) and `.git/hooks/commit-msg`.
+     - Stripped marketing filler across `firmware/BmoGameboy/src/core/`, `docs/`, `.agents/rules/`, `scripts/`, `tests/`, `tools/`, and `CHANGELOG.md`; removed obsolete `docs/research_apple_nintendo_ui_ux.md` and `docs/project-rules.md`.
 
 ## Previous Handoff — 2026-10-21 (Phase 5.2 Complete: All 14 Real Emulator Engines, Unified 14-Core Persistence & QoL Backlog Complete)
 

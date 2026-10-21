@@ -15,3 +15,4 @@ See [`.agents/rules/README.md`](file:///e:/BMO%20Gameboy/.agents/rules/README.md
 3. Every public symbol and API must match [`.agents/rules/10_symbol_reference.md`](file:///e:/BMO%20Gameboy/.agents/rules/10_symbol_reference.md).
 4. Audit your uncommitted changes with `python -m tools.guardian diff-audit` and run the full CI validator before concluding: `python scripts/validate_repo.py`.
 5. Leave clear logs in `04_known_issues.md` and `CHANGELOG.md` following [`.agents/rules/33_agent_handoff_and_optimization_cycle.md`](file:///e:/BMO%20Gameboy/.agents/rules/33_agent_handoff_and_optimization_cycle.md), and **always** use two-part commit messages (`git commit -m "type(scope): summary" -m "- bullet 1\n- bullet 2\n- Verified: ..."`).
+6. Never use AI buzzwords, marketing filler, or hype adjectives in code comments, docs, or commit messages — see [`.agents/rules/43_no_ai_jargon_and_buzzwords.md`](file:///e:/BMO%20Gameboy/.agents/rules/43_no_ai_jargon_and_buzzwords.md).

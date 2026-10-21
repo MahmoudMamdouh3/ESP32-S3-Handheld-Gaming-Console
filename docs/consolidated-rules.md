@@ -1,7 +1,7 @@
 # BMO Handheld Gaming Console — Consolidated Ruleset (v7)
 **Target Platform:** ESP32-S3-N16R8 (Dual-Core LX7 @ 240MHz, 16MB QIO Flash, 8MB Octal PSRAM)  
 **Display:** ST7789VW 240×320 SPI TFT (Landscape 320×240)  
-**Document Status:** Complete Consolidated Ground Truth (43 Rule Files)  
+**Document Status:** Complete Consolidated Ground Truth (44 Rule Files)  
 **Purpose:** Single-file compilation for external architectural and code review.
 
 ---
@@ -50,6 +50,7 @@
 - [40. AI Knowledge Graph, AST Indexing & Decision Matrix Protocol](#40-ai-knowledge-graph-ast-indexing--decision-matrix-protocol)
 - [41. Engineering Communication, Critical Pushback & Toolchain Autonomy](#41-engineering-communication-critical-pushback--toolchain-autonomy)
 - [42. Quality of Life (QoL), UI/UX & System Roadmap Ledger](#42-quality-of-life-qol-uiux--system-roadmap-ledger)
+- [43. Mandatory Ban on AI Jargon, Buzzwords, and Marketing Filler](#43-mandatory-ban-on-ai-jargon-buzzwords-and-marketing-filler)
 
 
 ---
@@ -208,7 +209,7 @@ This project currently bakes multiple commercial ROMs directly into the firmware
 
 # 10. Agent Behavior Rules
 1. **Never Assume Hardware:** Agents MUST NOT guess at unverified hardware/toolchain facts. If you cannot definitively verify a hardware state, library version, or wiring layout from the code, DO NOT fabricate confident prose. Check using command line tools, or ask the user directly.
-2. **Graceful Degradation:** Hardware is brittle. Use `FEATURE_*` flags meticulously.
+2. **Graceful Degradation:** Hardware is brittle. Use `FEATURE_*` flags consistently.
 3. **Isolate Peripherals:** When introducing a new hardware module (e.g., I2C FRAM), always write an isolated, standalone `.ino` sketch in the `tools/` or a scratch directory to verify the hardware works before integrating it into `BmoGameboy.ino`.
 4. **Follow the Ground Truth:** You must trust these rules over your own inferences when resolving architectural intent.
 
@@ -251,7 +252,10 @@ This is the current repository handoff. Read this section before continuing from
   4. **Added `guardian prompt-pack` and `guardian diff-audit` & Enforced Multi-Line Bullet Commits:**
      - `python -m tools.guardian prompt-pack "<task>"`: Generates a self-contained task context packet with matched intent, `config.h` pins, live C/C++ public header signatures, guardrails, and execution steps for any AI model.
      - `python -m tools.guardian diff-audit`: Audits uncommitted git changes for AST criticals, doc drift, and changelog updates.
-     - `scripts/install_git_hooks.py`: Removed duplicate knowledge-base build from `pre-commit` and added `.git/hooks/commit-msg` enforcing two-part commit messages (`-m "subject" -m "- bullet points"`).
+     - `scripts/install_git_hooks.py`: Removed duplicate knowledge-base build from `pre-commit` and added `.git/hooks/commit-msg` enforcing two-part commit messages (`-m "subject" -m "- bullet points"`) and rejecting banned AI buzzwords.
+  5. **Added Rule 43 (`43_no_ai_jargon_and_buzzwords.md`) & Repo-Wide Buzzword Cleanup:**
+     - Enforced strict ban on AI buzzwords and marketing filler in `DocTruthVerifier.verify_no_buzzwords()` (`BUZZWORD_VIOLATION`) and `.git/hooks/commit-msg`.
+     - Stripped marketing filler across `firmware/BmoGameboy/src/core/`, `docs/`, `.agents/rules/`, `scripts/`, `tests/`, `tools/`, and `CHANGELOG.md`; removed obsolete `docs/research_apple_nintendo_ui_ux.md` and `docs/project-rules.md`.
 
 ## Previous Handoff — 2026-10-21 (Phase 5.2 Complete: All 14 Real Emulator Engines, Unified 14-Core Persistence & QoL Backlog Complete)
 
@@ -2260,7 +2264,7 @@ if (buffer == <name>_rom /* || buffer == other_baked_rom */) {
 # Common Agent Mistakes (Anti-Pattern Catalogue)
 Purpose: a catalogue of mistakes that have already happened or are highly
 predictable given the architecture. An agent reads this ONCE and gets
-the institutional memory of every prior failure without having to re-derive it.
+the recorded history of every prior failure without having to re-derive it.
 Append entries here after every INC in 23_incident_postmortem_log.md.
 
 ---
@@ -2492,6 +2496,7 @@ python -m tools.guardian diff-audit
 | Performance benchmarks or profiling | `39_performance_and_benchmark_framework.md` & `tools/guardian/` |
 | Save states, SD storage, or cover art | `19_security_and_data_integrity.md`, `src/core/save_manager.h`, `src/core/box_art.h`, `src/core/rom_index.h` |
 | AI Knowledge base, rules, or Guardian CLI | `40_ai_knowledge_graph_and_indexing_protocol.md` & `42_quality_of_life_and_roadmap_ledger.md` |
+| Writing comments, docs, or commit messages | `43_no_ai_jargon_and_buzzwords.md` & `05_git_workflow.md` |
 | Ending session / committing & pushing | `05_git_workflow.md`, `33_agent_handoff_and_optimization_cycle.md`, & `04_known_issues.md` |
 
 ---
@@ -3094,7 +3099,7 @@ and code review.
 The `tools.guardian` framework is the single authoritative tool for evaluating performance and memory safety in this repository:
 
 ```bash
-# Run full brutal ground-truth audit (AST linter, bus model, ELF breakdown, microbenchmarks)
+# Run full ground-truth audit (AST linter, bus model, ELF breakdown, microbenchmarks)
 python -m tools.guardian audit
 
 # Calculate hardware bus limits and CPU compute budgets per console resolution
@@ -3290,7 +3295,7 @@ Use precise, empirical, and reproducible engineering terms:
 
 ## 3. Autonomous Toolchain Self-Sufficiency & Resource Utilization
 
-Agents are empowered and required to solve environmental, tooling, and diagnostic roadblocks autonomously.
+Agents are authorized and required to solve environmental, tooling, and diagnostic roadblocks autonomously.
 
 ### 3.1 No Roadblock Assumptions
 If a required tool, linter, compiler, profiler, benchmark script, Python library, or utility is missing, failing, or outdated:
@@ -3387,7 +3392,7 @@ Every feature or tool in this ledger is categorized into one of four states:
 | **Procedural 2D SDF Expressions** | `[IMPLEMENTED]` | Anti-aliased mathematical face rendering (`IDLE`, `HAPPY`, `SURPRISED`, `SLEEPY`, `ERROR`). | `src/core/bmo_face` |
 | **Launch Celebration Expression** | `[IMPLEMENTED]` | Brief `HAPPY` expression beat on game launch before emulator handoff. | `BmoGameboy.ino` |
 | **Ambient Living Screensaver (`STATE_IDLE_MASCOT`)** | `[IMPLEMENTED]` | 30s inactivity auto-sleep transitioning to full-screen dreaming BMO mascot (`DisplayEmu::drawIdleMascotScreen`) with any-button wake up. | `BmoGameboy.ino`, `display_emu` |
-| **Ultra-High-End Living BMO Mascot Engine** | `[IMPLEMENTED]` | 60 FPS physics-driven companion (native 320×240 PSRAM vector canvas, harmonic spring dynamics, organic gaze saccades, sinusoidal breathing, blush pulsing, particle engine, and gamepad interactivity). | `src/core/bmo_face`, `display_emu` |
+| **BMO 2D SDF Mascot Renderer** | `[IMPLEMENTED]` | 60 FPS physics-driven mascot (native 320×240 PSRAM vector canvas, harmonic spring dynamics, gaze saccades, sinusoidal breathing, blush pulsing, particle engine, and gamepad interactivity). | `src/core/bmo_face`, `display_emu` |
 | **Easter Egg / Konami Code Mini-Game** | `[IMPLEMENTED]` | Entering `↑ ↑ ↓ ↓ ← → ← → B A` in `STATE_IDLE_MASCOT` triggers BMO's celebratory dance party, wink, and "+30 LIVES" Easter egg toast. | `BmoGameboy.ino` |
 
 ---
@@ -3444,3 +3449,58 @@ When designing new screens or overlays:
 2. **Performance Budget:** Menu rendering must execute in `< 4ms` on ESP32-S3. Never allocate heap buffers per frame.
 3. **Selection States:** Use outlines (`drawRoundRect`), never filled boxes, to maintain 60 FPS menu responsiveness.
 4. **Non-Blocking Control:** All UI animations, carousels, and transitions must use non-blocking `millis()` deltas.
+
+---
+
+<!-- Section: 43_no_ai_jargon_and_buzzwords.md -->
+
+# 43. Mandatory Ban on AI Jargon, Buzzwords, and Marketing Filler
+
+**Purpose:** Eliminate AI-generated marketing filler, brand-name vanity adjectives, and hyperbolic buzzwords across every artifact in the repository—including C/C++ comments, Python docstrings, Markdown documentation, rule files, CLI outputs, and git commit messages.
+
+---
+
+## 1. Zero-Tolerance Scope
+
+Every piece of text written by an agent MUST use plain, measurable engineering language. This rule applies to:
+1. **Source Code Comments & Docstrings** (`firmware/`, `tools/`, `scripts/`, `tests/`)
+2. **Documentation & Architecture Specs** (`README.md`, `CHANGELOG.md`, `docs/*.md`)
+3. **Agent Rules & Handoff Logs** (`AGENTS.md`, `.agents/rules/*.md`)
+4. **Git Commit Messages & PR Descriptions** (both subject line and bullet body)
+5. **User-Facing Responses & Reports**
+
+---
+
+## 2. Banned Words & Phrases (Enforced by Automated Scanner)
+
+The following buzzwords and marketing phrases are strictly banned across the repository and will fail `python -m tools.guardian verify`, `python scripts/validate_repo.py` (Phase 7), and `.git/hooks/commit-msg`:
+
+- **Brand / Tier Vanity Labels:** `apple-grade`, `nintendo-grade`, `nintendo-style`, `apple/nintendo`, `museum-grade`, `reviewer-grade`, `production-grade`, `ultra-high-end`, `state-of-the-art`, `world-class`, `god-tier`, `next-gen`, `industry-leading`, `best-in-class`
+- **Speed / Motion Hyperbole:** `buttery-smooth`, `blazing-fast`, `lightning-fast`, `supercharge`, `supercharged`
+- **AI Prose Clichés:** `delve`, `tapestry`, `testament`, `paradigm`, `synergy`, `holistic`, `meticulously`, `bespoke`, `seamlessly`, `flawlessly`, `unparalleled`, `unmatched`, `groundbreaking`, `revolutionary`, `cutting-edge`, `game-changing`, `elevate`, `elevated`, `empower`, `empowered`, `living companion`, `authoritative living`, `glanceable`
+
+---
+
+## 3. Concrete Replacement Table
+
+Always replace vague adjectives with exact technical facts, measurements, or algorithm names:
+
+| Instead of writing (BANNED) | Write the exact engineering fact (REQUIRED) |
+| :--- | :--- |
+| "buttery-smooth carousel animation" | "60 Hz second-order spring-damper carousel transition ($\zeta = 0.72$, $\omega_n = 22.0\text{ rad/s}$)" |
+| "blazing-fast ROM loading" | "64 KB chunked SPI read at 25 MHz (~1.5 s for 4 MB ROM)" |
+| "Nintendo-grade glanceable button pills" | "rounded button badges (`drawButtonPill`) with contrasting text" |
+| "Apple-grade floating HUD" | "230×22 px rounded status overlay (`showToast`) at $Y = 8$" |
+| "Ultra-high-end living companion" | "320×240 2D SDF mascot renderer in Octal PSRAM (`BmoFace`)" |
+| "meticulously gated hardware flags" | "compile-time `#if FEATURE_*` guards" |
+| "seamlessly streams scanlines" | "streams 240-pixel RGB565 scanlines via Core 0 FreeRTOS queue" |
+| "production-grade / reviewer-grade spec" | "technical specification" |
+
+---
+
+## 4. Automated Enforcement
+
+1. **Repository Linter (`tools/guardian/core/doc_verifier.py`):**
+   - Scans tracked `.md`, `.c`, `.cpp`, `.h`, `.ino`, `.py`, and `.js` files for banned buzzwords and emits `BUZZWORD_VIOLATION` errors.
+2. **Git Commit Hook (`.git/hooks/commit-msg`):**
+   - Rejects any commit message containing banned buzzwords before the commit is recorded.

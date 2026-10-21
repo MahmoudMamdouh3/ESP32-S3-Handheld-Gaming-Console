@@ -1,7 +1,7 @@
 # Common Agent Mistakes (Anti-Pattern Catalogue)
 Purpose: a catalogue of mistakes that have already happened or are highly
 predictable given the architecture. An agent reads this ONCE and gets
-the institutional memory of every prior failure without having to re-derive it.
+the recorded history of every prior failure without having to re-derive it.
 Append entries here after every INC in 23_incident_postmortem_log.md.
 
 ---

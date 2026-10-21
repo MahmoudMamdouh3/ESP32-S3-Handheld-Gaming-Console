@@ -46,7 +46,7 @@ This project currently bakes multiple commercial ROMs directly into the firmware
 
 # 10. Agent Behavior Rules
 1. **Never Assume Hardware:** Agents MUST NOT guess at unverified hardware/toolchain facts. If you cannot definitively verify a hardware state, library version, or wiring layout from the code, DO NOT fabricate confident prose. Check using command line tools, or ask the user directly.
-2. **Graceful Degradation:** Hardware is brittle. Use `FEATURE_*` flags meticulously.
+2. **Graceful Degradation:** Hardware is brittle. Use `FEATURE_*` flags consistently.
 3. **Isolate Peripherals:** When introducing a new hardware module (e.g., I2C FRAM), always write an isolated, standalone `.ino` sketch in the `tools/` or a scratch directory to verify the hardware works before integrating it into `BmoGameboy.ino`.
 4. **Follow the Ground Truth:** You must trust these rules over your own inferences when resolving architectural intent.
 

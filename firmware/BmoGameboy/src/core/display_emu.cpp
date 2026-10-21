@@ -333,7 +333,7 @@ namespace {
     drawFittedCentered(text, 230, 300, UI_MUTED);
   }
 
-  // Nintendo-grade glanceable physical button glyphs
+  // Physical button prompt badge
   void drawButtonPill(int x, int y, const char* glyph, const char* label, uint16_t pillBg, uint16_t glyphCol, uint16_t labelCol) {
     int gLen = strlen(glyph);
     int pillW = gLen * 6 + 8;
@@ -982,7 +982,7 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
   menuCanvas->setCursor(298, 134);
   menuCanvas->print(">");
 
-  // Footer Action Bar with Nintendo-style glanceable badges
+  // Footer action bar with button badges
   menuCanvas->fillRect(0, 214, 320, 26, UI_DEEP_TEAL);
   menuCanvas->drawFastHLine(0, 213, 320, UI_TEAL);
   if (!sdMounted) {
@@ -1301,7 +1301,7 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   snprintf(position, sizeof(position), "%d / %d  [%s]", selectedIndex + 1, count, consoleBadge(actualType));
   drawCentered(position, 198, UI_DEEP_TEAL);
 
-  // Library Scroll Track (Spatial positioning like Nintendo Switch / Apple watchOS list)
+  // Library scroll position track
   if (count > 1) {
     const int trackX = 60;
     const int trackW = 200;
@@ -1312,7 +1312,7 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
     menuCanvas->fillRoundRect(thumbX, trackY - 1, thumbW, 4, 2, isFav ? UI_YELLOW : UI_MINT);
   }
 
-  // Footer Action Bar with Nintendo-style glanceable badges
+  // Footer action bar with button badges
   menuCanvas->fillRect(0, 214, 320, 26, UI_DEEP_TEAL);
   menuCanvas->drawFastHLine(0, 213, 320, UI_TEAL);
   drawButtonPill(8,   220, "A",   "PLAY", UI_CORAL,  UI_BLACK, UI_WHITE);
@@ -1320,7 +1320,7 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   drawButtonPill(146, 220, "SEL", isFav ? "★ UNSTAR" : "★ STAR", UI_YELLOW, UI_BLACK, UI_WHITE);
   drawButtonPill(245, 220, "< >", "A-Z",  UI_TEAL,   UI_BLACK, UI_WHITE);
 
-  // Quick A-Z Alphabetical Jump HUD Indicator (Apple watchOS fast-scroll index style)
+  // Quick A-Z alphabetical jump HUD indicator
   if (s_alphaBadgeExpireMs > millis() && s_alphaBadgeLetter != '\0') {
     const int cx = 270;
     const int cy = 115;
@@ -1416,7 +1416,7 @@ void DisplayEmu::drawPauseMenu(const char* romTitle, int currentSlot, bool hasSa
     menuCanvas->print(optStr);
   }
 
-  // Floating Pill Toast HUD (Apple Dynamic Island style)
+  // Floating pill toast HUD
   if (statusToast && strlen(statusToast) > 0 && strcmp(s_toastMessage, statusToast) != 0) {
     DisplayEmu::showToast(statusToast, UI_YELLOW, 1800);
   }
@@ -1522,7 +1522,7 @@ void DisplayEmu::drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeD
   menuCanvas->printf("MCU: ESP32-S3 Dual LX7 @ 240MHz");
   menuCanvas->setCursor(18, 58);
   unsigned long sec = uptimeMs / 1000;
-  menuCanvas->printf("Uptime: %lum %lus  |  Flash: 16MB OPI 80MHz", sec / 60, sec % 60);
+  menuCanvas->printf("Uptime: %lum %lus  |  Flash: 16MB QIO 80MHz", sec / 60, sec % 60);
 
   // Memory Telemetry
   menuCanvas->setCursor(18, 74);
@@ -1725,7 +1725,7 @@ void DisplayEmu::drawConsoleIcon(RomType type, int x, int y, uint16_t primaryCol
 void DisplayEmu::drawIdleMascotScreen(unsigned long idleSeconds, const char* stateMessage) {
   if (!menuCanvas) return;
   
-  // 2026 Ultra-High-End Living BMO Screen: renders native 320x240 in Octal PSRAM
+  // Render native 320x240 BMO face in Octal PSRAM
   BmoFace::renderFullScreen(menuCanvas->getBuffer(), 320, 240);
 
   if (BmoFace::hasSpeech()) {

@@ -37,6 +37,31 @@ class DocTruthVerifier:
         ("zig-windows-x86_64", "Removed Zig binary dependency; native host tests use MSVC cl.exe"),
     ]
 
+    BANNED_BUZZWORDS_REGEX = re.compile(
+        r"\b("
+        r"apple/nintendo|nintendo-grade|apple-grade|nintendo-style|museum-grade|"
+        r"reviewer-grade|production-grade|ultra-high-end|state-of-the-art|"
+        r"groundbreaking|revolutionary|cutting-edge|world-class|god-tier|"
+        r"buttery-smooth|blazing-fast|lightning-fast|living companion|"
+        r"authoritative living|glanceable|delve|tapestry|testament|"
+        r"paradigm|synergy|holistic|meticulously|bespoke|"
+        r"seamlessly|flawlessly|unparalleled|unmatched|supercharge|supercharged|"
+        r"game-changing"
+        r")\b",
+        re.IGNORECASE,
+    )
+
+    RULE_EXEMPT_FILES = {
+        ".agents/rules/05_git_workflow.md",
+        ".agents/rules/06_verification_standards.md",
+        ".agents/rules/41_engineering_communication_and_critical_pushback.md",
+        ".agents/rules/43_no_ai_jargon_and_buzzwords.md",
+        "docs/consolidated-rules.md",
+        "tools/guardian/core/doc_verifier.py",
+        "tools/guardian/tests/test_guardian.py",
+        "scripts/install_git_hooks.py",
+    }
+
     def __init__(self, repo_root: Path):
         self.repo_root = repo_root
         self.firmware_dir = repo_root / "firmware" / "BmoGameboy"
@@ -158,4 +183,58 @@ class DocTruthVerifier:
                         )
                     )
 
+        # 4. Scan repo files for banned AI buzzwords and marketing filler (Rule 43)
+        issues.extend(self.verify_no_buzzwords())
+
+        return issues
+
+    def verify_no_buzzwords(self) -> List[DocDriftIssue]:
+        issues: List[DocDriftIssue] = []
+        scan_roots = [
+            self.repo_root / "README.md",
+            self.repo_root / "AGENTS.md",
+            self.repo_root / "CHANGELOG.md",
+            self.repo_root / "docs",
+            self.repo_root / ".agents" / "rules",
+            self.repo_root / "firmware" / "BmoGameboy",
+            self.repo_root / "tools",
+            self.repo_root / "scripts",
+            self.repo_root / "tests",
+        ]
+        valid_exts = {".md", ".c", ".cpp", ".h", ".ino", ".py", ".js"}
+
+        files_to_scan: List[Path] = []
+        for root in scan_roots:
+            if not root.exists():
+                continue
+            if root.is_file():
+                files_to_scan.append(root)
+            else:
+                for p in root.rglob("*"):
+                    if not p.is_file() or p.suffix.lower() not in valid_exts:
+                        continue
+                    rel = str(p.relative_to(self.repo_root)).replace("\\", "/")
+                    if (
+                        "/assets/roms/" in rel
+                        or "/vendor/doom/" in rel
+                        or "__pycache__" in rel
+                    ):
+                        continue
+                    files_to_scan.append(p)
+
+        for fpath in files_to_scan:
+            rel_str = str(fpath.relative_to(self.repo_root)).replace("\\", "/")
+            if rel_str in self.RULE_EXEMPT_FILES:
+                continue
+            lines = fpath.read_text(encoding="utf-8", errors="ignore").splitlines()
+            for idx, line in enumerate(lines, 1):
+                for m in self.BANNED_BUZZWORDS_REGEX.finditer(line):
+                    issues.append(
+                        DocDriftIssue(
+                            rel_str,
+                            idx,
+                            "BUZZWORD_VIOLATION",
+                            f"Banned AI buzzword/jargon `{m.group(1)}` found (Rule 43)",
+                        )
+                    )
         return issues

@@ -1,6 +1,6 @@
 """
 validate_repo.py — BMO Gameboy AI Guardian CI Validator
-Production-grade multi-phase validator.
+Multi-phase repository validator.
 
 VERIFIED_HOST status requires Phase 0 (arduino-cli compile) to pass.
 Python text-pattern checks alone do NOT constitute compilation verification.
@@ -499,7 +499,7 @@ PHASES = [
 def main():
     start = time.perf_counter()
     print('=' * 62)
-    print('BMO Gameboy — AI Guardian CI Validator (Production Grade)')
+    print('BMO Gameboy — AI Guardian CI Validator')
     print('=' * 62)
 
     all_issues = []

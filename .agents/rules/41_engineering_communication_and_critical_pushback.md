@@ -49,7 +49,7 @@ Use precise, empirical, and reproducible engineering terms:
 
 ## 3. Autonomous Toolchain Self-Sufficiency & Resource Utilization
 
-Agents are empowered and required to solve environmental, tooling, and diagnostic roadblocks autonomously.
+Agents are authorized and required to solve environmental, tooling, and diagnostic roadblocks autonomously.
 
 ### 3.1 No Roadblock Assumptions
 If a required tool, linter, compiler, profiler, benchmark script, Python library, or utility is missing, failing, or outdated:

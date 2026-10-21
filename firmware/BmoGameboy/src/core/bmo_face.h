@@ -98,7 +98,7 @@ namespace BmoFace {
   void triggerJoy();
 
   // -----------------------------------------------------------------------
-  // Living Companion Dialogue, Dance & Mood System
+  // Dialogue, Dance & Mood System
   // -----------------------------------------------------------------------
   void say(const char* quote, unsigned long durationMs = 3500);
   const char* getCurrentQuote();

@@ -61,7 +61,7 @@ Every feature or tool in this ledger is categorized into one of four states:
 | **Procedural 2D SDF Expressions** | `[IMPLEMENTED]` | Anti-aliased mathematical face rendering (`IDLE`, `HAPPY`, `SURPRISED`, `SLEEPY`, `ERROR`). | `src/core/bmo_face` |
 | **Launch Celebration Expression** | `[IMPLEMENTED]` | Brief `HAPPY` expression beat on game launch before emulator handoff. | `BmoGameboy.ino` |
 | **Ambient Living Screensaver (`STATE_IDLE_MASCOT`)** | `[IMPLEMENTED]` | 30s inactivity auto-sleep transitioning to full-screen dreaming BMO mascot (`DisplayEmu::drawIdleMascotScreen`) with any-button wake up. | `BmoGameboy.ino`, `display_emu` |
-| **Ultra-High-End Living BMO Mascot Engine** | `[IMPLEMENTED]` | 60 FPS physics-driven companion (native 320×240 PSRAM vector canvas, harmonic spring dynamics, organic gaze saccades, sinusoidal breathing, blush pulsing, particle engine, and gamepad interactivity). | `src/core/bmo_face`, `display_emu` |
+| **BMO 2D SDF Mascot Renderer** | `[IMPLEMENTED]` | 60 FPS physics-driven mascot (native 320×240 PSRAM vector canvas, harmonic spring dynamics, gaze saccades, sinusoidal breathing, blush pulsing, particle engine, and gamepad interactivity). | `src/core/bmo_face`, `display_emu` |
 | **Easter Egg / Konami Code Mini-Game** | `[IMPLEMENTED]` | Entering `↑ ↑ ↓ ↓ ← → ← → B A` in `STATE_IDLE_MASCOT` triggers BMO's celebratory dance party, wink, and "+30 LIVES" Easter egg toast. | `BmoGameboy.ino` |
 
 ---

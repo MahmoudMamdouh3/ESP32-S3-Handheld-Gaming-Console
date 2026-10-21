@@ -1,6 +1,6 @@
 {
   "schema_version": "2.1.0",
-  "last_updated": "2026-10-21T18:01:21.058583",
+  "last_updated": "2026-10-21T18:19:07.079208",
   "task_decision_table": {
     "modify_gpio_or_pin": {
       "rules": [
@@ -136,7 +136,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "6. Known Issues, Technical Debt & Hardware Limitations Registry",
-      "lines": 410
+      "lines": 413
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -271,7 +271,7 @@
     "31_quick_start_primer.md": {
       "file": ".agents/rules/31_quick_start_primer.md",
       "title": "31. Quick-Start Primer (Zero-Context Agent On-Ramp)",
-      "lines": 80
+      "lines": 81
     },
     "32_modular_core_template.md": {
       "file": ".agents/rules/32_modular_core_template.md",
@@ -327,6 +327,11 @@
       "file": ".agents/rules/42_quality_of_life_and_roadmap_ledger.md",
       "title": "42. Quality of Life (QoL), UI/UX & System Roadmap Ledger",
       "lines": 120
+    },
+    "43_no_ai_jargon_and_buzzwords.md": {
+      "file": ".agents/rules/43_no_ai_jargon_and_buzzwords.md",
+      "title": "43. Mandatory Ban on AI Jargon, Buzzwords, and Marketing Filler",
+      "lines": 50
     }
   }
 }
