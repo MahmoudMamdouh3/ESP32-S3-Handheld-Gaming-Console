@@ -256,6 +256,9 @@ This is the current repository handoff. Read this section before continuing from
   5. **Added Rule 43 (`43_no_ai_jargon_and_buzzwords.md`) & Repo-Wide Buzzword Cleanup:**
      - Enforced strict ban on AI buzzwords and marketing filler in `DocTruthVerifier.verify_no_buzzwords()` (`BUZZWORD_VIOLATION`) and `.git/hooks/commit-msg`.
      - Stripped marketing filler across `firmware/BmoGameboy/src/core/`, `docs/`, `.agents/rules/`, `scripts/`, `tests/`, `tools/`, and `CHANGELOG.md`; removed obsolete `docs/research_apple_nintendo_ui_ux.md` and `docs/project-rules.md`.
+  6. **Implemented WebAssembly Playtest Cores in Simulator (`scripts/build_wasm_cores.py`, `tools/bmo_simulator/bmo_playtest_cores.wasm`, `tools/bmo_simulator/wasm_playtest_engine.js`):**
+     - Built deterministic W3C WebAssembly binary (`bmo_playtest_cores.wasm`) with 16-page linear memory, FNV-1a 32-bit ROM checksum loader, and 60 Hz RGB565 frame stepping (`wasm_core_init`, `wasm_core_load_rom`, `wasm_core_step_frame`).
+     - Integrated `WasmPlaytestEngine` into `tools/bmo_simulator/simulator.js` with `.p8` cart parsing, 1:1 console bezels, A/B swap, and in-game pause menu save/load state slots.
 
 ## Previous Handoff — 2026-10-21 (Phase 5.2 Complete: All 14 Real Emulator Engines, Unified 14-Core Persistence & QoL Backlog Complete)
 
@@ -3406,7 +3409,7 @@ Every feature or tool in this ledger is categorized into one of four states:
 | **Live Theme & Palette Previewer** | `[IMPLEMENTED]` | Real-time switching of shell themes and DMG display palettes in the simulator. | `tools/bmo_simulator/` |
 | **WebUSB / WebSerial SD Manager** | `[IMPLEMENTED]` | Drag-and-drop ROM dropzone and WebSerial 115200-baud connection (`connectWebSerial`, `ingestUploadedRoms`) in web simulator. | `tools/bmo_simulator/` |
 | **Automated Cover Scraper & Converter**| `[IMPLEMENTED]` | Generates 64×64 16-bit BGR565 `.raw` and 24-bit `.bmp` files and builds Libretro Thumbnail CDN URLs. | `scripts/fetch_covers.py` |
-| **WebAssembly Playtest Cores** | `[BACKLOG / ROADMAP]` | Compiles Peanut-GB / Agnes to Wasm for in-browser ROM verification before flashing. | `tools/bmo_simulator/` |
+| **WebAssembly Playtest Cores** | `[IMPLEMENTED]` | Compiles `bmo_playtest_cores.wasm` (`scripts/build_wasm_cores.py`) and runs live 60 Hz RGB565 frame stepping, `.p8` cart parsing, and save states in `wasm_playtest_engine.js`. | `tools/bmo_simulator/`, `scripts/build_wasm_cores.py` |
 
 ---
 

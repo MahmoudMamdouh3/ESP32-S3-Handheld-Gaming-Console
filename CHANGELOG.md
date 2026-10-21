@@ -18,6 +18,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Anti-Buzzword & Marketing Filler Ban (`.agents/rules/43_no_ai_jargon_and_buzzwords.md`, `tools/guardian/core/doc_verifier.py`)**:
   - Added Rule 43 banning AI buzzwords, brand vanity labels, and marketing filler across code comments, documentation, rules, and commit messages.
   - Added `DocTruthVerifier.verify_no_buzzwords()` and stripped marketing jargon across `firmware/BmoGameboy/src/core/`, `docs/`, `.agents/rules/`, `scripts/`, `tests/`, `tools/`, and `CHANGELOG.md`; deleted obsolete fluff files `docs/research_apple_nintendo_ui_ux.md` and `docs/project-rules.md`.
+- **WebAssembly Playtest Cores in Simulator (`scripts/build_wasm_cores.py`, `tools/bmo_simulator/bmo_playtest_cores.wasm`, `tools/bmo_simulator/wasm_playtest_engine.js`, `tools/bmo_simulator/simulator.js`)**:
+  - Added `scripts/build_wasm_cores.py` generating `bmo_playtest_cores.wasm` (16-page Wasm linear memory, `wasm_core_init`, `wasm_core_load_rom`, `wasm_core_step_frame`, `wasm_core_get_rom_ptr`, `wasm_core_get_fb_ptr`, `wasm_core_get_checksum`, `wasm_core_get_frame_count`).
+  - Integrated `WasmPlaytestEngine` into `tools/bmo_simulator/` supporting live 60 Hz RGB565 frame execution across all 15 console viewports, `.p8` cart section parsing, 1:1 console bezels, A/B button swap, and pause menu save/load state slots.
 
 ### Fixed & Removed
 - **Guardian Core Fixes (`elf_analyzer.py`, `ast_linter.py`, `host_bench.py`, `generate_ai_knowledge_base.py`)**:

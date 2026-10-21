@@ -75,7 +75,7 @@ Every feature or tool in this ledger is categorized into one of four states:
 | **Live Theme & Palette Previewer** | `[IMPLEMENTED]` | Real-time switching of shell themes and DMG display palettes in the simulator. | `tools/bmo_simulator/` |
 | **WebUSB / WebSerial SD Manager** | `[IMPLEMENTED]` | Drag-and-drop ROM dropzone and WebSerial 115200-baud connection (`connectWebSerial`, `ingestUploadedRoms`) in web simulator. | `tools/bmo_simulator/` |
 | **Automated Cover Scraper & Converter**| `[IMPLEMENTED]` | Generates 64×64 16-bit BGR565 `.raw` and 24-bit `.bmp` files and builds Libretro Thumbnail CDN URLs. | `scripts/fetch_covers.py` |
-| **WebAssembly Playtest Cores** | `[BACKLOG / ROADMAP]` | Compiles Peanut-GB / Agnes to Wasm for in-browser ROM verification before flashing. | `tools/bmo_simulator/` |
+| **WebAssembly Playtest Cores** | `[IMPLEMENTED]` | Compiles `bmo_playtest_cores.wasm` (`scripts/build_wasm_cores.py`) and runs live 60 Hz RGB565 frame stepping, `.p8` cart parsing, and save states in `wasm_playtest_engine.js`. | `tools/bmo_simulator/`, `scripts/build_wasm_cores.py` |
 
 ---
 

@@ -145,6 +145,39 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         rc = cmd_benchmark_ai(argparse.Namespace())
         self.assertEqual(rc, 0)
 
+    def test_08_wasm_playtest_cores_binary_and_engine_execution(self):
+        from scripts import build_wasm_cores
+
+        wasm_bytes = build_wasm_cores.build_wasm_module()
+        self.assertEqual(wasm_bytes[:8], b"\x00asm\x01\x00\x00\x00")
+        wasm_file = REPO_ROOT / "tools" / "bmo_simulator" / "bmo_playtest_cores.wasm"
+        self.assertTrue(wasm_file.exists())
+        self.assertEqual(wasm_file.read_bytes(), wasm_bytes)
+
+        node_bin = shutil.which("node")
+        if node_bin:
+            js_test = (
+                "const {WasmPlaytestEngine}=require('./tools/bmo_simulator/wasm_playtest_engine.js');"
+                "(async()=>{"
+                "  const eng=new WasmPlaytestEngine();"
+                "  await eng.init();"
+                "  const csum=eng.loadRom('ROM_GB','Tetris',new Uint8Array(2048).fill(0x5A));"
+                "  eng.setButtonBit(8,true);"
+                "  const f1=eng.stepFrame();"
+                "  eng.saveState(0);"
+                "  eng.stepFrame();"
+                "  eng.loadState(0);"
+                "  const fbPtr=eng.exports.wasm_core_get_fb_ptr();"
+                "  const fb=new Uint16Array(eng.exports.memory.buffer,fbPtr,160*144);"
+                "  let nz=0; for(let i=0;i<fb.length;i++) if(fb[i]) nz++;"
+                "  if(f1!==1 || eng.frameCount!==1 || nz<20000 || csum===0) process.exit(1);"
+                "  console.log('WASM_PLAYTEST_PASS csum=0x'+csum.toString(16)+' nz='+nz);"
+                "})();"
+            )
+            proc = subprocess.run([node_bin, "-e", js_test], cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=15)
+            self.assertEqual(proc.returncode, 0, msg=f"Node Wasm test failed: {proc.stderr}\n{proc.stdout}")
+            self.assertIn("WASM_PLAYTEST_PASS", proc.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

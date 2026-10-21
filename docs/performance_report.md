@@ -1,8 +1,8 @@
 # BMO Handheld Console — Complete Line-by-Line Benchmark & Architecture Audit
-**Generated:** 2026-10-21 18:17:33  
+**Generated:** 2026-10-21 18:29:46  
 **Target MCU:** ESP32-S3-N16R8 (240MHz Xtensa LX7, 16MB QIO Flash, 8MB Octal PSRAM)  
 **Display:** ST7789VW 2.4" TFT on Shared 80MHz FSPI  
-**Total Repository Files Audited:** 375 files (443,618 total lines, 408,881 SLOC)  
+**Total Repository Files Audited:** 376 files (444,009 total lines, 409,164 SLOC)  
 **Ground-Truth Quality Gate:** PASS (Zero Critical Violations)
 
 ---
@@ -59,7 +59,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `.agents/rules/01_hardware.md` | `AGENT_RULES` | 58 | 50 | 0 | 8 | 86.2% |
 | `.agents/rules/02_architecture.md` | `AGENT_RULES` | 25 | 23 | 0 | 2 | 92.0% |
 | `.agents/rules/03_conventions.md` | `AGENT_RULES` | 63 | 53 | 0 | 10 | 84.1% |
-| `.agents/rules/04_known_issues.md` | `AGENT_RULES` | 413 | 346 | 0 | 67 | 83.8% |
+| `.agents/rules/04_known_issues.md` | `AGENT_RULES` | 416 | 349 | 0 | 67 | 83.9% |
 | `.agents/rules/05_git_workflow.md` | `AGENT_RULES` | 35 | 29 | 0 | 6 | 82.9% |
 | `.agents/rules/06_verification_standards.md` | `AGENT_RULES` | 118 | 101 | 0 | 17 | 85.6% |
 | `.agents/rules/07_task_protocol.md` | `AGENT_RULES` | 86 | 80 | 0 | 6 | 93.0% |
@@ -99,15 +99,15 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `.agents/rules/41_engineering_communication_and_critical_pushback.md` | `AGENT_RULES` | 80 | 60 | 0 | 20 | 75.0% |
 | `.agents/rules/42_quality_of_life_and_roadmap_ledger.md` | `AGENT_RULES` | 120 | 90 | 0 | 30 | 75.0% |
 | `.agents/rules/43_no_ai_jargon_and_buzzwords.md` | `AGENT_RULES` | 50 | 35 | 0 | 15 | 70.0% |
-| `.agents/rules/CONTEXT_INDEX.json` | `AGENT_RULES` | 332 | 332 | 0 | 0 | 100.0% |
+| `.agents/rules/CONTEXT_INDEX.json` | `AGENT_RULES` | 337 | 337 | 0 | 0 | 100.0% |
 | `.agents/rules/README.md` | `AGENT_RULES` | 53 | 51 | 0 | 2 | 96.2% |
 | `AGENT_DECISION_TREE.json` | `OTHER` | 287 | 287 | 0 | 0 | 100.0% |
-| `AGENT_KNOWLEDGE_GRAPH.json` | `OTHER` | 18,309 | 18,309 | 0 | 0 | 100.0% |
+| `AGENT_KNOWLEDGE_GRAPH.json` | `OTHER` | 18,302 | 18,302 | 0 | 0 | 100.0% |
 | `AGENT_MANIFEST.json` | `OTHER` | 309 | 309 | 0 | 0 | 100.0% |
 | `AGENTS.md` | `OTHER` | 18 | 15 | 0 | 3 | 83.3% |
-| `CHANGELOG.md` | `OTHER` | 628 | 557 | 0 | 71 | 88.7% |
+| `CHANGELOG.md` | `OTHER` | 631 | 560 | 0 | 71 | 88.7% |
 | `diagram.json` | `OTHER` | 18 | 18 | 0 | 0 | 100.0% |
-| `docs/consolidated-rules.md` | `DOCUMENTATION` | 3,506 | 2,791 | 44 | 671 | 79.6% |
+| `docs/consolidated-rules.md` | `DOCUMENTATION` | 3,509 | 2,794 | 44 | 671 | 79.6% |
 | `docs/hardware-notes.md` | `DOCUMENTATION` | 162 | 112 | 0 | 50 | 69.1% |
 | `docs/performance_and_benchmarking.md` | `DOCUMENTATION` | 113 | 89 | 0 | 24 | 78.8% |
 | `docs/performance_report.md` | `DOCUMENTATION` | 498 | 476 | 0 | 22 | 95.6% |
@@ -389,6 +389,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `README.md` | `OTHER` | 170 | 126 | 0 | 44 | 74.1% |
 | `scripts/auto_install_romsets.py` | `SCRIPTS` | 293 | 251 | 11 | 31 | 85.7% |
 | `scripts/benchmark_repo.py` | `SCRIPTS` | 30 | 21 | 0 | 9 | 70.0% |
+| `scripts/build_wasm_cores.py` | `SCRIPTS` | 352 | 247 | 43 | 62 | 70.2% |
 | `scripts/bundle_rules.py` | `SCRIPTS` | 54 | 32 | 7 | 15 | 59.3% |
 | `scripts/color_calc.py` | `SCRIPTS` | 52 | 37 | 4 | 11 | 71.2% |
 | `scripts/convert_roms.py` | `SCRIPTS` | 66 | 52 | 3 | 11 | 78.8% |
@@ -404,7 +405,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `tests/test_bmo_mascot_engine.py` | `TESTS` | 208 | 141 | 35 | 32 | 67.8% |
 | `tests/test_box_art.py` | `TESTS` | 113 | 85 | 8 | 20 | 75.2% |
 | `tests/test_genesis_emu.py` | `TESTS` | 167 | 109 | 36 | 22 | 65.3% |
-| `tests/test_native_cores_execution.py` | `TESTS` | 150 | 128 | 3 | 19 | 85.3% |
+| `tests/test_native_cores_execution.py` | `TESTS` | 183 | 158 | 3 | 22 | 86.3% |
 | `tests/test_new_cores_and_qol.py` | `TESTS` | 194 | 138 | 15 | 41 | 71.1% |
 | `tests/test_pce_emu.py` | `TESTS` | 110 | 64 | 28 | 18 | 58.2% |
 | `tests/test_repo_tools.py` | `TESTS` | 71 | 53 | 4 | 14 | 74.6% |
@@ -421,7 +422,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `tools/guardian/core/ast_linter.py` | `GUARDIAN_TOOLCHAIN` | 452 | 396 | 17 | 39 | 87.6% |
 | `tools/guardian/core/bus_model.py` | `GUARDIAN_TOOLCHAIN` | 278 | 245 | 11 | 22 | 88.1% |
 | `tools/guardian/core/cppcheck_runner.py` | `GUARDIAN_TOOLCHAIN` | 121 | 99 | 6 | 16 | 81.8% |
-| `tools/guardian/core/doc_verifier.py` | `GUARDIAN_TOOLCHAIN` | 241 | 207 | 11 | 23 | 85.9% |
+| `tools/guardian/core/doc_verifier.py` | `GUARDIAN_TOOLCHAIN` | 240 | 206 | 11 | 23 | 85.8% |
 | `tools/guardian/core/elf_analyzer.py` | `GUARDIAN_TOOLCHAIN` | 213 | 184 | 3 | 26 | 86.4% |
 | `tools/guardian/core/host_bench.py` | `GUARDIAN_TOOLCHAIN` | 297 | 251 | 11 | 35 | 84.5% |
 | `tools/guardian/core/report_gen.py` | `GUARDIAN_TOOLCHAIN` | 243 | 220 | 3 | 20 | 90.5% |
@@ -437,13 +438,13 @@ Exhaustive line-by-line statistics across every single file in the repository:
 
 | Benchmark Kernel | Iterations | Total Time | Avg Latency | Throughput | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **BMO_SDF_Procedural_Face_Render_Unculled** | 100 | 119.75 ms | 1197.546 µs | 3.42 MOps/s | Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling. |
-| **BMO_SDF_Procedural_Face_Render_Culled** | 200 | 89.87 ms | 449.337 µs | 9.12 MOps/s | Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction). |
-| **4Pixel_Coalesced_Aligned_Store_Kernel** | 50,000 | 116.38 ms | 2.328 µs | 12.89 MOps/s | Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling. |
-| **O1_Palette_Scanline_Transformation** | 10,000 | 43.48 ms | 4.348 µs | 55.20 MOps/s | Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput. |
-| **CPU_Emulation_Opcode_Dispatch** | 500,000 | 31.68 ms | 0.063 µs | 15.78 MOps/s | Simulates CPU opcode fetch-decode-execute cycle dispatch throughput. |
-| **Direct_GPIO_Atomic_Bitmask_Sampling** | 100,000 | 49.61 ms | 0.496 µs | 16.13 MOps/s | Measures atomic 8-pin bitmask unpacking (GPIO 4,5,6,7,16,17,18,21) replacing 8 digitalRead calls. |
-| **SD_Catalog_O1_Query_And_Page_Jump** | 10,000 | 1.63 ms | 0.163 µs | 6.13 MOps/s | Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations. |
+| **BMO_SDF_Procedural_Face_Render_Unculled** | 100 | 107.99 ms | 1079.938 µs | 3.79 MOps/s | Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling. |
+| **BMO_SDF_Procedural_Face_Render_Culled** | 200 | 86.07 ms | 430.368 µs | 9.52 MOps/s | Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction). |
+| **4Pixel_Coalesced_Aligned_Store_Kernel** | 50,000 | 116.29 ms | 2.326 µs | 12.90 MOps/s | Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling. |
+| **O1_Palette_Scanline_Transformation** | 10,000 | 42.15 ms | 4.215 µs | 56.94 MOps/s | Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput. |
+| **CPU_Emulation_Opcode_Dispatch** | 500,000 | 37.95 ms | 0.076 µs | 13.18 MOps/s | Simulates CPU opcode fetch-decode-execute cycle dispatch throughput. |
+| **Direct_GPIO_Atomic_Bitmask_Sampling** | 100,000 | 51.33 ms | 0.513 µs | 15.58 MOps/s | Measures atomic 8-pin bitmask unpacking (GPIO 4,5,6,7,16,17,18,21) replacing 8 digitalRead calls. |
+| **SD_Catalog_O1_Query_And_Page_Jump** | 10,000 | 1.80 ms | 0.180 µs | 5.55 MOps/s | Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations. |
 
 ---
 

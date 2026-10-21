@@ -1,6 +1,6 @@
 {
   "schema_version": "2.2.0",
-  "generated_at": "2026-10-21T18:19:07.079208",
+  "generated_at": "2026-10-21T18:30:45.735665",
   "target_mcu": {
     "chip": "ESP32-S3-N16R8",
     "cpu_arch": "Xtensa dual-core 32-bit LX7 @ 240MHz",
@@ -437,50 +437,50 @@
     {
       "name": "BMO_SDF_Procedural_Face_Render_Unculled",
       "iterations": 100,
-      "avg_latency_us": 1855.508,
-      "throughput_mops": 2.21,
+      "avg_latency_us": 1640.396,
+      "throughput_mops": 2.5,
       "description": "Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling."
     },
     {
       "name": "BMO_SDF_Procedural_Face_Render_Culled",
       "iterations": 200,
-      "avg_latency_us": 664.476,
-      "throughput_mops": 6.16,
+      "avg_latency_us": 519.831,
+      "throughput_mops": 7.88,
       "description": "Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction)."
     },
     {
       "name": "4Pixel_Coalesced_Aligned_Store_Kernel",
       "iterations": 50000,
-      "avg_latency_us": 2.659,
-      "throughput_mops": 11.28,
+      "avg_latency_us": 4.495,
+      "throughput_mops": 6.67,
       "description": "Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling."
     },
     {
       "name": "O1_Palette_Scanline_Transformation",
       "iterations": 10000,
-      "avg_latency_us": 4.795,
-      "throughput_mops": 50.05,
+      "avg_latency_us": 5.08,
+      "throughput_mops": 47.24,
       "description": "Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput."
     },
     {
       "name": "CPU_Emulation_Opcode_Dispatch",
       "iterations": 500000,
-      "avg_latency_us": 0.076,
-      "throughput_mops": 13.22,
+      "avg_latency_us": 0.095,
+      "throughput_mops": 10.52,
       "description": "Simulates CPU opcode fetch-decode-execute cycle dispatch throughput."
     },
     {
       "name": "Direct_GPIO_Atomic_Bitmask_Sampling",
       "iterations": 100000,
-      "avg_latency_us": 0.538,
-      "throughput_mops": 14.88,
+      "avg_latency_us": 0.618,
+      "throughput_mops": 12.94,
       "description": "Measures atomic 8-pin bitmask unpacking (GPIO 4,5,6,7,16,17,18,21) replacing 8 digitalRead calls."
     },
     {
       "name": "SD_Catalog_O1_Query_And_Page_Jump",
       "iterations": 10000,
-      "avg_latency_us": 0.186,
-      "throughput_mops": 5.37,
+      "avg_latency_us": 0.457,
+      "throughput_mops": 2.19,
       "description": "Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations."
     }
   ],
@@ -508,7 +508,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "6. Known Issues, Technical Debt & Hardware Limitations Registry",
-      "lines": 413
+      "lines": 416
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -9923,11 +9923,11 @@
     ".agents/rules/04_known_issues.md": {
       "path": ".agents/rules/04_known_issues.md",
       "category": "AGENT_RULES",
-      "total_lines": 413,
-      "sloc": 346,
+      "total_lines": 416,
+      "sloc": 349,
       "comments": 0,
       "blanks": 67,
-      "density_percent": 83.8,
+      "density_percent": 83.9,
       "symbols": [],
       "pins_accessed": [
         "TFT_SCLK",
@@ -10535,8 +10535,8 @@
     "AGENT_KNOWLEDGE_GRAPH.json": {
       "path": "AGENT_KNOWLEDGE_GRAPH.json",
       "category": "OTHER",
-      "total_lines": 18302,
-      "sloc": 18302,
+      "total_lines": 18314,
+      "sloc": 18314,
       "comments": 0,
       "blanks": 0,
       "density_percent": 100.0,
@@ -10644,8 +10644,8 @@
     "CHANGELOG.md": {
       "path": "CHANGELOG.md",
       "category": "OTHER",
-      "total_lines": 628,
-      "sloc": 557,
+      "total_lines": 631,
+      "sloc": 560,
       "comments": 0,
       "blanks": 71,
       "density_percent": 88.7,
@@ -10672,8 +10672,8 @@
     "docs/consolidated-rules.md": {
       "path": "docs/consolidated-rules.md",
       "category": "DOCUMENTATION",
-      "total_lines": 3506,
-      "sloc": 2791,
+      "total_lines": 3509,
+      "sloc": 2794,
       "comments": 44,
       "blanks": 671,
       "density_percent": 79.6,
@@ -10767,8 +10767,8 @@
     "docs/performance_report.md": {
       "path": "docs/performance_report.md",
       "category": "DOCUMENTATION",
-      "total_lines": 498,
-      "sloc": 476,
+      "total_lines": 499,
+      "sloc": 477,
       "comments": 0,
       "blanks": 22,
       "density_percent": 95.6,
@@ -17700,6 +17700,18 @@
       "pins_accessed": [],
       "includes": []
     },
+    "scripts/build_wasm_cores.py": {
+      "path": "scripts/build_wasm_cores.py",
+      "category": "SCRIPTS",
+      "total_lines": 352,
+      "sloc": 247,
+      "comments": 43,
+      "blanks": 62,
+      "density_percent": 70.2,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
     "scripts/bundle_rules.py": {
       "path": "scripts/bundle_rules.py",
       "category": "SCRIPTS",
@@ -17915,11 +17927,11 @@
     "tests/test_native_cores_execution.py": {
       "path": "tests/test_native_cores_execution.py",
       "category": "TESTS",
-      "total_lines": 150,
-      "sloc": 128,
+      "total_lines": 183,
+      "sloc": 158,
       "comments": 3,
-      "blanks": 19,
-      "density_percent": 85.3,
+      "blanks": 22,
+      "density_percent": 86.3,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
