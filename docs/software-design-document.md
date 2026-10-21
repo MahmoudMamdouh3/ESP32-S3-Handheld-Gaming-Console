@@ -1,6 +1,6 @@
 # Software Design Document (SDD)
 **Project:** ESP32-S3-Handheld-Gaming-Console  
-**Target Platform:** ESP32-S3-N16R8 (16MB OPI Flash, 8MB Octal PSRAM)  
+**Target Platform:** ESP32-S3-N16R8 (16MB QIO Flash, 8MB Octal PSRAM)  
 **Target Display:** ST7789VW 2.4" SPI TFT (240×320 Physical, 320×240 Landscape Viewport)  
 **Document Version:** 3.7 (Technical Specification — Updated 2026-10-21)
 **Status:** Approved Engineering Ground Truth  
@@ -45,14 +45,14 @@ The hardware is permanently soldered onto a custom perfboard. To eliminate guess
 
 | Subsystem | Physical State | Software Module | Gating Macro (`config.h`) | Operational & Electrical Parameters |
 | :--- | :--- | :--- | :--- | :--- |
-| **MCU Core** | Soldered & Active | ESP32-S3-N16R8 | Mandatory | Dual-core Xtensa LX7 @ 240MHz, 16MB OPI Flash @ 80MHz, 8MB Octal PSRAM @ 80MHz |
+| **MCU Core** | Soldered & Active | ESP32-S3-N16R8 | Mandatory | Dual-core Xtensa LX7 @ 240MHz, 16MB QIO Flash @ 80MHz, 8MB Octal PSRAM @ 80MHz |
 | **Display** | Soldered & Active | `src/core/display_emu.cpp/h` | Mandatory | ST7789VW 240×320 TFT on shared FSPI @ 80MHz (`SCK=12, MOSI=11, CS=10, DC=8, RST=9`) |
 | **Input** | Soldered & Active | `src/core/buttons.cpp/h` | Mandatory | 8 Game Boy tactile buttons (GPIO 4-7, 16-18, 21), active-low internal pull-ups (`INPUT_PULLUP`) |
 | **MicroSD Storage** | Soldered & Active | `src/core/sd_card.cpp/h` | `FEATURE_SD_CARD = 1` | MicroSD on shared FSPI (`MISO=15, CS=13`); dynamic ROM/WAD streaming |
 | **Save States & Battery RAM** | Active | `src/core/save_manager.cpp/h` | Mandatory | Multi-slot save states (.s01-.s05) & battery RAM (.sav) on MicroSD with CRC32 verification |
 | **ROM Index Cache & Box Art** | Active | `src/core/box_art.cpp/h`, `src/core/rom_index.h` | Mandatory | Binary fast-cache (.bmo_index) < 15ms boot load & 64x64 raw/BMP cover art streaming |
 | **Baked ROMs** | Active (Flash) | `src/assets/rom_data.h` | Mandatory Fallback | 1MB Mario Deluxe + 1MB Zelda Ages in Flash `.rodata` partition |
-| **BMO Mascot Companion** | Active | `src/core/bmo_face.cpp/h` | Built-in | 2026 Living Mascot Companion: 320×240 native vector SDF canvas in Octal PSRAM (0 bytes DRAM), harmonic spring physics, vector speech bubble engine, 16-state emotion matrix, typewriter dialogue & dance party |
+| **BMO Mascot Companion** | Active | `src/core/bmo_face.cpp/h` | Built-in | BMO Mascot Renderer: 320×240 native vector SDF canvas in Octal PSRAM (0 bytes DRAM), harmonic spring physics, vector speech bubble engine, 16-state emotion matrix, typewriter dialogue & dance party |
 | **Battery Monitor** | **Dormant** | `src/core/battery.cpp/h` | `FEATURE_BATTERY_MONITOR = 0` | Complete driver compiled to no-op; no physical divider on GPIO1 (prevents floating ADC bootloop) |
 | **I2S Audio DAC** | **Dormant** | `src/core/audio_i2s.cpp/h` | `FEATURE_AUDIO = 0` | Complete driver compiled to no-op; no MAX98357A DAC wired to GPIO 38-40 |
 | **FRAM Save Memory**| **Planned** | `src/core/fram_save.cpp/h` | Dormant | I2C FM24C save memory reserved on GPIO 43/44 (`I2C_SDA=43, I2C_SCL=44`) |
@@ -69,7 +69,7 @@ The ESP32-S3-N16R8 utilizes specific pin groupings. Strapping pins (GPIO 0, 3, 4
 ```
                       +----------------------------------+
                       |       ESP32-S3-N16R8 (240MHz)    |
-                      |   16MB OPI Flash | 8MB OPI PSRAM |
+                      |   16MB QIO Flash | 8MB OPI PSRAM |
                       +----------------------------------+
                                        |
      +-----------------+---------------+-----------------+-----------------+
@@ -200,7 +200,7 @@ The ESP32-S3-N16R8 has a multi-tiered memory hierarchy. Internal SRAM is ultra-f
 |   ├── Menu Canvas Buffer: 320x240x2 = 150 KB (freed upon entering game)           |
 |   └── DOOM Game Engine Heap: ~6 MB dynamic zone allocations                       |
 |                                                                                   |
-| [External Octal SPI Flash: 16 MB @ 80MHz OPI]                                     |
+| [External Quad SPI Flash: 16 MB @ 80MHz QIO]                                      |
 |   ├── app0 Partition (8 MB): Firmware executable + Baked ROMs (.rodata)           |
 |   └── ffat Partition (~7.9 MB): Internal FAT filesystem storage                   |
 +-----------------------------------------------------------------------------------+
@@ -412,16 +412,16 @@ The codebase includes fully architected drivers for future hardware expansions. 
 |                              |                                          |
 |                              v                                          |
 |                    [Arduino CLI Build]                                  |
-|                     - 16MB OPI Flash + 8MB Octal PSRAM                  |
+|                     - 16MB QIO Flash + 8MB Octal PSRAM                  |
 |                     - Zero compilation errors/warnings                  |
 +-------------------------------------------------------------------------+
 ```
 
-1. **Host-Side CPU Test Harness (`tools/host_test.cpp`):** Standalone desktop test harness compiled via Zig (`zig c++`). Executes Blargg's `cpu_instrs.gb` test suite in headless mode to verify opcode correctness and CPU timings in under 3 seconds without hardware flashing.
+1. **Host-Side CPU Test Harness (`tools/host_test.cpp`):** Standalone desktop test harness compiled via C++. Executes Blargg's `cpu_instrs.gb` test suite in headless mode to verify opcode correctness and CPU timings in under 3 seconds without hardware flashing.
 2. **AI Guardian Repository Validator (`scripts/validate_repo.py`):** Multi-phase CI validator that audits Python script syntax, Nintendo ROM checksums, firmware safety guardrails, and symbol reference consistency.
 3. **Firmware Build Verification Command:**
    ```powershell
-   .\arduino-cli.exe compile --fqbn "esp32:esp32:esp32s3:FlashMode=opi,FlashSize=16M,PartitionScheme=custom,PSRAM=opi" firmware/BmoGameboy
+   .\arduino-cli.exe compile --fqbn "esp32:esp32:esp32s3:FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi" firmware/BmoGameboy
    ```
 
 ---

@@ -78,7 +78,7 @@ STUB_ENGINES = set()
 
 
 class TestAllConsolesFirmwareValidation(unittest.TestCase):
-    """Production-grade validation across all 15 console platforms."""
+    """Validation across all 15 console platforms."""
 
     # ------------------------------------------------------------------
     # test_01: Emulator wrapper files exist and are non-empty

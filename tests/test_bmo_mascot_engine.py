@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 test_bmo_mascot_engine.py
-Exhaustive automated unit testing for the 2026 Ultra-High-End Living BMO Mascot Engine:
+Automated unit tests for the BMO 2D SDF Mascot Renderer:
 - Adventure Time BMO 1:1 color space & BGR565 byte-swapped pack invariants
 - Second-order harmonic spring-damper differential physics stability
 - 2D signed distance functions (SDF) and smoothstep anti-aliasing

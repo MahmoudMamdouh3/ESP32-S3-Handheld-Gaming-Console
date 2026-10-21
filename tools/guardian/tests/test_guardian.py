@@ -216,6 +216,19 @@ class TestGuardianEngine(unittest.TestCase):
             rc = cmd_benchmark_ai(None)
         self.assertEqual(rc, 0, buf.getvalue())
 
+    def test_14_doc_truth_verifier_rejects_buzzwords(self):
+        """Verify DocTruthVerifier catches banned AI buzzwords (Rule 43)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "README.md").write_text(
+                "# Project\nThis uses a state-of-the-art buttery-smooth renderer.\n",
+                encoding="utf-8",
+            )
+            verifier = DocTruthVerifier(root)
+            issues = verifier.verify_no_buzzwords()
+            self.assertEqual(len(issues), 2)
+            self.assertEqual(issues[0].category, "BUZZWORD_VIOLATION")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -14,7 +14,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Pre-Commit Diff Auditor (`python -m tools.guardian diff-audit`)**:
   - Audits uncommitted git changes for AST critical violations, documentation/rule drift, and changelog updates.
 - **Commit-Msg Git Hook (`scripts/install_git_hooks.py`, `.git/hooks/commit-msg`)**:
-  - Enforces structured two-part commit messages (`-m "type(scope): summary" -m "- bullet points"`) per `.agents/rules/05_git_workflow.md`.
+  - Enforces structured two-part commit messages (`-m "type(scope): summary" -m "- bullet points"`) per `.agents/rules/05_git_workflow.md` and rejects banned AI buzzwords per `.agents/rules/43_no_ai_jargon_and_buzzwords.md`.
+- **Anti-Buzzword & Marketing Filler Ban (`.agents/rules/43_no_ai_jargon_and_buzzwords.md`, `tools/guardian/core/doc_verifier.py`)**:
+  - Added Rule 43 banning AI buzzwords, brand vanity labels, and marketing filler across code comments, documentation, rules, and commit messages.
+  - Added `DocTruthVerifier.verify_no_buzzwords()` and stripped marketing jargon across `firmware/BmoGameboy/src/core/`, `docs/`, `.agents/rules/`, `scripts/`, `tests/`, `tools/`, and `CHANGELOG.md`; deleted obsolete fluff files `docs/research_apple_nintendo_ui_ux.md` and `docs/project-rules.md`.
 
 ### Fixed & Removed
 - **Guardian Core Fixes (`elf_analyzer.py`, `ast_linter.py`, `host_bench.py`, `generate_ai_knowledge_base.py`)**:
@@ -79,7 +82,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Full Repo Objective Audit, Firmware Bug Fixes & God-Tier AI Harness Overhaul] - 2026-10-21
+## [Full Repo Objective Audit, Firmware Bug Fixes & AI Harness Overhaul] - 2026-10-21
 ### Fixed (Firmware & Emulator Engines)
 - **`src/core/bmo_face.cpp`**:
   - Fixed BGR565 byte-swap unpacking bug in particle alpha-blending (`renderMascotInternal`), which previously unpacked byte-swapped BGR565 values without un-swapping bytes first and swapped R/B channels.
@@ -183,23 +186,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Milestone 17.1] - 2026-10-09 (Apple & Nintendo UI/UX Ergonomics Phase: Harmonic Carousel Glide, Dynamic Island Floating HUD, and Fast A-Z Jump Indicator)
+## [Milestone 17.1] - 2026-10-09 (UI/UX Ergonomics Phase: Harmonic Carousel Glide, Floating Toast HUD, and Fast A-Z Jump Indicator)
 ### Added
 - **Kinetic Carousel Horizontal Spring Glide (`DisplayEmu::triggerCarouselGlide`)**:
   - Implemented 2nd-order harmonic spring damper physics ($\zeta = 0.72$, $\omega_n = 22.0\text{ rad/s}$) on `s_carouselOffset` and `s_carouselVel`.
   - Displaces card horizontally ($\pm 36\text{ px}$) on `LEFT`/`RIGHT` D-Pad input in `STATE_CONSOLE_MENU` with initial velocity $\mp 240\text{ px/s}$.
-  - Settles smoothly within 15–18 frames (~250–300 ms) with Nintendo Switch-style elastic recoil and zero jitter.
+  - Settles smoothly within 15–18 frames (~250–300 ms) with elastic recoil and zero jitter.
   - Offsets adjacent carousel tabs (left and right) in synchrony for continuous depth perception.
-- **Apple Dynamic Island / Elevated Floating Toast HUD System (`DisplayEmu::showToast`, `DisplayEmu::hasActiveToast`)**:
+- **Floating Toast HUD System (`DisplayEmu::showToast`, `DisplayEmu::hasActiveToast`)**:
   - Implemented 2nd-order harmonic spring descent physics ($\zeta = 0.75$, $\omega_n = 24.0\text{ rad/s}$) from $Y = -28$ down to $Y = 8$.
-  - 230×22 glassmorphic rounded pill ($r = 11$, centered at $X = 45$) with dark interior, high-contrast colored border, companion status dot, and crisp centered typography.
+  - 230×22 rounded pill ($r = 11$, centered at $X = 45$) with dark interior, high-contrast colored border, status dot, and centered typography.
   - Automatically composited inside `DisplayEmu::writeMenuCanvas()` across all menus and overlays with 0 extra memory allocation.
   - Wired into `STATE_GAME_MENU` favorite star toggling (`★ ADDED TO FAVORITES` / `REMOVED FROM FAVORITES`) and `STATE_PAUSE_MENU` quick saving/slot cycling.
 - **Alphabetical A–Z Jump Letter Badge (`DisplayEmu::showAlphaBadge`)**:
-  - Implemented glanceable circular floating indicator badge (center: $X = 270, Y = 115$, radius $18\text{ px}$) rendered in `drawGameSelectMenu`.
+  - Implemented circular floating indicator badge (center: $X = 270, Y = 115$, radius $18\text{ px}$) rendered in `drawGameSelectMenu`.
   - Displays currently selected starting character with drop shadow and high-contrast typography during rapid alphabetical skipping (`LEFT`/`RIGHT` in `STATE_GAME_MENU`).
-- **Footer Glanceable Button Badges**:
-  - Fixed conditional rendering in `DisplayEmu::drawConsoleSelectMenu` ensuring glanceable button pills (`[A] PLAY`, `[UP] BMO`, `[SEL] SPECS`, `[< >] SYSTEM`) are displayed whenever the SD card is mounted.
+- **Footer Button Badges**:
+  - Fixed conditional rendering in `DisplayEmu::drawConsoleSelectMenu` ensuring button pills (`[A] PLAY`, `[UP] BMO`, `[SEL] SPECS`, `[< >] SYSTEM`) are displayed whenever the SD card is mounted.
 - **Unit Testing Suite Expansion (`tests/test_apple_nintendo_ui.py`)**:
   - 4 comprehensive tests verifying 2nd-order harmonic spring convergence, toast HUD spring descent and overshoot margins, button pill geometry and screen boundary safety, and alphabetical badge coordinates.
   - Expanded repository test suite to 71/71 passing unit tests.
@@ -228,11 +231,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Milestone 16.2] - 2026-10-09 (Living BMO Mascot Companion Mode, Speech Bubbles, Typewriter Dialogue & Dance Party)
+## [Milestone 16.2] - 2026-10-09 (BMO Mascot Interactive Mode, Speech Bubbles, Typewriter Dialogue & Dance Party)
 ### Added
-- **Interactive Living Companion Mode (`STATE_IDLE_MASCOT` & `STATE_CONSOLE_MENU`)**:
-  - Direct 1-button access: Pressing `UP` on the main console carousel immediately launches the Living BMO Companion with initial greeting quote (`"Who wants to play video games?!"`).
-  - Added glanceable Nintendo-style `[UP] BMO` button pill badge to the console select menu footer alongside `[A] PLAY`, `[SEL] SPECS`, and `[< >] SYSTEM`.
+- **Interactive Mascot Mode (`STATE_IDLE_MASCOT` & `STATE_CONSOLE_MENU`)**:
+  - Direct 1-button access: Pressing `UP` on the main console carousel immediately launches the BMO Mascot mode with initial greeting quote (`"Who wants to play video games?!"`).
+  - Added `[UP] BMO` button pill badge to the console select menu footer alongside `[A] PLAY`, `[SEL] SPECS`, and `[< >] SYSTEM`.
   - Comprehensive interactive companion loop:
     * **D-Pad Directional Gaze**: BMO's eyes track D-Pad input in real time.
     * **Pet / Tickle Interaction (`petCompanion()`)**: Rapid D-Pad wiggling triggers squirming laughing bounce, increases happiness, and triggers dialogue: `"Hehehe! Stop it, that tickles!"`.
@@ -266,19 +269,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Milestone 16.1] - 2026-10-09 (Apple & Nintendo UI/UX Ergonomic Polish & Glanceable Interface)
+## [Milestone 16.1] - 2026-10-09 (UI/UX Ergonomic Polish & Button Pill Interface)
 ### Added
-- **UI/UX Research & Architectural Synthesis (`docs/research_apple_nintendo_ui_ux.md`)**:
-  - Conducted extensive comparative analysis of Apple Human Interface Guidelines (spatial continuity, spring-damper momentum, layered depth hierarchy, non-intrusive floating HUDs) and Nintendo console UX principles ("Omocha" toy-like tactility, glanceable glyph ergonomics, character companionship).
-  - Identified 6 core weak points in the existing firmware and established an actionable upgrade roadmap.
-- **Nintendo-Grade Glanceable Button Glyph System (`DisplayEmu::drawButtonPill`)**:
-  - Replaced plain text instructions with rounded, physical-style button badges (`[A]` Coral, `[B]` Mint, `[SEL]` Teal, `[< >]` Yellow) with bold typography and instant glanceability.
+- **UI/UX Research & Architectural Synthesis**:
+  - Evaluated spatial continuity, spring-damper momentum, layered depth hierarchy, and floating HUD overlays.
+  - Identified 6 core weak points in the existing firmware and established an upgrade roadmap.
+- **Button Glyph System (`DisplayEmu::drawButtonPill`)**:
+  - Replaced plain text instructions with rounded button badges (`[A]` Coral, `[B]` Mint, `[SEL]` Teal, `[< >]` Yellow) with bold typography.
   - Implemented across console selection menu, game selection library, and museum screens.
 - **Library Scroll Track Indicator**:
-  - Implemented dynamic horizontal scroll track and active thumb pill in `drawGameSelectMenu`, providing instant spatial awareness across libraries of 500+ ROMs.
-- **Apple-Grade Floating Pill HUD (`DisplayEmu::drawPauseMenu`)**:
-  - Replaced modal text block with elevated rounded pill at $(X: 40, Y: 10, W: 240, H: 22)$ with high-contrast border and centered status message (`★ SAVED TO SLOT 1!`, `💾 BATTERY RAM SAVED!`), preserving footer control hints.
-- **Ambient Living Companion Integration in Menus**:
+  - Implemented dynamic horizontal scroll track and active thumb pill in `drawGameSelectMenu`, providing spatial position indicators across libraries of 500+ ROMs.
+- **Floating Pill HUD (`DisplayEmu::drawPauseMenu`)**:
+  - Replaced modal text block with rounded pill at $(X: 40, Y: 10, W: 240, H: 22)$ with high-contrast border and centered status message (`★ SAVED TO SLOT 1!`, `💾 BATTERY RAM SAVED!`), preserving footer control hints.
+- **Ambient Mascot Integration in Menus**:
   - Connected header mini BMO to active navigation: BMO gazes toward the focused console card in `drawConsoleSelectMenu`, looks down at active cover art in `drawGameSelectMenu`, glances left/right on carousel paging, and triggers a joyful wink with star sparkles when starring a favorite game.
 ### Verified
 - `python scripts/validate_repo.py` → PASS (All 7 phases clean, Flash 33.2%, SRAM 65.3%).
@@ -286,9 +289,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Milestone 16.0] - 2026-10-09 (Phase 6: Ultra-High-End Living BMO Mascot Engine - 2026 Edition)
+## [Milestone 16.0] - 2026-10-09 (Phase 6: BMO 2D SDF Mascot Engine)
 ### Added
-- **2026 Living BMO Mascot Engine (`BmoFace`)**:
+- **BMO 2D SDF Mascot Engine (`BmoFace`)**:
   - Full 320×240 native high-definition vector SDF canvas allocated in Octal PSRAM (`MALLOC_CAP_SPIRAM`), freeing 32,768 bytes of internal SRAM and reducing overall SRAM utilization from 75.2% to **65.3%**.
   - Authentic 1:1 Adventure Time character aesthetics: `#8AD5C3` mint seafoam screen, `#101E2B` deep charcoal eye/mouth outlines, `#FF8BA7` soft glowing coral cheeks, and open mouth cavity with `#FA7F8F` warm coral tongue.
   - Second-order critically damped harmonic spring-damper differential physics ($\zeta \approx 0.72$, $\omega_n \approx 22\text{ rad/s}$) for fluid squash-and-stretch, overshoot, and elastic bounce.
@@ -433,7 +436,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Milestone 10.0] - 2026-08-31 (Repository-Wide Line Benchmark & State-of-the-Art AI Knowledge Graph Engine)
+## [Milestone 10.0] - 2026-08-31 (Repository-Wide Line Benchmark & AI Knowledge Graph Engine)
 ### Added
 - **Automated AI Knowledge Graph & Indexer Pipeline (`scripts/generate_ai_knowledge_base.py`)**:
   - Compiles an exhaustive, multi-dimensional machine-readable knowledge graph (`AGENT_KNOWLEDGE_GRAPH.json`) indexing all 784 files, 198 public symbol definitions, hardware pin accesses, memory types (`IRAM`, `DRAM`, `PSRAM`, `FLASH`), and line metrics.
@@ -449,7 +452,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Overhauled Known Issues & Technical Debt Registry (`04_known_issues.md`)**:
   - Added structured hardware categories: HARDWARE-01..05, BUS-01..05, MEM-01..06, EMU-01..15, PERF-01..25, and phased engineering roadmap.
 - **Synchronized Documentation**:
-  - Elevated Software Design Document to v3.2 with Guardian bus models and AI Knowledge Graph.
+  - Updated Software Design Document to v3.2 with Guardian bus models and AI Knowledge Graph.
   - Updated `docs/performance_and_benchmarking.md` and `docs/performance_report.md`.
 
 ---
@@ -492,7 +495,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Milestone 8.0] - 2026-08-31 (Production-Grade Testing Overhaul & Flash Overflow Fix)
+## [Milestone 8.0] - 2026-08-31 (Testing Overhaul & Flash Overflow Fix)
 ### Fixed
 - **Flash Overflow Root Cause**: The `158% of storage space` error is caused by the Arduino IDE defaulting to the 3 MB partition scheme. Fix: **Tools → Partition Scheme → Custom**. Firmware compiles at 5,002,020 bytes = **29.8% of 16MB** (VERIFIED_HOST, arduino-cli exit 0, this session).
 - **Stub Engines Honestly Labeled**: 9 of 14 emulator vendor engines (`pce`, `stella`, `pico`, `genesis`, `snes`, `wswan`, `ngp`, `lynx`, `colem`) were scaffold stubs rendering a blank framebuffer with no CPU emulation. All 9 now carry `// STUB_ENGINE` sentinel comments and are tagged `"engine_status": "stub"` in `AGENT_MANIFEST.json`.
@@ -568,7 +571,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Rule 33 (Agent Handoff & Optimization Cycle)**: Created [`.agents/rules/33_agent_handoff_and_optimization_cycle.md`](file:///e:/BMO%20Gameboy/.agents/rules/33_agent_handoff_and_optimization_cycle.md) establishing continuous optimization and status tagging across sequential AI sessions.
 - **Rule 34 (AI Agent Sandbox & Guardrails)**: Created [`.agents/rules/34_ai_agent_sandbox_and_guardrails.md`](file:///e:/BMO%20Gameboy/.agents/rules/34_ai_agent_sandbox_and_guardrails.md) establishing strict invariants for LLMs (hardware safety, anti-hallucination, memory alignment, and teardown lifecycle).
 - **Machine-Readable Metadata**: Added [`AGENT_MANIFEST.json`](file:///e:/BMO%20Gameboy/AGENT_MANIFEST.json) and [`.agents/rules/CONTEXT_INDEX.json`](file:///e:/BMO%20Gameboy/.agents/rules/CONTEXT_INDEX.json) for instant task-to-rule indexing by autonomous tools and agents.
-- **Anti-Patterns M-17 to M-20**: Added M-17 (Unaligned pointer casts on Flash), M-18 (DOOM PSRAM pre-buffering), M-19 (Unmatched `startFrame()` SPI lock), and M-20 (Missing handoff logs) to [`.agents/rules/30_common_agent_mistakes.md`](file:///e:/BMO%20Gameboy/.agents/rules/30_common_agent_mistakes.md).
+- **Anti-Patterns M-17 to M-20**: Added M-17 (Unaligned pointer casts on Flash), M-18 (DOOM PSRAM pre-buffering), M-19 (Unpaired `startFrame()` SPI lock), and M-20 (Missing handoff logs) to [`.agents/rules/30_common_agent_mistakes.md`](file:///e:/BMO%20Gameboy/.agents/rules/30_common_agent_mistakes.md).
 - **AI Guardian CI Validator**: Expanded [`scripts/validate_repo.py`](file:///e:/BMO%20Gameboy/scripts/validate_repo.py) into a multi-phase CI validator checking Python syntax, ROM checksums, firmware safety guardrails, and ruleset integrity.
 - **Unit Test Expansion**: Added automated unit tests in [`tests/test_repo_tools.py`](file:///e:/BMO%20Gameboy/tests/test_repo_tools.py) covering all validation guardrails.
 
@@ -584,7 +587,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Milestone 4.5] - 2026-08-30 (Ruleset v3 & SDD Upgrade)
 
 ### Added
-- **Software Design Document (SDD) v2.0**: Completely rewritten [`docs/software-design-document.md`](file:///e:/BMO%20Gameboy/docs/software-design-document.md) to serve as a legitimate, reviewer-grade specification. Documents the complete rendering pipeline, procedural SDF mascot engine, emulator contracts, memory maps, SPI bus sharing, and multi-agent AI environment.
+- **Software Design Document (SDD) v2.0**: Completely rewritten [`docs/software-design-document.md`](file:///e:/BMO%20Gameboy/docs/software-design-document.md) to serve as a technical specification. Documents the complete rendering pipeline, procedural SDF mascot engine, emulator contracts, memory maps, SPI bus sharing, and multi-agent AI environment.
 - **Agent Quick-Start Primer**: Added [`.agents/rules/31_quick_start_primer.md`](file:///e:/BMO%20Gameboy/.agents/rules/31_quick_start_primer.md) providing a 90-second zero-context on-ramp and decision matrix for AI agents and human contributors.
 - **Symbol Reference Expansion**: Extended [`.agents/rules/10_symbol_reference.md`](file:///e:/BMO%20Gameboy/.agents/rules/10_symbol_reference.md) to include verified public APIs for `DisplayEmu`, `Buttons`, `SDCard`, `BmoFace`, `Battery`, `PeanutEmu`, `WalnutEmu`, `NesEmu`, and `DoomEmu`.
 - **Anti-Pattern Registry M-16**: Added M-16 entry in [`.agents/rules/30_common_agent_mistakes.md`](file:///e:/BMO%20Gameboy/.agents/rules/30_common_agent_mistakes.md).
