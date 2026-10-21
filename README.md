@@ -50,15 +50,16 @@ Firmware and tooling for a custom handheld game console built around an **ESP32-
 - **Storage:** MicroSD over SPI (FAT32) + built-in flash fallback ROMs when no SD card is inserted
 - **Input:** 8 tactile buttons wired active-low (`INPUT_PULLUP`)
 
-| Component | Signal | GPIO | Notes |
+| Component | Macro (`config.h`) | GPIO | Notes |
 | :--- | :--- | :--- | :--- |
-| **ST7789 TFT** | `MOSI` / `SCLK` | `11` / `12` | Shared SPI bus (`FSPI`) |
-| | `CS` / `DC` / `RST` / `BLK` | `10` / `9` / `8` / `14` | Backlight PWM on GPIO 14 |
-| **MicroSD** | `MOSI` / `MISO` / `SCLK` / `CS` | `11` / `13` / `12` / `15` | Arbitrated with TFT via `SpiArbiter` |
-| **D-Pad** | `UP` / `DOWN` / `LEFT` / `RIGHT` | `4` / `5` / `6` / `7` | Active-low with 25 ms debounce |
-| **Buttons** | `A` / `B` / `START` / `SELECT` | `16` / `17` / `18` / `3` | GPIO 3 is a strapping pin (see hardware notes) |
+| **ST7789 TFT** | `TFT_MOSI` / `TFT_SCK` | `11` / `12` | Shared SPI bus (`FSPI`, 80 MHz) |
+| | `TFT_CS` / `TFT_DC` / `TFT_RST` | `10` / `8` / `9` | Display chip select, data/command, reset |
+| **MicroSD** | `SD_CS` / `SD_MISO` | `13` / `15` | Shares `TFT_MOSI` (`11`) & `TFT_SCK` (`12`) via `SpiArbiter` |
+| **D-Pad** | `BTN_UP` / `BTN_DOWN` / `BTN_LEFT` / `BTN_RIGHT` | `4` / `5` / `6` / `7` | `INPUT_PULLUP` (active-low, 25 ms debounce) |
+| **Buttons** | `BTN_A` / `BTN_B` / `BTN_START` / `BTN_SELECT` | `16` / `17` / `18` / `21` | `INPUT_PULLUP` (active-low, read via `GPIO_IN_REG`) |
+| **Reserved** | Strapping (`0, 3, 45, 46`), Octal PSRAM (`33–37`) | — | Do not assign to peripherals |
 
-> **Hardware note:** Battery ADC (`GPIO 1`) and speaker audio (`GPIO 1` / `GPIO 2`) are disabled in `config.h` (`FEATURE_BATTERY_MONITOR = 0`, `FEATURE_AUDIO = 0`) because those circuits are not populated on the current board.
+> **Hardware note:** Battery ADC (`BATTERY_ADC_PIN = 1`) and I2S audio (`I2S_BCLK = 38`, `I2S_LRC = 39`, `I2S_DIN = 40`) are disabled in `config.h` (`FEATURE_BATTERY_MONITOR = 0`, `FEATURE_AUDIO = 0`) because those circuits are not soldered on the current board.
 
 ---
 

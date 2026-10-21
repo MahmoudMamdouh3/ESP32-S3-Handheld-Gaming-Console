@@ -9,7 +9,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -19,7 +19,7 @@ RULES_DIR = REPO_ROOT / ".agents" / "rules"
 
 # Import Guardian Core for ground-truth telemetry
 from tools.guardian.core.ast_linter import FirmwareAstLinter
-from tools.guardian.core.bus_model import HardwareBusModel, SUPPORTED_RESOLUTIONS
+from tools.guardian.core.bus_model import HardwareBusModel
 from tools.guardian.core.elf_analyzer import ElfAnalyzer
 from tools.guardian.core.host_bench import HostBenchmarkSuite
 
@@ -58,61 +58,83 @@ def build_knowledge_base():
     print("\n[1/5] Gathering Hardware Bus, ELF, and Microbenchmark Baselines...")
     bus_model = HardwareBusModel()
     bus_metrics = bus_model.calculate_all()
-    
+
     linter = FirmwareAstLinter(FIRMWARE_DIR)
     file_stats = linter.get_repo_line_stats()
-    ast_findings = linter.lint_all()
-    
+
     elf_analyzer = ElfAnalyzer(REPO_ROOT)
     elf_res = elf_analyzer.analyze()
-    
+
     bench_suite = HostBenchmarkSuite()
     bench_metrics = bench_suite.run_all()
 
     # 2. Extract AST Symbols & Hardware Pin Accesses from Files
     print(f"\n[2/5] Parsing Symbols & AST Signatures across {len(file_stats)} files...")
-    
+
     file_nodes: Dict[str, Any] = {}
     symbol_registry: Dict[str, Any] = {}
-    
+
     for fs in file_stats:
         rel_str = fs.rel_path
         p = fs.file_path
-        
+
         symbols_in_file = []
         pins_accessed = []
         includes = []
-        
+
         try:
-            content = p.read_text(encoding="utf-8", errors="ignore")
-            lines = content.splitlines()
-            for idx, line in enumerate(lines, 1):
-                clean = line.strip()
-                if clean.startswith("#include"):
-                    inc = clean.replace("#include", "").strip().strip('<>"')
-                    includes.append(inc)
-                # Pin matches (e.g. GPIO, PIN_, TFT_, SD_, BTN_, BUTTON_, I2S_, I2C_, BATTERY_, FEATURE_)
-                for pin_match in re.findall(
-                    r"\b(PIN_[A-Z0-9_]+|TFT_[A-Z0-9_]+|SD_[A-Z0-9_]+|BTN_[A-Z0-9_]+|BUTTON_[A-Z0-9_]+|I2S_[A-Z0-9_]+|I2C_[A-Z0-9_]+|BATTERY_[A-Z0-9_]+|FEATURE_[A-Z0-9_]+|GPIO\d+)\b",
-                    clean,
-                ):
-                    if pin_match not in pins_accessed:
-                        pins_accessed.append(pin_match)
-                # Function / Class definition matches (C/C++)
-                if fs.category in {"FIRMWARE_CORE", "EMULATOR_WRAPPERS", "ENGINE_GBC", "FIRMWARE_TOP", "VENDOR_ENGINES"}:
-                    fn_match = re.match(
-                        r"^(?:static\s+)?(?:inline\s+)?(?:void|bool|int|uint\d+_t|int\d+_t|size_t|const\s+[a-zA-Z0-9_]+[\*\&]?|[a-zA-Z0-9_]+_t\*?)\s+([a-zA-Z0-9_]+::[a-zA-Z0-9_]+|[a-zA-Z0-9_]+)\s*\([^;]*\)\s*(?:const)?\s*\{?",
-                        clean,
-                    )
-                    if fn_match and not clean.startswith("if") and not clean.startswith("for") and not clean.startswith("while") and not clean.startswith("return"):
-                        sym_name = fn_match.group(1)
+            if fs.category == "BAKED_ROMS" and p.stat().st_size > 262144:
+                with p.open("r", encoding="utf-8", errors="ignore") as f:
+                    head_lines = [f.readline() for _ in range(10)]
+                for idx, line in enumerate(head_lines, 1):
+                    clean = line.strip()
+                    if clean.startswith("#include"):
+                        inc = clean.replace("#include", "").strip().strip('<>"')
+                        includes.append(inc)
+                    m_arr = re.search(r"const\s+(?:uint8_t|unsigned\s+char)\s+([a-zA-Z0-9_]+)\s*\[", clean)
+                    if m_arr:
+                        sym_name = m_arr.group(1)
                         symbols_in_file.append(sym_name)
                         symbol_registry[sym_name] = {
                             "file": rel_str,
                             "line": idx,
                             "signature": clean.rstrip("{").strip(),
-                            "is_iram": "IRAM_ATTR" in clean or (idx > 1 and "IRAM_ATTR" in lines[idx-2]),
+                            "is_iram": False,
                         }
+            else:
+                content = p.read_text(encoding="utf-8", errors="ignore")
+                lines = content.splitlines()
+                for idx, line in enumerate(lines, 1):
+                    clean = line.strip()
+                    if clean.startswith("#include"):
+                        inc = clean.replace("#include", "").strip().strip('<>"')
+                        includes.append(inc)
+                    for pin_match in re.findall(
+                        r"\b(PIN_[A-Z0-9_]+|TFT_[A-Z0-9_]+|SD_[A-Z0-9_]+|BTN_[A-Z0-9_]+|BUTTON_[A-Z0-9_]+|I2S_[A-Z0-9_]+|I2C_[A-Z0-9_]+|BATTERY_[A-Z0-9_]+|FEATURE_[A-Z0-9_]+|GPIO\d+)\b",
+                        clean,
+                    ):
+                        if pin_match not in pins_accessed:
+                            pins_accessed.append(pin_match)
+                    if fs.category in {"FIRMWARE_CORE", "EMULATOR_WRAPPERS", "ENGINE_GBC", "FIRMWARE_TOP", "VENDOR_ENGINES"}:
+                        fn_match = re.match(
+                            r"^(?:static\s+)?(?:inline\s+)?(?:void|bool|int|uint\d+_t|int\d+_t|size_t|const\s+[a-zA-Z0-9_]+[\*\&]?|[a-zA-Z0-9_]+_t\*?)\s+([a-zA-Z0-9_]+::[a-zA-Z0-9_]+|[a-zA-Z0-9_]+)\s*\([^;]*\)\s*(?:const)?\s*\{?",
+                            clean,
+                        )
+                        if (
+                            fn_match
+                            and not clean.startswith("if")
+                            and not clean.startswith("for")
+                            and not clean.startswith("while")
+                            and not clean.startswith("return")
+                        ):
+                            sym_name = fn_match.group(1)
+                            symbols_in_file.append(sym_name)
+                            symbol_registry[sym_name] = {
+                                "file": rel_str,
+                                "line": idx,
+                                "signature": clean.rstrip("{").strip(),
+                                "is_iram": "IRAM_ATTR" in clean or (idx > 1 and "IRAM_ATTR" in lines[idx - 2]),
+                            }
         except Exception:
             pass
 
@@ -130,7 +152,7 @@ def build_knowledge_base():
         }
 
     # 3. Parse Governance Rules
-    print(f"\n[3/5] Indexing Governance Rules and Intent Pathways...")
+    print("\n[3/5] Indexing Governance Rules and Intent Pathways...")
     rules_index = {}
     for rule_file in sorted(RULES_DIR.glob("*.md")):
         if rule_file.name == "README.md":
@@ -151,9 +173,9 @@ def build_knowledge_base():
     cfg = parse_config_h(FIRMWARE_DIR / "src" / "core" / "config.h")
     pce_status = "active" if detect_engine_status("src/vendor/pce/pce.c") == "production" else "stub"
     gen_status = "active" if detect_engine_status("src/vendor/genesis/genesis.c") == "production" else "stub"
-    ws_status  = "active" if detect_engine_status("src/vendor/wswan/wswan.c") == "production" else "stub"
+    ws_status = "active" if detect_engine_status("src/vendor/wswan/wswan.c") == "production" else "stub"
     a26_status = "active" if detect_engine_status("src/vendor/stella/atari.c") == "production" else "stub"
-    p8_status  = "active" if detect_engine_status("src/vendor/pico/pico.c") == "production" else "stub"
+    p8_status = "active" if detect_engine_status("src/vendor/pico/pico.c") == "production" else "stub"
     snes_status = "active" if detect_engine_status("src/vendor/snes/snes.c") == "production" else "stub"
     ngp_status = "active" if detect_engine_status("src/vendor/ngp/ngp.c") == "production" else "stub"
     lnx_status = "active" if detect_engine_status("src/vendor/lynx/lynx.c") == "production" else "stub"
@@ -179,7 +201,7 @@ def build_knowledge_base():
 
     # 5. Build Knowledge Graph Data Structure (Hardware Pins Sourced Directly From config.h)
     knowledge_graph = {
-        "schema_version": "2.1.0",
+        "schema_version": "2.2.0",
         "generated_at": now_iso,
         "target_mcu": {
             "chip": "ESP32-S3-N16R8",
@@ -187,6 +209,7 @@ def build_knowledge_base():
             "flash": "16MB Quad SPI (QIO 80MHz)",
             "psram": "8MB Octal SPI (OPI 80MHz)",
             "internal_sram_dram_bytes": 327680,
+            "iram_used_bytes": elf_res.iram_used_bytes,
             "dram_used_bytes": elf_res.dram_used_bytes,
             "flash_used_bytes": elf_res.flash_used_bytes,
         },
@@ -267,57 +290,57 @@ def build_knowledge_base():
 
     # 6. Build Decision Tree (Zero-Shot Agent Action Matrix)
     decision_tree = {
-        "schema_version": "2.0.0",
+        "schema_version": "2.1.0",
         "description": "Zero-shot task intent routing table for autonomous AI coding agents.",
         "tasks": {
             "modify_gpio_or_pin": {
-                "intent_keywords": ["pin", "gpio", "button", "hardware", "switch", "wiring"],
+                "intent_keywords": ["pin", "gpio", "button", "hardware", "switch", "wiring", "remap", "turbo"],
                 "mandatory_rules": ["01_hardware.md", "00_hard_stops.md"],
-                "primary_files": ["firmware/BmoGameboy/src/core/config.h", "firmware/BmoGameboy/src/core/buttons.cpp"],
-                "guardrails": ["Never touch GPIO1 (battery)", "Never enable I2S audio GPIOs"],
-                "verification_command": "python scripts/validate_repo.py",
+                "primary_files": ["firmware/BmoGameboy/src/core/config.h", "firmware/BmoGameboy/src/core/buttons.h", "firmware/BmoGameboy/src/core/buttons.cpp"],
+                "guardrails": ["Never touch GPIO1 (battery)", "Never enable I2S audio GPIOs", "Never assign peripherals to strapping pins 0, 3, 45, 46 or PSRAM 33-37"],
+                "verification_command": "python -m tools.guardian verify && python scripts/validate_repo.py",
             },
             "modify_display_rendering_or_spi": {
-                "intent_keywords": ["display", "spi", "screen", "st7789", "scaling", "color", "bgr565", "palette", "framebuffer"],
+                "intent_keywords": ["display", "spi", "screen", "st7789", "scaling", "color", "bgr565", "palette", "framebuffer", "bezel"],
                 "mandatory_rules": ["28_display_and_spi_contract.md", "15_performance_budgets.md", "39_performance_and_benchmark_framework.md"],
                 "primary_files": ["firmware/BmoGameboy/src/core/display_emu.h", "firmware/BmoGameboy/src/core/display_emu.cpp"],
-                "guardrails": ["Wire format is BGR565 byte-swapped", "Must open window once per frame with startDirectWindow"],
+                "guardrails": ["Wire format is BGR565 byte-swapped", "Acquire SpiArbiter::lock() around SPI bus transactions"],
                 "verification_command": "python -m tools.guardian bus-calc && python scripts/validate_repo.py",
             },
             "add_or_modify_emulator_core": {
-                "intent_keywords": ["emulator", "core", "tier", "nes", "genesis", "snes", "doom", "peanut", "walnut", "sms"],
+                "intent_keywords": ["emulator", "core", "tier", "nes", "genesis", "snes", "doom", "peanut", "walnut", "sms", "atari", "lynx", "wswan", "ngp", "colem", "pico", "pce"],
                 "mandatory_rules": ["12_extensibility_contract.md", "26_emulator_exit_contract.md", "32_modular_core_template.md"],
                 "primary_files": ["firmware/BmoGameboy/src/emulators/", "firmware/BmoGameboy/BmoGameboy.ino"],
-                "guardrails": ["Must implement destroy() to free PSRAM", "SELECT+UP must cleanly return to menu", "Must include #pragma GCC optimize"],
-                "verification_command": "python -m unittest discover tests && python scripts/validate_repo.py",
+                "guardrails": ["Must implement destroy() to free PSRAM and wire into teardownCurrentEmulator()", "Must implement saveState/loadState/saveBatteryRam/loadBatteryRam", "Must include #pragma GCC optimize(\"O3,unroll-loops\")"],
+                "verification_command": "python -m tools.guardian verify && python scripts/validate_repo.py",
             },
             "bake_rom_into_flash": {
                 "intent_keywords": ["bake", "rom", "header", "flash", "app0", "aladdin", "mario", "zelda"],
                 "mandatory_rules": ["29_adding_a_baked_rom.md", "37_rom_governance_and_flash_budget.md"],
                 "primary_files": ["firmware/BmoGameboy/src/assets/roms/", "firmware/BmoGameboy/src/core/sd_card.cpp"],
                 "guardrails": ["Check Flash headroom (stay under 8MB app0)", "Protect .rodata pointer in freeRom()"],
-                "verification_command": "python scripts/validate_repo.py",
+                "verification_command": "python scripts/test_runner.py && python scripts/validate_repo.py",
             },
             "bmo_mascot_face": {
                 "intent_keywords": ["bmo", "face", "mascot", "sdf", "animation", "blink", "expression"],
                 "mandatory_rules": ["35_bmo_face_contract.md", "08_ui_style_guide.md"],
                 "primary_files": ["firmware/BmoGameboy/src/core/bmo_face.h", "firmware/BmoGameboy/src/core/bmo_face.cpp"],
                 "guardrails": ["Preserve bounding-box spatial culling (PERF-12)", "Cache faceBuf in PSRAM"],
-                "verification_command": "python -m tools.guardian bench-host",
+                "verification_command": "python -m tools.guardian bench-host && python -m tools.guardian verify",
             },
             "benchmark_and_performance_audit": {
                 "intent_keywords": ["benchmark", "performance", "audit", "profile", "latency", "framerate", "fps", "memory"],
                 "mandatory_rules": ["39_performance_and_benchmark_framework.md", "04_known_issues.md"],
-                "primary_files": ["tools/guardian/", "report_guardian.md"],
+                "primary_files": ["tools/guardian/", "docs/performance_report.md"],
                 "guardrails": ["No throwaway scripts (Rule 2.1)", "Use tools.guardian framework"],
-                "verification_command": "python -m tools.guardian audit && python -m tools.guardian report",
+                "verification_command": "python -m tools.guardian audit && python -m tools.guardian report -o docs/performance_report.md",
             },
             "session_handoff_and_logging": {
                 "intent_keywords": ["handoff", "changelog", "commit", "known issues", "log", "summary", "done"],
-                "mandatory_rules": ["33_agent_handoff_and_optimization_cycle.md", "06_verification_standards.md", "41_engineering_communication_and_critical_pushback.md"],
+                "mandatory_rules": ["33_agent_handoff_and_optimization_cycle.md", "05_git_workflow.md", "06_verification_standards.md"],
                 "primary_files": [".agents/rules/04_known_issues.md", "CHANGELOG.md"],
-                "guardrails": ["Use two-header format: Verified by me this session / Waiting on you", "Run validate_repo.py first", "No marketing hyperbole"],
-                "verification_command": "python scripts/validate_repo.py",
+                "guardrails": ["Always use two-part commit messages: -m 'subject' -m '- bullets'", "Run validate_repo.py first", "No marketing hyperbole"],
+                "verification_command": "python -m tools.guardian diff-audit && python scripts/validate_repo.py",
             },
             "critical_pushback_and_fact_checking": {
                 "intent_keywords": ["idea", "question", "vibe", "change", "argue", "pushback", "suggest", "opinion", "why", "help"],
@@ -327,25 +350,25 @@ def build_knowledge_base():
                 "verification_command": "python scripts/validate_repo.py",
             },
             "save_states_and_persistence": {
-                "intent_keywords": ["save", "save state", "slot", "restore", "pause menu", "battery ram", "persistence", "fram", "crc32"],
+                "intent_keywords": ["save", "save state", "slot", "restore", "pause menu", "battery ram", "persistence", "fram", "crc32", "screenshot"],
                 "mandatory_rules": ["19_security_and_data_integrity.md", "28_display_and_spi_contract.md", "15_performance_budgets.md"],
                 "primary_files": ["firmware/BmoGameboy/src/core/save_manager.h", "firmware/BmoGameboy/src/core/save_manager.cpp"],
-                "guardrails": ["Must write to .tmp before atomic rename", "Must verify CRC32 and coreId on restore", "Must acquire SpiArbiter"],
-                "verification_command": "python -m unittest discover tests && python scripts/validate_repo.py",
+                "guardrails": ["Must write to .tmp before atomic rename", "Must verify CRC32 and coreId on restore", "Must acquire SpiArbiter::lock()"],
+                "verification_command": "python -m tools.guardian verify && python scripts/validate_repo.py",
             },
             "binary_rom_index_and_box_art": {
-                "intent_keywords": ["rom index", "bmo_index", "cache", "box art", "cover art", "bmp", "raw", "catalog", "sort"],
+                "intent_keywords": ["rom index", "bmo_index", "cache", "box art", "cover art", "bmp", "raw", "catalog", "sort", "folder", "history"],
                 "mandatory_rules": ["19_security_and_data_integrity.md", "15_performance_budgets.md", "28_display_and_spi_contract.md"],
                 "primary_files": ["firmware/BmoGameboy/src/core/rom_index.h", "firmware/BmoGameboy/src/core/box_art.h", "firmware/BmoGameboy/src/core/box_art.cpp", "firmware/BmoGameboy/src/core/sd_card.h", "firmware/BmoGameboy/src/core/sd_card.cpp"],
                 "guardrails": ["Allocate box art buffer strictly in PSRAM (8KB)", "Validate BMP 64x64 bounds", "Verify CRC32 of .bmo_index"],
-                "verification_command": "python -m unittest discover tests && python scripts/validate_repo.py",
+                "verification_command": "python -m tools.guardian verify && python scripts/validate_repo.py",
             },
         },
     }
 
     # 7. Write Artifacts to Disk
     print("\n[4/5] Writing Output Artifacts...")
-    
+
     kg_path = REPO_ROOT / "AGENT_KNOWLEDGE_GRAPH.json"
     kg_path.write_text(json.dumps(knowledge_graph, indent=2), encoding="utf-8")
     print(f"  * Generated: {kg_path} ({len(knowledge_graph['files_index'])} files, {len(symbol_registry)} symbols)")
@@ -354,7 +377,6 @@ def build_knowledge_base():
     dt_path.write_text(json.dumps(decision_tree, indent=2), encoding="utf-8")
     print(f"  * Generated: {dt_path} ({len(decision_tree['tasks'])} intent pathways)")
 
-    # Synchronize AGENT_MANIFEST.json dynamically from vendor sources
     manifest_path = REPO_ROOT / "AGENT_MANIFEST.json"
     emulators_list = [
         {"name": "Game Boy DMG", "wrapper": "src/emulators/emu_peanut.cpp", "engine_status": "production", "extensions": [".gb"]},
@@ -373,7 +395,7 @@ def build_knowledge_base():
         {"name": "ColecoVision", "wrapper": "src/emulators/emu_colem.cpp", "engine_status": detect_engine_status("src/vendor/colem/colem.c"), "extensions": [".col", ".sg"]},
     ]
     manifest_data = {
-        "manifest_version": "2.0.0",
+        "manifest_version": "2.1.0",
         "last_updated": now_iso,
         "total_files": len(file_stats),
         "total_lines": sum(f.total_lines for f in file_stats),
@@ -381,6 +403,7 @@ def build_knowledge_base():
         "target_mcu": "ESP32-S3-N16R8 (16MB Flash, 8MB PSRAM)",
         "active_consoles": 15,
         "rules_count": len(rules_index),
+        "iram_budget_used_bytes": elf_res.iram_used_bytes,
         "flash_budget_used_bytes": elf_res.flash_used_bytes,
         "dram_budget_used_bytes": elf_res.dram_used_bytes,
         "emulators": emulators_list,
@@ -389,10 +412,9 @@ def build_knowledge_base():
     manifest_path.write_text(json.dumps(manifest_data, indent=2), encoding="utf-8")
     print(f"  * Synchronized: {manifest_path}")
 
-    # Synchronize CONTEXT_INDEX.json
     ctx_path = RULES_DIR / "CONTEXT_INDEX.json"
     ctx_data = {
-        "schema_version": "2.0.0",
+        "schema_version": "2.1.0",
         "last_updated": now_iso,
         "task_decision_table": {k: {"rules": v["mandatory_rules"], "files": v["primary_files"]} for k, v in decision_tree["tasks"].items()},
         "rules": rules_index,

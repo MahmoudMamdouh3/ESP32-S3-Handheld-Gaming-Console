@@ -1,36 +1,59 @@
+"""
+scripts/test_runner.py — Fast Baked ROM Header Integrity & Checksum Verifier
+"""
+
 import re
 from pathlib import Path
+from typing import List, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-rom_path = REPO_ROOT / 'assets' / 'legacy_headers' / 'rom_data.h'
-if not rom_path.exists():
-    rom_path = REPO_ROOT / 'firmware' / 'BmoGameboy' / 'src' / 'assets' / 'roms' / 'virtual_bmo.h'
+ASSETS_DIR = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "assets"
 
-with open(rom_path, 'r') as f:
-    content = f.read()
 
-# Extract Tobu Tobu Girl ROM bytes
-match = re.search(r'const unsigned char tobu_tobu_girl_rom\[\] PROGMEM = \{(.*?)\};', content, re.DOTALL)
-if match:
-    hex_data = match.group(1).replace('\n', '').replace(' ', '')
-    byte_strings = hex_data.split(',')
-    rom_bytes = [int(b, 16) for b in byte_strings if b.startswith('0x')]
-    
-    print(f'ROM Length: {len(rom_bytes)} bytes')
-    
-    if len(rom_bytes) > 0x150:
-        header_checksum = 0
-        for j in range(0x0134, 0x014C + 1):
-            header_checksum = (header_checksum - rom_bytes[j] - 1) & 0xFF
-            
-        expected = rom_bytes[0x014D]
-        print(f'Calculated Checksum: 0x{header_checksum:02X}')
-        print(f'Expected Checksum (from ROM): 0x{expected:02X}')
-        if header_checksum == expected:
-            print('Result: ROM Integrity Check PASSED')
-        else:
-            print('Result: ROM Integrity Check FAILED')
-    else:
-        print('ROM too small!')
-else:
-    print('ROM not found')
+def verify_c_rom_header(header_path: Path) -> Tuple[bool, int, int]:
+    """Reads the first 4KB of a baked ROM C header and verifies the GB/GBC header checksum (0x0134..0x014D)."""
+    with header_path.open("r", encoding="utf-8", errors="ignore") as f:
+        head_chunk = f.read(16384)
+
+    hex_tokens = re.findall(r"0x([0-9a-fA-F]{2})", head_chunk)
+    if len(hex_tokens) <= 0x0150:
+        return False, 0, 0
+
+    rom_bytes = [int(h, 16) for h in hex_tokens[:0x0155]]
+    checksum = 0
+    for addr in range(0x0134, 0x014C + 1):
+        checksum = (checksum - rom_bytes[addr] - 1) & 0xFF
+
+    expected = rom_bytes[0x014D]
+    return checksum == expected, checksum, expected
+
+
+def verify_all_baked_roms() -> List[Tuple[str, bool, int, int]]:
+    results: List[Tuple[str, bool, int, int]] = []
+    candidates = [ASSETS_DIR / "rom_data.h"] + sorted((ASSETS_DIR / "roms").glob("*.h"))
+    for path in candidates:
+        if not path.exists():
+            continue
+        ok, actual, expected = verify_c_rom_header(path)
+        results.append((path.name, ok, actual, expected))
+    return results
+
+
+def main() -> int:
+    results = verify_all_baked_roms()
+    if not results:
+        print("No baked ROM headers found.")
+        return 1
+
+    failures = 0
+    for name, ok, actual, expected in results:
+        status = "PASSED" if ok else "FAILED"
+        print(f"{name:20s} | Checksum: 0x{actual:02X} (Expected: 0x{expected:02X}) -> {status}")
+        if not ok:
+            failures += 1
+
+    return 1 if failures else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
