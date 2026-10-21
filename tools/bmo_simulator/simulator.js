@@ -82,6 +82,16 @@ class BmoSimulator {
     // Sample Game List Cache
     this.mockGames = this.generateMockGameDatabase();
 
+    // WebAssembly Playtest Core Runner
+    this.isPausedInGame = false;
+    this.pauseMenuIndex = 0;
+    this.wasmEngine = (typeof window !== "undefined" && window.WasmPlaytestEngine)
+      ? new window.WasmPlaytestEngine()
+      : null;
+    if (this.wasmEngine) {
+      this.wasmEngine.init();
+    }
+
     // Setup input listeners
     this.setupInputHandlers();
     this.setupUIControls();
@@ -164,8 +174,20 @@ class BmoSimulator {
   }
 
   setupInputHandlers() {
+    const keyBitMap = {
+      ArrowUp: 1, ArrowDown: 2, ArrowLeft: 4, ArrowRight: 8,
+      z: 16, Z: 16, x: 32, X: 32, Enter: 64, Shift: 128
+    };
+
     // Keyboard Handler
     window.addEventListener("keydown", (e) => {
+      if (this.wasmEngine && keyBitMap[e.key]) {
+        this.wasmEngine.setButtonBit(keyBitMap[e.key], true);
+      }
+      if ((e.key === "p" || e.key === "P") && this.currentState === STATE.EMULATION_VIEW) {
+        this.isPausedInGame = !this.isPausedInGame;
+        return;
+      }
       switch (e.key) {
         case "ArrowUp":
           this.handleButtonPress("UP");
@@ -205,16 +227,22 @@ class BmoSimulator {
       }
     });
 
+    window.addEventListener("keyup", (e) => {
+      if (this.wasmEngine && keyBitMap[e.key]) {
+        this.wasmEngine.setButtonBit(keyBitMap[e.key], false);
+      }
+    });
+
     // Touch & Mouse On-Screen Physical Buttons
     const buttons = [
-      { id: "btn-dpad-up", key: "UP" },
-      { id: "btn-dpad-down", key: "DOWN" },
-      { id: "btn-dpad-left", key: "LEFT" },
-      { id: "btn-dpad-right", key: "RIGHT" },
-      { id: "btn-a", key: "A" },
-      { id: "btn-b", key: "B" },
-      { id: "btn-start", key: "START" },
-      { id: "btn-select", key: "SELECT" }
+      { id: "btn-dpad-up", key: "UP", bit: 1 },
+      { id: "btn-dpad-down", key: "DOWN", bit: 2 },
+      { id: "btn-dpad-left", key: "LEFT", bit: 4 },
+      { id: "btn-dpad-right", key: "RIGHT", bit: 8 },
+      { id: "btn-a", key: "A", bit: 16 },
+      { id: "btn-b", key: "B", bit: 32 },
+      { id: "btn-start", key: "START", bit: 64 },
+      { id: "btn-select", key: "SELECT", bit: 128 }
     ];
 
     buttons.forEach(b => {
@@ -222,15 +250,23 @@ class BmoSimulator {
       if (el) {
         el.addEventListener("mousedown", () => {
           el.classList.add("pressed");
+          if (this.wasmEngine) this.wasmEngine.setButtonBit(b.bit, true);
           this.handleButtonPress(b.key);
         });
-        window.addEventListener("mouseup", () => el.classList.remove("pressed"));
+        window.addEventListener("mouseup", () => {
+          el.classList.remove("pressed");
+          if (this.wasmEngine) this.wasmEngine.setButtonBit(b.bit, false);
+        });
         el.addEventListener("touchstart", (e) => {
           e.preventDefault();
           el.classList.add("pressed");
+          if (this.wasmEngine) this.wasmEngine.setButtonBit(b.bit, true);
           this.handleButtonPress(b.key);
         });
-        el.addEventListener("touchend", () => el.classList.remove("pressed"));
+        el.addEventListener("touchend", () => {
+          el.classList.remove("pressed");
+          if (this.wasmEngine) this.wasmEngine.setButtonBit(b.bit, false);
+        });
       }
     });
   }
@@ -312,15 +348,51 @@ class BmoSimulator {
         this.bmo.expression = "IDLE";
       } else if (key === "A" || key === "START") {
         if (games.length > 0) {
-          this.currentState = STATE.EMULATION_VIEW;
-          this.bmo.expression = "HAPPY";
+          this.launchSelectedGame(activeConsole.id, games[this.selectedGameIndex]);
         }
       }
     } else if (this.currentState === STATE.EMULATION_VIEW) {
-      if (key === "SELECT" || key === "B") {
-        this.currentState = STATE.GAME_SELECT;
+      if (this.isPausedInGame) {
+        if (key === "UP") {
+          this.pauseMenuIndex = (this.pauseMenuIndex + 3) % 4;
+        } else if (key === "DOWN") {
+          this.pauseMenuIndex = (this.pauseMenuIndex + 1) % 4;
+        } else if (key === "LEFT" && this.wasmEngine) {
+          this.wasmEngine.swapAB = !this.wasmEngine.swapAB;
+        } else if (key === "RIGHT" && this.wasmEngine) {
+          this.wasmEngine.bezelEnabled = !this.wasmEngine.bezelEnabled;
+        } else if (key === "B") {
+          this.isPausedInGame = false;
+        } else if (key === "A" || key === "START") {
+          if (this.pauseMenuIndex === 0) {
+            this.isPausedInGame = false;
+          } else if (this.pauseMenuIndex === 1 && this.wasmEngine) {
+            this.wasmEngine.saveState(this.wasmEngine.activeSlot);
+            this.isPausedInGame = false;
+          } else if (this.pauseMenuIndex === 2 && this.wasmEngine) {
+            this.wasmEngine.loadState(this.wasmEngine.activeSlot);
+            this.isPausedInGame = false;
+          } else if (this.pauseMenuIndex === 3) {
+            this.isPausedInGame = false;
+            this.currentState = STATE.GAME_SELECT;
+          }
+        }
+      } else if (key === "SELECT") {
+        this.isPausedInGame = true;
+        this.pauseMenuIndex = 0;
       }
     }
+  }
+
+  launchSelectedGame(consoleId, gameObj) {
+    const title = typeof gameObj === "string" ? gameObj : (gameObj.title || "Game");
+    const romBytes = (typeof gameObj === "object" && gameObj.romBytes) ? gameObj.romBytes : null;
+    if (this.wasmEngine && this.wasmEngine.ready) {
+      this.wasmEngine.loadRom(consoleId, title, romBytes);
+    }
+    this.isPausedInGame = false;
+    this.currentState = STATE.EMULATION_VIEW;
+    this.bmo.expression = "HAPPY";
   }
 
   setupUIControls() {
@@ -1125,36 +1197,46 @@ class BmoSimulator {
     const c = CONSOLES_LIST[this.selectedConsoleIndex];
     const pal = this.palettes[this.activePalette] || this.palettes.classic;
 
-    // Viewport background
-    this.ctx.fillStyle = pal[3];
-    this.ctx.fillRect(0, 0, 320, 240);
+    if (this.wasmEngine && this.wasmEngine.ready) {
+      this.wasmEngine.renderToCanvas(this.ctx, pal);
+    } else {
+      this.ctx.fillStyle = pal[3];
+      this.ctx.fillRect(0, 0, 320, 240);
+      this.ctx.fillStyle = pal[0];
+      this.ctx.fillRect(40, 12, 240, 216);
+      this.ctx.fillStyle = pal[3];
+      this.ctx.font = "bold 13px 'Press Start 2P', monospace";
+      this.ctx.textAlign = "center";
+      this.ctx.fillText(c.name, 160, 115);
+    }
 
-    // Centered Game Frame Window (240x216)
-    this.ctx.fillStyle = pal[0];
-    this.ctx.fillRect(40, 12, 240, 216);
+    if (this.isPausedInGame) {
+      this.ctx.fillStyle = "rgba(10, 18, 20, 0.86)";
+      this.ctx.fillRect(44, 28, 232, 184);
+      this.ctx.strokeStyle = "#FFE033";
+      this.ctx.lineWidth = 2;
+      this.ctx.strokeRect(44, 28, 232, 184);
 
-    // Decorative retro elements
-    this.ctx.fillStyle = pal[2];
-    this.ctx.fillRect(50, 22, 220, 196);
+      this.ctx.fillStyle = "#FFE033";
+      this.ctx.font = "bold 11px 'Press Start 2P', monospace";
+      this.ctx.textAlign = "center";
+      this.ctx.fillText("PAUSE MENU (WASM)", 160, 50);
 
-    this.ctx.fillStyle = pal[1];
-    this.ctx.fillRect(60, 32, 200, 176);
+      const items = ["RESUME GAME", "SAVE STATE (S0)", "LOAD STATE (S0)", "QUIT TO MENU"];
+      for (let i = 0; i < items.length; i++) {
+        const y = 76 + i * 24;
+        const sel = i === this.pauseMenuIndex;
+        this.ctx.fillStyle = sel ? "#FFE033" : "#CEF5E4";
+        this.ctx.font = sel ? "bold 11px 'JetBrains Mono', monospace" : "11px 'JetBrains Mono', monospace";
+        this.ctx.fillText(sel ? `▶ ${items[i]}` : items[i], 160, y);
+      }
 
-    this.ctx.fillStyle = pal[3];
-    this.ctx.font = "bold 13px 'Press Start 2P', monospace";
-    this.ctx.textAlign = "center";
-    this.ctx.fillText(c.name, 160, 95);
-
-    this.ctx.fillStyle = pal[2];
-    this.ctx.font = "10px 'Press Start 2P', monospace";
-    this.ctx.fillText("60 FPS • SPI DMA", 160, 125);
-
-    this.ctx.fillStyle = pal[3];
-    this.ctx.font = "bold 11px 'Outfit', sans-serif";
-    this.ctx.fillText(`Palette: ${this.activePalette.toUpperCase()}`, 160, 155);
-
-    this.ctx.font = "10px 'Outfit', sans-serif";
-    this.ctx.fillText("Hold SELECT + ◄/► to Fast-Forward | SELECT/B: Exit", 160, 185);
+      const swapTxt = (this.wasmEngine && this.wasmEngine.swapAB) ? "ON" : "OFF";
+      const bezTxt = (this.wasmEngine && this.wasmEngine.bezelEnabled) ? "ON" : "OFF";
+      this.ctx.fillStyle = "#8CD7C2";
+      this.ctx.font = "9px 'JetBrains Mono', monospace";
+      this.ctx.fillText(`◄ A/B Swap: ${swapTxt}  |  ► Bezel: ${bezTxt}`, 160, 196);
+    }
   }
 
   async connectWebSerial() {
@@ -1192,12 +1274,24 @@ class BmoSimulator {
       const cid = extMap[ext] || "ROM_GB";
       const cleanTitle = file.name.replace(/\.[^/.]+$/, "");
       if (!this.mockGames[cid]) this.mockGames[cid] = [];
-      this.mockGames[cid].unshift({ title: cleanTitle, console: ext.replace(".", "").toUpperCase(), isFav: true });
+      const entry = { title: cleanTitle, console: ext.replace(".", "").toUpperCase(), isFav: true, romBytes: null };
+      this.mockGames[cid].unshift(entry);
+      if (typeof file.arrayBuffer === "function") {
+        file.arrayBuffer().then((buf) => {
+          entry.romBytes = new Uint8Array(buf);
+          if (fileList.length === 1) {
+            const cIdx = CONSOLES_LIST.findIndex(c => c.id === cid);
+            if (cIdx >= 0) this.selectedConsoleIndex = cIdx;
+            this.selectedGameIndex = 0;
+            this.launchSelectedGame(cid, entry);
+          }
+        }).catch(() => {});
+      }
       added++;
     });
     this.rebuildFavoritesInDatabase(this.mockGames);
     const logEl = document.getElementById("webserial-log");
-    if (logEl) logEl.textContent = `Mounted ${added} ROM file(s) into simulator SD catalog.`;
+    if (logEl) logEl.textContent = `Mounted ${added} ROM file(s) into Wasm playtest engine.`;
     return added;
   }
 }
