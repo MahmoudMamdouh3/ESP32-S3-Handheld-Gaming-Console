@@ -641,6 +641,14 @@ void P_RespawnSpecials (void)
 	if (mthing->type == mobjinfo[i].doomednum)
 	    break;
     }
+
+    // BMO-PATCH: reject malformed map object types before indexing mobjinfo.
+    if (i == NUMMOBJTYPES)
+    {
+        I_Error ("P_RespawnSpecials: Unknown type %i at (%i, %i)",
+                 mthing->type, mthing->x, mthing->y);
+        return;
+    }
     
     // spawn it
     if (mobjinfo[i].flags & MF_SPAWNCEILING)
@@ -794,10 +802,14 @@ void P_SpawnMapThing (mapthing_t* mthing)
 	if (mthing->type == mobjinfo[i].doomednum)
 	    break;
 	
+    // BMO-PATCH: do not continue to mobjinfo[i] if a malformed map type is unknown.
     if (i==NUMMOBJTYPES)
+    {
 	I_Error ("P_SpawnMapThing: Unknown type %i at (%i, %i)",
 		 mthing->type,
 		 mthing->x, mthing->y);
+        return;
+    }
 		
     // don't spawn keycards and players in deathmatch
     if (deathmatch && mobjinfo[i].flags & MF_NOTDMATCH)
@@ -1046,4 +1058,3 @@ P_SpawnPlayerMissile
 
     P_CheckMissileSpawn (th);
 }
-

@@ -2,7 +2,7 @@
 **Project:** ESP32-S3-Handheld-Gaming-Console  
 **Target Platform:** ESP32-S3-N16R8 (16MB OPI Flash, 8MB Octal PSRAM)  
 **Target Display:** ST7789VW 2.4" SPI TFT (240×320 Physical, 320×240 Landscape Viewport)  
-**Document Version:** 3.6 (Technical Specification — Updated 2026-10-09)  
+**Document Version:** 3.7 (Technical Specification — Updated 2026-10-21)
 **Status:** Approved Engineering Ground Truth  
 **Maintained By:** Firmware Engineering Team & Autonomous AI Agents  
 
@@ -331,7 +331,8 @@ public:
 - **Target:** Classic DOOM (`.wad`).
 - **Engine:** `doomgeneric` ported to ESP32 VFS.
 - **Direct VFS Streaming:** Reads `.wad` data directly from the MicroSD FAT filesystem via POSIX `fopen()` / `fread()`, bypassing PSRAM ROM pre-buffering to maximize available heap for DOOM's game zone memory.
-- **Memory Management:** Releases DOOM zone heap memory at `destroy()`.
+- **Framebuffer:** With `CMAP256`, the 320×200 indexed framebuffer occupies 64,000 bytes in PSRAM (`sizeof(pixel_t)` per pixel).
+- **Teardown limitation:** `DoomEmu::destroy()` is currently a no-op. The framebuffer, DOOM zone, WAD handles, and engine globals do not have a verified reusable shutdown path; repeated DOOM sessions may retain memory or stale state.
 
 ---
 

@@ -82,14 +82,26 @@ def cmd_audit(args) -> int:
     cppcheck_findings = []
     if hasattr(args, "cppcheck") and args.cppcheck:
         print("  Running Cppcheck deep static analysis...")
-        cppcheck_findings = cppcheck.run() if cppcheck.is_available() else []
+        if not cppcheck.is_available():
+            print("Cppcheck was requested but is not installed or could not be located.")
+            return 2
+        cppcheck_findings = cppcheck.run()
         print(f"  Cppcheck available: {cppcheck.is_available()} (Findings: {len(cppcheck_findings)})")
+        for finding in cppcheck_findings:
+            print(
+                f"    [{finding.severity.upper()}] {finding.file_path}:"
+                f"{finding.line} [{finding.error_id}] {finding.message}"
+            )
     else:
         print(f"  Cppcheck toolchain detected: {cppcheck.is_available()} (use --cppcheck for deep analysis)")
 
     print("\n" + "=" * 70)
-    if critical:
-        print(f" AUDIT RESULT: FAIL -- {len(critical)} Critical Violations Found.")
+    cppcheck_errors = [f for f in cppcheck_findings if f.severity == "error"]
+    if critical or cppcheck_errors:
+        print(
+            f" AUDIT RESULT: FAIL -- {len(critical)} Critical AST violations, "
+            f"{len(cppcheck_errors)} Cppcheck errors."
+        )
         return 1
     else:
         print(" AUDIT RESULT: PASS -- Clean Performance & Quality Baseline.")
@@ -136,6 +148,25 @@ def cmd_bench_host(args) -> int:
     for m in metrics:
         print(f"{m.name:36s} | {m.iterations:10,d} | {m.avg_latency_us:8.3f} us  | {m.throughput_mops:7.2f} MOps/s")
     return 0
+
+
+def cmd_cppcheck(args) -> int:
+    """Run Cppcheck across the complete firmware source tree."""
+    cppcheck = CppcheckRunner(REPO_ROOT)
+    if not cppcheck.is_available():
+        print("Cppcheck is not installed or could not be located.")
+        return 2
+
+    findings = cppcheck.run()
+    for finding in findings:
+        print(
+            f"[{finding.severity.upper()}] {finding.file_path}:"
+            f"{finding.line} [{finding.error_id}] {finding.message}"
+        )
+
+    errors = sum(finding.severity == "error" for finding in findings)
+    print(f"Cppcheck findings: {len(findings)} total, {errors} errors.")
+    return 1 if errors else 0
 
 
 def cmd_report(args) -> int:
@@ -388,7 +419,7 @@ def main() -> int:
     subparsers.add_parser("bench-host", help="Run host-side microbenchmarks")
 
     # cppcheck
-    subparsers.add_parser("cppcheck", help="Run cppcheck static analysis")
+    subparsers.add_parser("cppcheck", help="Run Cppcheck across all firmware sources")
 
     # report
     p_rep = subparsers.add_parser("report", help="Generate full performance & ground-truth report")
@@ -422,7 +453,7 @@ def main() -> int:
         "bus-calc": cmd_bus_calc,
         "profile-elf": cmd_profile_elf,
         "bench-host": cmd_bench_host,
-        "cppcheck": cmd_audit,
+        "cppcheck": cmd_cppcheck,
         "report": cmd_report,
         "index": cmd_index,
         "route": cmd_route,

@@ -5,6 +5,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Agent Handoff] - 2026-10-21
+### Changed
+- Updated `.agents/rules/04_known_issues.md` with a current handoff, the AI-environment project goal, exact previously recorded verification, open triage tasks, corrected repository metrics, and preserved worktree/generated-index notes.
+- Updated `.agents/rules/42_quality_of_life_and_roadmap_ledger.md` to prioritize AI development-environment reliability and distinguish feature availability from verification evidence.
+- Updated `.agents/rules/31_quick_start_primer.md` so new agents can route AI-environment and Guardian work to the relevant rules and roadmap.
+### Verification
+- Documentation-only update; preceding code verification outputs are recorded in the handoff as prior-session results, not rerun here.
+
+## [Fixes & Audit] - 2026-10-21
+### Fixed
+- Corrected DOOM's 320x200 indexed framebuffer allocation to use `sizeof(pixel_t)`, reducing its PSRAM request by 192,000 bytes.
+- Added invalid map-object bounds guards and allocation-failure handling for the DOOM WAD checksum list.
+- Updated Guardian Cppcheck to scan all firmware source directories, report timeout/tool failures, ignore informational messages, and propagate non-zero command results. Removed the comment-only per-frame-filter false positive.
+### Verification
+- Firmware compile: `Sketch uses 5601544 bytes (33%) of program storage space.` Global variables: `215200 bytes (65%)`.
+- Guardian tests: `Ran 10 tests in 3.879s` / `OK`; repository tests: `Ran 85 tests in 7.546s` / `OK`.
+- Guardian AST audit: `0 Critical, 11 Warnings`. Full-source Cppcheck: `Cppcheck findings: 60 total, 4 errors.` Remaining static-analysis errors and DOOM teardown remain open; no hardware behavior is claimed.
+- Repository validator: `VALIDATION PASSED in 16555 ms` (all phases clean).
+
+---
+
+## [Docs] - 2026-10-21 (Unevaluated UI Framework Backlog Note)
+### Added
+- `docs/research_embedded_ui_frameworks_unevaluated.md`: records that LVGL, Tactility, and MicroPythonOS were never evaluated or borrowed from, lists preliminary concerns as hypotheses, and gives an evaluation plan. No firmware changes.
+
+---
+
 ## [Milestone 17.2] - 2026-10-09 (Milestone 5.2.2: Sega Genesis / Mega Drive 68000 CPU & VDP Core Integration in PSRAM)
 ### Added
 - **Sega Genesis / Mega Drive Real Engine Bringup (`src/vendor/genesis/genesis.c`, `src/vendor/genesis/genesis.h`)**:
