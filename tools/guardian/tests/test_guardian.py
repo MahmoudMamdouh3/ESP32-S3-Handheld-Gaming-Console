@@ -3,12 +3,19 @@ test_guardian.py — Unit Tests for the Guardian Ground-Truth Engine
 """
 
 import json
+import io
+import runpy
+import subprocess
+import tempfile
+import sys
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 
 from tools.guardian.core.ast_linter import FirmwareAstLinter, LintFinding
 from tools.guardian.core.bus_model import HardwareBusModel, SUPPORTED_RESOLUTIONS
-from tools.guardian.core.cppcheck_runner import CppcheckRunner
+from tools.guardian.core.cppcheck_runner import CppcheckFinding, CppcheckRunner
 from tools.guardian.core.elf_analyzer import ElfAnalyzer
 from tools.guardian.core.host_bench import HostBenchmarkSuite
 from tools.guardian.core.report_gen import ReportGenerator
@@ -105,6 +112,77 @@ class TestGuardianEngine(unittest.TestCase):
         self.assertIn("microbenchmarks", data)
         self.assertIn("file_stats", data)
         self.assertGreater(len(data["file_stats"]), 50)
+
+    def test_06_cppcheck_scans_all_firmware_sources(self):
+        runner = CppcheckRunner(REPO_ROOT)
+        runner.cppcheck_bin = "cppcheck"
+        with patch(
+            "tools.guardian.core.cppcheck_runner.subprocess.run",
+            return_value=subprocess.CompletedProcess([], 0, "", ""),
+        ) as run:
+            self.assertEqual(runner.run(), [])
+
+        command = run.call_args.args[0]
+        self.assertIn(str(FIRMWARE_DIR / "src"), command)
+        self.assertEqual(run.call_args.kwargs["timeout"], 600)
+        self.assertIn("--error-exitcode=1", command)
+
+    def test_07_cppcheck_timeout_is_reported(self):
+        runner = CppcheckRunner(REPO_ROOT)
+        runner.cppcheck_bin = "cppcheck"
+        with patch(
+            "tools.guardian.core.cppcheck_runner.subprocess.run",
+            side_effect=subprocess.TimeoutExpired("cppcheck", 600),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "timed out"):
+                runner.run()
+
+    def test_08_cppcheck_findings_are_returned(self):
+        runner = CppcheckRunner(REPO_ROOT)
+        runner.cppcheck_bin = "cppcheck"
+        output = (
+            "src/example.c::0::information::branchCheck::scan note\n"
+            "src/vendor/example.c::17::error::exampleCheck::detected issue\n"
+        )
+        with patch(
+            "tools.guardian.core.cppcheck_runner.subprocess.run",
+            return_value=subprocess.CompletedProcess([], 1, "", output),
+        ):
+            findings = runner.run()
+
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].severity, "error")
+        self.assertEqual(findings[0].line, 17)
+
+    def test_09_guardian_module_propagates_cppcheck_failure(self):
+        finding = CppcheckFinding(
+            "src/example.c", 17, "error", "exampleCheck", "detected issue"
+        )
+        with (
+            patch.object(sys, "argv", ["tools.guardian", "cppcheck"]),
+            patch.object(CppcheckRunner, "is_available", return_value=True),
+            patch.object(CppcheckRunner, "run", return_value=[finding]),
+            redirect_stdout(io.StringIO()),
+        ):
+            with self.assertRaises(SystemExit) as result:
+                runpy.run_module("tools.guardian", run_name="__main__")
+
+        self.assertEqual(result.exception.code, 1)
+
+    def test_10_ast_linter_ignores_per_frame_filter_comments(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sketch = Path(tmp) / "BmoGameboy.ino"
+            sketch.write_text(
+                "void loop() {\n"
+                "    // rebuildVisibleGames() is called only when dirty.\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            findings = FirmwareAstLinter(Path(tmp)).lint_all()
+
+        self.assertFalse(
+            any(f.rule_id == "UNGUARDED_PER_FRAME_FILTER" for f in findings)
+        )
 
 
 if __name__ == "__main__":

@@ -23,6 +23,9 @@ Before syncing a vendor library to a newer upstream version:
 |---|---|---|---|---|
 | `src/emulators/emu_walnut.cpp` | ~L84, ~L90 | Replaced unsafe unaligned pointer casts with byte-wise little-endian reconstruction | 2026-08-29 | ACTIVE |
 | `src/engine/walnut_cgb/walnut_cgb.h` | ~L67 | Enabled 16-bit fast paths (DUALFETCH + 16BIT_OPS) | 2026-08-29 | **REVERTED 2026-08-30** -- caused Mario Deluxe GBC freeze (INC-3). See `24_vendor_flag_safety.md`. |
+| `src/vendor/doom/src/doomgeneric.c` | ~27 | Size the indexed framebuffer using its pixel type instead of four bytes per pixel | 2026-10-21 | ACTIVE |
+| `src/vendor/doom/src/p_mobj.c` | ~646, ~803 | Stop before indexing the object table for unknown map thing types | 2026-10-21 | ACTIVE |
+| `src/vendor/doom/src/w_checksum.c` | ~48 | Preserve the old file list and report a fatal error if realloc fails | 2026-10-21 | ACTIVE |
 
 ## Vendor flag changes require 24_vendor_flag_safety.md compliance
 Any change to a `#define` value in `src/engine/*/` or `src/vendor/*/`

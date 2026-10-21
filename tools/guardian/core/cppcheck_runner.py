@@ -27,6 +27,7 @@ class CppcheckRunner:
         self.repo_root = repo_root
         self.firmware_dir = repo_root / "firmware" / "BmoGameboy"
         self.cppcheck_bin = self._find_cppcheck()
+        self.timeout_seconds = 600
 
     def _find_cppcheck(self) -> Optional[str]:
         # Check PATH
@@ -53,20 +54,18 @@ class CppcheckRunner:
 
         # Target first-party core and wrappers
         target_dirs = [
-            str(self.firmware_dir / "src" / "core"),
-            str(self.firmware_dir / "src" / "emulators"),
+            str(self.firmware_dir / "src"),
         ]
 
         cmd = [
             self.cppcheck_bin,
-            "-j4",
+            "-j8",
             "--max-configs=1",
             "--enable=warning,performance,portability",
             "--suppress=missingIncludeSystem",
             "--suppress=missingInclude",
             "--inline-suppr",
-            "--language=c++",
-            "--std=c++17",
+            "--error-exitcode=1",
             "--template={file}::{line}::{severity}::{id}::{message}",
             "--quiet",
             *target_dirs,
@@ -74,29 +73,47 @@ class CppcheckRunner:
 
         findings: List[CppcheckFinding] = []
         try:
-            res = subprocess.run(cmd, capture_output=True, text=True, errors="ignore", timeout=3)
-            # cppcheck output is in stderr
-            combined_out = (res.stderr or "") + "\n" + (res.stdout or "")
-            for line in combined_out.splitlines():
-                line = line.strip()
-                if "::" in line:
-                    parts = line.split("::", 4)
-                    if len(parts) >= 5:
-                        f_path, l_num, sev, err_id, msg = parts[0], parts[1], parts[2], parts[3], parts[4]
-                        try:
-                            line_int = int(l_num)
-                        except ValueError:
-                            line_int = 0
-                        findings.append(
-                            CppcheckFinding(
-                                file_path=f_path,
-                                line=line_int,
-                                severity=sev,
-                                error_id=err_id,
-                                message=msg,
-                            )
+            res = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                errors="ignore",
+                timeout=self.timeout_seconds,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError(
+                f"Cppcheck timed out after {self.timeout_seconds} seconds."
+            ) from exc
+        except OSError as exc:
+            raise RuntimeError(f"Unable to run Cppcheck: {exc}") from exc
+
+        combined_out = (res.stderr or "") + "\n" + (res.stdout or "")
+        for line in combined_out.splitlines():
+            line = line.strip()
+            if "::" in line:
+                parts = line.split("::", 4)
+                if len(parts) >= 5:
+                    f_path, l_num, sev, err_id, msg = parts[0], parts[1], parts[2], parts[3], parts[4]
+                    if sev not in {"error", "warning", "performance", "portability", "style"}:
+                        continue
+                    try:
+                        line_int = int(l_num)
+                    except ValueError:
+                        line_int = 0
+                    findings.append(
+                        CppcheckFinding(
+                            file_path=f_path,
+                            line=line_int,
+                            severity=sev,
+                            error_id=err_id,
+                            message=msg,
                         )
-        except (subprocess.TimeoutExpired, Exception):
-            pass
+                    )
+
+        if res.returncode != 0 and not findings:
+            detail = combined_out.strip() or "no diagnostic output"
+            raise RuntimeError(
+                f"Cppcheck exited with code {res.returncode}: {detail}"
+            )
 
         return findings

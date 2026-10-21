@@ -65,6 +65,7 @@ Purpose: Any AI agent or developer starting a session with zero prior memory can
 | Performance benchmarks or profiling | `39_performance_and_benchmark_framework.md` & `tools/guardian/` |
 | Save states, SD storage, or cover art | `19_security_and_data_integrity.md`, `src/core/save_manager.h`, `src/core/box_art.h`, `src/core/rom_index.h` |
 | AI Knowledge base & indexing | `40_ai_knowledge_graph_and_indexing_protocol.md` |
+| AI agent environment, Guardian, or developer-utility improvements | `04_known_issues.md`, `33_agent_handoff_and_optimization_cycle.md`, `40_ai_knowledge_graph_and_indexing_protocol.md`, `42_quality_of_life_and_roadmap_ledger.md` |
 | Modifying vendor `#define` flags | `24_vendor_flag_safety.md` |
 | AI guardrails, anti-hallucination, invariants | `34_ai_agent_sandbox_and_guardrails.md` |
 | Ending session / logging handoffs | `33_agent_handoff_and_optimization_cycle.md` & `04_known_issues.md` |

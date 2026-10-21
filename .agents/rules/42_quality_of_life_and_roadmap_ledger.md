@@ -2,12 +2,16 @@
 
 **Purpose:** This document is the single ground-truth ledger for all Quality of Life (QoL) tools, UI/UX enhancements, emulator ergonomics, and developer utilities across the entire BMO Gameboy platform. It tracks active implementations, prioritizes backlog initiatives, and defines standards for handheld user experience.
 
+**Project direction (user-stated, 2026-10-21):** Build the handheld and its AI development environment together. The AI environment should help models with limited capability or context work accurately and efficiently through grounded navigation, clear safety constraints, reliable tools, executable tests, and evidence-based handoffs. Treat improvements to Guardian, routing/indexing, agent rules, issue tracking, and developer utilities as first-class engineering work alongside firmware. Do not trade verification or hardware safety for model autonomy.
+
+**Status note:** `[IMPLEMENTED]` describes feature/tool availability in this ledger; it does not by itself mean `VERIFIED_HARDWARE` or establish correctness. Use `.agents/rules/06_verification_standards.md` and `.agents/rules/04_known_issues.md` for evidence and verification status.
+
 ---
 
 ## 1. Feature Lifecycle Status Definitions
 
 Every feature or tool in this ledger is categorized into one of four states:
-- `[IMPLEMENTED]`: Tested, verified on hardware / CI, and active in master firmware or tooling.
+- `[IMPLEMENTED]`: Present and in use in firmware or tooling; this label alone is not a verification tier (see the status note above).
 - `[IN PROGRESS]`: Actively under development or integration in the current cycle.
 - `[BACKLOG / ROADMAP]`: Prioritized for future development; feasible with current hardware.
 - `[BLOCKED / HARDWARE-DORMANT]`: Architected in code but dormant pending physical hardware rework (e.g., I2S audio DAC, battery divider resistors).
@@ -84,8 +88,17 @@ Every feature or tool in this ledger is categorized into one of four states:
 | **Flash Budget Visualizer (`budget`)** | `[IMPLEMENTED]` | CLI explorer showing `app0` partition breakdown, baked ROMs, and free headroom. | `tools/guardian/cli.py` |
 | **Roadmap & QoL Explorer (`qol`)** | `[IMPLEMENTED]` | CLI command to query active, in-progress, and backlog features directly from terminal. | `tools/guardian/cli.py` |
 | **Host CPU C++ Verification Harness** | `[IMPLEMENTED]` | Native Zig-compiled host test harness for desktop test execution without hardware. | `tools/host_test.cpp` |
+| **AI-First Engineering Workflow** | `[BACKLOG / ROADMAP]` | Audit and improve orientation, code/API grounding, tool failure visibility, targeted test selection, false-positive triage, and cross-session handoffs for models with limited context; measure observed failure modes before setting success thresholds. | `tools/guardian/`, `.agents/rules/`, `tests/`, `04_known_issues.md` |
 | **Headless Visual Regression Testing** | `[BACKLOG / ROADMAP]` | Framebuffer hash verification across 50-frame golden runs in CI. | `tools/host_test.cpp` |
 | **Real-Time Serial Telemetry GUI** | `[BACKLOG / ROADMAP]` | Desktop plotter graphing FPS, frame pacing jitter, and heap fragmentation in real time. | `tools/telemetry_plotter` |
+
+#### AI Environment Backlog: Evidence-Driven Work for Limited-Context Models
+
+1. Audit routing, symbol lookup, generated-index freshness, mandatory-rule discovery, and test-command selection against representative tasks.
+2. Audit developer utilities for bounded execution, visible errors, meaningful exit codes, diagnostic coverage, and focused regression tests.
+3. Track false positives and missed findings with source-level adjudication; never treat an analyzer's output as a confirmed defect without checking the implementation and active configuration.
+4. Keep handoffs self-contained: latest verified changes, exact test/build outcomes, unresolved findings, preserved worktree state, and concrete next actions.
+5. Measure a baseline before choosing targets for task routing accuracy, unsupported-symbol claims, verification selection, and tool failure visibility. No model-capability improvement is claimed until measured.
 
 ---
 

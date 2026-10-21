@@ -2,10 +2,45 @@
 
 > **System Target:** ESP32-S3-N16R8 (240MHz Xtensa LX7 dual-core, 16MB Octal SPI Flash, 8MB Octal PSRAM).  
 > **Physical Peripherals:** ST7789VW 240×320 IPS TFT (80MHz FSPI), MicroSD Slot (25MHz SPI), 8× GPIO Tactile Buttons.  
-> **Repository Scope:** 782 files (1,354,395 total lines, 1,267,253 SLOC, 41,176 comments).  
-> **Verification Status:** Binary build clean (arduino-cli), Guardian CI passed, Host microbenchmarks verified.
+> **Repository Scope:** The latest generated manifest records 1,221 files, 1,555,084 lines, and 1,436,520 SLOC as of 2026-10-21. The last recorded full-source Cppcheck run covered firmware `src`; its findings are not a clean scan.
+> **Verification Status:** Firmware compile and repository validator passed; Guardian AST reported 0 critical violations and 11 warnings. Full-source Cppcheck reported 60 non-informational findings, including 4 errors that remain under triage.
 
 ---
+
+## Latest Agent Handoff — 2026-10-21
+
+This is the current repository handoff. Read this section before continuing from an earlier changelog entry.
+
+- **Project goal from the user:** Improve both the handheld and the development environment around it. Treat the AI-facing tools and documentation as product surfaces: models with limited capability or context should be able to orient, find grounded code/API facts, choose the right checks, recognize uncertainty, and leave an actionable handoff. Improve these systems based on observed failures, not by adding unvalidated automation. Preserve physical-hardware safety and evidence standards.
+- **Latest recorded implementation verification (from the preceding implementation session; not rerun during this documentation handoff):** `VALIDATION PASSED in 16555 ms — all phases clean.`; compile reported `Flash: 5,601,544 / 16,777,216 bytes (33.4%)` and `SRAM: 215,200 / 327,680 bytes (65.7%)`; full tests ended `Ran 85 tests in 7.546s` / `OK`; Guardian tests ended `Ran 10 tests in 3.879s` / `OK`.
+- **Static analysis remains open:** The recorded full-source run reported `Cppcheck findings: 60 total, 4 errors.` Remaining error reports are at `i_system.c:296`, `am_map.c:377-378`, and `p_switch.c:117`. Triage each against the actual build configuration before fixing or dismissing it; do not describe the scan as clean.
+- **Confirmed fixes already recorded:** DOOM indexed framebuffer allocation now uses pixel size; two invalid `mobjinfo` paths are guarded; WAD checksum-list growth preserves the old allocation and reports failure. Guardian Cppcheck now scans firmware `src`, has a bounded timeout, surfaces tool failures, and propagates nonzero status. The AST linter ignores comment-only lines for its per-frame check.
+- **Next work, in order:** (1) triage the four Cppcheck error-severity reports and document evidence for each disposition; (2) design and test complete DOOM shutdown before claiming repeated sessions are safe; (3) reconcile WonderSwan implementation, tests, manifest, and SDD status, with tests that execute the actual core before making an emulation claim; (4) audit Guardian and other developer utilities for coverage gaps, false positives/negatives, silent failure paths, and outdated documentation, prioritizing reproducible defects.
+- **Preserved worktree state:** WonderSwan source/test changes and the unevaluated UI-framework research note were already present and were preserved. No commit was made. Re-check `git status` before editing or attributing those changes.
+- **Generated index state:** The validator regenerated `AGENT_KNOWLEDGE_GRAPH.json`, `AGENT_DECISION_TREE.json`, `AGENT_MANIFEST.json`, and `.agents/rules/CONTEXT_INDEX.json`; do not hand-edit generated artifacts. Re-run the generator/validator after source or indexed metadata changes.
+
+## [OPEN-QUESTION-UI-FRAMEWORKS] - 2026-10-21 - LVGL / Tactility / MicroPythonOS Never Evaluated
+- OPEN: The custom UI was never compared against LVGL, Tactility, or MicroPythonOS, and no ideas were borrowed from them. Not adopting them is unverified, not a documented decision.
+- NEXT: See `docs/research_embedded_ui_frameworks_unevaluated.md` for hypotheses and an evaluation plan (budget check, then isolated LVGL prototype, then recorded decision). No firmware changes made.
+
+## [PERF-DOOM-FRAMEBUFFER] - 2026-10-21 - DOOM Indexed Framebuffer Overallocated
+- FIXED_UNVERIFIED: With `CMAP256`, `pixel_t` is `uint8_t`; the 320x200 screen buffer now allocates `width * height * sizeof(*DG_ScreenBuffer)`, reducing its request from 256,000 to 64,000 bytes (192,000 fewer PSRAM bytes).
+- EVIDENCE: Arduino compile output: `Sketch uses 5601544 bytes (33%) of program storage space.` Runtime behavior and physical hardware remain unverified.
+
+## [DOOM-INPUT-GUARDS] - 2026-10-21 - Invalid Map Types and WAD List Growth
+- FIXED_UNVERIFIED: `P_RespawnSpecials` and `P_SpawnMapThing` now stop before indexing `mobjinfo` for an unknown map type. WAD checksum file-list growth now reports allocation failure without losing the previous list pointer.
+- EVIDENCE: Arduino compile output: `Global variables use 215200 bytes (65%) of dynamic memory, leaving 112480 bytes for local variables.` Full-source Cppcheck no longer reports the two `p_mobj.c` indexes or `w_checksum.c` realloc at the reviewed locations.
+
+## [GUARDIAN-SCAN-RESULTS] - 2026-10-21 - Full Firmware Static Scan Triage
+- VERIFIED_HOST: Guardian Cppcheck now scans `firmware/BmoGameboy/src`, uses a bounded 600-second timeout, filters informational branch-limit notes, surfaces execution failures, and propagates command exit status. The Guardian test output was `Ran 10 tests in 3.879s` and `OK`; firmware compile output was `Sketch uses 5601544 bytes (33%) of program storage space.`
+- DEBUNKED: `UNGUARDED_PER_FRAME_FILTER` was triggered by the text `rebuildVisibleGames()` inside a comment at `BmoGameboy.ino:819`; actual calls are dirty-flag guarded. The linter now ignores comment-only lines, and the Guardian audit output changed from 12 warnings to 11.
+- OPEN: Full-source Cppcheck output was `Cppcheck findings: 60 total, 4 errors.` Remaining error reports are `i_system.c:296`, `am_map.c:377-378`, and `p_switch.c:117`; these have not all been proven defects or false positives. Cppcheck exited with status 1 as intended.
+
+## [OPEN-DOOM-TEARDOWN] - 2026-10-21 - DOOM Core Retains Session Allocations
+- OPEN: `DoomEmu::destroy()` is currently a no-op, while `doomgeneric_Create()` allocates the indexed framebuffer and `I_ZoneBase()` allocates the DOOM zone. The SDD previously claimed the zone was released at destroy; that claim is corrected, but safe reinitialization also requires resetting engine globals and closing WAD resources. Do not call repeated DOOM sessions leak-free until a complete shutdown path is implemented and tested.
+
+## [OPEN-WSWAN-CORE-STATUS] - 2026-10-21 - WonderSwan Work Is Not Behaviorally Verified
+- OPEN: Existing uncommitted changes classify `emu_wswan` as production in `tests/test_all_tiers_validation.py`, while `AGENT_MANIFEST.json` and the SDD still classify it as a stub. `tests/test_wswan_emu.py` tests independent Python arithmetic models and does not execute `wswan.c`; the current CPU step falls through to a 4-cycle fallback for unimplemented opcodes. No working-emulator claim is supported by those tests. The pre-existing WonderSwan edits were preserved.
 
 ## [PHASE-5.1-UNIFIED-CONTRACT-PCE] - 2026-10-09 - Unified Core Contract & PC Engine Persistence
 - RESOLVED: Unified `EmulatorCoreContract` standardized across all platform engines (begin, updateJoypad, runFrame, destroy, saveState, loadState, saveBatteryRam, loadBatteryRam).
@@ -230,7 +265,7 @@ The table below illustrates the hardware physics calculations modeled in `tools/
 
 ## 7. Line-by-Line Codebase Inventory & Density Breakdown
 
-The repository comprises **782 source files** totaling **1,354,395 lines** (1,267,253 SLOC, 41,176 comments). Below is the breakdown across all major subsystem categories:
+**Historical snapshot — 2026-08-31; do not use these figures as current repository totals.** The latest generated `AGENT_MANIFEST.json` records 1,221 files, 1,555,084 lines, and 1,436,520 SLOC as of 2026-10-21. The subsystem breakdown below has not been regenerated; refresh it before using it for planning, budgeting, or coverage claims.
 
 | Subsystem Category | Directory Path | File Count | Total Lines | SLOC | Comments | Blanks | Code Density |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -296,6 +331,7 @@ graph TD
 ---
 
 ## 10. Changelog
+- **2026-10-21**: Current handoff consolidated for the AI-environment project goal, exact previously recorded verification, open Cppcheck/DOOM/WonderSwan work, and preserved worktree state. The preceding implementation results are explicitly marked as not rerun during this documentation handoff. (Agent Copilot)
 - **2026-08-29**: Discovered and documented `Buttons::update()` double-polling bug in Doom. Split rules into `.agents/rules/`. Purged Zig binaries from git history. (Agent Antigravity)
 - **2026-08-30**: Ruleset v2/v3/v4/v5 upgrades: Added SDD v3.0, symbol reference index, ROM governance rules, BMO mascot SDF contract, and multi-tier emulator architecture. (Agent Antigravity)
 - **2026-08-31**: Tier 1 & Tier 2 Expansion: Scaled SD card catalog to 16,384 PSRAM slots (28,000+ games library automated installer). Added 6 new Tier 2 emulator cores and clean binary builds. (Agent Antigravity)

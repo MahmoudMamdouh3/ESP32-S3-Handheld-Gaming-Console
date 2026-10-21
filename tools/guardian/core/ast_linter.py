@@ -261,6 +261,8 @@ class FirmwareAstLinter:
             loop_idx = next((i for i, l in enumerate(lines, 1) if "void loop()" in l), 9999)
             for idx, line in enumerate(lines, 1):
                 clean = line.strip()
+                if clean.startswith(("//", "/*")):
+                    continue
                 if idx > loop_idx and "countGamesForConsole(" in clean:
                     findings.append(
                         LintFinding(

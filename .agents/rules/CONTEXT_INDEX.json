@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0.0",
-  "last_updated": "2026-10-09T15:18:28.064668",
+  "last_updated": "2026-10-21T15:17:45.528882",
   "task_decision_table": {
     "modify_gpio_or_pin": {
       "rules": [
@@ -135,7 +135,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "6. Known Issues, Technical Debt & Hardware Limitations Registry",
-      "lines": 305
+      "lines": 341
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -205,7 +205,7 @@
     "18_dependency_and_vendor_sync.md": {
       "file": ".agents/rules/18_dependency_and_vendor_sync.md",
       "title": "Dependency & Vendor-Library Sync",
-      "lines": 31
+      "lines": 34
     },
     "19_security_and_data_integrity.md": {
       "file": ".agents/rules/19_security_and_data_integrity.md",
@@ -270,7 +270,7 @@
     "31_quick_start_primer.md": {
       "file": ".agents/rules/31_quick_start_primer.md",
       "title": "31. Quick-Start Primer (Zero-Context Agent On-Ramp)",
-      "lines": 90
+      "lines": 91
     },
     "32_modular_core_template.md": {
       "file": ".agents/rules/32_modular_core_template.md",
@@ -325,7 +325,7 @@
     "42_quality_of_life_and_roadmap_ledger.md": {
       "file": ".agents/rules/42_quality_of_life_and_roadmap_ledger.md",
       "title": "42. Quality of Life (QoL), UI/UX & System Roadmap Ledger",
-      "lines": 107
+      "lines": 120
     }
   }
 }
