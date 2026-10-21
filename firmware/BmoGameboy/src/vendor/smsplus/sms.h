@@ -10,6 +10,7 @@ extern "C" {
 typedef struct {
     uint8_t vram[0x4000];      // 16KB VRAM
     uint8_t cram[64];          // 32-color Palette RAM (SMS 32, GG 64 bytes)
+    uint16_t palette_cache[32];// Pre-swapped BGR565 palette cache for ST7789
     uint8_t regs[16];          // VDP Registers
     uint8_t status;
     uint8_t latch;

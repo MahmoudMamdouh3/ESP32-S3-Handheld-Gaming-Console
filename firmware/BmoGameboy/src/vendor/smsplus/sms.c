@@ -115,6 +115,93 @@ static void sms_write_byte(sms_context_t* ctx, uint16_t addr, uint8_t val) {
     }
 }
 
+    // SPlit 16-bit register helpers and Z80 I/O port handlers
+static void sms_write_word(sms_context_t* ctx, uint16_t addr, uint16_t val) {
+    sms_write_byte(ctx, addr, (uint8_t)(val & 0xFF));
+    sms_write_byte(ctx, (uint16_t)(addr + 1), (uint8_t)(val >> 8));
+}
+
+static uint16_t sms_read_word(sms_context_t* ctx, uint16_t addr) {
+    return (uint16_t)sms_read_byte(ctx, addr) | ((uint16_t)sms_read_byte(ctx, (uint16_t)(addr + 1)) << 8);
+}
+
+static uint8_t sms_io_read(sms_context_t* ctx, uint8_t port) {
+    if (port >= 0x40 && port <= 0x7F) {
+        // VCounter (even) / HCounter (odd)
+        return (port & 1) ? 0x00 : ctx->vdp.status;
+    } else if (port >= 0x80 && port <= 0xBF) {
+        if ((port & 1) == 0) {
+            // VDP Data Port (0xBE)
+            uint8_t ret = ctx->vdp.read_buf;
+            ctx->vdp.read_buf = ctx->vdp.vram[ctx->vdp.addr & 0x3FFF];
+            ctx->vdp.addr = (ctx->vdp.addr + 1) & 0x3FFF;
+            ctx->vdp.latch = 0;
+            return ret;
+        } else {
+            // VDP Status Port (0xBF)
+            uint8_t st = ctx->vdp.vblank_irq ? 0x80 : 0x00;
+            ctx->vdp.vblank_irq = false;
+            ctx->vdp.latch = 0;
+            return st;
+        }
+    } else if (port >= 0xC0) {
+        // Joypad Port A (0xDC) / Port B (0xDD)
+        return (port & 1) ? ctx->system_pad : ctx->joypad;
+    }
+    return 0xFF;
+}
+
+static void sms_io_write(sms_context_t* ctx, uint8_t port, uint8_t val) {
+    if (port >= 0x80 && port <= 0xBF) {
+        if ((port & 1) == 0) {
+            // VDP Data Port (0xBE)
+            uint8_t code = (ctx->vdp.addr >> 14) & 3;
+            if (code == 3) {
+                if (ctx->vdp.is_gamegear) {
+                    uint8_t cidx = ctx->vdp.addr & 0x3F;
+                    ctx->vdp.cram[cidx] = val;
+                    uint8_t pal_idx = cidx >> 1;
+                    uint16_t gg_col = (uint16_t)ctx->vdp.cram[pal_idx * 2] |
+                                      ((uint16_t)ctx->vdp.cram[pal_idx * 2 + 1] << 8);
+                    uint8_t r = (uint8_t)(((gg_col >> 0) & 0x0F) * 17);
+                    uint8_t g = (uint8_t)(((gg_col >> 4) & 0x0F) * 17);
+                    uint8_t b = (uint8_t)(((gg_col >> 8) & 0x0F) * 17);
+                    ctx->vdp.palette_cache[pal_idx] = sms_rgb_to_bgr565(r, g, b);
+                } else {
+                    uint8_t cidx = ctx->vdp.addr & 0x1F;
+                    ctx->vdp.cram[cidx] = val;
+                    uint8_t r = ((val >> 0) & 3) * 85;
+                    uint8_t g = ((val >> 2) & 3) * 85;
+                    uint8_t b = ((val >> 4) & 3) * 85;
+                    ctx->vdp.palette_cache[cidx] = sms_rgb_to_bgr565(r, g, b);
+                }
+            } else {
+                ctx->vdp.vram[ctx->vdp.addr & 0x3FFF] = val;
+            }
+            ctx->vdp.read_buf = val;
+            ctx->vdp.addr = (ctx->vdp.addr & 0xC000) | ((ctx->vdp.addr + 1) & 0x3FFF);
+            ctx->vdp.latch = 0;
+        } else {
+            // VDP Control Port (0xBF)
+            if (ctx->vdp.latch == 0) {
+                ctx->vdp.addr = (ctx->vdp.addr & 0xFF00) | val;
+                ctx->vdp.latch = 1;
+            } else {
+                ctx->vdp.addr = (ctx->vdp.addr & 0x00FF) | ((uint16_t)val << 8);
+                ctx->vdp.latch = 0;
+                uint8_t code = (val >> 6) & 3;
+                if (code == 0) {
+                    ctx->vdp.read_buf = ctx->vdp.vram[ctx->vdp.addr & 0x3FFF];
+                    ctx->vdp.addr = (ctx->vdp.addr & 0xC000) | ((ctx->vdp.addr + 1) & 0x3FFF);
+                } else if (code == 2) {
+                    uint8_t reg = val & 0x0F;
+                    ctx->vdp.regs[reg] = (uint8_t)(ctx->vdp.addr & 0xFF);
+                }
+            }
+        }
+    }
+}
+
 // VDP Line Rendering
 static void sms_render_scanline(sms_context_t* ctx, int line) {
     if (line >= 192 || !ctx->framebuffer) return;
@@ -155,16 +242,9 @@ static void sms_render_scanline(sms_context_t* ctx, int line) {
                                (((bp3 >> bit) & 1) << 3);
             
             uint8_t cram_idx = (palette_sel ? 16 : 0) + color_idx;
-            uint8_t c = ctx->vdp.cram[cram_idx & 0x1F];
-            
-            // 2-bit per channel RGB (SMS standard: 0..3 -> 0..255)
-            uint8_t r = ((c >> 0) & 3) * 85;
-            uint8_t g = ((c >> 2) & 3) * 85;
-            uint8_t b = ((c >> 4) & 3) * 85;
-            
             int out_x = (col * 8) + px;
             if (out_x < 256) {
-                dst[out_x] = sms_rgb_to_bgr565(r, g, b);
+                dst[out_x] = ctx->vdp.palette_cache[cram_idx & 0x1F];
             }
         }
     }
@@ -175,27 +255,120 @@ void sms_run_frame(sms_context_t* ctx) {
     
     // Simulate 262 scanlines per 60Hz NTSC frame
     for (int line = 0; line < 262; line++) {
+        ctx->vdp.status = (uint8_t)(line <= 0xDA ? line : (line - 6));
         if (line < 192) {
             sms_render_scanline(ctx, line);
-        } else if (line == 193) {
+        } else if (line == 192) {
             ctx->vdp.vblank_irq = true;
+            if (ctx->iff1 && (ctx->vdp.regs[1] & 0x20)) {
+                ctx->halted = false;
+                ctx->iff1 = 0;
+                ctx->sp -= 2;
+                sms_write_word(ctx, ctx->sp, ctx->pc);
+                ctx->pc = 0x0038;
+            }
         }
         
-        // Step simple Z80 instruction cycle budget per line (~228 cycles)
-        // Basic Z80 instruction dispatcher handles standard Sega boots
+        // Step Z80 instruction cycle budget per line (~228 cycles)
         int cycles = 0;
         while (cycles < 228 && !ctx->halted) {
             uint8_t op = sms_read_byte(ctx, ctx->pc++);
             cycles += 4;
-            if (op == 0x00) { // NOP
-                continue;
-            } else if (op == 0xC3) { // JP nn
-                uint8_t l = sms_read_byte(ctx, ctx->pc++);
-                uint8_t h = sms_read_byte(ctx, ctx->pc++);
-                ctx->pc = (h << 8) | l;
-                cycles += 6;
-            } else if (op == 0x76) { // HALT
-                ctx->halted = true;
+            switch (op) {
+                case 0x00: break; // NOP
+                case 0x01: ctx->bc = sms_read_word(ctx, ctx->pc); ctx->pc += 2; cycles += 6; break;
+                case 0x11: ctx->de = sms_read_word(ctx, ctx->pc); ctx->pc += 2; cycles += 6; break;
+                case 0x21: ctx->hl = sms_read_word(ctx, ctx->pc); ctx->pc += 2; cycles += 6; break;
+                case 0x31: ctx->sp = sms_read_word(ctx, ctx->pc); ctx->pc += 2; cycles += 6; break;
+                case 0x06: ctx->bc = (ctx->bc & 0x00FF) | ((uint16_t)sms_read_byte(ctx, ctx->pc++) << 8); cycles += 3; break;
+                case 0x0E: ctx->bc = (ctx->bc & 0xFF00) | sms_read_byte(ctx, ctx->pc++); cycles += 3; break;
+                case 0x16: ctx->de = (ctx->de & 0x00FF) | ((uint16_t)sms_read_byte(ctx, ctx->pc++) << 8); cycles += 3; break;
+                case 0x1E: ctx->de = (ctx->de & 0xFF00) | sms_read_byte(ctx, ctx->pc++); cycles += 3; break;
+                case 0x26: ctx->hl = (ctx->hl & 0x00FF) | ((uint16_t)sms_read_byte(ctx, ctx->pc++) << 8); cycles += 3; break;
+                case 0x2E: ctx->hl = (ctx->hl & 0xFF00) | sms_read_byte(ctx, ctx->pc++); cycles += 3; break;
+                case 0x36: sms_write_byte(ctx, ctx->hl, sms_read_byte(ctx, ctx->pc++)); cycles += 6; break;
+                case 0x3E: ctx->af = (ctx->af & 0x00FF) | ((uint16_t)sms_read_byte(ctx, ctx->pc++) << 8); cycles += 3; break;
+                case 0x32: { uint16_t a = sms_read_word(ctx, ctx->pc); ctx->pc += 2; sms_write_byte(ctx, a, (uint8_t)(ctx->af >> 8)); cycles += 9; break; }
+                case 0x3A: { uint16_t a = sms_read_word(ctx, ctx->pc); ctx->pc += 2; ctx->af = (ctx->af & 0x00FF) | ((uint16_t)sms_read_byte(ctx, a) << 8); cycles += 9; break; }
+                case 0x77: sms_write_byte(ctx, ctx->hl, (uint8_t)(ctx->af >> 8)); cycles += 3; break;
+                case 0x7E: ctx->af = (ctx->af & 0x00FF) | ((uint16_t)sms_read_byte(ctx, ctx->hl) << 8); cycles += 3; break;
+                case 0x03: ctx->bc++; cycles += 2; break;
+                case 0x13: ctx->de++; cycles += 2; break;
+                case 0x23: ctx->hl++; cycles += 2; break;
+                case 0x0B: ctx->bc--; cycles += 2; break;
+                case 0x1B: ctx->de--; cycles += 2; break;
+                case 0x2B: ctx->hl--; cycles += 2; break;
+                case 0x04: { uint8_t b = (uint8_t)(ctx->bc >> 8) + 1; ctx->bc = (ctx->bc & 0x00FF) | ((uint16_t)b << 8); ctx->af = (ctx->af & 0xFF00) | (b == 0 ? 0x40 : 0); break; }
+                case 0x05: { uint8_t b = (uint8_t)(ctx->bc >> 8) - 1; ctx->bc = (ctx->bc & 0x00FF) | ((uint16_t)b << 8); ctx->af = (ctx->af & 0xFF00) | (b == 0 ? 0x40 : 0); break; }
+                case 0x0C: { uint8_t c = (uint8_t)(ctx->bc & 0xFF) + 1; ctx->bc = (ctx->bc & 0xFF00) | c; ctx->af = (ctx->af & 0xFF00) | (c == 0 ? 0x40 : 0); break; }
+                case 0x0D: { uint8_t c = (uint8_t)(ctx->bc & 0xFF) - 1; ctx->bc = (ctx->bc & 0xFF00) | c; ctx->af = (ctx->af & 0xFF00) | (c == 0 ? 0x40 : 0); break; }
+                case 0x3C: { uint8_t a = (uint8_t)(ctx->af >> 8) + 1; ctx->af = ((uint16_t)a << 8) | (a == 0 ? 0x40 : 0); break; }
+                case 0x3D: { uint8_t a = (uint8_t)(ctx->af >> 8) - 1; ctx->af = ((uint16_t)a << 8) | (a == 0 ? 0x40 : 0); break; }
+                case 0xAF: ctx->af = 0x0040; break; // XOR A
+                case 0xB7: { uint8_t a = (uint8_t)(ctx->af >> 8); ctx->af = ((uint16_t)a << 8) | (a == 0 ? 0x40 : 0); break; } // OR A
+                case 0xFE: { // CP n
+                    uint8_t n = sms_read_byte(ctx, ctx->pc++);
+                    uint8_t a = (uint8_t)(ctx->af >> 8);
+                    ctx->af = (ctx->af & 0xFF00) | (a == n ? 0x40 : 0) | (a < n ? 0x01 : 0);
+                    cycles += 3;
+                    break;
+                }
+                case 0x10: { // DJNZ e
+                    int8_t disp = (int8_t)sms_read_byte(ctx, ctx->pc++);
+                    uint8_t b = (uint8_t)(ctx->bc >> 8) - 1;
+                    ctx->bc = (ctx->bc & 0x00FF) | ((uint16_t)b << 8);
+                    if (b != 0) { ctx->pc = (uint16_t)(ctx->pc + disp); cycles += 9; } else { cycles += 4; }
+                    break;
+                }
+                case 0x18: { int8_t disp = (int8_t)sms_read_byte(ctx, ctx->pc++); ctx->pc = (uint16_t)(ctx->pc + disp); cycles += 8; break; } // JR e
+                case 0x20: { int8_t disp = (int8_t)sms_read_byte(ctx, ctx->pc++); if (!(ctx->af & 0x40)) { ctx->pc = (uint16_t)(ctx->pc + disp); cycles += 8; } else cycles += 3; break; } // JR NZ
+                case 0x28: { int8_t disp = (int8_t)sms_read_byte(ctx, ctx->pc++); if (ctx->af & 0x40) { ctx->pc = (uint16_t)(ctx->pc + disp); cycles += 8; } else cycles += 3; break; } // JR Z
+                case 0xC3: ctx->pc = sms_read_word(ctx, ctx->pc); cycles += 6; break; // JP nn
+                case 0xC2: { uint16_t dst = sms_read_word(ctx, ctx->pc); ctx->pc += 2; if (!(ctx->af & 0x40)) ctx->pc = dst; cycles += 6; break; } // JP NZ, nn
+                case 0xCA: { uint16_t dst = sms_read_word(ctx, ctx->pc); ctx->pc += 2; if (ctx->af & 0x40) ctx->pc = dst; cycles += 6; break; } // JP Z, nn
+                case 0xCD: { uint16_t dst = sms_read_word(ctx, ctx->pc); ctx->pc += 2; ctx->sp -= 2; sms_write_word(ctx, ctx->sp, ctx->pc); ctx->pc = dst; cycles += 13; break; } // CALL nn
+                case 0xC9: ctx->pc = sms_read_word(ctx, ctx->sp); ctx->sp += 2; cycles += 6; break; // RET
+                case 0xC5: ctx->sp -= 2; sms_write_word(ctx, ctx->sp, ctx->bc); cycles += 7; break; // PUSH BC
+                case 0xD5: ctx->sp -= 2; sms_write_word(ctx, ctx->sp, ctx->de); cycles += 7; break; // PUSH DE
+                case 0xE5: ctx->sp -= 2; sms_write_word(ctx, ctx->sp, ctx->hl); cycles += 7; break; // PUSH HL
+                case 0xF5: ctx->sp -= 2; sms_write_word(ctx, ctx->sp, ctx->af); cycles += 7; break; // PUSH AF
+                case 0xC1: ctx->bc = sms_read_word(ctx, ctx->sp); ctx->sp += 2; cycles += 6; break; // POP BC
+                case 0xD1: ctx->de = sms_read_word(ctx, ctx->sp); ctx->sp += 2; cycles += 6; break; // POP DE
+                case 0xE1: ctx->hl = sms_read_word(ctx, ctx->sp); ctx->sp += 2; cycles += 6; break; // POP HL
+                case 0xF1: ctx->af = sms_read_word(ctx, ctx->sp); ctx->sp += 2; cycles += 6; break; // POP AF
+                case 0xD3: { uint8_t port = sms_read_byte(ctx, ctx->pc++); sms_io_write(ctx, port, (uint8_t)(ctx->af >> 8)); cycles += 7; break; } // OUT (n), A
+                case 0xDB: { uint8_t port = sms_read_byte(ctx, ctx->pc++); ctx->af = (ctx->af & 0x00FF) | ((uint16_t)sms_io_read(ctx, port) << 8); cycles += 7; break; } // IN A, (n)
+                case 0xF3: ctx->iff1 = ctx->iff2 = 0; break; // DI
+                case 0xFB: ctx->iff1 = ctx->iff2 = 1; break; // EI
+                case 0x76: ctx->halted = true; break; // HALT
+                case 0xED: {
+                    uint8_t sub = sms_read_byte(ctx, ctx->pc++);
+                    if (sub == 0xB0) { // LDIR
+                        while (ctx->bc != 0) {
+                            sms_write_byte(ctx, ctx->de++, sms_read_byte(ctx, ctx->hl++));
+                            ctx->bc--;
+                            cycles += 21;
+                        }
+                    } else if (sub == 0xB3) { // OTIR
+                        uint8_t b = (uint8_t)(ctx->bc >> 8);
+                        uint8_t c = (uint8_t)(ctx->bc & 0xFF);
+                        while (b != 0) {
+                            sms_io_write(ctx, c, sms_read_byte(ctx, ctx->hl++));
+                            b--;
+                            cycles += 21;
+                        }
+                        ctx->bc = c;
+                    } else if (sub == 0x56) { // IM 1
+                        ctx->im = 1;
+                    } else if (sub == 0x4D || sub == 0x45) { // RETI / RETN
+                        ctx->pc = sms_read_word(ctx, ctx->sp);
+                        ctx->sp += 2;
+                        ctx->iff1 = ctx->iff2;
+                        cycles += 10;
+                    }
+                    break;
+                }
+                default: break;
             }
         }
     }

@@ -40,7 +40,7 @@ void WSwanEmu::update() {
   if (Buttons::get(Buttons::LEFT).pressed)   keys |= 0x0008; // X4
   if (Buttons::get(Buttons::A).pressed)      keys |= 0x0010; // Button A
   if (Buttons::get(Buttons::B).pressed)      keys |= 0x0020; // Button B
-  if (Buttons::get(Buttons::START).pressed)  keys |= 0x0040; // Start
+  if (Buttons::get(Buttons::START).pressed)  keys |= 0x0080; // Start (bit 7 per wswan_in port 0xB5)
   wswan_set_keys(&wswanState, keys);
 
   wswan_step_frame(&wswanState);
@@ -49,6 +49,7 @@ void WSwanEmu::update() {
 
 void WSwanEmu::destroy() {
   running = false;
+  wswan_destroy(&wswanState);
   if (wswanFb) {
     heap_caps_free(wswanFb); // PERF-FIX: matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
     wswanFb = nullptr;

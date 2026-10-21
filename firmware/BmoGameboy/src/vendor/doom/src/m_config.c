@@ -2043,6 +2043,7 @@ float M_GetFloatVariable(char *name)
 static char *GetDefaultConfigDir(void)
 {
     char *result = (char *)malloc(2);
+    if (!result) return NULL;
     result[0] = '.';
     result[1] = '\0';
 

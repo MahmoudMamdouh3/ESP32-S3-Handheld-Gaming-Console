@@ -59,6 +59,7 @@ namespace {
 
 bool SDCard::begin() {
   numRoms = 0;
+  s_favoritesCount = 0;
   memset(romCountsByType, 0, sizeof(romCountsByType));
 
   if (romList == fallbackRomList) {
@@ -197,6 +198,9 @@ bool SDCard::loadIndex() {
     romList[numRoms].filename[63] = '\0';
     romList[numRoms].type = (RomType)e.type;
     romList[numRoms].isFavorite = (e.isFavorite != 0);
+    if (romList[numRoms].isFavorite) {
+      s_favoritesCount++;
+    }
     romList[numRoms].hasBoxArt = (e.hasBoxArt != 0);
     if (romList[numRoms].type <= ROM_COLEM) {
       romCountsByType[romList[numRoms].type]++;
@@ -266,10 +270,14 @@ void SDCard::rebuildIndex() {
   }
 
   numRoms = BAKED_ROM_COUNT;
+  s_favoritesCount = 0;
   memset(romCountsByType, 0, sizeof(romCountsByType));
   for (int i = 0; i < BAKED_ROM_COUNT; ++i) {
     if (romList[i].type <= ROM_COLEM) {
       romCountsByType[romList[i].type]++;
+    }
+    if (romList[i].isFavorite) {
+      s_favoritesCount++;
     }
   }
 
@@ -295,6 +303,8 @@ void SDCard::scanRoms() {
     return;
   }
 
+  const bool hasArtDirs = SD.exists("/boxart") || SD.exists("/covers");
+
   while (numRoms < maxCapacity) {
     File entry = root.openNextFile();
     if (!entry) break;
@@ -307,7 +317,7 @@ void SDCard::scanRoms() {
         romList[numRoms].filename[63] = '\0';
         romList[numRoms].type = type;
         romList[numRoms].isFavorite = false;
-        romList[numRoms].hasBoxArt = BoxArt::existsForRom(name);
+        romList[numRoms].hasBoxArt = hasArtDirs ? BoxArt::existsForRom(name) : false;
         if (type <= ROM_COLEM) {
           romCountsByType[type]++;
         }

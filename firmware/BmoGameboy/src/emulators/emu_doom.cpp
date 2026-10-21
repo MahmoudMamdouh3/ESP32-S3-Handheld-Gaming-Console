@@ -2,6 +2,7 @@
 #include "emu_doom.h"
 #include "../core/display_emu.h"
 #include "../core/buttons.h"
+#include "../core/spi_arbiter.h"
 #include "../core/config.h"
 
 extern "C" {
@@ -28,6 +29,20 @@ extern "C" {
             LOG_ERROR("Failed to allocate %d bytes in PSRAM for DOOM!", (int)size);
         }
         return ptr;
+    }
+
+    void Doom_FreePSRAM(void* ptr) {
+        if (ptr) {
+            heap_caps_free(ptr);
+        }
+    }
+
+    void Doom_SpiLock(void) {
+        SpiArbiter::lock();
+    }
+
+    void Doom_SpiUnlock(void) {
+        SpiArbiter::unlock();
     }
 }
 
@@ -147,7 +162,10 @@ void runFrame() {
 }
 
 void destroy() {
-  // Doom engine doesn't have a clean destroy, we just let it be.
+  DisplayEmu::waitForDisplay();
+  doomgeneric_Destroy();
+  memset(s_keyState, 0, sizeof(s_keyState));
+  s_keyRingHead = s_keyRingTail = 0;
 }
 
 }

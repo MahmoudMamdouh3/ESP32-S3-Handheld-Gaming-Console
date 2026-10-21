@@ -871,7 +871,6 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
   // Mini Living BMO Mascot Face in top-left (8, 5, 48, 30)
   BmoFace::renderToBuffer(menuCanvas->getBuffer(), 320, 8, 5, 48, 30);
   menuCanvas->drawRoundRect(8, 5, 48, 30, 4, UI_DEEP_TEAL);
-  BmoFace::setGaze(0.35f, -0.28f); // BMO companion gazes toward active console card
 
   // Top Right System Counter ("SYSTEM 1/16")
   menuCanvas->setFont();
@@ -1420,6 +1419,8 @@ void DisplayEmu::drawPauseMenu(const char* romTitle, int currentSlot, bool hasSa
 }
 
 void DisplayEmu::showSDCardWarning() {
+  waitForDisplay();
+  SpiArbiter::lock();
   tft.fillRect(40, 80, 240, 80, panelColor(22, 72, 72));
   tft.drawRect(42, 82, 236, 76, panelColor(255, 210, 66));
   tft.setFont(&FreeSans9pt7b);
@@ -1428,6 +1429,7 @@ void DisplayEmu::showSDCardWarning() {
   tft.print("SD CARD REQUIRED");
   tft.setCursor(55, 135);
   tft.print("FOR THIS CONSOLE");
+  SpiArbiter::unlock();
 }
 
 void DisplayEmu::sanitizeRomTitle(const char* src, char* dst, size_t maxLen) {

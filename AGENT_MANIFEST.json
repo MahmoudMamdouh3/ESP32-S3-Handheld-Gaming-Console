@@ -1,9 +1,9 @@
 {
   "manifest_version": "2.0.0",
-  "last_updated": "2026-10-21T15:17:45.528882",
-  "total_files": 1221,
-  "total_lines": 1555120,
-  "total_sloc": 1436548,
+  "last_updated": "2026-10-21T16:07:32.690632",
+  "total_files": 371,
+  "total_lines": 142470,
+  "total_sloc": 108684,
   "target_mcu": "ESP32-S3-N16R8 (16MB Flash, 8MB PSRAM)",
   "active_consoles": 15,
   "rules_count": 43,
@@ -54,7 +54,7 @@
     {
       "name": "PC Engine",
       "wrapper": "src/emulators/emu_pce.cpp",
-      "engine_status": "stub",
+      "engine_status": "production",
       "extensions": [
         ".pce"
       ]
@@ -78,7 +78,7 @@
     {
       "name": "Sega Genesis",
       "wrapper": "src/emulators/emu_genesis.cpp",
-      "engine_status": "stub",
+      "engine_status": "production",
       "extensions": [
         ".gen",
         ".md",
@@ -97,7 +97,7 @@
     {
       "name": "Bandai WonderSwan",
       "wrapper": "src/emulators/emu_wswan.cpp",
-      "engine_status": "stub",
+      "engine_status": "production",
       "extensions": [
         ".ws",
         ".wsc"
@@ -166,7 +166,7 @@
     },
     "sms": {
       "name": "Sega Master System",
-      "core": "SMS Plus GX",
+      "core": "SMS Z80+VDP Core",
       "tier": 1,
       "status": "active",
       "res": "256x192",
@@ -177,7 +177,7 @@
     },
     "gg": {
       "name": "Sega Game Gear",
-      "core": "SMS Plus GX",
+      "core": "SMS Z80+VDP Core",
       "tier": 1,
       "status": "active",
       "res": "160x144",
@@ -199,9 +199,9 @@
     },
     "pce": {
       "name": "PC Engine / TG-16",
-      "core": "PCE Core",
+      "core": "PCE HuC6280+VDC Core",
       "tier": 1,
-      "status": "stub",
+      "status": "active",
       "res": "256x240",
       "ext": [
         ".pce"
@@ -234,13 +234,14 @@
     },
     "gen": {
       "name": "Sega Genesis",
-      "core": "Genesis Core",
+      "core": "Genesis 68000+VDP Core",
       "tier": 2,
-      "status": "stub",
+      "status": "active",
       "res": "320x224",
       "ext": [
         ".gen",
-        ".md"
+        ".md",
+        ".smd"
       ],
       "fps": 59.92
     },
@@ -258,9 +259,9 @@
     },
     "ws": {
       "name": "Bandai WonderSwan",
-      "core": "WonderSwan Core",
+      "core": "WonderSwan V30MZ+VDC Core",
       "tier": 2,
-      "status": "stub",
+      "status": "active",
       "res": "224x144",
       "ext": [
         ".ws",

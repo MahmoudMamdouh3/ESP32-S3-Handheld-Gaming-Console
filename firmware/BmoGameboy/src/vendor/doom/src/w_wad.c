@@ -89,11 +89,19 @@ static void ExtendLumpInfo(int newnumlumps)
     lumpinfo_t *newlumpinfo;
     unsigned int i;
 
+#if defined(ESP32) || defined(ARDUINO)
+    extern void* Doom_MallocPSRAM(size_t size);
+    extern void Doom_FreePSRAM(void* ptr);
+    newlumpinfo = (lumpinfo_t *)Doom_MallocPSRAM((size_t)newnumlumps * sizeof(lumpinfo_t));
+    if (newlumpinfo != NULL) memset(newlumpinfo, 0, (size_t)newnumlumps * sizeof(lumpinfo_t));
+#else
     newlumpinfo = calloc(newnumlumps, sizeof(lumpinfo_t));
+#endif
 
     if (newlumpinfo == NULL)
     {
 	I_Error ("Couldn't realloc lumpinfo");
+	return;
     }
 
     // Copy over lumpinfo_t structures from the old array. If any of
@@ -118,7 +126,11 @@ static void ExtendLumpInfo(int newnumlumps)
     }
 
     // All done.
+#if defined(ESP32) || defined(ARDUINO)
+    if (lumpinfo != NULL) Doom_FreePSRAM(lumpinfo);
+#else
     free(lumpinfo);
+#endif
     lumpinfo = newlumpinfo;
     numlumps = newnumlumps;
 }
@@ -535,6 +547,35 @@ void W_Profile (void)
 #endif
 
 // Generate a hash table for fast lookups
+
+void W_Shutdown(void)
+{
+    unsigned int i, j;
+    if (lumpinfo != NULL)
+    {
+        for (i = 0; i < numlumps; ++i)
+        {
+            wad_file_t *wf = lumpinfo[i].wad_file;
+            if (wf != NULL)
+            {
+                for (j = i; j < numlumps; ++j)
+                {
+                    if (lumpinfo[j].wad_file == wf) lumpinfo[j].wad_file = NULL;
+                }
+                W_CloseFile(wf);
+            }
+        }
+#if defined(ESP32) || defined(ARDUINO)
+        extern void Doom_FreePSRAM(void* ptr);
+        Doom_FreePSRAM(lumpinfo);
+#else
+        free(lumpinfo);
+#endif
+        lumpinfo = NULL;
+    }
+    numlumps = 0;
+    lumphash = NULL;
+}
 
 void W_GenerateHashTable(void)
 {

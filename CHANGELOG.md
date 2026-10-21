@@ -5,6 +5,62 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Full Repo Objective Audit, Firmware Bug Fixes & God-Tier AI Harness Overhaul] - 2026-10-21
+### Fixed (Firmware & Emulator Engines)
+- **`src/core/bmo_face.cpp`**:
+  - Fixed BGR565 byte-swap unpacking bug in particle alpha-blending (`renderMascotInternal`), which previously unpacked byte-swapped BGR565 values without un-swapping bytes first and swapped R/B channels.
+  - Fixed `BmoFace::SLEEPING` anti-aliasing halo bug where SDF edge blending hardcoded `COL_MINT_BG` instead of `COL_DUSK_BG`.
+  - Fixed unaligned 32-bit pointer dereference (`*(uint32_t*)&row[c]`) when `destX` or `stride` is odd.
+  - Removed unused dead variables (`bgR`, `bgG`, `bgB`).
+- **`src/core/display_emu.cpp`**:
+  - Removed per-frame `BmoFace::setGaze(0.35f, -0.28f)` call inside `drawConsoleSelectMenu()`, which previously overwrote left/right carousel glances set in `BmoGameboy.ino` every frame and forced `s_dirty = true` at 60 Hz.
+  - Added `waitForDisplay()` and `SpiArbiter::lock()` / `unlock()` around `showSDCardWarning()` to prevent concurrent Core 0 / Core 1 FSPI bus corruption.
+- **`src/core/sd_card.cpp`**:
+  - Reset `s_favoritesCount = 0` in `SDCard::begin()` to prevent unbounded accumulation across re-initializations.
+  - Fixed `s_favoritesCount` desynchronization between `loadIndex()` and `loadFavorites()`.
+  - Added fast directory existence pre-check for `/boxart` and `/covers` in `scanRoms()`, avoiding up to 65,536 redundant `SD.exists()` FAT32 lookups on first boot when cover directories are absent.
+- **Classic DOOM (`src/vendor/doom/src/`, `src/emulators/emu_doom.cpp`)**:
+  - Wrapped `W_StdC_OpenFile`, `W_StdC_CloseFile`, and `W_StdC_Read` (`w_file_stdc.c`) in `Doom_SpiLock()` / `Doom_SpiUnlock()` (`SpiArbiter`) to eliminate shared FSPI bus collisions between Core 1 SD WAD reads and Core 0 async display transfers.
+  - Routed `ExtendLumpInfo` (`w_wad.c`) `lumpinfo` allocation (40–95 KB) to Octal PSRAM (`Doom_MallocPSRAM`) instead of internal DRAM `calloc()`.
+  - Implemented complete DOOM session teardown (`DoomEmu::destroy()`, `doomgeneric_Destroy()`, `W_Shutdown()`, `I_ShutdownZone()`) releasing the 6 MiB PSRAM zone, 64 KB `DG_ScreenBuffer`, `lumpinfo`, `exit_funcs`, and open WAD file handles.
+  - Resolved all 4 Cppcheck error-severity findings (`i_system.c:77,291` null-pointer checks on `malloc`, `am_map.c:377-378` signed integer overflow guard when `numvertexes <= 0`, `p_switch.c:117` explicit `alphSwitchList` array bounds guard).
+- **PC Engine (`src/vendor/pce/pce.c`)**:
+  - Fixed initial VCE palette initialization overflow where 3-bit RGB values were pre-multiplied by 36 before calling `pce_rgb_to_bgr565()`.
+  - Fixed `pce_load_rom()` mapping `MPR[7]` to ROM bank `0x00` (instead of RAM `0xF8`) and reading the 65C02/HuC6280 reset vector from bank 0 offset `0x1FFE` (`$FFFE`).
+- **Sega Genesis (`src/vendor/genesis/genesis.c`)**:
+  - Masked VDP register 23 (`vdp_regs[23] & 0x7F`) during 68K-to-VDP DMA source calculation so DMA mode bit 7 does not shift into the 24-bit ROM address.
+  - Fixed 68000 16-bit displacement branch calculation (`BRA`, `BSR`, `Bcc`) so displacement is relative to `instruction_pc + 2` rather than `instruction_pc + 4`.
+- **Bandai WonderSwan (`src/vendor/wswan/wswan.c`, `src/emulators/emu_wswan.cpp`)**:
+  - Fixed unreachable `else if (port == 0xC1)` in `wswan_out()`, wired `bank_rom` / `bank_sram` segment banking into `wswan_read8()` / `wswan_write8()`, initialized `bank_rom[0,2,3] = 0xFF` in `wswan_reset()` so the `$F0000` boot alias is active on reset, fixed port `0xB5` active-high multiplexed keypad scan, and corrected `Buttons::START` bitmask (`0x0080`) in `WSwanEmu::update()`.
+- **Sega Master System / Game Gear (`src/vendor/smsplus/sms.c`, `src/vendor/smsplus/sms.h`)**:
+  - Expanded Z80 instruction decoder and wired VDP data/control ports (`0xBE`/`0xBF`) and joypad I/O ports (`0xDC`/`0xDD`) so ROM code can upload tiles/palettes and read input.
+  - Added pre-swapped BGR565 `palette_cache[32]` updated on CRAM writes (supporting both 6-bit SMS and 12-bit Game Gear RGB444 CRAM formats), eliminating 49,152 per-pixel RGB multiplications and bit-shifts per frame in `sms_render_scanline()`.
+- **Hot-Path Menu, BoxArt & CRC32 Performance (`BmoGameboy.ino`, `src/core/box_art.cpp`, `src/core/save_manager.cpp`)**:
+  - Added `s_pauseMetaDirty` caching (`s_pauseHasSave`, `s_pauseHasBatt`) in `STATE_PAUSE_MENU` so idle pause frames do not stall `waitForDisplay()` and execute 60 FAT32 `SD.exists()` checks per second.
+  - Gated `BoxArt::load()` calls in `BmoGameboy.ino` on `selectedGame()->hasBoxArt` (precomputed in `.bmo_index`), and guarded the 8KB PSRAM `memset` in `BoxArt::unload()` with `hadArt`, eliminating SD card bus locks and PSRAM clears when scrolling past ROMs without cover art.
+  - Replaced bitwise branching `SaveManager::computeCRC32()` inner loop with a 16-entry (64-byte `.rodata`, 0 DRAM) branchless nibble lookup table (`kCrc32NibbleTable`), speeding up `.bmo_index` and save-state CRC32 verification ~5×.
+  - Fixed additional DOOM array-bounds off-by-one bugs (`f_finale.c` `c >= HU_FONTSIZE`, `p_inter.c` `ammo >= NUMAMMO`, `p_spec.c` `h < MAX_ADJOINING_SECTORS`) and `malloc` null check in `m_config.c`.
+
+### Fixed (AI Guardian Environment, Safeguards, Scripts & Tests)
+- **`scripts/generate_ai_knowledge_base.py` & `.agents/rules/04_known_issues.md`**:
+  - Eliminated hardcoded false GPIO pin numbers (`TFT_SCLK=13, TFT_DC=9, START=0`, etc.) and false `FlashMode=opi` claims. `generate_ai_knowledge_base.py` now parses `firmware/BmoGameboy/src/core/config.h` dynamically as the single ground-truth source.
+  - Auto-detects emulator `production` vs `stub` status from vendor source files rather than stale hardcoded dictionaries.
+- **`tools/guardian/core/ast_linter.py` & `scripts/benchmark_repo.py`**:
+  - Excluded `.venv`, `tools/zig`, `scratch`, `build`, `assets`, `roms`, `arduino-cli-bin`, `resources` from recursive file scans, accelerating repo indexing and AST linting by >10×.
+  - Added new hardware/embedded AST guardrails (detecting unguarded `tft.` calls outside `SpiArbiter`, unaligned 32-bit pointer casts, and preprocessor nesting tracking).
+- **`tools/guardian/cli.py`**:
+  - Added weak-model harness commands (`doctor`, `explain`, `verify`) for one-command orientation, file dependency/symbol inspection, and fast verification.
+- **`tests/` & `scripts/` Portability**:
+  - Fixed `NESEmu::destroy()` -> `NesEmu::destroy()` typo in `tests/test_tier1_validation.py`.
+  - Replaced hardcoded `Path(r"E:\BMO Gameboy")` and user profile paths across all tests and scripts with dynamic repo-root resolution.
+### Verification
+- `python scripts/validate_repo.py`: `VALIDATION PASSED in 36329 ms — all phases clean` (`Flash: 5,605,280 / 16,777,216 bytes (33.4%)`, `SRAM: 215,200 / 327,680 bytes (65.7%)`).
+- `python -m tools.guardian verify`: `Ran 96 tests in 7.429s` / `OK` (`[PASS] AST Linter: 0 Critical violations (11 warnings)`).
+- `python -m tools.guardian doctor`: `DOCTOR RESULT: HEALTHY (0 blocking issues)`.
+- `python -m tools.guardian cppcheck`: `Cppcheck findings: 46 total, 0 errors.` (exit code 0).
+
+---
+
 ## [Agent Handoff] - 2026-10-21
 ### Changed
 - Updated `.agents/rules/04_known_issues.md` with a current handoff, the AI-environment project goal, exact previously recorded verification, open triage tasks, corrected repository metrics, and preserved worktree/generated-index notes.

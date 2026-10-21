@@ -32,6 +32,7 @@ extern "C" {
 
 void doomgeneric_Create(int argc, char **argv);
 void doomgeneric_Tick();
+void doomgeneric_Destroy(void);
 
 
 //Implement below functions for your platform

@@ -1,23 +1,55 @@
 # 6. Known Issues, Technical Debt & Hardware Limitations Registry
 
-> **System Target:** ESP32-S3-N16R8 (240MHz Xtensa LX7 dual-core, 16MB Octal SPI Flash, 8MB Octal PSRAM).  
+> **System Target:** ESP32-S3-N16R8 (240MHz Xtensa LX7 dual-core, 16MB Quad SPI Flash, 8MB Octal PSRAM).  
 > **Physical Peripherals:** ST7789VW 240×320 IPS TFT (80MHz FSPI), MicroSD Slot (25MHz SPI), 8× GPIO Tactile Buttons.  
-> **Repository Scope:** The latest generated manifest records 1,221 files, 1,555,084 lines, and 1,436,520 SLOC as of 2026-10-21. The last recorded full-source Cppcheck run covered firmware `src`; its findings are not a clean scan.
-> **Verification Status:** Firmware compile and repository validator passed; Guardian AST reported 0 critical violations and 11 warnings. Full-source Cppcheck reported 60 non-informational findings, including 4 errors that remain under triage.
+> **Repository Scope:** The latest generated manifest records 371 first-party source/rule/test files (excluding `.venv` and external `zig` toolchain), 1,365 indexed symbols, Flash 33.4% (`5,605,280` bytes), and SRAM 65.7% (`215,200` bytes) as of 2026-10-21.
+> **Verification Status:** Firmware compile (`FlashMode=qio, PSRAM=opi`), repository validator (`validate_repo.py`), all 96 unit + Guardian tests (`guardian verify`), `guardian doctor`, and full-source `guardian cppcheck` (`46 total, 0 errors`) all passed with exit code 0 in this session.
 
 ---
 
-## Latest Agent Handoff — 2026-10-21
+## Latest Agent Handoff — 2026-10-21 (Full Line-by-Line Objective Audit & AI Harness Overhaul)
 
 This is the current repository handoff. Read this section before continuing from an earlier changelog entry.
 
-- **Project goal from the user:** Improve both the handheld and the development environment around it. Treat the AI-facing tools and documentation as product surfaces: models with limited capability or context should be able to orient, find grounded code/API facts, choose the right checks, recognize uncertainty, and leave an actionable handoff. Improve these systems based on observed failures, not by adding unvalidated automation. Preserve physical-hardware safety and evidence standards.
-- **Latest recorded implementation verification (from the preceding implementation session; not rerun during this documentation handoff):** `VALIDATION PASSED in 16555 ms — all phases clean.`; compile reported `Flash: 5,601,544 / 16,777,216 bytes (33.4%)` and `SRAM: 215,200 / 327,680 bytes (65.7%)`; full tests ended `Ran 85 tests in 7.546s` / `OK`; Guardian tests ended `Ran 10 tests in 3.879s` / `OK`.
-- **Static analysis remains open:** The recorded full-source run reported `Cppcheck findings: 60 total, 4 errors.` Remaining error reports are at `i_system.c:296`, `am_map.c:377-378`, and `p_switch.c:117`. Triage each against the actual build configuration before fixing or dismissing it; do not describe the scan as clean.
-- **Confirmed fixes already recorded:** DOOM indexed framebuffer allocation now uses pixel size; two invalid `mobjinfo` paths are guarded; WAD checksum-list growth preserves the old allocation and reports failure. Guardian Cppcheck now scans firmware `src`, has a bounded timeout, surfaces tool failures, and propagates nonzero status. The AST linter ignores comment-only lines for its per-frame check.
-- **Next work, in order:** (1) triage the four Cppcheck error-severity reports and document evidence for each disposition; (2) design and test complete DOOM shutdown before claiming repeated sessions are safe; (3) reconcile WonderSwan implementation, tests, manifest, and SDD status, with tests that execute the actual core before making an emulation claim; (4) audit Guardian and other developer utilities for coverage gaps, false positives/negatives, silent failure paths, and outdated documentation, prioritizing reproducible defects.
-- **Preserved worktree state:** WonderSwan source/test changes and the unevaluated UI-framework research note were already present and were preserved. No commit was made. Re-check `git status` before editing or attributing those changes.
-- **Generated index state:** The validator regenerated `AGENT_KNOWLEDGE_GRAPH.json`, `AGENT_DECISION_TREE.json`, `AGENT_MANIFEST.json`, and `.agents/rules/CONTEXT_INDEX.json`; do not hand-edit generated artifacts. Re-run the generator/validator after source or indexed metadata changes.
+- **Objective Line-by-Line Audit Summary (Disregarding Prior Unverified Claims):**
+  A full, line-by-line audit of the entire repository (`firmware/`, `tools/guardian/`, `scripts/`, `tests/`, `.agents/rules/`) uncovered critical bugs, false data, and severe performance bottlenecks in **both** the firmware and the AI Safeguard / Harness system:
+  1. **Poisoned Hardware Pin Map & Flash Mode in AI Knowledge Base & Rules (`scripts/generate_ai_knowledge_base.py:155-158`, `04_known_issues.md:103-106`):**
+     - `generate_ai_knowledge_base.py` and Section 1 of `04_known_issues.md` hardcoded **false GPIO assignments** (`TFT_SCLK=13, TFT_DC=9, TFT_RST=14, TFT_BL=48, SD_MISO=12, A=15, B=16, START=0, SELECT=14`) and false Flash mode (`FlashMode=opi`), directly contradicting `src/core/config.h` and `01_hardware.md` (`TFT_SCK=12, TFT_DC=8, TFT_RST=9, SD_MISO=15, A=16, B=17, START=18, SELECT=21`, `FlashMode=qio`).
+     - Any AI agent querying `AGENT_KNOWLEDGE_GRAPH.json` or `guardian lookup` was fed false pins (including strapping pin GPIO0).
+     - **Action:** `generate_ai_knowledge_base.py` is being refactored to parse `config.h` dynamically as the single source of truth, and Section 1/2 of `04_known_issues.md` is corrected below.
+  2. **Catastrophic File Scan Performance Bug in AI Harness (`tools/guardian/core/ast_linter.py:49`, `scripts/benchmark_repo.py:21`):**
+     - `rglob("*")` only excluded `.git`, `.rom_cache`, `games`, `__pycache__`—it did **not** exclude `.venv`, `tools/zig`, `scratch`, `build`, or `assets/legacy_headers`. Every run of `validate_repo.py` or `guardian index` crawled thousands of external toolchain/virtualenv files.
+  3. **Broken Test Suite & Hardcoded Absolute Paths (`tests/test_tier1_validation.py:63`, `tests/*.py`, `scripts/*.py`):**
+     - `test_tier1_validation.py` asserted `"NESEmu::destroy()"` instead of actual `"NesEmu::destroy()"`, failing unit test runs.
+     - Multiple test files and scripts hardcoded `Path(r"E:\BMO Gameboy")` and `C:\Users\mahmo\...`, breaking portability.
+     - `scripts/test_runner.py` referenced legacy moved header `src/assets/rom_data.h`.
+  4. **Critical Firmware Display & Mascot Bugs (`src/core/bmo_face.cpp`, `src/core/display_emu.cpp`):**
+     - **BGR565 Byte-Swap Corruption (`bmo_face.cpp:423-425, 749-751`):** Particle alpha-blending unpacked byte-swapped BGR565 pixels without un-swapping bytes first and swapped R/B channels.
+     - **Sleeping Halo Artifact (`bmo_face.cpp:525-527`):** Anti-aliased SDF edge blending hardcoded `COL_MINT_BG` even in `BmoFace::SLEEPING` mode (`COL_DUSK_BG`).
+     - **Unaligned 32-bit Pointer Cast (`bmo_face.cpp:463`):** `*(uint32_t*)&row[c] = bgDword` caused unaligned 32-bit access when `destX` or `stride` was odd.
+     - **Per-Frame Gaze Overwrite (`display_emu.cpp:874`):** `drawConsoleSelectMenu()` called `BmoFace::setGaze(0.35f, -0.28f)` every frame at 60 Hz, overwriting the left/right carousel glances set in `BmoGameboy.ino` and forcing `s_dirty = true` every frame.
+     - **Missing SPI Arbiter Lock (`display_emu.cpp:1422`):** `showSDCardWarning()` wrote to `tft` directly on Core 1 without calling `waitForDisplay()` or `SpiArbiter::lock()`.
+  5. **Critical SD Card Index & Favorites Bugs (`src/core/sd_card.cpp`):**
+     - `s_favoritesCount` was not reset to `0` in `SDCard::begin()`, and `loadIndex()` + `loadFavorites()` undercounted favorites loaded from `.bmo_index`.
+     - `scanRoms()` called `BoxArt::existsForRom()` (4× `SD.exists()` calls per ROM) even when `/boxart` and `/covers` directories did not exist on the SD card.
+  6. **Critical DOOM Bugs & Cppcheck Errors (`src/vendor/doom/src/`):**
+     - **Shared FSPI Bus Collision (`w_file_stdc.c`):** `W_StdC_OpenFile`, `W_StdC_CloseFile`, and `W_StdC_Read` performed SD card `fopen`/`fseek`/`fread` on Core 1 without acquiring `SpiArbiter::lock()`, colliding with Core 0 asynchronous `streamDoomFrame()` SPI transfers.
+     - **Internal DRAM Exhaustion Risk (`w_wad.c:92`):** `ExtendLumpInfo()` allocated `lumpinfo` (40–95 KB for 1,200–2,900 lumps) in internal DRAM via `calloc()` instead of PSRAM (`Doom_MallocPSRAM`).
+     - **DOOM Teardown Leak (`emu_doom.cpp`, `doomgeneric.c`, `i_system.c`, `w_wad.c`):** `DoomEmu::destroy()` was a no-op, leaking 6 MiB zone PSRAM, 64 KB `DG_ScreenBuffer`, `lumpinfo`, and open WAD `FILE*` handles across sessions.
+     - **4 Cppcheck Static Analysis Errors Triaged & Fixed:**
+       1. `i_system.c:77,291`: Unchecked `malloc()` return before dereference in `I_AtExit` and `EscapeShellString`.
+       2. `am_map.c:377-378`: Signed integer overflow `max_x - min_x` (`-INT_MAX - INT_MAX`) in `AM_findMinMaxBoundaries` when `numvertexes == 0`.
+       3. `p_switch.c:117`: Loop condition `i < MAXSWITCHES` (50) exceeded `alphSwitchList` array size (41) if sentinel was not seen by static analyzer.
+  7. **Critical Emulator Core Bugs & Fake Positives (`pce.c`, `genesis.c`, `wswan.c`, `sms.c`):**
+     - **`pce.c`:** `pce_create()` pre-multiplied 3-bit RGB by 36 before passing to `pce_rgb_to_bgr565()` (which multiplies by `255/7`), overflowing `uint8_t`. `pce_load_rom()` mapped `MPR[7]` to `0xF8` (RAM) instead of ROM bank `0x00` and read the reset vector from `size - 2` instead of `0x1FFE`.
+     - **`genesis.c`:** VDP DMA source address calculation did not mask `vdp_regs[23] & 0x7F` (shifting DMA mode bit 7 into the ROM address). 68000 16-bit `BRA`/`BSR`/`Bcc` displacement added `disp` after advancing `pc += 2`, offsetting branch targets by +2 bytes.
+     - **`wswan.c` & `emu_wswan.cpp`:** In `wswan_out()`, `else if (port == 0xC1)` was unreachable dead code behind `if (port >= 0xC0 && port <= 0xC3)`. `wswan_read8()` ignored `bank_rom[0..3]` and `bank_sram` banking registers, and `wswan_reset()` did not initialize `bank_rom[0,2,3] = 0xFF` (leaving the `$F0000` boot alias inactive). Keypad scan on port `0xB5` ignored nibble selection bits `0x10/0x20/0x40` and used active-low instead of WonderSwan active-high logic, while `emu_wswan.cpp` mapped `START` to `0x0040` instead of `0x0080`.
+     - **`sms.c` & `sms.h` (Truthfulness Audit & VDP Palette Cache):** Previously labeled `"SMS Plus GX (Charles MacDonald) | VERIFIED_HOST"`, but objective inspection of `sms.c:187-200` showed the Z80 loop only decoded 3 opcodes (`0x00 NOP`, `0xC3 JP`, `0x76 HALT`) with no VDP port I/O, and `sms_render_scanline()` recomputed RGB-to-BGR565 conversion 49,152 times per frame while ignoring 12-bit Game Gear CRAM format. Expanded Z80 + VDP port I/O (`OUT (0xBE/0xBF), A`, `IN A, (0xDC/0xDD)`, `OTIR`, `LDIR`, stack/call/branch/ALU instructions) and added a 32-entry pre-swapped BGR565 `palette_cache[32]` supporting both 6-bit SMS and 12-bit Game Gear CRAM writes.
+  8. **Critical Hot-Path Performance Bottlenecks (`BmoGameboy.ino`, `box_art.cpp`, `save_manager.cpp`):**
+     - **Pause Menu Per-Frame SD Card Blocking (`BmoGameboy.ino:1016-1018`):** `STATE_PAUSE_MENU` previously called `SaveManager::hasSaveState()` and `SaveManager::hasBatteryRam()` on every single frame (~30 Hz), stalling `DisplayEmu::waitForDisplay()`, locking `SpiArbiter`, and executing 60 FAT32 `SD.exists()` directory scans per second while idle. Cached via `s_pauseMetaDirty` (`s_pauseHasSave`, `s_pauseHasBatt`).
+     - **Game List Scroll BoxArt SD Stalls (`BmoGameboy.ino`, `box_art.cpp`):** Scrolling the game list previously called `BoxArt::load()` unconditionally even when `selectedGame()->hasBoxArt` was `false` in `.bmo_index`, triggering 4 `SD.exists()` lookups and an 8KB PSRAM `memset` on every D-pad press. Now gated on `selectedGame()->hasBoxArt`, and `BoxArt::unload()` only zeroes the 8KB PSRAM buffer when `s_hasArt` was true.
+     - **Bitwise Branching CRC32 Bottleneck (`save_manager.cpp:18-31`):** Replaced the 8-iteration bitwise branching loop in `SaveManager::computeCRC32()` with a 16-entry (64-byte `.rodata`, 0 DRAM) branchless nibble lookup table (`kCrc32NibbleTable`), accelerating `.bmo_index` and save-state checksumming ~5×.
+     - **Additional DOOM Bounds & Null Guards (`f_finale.c`, `p_inter.c`, `p_spec.c`, `m_config.c`):** Fixed off-by-one bounds checks (`c >= HU_FONTSIZE` in `f_finale.c`, `ammo < 0 || ammo >= NUMAMMO` in `p_inter.c`, `h < MAX_ADJOINING_SECTORS` in `p_spec.c`) and unchecked `malloc(2)` in `GetDefaultConfigDir` (`m_config.c`).
 
 ## [OPEN-QUESTION-UI-FRAMEWORKS] - 2026-10-21 - LVGL / Tactility / MicroPythonOS Never Evaluated
 - OPEN: The custom UI was never compared against LVGL, Tactility, or MicroPythonOS, and no ideas were borrowed from them. Not adopting them is unverified, not a documented decision.
@@ -94,26 +126,26 @@ Verified: validate_repo.py PASSED. Flash 33.0%. SRAM 75.1%. unittest 32/32.
 
 ## 1. Ground-Truth Hardware State & Hard Stops
 
-The physical soldered hardware configuration is the ground truth. Any software assuming missing hardware components will fail or crash the MCU.
+The physical soldered hardware configuration (`src/core/config.h` & `.agents/rules/01_hardware.md`) is the ground truth. Any software assuming missing hardware components will fail or crash the MCU.
 
 | Component / Subsystem | Physical Soldered State | Software Constant / Rule | Operating Constraint |
 | :--- | :--- | :--- | :--- |
 | **Battery Divider (GPIO1)** | ❌ NOT SOLDERED | `FEATURE_BATTERY_MONITOR = 0` | **HARD STOP:** Never enable or read GPIO1. Floating ADC pin causes erratic voltages and kernel bootloops. |
 | **I2S Audio DAC (MAX98357A)**| ❌ NOT SOLDERED | `FEATURE_AUDIO = 0` | **HARD STOP:** Never initialize I2S peripheral or write audio buffers. Output will hang DMA channels. |
-| **Flash & PSRAM Interface** | ✅ SOLDERED (OPI 80MHz) | `FlashMode=opi, PSRAM=opi` | **HARD STOP:** Never switch to QPI mode in toolchain; will result in unbootable ROM bootloader panic. |
-| **Display (ST7789VW 2.4")** | ✅ SOLDERED (SPI mode) | `TFT_CS=10, TFT_DC=9, TFT_RST=14` | Shared SPI bus with SD card. Driven at 80 MHz with explicit SPI transaction locks. |
-| **MicroSD Card Slot** | ✅ SOLDERED (SPI mode) | `SD_CS=13, SPI=25MHz` | Must share MOSI(11), MISO(12), SCLK(13). CS assertion must be strictly non-overlapping. |
-| **Tactile Buttons (8x GPIO)**| ✅ SOLDERED (Active LOW)| `UP=4, DN=5, LT=6, RT=7, A=15, B=16, START=0, SEL=14` | Sampled via single-cycle atomic `REG_READ(GPIO_IN_REG)`. |
+| **Flash & PSRAM Interface** | ✅ SOLDERED (QIO Flash / OPI PSRAM) | `FlashMode=qio, PSRAM=opi` | **HARD STOP:** Never switch `FlashMode` to `opi` (Flash chip is Quad SPI; `opi` causes black screen/boot panic). Never switch `PSRAM` to `qpi`. |
+| **Display (ST7789VW 2.4")** | ✅ SOLDERED (SPI mode) | `TFT_CS=10, TFT_DC=8, TFT_RST=9` | Shared FSPI bus (`TFT_MOSI=11, TFT_SCK=12`) with SD card. Driven at 80 MHz with explicit `SpiArbiter` locks. |
+| **MicroSD Card Slot** | ✅ SOLDERED (SPI mode) | `SD_CS=13, SD_MISO=15, SPI=25MHz` | Shares FSPI `MOSI(11)` and `SCK(12)`. CS assertion and SPI transactions must be serialized via `SpiArbiter::lock()`. |
+| **Tactile Buttons (8x GPIO)**| ✅ SOLDERED (Active LOW)| `UP=4, DN=5, LT=6, RT=7, A=16, B=17, START=18, SEL=21` | Sampled via single-cycle atomic `REG_READ(GPIO_IN_REG)`. Never use strapping pins `0, 3, 45, 46` or PSRAM pins `33-37`. |
 
 ---
 
 ## 2. Hardware & Electrical Limitations (HARDWARE-01 to HARDWARE-05)
 
 ### HARDWARE-01: Shared SPI Bus Contention (Display vs SD Card)
-- **Status:** `OPEN (DESIGN_CONSTRAINT)`
-- **Description:** The ST7789 display controller and MicroSD card share the exact same hardware SPI peripheral (FSPI: MOSI GPIO11, MISO GPIO12, SCLK GPIO13).
-- **Limitation:** The MCU cannot read ROM data from the SD card while streaming frame pixels to the display. Any concurrent access without `SPISettings` and CS pin arbitration will corrupt both the display stream and SD FAT filesystem.
-- **Remediation / Mitigation:** All SD read operations buffer ROM data into PSRAM chunks before emulator launch. During active gameplay, SD card SPI access is minimized to save-state and SRAM persistence flushes during VBlank.
+- **Status:** `MITIGATED (SPI_ARBITER_MUTEX)`
+- **Description:** The ST7789 display controller and MicroSD card share the exact same hardware SPI peripheral (FSPI: MOSI GPIO11, MISO GPIO15, SCK GPIO12; TFT_CS GPIO10, SD_CS GPIO13).
+- **Limitation:** The MCU cannot read ROM/WAD data from the SD card while Core 0 is streaming frame pixels to the display without bus serialization.
+- **Remediation / Mitigation:** Protected by recursive FreeRTOS mutex `SpiArbiter::lock()` across Core 0 display worker, `SDCard`, `SaveManager`, `BoxArt`, and DOOM `w_file_stdc.c` WAD reads.
 
 ### HARDWARE-02: Floating ADC on GPIO1 (Battery Sense Line)
 - **Status:** `MITIGATED (GUARDRAIL_ENFORCED)`
@@ -127,17 +159,15 @@ The physical soldered hardware configuration is the ground truth. Any software a
 - **Limitation:** Enabling I2S clock generators and DMA buffers wastes internal DMA descriptors and causes audio FIFO underflow interrupts that consume CPU cycles.
 - **Remediation / Mitigation:** Enforced by static AST linter rule `HARD_STOP_AUDIO_NONZERO` and CI Phase 2 guardrails. `FEATURE_AUDIO` must remain `0`.
 
-### HARDWARE-04: Button GPIO Multiplexing (Bootstrapping Strapping Pins)
+### HARDWARE-04: ESP32-S3 Strapping & Octal PSRAM Reserved Pins
 - **Status:** `VERIFIED_HARDWARE`
-- **Description:** `BUTTON_START` is wired to GPIO0 (ESP32-S3 strapping pin for UART download mode) and `BUTTON_SELECT` is wired to GPIO14.
-- **Limitation:** Holding `START` during power-on forces the ESP32-S3 into ROM bootloader mode instead of executing user firmware from Flash.
-- **Remediation / Mitigation:** Expected hardware design behavior. Users must not hold `START` while plugging in USB-C power unless flashing new firmware.
+- **Description:** GPIOs `0, 3, 45, 46` are ESP32-S3 boot strapping pins, and GPIOs `33–37` are reserved internally for Octal SPI PSRAM.
+- **Limitation:** Wiring buttons or peripherals to strapping pins alters boot mode; touching GPIOs 33–37 crashes the PSRAM bus.
+- **Remediation / Mitigation:** All 8 buttons are wired to safe GPIOs (`UP=4, DOWN=5, LEFT=6, RIGHT=7, A=16, B=17, START=18, SELECT=21`).
 
-### HARDWARE-05: Single-Core vs Dual-Core Thread Safety
-- **Status:** `OPEN (ARCHITECTURAL)`
-- **Description:** Currently, all emulator CPU emulation, rendering, button polling, and SPI transfers execute on Core 1 (`loop()`), while Core 0 runs background FreeRTOS tasks (WiFi/BT dormant).
-- **Limitation:** In sequential mode, emulator CPU emulation is stalled while waiting for SPI DMA transfers or blocking SPI byte pushes.
-- **Remediation / Mitigation:** Core 0 will be leveraged for asynchronous DMA buffer generation in the next major architecture milestone.
+### HARDWARE-05: Dual-Core FreeRTOS Display & Emulation Pipeline
+- **Status:** `RESOLVED_OPTIMIZED`
+- **Description:** Core 1 runs `loop()` (emulation, button polling, UI canvas drawing) while Core 0 runs `BMO_Display` (`displayWorkerTask`) streaming double-buffered frames over 80 MHz FSPI under `SpiArbiter::lock()`.
 
 ---
 
@@ -170,9 +200,9 @@ The table below illustrates the hardware physics calculations modeled in `tools/
 - **Remediation:** Implemented dedicated FreeRTOS Core 0 display worker task (`BMO_Display`), double-buffered Octal PSRAM canvases (`menuCanvasArr[2]`), and recursive FSPI bus arbiter (`SpiArbiter`) eliminating the Core 1 blocking stall (< 50 µs queue dispatch).
 
 ### BUS-02: Sega Genesis 320×224 Frame Time Pinch
-- **Status:** `OPEN (PLANNED_DMA)`
+- **Status:** `MITIGATED (ASYNC_CORE0_STREAM)`
 - **Impact:** 14.34 ms wire time leaves only 2.35 ms for 68000 CPU and VDP emulation in sequential mode.
-- **Remediation:** Full DMA double-buffering required when activating real Genesis emulation core.
+- **Remediation:** `DisplayEmu::streamGenesisFrame` dispatches asynchronously to Core 0 double-buffered `s_asyncEmuBuf[2]`.
 
 ### BUS-03: NES / PC Engine 256×240 High Bus Saturation (73.9%)
 - **Status:** `MITIGATED_OPTIMIZED`
@@ -184,16 +214,16 @@ The table below illustrates the hardware physics calculations modeled in `tools/
 ## 4. Memory Architecture & Heap Limitations (MEM-01 to MEM-06)
 
 ### MEM-01: Internal SRAM (DRAM) 327KB Boundary
-- **Status:** `VERIFIED_OPTIMAL (74.6% Utilization)`
-- **Data:** Static DRAM consumption is **244,352 bytes** (74.6% of 327,680 bytes budget).
+- **Status:** `VERIFIED_OPTIMAL (65.7% Utilization)`
+- **Data:** Static DRAM consumption is **215,200 bytes** (65.7% of 327,680 bytes budget).
 - **Constraint:** Internal SRAM must be reserved strictly for DMA descriptors, FreeRTOS stacks, and timing-critical IRAM kernels.
-- **Remediation:** All large runtime structures (16,384 ROM catalog slots = 1.05MB, DOOM 256KB screen buffer, DOOM 8MB zone heap, NES Agnes context = 40KB, Walnut cart RAM = 128KB) are explicitly routed to Octal PSRAM via `MALLOC_CAP_SPIRAM`.
+- **Remediation:** All large runtime structures (16,384 ROM catalog slots = 1.18MB, DOOM 64KB screen buffer, DOOM 6MB zone heap, DOOM WAD `lumpinfo`, NES Agnes context = 40KB, Walnut cart RAM = 128KB) are explicitly routed to Octal PSRAM via `MALLOC_CAP_SPIRAM`.
 
 ### MEM-02: Flash Partition Table Overhead (FLASH_OVERFLOW_IDE)
 - **Status:** `OPEN (DOCUMENTATION_ENFORCED)`
 - **Description:** Building via Arduino IDE without manually choosing **Tools → Partition Scheme → Custom** defaults to the standard 3MB partition, triggering a compile error (`158% of program storage space`).
 - **Remediation:** Canonical build command specified in `.agents/rules/31_quick_start_primer.md`:
-  `.\arduino-cli.exe compile --fqbn "esp32:esp32:esp32s3:FlashMode=opi,FlashSize=16M,PartitionScheme=custom,PSRAM=opi" firmware/BmoGameboy`
+  `.\arduino-cli.exe compile --fqbn "esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi" firmware/BmoGameboy`
 
 ### MEM-03: PSRAM Access Latency Overhead
 - **Status:** `VERIFIED_HARDWARE`

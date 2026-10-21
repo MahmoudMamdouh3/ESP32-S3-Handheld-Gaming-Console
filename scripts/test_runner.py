@@ -2,7 +2,9 @@ import re
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-rom_path = REPO_ROOT / 'firmware' / 'BmoGameboy' / 'src' / 'assets' / 'rom_data.h'
+rom_path = REPO_ROOT / 'assets' / 'legacy_headers' / 'rom_data.h'
+if not rom_path.exists():
+    rom_path = REPO_ROOT / 'firmware' / 'BmoGameboy' / 'src' / 'assets' / 'roms' / 'virtual_bmo.h'
 
 with open(rom_path, 'r') as f:
     content = f.read()

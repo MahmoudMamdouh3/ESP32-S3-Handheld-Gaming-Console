@@ -112,7 +112,7 @@ void P_InitSwitchList(void)
 	if ( gamemode == commercial )
 	    episode = 3;
 		
-    for (index = 0,i = 0;i < MAXSWITCHES;i++)
+    for (index = 0,i = 0;i < MAXSWITCHES && i < (int)(sizeof(alphSwitchList) / sizeof(alphSwitchList[0]));i++)
     {
 	if (!alphSwitchList[i].episode)
 	{

@@ -66,6 +66,9 @@ uint8_t* currentRomBuffer = nullptr;
 char currentRomFilename[64] = "";
 static int pauseOption = 0;
 static char pauseToast[48] = "";
+static bool s_pauseMetaDirty = true;
+static bool s_pauseHasSave = false;
+static bool s_pauseHasBatt = false;
 
 static void autoSaveCurrentBatteryRam() {
   if (currentRomFilename[0] == '\0') return;
@@ -401,7 +404,7 @@ void loop() {
         rebuildVisibleGames();
         currentState = STATE_GAME_MENU;
         BmoFace::setExpression(BmoFace::IDLE);
-        if (visibleGameCount > 0 && selectedGame()) {
+        if (visibleGameCount > 0 && selectedGame() && selectedGame()->hasBoxArt) {
           BoxArt::load(selectedGame()->filename);
         } else {
           BoxArt::unload();
@@ -621,7 +624,7 @@ void loop() {
         if (CONSOLES[selectedConsoleIndex] == ROM_FAVORITES) {
           visibleGamesDirty = true;
           rebuildVisibleGames();
-          if (visibleGameCount > 0 && selectedGame()) {
+          if (visibleGameCount > 0 && selectedGame() && selectedGame()->hasBoxArt) {
             BoxArt::load(selectedGame()->filename);
           } else {
             BoxArt::unload();
@@ -685,7 +688,7 @@ void loop() {
         lastButtonMs = millis();
       }
       if (selectedGameIndex != prevGameIndex) {
-        if (visibleGameCount > 0 && selectedGame()) {
+        if (visibleGameCount > 0 && selectedGame() && selectedGame()->hasBoxArt) {
           BoxArt::load(selectedGame()->filename);
         } else {
           BoxArt::unload();
@@ -841,6 +844,7 @@ void loop() {
       currentState = STATE_PAUSE_MENU;
       pauseOption = 0;
       pauseToast[0] = '\0';
+      s_pauseMetaDirty = true;
       delay(200);
       return;
     }
@@ -849,6 +853,7 @@ void loop() {
     if (select && btnA) {
       int slot = SaveManager::getActiveSlot();
       quickSaveState(slot);
+      s_pauseMetaDirty = true;
       delay(200);
       return;
     }
@@ -985,6 +990,7 @@ void loop() {
         return;
       } else if (pauseOption == 1) {
         if (quickSaveState(slot)) {
+          s_pauseMetaDirty = true;
           snprintf(pauseToast, sizeof(pauseToast), "SAVED TO SLOT %d!", slot);
         } else {
           snprintf(pauseToast, sizeof(pauseToast), "SAVE FAILED!");
@@ -999,9 +1005,11 @@ void loop() {
         }
       } else if (pauseOption == 3) {
         SaveManager::cycleActiveSlot();
+        s_pauseMetaDirty = true;
         snprintf(pauseToast, sizeof(pauseToast), "ACTIVE SLOT: %d", SaveManager::getActiveSlot());
       } else if (pauseOption == 4) {
         autoSaveCurrentBatteryRam();
+        s_pauseMetaDirty = true;
         snprintf(pauseToast, sizeof(pauseToast), "BATTERY RAM SAVED!");
       } else if (pauseOption == 5) {
         autoSaveCurrentBatteryRam();
@@ -1014,10 +1022,13 @@ void loop() {
     }
 
     int currentSlot = SaveManager::getActiveSlot();
-    bool hasSave = SaveManager::hasSaveState(currentRomFilename, currentSlot);
-    bool hasBatt = SaveManager::hasBatteryRam(currentRomFilename);
+    if (s_pauseMetaDirty) {
+      s_pauseHasSave = SaveManager::hasSaveState(currentRomFilename, currentSlot);
+      s_pauseHasBatt = SaveManager::hasBatteryRam(currentRomFilename);
+      s_pauseMetaDirty = false;
+    }
 
-    DisplayEmu::drawPauseMenu(currentRomFilename, currentSlot, hasSave, hasBatt, pauseOption, pauseToast);
+    DisplayEmu::drawPauseMenu(currentRomFilename, currentSlot, s_pauseHasSave, s_pauseHasBatt, pauseOption, pauseToast);
     delay(30);
   }
 }

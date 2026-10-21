@@ -551,11 +551,11 @@ pce_context_t* pce_create(void) {
         return NULL;
     }
 
-    // Default VCE Palette initialization
+    // Default VCE Palette initialization (3-bit channels 0..7 passed to pce_rgb_to_bgr565)
     for (int i = 0; i < 512; i++) {
-        uint8_t b = (uint8_t)((i & 7) * 36);
-        uint8_t r = (uint8_t)(((i >> 3) & 7) * 36);
-        uint8_t g = (uint8_t)(((i >> 6) & 7) * 36);
+        uint8_t b = (uint8_t)(i & 7);
+        uint8_t r = (uint8_t)((i >> 3) & 7);
+        uint8_t g = (uint8_t)((i >> 6) & 7);
         ctx->vce_raw[i] = (uint16_t)i;
         ctx->vce_palette[i] = pce_rgb_to_bgr565(r, g, b);
     }
@@ -584,14 +584,21 @@ bool pce_load_rom(pce_context_t* ctx, const uint8_t* rom, size_t size) {
     ctx->rom = rom;
     ctx->rom_size = size;
 
-    // Default MPR mapping (MPR 0..6 to ROM pages 0..6, MPR 7 to RAM 0xF8)
+    // HuC6280 hardware reset maps MPR7 ($E000-$FFFF) to ROM bank 0x00 and MPR1 ($2000-$3FFF) to Work RAM 0xF8
     for (int i = 0; i < 7; i++) {
         ctx->mpr[i] = (uint8_t)i;
     }
-    ctx->mpr[7] = 0xF8;
+    ctx->mpr[1] = 0xF8;
+    ctx->mpr[7] = 0x00;
 
-    // CPU Reset Vector (0xFFFE - 0xFFFF in page 7)
-    ctx->pc = (size >= 2) ? (uint16_t)(rom[size - 2] | (rom[size - 1] << 8)) : 0xE000;
+    // CPU Reset Vector ($FFFE - $FFFF in ROM bank 0, offset 0x1FFE)
+    if (size >= 0x2000) {
+        ctx->pc = (uint16_t)(rom[0x1FFE] | (rom[0x1FFF] << 8));
+    } else if (size >= 2) {
+        ctx->pc = (uint16_t)(rom[size - 2] | (rom[size - 1] << 8));
+    } else {
+        ctx->pc = 0xE000;
+    }
     ctx->s = 0xFF;
     ctx->p = 0x20;
     ctx->joypad = 0xFF;
