@@ -95,8 +95,8 @@ static void wswan_write8(wswan_t* emu, uint32_t addr, uint8_t val) {
             if (addr >= 0xFE00) {
                 uint16_t pal_idx = (addr - 0xFE00) >> 1;
                 if (pal_idx < 256) {
-                    uint16_t col12 = ((uint16_t)emu->internal_ram[(pal_idx << 1) + 1] << 8) |
-                                     emu->internal_ram[pal_idx << 1];
+                    uint16_t col12 = ((uint16_t)emu->internal_ram[0xFE00 + (pal_idx << 1) + 1] << 8) |
+                                     emu->internal_ram[0xFE00 + (pal_idx << 1)];
                     emu->palette_cache[pal_idx] = wswan_color_to_bgr565(col12);
                 }
             }
@@ -295,6 +295,24 @@ static int wswan_cpu_step(wswan_t* emu) {
         return 8;
     }
 
+    // MOV reg8, imm8 (B0..B7: AL, CL, DL, BL, AH, CH, DH, BH)
+    if ((op & 0xF8) == 0xB0) {
+        uint8_t r = op & 7;
+        uint8_t imm = wswan_read8(emu, ((uint32_t)emu->cs << 4) + emu->ip);
+        emu->ip++;
+        switch (r) {
+            case 0: emu->ax = (emu->ax & 0xFF00) | imm; break;
+            case 1: emu->cx = (emu->cx & 0xFF00) | imm; break;
+            case 2: emu->dx = (emu->dx & 0xFF00) | imm; break;
+            case 3: emu->bx = (emu->bx & 0xFF00) | imm; break;
+            case 4: emu->ax = (emu->ax & 0x00FF) | ((uint16_t)imm << 8); break;
+            case 5: emu->cx = (emu->cx & 0x00FF) | ((uint16_t)imm << 8); break;
+            case 6: emu->dx = (emu->dx & 0x00FF) | ((uint16_t)imm << 8); break;
+            case 7: emu->bx = (emu->bx & 0x00FF) | ((uint16_t)imm << 8); break;
+        }
+        return 4;
+    }
+
     // MOV reg, imm16 (B8..BF)
     if ((op & 0xF8) == 0xB8) {
         uint8_t r = op & 7;
@@ -310,6 +328,56 @@ static int wswan_cpu_step(wswan_t* emu) {
             case 6: emu->si = imm; break;
             case 7: emu->di = imm; break;
         }
+        return 4;
+    }
+
+    // MOV AL/AX, [moffs16] and MOV [moffs16], AL/AX (A0..A3)
+    if (op >= 0xA0 && op <= 0xA3) {
+        uint16_t off = wswan_read16(emu, ((uint32_t)emu->cs << 4) + emu->ip);
+        emu->ip += 2;
+        uint32_t addr = ((uint32_t)emu->ds << 4) + off;
+        if (op == 0xA0) emu->ax = (emu->ax & 0xFF00) | wswan_read8(emu, addr);
+        else if (op == 0xA1) emu->ax = wswan_read16(emu, addr);
+        else if (op == 0xA2) wswan_write8(emu, addr, (uint8_t)(emu->ax & 0xFF));
+        else if (op == 0xA3) wswan_write16(emu, addr, emu->ax);
+        return 6;
+    }
+
+    // INC reg16 (40..47) / DEC reg16 (48..4F)
+    if ((op & 0xF0) == 0x40) {
+        uint16_t* regs[8] = { &emu->ax, &emu->cx, &emu->dx, &emu->bx, &emu->sp, &emu->bp, &emu->si, &emu->di };
+        uint16_t v = (op & 0x08) ? (*regs[op & 7] - 1) : (*regs[op & 7] + 1);
+        *regs[op & 7] = v;
+        emu->flags &= ~(FLAG_ZF | FLAG_SF);
+        if (v == 0) emu->flags |= FLAG_ZF;
+        if (v & 0x8000) emu->flags |= FLAG_SF;
+        return 2;
+    }
+
+    // PUSH reg16 (50..57) / POP reg16 (58..5F)
+    if ((op & 0xF0) == 0x50) {
+        uint16_t* regs[8] = { &emu->ax, &emu->cx, &emu->dx, &emu->bx, &emu->sp, &emu->bp, &emu->si, &emu->di };
+        if (op & 0x08) {
+            *regs[op & 7] = wswan_read16(emu, ((uint32_t)emu->ss << 4) + emu->sp);
+            emu->sp += 2;
+        } else {
+            emu->sp -= 2;
+            wswan_write16(emu, ((uint32_t)emu->ss << 4) + emu->sp, *regs[op & 7]);
+        }
+        return 8;
+    }
+
+    // Immediate ALU on AL/AX: ADD (04/05), SUB (2C/2D), XOR (34/35), CMP (3C/3D)
+    if (op == 0x04 || op == 0x2C || op == 0x34 || op == 0x3C) {
+        uint8_t imm = wswan_read8(emu, ((uint32_t)emu->cs << 4) + emu->ip);
+        emu->ip++;
+        uint8_t al = (uint8_t)(emu->ax & 0xFF);
+        uint16_t res = (op == 0x04) ? (al + imm) : (op == 0x34) ? (al ^ imm) : (al - imm);
+        emu->flags &= ~(FLAG_CF | FLAG_ZF | FLAG_SF);
+        if (res & 0x100) emu->flags |= FLAG_CF;
+        if ((res & 0xFF) == 0) emu->flags |= FLAG_ZF;
+        if (res & 0x80) emu->flags |= FLAG_SF;
+        if (op != 0x3C) emu->ax = (emu->ax & 0xFF00) | (res & 0xFF);
         return 4;
     }
 

@@ -58,6 +58,10 @@ namespace {
 
   static uint8_t* s_asyncEmuBuf[2] = {nullptr, nullptr};
   static int s_activeEmuBuf = 0;
+  static bool s_bezelEnabled = true;
+  static const uint16_t* s_lastFramePtr = nullptr;
+  static int s_lastFrameW = 0;
+  static int s_lastFrameH = 0;
 
   enum DisplayCmdType {
     CMD_NONE = 0,
@@ -577,17 +581,22 @@ void DisplayEmu::streamRawFrameAsync(const uint16_t* fb, int x, int y, int w, in
   size_t byteCount = (size_t)w * h * 2;
   if (byteCount > (320 * 240 * 2)) return;
 
+  s_lastFrameW = w;
+  s_lastFrameH = h;
+
   if (s_displayTaskHandle && s_displayQueue && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
     waitForDisplay();
     xSemaphoreTake(s_displayDoneSem, 0);
 
     uint8_t* dst = s_asyncEmuBuf[s_activeEmuBuf];
     memcpy(dst, fb, byteCount);
+    s_lastFramePtr = (const uint16_t*)dst;
 
     DisplayTaskCmd cmd = { CMD_STREAM_RAW16, dst, (int16_t)x, (int16_t)y, (int16_t)w, (int16_t)h };
     xQueueSend(s_displayQueue, &cmd, portMAX_DELAY);
     s_activeEmuBuf = 1 - s_activeEmuBuf;
   } else {
+    s_lastFramePtr = fb;
     // Synchronous fallback
     waitForDisplay();
     SpiArbiter::lock();
@@ -1413,7 +1422,7 @@ void DisplayEmu::drawPauseMenu(const char* romTitle, int currentSlot, bool hasSa
   }
 
   menuCanvas->setTextColor(UI_MUTED);
-  drawFittedCentered("UP/DOWN: MOVE   A: SELECT   B/START: RESUME", 206, 260, UI_MUTED);
+  drawFittedCentered("L:A/B  R:BEZEL  SEL:SHOT  A:OK  B:PLAY", 206, 260, UI_MUTED);
 
   writeMenuCanvas();
 }
@@ -1434,6 +1443,9 @@ void DisplayEmu::showSDCardWarning() {
 
 void DisplayEmu::sanitizeRomTitle(const char* src, char* dst, size_t maxLen) {
   if (!src || !dst || maxLen == 0) return;
+  const char* slash = strrchr(src, '/');
+  if (!slash) slash = strrchr(src, '\\');
+  if (slash) src = slash + 1;
   size_t si = 0, di = 0;
   bool inParen = false, inBracket = false;
   
@@ -1803,6 +1815,78 @@ void DisplayEmu::showAlphaBadge(char letter, unsigned long durationMs) {
   }
   s_alphaBadgeLetter = letter;
   s_alphaBadgeExpireMs = millis() + durationMs;
+}
+
+void DisplayEmu::setBezelEnabled(bool enabled) {
+  s_bezelEnabled = enabled;
+}
+
+bool DisplayEmu::isBezelEnabled() {
+  return s_bezelEnabled;
+}
+
+bool DisplayEmu::toggleBezel() {
+  s_bezelEnabled = !s_bezelEnabled;
+  return s_bezelEnabled;
+}
+
+const uint16_t* DisplayEmu::getLastFramebuffer(int* outWidth, int* outHeight) {
+  if (outWidth) *outWidth = s_lastFrameW;
+  if (outHeight) *outHeight = s_lastFrameH;
+  return s_lastFramePtr;
+}
+
+void DisplayEmu::drawConsoleBezel(int consoleIndex) {
+  if (!s_bezelEnabled || !menuCanvas) {
+    clearScreen();
+    return;
+  }
+
+  int vx = 40, vy = 12, vw = 240, vh = 216;
+  const char* label = "BMO GAMEBOY";
+  switch (consoleIndex) {
+    case 0:  vx = 40; vy = 12; vw = 240; vh = 216; label = "GAME BOY COLOR"; break;
+    case 1:  vx = 40; vy = 12; vw = 240; vh = 216; label = "GAME BOY DMG";   break;
+    case 2:  vx = 32; vy = 0;  vw = 256; vh = 240; label = "NINTENDO NES";   break;
+    case 3:  vx = 0;  vy = 20; vw = 320; vh = 200; label = "CLASSIC DOOM";   break;
+    case 4:  vx = 32; vy = 24; vw = 256; vh = 192; label = "MASTER SYSTEM";  break;
+    case 5:  vx = 80; vy = 48; vw = 160; vh = 144; label = "SEGA GAME GEAR"; break;
+    case 6:  vx = 32; vy = 0;  vw = 256; vh = 240; label = "PC ENGINE";      break;
+    case 7:  vx = 80; vy = 24; vw = 160; vh = 192; label = "ATARI 2600";     break;
+    case 8:  vx = 96; vy = 56; vw = 128; vh = 128; label = "PICO-8 FANTASY"; break;
+    case 9:  vx = 0;  vy = 8;  vw = 320; vh = 224; label = "SEGA GENESIS";   break;
+    case 10: vx = 32; vy = 8;  vw = 256; vh = 224; label = "SUPER NINTENDO"; break;
+    case 11: vx = 48; vy = 48; vw = 224; vh = 144; label = "WONDERSWAN";     break;
+    case 12: vx = 80; vy = 44; vw = 160; vh = 152; label = "NEO GEO POCKET"; break;
+    case 13: vx = 80; vy = 69; vw = 160; vh = 102; label = "ATARI LYNX";     break;
+    case 14: vx = 32; vy = 24; vw = 256; vh = 192; label = "COLECOVISION";   break;
+    default: break;
+  }
+
+  menuCanvas->fillScreen(UI_DEEP_TEAL);
+  menuCanvas->drawRoundRect(2, 2, 316, 236, 8, UI_TEAL);
+  if (vx >= 2 && vy >= 2) {
+    menuCanvas->drawRect(vx - 2, vy - 2, vw + 4, vh + 4, UI_YELLOW);
+    menuCanvas->drawRect(vx - 1, vy - 1, vw + 2, vh + 2, UI_BLACK);
+  }
+  menuCanvas->fillRect(vx, vy, vw, vh, UI_BLACK);
+
+  if (vx >= 24) {
+    // Power LED indicator + decorative speaker grill lines on left/right bezel wings
+    menuCanvas->fillCircle(vx / 2, 32, 3, UI_CORAL);
+    menuCanvas->drawCircle(vx / 2, 32, 4, UI_BLACK);
+    int rightWingX = vx + vw + (320 - (vx + vw)) / 2;
+    for (int g = 0; g < 4; ++g) {
+      menuCanvas->drawFastHLine(rightWingX - 6, 180 + g * 5, 12, UI_TEAL);
+    }
+  }
+  if (vy >= 12) {
+    menuCanvas->setFont();
+    drawCentered(label, (vy - 8) / 2 + 1, UI_MINT);
+  }
+
+  writeMenuCanvas();
+  waitForDisplay();
 }
 
 

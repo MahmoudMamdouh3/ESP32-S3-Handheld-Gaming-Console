@@ -61,6 +61,13 @@ namespace DisplayEmu {
   void cycleDmgPalette();
   const uint16_t* getActiveDmgPalette();
 
+  // Custom Console Bezels (1:1 Viewport Border Artwork) & Screenshot Frame Access
+  void setBezelEnabled(bool enabled);
+  bool isBezelEnabled();
+  bool toggleBezel();
+  void drawConsoleBezel(int consoleIndex);
+  const uint16_t* getLastFramebuffer(int* outWidth, int* outHeight);
+
   // ---------------------------------------------------------------------------
   // Pixel push API
   // ---------------------------------------------------------------------------

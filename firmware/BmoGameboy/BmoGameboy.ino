@@ -708,16 +708,23 @@ void loop() {
         lastButtonMs = millis();
       }
       int prevGameIndex = selectedGameIndex;
+      auto romInitialLetter = [](const RomFile* rf) -> char {
+        if (!rf || !rf->filename[0]) return 'A';
+        const char* base = strrchr(rf->filename, '/');
+        if (!base) base = strrchr(rf->filename, '\\');
+        base = base ? (base + 1) : rf->filename;
+        return base[0] ? (char)toupper((unsigned char)base[0]) : 'A';
+      };
       if (left && visibleGameCount > 0) {
         // Alphabetical reverse skip: find previous ROM with different starting letter
         const RomFile* cur = selectedGame();
-        char curLetter = (cur && cur->filename[0]) ? toupper((unsigned char)cur->filename[0]) : 'A';
+        char curLetter = romInitialLetter(cur);
         int targetIdx = selectedGameIndex;
         for (int step = 1; step < visibleGameCount; ++step) {
           int testIdx = (selectedGameIndex - step + visibleGameCount) % visibleGameCount;
           const RomFile* testRom = SDCard::getRomInfo(visibleRomIndexes[testIdx]);
           if (testRom && testRom->filename[0]) {
-            char testLetter = toupper((unsigned char)testRom->filename[0]);
+            char testLetter = romInitialLetter(testRom);
             if (testLetter != curLetter) {
               targetIdx = testIdx;
               break;
@@ -727,20 +734,20 @@ void loop() {
         selectedGameIndex = targetIdx;
         const RomFile* newRom = selectedGame();
         if (newRom && newRom->filename[0]) {
-          DisplayEmu::showAlphaBadge(newRom->filename[0], 800);
+          DisplayEmu::showAlphaBadge(romInitialLetter(newRom), 800);
         }
         lastButtonMs = millis();
       }
       if (right && visibleGameCount > 0) {
         // Alphabetical forward skip: find next ROM with different starting letter
         const RomFile* cur = selectedGame();
-        char curLetter = (cur && cur->filename[0]) ? toupper((unsigned char)cur->filename[0]) : 'A';
+        char curLetter = romInitialLetter(cur);
         int targetIdx = selectedGameIndex;
         for (int step = 1; step < visibleGameCount; ++step) {
           int testIdx = (selectedGameIndex + step) % visibleGameCount;
           const RomFile* testRom = SDCard::getRomInfo(visibleRomIndexes[testIdx]);
           if (testRom && testRom->filename[0]) {
-            char testLetter = toupper((unsigned char)testRom->filename[0]);
+            char testLetter = romInitialLetter(testRom);
             if (testLetter != curLetter) {
               targetIdx = testIdx;
               break;
@@ -750,7 +757,7 @@ void loop() {
         selectedGameIndex = targetIdx;
         const RomFile* newRom = selectedGame();
         if (newRom && newRom->filename[0]) {
-          DisplayEmu::showAlphaBadge(newRom->filename[0], 800);
+          DisplayEmu::showAlphaBadge(romInitialLetter(newRom), 800);
         }
         lastButtonMs = millis();
       }
@@ -907,6 +914,7 @@ void loop() {
         BmoFace::draw(); // one-shot launch celebration; large centered blit
         lastButtonMs = millis();
         delay(400);      // Allow launch celebration face to be seen before first emu frame
+        DisplayEmu::drawConsoleBezel(selectedEmulatorIndex);
         return;
       }
     }
@@ -1066,9 +1074,12 @@ void loop() {
     Buttons::update();
     bool up    = Buttons::get(Buttons::UP).pressed && Buttons::get(Buttons::UP).changed;
     bool down  = Buttons::get(Buttons::DOWN).pressed && Buttons::get(Buttons::DOWN).changed;
+    bool left  = Buttons::get(Buttons::LEFT).pressed && Buttons::get(Buttons::LEFT).changed;
+    bool right = Buttons::get(Buttons::RIGHT).pressed && Buttons::get(Buttons::RIGHT).changed;
     bool btnA  = Buttons::get(Buttons::A).pressed && Buttons::get(Buttons::A).changed;
     bool btnB  = Buttons::get(Buttons::B).pressed && Buttons::get(Buttons::B).changed;
     bool start = Buttons::get(Buttons::START).pressed && Buttons::get(Buttons::START).changed;
+    bool sel   = Buttons::get(Buttons::SELECT).pressed && Buttons::get(Buttons::SELECT).changed;
 
     if (up) {
       pauseOption = (pauseOption + 5) % 6;
@@ -1076,13 +1087,29 @@ void loop() {
     } else if (down) {
       pauseOption = (pauseOption + 1) % 6;
       pauseToast[0] = '\0';
+    } else if (left) {
+      bool swapped = Buttons::toggleSwapAB();
+      snprintf(pauseToast, sizeof(pauseToast), swapped ? "A/B SWAP: ON" : "A/B SWAP: OFF");
+    } else if (right) {
+      bool bezel = DisplayEmu::toggleBezel();
+      snprintf(pauseToast, sizeof(pauseToast), bezel ? "CONSOLE BEZEL: ON" : "CONSOLE BEZEL: OFF");
+    } else if (sel) {
+      int shotW = 0, shotH = 0;
+      const uint16_t* shotFb = DisplayEmu::getLastFramebuffer(&shotW, &shotH);
+      if (shotFb && SaveManager::saveScreenshotBmp(currentRomFilename, shotFb, shotW, shotH)) {
+        snprintf(pauseToast, sizeof(pauseToast), "SCREENSHOT SAVED!");
+      } else {
+        snprintf(pauseToast, sizeof(pauseToast), "SCREENSHOT FAILED!");
+      }
     } else if (btnB || start) {
+      DisplayEmu::drawConsoleBezel(selectedEmulatorIndex);
       currentState = STATE_EMULATOR;
       delay(200);
       return;
     } else if (btnA) {
       int slot = SaveManager::getActiveSlot();
       if (pauseOption == 0) {
+        DisplayEmu::drawConsoleBezel(selectedEmulatorIndex);
         currentState = STATE_EMULATOR;
         delay(200);
         return;
@@ -1095,6 +1122,7 @@ void loop() {
         }
       } else if (pauseOption == 2) {
         if (quickLoadState(slot)) {
+          DisplayEmu::drawConsoleBezel(selectedEmulatorIndex);
           currentState = STATE_EMULATOR;
           delay(200);
           return;

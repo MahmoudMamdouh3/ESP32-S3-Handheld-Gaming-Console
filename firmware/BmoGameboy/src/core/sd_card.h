@@ -34,8 +34,9 @@ public:
   static bool begin();
   static bool isMounted();
   
-  // Scans the root directory for ROMs and builds a list
+  // Scans the SD directory hierarchy (up to depth 3) for ROMs and builds a list
   static void scanRoms();
+  static void scanDirectory(const char* dirPath, int depth, bool hasArtDirs);
   static int getRomCount();
   static int getRomCountForType(RomType type);
   static const RomFile* getRomInfo(int index);

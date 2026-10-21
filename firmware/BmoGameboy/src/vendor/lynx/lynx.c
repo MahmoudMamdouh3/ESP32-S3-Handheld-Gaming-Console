@@ -141,15 +141,15 @@ static void lynx_write8(lynx_t* emu, uint16_t addr, uint8_t val) {
     if (addr >= 0xFC00 && addr <= 0xFCFF && !(mmap & 0x01)) {
         uint8_t reg = (uint8_t)(addr & 0xFF);
         emu->suzy[reg] = val;
-        if (reg == 0x52) {
-            // MATHA write triggers 16x16 hardware multiply: AB * CD -> EFGH
-            uint16_t ab = (uint16_t)emu->suzy[0x53] | ((uint16_t)emu->suzy[0x52] << 8);
-            uint16_t cd = (uint16_t)emu->suzy[0x55] | ((uint16_t)emu->suzy[0x54] << 8);
+        if (reg == 0x52 || reg == 0x55) {
+            // MATHA/MATHD write triggers 16x16 hardware multiply: AB * CD -> EFGH
+            uint16_t cd = (uint16_t)emu->suzy[0x52] | ((uint16_t)emu->suzy[0x53] << 8);
+            uint16_t ab = (uint16_t)emu->suzy[0x54] | ((uint16_t)emu->suzy[0x55] << 8);
             uint32_t prod = (uint32_t)ab * (uint32_t)cd;
-            emu->suzy[0x63] = (uint8_t)(prod & 0xFF);
-            emu->suzy[0x62] = (uint8_t)((prod >> 8) & 0xFF);
-            emu->suzy[0x61] = (uint8_t)((prod >> 16) & 0xFF);
-            emu->suzy[0x60] = (uint8_t)((prod >> 24) & 0xFF);
+            emu->suzy[0x60] = (uint8_t)(prod & 0xFF);
+            emu->suzy[0x61] = (uint8_t)((prod >> 8) & 0xFF);
+            emu->suzy[0x62] = (uint8_t)((prod >> 16) & 0xFF);
+            emu->suzy[0x63] = (uint8_t)((prod >> 24) & 0xFF);
         } else if (reg == 0x91 && (val & 0x01)) {
             lynx_execute_scb(emu);
         }

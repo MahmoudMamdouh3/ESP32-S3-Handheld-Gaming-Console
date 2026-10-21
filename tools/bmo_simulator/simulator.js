@@ -1156,9 +1156,64 @@ class BmoSimulator {
     this.ctx.font = "10px 'Outfit', sans-serif";
     this.ctx.fillText("Hold SELECT + ◄/► to Fast-Forward | SELECT/B: Exit", 160, 185);
   }
+
+  async connectWebSerial() {
+    const statusEl = document.getElementById("webserial-status");
+    const logEl = document.getElementById("webserial-log");
+    if (!("serial" in navigator)) {
+      if (logEl) logEl.textContent = "WebSerial API requires Chrome / Edge desktop browser.";
+      return false;
+    }
+    try {
+      this.serialPort = await navigator.serial.requestPort();
+      await this.serialPort.open({ baudRate: 115200 });
+      if (statusEl) statusEl.textContent = "Connected";
+      if (logEl) logEl.textContent = "ESP32-S3 connected @ 115200 baud. Streaming telemetry...";
+      return true;
+    } catch (err) {
+      if (logEl) logEl.textContent = `Serial connection cancelled: ${err.message || err}`;
+      return false;
+    }
+  }
+
+  ingestUploadedRoms(fileList) {
+    if (!fileList || fileList.length === 0) return 0;
+    const extMap = {
+      ".gb": "ROM_GB", ".gbc": "ROM_GBC", ".nes": "ROM_NES",
+      ".sfc": "ROM_SNES", ".smc": "ROM_SNES", ".gen": "ROM_GENESIS", ".md": "ROM_GENESIS",
+      ".sms": "ROM_SMS", ".gg": "ROM_GG", ".pce": "ROM_PCE", ".a26": "ROM_ATARI",
+      ".col": "ROM_COLEM", ".ngp": "ROM_NGP", ".ngc": "ROM_NGP", ".lnx": "ROM_LYNX",
+      ".ws": "ROM_WSWAN", ".wsc": "ROM_WSWAN", ".p8": "ROM_PICO8", ".wad": "ROM_WAD"
+    };
+    let added = 0;
+    Array.from(fileList).forEach(file => {
+      const dot = file.name.lastIndexOf(".");
+      const ext = dot >= 0 ? file.name.slice(dot).toLowerCase() : "";
+      const cid = extMap[ext] || "ROM_GB";
+      const cleanTitle = file.name.replace(/\.[^/.]+$/, "");
+      if (!this.mockGames[cid]) this.mockGames[cid] = [];
+      this.mockGames[cid].unshift({ title: cleanTitle, console: ext.replace(".", "").toUpperCase(), isFav: true });
+      added++;
+    });
+    this.rebuildFavoritesInDatabase(this.mockGames);
+    const logEl = document.getElementById("webserial-log");
+    if (logEl) logEl.textContent = `Mounted ${added} ROM file(s) into simulator SD catalog.`;
+    return added;
+  }
 }
 
 // Instantiate Simulator on DOM Load
 window.addEventListener("DOMContentLoaded", () => {
   window.simulator = new BmoSimulator();
+  const btnSerial = document.getElementById("btn-webserial-connect");
+  if (btnSerial) btnSerial.addEventListener("click", () => window.simulator.connectWebSerial());
+  const fileInput = document.getElementById("rom-file-upload");
+  if (fileInput) fileInput.addEventListener("change", (e) => window.simulator.ingestUploadedRoms(e.target.files));
+  window.addEventListener("dragover", (e) => e.preventDefault());
+  window.addEventListener("drop", (e) => {
+    e.preventDefault();
+    if (e.dataTransfer && e.dataTransfer.files) {
+      window.simulator.ingestUploadedRoms(e.dataTransfer.files);
+    }
+  });
 });

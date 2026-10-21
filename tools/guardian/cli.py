@@ -552,6 +552,101 @@ def cmd_verify(args) -> int:
     return 0
 
 
+def cmd_benchmark_ai(args) -> int:
+    """Evaluates AI-First Engineering Workflow metrics (routing accuracy, symbol grounding, pin parity, core coverage)."""
+    import json
+    from scripts.generate_ai_knowledge_base import parse_config_h
+
+    print("=" * 70)
+    print(" BMO GUARDIAN AI-FIRST WORKFLOW BENCHMARK")
+    print("=" * 70)
+
+    kg_path = REPO_ROOT / "AGENT_KNOWLEDGE_GRAPH.json"
+    dt_path = REPO_ROOT / "AGENT_DECISION_TREE.json"
+    manifest_path = REPO_ROOT / "AGENT_MANIFEST.json"
+    if not (kg_path.exists() and dt_path.exists() and manifest_path.exists()):
+        from scripts.generate_ai_knowledge_base import build_knowledge_base
+        build_knowledge_base()
+
+    kg = json.loads(kg_path.read_text(encoding="utf-8"))
+    dt = json.loads(dt_path.read_text(encoding="utf-8")).get("tasks", {})
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    # 1. Intent Routing Accuracy across all 10 decision tree pathways
+    benchmark_queries = [
+        ("add new emulator console core", "add_or_modify_emulator_core"),
+        ("fix st7789 display spi palette", "modify_display_rendering_or_spi"),
+        ("update bmo mascot face expression", "bmo_mascot_face"),
+        ("check gpio button pinout wiring", "modify_gpio_or_pin"),
+        ("bake rom header into flash app0", "bake_rom_into_flash"),
+        ("benchmark performance audit latency fps", "benchmark_and_performance_audit"),
+        ("fix save state crc32 slot restore", "save_states_and_persistence"),
+        ("update bmo_index box art bmp catalog", "binary_rom_index_and_box_art"),
+        ("session handoff changelog commit log", "session_handoff_and_logging"),
+        ("critical pushback suggest opinion idea", "critical_pushback_and_fact_checking"),
+    ]
+    routed_hits = 0
+    for query_str, expected_intent in benchmark_queries:
+        q_words = set(query_str.lower().split())
+        best_id = None
+        best_score = -1
+        for intent_id, pdata in dt.items():
+            triggers = [t.lower() for t in pdata.get("intent_keywords", [])]
+            score = sum(2 if w in triggers else sum(1 for t in triggers if w in t) for w in q_words)
+            if score > best_score:
+                best_score = score
+                best_id = intent_id
+        if best_id == expected_intent and best_score > 0:
+            routed_hits += 1
+
+    routing_pct = (routed_hits / len(benchmark_queries)) * 100.0
+    print(f"  [1/4] Task Intent Routing Coverage : {routed_hits}/{len(benchmark_queries)} ({routing_pct:.1f}%)")
+
+    # 2. Hardware Pin Parity (config.h vs AGENT_KNOWLEDGE_GRAPH.json)
+    cfg = parse_config_h(FIRMWARE_DIR / "src" / "core" / "config.h")
+    hp = kg.get("hardware_pins", {})
+    pin_checks = [
+        (hp.get("display", {}).get("tft_cs"), cfg.get("TFT_CS")),
+        (hp.get("display", {}).get("tft_dc"), cfg.get("TFT_DC")),
+        (hp.get("display", {}).get("tft_rst"), cfg.get("TFT_RST")),
+        (hp.get("sd_card", {}).get("sd_cs"), cfg.get("SD_CS")),
+        (hp.get("sd_card", {}).get("sd_miso"), cfg.get("SD_MISO")),
+        (hp.get("buttons", {}).get("btn_a"), cfg.get("BTN_A")),
+        (hp.get("buttons", {}).get("btn_b"), cfg.get("BTN_B")),
+        (hp.get("buttons", {}).get("btn_start"), cfg.get("BTN_START")),
+        (hp.get("buttons", {}).get("btn_select"), cfg.get("BTN_SELECT")),
+    ]
+    pin_hits = sum(1 for a, b in pin_checks if a == b and a is not None)
+    pin_pct = (pin_hits / len(pin_checks)) * 100.0
+    print(f"  [2/4] Hardware Pin Ground-Truth    : {pin_hits}/{len(pin_checks)} ({pin_pct:.1f}%)")
+
+    # 3. Core Symbol Registry Coverage
+    symbols = kg.get("symbol_registry", {})
+    required_symbols = [
+        "begin", "update", "runFrame", "destroy", "saveState", "loadState",
+        "saveBatteryRam", "loadBatteryRam", "saveScreenshotBmp", "drawConsoleBezel",
+        "scanDirectory", "recordRecentLaunch", "setSwapAB", "setTurboEnabled",
+    ]
+    sym_hits = sum(
+        1 for s in required_symbols
+        if s in symbols or any(k.endswith(f"::{s}") for k in symbols)
+    )
+    sym_pct = (sym_hits / len(required_symbols)) * 100.0
+    print(f"  [3/4] Symbol Registry Grounding    : {sym_hits}/{len(required_symbols)} ({sym_pct:.1f}%)")
+
+    # 4. Emulator Production Core Ratio
+    platforms = manifest.get("emulators", [])
+    prod_cores = [p for p in platforms if p.get("engine_status") == "production"]
+    core_pct = (len(prod_cores) / max(1, len(platforms))) * 100.0
+    print(f"  [4/4] Production Emulator Engines  : {len(prod_cores)}/{len(platforms)} ({core_pct:.1f}%)")
+    print("=" * 70)
+
+    if routing_pct == 100.0 and pin_pct == 100.0 and sym_pct == 100.0 and core_pct == 100.0:
+        print(" AI WORKFLOW BENCHMARK: 100.0% PASS across all 4 dimensions.")
+        return 0
+    return 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="BMO Guardian Performance & Ground-Truth Suite")
     subparsers = parser.add_subparsers(dest="command", help="Available subcommands")
@@ -605,6 +700,9 @@ def main() -> int:
     # verify
     subparsers.add_parser("verify", help="Fast all-in-one verification gate (AST lint + all unit tests)")
 
+    # benchmark-ai
+    subparsers.add_parser("benchmark-ai", help="Run quantitative AI-first workflow grounding & routing benchmark")
+
     args = parser.parse_args()
     if not args.command:
         parser.print_help()
@@ -625,6 +723,7 @@ def main() -> int:
         "doctor": cmd_doctor,
         "explain": cmd_explain,
         "verify": cmd_verify,
+        "benchmark-ai": cmd_benchmark_ai,
     }
 
     handler = commands.get(args.command)

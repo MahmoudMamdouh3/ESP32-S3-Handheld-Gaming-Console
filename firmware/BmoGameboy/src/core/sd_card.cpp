@@ -53,7 +53,25 @@ namespace {
   int compareRoms(const void* a, const void* b) {
     const RomFile* ra = (const RomFile*)a;
     const RomFile* rb = (const RomFile*)b;
-    return strcasecmp(ra->filename, rb->filename);
+    const char* sa = strrchr(ra->filename, '/');
+    const char* sb = strrchr(rb->filename, '/');
+    sa = sa ? (sa + 1) : ra->filename;
+    sb = sb ? (sb + 1) : rb->filename;
+    int cmp = strcasecmp(sa, sb);
+    return (cmp != 0) ? cmp : strcasecmp(ra->filename, rb->filename);
+  }
+
+  bool isIgnoredDirName(const char* baseName) {
+    if (!baseName || baseName[0] == '\0' || baseName[0] == '.') return true;
+    if (strcasecmp(baseName, "saves") == 0 ||
+        strcasecmp(baseName, "screenshots") == 0 ||
+        strcasecmp(baseName, "boxart") == 0 ||
+        strcasecmp(baseName, "covers") == 0 ||
+        strcasecmp(baseName, "System Volume Information") == 0 ||
+        strcasecmp(baseName, "LOST.DIR") == 0) {
+      return true;
+    }
+    return false;
   }
 }
 
@@ -288,6 +306,75 @@ void SDCard::rebuildIndex() {
 #endif
 }
 
+void SDCard::scanDirectory(const char* dirPath, int depth, bool hasArtDirs) {
+#if FEATURE_SD_CARD
+  if (!dirPath || depth > 3 || numRoms >= maxCapacity) return;
+
+  File dir = SD.open(dirPath);
+  if (!dir || !dir.isDirectory()) {
+    if (dir) dir.close();
+    return;
+  }
+
+  const char* relPrefix = (dirPath[0] == '/') ? (dirPath + 1) : dirPath;
+
+  while (numRoms < maxCapacity) {
+    File entry = dir.openNextFile();
+    if (!entry) break;
+
+    const char* rawName = entry.name();
+    const char* slash = strrchr(rawName, '/');
+    const char* baseName = slash ? (slash + 1) : rawName;
+    const bool isDir = entry.isDirectory();
+    entry.close();
+
+    if (!baseName || baseName[0] == '\0' || baseName[0] == '.') {
+      continue;
+    }
+
+    if (isDir) {
+      if (depth < 3 && !isIgnoredDirName(baseName)) {
+        char childPath[128];
+        if (relPrefix[0] == '\0') {
+          snprintf(childPath, sizeof(childPath), "/%s", baseName);
+        } else {
+          snprintf(childPath, sizeof(childPath), "/%s/%s", relPrefix, baseName);
+        }
+        scanDirectory(childPath, depth + 1, hasArtDirs);
+      }
+      continue;
+    }
+
+    RomType type = determineType(baseName);
+    if (type != ROM_UNKNOWN) {
+      char relPath[64];
+      int written = 0;
+      if (relPrefix[0] == '\0') {
+        written = snprintf(relPath, sizeof(relPath), "%s", baseName);
+      } else {
+        written = snprintf(relPath, sizeof(relPath), "%s/%s", relPrefix, baseName);
+      }
+      if (written > 0 && written < (int)sizeof(relPath)) {
+        strncpy(romList[numRoms].filename, relPath, 63);
+        romList[numRoms].filename[63] = '\0';
+        romList[numRoms].type = type;
+        romList[numRoms].isFavorite = false;
+        romList[numRoms].hasBoxArt = hasArtDirs ? BoxArt::existsForRom(baseName) : false;
+        if (type <= ROM_COLEM) {
+          romCountsByType[type]++;
+        }
+        numRoms++;
+      }
+    }
+  }
+  dir.close();
+#else
+  (void)dirPath;
+  (void)depth;
+  (void)hasArtDirs;
+#endif
+}
+
 void SDCard::scanRoms() {
 #if FEATURE_SD_CARD
   SpiArbiter::lock();
@@ -298,36 +385,8 @@ void SDCard::scanRoms() {
     return;
   }
 
-  File root = SD.open("/");
-  if (!root || !root.isDirectory()) {
-    SpiArbiter::unlock();
-    return;
-  }
-
   const bool hasArtDirs = SD.exists("/boxart") || SD.exists("/covers");
-
-  while (numRoms < maxCapacity) {
-    File entry = root.openNextFile();
-    if (!entry) break;
-
-    const char* name = entry.name();
-    if (name[0] != '.' && !entry.isDirectory()) {
-      RomType type = determineType(name);
-      if (type != ROM_UNKNOWN) {
-        strncpy(romList[numRoms].filename, name, 63);
-        romList[numRoms].filename[63] = '\0';
-        romList[numRoms].type = type;
-        romList[numRoms].isFavorite = false;
-        romList[numRoms].hasBoxArt = hasArtDirs ? BoxArt::existsForRom(name) : false;
-        if (type <= ROM_COLEM) {
-          romCountsByType[type]++;
-        }
-        numRoms++;
-      }
-    }
-    entry.close();
-  }
-  root.close();
+  scanDirectory("/", 0, hasArtDirs);
 
   // Sort newly crawled ROMs alphabetically
   sortRoms();
