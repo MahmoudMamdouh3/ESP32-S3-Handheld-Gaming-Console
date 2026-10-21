@@ -26,8 +26,14 @@ python -m tools.guardian prompt-pack "<describe your task>"
 # 2. Look up any function, struct, or hardware pin
 python -m tools.guardian lookup "<symbol_or_pin>"
 
-# 3. Audit your uncommitted diff before committing
+# 3. Pre-flight check code changes for brace balance, AST rules, and buzzwords
+python -m tools.guardian patch-check
+
+# 4. Audit your uncommitted diff before committing
 python -m tools.guardian diff-audit
+
+# 5. Export the entire AI harness & rules to another repository
+python -m tools.guardian export-harness <destination_dir>
 ```
 
 ---

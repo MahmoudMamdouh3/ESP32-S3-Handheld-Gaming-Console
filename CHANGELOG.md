@@ -21,6 +21,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **WebAssembly Playtest Cores in Simulator (`scripts/build_wasm_cores.py`, `tools/bmo_simulator/bmo_playtest_cores.wasm`, `tools/bmo_simulator/wasm_playtest_engine.js`, `tools/bmo_simulator/simulator.js`)**:
   - Added `scripts/build_wasm_cores.py` generating `bmo_playtest_cores.wasm` (16-page Wasm linear memory, `wasm_core_init`, `wasm_core_load_rom`, `wasm_core_step_frame`, `wasm_core_get_rom_ptr`, `wasm_core_get_fb_ptr`, `wasm_core_get_checksum`, `wasm_core_get_frame_count`).
   - Integrated `WasmPlaytestEngine` into `tools/bmo_simulator/` supporting live 60 Hz RGB565 frame execution across all 15 console viewports, `.p8` cart section parsing, 1:1 console bezels, A/B button swap, and pause menu save/load state slots.
+- **Portable AI Harness Exporter & Pre-Flight Patch Checker (`tools/guardian/cli.py`)**:
+  - Added `python -m tools.guardian patch-check` for pre-flight checking target files or uncommitted changes for brace balance, AST guardrails, and Rule 43 buzzwords.
+  - Added `python -m tools.guardian export-harness <dest>` exporting the 14 core governance rules, `tools/guardian/`, and git hooks into any external project.
+  - Added `/api/host-cores/run` HTTP endpoint in `tools/bmo_simulator/run_simulator.py` and connected one-click host core verification in the simulator UI.
 
 ### Fixed & Removed
 - **Guardian Core Fixes (`elf_analyzer.py`, `ast_linter.py`, `host_bench.py`, `generate_ai_knowledge_base.py`)**:

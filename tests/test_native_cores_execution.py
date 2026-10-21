@@ -178,6 +178,15 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
             self.assertEqual(proc.returncode, 0, msg=f"Node Wasm test failed: {proc.stderr}\n{proc.stdout}")
             self.assertIn("WASM_PLAYTEST_PASS", proc.stdout)
 
+    def test_09_run_simulator_server_handler_endpoints(self):
+        from tools.bmo_simulator import run_simulator
+        self.assertTrue(hasattr(run_simulator, "Handler"))
+        self.assertTrue(hasattr(run_simulator.Handler, "handle_host_cores_run"))
+        html = (REPO_ROOT / "tools" / "bmo_simulator" / "index.html").read_text(encoding="utf-8")
+        self.assertIn("wasm-playtest-panel", html)
+        self.assertIn("btn-wasm-save-state", html)
+        self.assertIn("btn-verify-host-cores", html)
+
 
 if __name__ == "__main__":
     unittest.main()

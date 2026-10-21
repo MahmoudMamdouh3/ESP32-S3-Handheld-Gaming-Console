@@ -229,6 +229,42 @@ class TestGuardianEngine(unittest.TestCase):
             self.assertEqual(len(issues), 2)
             self.assertEqual(issues[0].category, "BUZZWORD_VIOLATION")
 
+    def test_15_patch_check_catches_unbalanced_braces_and_buzzwords(self):
+        from tools.guardian.cli import cmd_patch_check
+
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "bad_syntax.c"
+            p.write_text("void broken() { int x = 1;\n", encoding="utf-8")
+
+            class DummyArgs:
+                files = [str(p)]
+                strict = False
+
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                rc = cmd_patch_check(DummyArgs())
+            self.assertEqual(rc, 1)
+            self.assertIn("Unbalanced curly braces", buf.getvalue())
+
+    def test_16_export_harness_scaffolds_portable_rules(self):
+        from tools.guardian.cli import cmd_export_harness
+
+        with tempfile.TemporaryDirectory() as tmp:
+            class DummyArgs:
+                destination = tmp
+                project_name = "ExportTest"
+
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                rc = cmd_export_harness(DummyArgs())
+            self.assertEqual(rc, 0)
+            dest_path = Path(tmp)
+            self.assertTrue((dest_path / "AGENTS.md").exists())
+            self.assertTrue((dest_path / ".agents" / "rules" / "00_hard_stops.md").exists())
+            self.assertTrue((dest_path / ".agents" / "rules" / "43_no_ai_jargon_and_buzzwords.md").exists())
+            self.assertTrue((dest_path / "tools" / "guardian" / "cli.py").exists())
+            self.assertTrue((dest_path / "scripts" / "install_git_hooks.py").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

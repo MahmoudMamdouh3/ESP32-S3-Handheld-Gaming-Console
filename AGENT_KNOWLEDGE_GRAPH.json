@@ -1,6 +1,6 @@
 {
   "schema_version": "2.2.0",
-  "generated_at": "2026-10-21T18:30:45.735665",
+  "generated_at": "2026-10-21T18:40:44.966575",
   "target_mcu": {
     "chip": "ESP32-S3-N16R8",
     "cpu_arch": "Xtensa dual-core 32-bit LX7 @ 240MHz",
@@ -437,50 +437,50 @@
     {
       "name": "BMO_SDF_Procedural_Face_Render_Unculled",
       "iterations": 100,
-      "avg_latency_us": 1640.396,
-      "throughput_mops": 2.5,
+      "avg_latency_us": 1575.111,
+      "throughput_mops": 2.6,
       "description": "Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling."
     },
     {
       "name": "BMO_SDF_Procedural_Face_Render_Culled",
       "iterations": 200,
-      "avg_latency_us": 519.831,
-      "throughput_mops": 7.88,
+      "avg_latency_us": 559.128,
+      "throughput_mops": 7.33,
       "description": "Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction)."
     },
     {
       "name": "4Pixel_Coalesced_Aligned_Store_Kernel",
       "iterations": 50000,
-      "avg_latency_us": 4.495,
-      "throughput_mops": 6.67,
+      "avg_latency_us": 3.619,
+      "throughput_mops": 8.29,
       "description": "Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling."
     },
     {
       "name": "O1_Palette_Scanline_Transformation",
       "iterations": 10000,
-      "avg_latency_us": 5.08,
-      "throughput_mops": 47.24,
+      "avg_latency_us": 7.025,
+      "throughput_mops": 34.16,
       "description": "Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput."
     },
     {
       "name": "CPU_Emulation_Opcode_Dispatch",
       "iterations": 500000,
-      "avg_latency_us": 0.095,
-      "throughput_mops": 10.52,
+      "avg_latency_us": 0.08,
+      "throughput_mops": 12.48,
       "description": "Simulates CPU opcode fetch-decode-execute cycle dispatch throughput."
     },
     {
       "name": "Direct_GPIO_Atomic_Bitmask_Sampling",
       "iterations": 100000,
-      "avg_latency_us": 0.618,
-      "throughput_mops": 12.94,
+      "avg_latency_us": 0.553,
+      "throughput_mops": 14.47,
       "description": "Measures atomic 8-pin bitmask unpacking (GPIO 4,5,6,7,16,17,18,21) replacing 8 digitalRead calls."
     },
     {
       "name": "SD_Catalog_O1_Query_And_Page_Jump",
       "iterations": 10000,
-      "avg_latency_us": 0.457,
-      "throughput_mops": 2.19,
+      "avg_latency_us": 0.186,
+      "throughput_mops": 5.36,
       "description": "Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations."
     }
   ],
@@ -508,7 +508,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "6. Known Issues, Technical Debt & Hardware Limitations Registry",
-      "lines": 416
+      "lines": 413
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -643,7 +643,7 @@
     "31_quick_start_primer.md": {
       "file": ".agents/rules/31_quick_start_primer.md",
       "title": "31. Quick-Start Primer (Zero-Context Agent On-Ramp)",
-      "lines": 81
+      "lines": 87
     },
     "32_modular_core_template.md": {
       "file": ".agents/rules/32_modular_core_template.md",
@@ -9923,11 +9923,11 @@
     ".agents/rules/04_known_issues.md": {
       "path": ".agents/rules/04_known_issues.md",
       "category": "AGENT_RULES",
-      "total_lines": 416,
+      "total_lines": 413,
       "sloc": 349,
       "comments": 0,
-      "blanks": 67,
-      "density_percent": 83.9,
+      "blanks": 64,
+      "density_percent": 84.5,
       "symbols": [],
       "pins_accessed": [
         "TFT_SCLK",
@@ -10306,11 +10306,11 @@
     ".agents/rules/31_quick_start_primer.md": {
       "path": ".agents/rules/31_quick_start_primer.md",
       "category": "AGENT_RULES",
-      "total_lines": 81,
-      "sloc": 67,
+      "total_lines": 87,
+      "sloc": 71,
       "comments": 0,
-      "blanks": 14,
-      "density_percent": 82.7,
+      "blanks": 16,
+      "density_percent": 81.6,
       "symbols": [],
       "pins_accessed": [
         "GPIO1",
@@ -10644,11 +10644,11 @@
     "CHANGELOG.md": {
       "path": "CHANGELOG.md",
       "category": "OTHER",
-      "total_lines": 631,
-      "sloc": 560,
+      "total_lines": 635,
+      "sloc": 564,
       "comments": 0,
       "blanks": 71,
-      "density_percent": 88.7,
+      "density_percent": 88.8,
       "symbols": [],
       "pins_accessed": [
         "TFT_SCLK",
@@ -10672,11 +10672,11 @@
     "docs/consolidated-rules.md": {
       "path": "docs/consolidated-rules.md",
       "category": "DOCUMENTATION",
-      "total_lines": 3509,
-      "sloc": 2794,
+      "total_lines": 3512,
+      "sloc": 2798,
       "comments": 44,
-      "blanks": 671,
-      "density_percent": 79.6,
+      "blanks": 670,
+      "density_percent": 79.7,
       "symbols": [],
       "pins_accessed": [
         "GPIO1",
@@ -10795,11 +10795,11 @@
     "docs/software-design-document.md": {
       "path": "docs/software-design-document.md",
       "category": "DOCUMENTATION",
-      "total_lines": 465,
-      "sloc": 380,
+      "total_lines": 463,
+      "sloc": 378,
       "comments": 0,
       "blanks": 85,
-      "density_percent": 81.7,
+      "density_percent": 81.6,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_SD_CARD",
@@ -17645,11 +17645,11 @@
     "README.md": {
       "path": "README.md",
       "category": "OTHER",
-      "total_lines": 170,
-      "sloc": 126,
+      "total_lines": 177,
+      "sloc": 131,
       "comments": 0,
-      "blanks": 44,
-      "density_percent": 74.1,
+      "blanks": 46,
+      "density_percent": 74.0,
       "symbols": [],
       "pins_accessed": [
         "TFT_MOSI",
@@ -17927,11 +17927,11 @@
     "tests/test_native_cores_execution.py": {
       "path": "tests/test_native_cores_execution.py",
       "category": "TESTS",
-      "total_lines": 183,
-      "sloc": 158,
+      "total_lines": 192,
+      "sloc": 166,
       "comments": 3,
-      "blanks": 22,
-      "density_percent": 86.3,
+      "blanks": 23,
+      "density_percent": 86.5,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -18035,11 +18035,11 @@
     "tools/bmo_simulator/run_simulator.py": {
       "path": "tools/bmo_simulator/run_simulator.py",
       "category": "TOOLS",
-      "total_lines": 39,
-      "sloc": 29,
+      "total_lines": 91,
+      "sloc": 78,
       "comments": 3,
-      "blanks": 7,
-      "density_percent": 74.4,
+      "blanks": 10,
+      "density_percent": 85.7,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -18071,11 +18071,11 @@
     "tools/guardian/cli.py": {
       "path": "tools/guardian/cli.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 955,
-      "sloc": 768,
-      "comments": 40,
-      "blanks": 147,
-      "density_percent": 80.4,
+      "total_lines": 1144,
+      "sloc": 928,
+      "comments": 49,
+      "blanks": 167,
+      "density_percent": 81.1,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
@@ -18241,11 +18241,11 @@
     "tools/guardian/tests/test_guardian.py": {
       "path": "tools/guardian/tests/test_guardian.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 234,
-      "sloc": 184,
+      "total_lines": 270,
+      "sloc": 213,
       "comments": 18,
-      "blanks": 32,
-      "density_percent": 78.6,
+      "blanks": 39,
+      "density_percent": 78.9,
       "symbols": [],
       "pins_accessed": [
         "TFT_CS"

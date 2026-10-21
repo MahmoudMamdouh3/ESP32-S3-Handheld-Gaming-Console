@@ -153,6 +153,13 @@ python scripts/validate_repo.py
 # Run all unit tests and the native C 50-frame emulator test suite
 python -m unittest discover -s tests -v
 
+# Run Guardian pre-flight patch check and all-in-one verification
+python -m tools.guardian patch-check
+python -m tools.guardian verify
+
+# Export Guardian AI development harness and rules to another repository
+python -m tools.guardian export-harness <destination_dir>
+
 # Convert or fetch 64x64 RGB565 cover art for an SD card directory
 python scripts/fetch_covers.py --sd-root ./sdcard --offline
 ```

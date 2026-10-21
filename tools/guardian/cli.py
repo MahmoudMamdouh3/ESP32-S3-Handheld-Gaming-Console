@@ -16,6 +16,8 @@ Usage:
   python -m tools.guardian doctor
   python -m tools.guardian verify
   python -m tools.guardian benchmark-ai
+  python -m tools.guardian patch-check [--files PATH ...] [--strict]
+  python -m tools.guardian export-harness <destination_dir> [--project-name NAME]
 """
 
 import argparse
@@ -878,6 +880,183 @@ def cmd_benchmark_ai(args) -> int:
     return 1
 
 
+def cmd_patch_check(args) -> int:
+    """Validates proposed code changes against AST guardrails, brace balance, and Rule 43 buzzwords."""
+    target_files: List[Path] = []
+    if getattr(args, "files", None):
+        for f in args.files:
+            p = Path(f)
+            if not p.is_absolute():
+                p = REPO_ROOT / p
+            if p.exists() and p.is_file():
+                target_files.append(p)
+    else:
+        try:
+            res = subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=str(REPO_ROOT),
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            for line in res.stdout.splitlines():
+                if len(line) >= 4:
+                    raw_path = line[3:].strip().strip('"')
+                    p = REPO_ROOT / raw_path
+                    if p.exists() and p.is_file() and p.suffix.lower() in {".c", ".cpp", ".h", ".ino", ".py", ".md", ".js"}:
+                        target_files.append(p)
+        except Exception:
+            pass
+
+    print("=" * 70)
+    print(" BMO GUARDIAN PATCH-CHECK -- AST Guardrail & Syntax Pre-Flight")
+    print("=" * 70)
+
+    if not target_files:
+        print("[PASS] No changed or specified source files to check.")
+        return 0
+
+    print(f"Checking {len(target_files)} target file(s):")
+    for tf in target_files:
+        try:
+            rel = str(tf.relative_to(REPO_ROOT)).replace("\\", "/")
+        except ValueError:
+            rel = str(tf).replace("\\", "/")
+        print(f"  * {rel}")
+    print("-" * 70)
+
+    issues_found = 0
+
+    # 1. Structural balance check (braces) for C/C++/JS
+    for tf in target_files:
+        try:
+            rel = str(tf.relative_to(REPO_ROOT)).replace("\\", "/")
+        except ValueError:
+            rel = str(tf).replace("\\", "/")
+        if tf.suffix.lower() in {".c", ".cpp", ".h", ".ino", ".js"}:
+            txt = tf.read_text(encoding="utf-8", errors="ignore")
+            open_b = txt.count("{")
+            close_b = txt.count("}")
+            if open_b != close_b:
+                print(f"[FAIL] {rel}: Unbalanced curly braces ({{ = {open_b}, }} = {close_b})")
+                issues_found += 1
+
+    # 2. Run AST linter on firmware files
+    linter = FirmwareAstLinter(FIRMWARE_DIR)
+    for tf in target_files:
+        if tf.suffix.lower() in {".c", ".cpp", ".h", ".ino"}:
+            findings = linter.lint_file(tf)
+            for f in findings:
+                if f.severity == "CRITICAL":
+                    print(f"[FAIL] [{f.rule_id}] {tf.name}:{f.line_number} -- {f.message}")
+                    print(f"       Suggested Fix: {f.suggested_fix}")
+                    issues_found += 1
+                elif getattr(args, "strict", False):
+                    print(f"[WARN] [{f.rule_id}] {tf.name}:{f.line_number} -- {f.message}")
+                    issues_found += 1
+
+    # 3. Buzzword check on target files
+    verifier = DocTruthVerifier(REPO_ROOT)
+    for tf in target_files:
+        try:
+            rel = str(tf.relative_to(REPO_ROOT)).replace("\\", "/")
+        except ValueError:
+            rel = str(tf).replace("\\", "/")
+        if rel in verifier.RULE_EXEMPT_FILES or "/assets/roms/" in rel or "/vendor/doom/" in rel:
+            continue
+        lines = tf.read_text(encoding="utf-8", errors="ignore").splitlines()
+        for idx, line in enumerate(lines, 1):
+            for m in verifier.BANNED_BUZZWORDS_REGEX.finditer(line):
+                print(f"[FAIL] [BUZZWORD] {rel}:{idx} -- Banned AI buzzword '{m.group(1)}' found (Rule 43)")
+                issues_found += 1
+
+    print("=" * 70)
+    if issues_found == 0:
+        print("[PASS] PATCH-CHECK CLEAN: Zero critical issues detected across checked files.")
+        return 0
+    else:
+        print(f"[FAIL] PATCH-CHECK: {issues_found} issue(s) detected. Fix before concluding.")
+        return 1
+
+
+def cmd_export_harness(args) -> int:
+    """Exports the Guardian AI development harness and governance rules into another repository."""
+    dest = Path(args.destination).resolve()
+    print("=" * 70)
+    print(" BMO GUARDIAN AI HARNESS EXPORTER -- Zero-Friction Portability")
+    print("=" * 70)
+    print(f"Target Directory: {dest}")
+
+    dest.mkdir(parents=True, exist_ok=True)
+
+    # 1. Export core rule files
+    rules_dest = dest / ".agents" / "rules"
+    rules_dest.mkdir(parents=True, exist_ok=True)
+    rules_src = REPO_ROOT / ".agents" / "rules"
+    exported_rules = [
+        "00_hard_stops.md",
+        "05_git_workflow.md",
+        "06_verification_standards.md",
+        "07_task_protocol.md",
+        "10_symbol_reference.md",
+        "13_code_style.md",
+        "21_documentation_standards.md",
+        "22_review_checklist.md",
+        "31_quick_start_primer.md",
+        "33_agent_handoff_and_optimization_cycle.md",
+        "34_ai_agent_sandbox_and_guardrails.md",
+        "41_engineering_communication_and_critical_pushback.md",
+        "43_no_ai_jargon_and_buzzwords.md",
+        "README.md",
+    ]
+    for r in exported_rules:
+        src_file = rules_src / r
+        if src_file.exists():
+            shutil.copy2(src_file, rules_dest / r)
+    print(f"  * Exported {len(exported_rules)} core governance rules to .agents/rules/")
+
+    # 2. Export tools/guardian/ engine
+    guardian_dest = dest / "tools" / "guardian"
+    guardian_dest.mkdir(parents=True, exist_ok=True)
+    guardian_src = REPO_ROOT / "tools" / "guardian"
+    for item in guardian_src.rglob("*"):
+        if item.is_file() and "__pycache__" not in item.parts:
+            rel = item.relative_to(guardian_src)
+            target = guardian_dest / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(item, target)
+    print("  * Exported tools/guardian/ engine (linter, doc-verifier, prompt-pack, diff-audit)")
+
+    # 3. Export scripts/install_git_hooks.py
+    scripts_dest = dest / "scripts"
+    scripts_dest.mkdir(parents=True, exist_ok=True)
+    hook_src = REPO_ROOT / "scripts" / "install_git_hooks.py"
+    if hook_src.exists():
+        shutil.copy2(hook_src, scripts_dest / "install_git_hooks.py")
+    print("  * Exported scripts/install_git_hooks.py")
+
+    # 4. Create root AGENTS.md in destination
+    agents_md = dest / "AGENTS.md"
+    if not agents_md.exists():
+        proj_name = args.project_name or dest.name
+        content = (
+            f"# Agent Instructions — {proj_name}\n\n"
+            "Quick On-Ramp:\n"
+            "1. Read `.agents/rules/31_quick_start_primer.md` and `.agents/rules/00_hard_stops.md`.\n"
+            "2. Run `python -m tools.guardian prompt-pack \"<your task>\"` to generate a self-contained context packet.\n"
+            "3. Audit changes with `python -m tools.guardian patch-check` and `diff-audit`.\n"
+            "4. Always use two-part commit messages (Rule 05) and zero AI buzzwords (Rule 43).\n"
+        )
+        agents_md.write_text(content, encoding="utf-8")
+        print("  * Created destination AGENTS.md entrypoint")
+
+    print("-" * 70)
+    print(f"[SUCCESS] Guardian AI Harness successfully exported to: {dest}")
+    print("Next step in new repo: run 'python scripts/install_git_hooks.py'")
+    print("=" * 70)
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="BMO Guardian Performance & Ground-Truth Suite")
     subparsers = parser.add_subparsers(dest="command", help="Available subcommands")
@@ -920,6 +1099,14 @@ def main() -> int:
     subparsers.add_parser("verify", help="Fast all-in-one verification gate (AST lint + DocTruth + all unit tests)")
     subparsers.add_parser("benchmark-ai", help="Run quantitative AI-first workflow grounding & routing benchmark")
 
+    p_patch = subparsers.add_parser("patch-check", help="Pre-flight validator for code changes (AST, brace balance, buzzwords)")
+    p_patch.add_argument("--files", nargs="*", help="Specific source files to check (defaults to uncommitted git files)")
+    p_patch.add_argument("--strict", action="store_true", help="Treat AST warnings as errors")
+
+    p_export = subparsers.add_parser("export-harness", help="Export the Guardian AI development harness and rules to another project")
+    p_export.add_argument("destination", help="Path to destination directory")
+    p_export.add_argument("--project-name", help="Name of the destination project")
+
     args = parser.parse_args()
     if not args.command:
         parser.print_help()
@@ -943,6 +1130,8 @@ def main() -> int:
         "explain": cmd_explain,
         "verify": cmd_verify,
         "benchmark-ai": cmd_benchmark_ai,
+        "patch-check": cmd_patch_check,
+        "export-harness": cmd_export_harness,
     }
 
     handler = commands.get(args.command)

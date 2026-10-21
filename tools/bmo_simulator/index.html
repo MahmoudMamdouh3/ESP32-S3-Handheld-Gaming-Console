@@ -256,6 +256,42 @@
         </div>
       </div>
 
+      <!-- WebAssembly & Host Native Playtest Engine Card -->
+      <div class="panel-card" id="wasm-playtest-panel">
+        <div class="card-header">
+          <div class="card-title">⚙️ Playtest Engine (Wasm & Host C)</div>
+          <div class="badge-counter" id="wasm-engine-status">Wasm Ready</div>
+        </div>
+        <div class="telemetry-grid" style="margin-top: 8px;">
+          <div class="telemetry-box">
+            <div class="telemetry-label">Engine Mode</div>
+            <div class="telemetry-value" id="playtest-mode-val">60Hz Wasm</div>
+          </div>
+          <div class="telemetry-box">
+            <div class="telemetry-label">Active Core / Res</div>
+            <div class="telemetry-value" id="playtest-core-val">GB (160×144)</div>
+          </div>
+          <div class="telemetry-box">
+            <div class="telemetry-label">ROM Checksum</div>
+            <div class="telemetry-value" id="playtest-crc-val">0x00000000</div>
+          </div>
+          <div class="telemetry-box">
+            <div class="telemetry-label">Linear Memory</div>
+            <div class="telemetry-value">1 MiB (16 Pgs)</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap;">
+          <button class="control-pill" id="btn-wasm-save-state">Save State (S0)</button>
+          <button class="control-pill" id="btn-wasm-load-state">Load State (S0)</button>
+          <button class="control-pill" id="btn-wasm-toggle-bezel">Toggle Bezel</button>
+          <button class="control-pill" id="btn-wasm-toggle-ab">Swap A/B</button>
+          <button class="control-pill" id="btn-verify-host-cores">Verify 10 Host Cores</button>
+        </div>
+        <div id="playtest-engine-log" style="margin-top: 8px; font-family: monospace; font-size: 11px; opacity: 0.85;">
+          Wasm 60 Hz frame runner ready. Press P in-game for Pause Menu.
+        </div>
+      </div>
+
     </aside>
 
   </main>

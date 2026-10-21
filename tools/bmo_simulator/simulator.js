@@ -453,6 +453,72 @@ class BmoSimulator {
       });
     });
 
+    // Playtest Controls (Wasm & Host C)
+    const btnSave = document.getElementById("btn-wasm-save-state");
+    if (btnSave) {
+      btnSave.addEventListener("click", () => {
+        if (this.wasmEngine) {
+          this.wasmEngine.saveState(0);
+          const log = document.getElementById("playtest-engine-log");
+          if (log) log.textContent = `State saved to Slot 0 for ${this.wasmEngine.activeTitle}`;
+          this.playBeep(660, "sine", 0.05);
+        }
+      });
+    }
+
+    const btnLoad = document.getElementById("btn-wasm-load-state");
+    if (btnLoad) {
+      btnLoad.addEventListener("click", () => {
+        if (this.wasmEngine) {
+          const ok = this.wasmEngine.loadState(0);
+          const log = document.getElementById("playtest-engine-log");
+          if (log) log.textContent = ok ? `State loaded from Slot 0 (Frame ${this.wasmEngine.frameCount})` : "No saved state in Slot 0";
+          this.playBeep(ok ? 520 : 220, "sine", 0.05);
+        }
+      });
+    }
+
+    const btnBezel = document.getElementById("btn-wasm-toggle-bezel");
+    if (btnBezel) {
+      btnBezel.addEventListener("click", () => {
+        if (this.wasmEngine) {
+          this.wasmEngine.bezelEnabled = !this.wasmEngine.bezelEnabled;
+          const log = document.getElementById("playtest-engine-log");
+          if (log) log.textContent = `1:1 Console Bezel: ${this.wasmEngine.bezelEnabled ? "ON" : "OFF"}`;
+        }
+      });
+    }
+
+    const btnSwap = document.getElementById("btn-wasm-toggle-ab");
+    if (btnSwap) {
+      btnSwap.addEventListener("click", () => {
+        if (this.wasmEngine) {
+          this.wasmEngine.swapAB = !this.wasmEngine.swapAB;
+          const log = document.getElementById("playtest-engine-log");
+          if (log) log.textContent = `Gamepad A/B Swap: ${this.wasmEngine.swapAB ? "ON" : "OFF"}`;
+        }
+      });
+    }
+
+    const btnVerifyHost = document.getElementById("btn-verify-host-cores");
+    if (btnVerifyHost) {
+      btnVerifyHost.addEventListener("click", async () => {
+        const log = document.getElementById("playtest-engine-log");
+        if (log) log.textContent = "Running 10 native host C cores across 50 frames...";
+        try {
+          const resp = await fetch("/api/host-cores/run");
+          if (resp.ok) {
+            const data = await resp.json();
+            if (log) log.textContent = `Host Cores: ${data.message || "All 10 cores verified"}`;
+          } else {
+            if (log) log.textContent = `Host runner returned HTTP ${resp.status}`;
+          }
+        } catch (err) {
+          if (log) log.textContent = `Host runner available via run_simulator.py (${err.message})`;
+        }
+      });
+    }
+
     this.updateSidebarMuseumView();
   }
 
@@ -553,6 +619,22 @@ class BmoSimulator {
     // Telemetry display update
     const fpsVal = document.getElementById("telemetry-fps");
     if (fpsVal) fpsVal.innerText = `${this.fps} FPS`;
+
+    // Playtest Wasm telemetry update
+    if (this.wasmEngine) {
+      const crcEl = document.getElementById("playtest-crc-val");
+      const coreEl = document.getElementById("playtest-core-val");
+      const statusEl = document.getElementById("wasm-engine-status");
+      if (crcEl) crcEl.textContent = "0x" + (this.wasmEngine.romChecksum >>> 0).toString(16).toUpperCase();
+      if (coreEl && this.wasmEngine.viewport) {
+        coreEl.textContent = `${this.wasmEngine.activeConsoleId.replace("ROM_", "")} (${this.wasmEngine.viewport.w}×${this.wasmEngine.viewport.h})`;
+      }
+      if (statusEl) {
+        statusEl.textContent = (this.currentState === STATE.EMULATION_VIEW)
+          ? `Frame ${this.wasmEngine.frameCount}`
+          : "Wasm Ready";
+      }
+    }
 
     requestAnimationFrame(this.renderLoop.bind(this));
   }

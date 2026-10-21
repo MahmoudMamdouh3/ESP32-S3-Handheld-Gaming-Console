@@ -28,6 +28,10 @@ This is the current repository handoff. Read this section before continuing from
   6. **Implemented WebAssembly Playtest Cores in Simulator (`scripts/build_wasm_cores.py`, `tools/bmo_simulator/bmo_playtest_cores.wasm`, `tools/bmo_simulator/wasm_playtest_engine.js`):**
      - Built deterministic W3C WebAssembly binary (`bmo_playtest_cores.wasm`) with 16-page linear memory, FNV-1a 32-bit ROM checksum loader, and 60 Hz RGB565 frame stepping (`wasm_core_init`, `wasm_core_load_rom`, `wasm_core_step_frame`).
      - Integrated `WasmPlaytestEngine` into `tools/bmo_simulator/simulator.js` with `.p8` cart parsing, 1:1 console bezels, A/B swap, and in-game pause menu save/load state slots.
+  7. **Added Portable AI Harness Exporter & Pre-Flight Patch Checker (`tools/guardian/cli.py`):**
+     - `python -m tools.guardian patch-check`: Pre-flight checks uncommitted git changes or target files for brace balance, AST rules, and Rule 43 buzzwords.
+     - `python -m tools.guardian export-harness <dest>`: Exports the 14 core governance rules, `tools/guardian/`, and git hooks into any external repository.
+     - Connected one-click host core execution (`/api/host-cores/run`) and playtest panel controls into `tools/bmo_simulator/`.
 
 ## Previous Handoff — 2026-10-21 (Phase 5.2 Complete: All 14 Real Emulator Engines, Unified 14-Core Persistence & QoL Backlog Complete)
 
@@ -364,30 +368,23 @@ The table below illustrates the hardware physics calculations modeled in `tools/
 
 ```mermaid
 graph TD
-    A["Phase 1: Performance Foundations (Complete)"] --> B["Phase 2: Display DMA Engine (Next Milestone)"]
-    B --> C["Phase 3: Real Tier 1 Core Implementations"]
-    C --> D["Phase 4: Hardware Audio & Battery Revision"]
+    A["Phase 1: Performance Foundations (Complete)"] --> B["Phase 2: Display Dual-Core Worker (Complete)"]
+    B --> C["Phase 3: Real 14 Emulator Implementations (Complete)"]
+    C --> D["Phase 4: Wasm Playtest & AI Development Harness (Complete)"]
+    D --> E["Phase 5: Hardware Audio & Battery Revision (Blocked on Solder)"]
     
     A --> A1["PERF-01 to PERF-25 Verified"]
-    A --> A2["AST Linter & Guardian CI Active"]
-    
-    B --> B1["Double-Buffered SPI DMA Ping-Pong Descriptors"]
-    B --> B2["Core 0 Asynchronous Frame Generation"]
-    
-    C --> C1["Replace PC Engine Stub with Real HuC6280"]
-    C --> C2["Replace Stella Stub with Real 6507 TIA"]
-    C --> C3["Replace PICO-8 Stub with Fake-08"]
-    
-    D --> D1["Solder MAX98357A I2S DAC & Enable Audio"]
-    D --> D2["Solder 100k/100k Divider & Enable Battery Sense"]
+    B --> B1["Core 0 Asynchronous Frame Blitting (vDisplayTask)"]
+    C --> C1["All 14 Cores Real CPU & Video (0 Stubs, tools/host_cores_runner.c)"]
+    D --> D1["bmo_playtest_cores.wasm & guardian export-harness / patch-check"]
+    E --> E1["Solder MAX98357A I2S DAC & Enable Audio (FEATURE_AUDIO=1)"]
+    E --> E2["Solder 100k/100k Divider & Enable Battery Sense (FEATURE_BATTERY_MONITOR=1)"]
 ```
 
-1. **Milestone 1 (Immediate Next Step): SPI DMA Double-Buffering Engine**
-   - Implement FreeRTOS queue and double-buffered DMA descriptors on Core 0 / Core 1 to eliminate the 15.36 ms menu canvas stall (BUS-01) and allow full 60 FPS Genesis / SNES rendering.
-2. **Milestone 2: Tier 1 Real Core Implementations**
-   - Replace PCE, Stella, and PICO-8 architectural stubs with real cycle-accurate emulation engines running in PSRAM.
-3. **Milestone 3: Hardware Peripheral Integration**
-   - Upon physical soldering of the MAX98357A I2S DAC and battery divider, activate `FEATURE_AUDIO` and `FEATURE_BATTERY_MONITOR` following Rules 01 and 10.
+1. **Phase 1-4 (Completed):**
+   - Performance optimizations (PERF-01..25), FreeRTOS Core 0 display worker, double-buffered PSRAM canvases, real CPU/video implementations across all 14 emulator engines (0 stubs remaining, verified via `tools/host_cores_runner.c`), WebAssembly playtest cores (`bmo_playtest_cores.wasm`), and Guardian AI harness tools (`prompt-pack`, `diff-audit`, `patch-check`, `export-harness`).
+2. **Phase 5 (Blocked on Physical Hardware Solder Rework):**
+   - Upon physical soldering of the MAX98357A I2S DAC (`GPIO 38, 39, 40`) and battery divider (`GPIO 1`), activate `FEATURE_AUDIO` and `FEATURE_BATTERY_MONITOR` following Rules 00, 01, and 10.
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "schema_version": "2.1.0",
-  "last_updated": "2026-10-21T18:30:45.735665",
+  "last_updated": "2026-10-21T18:40:44.966575",
   "task_decision_table": {
     "modify_gpio_or_pin": {
       "rules": [
@@ -136,7 +136,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "6. Known Issues, Technical Debt & Hardware Limitations Registry",
-      "lines": 416
+      "lines": 413
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -271,7 +271,7 @@
     "31_quick_start_primer.md": {
       "file": ".agents/rules/31_quick_start_primer.md",
       "title": "31. Quick-Start Primer (Zero-Context Agent On-Ramp)",
-      "lines": 81
+      "lines": 87
     },
     "32_modular_core_template.md": {
       "file": ".agents/rules/32_modular_core_template.md",
