@@ -35,6 +35,9 @@ class DocTruthVerifier:
         ("report_guardian.md", "Deleted root report; use docs/performance_report.md"),
         ("tools/convert.py", "Deleted duplicate script; use scripts/convert_roms.py"),
         ("zig-windows-x86_64", "Removed Zig binary dependency; native host tests use MSVC cl.exe"),
+        ("teardownCurrentEmulator", "Obsolete function name; actual symbol in BmoGameboy.ino is destroyActiveEmulator()"),
+        ("STATE_CONSOLE_SPECS", "Obsolete state name; actual enum in BmoGameboy.ino is STATE_CONSOLE_MUSEUM"),
+        ("submitFrameAsync", "Non-existent DisplayEmu method; use streamGBFrame or streamRawFrameAsync"),
     ]
 
     BANNED_BUZZWORDS_REGEX = re.compile(
@@ -104,18 +107,19 @@ class DocTruthVerifier:
                         )
                     )
 
-        # 2. Scan key markdown files for explicit macro-to-GPIO mismatches and stale references
+        # 2. Scan key markdown files and all active .agents/rules/*.md for macro-to-GPIO mismatches and stale references
+        rules_dir = self.repo_root / ".agents" / "rules"
+        historical_rule_logs = {"04_known_issues.md", "23_incident_postmortem_log.md"}
+        rule_docs = sorted(
+            p for p in rules_dir.glob("*.md")
+            if p.name not in historical_rule_logs
+        ) if rules_dir.exists() else []
+
         target_docs = [
             self.repo_root / "README.md",
             self.repo_root / "AGENTS.md",
             self.repo_root / "docs" / "hardware-notes.md",
-            self.repo_root / ".agents" / "rules" / "01_hardware.md",
-            self.repo_root / ".agents" / "rules" / "02_architecture.md",
-            self.repo_root / ".agents" / "rules" / "09_testing_infrastructure.md",
-            self.repo_root / ".agents" / "rules" / "26_emulator_exit_contract.md",
-            self.repo_root / ".agents" / "rules" / "27_codebase_map.md",
-            self.repo_root / ".agents" / "rules" / "31_quick_start_primer.md",
-        ]
+        ] + rule_docs
 
         for doc_path in target_docs:
             if not doc_path.exists():
@@ -124,7 +128,7 @@ class DocTruthVerifier:
             lines = doc_path.read_text(encoding="utf-8", errors="ignore").splitlines()
 
             for idx, line in enumerate(lines, 1):
-                # Check for stale file/tool references
+                # Check for stale file/tool/symbol references
                 for stale_token, reason in self.FORBIDDEN_STALE_REFERENCES:
                     if stale_token in line:
                         issues.append(
@@ -136,9 +140,24 @@ class DocTruthVerifier:
                             )
                         )
 
+                # Check for unguarded FlashMode=opi command flags (unless warning against it)
+                if "FlashMode=opi" in line:
+                    low_line = line.lower()
+                    if not any(w in low_line for w in ("never", "do not", "don't", "brick", "bootloop", "wrong", "forbidden", "hard-stop", "bad", "prevent", "setting")):
+                        issues.append(
+                            DocDriftIssue(
+                                rel_str,
+                                idx,
+                                "PIN_DRIFT",
+                                "Contains unguarded `FlashMode=opi` (brick hazard; board requires `FlashMode=qio,PSRAM=opi`)",
+                            )
+                        )
+
                 # Check for explicit `MACRO = N`, `| N | MACRO |`, or `MACRO (GPIO N)` mismatches
                 for macro in self.PIN_MACROS:
                     if macro not in line or macro not in cfg:
+                        continue
+                    if any(w in line.lower() for w in ("setting ", "never ", "do not ", "mistake")):
                         continue
                     expected = cfg[macro]
                     # Pattern A: `| **13** | `SD_CS` |`

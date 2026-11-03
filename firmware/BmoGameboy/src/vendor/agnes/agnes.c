@@ -33,7 +33,16 @@ THE SOFTWARE.
 #endif /* _MSC_VER */
 
 #include "agnes.h"
+#if defined(ESP32) || defined(ARDUINO)
 #include <esp_heap_caps.h>
+#define AGNES_ALIGN32 __attribute__((aligned(32)))
+#else
+#include <stdlib.h>
+#define AGNES_ALIGN32
+#ifndef IRAM_ATTR
+#define IRAM_ATTR
+#endif
+#endif
 
 //-----------------------------------------------------------------------------
 // Headers
@@ -243,7 +252,7 @@ typedef struct controller {
 } controller_t;
 
 /*********************************** AGNES ***********************************/
-typedef struct __attribute__((aligned(32))) agnes {
+typedef struct AGNES_ALIGN32 agnes {
     cpu_t cpu;
     ppu_t ppu;
     uint8_t ram[2 * 1024];
@@ -447,8 +456,10 @@ AGNES_INTERNAL void mapper4_pa12_rising_edge(mapper4_t *mapper);
 //FILE_START:agnes.c
 #include <stdlib.h>
 #include <string.h>
+#if defined(ESP32) || defined(ARDUINO)
 #include <esp_heap_caps.h>
 #include <esp_attr.h>
+#endif
 
 #ifndef AGNES_AMALGAMATED
 #include "agnes.h"
@@ -484,7 +495,7 @@ typedef struct {
     uint8_t zeros[5];
 } ines_header_t;
 
-typedef struct __attribute__((aligned(32))) agnes_state {
+typedef struct AGNES_ALIGN32 agnes_state {
     agnes_t agnes;
 } agnes_state_t;
 
@@ -510,11 +521,15 @@ static agnes_color_t g_colors[64] = {
 };
 
 agnes_t* agnes_make(void) {
+#if defined(ESP32) || defined(ARDUINO)
     // BMO-PATCH: Allocate agnes_t in PSRAM to free ~40KB internal SRAM (PERF-05)
     agnes_t *agnes = (agnes_t*)heap_caps_aligned_alloc(32, sizeof(*agnes), MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
     if (!agnes) {
         agnes = (agnes_t*)heap_caps_aligned_alloc(32, sizeof(*agnes), MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
     }
+#else
+    agnes_t *agnes = (agnes_t*)calloc(1, sizeof(*agnes));
+#endif
     if (!agnes) {
         return NULL;
     }
@@ -666,7 +681,11 @@ uint8_t* agnes_get_prg_ram(agnes_t *agnes, size_t *out_size) {
 }
 
 void agnes_destroy(agnes_t *agnes) {
+#if defined(ESP32) || defined(ARDUINO)
     heap_caps_free(agnes);
+#else
+    free(agnes);
+#endif
 }
 
 static uint8_t get_input_byte(const agnes_input_t* input) {

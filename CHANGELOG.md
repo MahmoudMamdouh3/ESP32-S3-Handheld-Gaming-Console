@@ -5,6 +5,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [AI Development Environment Overhaul, 11-Core Native C Harness & MCP Server] - 2026-11-03
+### Added
+- **Model Context Protocol (MCP) Server for BMO Guardian (`tools/guardian/mcp_server.py`, `.mcp.json`, `tools/guardian/cli.py`)**:
+  - Implemented a zero-dependency JSON-RPC 2.0 stdio MCP server (`python -m tools.guardian mcp`) exposing 7 structured tools (`bmo_prompt_pack`, `bmo_lookup`, `bmo_explain`, `bmo_patch_check`, `bmo_run_host_cores`, `bmo_memory_budget`, `bmo_doctor`) and added `.mcp.json` at the repository root for automatic IDE and agent discovery.
+- **LLVM Clang-Tidy Deep Static Analyzer Integration (`tools/guardian/core/clang_tidy_runner.py`, `python -m tools.guardian clang-tidy`)**:
+  - Integrated `clang-tidy` with embedded C/C++ defect checks (`clang-analyzer-core.*`, `clang-analyzer-unix.Malloc`, `clang-analyzer-cplusplus.NewDelete`, `bugprone-assert-side-effect`, `bugprone-infinite-loop`, `bugprone-sizeof-expression`, `bugprone-string-constructor`, `bugprone-suspicious-memset-usage`, `bugprone-use-after-move`) across all 11 host-portable C emulator cores and `tools/host_cores_runner.c`.
+- **Host-Portable `agnes.c` (NES 6502 + PPU + Mapper 0/1/2/4) & Save-State Determinism Harness (`firmware/BmoGameboy/src/vendor/agnes/agnes.c`, `tools/host_cores_runner.c`, `tests/test_native_cores_execution.py`)**:
+  - Guarded ESP-IDF headers and attributes (`esp_heap_caps.h`, `esp_attr.h`, `IRAM_ATTR`, `__attribute__((aligned(32)))`) in `agnes.c` with `#if defined(ESP32) || defined(ARDUINO)` so the 2,600-line NES engine compiles natively on x64 `cl.exe` and `gcc`.
+  - Upgraded `tools/host_cores_runner.c` and `tests/test_native_cores_execution.py` from 10 to 11 native C cores (575 frames total) and added `test_nes_agnes_core()` verifying 6502 instruction execution, PPU rendering, `$6000` `agnes_get_prg_ram()` persistence, and bit-exact save-state determinism (`save @ frame 25 -> run to 50 -> restore @ 25 -> re-run to 50 -> assert FNV-1a framebuffer hash and PRG-RAM match 100%`).
+
+### Fixed
+- **Eliminated Split-Brain Contradictions & Harmful Rules Across `.agents/rules/` (`tools/guardian/core/doc_verifier.py`, `.agents/rules/*.md`)**:
+  - Fixed the boot-bricking `FlashMode=opi` copy-paste compile command in `.agents/rules/06_verification_standards.md:110` to `FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi`.
+  - Removed the rule in `.agents/rules/07_task_protocol.md` and `.agents/rules/12_extensibility_contract.md` that forbade agents from fixing bugs discovered outside their immediate prompt, replacing it with a proactive defect resolution rule.
+  - Corrected obsolete symbol and state names across `.agents/rules/02_architecture.md`, `03_conventions.md`, `10_symbol_reference.md`, `12_extensibility_contract.md`, `26_emulator_exit_contract.md`, `27_codebase_map.md`, `30_common_agent_mistakes.md`, `31_quick_start_primer.md`, `35_bmo_face_contract.md`, and `.agents/rules/README.md` (`teardownCurrentEmulator` -> `destroyActiveEmulator`, `STATE_CONSOLE_SPECS` -> `STATE_CONSOLE_MUSEUM`, `submitFrameAsync` -> `streamGBFrame`/`streamRawFrameAsync`, `Slots 0-4` -> `Slots 1-5`, `/.favorites.txt` -> `/favorites.txt`).
+  - Expanded `DocTruthVerifier` to scan all active `.agents/rules/*.md` files and reject unguarded `FlashMode=opi` commands and obsolete symbol references.
+
+---
+
 ## [Pre-Flash Hardware Safety & Runtime Audit Fixes] - 2026-11-03
 ### Fixed
 - **Game Select Menu Visibility, UTF-8 CP437 Font Corruption & Theme Token Compliance (`src/core/display_emu.cpp`, `src/core/bmo_face.cpp`, `BmoGameboy.ino`, `tools/guardian/core/ui_auditor.py`)**:

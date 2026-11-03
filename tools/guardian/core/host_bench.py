@@ -40,7 +40,7 @@ class HostBenchmarkSuite:
         return metrics
 
     def bench_native_c_10_core_execution(self) -> BenchmarkMetric:
-        """Executes the compiled native x64 C 10-core 50-frame test harness (500 total frames)."""
+        """Executes the compiled native x64 C 11-core test harness (575 total frames including save-state replay)."""
         repo_root = Path(__file__).resolve().parents[3]
         exe_path = repo_root / "build" / "host_cores_test" / "host_cores_runner.exe"
         if not exe_path.exists():
@@ -54,16 +54,16 @@ class HostBenchmarkSuite:
             return None
         elapsed_sec = max(1e-6, time.perf_counter() - start)
         elapsed_ms = elapsed_sec * 1000.0
-        frames = 500  # 10 C cores * 50 frames each
+        frames = 575  # 11 C cores * 50 frames each + 25 save-state replay frames
         avg_us = (elapsed_ms * 1000.0) / frames
         fps_thousand = (frames / elapsed_sec) / 1000.0
         return BenchmarkMetric(
-            name="Native_C_10_Cores_500_Frames",
+            name="Native_C_11_Cores_575_Frames",
             iterations=frames,
             total_time_ms=elapsed_ms,
             avg_latency_us=avg_us,
             throughput_mops=fps_thousand,
-            description="Executes 50 frames across all 10 native C emulator engines (500 frames total, kFPS).",
+            description="Executes 50 frames across all 11 native C emulator engines + save-state replay (575 frames total, kFPS).",
         )
 
     def bench_bmo_sdf_face_renderer(self, iterations: int = 100) -> BenchmarkMetric:

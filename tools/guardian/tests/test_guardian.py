@@ -15,12 +15,14 @@ from unittest.mock import patch
 
 from tools.guardian.core.ast_linter import FirmwareAstLinter, LintFinding
 from tools.guardian.core.bus_model import HardwareBusModel, SUPPORTED_RESOLUTIONS
+from tools.guardian.core.clang_tidy_runner import ClangTidyFinding, ClangTidyRunner
 from tools.guardian.core.cppcheck_runner import CppcheckFinding, CppcheckRunner
 from tools.guardian.core.doc_verifier import DocTruthVerifier
 from tools.guardian.core.elf_analyzer import ElfAnalyzer
 from tools.guardian.core.host_bench import HostBenchmarkSuite
 from tools.guardian.core.report_gen import ReportGenerator
 from tools.guardian.core.ui_auditor import UiAuditor
+from tools.guardian.mcp_server import handle_rpc_request, MCP_TOOLS_SCHEMA
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 FIRMWARE_DIR = REPO_ROOT / "firmware" / "BmoGameboy"
@@ -314,6 +316,64 @@ class TestGuardianEngine(unittest.TestCase):
             self.assertIn("MISSING_FOCUS", cats)
             self.assertIn("TOKEN_PARITY", cats)
             self.assertIn("OFF_GRID_SPACING", cats)
+
+    def test_19_clang_tidy_runner_executes_and_parses_diagnostics(self):
+        """Verify ClangTidyRunner locates default C targets and parses clang-tidy diagnostic format."""
+        runner = ClangTidyRunner(REPO_ROOT)
+        targets = runner.default_targets()
+        self.assertGreaterEqual(len(targets), 12)
+        runner.clang_tidy_bin = "clang-tidy"
+        fake_out = "tools/host_cores_runner.c:42:9: warning: Dereference of null pointer [clang-analyzer-core.NullDereference]\n"
+        with patch(
+            "tools.guardian.core.clang_tidy_runner.subprocess.run",
+            return_value=subprocess.CompletedProcess([], 0, fake_out, ""),
+        ):
+            findings = runner.run()
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].check_name, "clang-analyzer-core.NullDereference")
+        self.assertEqual(findings[0].line, 42)
+
+    def test_20_mcp_server_protocol_and_tools(self):
+        """Verify Guardian MCP server handles initialize, tools/list, and tools/call over JSON-RPC 2.0."""
+        init_resp = handle_rpc_request({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2024-11-05"}})
+        self.assertEqual(init_resp["result"]["serverInfo"]["name"], "bmo-guardian-mcp")
+
+        list_resp = handle_rpc_request({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
+        tool_names = {t["name"] for t in list_resp["result"]["tools"]}
+        self.assertIn("bmo_prompt_pack", tool_names)
+        self.assertIn("bmo_lookup", tool_names)
+        self.assertIn("bmo_doctor", tool_names)
+        self.assertIn("bmo_run_host_cores", tool_names)
+
+        call_resp = handle_rpc_request({
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {"name": "bmo_lookup", "arguments": {"symbol": "TFT_CS"}},
+        })
+        self.assertFalse(call_resp["result"]["isError"])
+        self.assertIn("GPIO 10", call_resp["result"]["content"][0]["text"])
+
+    def test_21_doc_truth_verifier_catches_flashmode_opi_and_stale_symbols(self):
+        """Verify DocTruthVerifier rejects unguarded FlashMode=opi and obsolete symbol names in rules."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg_dir = root / "firmware" / "BmoGameboy" / "src" / "core"
+            cfg_dir.mkdir(parents=True)
+            (cfg_dir / "config.h").write_text("#define TFT_CS 10\n", encoding="utf-8")
+            rules_dir = root / ".agents" / "rules"
+            rules_dir.mkdir(parents=True)
+            (rules_dir / "06_verification_standards.md").write_text(
+                "arduino-cli compile --fqbn esp32:esp32:esp32s3:FlashMode=opi,PSRAM=opi\n"
+                "Call teardownCurrentEmulator() and DisplayEmu::submitFrameAsync()\n",
+                encoding="utf-8",
+            )
+            verifier = DocTruthVerifier(root)
+            issues = verifier.verify_all()
+            messages = " | ".join(i.message for i in issues)
+            self.assertIn("FlashMode=opi", messages)
+            self.assertIn("teardownCurrentEmulator", messages)
+            self.assertIn("submitFrameAsync", messages)
 
 
 if __name__ == "__main__":
