@@ -17,6 +17,15 @@
 - `IN_PROGRESS`: The one-to-one request is not complete. Four of 14 game cores are browser-playable, the menus still are not firmware execution, physical SPI/SD behavior is not modeled in the browser, and Wokwi has no ST7789 model.
 - The Wokwi diagram has the ESP32-S3, button GPIOs, shared TFT/SD SPI lines, and separate chip selects from `config.h`. Wokwi lacks an ST7789 model and does not expose the display reset/backlight pins; it uses an ILI9341 visual substitute. Wokwi CLI execution requires `WOKWI_CLI_TOKEN`.
 
+## Storage Audit Handoff — 2026-11-03
+
+- The local `games/` directory contains 31,326 firmware-recognized files (~16.1 GB); the attached FAT32 `GAMELIB` volume currently has 11,184 matching ROMs. 20,142 source ROMs are absent, and two same-name Game Boy Color files have different sizes than their local source versions. Do not claim the full library is deployed or replace these user files without permission.
+- The SD card has 15,677 box-art assets. Their raw sizes and BMP headers meet the firmware decoder's accepted formats, and SHA-256 comparison matched all corresponding files in `roms/boxart`. 12,659 source art files are not on the card. The folder placement (`/boxart/` plus ROMs at root) is recognized by the firmware.
+- Local root art in `roms/boxart/` contains 14,168 exact-size raw images and 14,168 BMPs with 64×64, 24-bit BI_RGB headers; no invalid files were found. Every filename in `sdcard/boxart/` exists in that source, but the staging folder has 112 fewer assets.
+- Windows reports the volume healthy; a complete read scan found no I/O errors or zero-byte files. `chkdsk F:` could not start because this environment lacks permission, so a filesystem-level repair scan is not verified. The card currently has no `/.bmo_index`; firmware will perform its full initial scan and create the cache.
+- `scripts/audit_all_games.py` uses shallow format heuristics and flagged 26 candidate files; treat them as unverified, not confirmed corrupt. It does not exercise every firmware emulator. PICO-8 handling is only a graphics/data plus custom draw-bytecode runtime, not a Lua interpreter; `.p8.png` is not supported despite older documentation.
+- `scripts/deploy_to_sd.py` now defaults to dry-run and supports sequential staged/checksummed writes only with explicit `--apply` to an existing `GAMELIB` volume. It invalidates the derived index and does not delete extra files. No ROM or cover-art data is to be committed to Git.
+
 ## Previous Handoff — 2026-11-03 (Firmware-Backed Wokwi Hardware Simulation)
 
 ## Previous Handoff — 2026-11-03 (AI Environment Overhaul, 11-Core Native C Harness & MCP Server)

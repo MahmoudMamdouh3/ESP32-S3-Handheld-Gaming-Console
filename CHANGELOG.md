@@ -5,6 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [SD Library Audit and Safer Deployment] - 2026-11-03
+### Changed
+- **FAT32 deployment (`scripts/deploy_to_sd.py`)**: Replaced size-only, concurrent in-place writes with an explicit-destination dry run, volume-label guard, content hashing, sequential staged copies, post-copy verification, and ROM-index invalidation. The tool deploys only supported root-level source files, does not delete destination files, and reports files that would be copied or replaced.
+- **ROM menu PSRAM allocation (`firmware/BmoGameboy/BmoGameboy.ino`)**: Made the 36,000-entry index and pointer arrays an all-or-fallback allocation so a partial allocation cannot overrun the 32-entry fallback array.
+- **Console and PICO-8 documentation (`README.md`)**: Corrected `.sg` to the ColecoVision / SG-1000 core and documented that the current PICO-8-style runtime does not execute Lua carts or `.p8.png` files.
+
+### Verification
+- `F:\` is FAT32 and Windows reports the volume healthy; all scanned files were readable, and installed box art passed firmware size/header checks and matched corresponding local-source hashes.
+- The card contains 11,184 of 31,326 local game files; 20,142 are not present. Two same-name GBC files differ in size from the source. 12,659 box-art files from the current `roms/boxart` source are absent on the card.
+- The root box-art source contains 14,168 exact-size raw images and 14,168 BMPs with 64×64, 24-bit BI_RGB headers; no invalid files were found. `sdcard/boxart` contains 28,224 filenames, all present in the root source, with 112 source assets not in staging.
+- A basic ROM-header audit flagged 26 files for manual/core-level validation; its heuristics are not proof that those files are corrupt. A privileged filesystem checker could not be run in this environment.
+- No ROM or cover-art binaries were copied, committed, or pushed.
+
 ## [Firmware-Backed Browser BMO Companion] - 2026-11-03
 ### Added
 - **Actual firmware BMO face renderer in WebAssembly (`tools/bmo_simulator/bmo_face_firmware.cpp`, `bmo_face_wasm.cpp`)**: Compiles `firmware/BmoGameboy/src/core/bmo_face.cpp` and calls the real 320×240 SDF rendering, expression, gaze, blink, speech, petting, and dance APIs.
