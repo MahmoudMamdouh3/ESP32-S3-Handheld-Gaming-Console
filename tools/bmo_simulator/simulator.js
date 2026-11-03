@@ -48,6 +48,9 @@ class BmoSimulator {
     this.selectedGameIndex = 0;
     this.gameListScrollOffset = 0;
     this.topPicksFilter = false;
+    // Box art cache keyed by slug; values are { img, ready, failed }.
+    this.coverImages = {};
+    this.lastHdCoverSlug = "";
     this.bootTimer = 0;
     this.lastFrameTime = performance.now();
     this.fps = 60;
@@ -113,6 +116,11 @@ class BmoSimulator {
         this.selectedConsoleIndex = idx;
         this.updateSidebarMuseumView();
       }
+    }
+    const gameParam = params.get("game");
+    if (gameParam !== null) {
+      const gi = parseInt(gameParam, 10);
+      if (!isNaN(gi) && gi >= 0) this.selectedGameIndex = gi;
     }
     const stateParam = (params.get("state") || "").toLowerCase();
     if (stateParam === "splash") {
@@ -1343,104 +1351,192 @@ class BmoSimulator {
     this.ctx.fillText("D-PAD:LOOK/PET  A:WINK  B:BLUSH  SEL:TALK  START:MENU", 160, 226);
   }
 
+  // Same slug rule as scripts/fetch_covers.py slugify_title().
+  slugifyTitle(title) {
+    let s = String(title || "").replace(/\.[^/.]+$/, "").toLowerCase();
+    s = s.replace(/\([^)]*\)|\[[^\]]*\]/g, "");
+    s = s.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    return s || "cover";
+  }
+
+  // Returns the cached cover entry for a title, starting the load on first use.
+  getCoverImage(title) {
+    const slug = this.slugifyTitle(title);
+    let entry = this.coverImages[slug];
+    if (!entry) {
+      entry = { img: new Image(), ready: false, failed: false, slug };
+      entry.img.onload = () => { entry.ready = true; };
+      entry.img.onerror = () => { entry.failed = true; };
+      entry.img.src = `covers/${slug}.png`;
+      this.coverImages[slug] = entry;
+    }
+    return entry;
+  }
+
+  // Updates the sidebar panel with the full-resolution original box art.
+  updateHdCoverPanel(entry, title) {
+    const slug = entry ? entry.slug : "";
+    if (slug === this.lastHdCoverSlug && (!entry || entry.ready || entry.failed)) return;
+    const panelImg = document.getElementById("hd-boxart-preview-img");
+    const panelMeta = document.getElementById("hd-boxart-meta");
+    const panelTitle = document.getElementById("hd-boxart-title");
+    if (!panelImg || !panelMeta || !panelTitle) return;
+    if (entry && entry.ready) {
+      this.lastHdCoverSlug = slug;
+      panelImg.src = entry.img.src;
+      panelImg.style.visibility = "visible";
+      panelTitle.textContent = title;
+      panelMeta.textContent = `${entry.img.naturalWidth} × ${entry.img.naturalHeight} original scan`;
+    } else if (entry && entry.failed) {
+      this.lastHdCoverSlug = slug;
+      panelImg.style.visibility = "hidden";
+      panelTitle.textContent = title;
+      panelMeta.textContent = "No cover art for this title";
+    }
+  }
+
+  // Mirrors firmware DisplayEmu::drawGameSelectMenu(): cover card, title, scroll track, button pills.
   renderGameSelectMenu() {
     const c = CONSOLES_LIST[this.selectedConsoleIndex];
     const games = this.getVisibleGames(c.id);
+    const T = {
+      black: "#0f2620", deepTeal: "#1a4b42", teal: "#5fb49c", mint: "#cef5e4",
+      yellow: "#ffe033", coral: "#e8175d", blue: "#52a6ba", white: "#f8fdfa"
+    };
+    const ctx = this.ctx;
 
-    // Background - Authentic BMO Mint Screen
-    this.ctx.fillStyle = "#cef5e4";
-    this.ctx.fillRect(0, 0, 320, 240);
+    const pill = (x, y, glyph, label, bg, glyphCol, labelCol) => {
+      const w = glyph.length * 6 + 8;
+      ctx.fillStyle = bg;
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, 14, 4);
+      ctx.fill();
+      ctx.font = "10px 'JetBrains Mono', monospace";
+      ctx.textAlign = "left";
+      ctx.fillStyle = glyphCol;
+      ctx.fillText(glyph, x + 4, y + 11);
+      ctx.fillStyle = labelCol;
+      ctx.fillText(label, x + w + 4, y + 11);
+    };
 
-    // Header Bar - Deep Forest Teal
-    this.ctx.fillStyle = "#1a4b42";
-    this.ctx.fillRect(0, 0, 320, 34);
+    ctx.fillStyle = T.black;
+    ctx.fillRect(0, 0, 320, 240);
+    ctx.fillStyle = T.deepTeal;
+    ctx.fillRect(0, 0, 320, 38);
+    this.drawBmoFace(8, 4, 1);
 
-    this.ctx.fillStyle = "#ffe033";
-    this.ctx.font = "bold 13px 'Outfit', sans-serif";
-    this.ctx.textAlign = "left";
-    const headerTitle = c.id === "ROM_FAVORITES"
-      ? "★ FAVORITE GAMES"
-      : (this.topPicksFilter ? `★ ${c.name} Top Picks` : `📂 ${c.name} Library`);
-    this.ctx.fillText(headerTitle, 12, 22);
-
-    this.ctx.fillStyle = "#cef5e4";
-    this.ctx.font = "bold 10px 'JetBrains Mono', monospace";
-    this.ctx.textAlign = "right";
-    this.ctx.fillText(`${games.length > 0 ? this.selectedGameIndex + 1 : 0}/${games.length}${this.topPicksFilter ? ' [TOP]' : ''}`, 310, 22);
+    const heading = c.id === "ROM_FAVORITES"
+      ? "* FAVORITE GAMES"
+      : `${c.name.toUpperCase()} ${this.topPicksFilter ? "TOP PICKS" : "LIBRARY"}`;
+    ctx.fillStyle = T.yellow;
+    ctx.font = "bold 12px 'Outfit', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(heading, 160, 25);
 
     if (games.length === 0) {
-      this.ctx.fillStyle = "#0f2620";
-      this.ctx.font = "bold 14px 'Outfit', sans-serif";
-      this.ctx.textAlign = "center";
-      this.ctx.fillText("NO FAVORITES YET!", 160, 105);
-      this.ctx.fillStyle = "#1a4b42";
-      this.ctx.font = "12px 'Outfit', sans-serif";
-      this.ctx.fillText("Press SELECT on any game to star it ★", 160, 130);
-    } else {
-      // List rendering (5 visible items per page)
-      const visibleCount = 5;
-      const startIdx = Math.max(0, Math.min(this.selectedGameIndex - 2, games.length - visibleCount));
-      const endIdx = Math.min(games.length, startIdx + visibleCount);
-
-      for (let i = startIdx; i < endIdx; i++) {
-        const y = 42 + (i - startIdx) * 33;
-        const isSelected = (i === this.selectedGameIndex);
-        const game = games[i];
-        const title = (typeof game === "string") ? game : (game.title || `Game ${i + 1}`);
-        const isFav = (typeof game === "object") ? game.isFav : false;
-        const isPop = (typeof game === "object") ? Boolean(game.isPopular) : false;
-        const badge = (typeof game === "object" && game.console) ? game.console : c.badge;
-
-        if (isSelected) {
-          this.ctx.fillStyle = "#1a4b42";
-          this.ctx.beginPath();
-          this.ctx.roundRect(8, y, 304, 30, 8);
-          this.ctx.fill();
-          this.ctx.strokeStyle = "#ffe033";
-          this.ctx.lineWidth = 1.5;
-          this.ctx.stroke();
-          this.ctx.fillStyle = "#ffe033";
-        } else {
-          this.ctx.fillStyle = "rgba(95, 180, 156, 0.25)";
-          this.ctx.beginPath();
-          this.ctx.roundRect(8, y, 304, 30, 8);
-          this.ctx.fill();
-          this.ctx.strokeStyle = "#5fb49c";
-          this.ctx.lineWidth = 1;
-          this.ctx.stroke();
-          this.ctx.fillStyle = "#0f2620";
-        }
-
-        const displayTitle = title.length > 28 ? (title.slice(0, 26) + "..") : title;
-        this.ctx.font = isSelected ? "bold 12px 'Outfit', sans-serif" : "12px 'Outfit', sans-serif";
-        this.ctx.textAlign = "left";
-        this.ctx.fillText(`${isSelected ? '▶ ' : '  '}${displayTitle}`, 16, y + 20);
-
-        // Right-aligned Star / Top Pick & Badge
-        this.ctx.textAlign = "right";
-        if (isFav) {
-          this.ctx.fillStyle = isSelected ? "#ffe033" : "#b8860b";
-          this.ctx.font = "bold 11px 'JetBrains Mono', monospace";
-          this.ctx.fillText(`★ FAV [${badge}]`, 300, y + 20);
-        } else if (isPop) {
-          this.ctx.fillStyle = isSelected ? "#55efc4" : "#1a4b42";
-          this.ctx.font = "bold 10px 'JetBrains Mono', monospace";
-          this.ctx.fillText(`TOP PICK [${badge}]`, 300, y + 20);
-        } else {
-          this.ctx.fillStyle = isSelected ? "#cef5e4" : "#438f7a";
-          this.ctx.font = "10px 'JetBrains Mono', monospace";
-          this.ctx.fillText(`[${badge}]`, 300, y + 20);
-        }
+      this.updateHdCoverPanel(null, "");
+      ctx.fillStyle = T.white;
+      ctx.font = "bold 16px 'Outfit', sans-serif";
+      if (c.id === "ROM_FAVORITES") {
+        ctx.fillText("NO FAVORITES YET!", 160, 100);
+        ctx.fillStyle = T.mint;
+        ctx.font = "12px 'Outfit', sans-serif";
+        ctx.fillText("Press SELECT on any game in any", 160, 128);
+        ctx.fillText("console library to star it *", 160, 148);
+      } else {
+        ctx.fillText("NO GAMES", 160, 100);
+        ctx.fillStyle = T.mint;
+        ctx.font = "12px 'Outfit', sans-serif";
+        ctx.fillText("Add compatible ROMs to the SD card.", 160, 138);
       }
+      ctx.fillStyle = T.black;
+      ctx.fillRect(0, 212, 320, 28);
+      ctx.fillStyle = "#a4b0be";
+      ctx.font = "10px 'JetBrains Mono', monospace";
+      ctx.fillText("B: BACK", 160, 230);
+      return;
     }
 
-    // Footer Bar
-    this.ctx.fillStyle = "#1a4b42";
-    this.ctx.fillRect(0, 214, 320, 26);
-    this.ctx.fillStyle = "#cef5e4";
-    this.ctx.font = "10px 'Outfit', sans-serif";
-    this.ctx.textAlign = "center";
-    this.ctx.fillText(`A: Play  •  B: Back  •  START: ${this.topPicksFilter ? 'All Games' : 'Top Picks'}  •  SELECT: ★ Star`, 160, 231);
+    const idx = Math.min(Math.max(this.selectedGameIndex, 0), games.length - 1);
+    const game = games[idx];
+    const title = (typeof game === "string") ? game : (game.title || `Game ${idx + 1}`);
+    const isFav = (typeof game === "object") ? Boolean(game.isFav) : false;
+    const isPop = (typeof game === "object") ? Boolean(game.isPopular) : false;
+    const badge = (typeof game === "object" && game.console) ? game.console : c.badge;
+
+    // Cover card (81,46,158x114)
+    ctx.fillStyle = T.deepTeal;
+    ctx.beginPath();
+    ctx.roundRect(81, 46, 158, 114, 12);
+    ctx.fill();
+    ctx.strokeStyle = isFav ? T.yellow : T.teal;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(81.5, 46.5, 157, 113, 12);
+    ctx.stroke();
+
+    const cover = this.getCoverImage(title);
+    this.updateHdCoverPanel(cover, title);
+    if (cover.ready) {
+      // 64x64 slot at (128,54), the size BoxArt::draw() uses on hardware.
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(cover.img, 128, 54, 64, 64);
+      ctx.strokeStyle = isFav ? T.yellow : T.teal;
+      ctx.strokeRect(127.5, 53.5, 65, 65);
+    } else {
+      ctx.fillStyle = T.black;
+      ctx.fillRect(102, 62, 116, 52);
+      ctx.fillStyle = T.yellow;
+      ctx.font = "bold 16px 'Outfit', sans-serif";
+      ctx.fillText(badge, 160, 94);
+    }
+
+    // Status pill (112,126,96x18)
+    ctx.strokeStyle = isFav ? T.yellow : (isPop ? T.mint : T.teal);
+    ctx.beginPath();
+    ctx.roundRect(112.5, 126.5, 95, 17, 8);
+    ctx.stroke();
+    ctx.font = "10px 'JetBrains Mono', monospace";
+    ctx.fillStyle = isFav ? T.yellow : (isPop ? T.mint : T.white);
+    ctx.fillText(isFav ? "* FAVORITE" : (isPop ? "TOP PICK" : badge), 160, 138);
+
+    // Title, truncated to 290 px like drawFittedCentered()
+    ctx.font = "12px 'Outfit', sans-serif";
+    ctx.fillStyle = T.white;
+    let shown = title;
+    while (ctx.measureText(shown).width > 290 && shown.length > 4) {
+      shown = shown.slice(0, shown.length - 4) + "...";
+    }
+    ctx.fillText(shown, 160, 184);
+
+    ctx.font = "10px 'JetBrains Mono', monospace";
+    ctx.fillStyle = T.mint;
+    ctx.fillText(`${idx + 1} / ${games.length}  [${badge}${this.topPicksFilter ? " TOP" : ""}]`, 160, 206);
+
+    // Scroll position track
+    if (games.length > 1) {
+      const trackX = 60, trackW = 200, trackY = 168;
+      ctx.fillStyle = T.deepTeal;
+      ctx.fillRect(trackX, trackY, trackW, 2);
+      const thumbW = Math.max(14, Math.floor(trackW / games.length));
+      const thumbX = trackX + Math.floor((idx / (games.length - 1)) * (trackW - thumbW));
+      ctx.fillStyle = isFav ? T.yellow : T.mint;
+      ctx.beginPath();
+      ctx.roundRect(thumbX, trackY - 1, thumbW, 4, 2);
+      ctx.fill();
+    }
+
+    // Footer action bar
+    ctx.fillStyle = T.deepTeal;
+    ctx.fillRect(0, 214, 320, 26);
+    ctx.fillStyle = T.teal;
+    ctx.fillRect(0, 213, 320, 1);
+    pill(6, 220, "A", "PLAY", T.coral, T.black, T.white);
+    pill(56, 220, "B", "BACK", T.mint, T.black, T.white);
+    pill(106, 220, "SEL", isFav ? "UNSTAR" : "STAR", T.yellow, T.black, T.white);
+    pill(180, 220, "ST", this.topPicksFilter ? "ALL" : "TOP", T.blue, T.white, T.white);
+    pill(236, 220, "<>", "A-Z", T.teal, T.black, T.white);
   }
 
   renderEmulationView() {

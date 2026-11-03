@@ -11,6 +11,7 @@
 
 This is the current repository handoff. Read this section before continuing from an earlier changelog entry.
 
+- **Box art and simulator parity (2026-11-03):** 61 original box arts are downloaded by `scripts/fetch_covers.py`; titles outside that catalog still show the console badge placeholder. The Web Simulator library screen now follows `drawGameSelectMenu()`, but the other screens are still a hand-written canvas port, not the firmware code, so they can drift. Only freely distributable ROMs are bundled; commercial ROM sets are not downloaded by the repository tooling.
 - **AI Development Environment & Native Verification Upgrades (`tools/guardian/`, `tests/`, `.agents/rules/`, `agnes.c`):**
   1. **Eliminated Split-Brain Rule Contradictions & Bug-Fix Prohibitions (`.agents/rules/*.md`, `tools/guardian/core/doc_verifier.py`):**
      - Fixed the copy-paste compile command in `.agents/rules/06_verification_standards.md:110` from `FlashMode=opi` (which bootloops the Quad-SPI Flash ESP32-S3-N16R8) to `CDCOnBoot=cdc,FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi`.

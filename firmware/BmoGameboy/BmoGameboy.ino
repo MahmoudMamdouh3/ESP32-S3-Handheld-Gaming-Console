@@ -833,6 +833,7 @@ void loop() {
           LOG_ERROR_STR("Failed to load ROM from SD card.");
           DisplayEmu::showSDCardWarning();
           delay(2000);
+          if (selectedRom->hasBoxArt) BoxArt::load(selectedRom->filename);
           currentState = STATE_GAME_MENU;
           return;
         }
@@ -894,6 +895,7 @@ void loop() {
           LOG_ERROR_STR("Failed to start emulator. Check errors.");
           SDCard::freeRom(romData);
           currentRomBuffer = nullptr;
+          if (selectedRom->hasBoxArt) BoxArt::load(selectedRom->filename);
           currentState = STATE_GAME_MENU;
           BmoFace::setExpression(BmoFace::IDLE);
           lastButtonMs = millis();

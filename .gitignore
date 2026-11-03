@@ -52,3 +52,6 @@ rom_*.h
 cover_*.h
 
 tools/zig/
+
+# Full-resolution box art downloaded by scripts/fetch_covers.py (regenerate locally)
+tools/bmo_simulator/covers/

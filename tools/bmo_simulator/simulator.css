@@ -849,3 +849,29 @@ kbd.key-cap {
     grid-template-columns: 1fr;
   }
 }
+
+/* Original box art preview panel */
+.hd-boxart-frame {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0 8px;
+  background: var(--bezel-lens);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.hd-boxart-frame img {
+  width: 100%;
+  max-width: 320px;
+  max-height: 320px;
+  object-fit: contain;
+  image-rendering: auto;
+}
+
+.hd-boxart-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
