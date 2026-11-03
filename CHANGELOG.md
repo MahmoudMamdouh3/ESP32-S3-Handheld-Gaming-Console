@@ -18,6 +18,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Extracted raw `.gb` and `.gbc` binaries alongside `.zip` archives in `roms/gb/` and `roms/gbc/` (and renamed `hotdog.zip` to `Kirby - Tilt 'n' Tumble (USA).zip`) so `SDCard::scanDirectory()` indexes all 13 SD ROMs directly, and verified all 13 SD ROMs + 6 flash fallback ROM headers across 180 frames in native `Walnut-CGB` / `Peanut-GB` execution (`0` header/global checksum or init errors).
 - **Replaced AI-Generated Images in `docs/assets/` and `README.md` with Real Captures (`docs/assets/*.png`, `README.md`, `tools/bmo_simulator/simulator.css`)**:
   - Removed all 8 fake AI-generated images from `docs/assets/` (`bmo_hardware_showcase.jpg`, `bmo_living_companion.jpg`, `bmo_carousel_menu.jpg`, `bmo_game_library.jpg`, `hardware_and_states.png`, `hardware_bmo_face.png`, `hardware_charging.png`, `hardware_gameplay.png`) and replaced them with real headless Chrome screenshots of the 1:1 Web Simulator (`sim_full_workstation.png`, `sim_living_companion.png`, `sim_console_carousel.png`, `sim_top_picks_library.png`, `sim_console_museum.png`) and a 2×2 native C emulator RGB565 framebuffer grid (`native_emu_gameplay_grid.png`).
+- **Repository Root & Hierarchy Cleanup (`.gitignore`, `LICENSE`, `wokwi.toml`, `resources/aseprite/`)**:
+  - Removed committed build/binary artifacts and log dumps from the repository root (`arduino-cli.exe` untracked from Git while kept locally, `arduino-cli-bin/`, `arduino-cli.zip`, `zig.zip`, `host_test.exe`, `host_test.pdb`, `cppcheck.txt`, `sizes.txt`, `test.bmp`, `LICENSE.txt`, and `scratch/doomgeneric`).
+  - Relocated and fixed spelling on `"BMO asperite files/"` to `resources/aseprite/bmo_palette.aseprite` and `resources/aseprite/bmo_sprite_0001.aseprite`, removed leftover AI-generated media in `resources/`, updated `LICENSE` copyright holder, and updated `wokwi.toml` ELF path.
 
 ---
 
