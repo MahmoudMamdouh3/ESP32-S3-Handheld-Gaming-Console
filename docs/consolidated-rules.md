@@ -699,6 +699,7 @@ graph TD
 - **2026-08-31**: System-Wide Quality of Life (QoL) & UI/UX Suite: Formalized Rule 42 (`42_quality_of_life_and_roadmap_ledger.md`) tracking system-wide features. Implemented centralized theme engine (`src/core/theme.h`), Title Sanitizer (`sanitizeRomTitle`), A-Z Alphabetical Quick-Jump in game launcher, Hardware Self-Test & Gamepad Diagnostics Screen (`STATE_DIAGNOSTICS`), dynamic DMG 4-color palette switcher (Pea Soup, BMO Teal, Pocket Gray, Light Cyan, Amber Phosphor) with real-time in-game switching (`SELECT + DOWN`), Fast-Forward acceleration (`SELECT + RIGHT`), web simulator touch controls and live palette previewer, and Guardian CLI commands (`budget` and `qol`). CI & test suite 100% verified (32/32 tests passing). (Agent Antigravity)
 - **2026-08-31**: Universal Multi-Console Favorites Engine, OnionUI BMO Theme & Virtual BMO Integration: Built multi-system Favorites playlist with real-time `SELECT` button toggling, joyful BMO mascot reactions, `/favorites.txt` SD persistence, and multi-core auto-dispatch across all 15 retro platforms. Extracted and integrated `virtual_bmo.h` (512KB pre-favorited official game with BMO Desktop, Guardians of Sunshine, and BMO Talk). Redesigned UI with authentic OnionUI BMO theme palette (Mint Screen `#CEF5E4`, Body Teal `#5FB49C`, D-Pad Yellow `#FFE033`). Updated web simulator. (Agent Antigravity)
 - **2026-10-09**: Phase 2 Dual-Core Display Pipeline: Implemented FreeRTOS Core 0 dedicated display worker task (`BMO_Display`), double-buffered Octal PSRAM canvases (`menuCanvasArr[2]`), and recursive FSPI bus arbiter mutex (`SpiArbiter`) resolving BUS-01 15.36 ms Core 1 stall. Verified via Guardian CI (32/32 tests, Flash 33.0%, SRAM 75.2%). (Agent Antigravity)
+- **2026-11-03**: Pre-Flash Hardware Safety Fixes, 11-Core Native C Harness, Guardian MCP Server, MBC7 (`0x22`) Mapper, Curated Top Picks Filter (`SDCard::isPopularGame`, `DisplayEmu::setTopPicksFilter`), and Real Simulator/Emulator Screenshots in `README.md`. Verified all 19 ROMs natively across 180 frames with 0 errors. (Agent Antigravity)
 
 ---
 
@@ -1099,6 +1100,8 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `DisplayEmu::isBezelEnabled` | fn | `bool isBezelEnabled()` | Returns true if console bezels are enabled |
 | `DisplayEmu::toggleBezel` | fn | `bool toggleBezel()` | Toggles console bezel rendering on/off |
 | `DisplayEmu::drawConsoleBezel` | fn | `void drawConsoleBezel(int consoleIndex)` | Draws custom console bezel border around active viewport |
+| `DisplayEmu::setTopPicksFilter` | fn | `void setTopPicksFilter(bool enabled)` | Enables or disables Top Picks filter badge in game library menu |
+| `DisplayEmu::getTopPicksFilter` | fn | `bool getTopPicksFilter()` | Returns true if Top Picks library filter is active |
 | `DisplayEmu::getLastFramebuffer` | fn | `const uint16_t* getLastFramebuffer(int* outWidth, int* outHeight)` | Returns most recently streamed BGR565 framebuffer and dimensions |
 | `DisplayEmu::startFrame` | fn | `void startFrame()` | Asserts CS & sets 240x216 window once |
 | `DisplayEmu::endFrame` | fn | `void endFrame()` | Deasserts CS |
@@ -1191,6 +1194,8 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `SDCard::isFavorite` | fn | `bool isFavorite(int index)` | Returns true if game is in Favorites |
 | `SDCard::toggleFavorite` | fn | `void toggleFavorite(int index)` | Toggles favorite status & persists to SD |
 | `SDCard::getFavoritesCount` | fn | `int getFavoritesCount()` | Returns total count of starred favorite games |
+| `SDCard::isPopularGame` | fn | `bool isPopularGame(const char* filename, RomType type)` | Returns true if ROM matches curated Top Picks Hall-of-Fame catalog for its console |
+| `SDCard::getPopularCountForType` | fn | `int getPopularCountForType(RomType type)` | Returns count of curated Top Picks games for specific console |
 | `SDCard::saveFavorites` | fn | `void saveFavorites()` | Writes starred titles to /favorites.txt |
 | `SDCard::loadFavorites` | fn | `void loadFavorites()` | Reads starred titles from /favorites.txt |
 | `SDCard::loadIndex` | fn | `bool loadIndex()` | Fast-loads binary cached ROM list from /.bmo_index (<15ms) |
@@ -1205,7 +1210,7 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `SDCard::loadRom` | fn | `uint8_t* loadRom(const char* filename, size_t* outSize)` | Loads ROM to PSRAM (or returns .rodata) |
 | `SDCard::freeRom` | fn | `void freeRom(uint8_t* buffer)` | Frees PSRAM ROM (safe for .rodata) |
 | `RomType` | enum | `enum RomType { ROM_FAVORITES, ROM_GB, ROM_GBC, ROM_NES, ... }` | 16-platform console enum |
-| `RomFile` | struct | `struct RomFile { char filename[64]; RomType type; bool isFavorite; bool hasBoxArt; }` | ROM entry info with favorite and box art status |
+| `RomFile` | struct | `struct RomFile { char filename[64]; RomType type; bool isFavorite; bool hasBoxArt; bool isPopular; }` | ROM entry info with favorite, box art, and Top Pick status |
 
 ---
 

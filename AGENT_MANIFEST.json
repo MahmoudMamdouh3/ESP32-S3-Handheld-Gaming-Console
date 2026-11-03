@@ -1,14 +1,14 @@
 {
   "manifest_version": "2.1.0",
-  "last_updated": "2026-11-03T11:51:25.733999",
+  "last_updated": "2026-11-03T12:37:41.252211",
   "total_files": 382,
-  "total_lines": 446297,
-  "total_sloc": 411090,
+  "total_lines": 446654,
+  "total_sloc": 411431,
   "target_mcu": "ESP32-S3-N16R8 (16MB Flash, 8MB PSRAM)",
   "active_consoles": 15,
   "rules_count": 45,
   "iram_budget_used_bytes": 77824,
-  "flash_budget_used_bytes": 5694541,
+  "flash_budget_used_bytes": 5698641,
   "dram_budget_used_bytes": 218904,
   "emulators": [
     {

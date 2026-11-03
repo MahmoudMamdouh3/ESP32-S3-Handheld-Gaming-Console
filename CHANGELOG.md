@@ -5,6 +5,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Curated Top Picks Library Filter, MBC7 Accelerometer Mapper & Real Simulator Screenshots] - 2026-11-03
+### Added
+- **Curated Top Picks (`[TOP PICK]`) Library Filter & Hall-of-Fame Catalog (`src/core/sd_card.h`, `src/core/sd_card.cpp`, `src/core/display_emu.h`, `src/core/display_emu.cpp`, `BmoGameboy.ino`, `tools/bmo_simulator/simulator.js`)**:
+  - Added `bool isPopular` to `struct RomFile` and implemented `SDCard::isPopularGame()` and `SDCard::getPopularCountForType()` across all 14 console platforms (`ROM_GB` through `ROM_WAD`) so users with large SD card libraries can identify iconic titles immediately.
+  - Added `DisplayEmu::setTopPicksFilter()` / `DisplayEmu::getTopPicksFilter()`, `TOP PICK` badge rendering on game cards, and one-button `START` toggling in `STATE_GAME_MENU` (`rebuildVisibleGames()`) and the Web Simulator (`tools/bmo_simulator/simulator.js`).
+- **MBC7 (`0x22`) Accelerometer + EEPROM Cartridge Support (`src/engine/walnut_cgb/walnut_cgb.h`, `src/vendor/peanut_gb/peanut_gb.h`)**:
+  - Implemented MBC7 (`0x22`, `MBC = 7`) ROM banking, D-Pad-driven ADXL202 2-axis accelerometer tilt registers (`$A020-$A050`, centered at `0x81D0` ± `0x0090`), and 93LC56 EEPROM ready status (`$A080`) so `Kirby - Tilt 'n' Tumble (USA).gbc` boots and plays with zero errors.
+
+### Fixed
+- **Extracted Zipped ROMs in `roms/gb/` and `roms/gbc/` & Verified All 19 Installed ROMs Natively**:
+  - Extracted raw `.gb` and `.gbc` binaries alongside `.zip` archives in `roms/gb/` and `roms/gbc/` (and renamed `hotdog.zip` to `Kirby - Tilt 'n' Tumble (USA).zip`) so `SDCard::scanDirectory()` indexes all 13 SD ROMs directly, and verified all 13 SD ROMs + 6 flash fallback ROM headers across 180 frames in native `Walnut-CGB` / `Peanut-GB` execution (`0` header/global checksum or init errors).
+- **Replaced AI-Generated Images in `docs/assets/` and `README.md` with Real Captures (`docs/assets/*.png`, `README.md`, `tools/bmo_simulator/simulator.css`)**:
+  - Removed all 8 fake AI-generated images from `docs/assets/` (`bmo_hardware_showcase.jpg`, `bmo_living_companion.jpg`, `bmo_carousel_menu.jpg`, `bmo_game_library.jpg`, `hardware_and_states.png`, `hardware_bmo_face.png`, `hardware_charging.png`, `hardware_gameplay.png`) and replaced them with real headless Chrome screenshots of the 1:1 Web Simulator (`sim_full_workstation.png`, `sim_living_companion.png`, `sim_console_carousel.png`, `sim_top_picks_library.png`, `sim_console_museum.png`) and a 2×2 native C emulator RGB565 framebuffer grid (`native_emu_gameplay_grid.png`).
+
+---
+
 ## [AI Development Environment Overhaul, 11-Core Native C Harness & MCP Server] - 2026-11-03
 ### Added
 - **Model Context Protocol (MCP) Server for BMO Guardian (`tools/guardian/mcp_server.py`, `.mcp.json`, `tools/guardian/cli.py`)**:

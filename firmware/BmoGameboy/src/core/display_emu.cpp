@@ -373,6 +373,7 @@ namespace {
 
   static char s_alphaBadgeLetter = '\0';
   static unsigned long s_alphaBadgeExpireMs = 0;
+  static bool s_topPicksFilter = false;
 
   bool internalHasActiveToast() {
     return (s_toastExpireMs > 0 && millis() < s_toastExpireMs) || (s_toastY > -27.0f);
@@ -1284,6 +1285,8 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   char heading[40];
   if (console == ROM_FAVORITES) {
     snprintf(heading, sizeof(heading), "* FAVORITE GAMES");
+  } else if (s_topPicksFilter) {
+    snprintf(heading, sizeof(heading), "%s TOP PICKS", consoleName(console));
   } else {
     snprintf(heading, sizeof(heading), "%s LIBRARY", consoleName(console));
   }
@@ -1309,6 +1312,7 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
 
   const RomFile* game = games[selectedIndex];
   const bool isFav = game ? game->isFavorite : false;
+  const bool isPop = game ? game->isPopular : false;
   const RomType actualType = game ? game->type : console;
 
   char title[64];
@@ -1327,13 +1331,17 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
     drawCentered(consoleBadge(actualType), 98, UI_YELLOW);
   }
 
-  menuCanvas->drawRoundRect(112, 126, 96, 18, 8, isFav ? UI_YELLOW : UI_TEAL);
+  menuCanvas->drawRoundRect(112, 126, 96, 18, 8, isFav ? UI_YELLOW : (isPop ? UI_MINT : UI_TEAL));
   
   menuCanvas->setFont();
   if (isFav) {
     menuCanvas->setTextColor(UI_YELLOW);
     menuCanvas->setCursor(130, 132);
     menuCanvas->print("* FAVORITE");
+  } else if (isPop) {
+    menuCanvas->setTextColor(UI_MINT);
+    menuCanvas->setCursor(136, 132);
+    menuCanvas->print("TOP PICK");
   } else {
     menuCanvas->setTextColor(UI_WHITE);
     menuCanvas->setCursor(126, 132);
@@ -1345,7 +1353,8 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   
   menuCanvas->setFont();
   char position[36];
-  snprintf(position, sizeof(position), "%d / %d  [%s]", selectedIndex + 1, count, consoleBadge(actualType));
+  snprintf(position, sizeof(position), "%d / %d  [%s%s]", selectedIndex + 1, count,
+           consoleBadge(actualType), s_topPicksFilter ? " TOP" : "");
   drawCentered(position, 198, UI_MINT);
 
   // Library scroll position track
@@ -1362,10 +1371,11 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   // Footer action bar with button badges
   menuCanvas->fillRect(0, 214, 320, 26, UI_DEEP_TEAL);
   menuCanvas->drawFastHLine(0, 213, 320, UI_TEAL);
-  drawButtonPill(8,   220, "A",   "PLAY", UI_CORAL,  UI_BLACK, UI_WHITE);
-  drawButtonPill(78,  220, "B",   "BACK", UI_MINT,   UI_BLACK, UI_WHITE);
-  drawButtonPill(146, 220, "SEL", isFav ? "* UNSTAR" : "* STAR", UI_YELLOW, UI_BLACK, UI_WHITE);
-  drawButtonPill(245, 220, "< >", "A-Z",  UI_TEAL,   UI_BLACK, UI_WHITE);
+  drawButtonPill(6,   220, "A",   "PLAY", UI_CORAL,  UI_BLACK, UI_WHITE);
+  drawButtonPill(56,  220, "B",   "BACK", UI_MINT,   UI_BLACK, UI_WHITE);
+  drawButtonPill(106, 220, "SEL", isFav ? "UNSTAR" : "STAR", UI_YELLOW, UI_BLACK, UI_WHITE);
+  drawButtonPill(180, 220, "ST",  s_topPicksFilter ? "ALL" : "TOP", UI_BLUE, UI_WHITE, UI_WHITE);
+  drawButtonPill(236, 220, "<>",  "A-Z",  UI_TEAL,   UI_BLACK, UI_WHITE);
 
   // Quick A-Z alphabetical jump HUD indicator
   if (s_alphaBadgeExpireMs > millis() && s_alphaBadgeLetter != '\0') {
@@ -1862,6 +1872,14 @@ void DisplayEmu::showAlphaBadge(char letter, unsigned long durationMs) {
   }
   s_alphaBadgeLetter = letter;
   s_alphaBadgeExpireMs = millis() + durationMs;
+}
+
+void DisplayEmu::setTopPicksFilter(bool enabled) {
+  s_topPicksFilter = enabled;
+}
+
+bool DisplayEmu::getTopPicksFilter() {
+  return s_topPicksFilter;
 }
 
 void DisplayEmu::setBezelEnabled(bool enabled) {

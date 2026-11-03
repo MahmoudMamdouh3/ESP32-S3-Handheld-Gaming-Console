@@ -94,6 +94,7 @@ bool SDCard::begin() {
   romList[numRoms].type = ROM_GB;
   romList[numRoms].isFavorite = true;
   romList[numRoms].hasBoxArt = false;
+  romList[numRoms].isPopular = true;
   s_favoritesCount++;                  // PERF-C1
   romCountsByType[ROM_GB]++;
   numRoms++;
@@ -104,6 +105,7 @@ bool SDCard::begin() {
   romList[numRoms].type = ROM_GBC;
   romList[numRoms].isFavorite = true;
   romList[numRoms].hasBoxArt = false;
+  romList[numRoms].isPopular = true;
   s_favoritesCount++;                  // PERF-C1
   romCountsByType[ROM_GBC]++;
   numRoms++;
@@ -113,6 +115,7 @@ bool SDCard::begin() {
   romList[numRoms].type = ROM_GBC;
   romList[numRoms].isFavorite = true;
   romList[numRoms].hasBoxArt = false;
+  romList[numRoms].isPopular = true;
   s_favoritesCount++;                  // PERF-C1
   romCountsByType[ROM_GBC]++;
   numRoms++;
@@ -122,6 +125,7 @@ bool SDCard::begin() {
   romList[numRoms].type = ROM_GBC;
   romList[numRoms].isFavorite = false;
   romList[numRoms].hasBoxArt = false;
+  romList[numRoms].isPopular = true;
   romCountsByType[ROM_GBC]++;
   numRoms++;
 
@@ -130,6 +134,7 @@ bool SDCard::begin() {
   romList[numRoms].type = ROM_GBC;
   romList[numRoms].isFavorite = false;
   romList[numRoms].hasBoxArt = false;
+  romList[numRoms].isPopular = true;
   romCountsByType[ROM_GBC]++;
   numRoms++;
 
@@ -221,6 +226,7 @@ bool SDCard::loadIndex() {
       s_favoritesCount++;
     }
     romList[numRoms].hasBoxArt = (e.hasBoxArt != 0);
+    romList[numRoms].isPopular = SDCard::isPopularGame(romList[numRoms].filename, romList[numRoms].type);
     if (romList[numRoms].type <= ROM_COLEM) {
       romCountsByType[romList[numRoms].type]++;
     }
@@ -360,6 +366,7 @@ void SDCard::scanDirectory(const char* dirPath, int depth, bool hasArtDirs) {
         romList[numRoms].type = type;
         romList[numRoms].isFavorite = false;
         romList[numRoms].hasBoxArt = hasArtDirs ? BoxArt::existsForRom(baseName) : false;
+        romList[numRoms].isPopular = SDCard::isPopularGame(baseName, type);
         if (type <= ROM_COLEM) {
           romCountsByType[type]++;
         }
@@ -412,6 +419,121 @@ int SDCard::getRomCountForType(RomType type) {
   }
   if (type <= ROM_COLEM) return romCountsByType[type];
   return 0;
+}
+
+bool SDCard::isPopularGame(const char* filename, RomType type) {
+  if (!filename || !filename[0]) return false;
+  const char* base = strrchr(filename, '/');
+  if (!base) base = strrchr(filename, '\\');
+  base = base ? (base + 1) : filename;
+
+  char lower[64];
+  size_t i = 0;
+  for (; base[i] != '\0' && i + 1 < sizeof(lower); ++i) {
+    char c = base[i];
+    if (c >= 'A' && c <= 'Z') c = (char)(c - 'A' + 'a');
+    lower[i] = c;
+  }
+  lower[i] = '\0';
+
+  auto matchAny = [&](const char* const* keywords, int n) -> bool {
+    for (int k = 0; k < n; ++k) {
+      if (strstr(lower, keywords[k]) != nullptr) return true;
+    }
+    return false;
+  };
+
+  static const char* const kGbTop[] = {
+    "virtual bmo", "tetris", "super mario", "zelda", "link's awakening",
+    "pokemon", "kirby", "metroid", "donkey kong", "gargoyle", "castlevania",
+    "final fantasy", "wario land", "mega man", "contra", "ducktales", "dr. mario", "spider-man"
+  };
+  static const char* const kGbcTop[] = {
+    "mario", "zelda", "oracle", "pokemon", "metal gear", "shantae",
+    "wario land", "dragon warrior", "aladdin", "lego racers", "kirby",
+    "grand theft auto", "tetris", "resident evil", "survival kids", "lufia"
+  };
+  static const char* const kNesTop[] = {
+    "super mario", "zelda", "metroid", "mega man", "castlevania", "contra",
+    "kirby", "punch-out", "final fantasy", "dragon warrior", "tetris",
+    "ninja gaiden", "ducktales", "river city", "double dragon", "excitebike", "blaster master"
+  };
+  static const char* const kSnesTop[] = {
+    "chrono trigger", "super mario", "zelda", "link to the past", "super metroid",
+    "donkey kong", "final fantasy", "earthbound", "secret of mana", "mega man x",
+    "contra", "castlevania", "f-zero", "star fox", "street fighter", "actraiser", "terranigma"
+  };
+  static const char* const kGenesisTop[] = {
+    "sonic", "streets of rage", "gunstar", "shinobi", "phantasy star",
+    "shining force", "castlevania", "contra", "golden axe", "altered beast",
+    "comix zone", "earthworm jim", "mortal kombat", "aladdin", "thunder force", "vectorman", "ristar"
+  };
+  static const char* const kSmsGgTop[] = {
+    "alex kidd", "phantasy star", "wonder boy", "sonic", "shinobi",
+    "castle of illusion", "master of darkness", "power strike", "golden axe",
+    "r-type", "outrun", "columns", "defender of oasis", "tails", "gunstar", "ristar"
+  };
+  static const char* const kPceTop[] = {
+    "bonk", "blazing lazers", "rondo", "castlevania", "soldier blade",
+    "star soldier", "bomberman", "splatterhouse", "ys ", "air zonk",
+    "neutopia", "military madness", "parasol stars", "r-type", "devil's crush"
+  };
+  static const char* const kAtariTop[] = {
+    "pitfall", "river raid", "adventure", "yar", "kaboom", "space invaders",
+    "missile command", "frogger", "pac-man", "pacman", "asteroids", "centipede", "berzerk", "h.e.r.o"
+  };
+  static const char* const kColemTop[] = {
+    "donkey kong", "zaxxon", "venture", "lady bug", "mouse trap", "smurf",
+    "pepper", "frogger", "galaxian", "gorf", "antarctic", "montezuma", "boulder dash", "q*bert"
+  };
+  static const char* const kNgpTop[] = {
+    "snk vs", "card fighters", "millennium", "metal slug", "sonic",
+    "king of fighters", "samurai shodown", "fatal fury", "last blade", "dark arms", "faselei"
+  };
+  static const char* const kLynxTop[] = {
+    "california games", "blue lightning", "chip's challenge", "chips challenge",
+    "klax", "rygar", "stun runner", "s.t.u.n", "xenophobe", "rampart", "gauntlet", "toki", "lemmings"
+  };
+  static const char* const kWSwanTop[] = {
+    "final fantasy", "klonoa", "gunpey", "silversword", "dicing knight",
+    "guilty gear", "rockman", "mega man", "digimon", "chocobo", "makaimura", "golden axe"
+  };
+  static const char* const kPicoTop[] = {
+    "celeste", "high stakes", "slipways", "picohot", "jelpi", "combo pool",
+    "poom", "dusk child", "bmo", "cab ride", "just one boss"
+  };
+  static const char* const kDoomTop[] = {
+    "doom", "freedoom", "plutonia", "tnt", "heretic", "chex"
+  };
+
+  switch (type) {
+    case ROM_GB:      return matchAny(kGbTop, sizeof(kGbTop) / sizeof(kGbTop[0]));
+    case ROM_GBC:     return matchAny(kGbcTop, sizeof(kGbcTop) / sizeof(kGbcTop[0]));
+    case ROM_NES:     return matchAny(kNesTop, sizeof(kNesTop) / sizeof(kNesTop[0]));
+    case ROM_SNES:    return matchAny(kSnesTop, sizeof(kSnesTop) / sizeof(kSnesTop[0]));
+    case ROM_GENESIS: return matchAny(kGenesisTop, sizeof(kGenesisTop) / sizeof(kGenesisTop[0]));
+    case ROM_SMS:
+    case ROM_GG:      return matchAny(kSmsGgTop, sizeof(kSmsGgTop) / sizeof(kSmsGgTop[0]));
+    case ROM_PCE:     return matchAny(kPceTop, sizeof(kPceTop) / sizeof(kPceTop[0]));
+    case ROM_ATARI:   return matchAny(kAtariTop, sizeof(kAtariTop) / sizeof(kAtariTop[0]));
+    case ROM_COLEM:   return matchAny(kColemTop, sizeof(kColemTop) / sizeof(kColemTop[0]));
+    case ROM_NGP:     return matchAny(kNgpTop, sizeof(kNgpTop) / sizeof(kNgpTop[0]));
+    case ROM_LYNX:    return matchAny(kLynxTop, sizeof(kLynxTop) / sizeof(kLynxTop[0]));
+    case ROM_WSWAN:   return matchAny(kWSwanTop, sizeof(kWSwanTop) / sizeof(kWSwanTop[0]));
+    case ROM_PICO8:   return matchAny(kPicoTop, sizeof(kPicoTop) / sizeof(kPicoTop[0]));
+    case ROM_WAD:     return matchAny(kDoomTop, sizeof(kDoomTop) / sizeof(kDoomTop[0]));
+    default:          return false;
+  }
+}
+
+int SDCard::getPopularCountForType(RomType type) {
+  int count = 0;
+  for (int i = 0; i < numRoms; ++i) {
+    if (romList[i].type == type && romList[i].isPopular) {
+      count++;
+    }
+  }
+  return count;
 }
 
 const RomFile* SDCard::getRomInfo(int index) {

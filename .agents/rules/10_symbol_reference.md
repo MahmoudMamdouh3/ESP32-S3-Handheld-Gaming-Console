@@ -81,6 +81,8 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `DisplayEmu::isBezelEnabled` | fn | `bool isBezelEnabled()` | Returns true if console bezels are enabled |
 | `DisplayEmu::toggleBezel` | fn | `bool toggleBezel()` | Toggles console bezel rendering on/off |
 | `DisplayEmu::drawConsoleBezel` | fn | `void drawConsoleBezel(int consoleIndex)` | Draws custom console bezel border around active viewport |
+| `DisplayEmu::setTopPicksFilter` | fn | `void setTopPicksFilter(bool enabled)` | Enables or disables Top Picks filter badge in game library menu |
+| `DisplayEmu::getTopPicksFilter` | fn | `bool getTopPicksFilter()` | Returns true if Top Picks library filter is active |
 | `DisplayEmu::getLastFramebuffer` | fn | `const uint16_t* getLastFramebuffer(int* outWidth, int* outHeight)` | Returns most recently streamed BGR565 framebuffer and dimensions |
 | `DisplayEmu::startFrame` | fn | `void startFrame()` | Asserts CS & sets 240x216 window once |
 | `DisplayEmu::endFrame` | fn | `void endFrame()` | Deasserts CS |
@@ -173,6 +175,8 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `SDCard::isFavorite` | fn | `bool isFavorite(int index)` | Returns true if game is in Favorites |
 | `SDCard::toggleFavorite` | fn | `void toggleFavorite(int index)` | Toggles favorite status & persists to SD |
 | `SDCard::getFavoritesCount` | fn | `int getFavoritesCount()` | Returns total count of starred favorite games |
+| `SDCard::isPopularGame` | fn | `bool isPopularGame(const char* filename, RomType type)` | Returns true if ROM matches curated Top Picks Hall-of-Fame catalog for its console |
+| `SDCard::getPopularCountForType` | fn | `int getPopularCountForType(RomType type)` | Returns count of curated Top Picks games for specific console |
 | `SDCard::saveFavorites` | fn | `void saveFavorites()` | Writes starred titles to /favorites.txt |
 | `SDCard::loadFavorites` | fn | `void loadFavorites()` | Reads starred titles from /favorites.txt |
 | `SDCard::loadIndex` | fn | `bool loadIndex()` | Fast-loads binary cached ROM list from /.bmo_index (<15ms) |
@@ -187,7 +191,7 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `SDCard::loadRom` | fn | `uint8_t* loadRom(const char* filename, size_t* outSize)` | Loads ROM to PSRAM (or returns .rodata) |
 | `SDCard::freeRom` | fn | `void freeRom(uint8_t* buffer)` | Frees PSRAM ROM (safe for .rodata) |
 | `RomType` | enum | `enum RomType { ROM_FAVORITES, ROM_GB, ROM_GBC, ROM_NES, ... }` | 16-platform console enum |
-| `RomFile` | struct | `struct RomFile { char filename[64]; RomType type; bool isFavorite; bool hasBoxArt; }` | ROM entry info with favorite and box art status |
+| `RomFile` | struct | `struct RomFile { char filename[64]; RomType type; bool isFavorite; bool hasBoxArt; bool isPopular; }` | ROM entry info with favorite, box art, and Top Pick status |
 
 ---
 

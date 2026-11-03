@@ -13,32 +13,32 @@ Firmware and tooling for a custom handheld game console built around an **ESP32-
 
 <br/>
 
-<img src="docs/assets/bmo_hardware_showcase.jpg" width="680" alt="BMO Handheld Gaming Console Hardware" />
+<img src="docs/assets/sim_full_workstation.png" width="760" alt="BMO Handheld Console 1:1 Simulator & Hardware Telemetry Lab" />
 
 </div>
 
 ---
 
-## Screenshots
+## Real Simulator & Native Emulator Screenshots
 
 <div align="center">
-  <img src="docs/assets/bmo_living_companion.jpg" width="580" alt="BMO Companion Mode" />
-  <p><em>BMO face mode with animated expressions and dialogue bubbles.</em></p>
+  <img src="docs/assets/sim_living_companion.png" width="460" alt="BMO Face Mode" />
+  <p><em>BMO face mode (320×240 ST7789) with procedural 2D SDF expressions and dialogue bubbles.</em></p>
 </div>
 
 <div align="center">
-  <img src="docs/assets/bmo_carousel_menu.jpg" width="580" alt="System Carousel" />
-  <p><em>Console selector carousel.</em></p>
+  <img src="docs/assets/sim_console_carousel.png" width="460" alt="System Carousel" />
+  <p><em>15-system console selector carousel with pixel-art hardware silhouettes and per-system ROM counts.</em></p>
 </div>
 
 <div align="center">
-  <img src="docs/assets/bmo_game_library.jpg" width="580" alt="ROM Library Browser" />
-  <p><em>ROM browser with 64×64 cover art, favorites, and folder support.</em></p>
+  <img src="docs/assets/sim_top_picks_library.png" width="460" alt="ROM Library Browser with Top Picks" />
+  <p><em>ROM browser with <code>[TOP PICK]</code> Hall-of-Fame curation badges, <code>★ FAV</code> stars, and one-button Top Picks filtering (<code>START</code>).</em></p>
 </div>
 
 <div align="center">
-  <img src="docs/assets/hardware_and_states.png" width="660" alt="Hardware and Operating Modes" />
-  <p><em>Soldered ESP32-S3 perfboard prototype and main UI screens.</em></p>
+  <img src="docs/assets/native_emu_gameplay_grid.png" width="680" alt="Native C Emulator Framebuffer Captures" />
+  <p><em>Direct RGB565 framebuffers captured from the native C emulator cores (<code>Walnut-CGB</code> / <code>Peanut-GB</code>) running Super Mario Bros. Deluxe, The Legend of Zelda: Oracle of Ages, Pokémon Red, and Kirby - Tilt 'n' Tumble (MBC7 accelerometer).</em></p>
 </div>
 
 ---
@@ -69,8 +69,8 @@ All 14 cores run in PSRAM and share a common lifecycle (`loadRom`, `runFrame`, `
 
 | System | Extensions | Core / Implementation | Native Resolution |
 | :--- | :--- | :--- | :--- |
-| **Game Boy (DMG)** | `.gb` | Peanut-GB | 160×144 |
-| **Game Boy Color** | `.gbc` | Walnut-CGB | 160×144 |
+| **Game Boy (DMG)** | `.gb` | Peanut-GB (MBC1, MBC2, MBC3+RTC, MBC5, MBC7) | 160×144 |
+| **Game Boy Color** | `.gbc` | Walnut-CGB (MBC1, MBC2, MBC3+RTC, MBC5, MBC7) | 160×144 |
 | **NES** | `.nes` | Agnes (Mappers 0, 1, 2, 3, 4) | 256×240 |
 | **Sega Master System / Game Gear** | `.sms`, `.gg`, `.sg` | Z80 + VDP + SN76489 | 256×192 / 160×144 |
 | **Sega Genesis / Mega Drive** | `.gen`, `.md`, `.smd` | M68000 + VDP | 320×224 |
@@ -92,7 +92,7 @@ All 14 cores run in PSRAM and share a common lifecycle (`loadRom`, `runFrame`, `
 - **Fast SD Indexing & Folders:** Scans up to 3 levels of subdirectories on the SD card and caches the ROM list in `/.bmo_index` for fast boot times.
 - **Save States & Battery Saves:** 5 save state slots per game (`/saves/<game>.st0`–`.st4`) plus automatic `.sav` battery SRAM backup on exit.
 - **Cover Art & Screenshots:** Loads 64×64 RGB565 `.raw` or `.bmp` box art from `/boxart` or `/covers`, and saves 24-bit `.bmp` screenshots to `/screenshots`.
-- **Favorites & History:** Star games in the menu (`/.favorites.txt`) and track recently played titles (`/history.txt`).
+- **Favorites, History & Curated Top Picks:** Star games in the menu (`/favorites.txt`), track recently played titles (`/history.txt`), or press **`START`** inside any console library to filter large SD card ROM sets down to curated **`[TOP PICK]`** Hall-of-Fame titles per console.
 
 ### In-Game & Pause Controls
 

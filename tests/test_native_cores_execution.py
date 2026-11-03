@@ -198,6 +198,24 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         self.assertIn("btn-wasm-save-state", html)
         self.assertIn("btn-verify-host-cores", html)
 
+    def test_10_top_picks_curation_and_mbc7_rom_playability(self):
+        sd_h = (FIRMWARE_DIR / "src" / "core" / "sd_card.h").read_text(encoding="utf-8")
+        sd_cpp = (FIRMWARE_DIR / "src" / "core" / "sd_card.cpp").read_text(encoding="utf-8")
+        disp_h = (FIRMWARE_DIR / "src" / "core" / "display_emu.h").read_text(encoding="utf-8")
+        disp_cpp = (FIRMWARE_DIR / "src" / "core" / "display_emu.cpp").read_text(encoding="utf-8")
+        ino_src = (FIRMWARE_DIR / "BmoGameboy.ino").read_text(encoding="utf-8")
+        walnut_h = (FIRMWARE_DIR / "src" / "engine" / "walnut_cgb" / "walnut_cgb.h").read_text(encoding="utf-8")
+        peanut_h = (FIRMWARE_DIR / "src" / "vendor" / "peanut_gb" / "peanut_gb.h").read_text(encoding="utf-8")
+
+        self.assertIn("bool isPopularGame(const char* filename, RomType type);", sd_h)
+        self.assertIn("int getPopularCountForType(RomType type);", sd_h)
+        self.assertIn("SDCard::isPopularGame", sd_cpp)
+        self.assertIn("void setTopPicksFilter(bool enabled);", disp_h)
+        self.assertIn("TOP PICK", disp_cpp)
+        self.assertIn("s_topPicksOnly", ino_src)
+        self.assertIn("0x22", walnut_h)
+        self.assertIn("0x22", peanut_h)
+
 
 if __name__ == "__main__":
     unittest.main()

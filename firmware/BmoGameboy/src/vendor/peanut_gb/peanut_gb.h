@@ -814,6 +814,27 @@ uint8_t __gb_read(struct gb_s *gb, uint16_t addr)
 
 	case 0xA:
 	case 0xB:
+		if(gb->mbc == 7)
+		{
+			if(!gb->enable_cart_ram || gb->cart_ram_bank != 0x40)
+				return 0xFF;
+			uint16_t ax = 0x81D0, ay = 0x81D0;
+			if((gb->direct.joypad & JOYPAD_LEFT) == 0)  ax += 0x0070;
+			if((gb->direct.joypad & JOYPAD_RIGHT) == 0) ax -= 0x0070;
+			if((gb->direct.joypad & JOYPAD_UP) == 0)    ay += 0x0070;
+			if((gb->direct.joypad & JOYPAD_DOWN) == 0)  ay -= 0x0070;
+			switch((addr >> 4) & 0x0F)
+			{
+			case 0x2: return (uint8_t)(ax & 0xFF);
+			case 0x3: return (uint8_t)((ax >> 8) & 0xFF);
+			case 0x4: return (uint8_t)(ay & 0xFF);
+			case 0x5: return (uint8_t)((ay >> 8) & 0xFF);
+			case 0x6: return 0x00;
+			case 0x7: return 0xFF;
+			case 0x8: return (uint8_t)(gb->gb_cart_ram_read(gb, 0x80) | 0x01);
+			default:  return 0xFF;
+			}
+		}
 		if(gb->mbc == 3 && gb->cart_ram_bank >= 0x08)
 		{
 			return gb->rtc_latched.bytes[gb->cart_ram_bank - 0x08];
@@ -953,6 +974,8 @@ void __gb_write(struct gb_s *gb, uint_fast16_t addr, uint8_t val)
 		}
 		else if(gb->mbc == 5)
 			gb->selected_rom_bank = (val & 0x01) << 8 | (gb->selected_rom_bank & 0xFF);
+		else if(gb->mbc == 7)
+			gb->selected_rom_bank = val & 0x7F;
 
 		gb->selected_rom_bank = gb->selected_rom_bank & gb->num_rom_banks_mask;
 		return;
@@ -977,6 +1000,8 @@ void __gb_write(struct gb_s *gb, uint_fast16_t addr, uint8_t val)
 
 		else if(gb->mbc == 5)
 			gb->cart_ram_bank = (val & 0x0F);
+		else if(gb->mbc == 7)
+			gb->cart_ram_bank = val;
 
 		return;
 
@@ -997,6 +1022,12 @@ void __gb_write(struct gb_s *gb, uint_fast16_t addr, uint8_t val)
 
 	case 0xA:
 	case 0xB:
+		if(gb->mbc == 7)
+		{
+			if(gb->enable_cart_ram && gb->cart_ram_bank == 0x40)
+				gb->gb_cart_ram_write(gb, (addr >> 4) & 0xFF, val);
+			return;
+		}
 		if(gb->mbc == 3 && gb->cart_ram_bank >= 0x08)
 		{
 			const uint8_t rtc_reg_mask[5] = {
@@ -3554,6 +3585,11 @@ int gb_get_save_size_s(struct gb_s *gb, size_t *ram_size)
 		*ram_size = 0x200;
 		return 0;
 	}
+	if(gb->mbc == 7)
+	{
+		*ram_size = 0x100;
+		return 0;
+	}
 
 	/* Return -1 on invalid or unsupported RAM size. */
 	if(ram_size_code >= PEANUT_GB_ARRAYSIZE(ram_sizes))
@@ -3579,6 +3615,8 @@ uint_fast32_t gb_get_save_size(struct gb_s *gb)
 	 * nibbles are not packed. */
 	if(gb->mbc == 2)
 		return 0x200;
+	if(gb->mbc == 7)
+		return 0x100;
 
 	/* Return 0 on invalid or unsupported RAM size. */
 	if(ram_size_code >= PEANUT_GB_ARRAYSIZE(ram_sizes))
@@ -3716,13 +3754,15 @@ enum gb_init_error_e gb_init(struct gb_s *gb,
 	const int8_t cart_mbc[] =
 	{
 		0, 1, 1, 1, -1, 2, 2, -1, 0, 0, -1, 0, 0, 0, -1, 3,
-		3, 3, 3, 3, -1, -1, -1, -1, -1, 5, 5, 5, 5, 5, 5, -1
+		3, 3, 3, 3, -1, -1, -1, -1, -1, 5, 5, 5, 5, 5, 5, -1,
+		-1, -1, 7
 	};
 	/* Whether cart has RAM. */
 	const uint8_t cart_ram[] =
 	{
 		0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0,
-		1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0
+		1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0,
+		0, 0, 1
 	};
 	/* How large the ROM is in banks of 16 KiB. */
 	const uint16_t num_rom_banks_mask[] =
@@ -3786,7 +3826,12 @@ enum gb_init_error_e gb_init(struct gb_s *gb,
 
 	/* If the ROM says that it support RAM, but has 0 RAM banks, then
 	 * disable RAM reads from the cartridge. */
-	if(gb->cart_ram == 0 || gb->num_ram_banks == 0)
+	if(gb->mbc == 7)
+	{
+		gb->cart_ram = 1;
+		gb->num_ram_banks = 1;
+	}
+	else if(gb->cart_ram == 0 || gb->num_ram_banks == 0)
 	{
 		gb->cart_ram = 0;
 		gb->num_ram_banks = 0;
