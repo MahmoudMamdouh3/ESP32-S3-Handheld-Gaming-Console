@@ -5,6 +5,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Original Box Art Pipeline & Firmware-Matched Simulator Library Screen] - 2026-11-03
+### Added
+- **Full-resolution box art pipeline (`scripts/fetch_covers.py`)**:
+  - Downloads the original Libretro box art PNGs (256x256 up to 512x731) for 61 titles across every console, follows Libretro symlink entries (Atari Lynx), and builds a 640x640 Virtual BMO cover from `resources/Virtual BMO GBS Source Code.zip`.
+  - Writes masters to `roms/boxart/hd/`, Lanczos-resampled 64x64 `.raw` (byte-swapped BGR565) and `.bmp` files to `roms/boxart/` for `BoxArt::load()`, and simulator PNGs to `tools/bmo_simulator/covers/`. `--target-size WxH` supports future higher-resolution panels.
+- **Original Box Art panel in the Web Simulator (`tools/bmo_simulator/index.html`, `simulator.css`, `simulator.js`)**: shows the full-resolution scan and its pixel size for the selected game. `?game=<n>` URL parameter selects a game for screenshots.
+- **`TestCoverArtPipeline` (`tests/test_native_cores_execution.py`)**: covers resize, `.raw`/`.bmp` output sizes, simulator/script slug parity, and PNG validity when covers are present.
+
+### Changed
+- **Simulator game library screen now mirrors `DisplayEmu::drawGameSelectMenu()`**: same cover card geometry, 64x64 art slot, status pill, scroll track, and footer button pills, replacing the earlier 5-row list that did not exist on the device.
+- `tools/bmo_simulator/covers/` is gitignored (22 MB); run `python scripts/fetch_covers.py` to regenerate.
+
+### Fixed
+- **`BmoGameboy.ino`**: when a ROM fails to load or an emulator fails to start, the game menu is re-entered with the selected game's box art reloaded (it was unloaded before launch and stayed blank).
+
+---
+
 ## [Curated Top Picks Library Filter, MBC7 Accelerometer Mapper & Real Simulator Screenshots] - 2026-11-03
 ### Added
 - **Curated Top Picks (`[TOP PICK]`) Library Filter & Hall-of-Fame Catalog (`src/core/sd_card.h`, `src/core/sd_card.cpp`, `src/core/display_emu.h`, `src/core/display_emu.cpp`, `BmoGameboy.ino`, `tools/bmo_simulator/simulator.js`)**:

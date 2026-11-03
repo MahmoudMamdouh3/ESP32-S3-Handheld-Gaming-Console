@@ -217,5 +217,43 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         self.assertIn("0x22", peanut_h)
 
 
+class TestCoverArtPipeline(unittest.TestCase):
+    """Covers the full-resolution to 64x64 box art conversion path."""
+
+    def test_image_to_pixels_rgb_resizes_to_target(self):
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "master.png"
+            Image.new("RGB", (512, 731), (200, 40, 90)).save(src)
+            px = fetch_covers.image_to_pixels_rgb(src, 64, 64)
+            self.assertEqual(len(px), 64 * 64)
+            self.assertEqual(px[0], (200, 40, 90))
+            big = fetch_covers.image_to_pixels_rgb(src, 128, 96)
+            self.assertEqual(len(big), 128 * 96)
+
+    def test_write_cover_files_sizes_match_boxart_loader(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            px = [(10, 20, 30)] * (64 * 64)
+            raw, bmp = fetch_covers.write_cover_files("t", Path(tmp), px)
+            self.assertEqual(raw.stat().st_size, 64 * 64 * 2)
+            self.assertEqual(bmp.read_bytes()[:2], b"BM")
+
+    def test_slug_rule_matches_simulator(self):
+        self.assertEqual(fetch_covers.slugify_title("Tetris (World) (Rev A).gb"), "tetris")
+        self.assertEqual(fetch_covers.slugify_title("Kirby - Tilt 'n' Tumble"), "kirby_tilt_n_tumble")
+        js = (REPO_ROOT / "tools" / "bmo_simulator" / "simulator.js").read_text(encoding="utf-8")
+        self.assertIn("slugifyTitle(title)", js)
+        self.assertIn("covers/${slug}.png", js)
+
+    def test_downloaded_covers_are_valid_images_when_present(self):
+        from PIL import Image
+        cover_dir = REPO_ROOT / "tools" / "bmo_simulator" / "covers"
+        if not cover_dir.is_dir():
+            self.skipTest("covers not downloaded; run scripts/fetch_covers.py")
+        for png in cover_dir.glob("*.png"):
+            with Image.open(png) as im:
+                im.verify()
+
+
 if __name__ == "__main__":
     unittest.main()
