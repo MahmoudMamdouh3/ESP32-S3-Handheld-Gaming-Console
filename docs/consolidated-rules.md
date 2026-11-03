@@ -19,7 +19,7 @@
 - [Testing Infrastructure](#testing-infrastructure)
 - [Symbol Reference (Ground Truth for Names)](#symbol-reference-ground-truth-for-names)
 - [Meta-Rules for the Rules Directory Itself](#meta-rules-for-the-rules-directory-itself)
-- [Extensibility Contract (New Emulator Cores)](#extensibility-contract-new-emulator-cores)
+- [Extensibility Contract (Emulator Cores & Peripherals)](#extensibility-contract-emulator-cores--peripherals)
 - [Code Style & Formatting](#code-style--formatting)
 - [Error Handling & Fault Isolation](#error-handling--fault-isolation)
 - [Performance Engineering & Budgets](#performance-engineering--budgets)
@@ -150,7 +150,7 @@ All peripheral modules must be gated by `FEATURE_*` flags in `config.h`. A disab
 - **Memory & Cache:** Place hot structures in internal DRAM aligned to the ESP32-S3 D-cache line size (`__attribute__((aligned(32)))`) where needed, and allocate all large emulator contexts, framebuffers, ROM payloads, save buffers, and box art in Octal PSRAM (`heap_caps_malloc(..., MALLOC_CAP_SPIRAM)`).
 - **Dual-Core FreeRTOS Pipeline:**
   - **Core 1 (Application & Emulation):** Runs Arduino `setup()` and `loop()`, emulator CPU/PPU step loops, button debouncing, and UI logic.
-  - **Core 0 (Display Worker Task):** Hosts `vDisplayTask` dedicated FreeRTOS worker. Core 1 hands off completed double-buffered PSRAM frames via `DisplayEmu::submitFrameAsync()` allowing CPU emulation and SPI display DMA transfers to run in parallel at 60 FPS.
+  - **Core 0 (Display Worker Task):** Hosts `vDisplayTask` dedicated FreeRTOS worker. Core 1 hands off completed double-buffered PSRAM frames via `DisplayEmu::streamGBFrame()` or `DisplayEmu::streamRawFrameAsync()`, allowing CPU emulation and SPI display DMA transfers to run in parallel at 60 FPS.
 - **SPI Bus Arbitration (`SpiArbiter`):**
   - ST7789 display and MicroSD card share the FSPI bus (`TFT_SCK` GPIO 12, `TFT_MOSI` GPIO 11).
   - All display transactions and SD card filesystem operations (save states, battery RAM, ROM index cache, box art loading, screenshots, favorites, history) MUST acquire `SpiArbiter::lock()` before asserting CS to eliminate bus contention between Core 0 and Core 1.
@@ -180,12 +180,12 @@ repo-root/
         ├── BmoGameboy.ino            ← ONLY setup(), loop(), and state dispatch
         ├── partitions.csv            ← 8MB app0 custom partition table
         └── src/
-            ├── core/                 ← hardware drivers & storage (config.h, display, buttons, SDF face, spi_arbiter, save_manager, box_art, rom_index)
-            ├── emulators/            ← glue code per console (emu_peanut, emu_walnut, emu_nes, emu_doom)
+            ├── core/                 ← hardware drivers & storage (config.h, display_emu, buttons, bmo_face, spi_arbiter, save_manager, box_art, rom_index)
+            ├── emulators/            ← 14 C++ glue wrappers (emu_peanut, emu_walnut, emu_nes, emu_doom, emu_sms, emu_pce, emu_atari, emu_pico, emu_genesis, emu_snes, emu_wswan, emu_ngp, emu_lynx, emu_colem)
             ├── engine/               ← header-only engines (walnut_cgb)
-            ├── vendor/               ← third-party libraries (peanut_gb, agnes, doom)
+            ├── vendor/               ← 13 C emulator engines (peanut_gb, agnes, doom, smsplus, pce, stella, pico, genesis, snes, wswan, ngp, lynx, colem)
             ├── assets/               ← asset headers
-            │   └── roms/             ← baked commercial ROM headers (mario, zelda)
+            │   └── roms/             ← 5 baked ROM headers (mario_deluxe, zelda_ages, aladdin, lego_racers, virtual_bmo)
             └── tests/                ← on-device unit tests
 ```
 - **Rule:** Custom engines live in `src/engine/<name>/`, while third-party vendor libraries go under `src/vendor/<name>/`.
@@ -239,7 +239,24 @@ Routine bug fixes not touching hardware/architecture, or pure refactors that don
 
 ---
 
-## Latest Agent Handoff — 2026-11-03 (Pre-Flash Hardware Safety & Runtime Audit Fixes)
+## Latest Agent Handoff — 2026-11-03 (AI Environment Overhaul, 11-Core Native C Harness & MCP Server)
+
+This is the current repository handoff. Read this section before continuing from an earlier changelog entry.
+
+- **AI Development Environment & Native Verification Upgrades (`tools/guardian/`, `tests/`, `.agents/rules/`, `agnes.c`):**
+  1. **Eliminated Split-Brain Rule Contradictions & Bug-Fix Prohibitions (`.agents/rules/*.md`, `tools/guardian/core/doc_verifier.py`):**
+     - Fixed the copy-paste compile command in `.agents/rules/06_verification_standards.md:110` from `FlashMode=opi` (which bootloops the Quad-SPI Flash ESP32-S3-N16R8) to `CDCOnBoot=cdc,FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi`.
+     - Removed the rule in `.agents/rules/07_task_protocol.md` and `.agents/rules/12_extensibility_contract.md` that forbade agents from fixing out-of-scope bugs (`"do NOT silently fix it inline"`), replacing it with a proactive defect resolution rule.
+     - Synchronized all stale symbol and state names across `.agents/rules/02_architecture.md`, `03_conventions.md`, `10_symbol_reference.md`, `12_extensibility_contract.md`, `26_emulator_exit_contract.md`, `27_codebase_map.md`, `30_common_agent_mistakes.md`, `31_quick_start_primer.md`, `35_bmo_face_contract.md`, and `.agents/rules/README.md` (`destroyActiveEmulator()`, `STATE_CONSOLE_MUSEUM`, `streamGBFrame()` / `streamRawFrameAsync()`, `SDCard::freeRom(currentRom)`, `Slots 1–5`, `/favorites.txt`, 14 cores, 5 baked ROMs).
+     - Upgraded `DocTruthVerifier` (`tools/guardian/core/doc_verifier.py`) to scan all active `.agents/rules/*.md` files and reject unguarded `FlashMode=opi` flags and obsolete symbol references.
+  2. **Made `agnes.c` Host-Portable & Upgraded Native C Test Harness to 11 Cores + Save-State Determinism (`agnes.c`, `tools/host_cores_runner.c`, `tests/test_native_cores_execution.py`):**
+     - Guarded ESP-IDF headers and macros in `firmware/BmoGameboy/src/vendor/agnes/agnes.c` (`#if defined(ESP32) || defined(ARDUINO)`) so the 2,600-line NES 6502 + PPU + Mapper 0/1/2/4 engine compiles natively on x64 `cl.exe` / `gcc`.
+     - Added `test_nes_agnes_core()` to `tools/host_cores_runner.c` and `tests/test_native_cores_execution.py`, testing 6502 instruction execution, PPU rendering, `$6000` `agnes_get_prg_ram()` persistence, and bit-exact save-state determinism (`save @ frame 25 -> run to 50 -> restore @ 25 -> re-run to 50 -> assert FNV-1a framebuffer hash and PRG-RAM match 100%`).
+  3. **Added LLVM `clang-tidy` Analyzer & Guardian Model Context Protocol (MCP) Server (`tools/guardian/core/clang_tidy_runner.py`, `tools/guardian/mcp_server.py`, `.mcp.json`):**
+     - Added `ClangTidyRunner` (`python -m tools.guardian clang-tidy`) running LLVM `clang-tidy` embedded defect checks across all 11 host-portable C cores and `tools/host_cores_runner.c` (`0` warnings/errors).
+     - Added a zero-dependency JSON-RPC 2.0 stdio MCP server (`python -m tools.guardian mcp` and `.mcp.json`) exposing `bmo_prompt_pack`, `bmo_lookup`, `bmo_explain`, `bmo_patch_check`, `bmo_run_host_cores`, `bmo_memory_budget`, and `bmo_doctor`.
+
+## Previous Handoff — 2026-11-03 (Pre-Flash Hardware Safety & Runtime Audit Fixes)
 
 This is the current repository handoff. Read this section before continuing from an earlier changelog entry.
 
@@ -836,7 +853,7 @@ checks file existence and string presence — it **cannot detect**:
 
 The canonical compile command must be run and pass before VERIFIED_HOST is claimed:
 ```powershell
-.\arduino-cli.exe compile --fqbn "esp32:esp32:esp32s3:FlashMode=opi,FlashSize=16M,PartitionScheme=custom,PSRAM=opi" firmware/BmoGameboy
+.\arduino-cli.exe compile --fqbn "esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi" firmware/BmoGameboy
 ```
 
 ## Numeric claims (counts, hit totals, percentages)
@@ -874,50 +891,25 @@ capable or careful the specific model is.
    and state which constraint applies.
 
 ## During
-5. Prefer the smallest change that satisfies the request. Don't bundle
-   unrelated cleanup into the same commit (see 05_git_workflow.md).
-6. If you hit an unrelated bug while working, do NOT silently fix it
-   inline — note it, ask, or log it as a new 04_known_issues.md entry
-   with status `OPEN`, and finish the requested task first, unless it's
-   blocking the requested task.
+5. Prefer clean, minimal changes that solve the root cause.
+6. **Proactive Defect Resolution:** If you discover an existing bug, memory safety hazard, stack overflow risk, or documentation drift while inspecting files for your task, fix it and verify it rather than walking past it, and document every fix in `CHANGELOG.md` and `04_known_issues.md`.
 7. If you're about to fabricate a plausible-sounding detail because you
    don't actually know it (a line number, a variable name, a test
-   result) — stop. State the uncertainty instead. This is the single
-   highest-value habit for this repo given past incidents.
+   result) — stop. State the uncertainty or verify it with a tool call instead.
 8. **Stop-after-2-failures rule:** if the same interaction/approach fails
    twice in a row (a build flag, a test invocation, a specific fix
    attempt), STOP retrying variations of the same approach. Switch
-   strategy entirely, or stop and ask. Never spend more than 5 tool calls
-   total on a single stuck sub-problem before changing approach or asking.
-9. **Implementation-plan gate for substantial changes:** for anything
-   multi-file, architectural, or that would trigger the review gate in
-   05_git_workflow.md (hard-stop-adjacent, history-rewriting, new
-   binaries) — write a short plan (a few bullets is fine, doesn't need to
-   be a separate file for most cases) and wait for explicit approval
-   before writing code or running risky commands. Trivial fixes and
-   single-line edits skip this, same as always.
+   strategy entirely, or stop and ask.
 
 ## Before reporting done
-10. Compile. A successful compile is necessary, never sufficient, for
-   "done" — see 06_verification_standards.md for what else is required
-   depending on what was touched.
-11. Update .agents/rules/ files per the Documentation Maintenance Protocol
-   in 03_conventions.md, using the status vocabulary from
-   06_verification_standards.md.
-12. Update 04_known_issues.md's Changelog section with a one-line dated
-    entry (see existing entries for format).
+9. Compile and run `python scripts/validate_repo.py` and `python -m tools.guardian diff-audit`. A successful compile and passing validator are required before reporting a code change complete.
+10. Update `.agents/rules/` files per the Documentation Maintenance Protocol in `03_conventions.md`, using the status vocabulary from `06_verification_standards.md`.
+11. Update `04_known_issues.md` and `CHANGELOG.md` with dated entries when firmware or tooling changes are made.
 
-## Final report format (always use these two headers, verbatim)
-```
-## Verified by me this session
-<only things you personally ran/read/confirmed in THIS session>
-
-## Waiting on you
-<anything requiring physical hardware, a human decision, or an external
-resource you don't have access to — with an exact checklist, per
-06_verification_standards.md's PASS/FAIL definition rules>
-```
-Never merge these two categories. Never imply the second category is done.
+## Reporting verification clearly
+Always clearly distinguish between:
+- **Verified in this session on host:** commands, compiles, unit tests, and native C harness runs you executed in this session.
+- **Requires physical hardware verification:** behavior that can only be confirmed after flashing onto the physical ESP32-S3 board.
 
 ## Definition of Done, by task type
 - **Docs-only change:** compiles N/A; diff reviewed; cross-references
@@ -1040,7 +1032,7 @@ signatures, macro `#define`s, and top-level struct declarations from:
 `src/core/`, `src/emulators/`, `src/engine/*/`, `src/vendor/*/`.
 
 ## Staleness detection
-This file was last regenerated: **2026-10-21**.
+This file was last regenerated: **2026-11-03**.
 If any of the following files have a newer git commit date than that,
 this file is stale — grep live and update before making any symbol claims:
 - `src/emulators/emu_walnut.cpp/h`
@@ -1090,6 +1082,13 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `DisplayEmu::drawConsoleSelectMenu` | fn | `void drawConsoleSelectMenu(int selectedIndex, const int* gameCounts, int consoleCount, bool sdMounted)` | Renders 1:1 Carousel Card console selector |
 | `DisplayEmu::drawConsoleMuseumModal` | fn | `void drawConsoleMuseumModal(RomType console)` | Renders console history/specs modal (STATE_CONSOLE_MUSEUM) |
 | `DisplayEmu::drawGameSelectMenu` | fn | `void drawGameSelectMenu(const RomFile* const* games, int count, int selectedIndex, RomType console, bool sdMounted)` | Renders game list menu |
+| `DisplayEmu::showToast` | fn | `void showToast(const char* message, uint16_t borderColor = 0xFFE0, unsigned long durationMs = 1800)` | Triggers floating toast notification pill |
+| `DisplayEmu::hasActiveToast` | fn | `bool hasActiveToast()` | Returns true if floating toast notification is active |
+| `DisplayEmu::triggerCarouselGlide` | fn | `void triggerCarouselGlide(bool directionRight)` | Triggers spring-damper carousel transition |
+| `DisplayEmu::showAlphaBadge` | fn | `void showAlphaBadge(char letter, unsigned long durationMs = 800)` | Displays A-Z alphabetical jump HUD badge |
+| `DisplayEmu::drawDiagnosticsDashboard` | fn | `void drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeDram, uint32_t freePsram, uint32_t freeIram, uint8_t buttonMask)` | Renders hardware self-test & memory dashboard |
+| `DisplayEmu::sanitizeRomTitle` | fn | `void sanitizeRomTitle(const char* src, char* dst, size_t maxLen)` | Strips path, extension, and region tags from ROM filename |
+| `DisplayEmu::setDoomPalette` | fn | `void setDoomPalette(const uint8_t* rgbPalette)` | Converts 256-entry RGB888 DOOM PLAYPAL to byte-swapped BGR565 |
 | `DisplayEmu::drawConsoleIcon` | fn | `void drawConsoleIcon(RomType type, int x, int y, uint16_t primaryColor = 0)` | Renders pixel-art console hardware silhouette |
 | `DisplayEmu::drawIdleMascotScreen` | fn | `void drawIdleMascotScreen(unsigned long idleSeconds, const char* stateMessage)` | Renders Living BMO Screensaver (STATE_IDLE_MASCOT) |
 | `DisplayEmu::setDmgPalette` | fn | `void setDmgPalette(int paletteIndex)` | Sets active DMG runtime palette |
@@ -1251,13 +1250,28 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 ## src/core/bmo_face.h (BmoFace)
 | Symbol | Kind | Signature | Notes |
 |---|---|---|---|
-| `BmoFace::begin` | fn | `void begin()` | Initializes RNG and clears dirty flag |
+| `BmoFace::begin` | fn | `void begin()` | Allocates PSRAM canvas and initializes spring-damper physics |
 | `BmoFace::setExpression` | fn | `void setExpression(BmoExpression expr)` | Sets target facial expression |
-| `BmoFace::update` | fn | `void update()` | Ticks procedural animation & blink |
+| `BmoFace::getExpression` | fn | `BmoExpression getExpression()` | Returns active facial expression |
+| `BmoFace::update` | fn | `void update()` | Ticks procedural animation, springs, & blink |
 | `BmoFace::draw` | fn | `void draw(int x, int y, int size)` | Renders & blits scaled face |
-| `BmoFace::draw` | fn | `void draw()` | Blits large centered face |
+| `BmoFace::draw` | fn | `void draw()` | Blits full-screen 320x240 BMO face |
+| `BmoFace::renderToBuffer` | fn | `void renderToBuffer(uint16_t* dst, int stride, int x, int y, int w, int h)` | Renders vector SDF face directly into caller buffer |
+| `BmoFace::renderFullScreen` | fn | `void renderFullScreen(uint16_t* dst, int width = 320, int height = 240)` | Renders full-screen 320x240 face into caller buffer |
+| `BmoFace::getScreenBgColor` | fn | `uint16_t getScreenBgColor()` | Returns current face background color (mint or dusk) |
+| `BmoFace::setGaze` | fn | `void setGaze(float gx, float gy)` | Sets normalized eye gaze offset (-1.0..1.0) |
+| `BmoFace::tickle` | fn | `void tickle(float intensity = 1.0f)` | Triggers tickle spring impulse |
+| `BmoFace::triggerWink` | fn | `void triggerWink()` | Triggers wink animation with star glint |
+| `BmoFace::triggerBlush` | fn | `void triggerBlush()` | Triggers coral cheek blush animation |
+| `BmoFace::triggerJoy` | fn | `void triggerJoy()` | Triggers joyful bounce expression |
+| `BmoFace::say` | fn | `void say(const char* quote, unsigned long durationMs = 3500)` | Shows typewriter speech bubble |
+| `BmoFace::clearSpeech` | fn | `void clearSpeech()` | Dismisses active speech bubble |
+| `BmoFace::triggerDance` | fn | `void triggerDance(float bpm = 125.0f)` | Starts rhythmic dance animation |
+| `BmoFace::stopDance` | fn | `void stopDance()` | Stops dance animation |
+| `BmoFace::isDancing` | fn | `bool isDancing()` | Returns true if dance mode is active |
+| `BmoFace::petCompanion` | fn | `void petCompanion()` | Increments happiness/buddy level on D-pad pet |
 | `BmoFace::isDirty` | fn | `bool isDirty()` | True if expression or blink changed |
-| `BmoFace::BmoExpression`| enum | `enum BmoExpression { IDLE, SURPRISED, HAPPY, SLEEPY, LOW_BATTERY, CHARGING, ERROR, SHUTDOWN, HIDDEN }` | Face emotion states |
+| `BmoFace::BmoExpression`| enum | `enum BmoExpression { IDLE, SURPRISED, HAPPY, SLEEPY, LOW_BATTERY, CHARGING, ERROR, SHUTDOWN, HIDDEN, JOY, SLEEPING, WINK, BLUSH, CONFUSED, ANNOYED, LOVE, TICKLED, CELEBRATING }` | 18-state face emotion enum |
 
 ---
 
@@ -1279,14 +1293,28 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `PeanutEmu::updateJoypad` | fn | `void updateJoypad()` | Syncs direct.joypad with buttons |
 | `PeanutEmu::runFrame` | fn | `void runFrame()` | Runs 1 frame inside startFrame/endFrame |
 | `PeanutEmu::destroy` | fn | `void destroy()` | Frees cart_ram in PSRAM |
+| `PeanutEmu::saveBatteryRam` | fn | `bool saveBatteryRam(const char* romFilename)` | Flushes DMG cartridge SRAM to `.sav` |
+| `PeanutEmu::loadBatteryRam` | fn | `bool loadBatteryRam(const char* romFilename)` | Restores DMG cartridge SRAM from `.sav` |
+| `PeanutEmu::saveState` | fn | `bool saveState(const char* romFilename, int slot)` | Writes DMG state + cart_ram snapshot |
+| `PeanutEmu::loadState` | fn | `bool loadState(const char* romFilename, int slot)` | Restores DMG state + cart_ram via PSRAM staging |
 | `WalnutEmu::begin` | fn | `bool begin(const uint8_t* rom_data, size_t rom_len)` | Starts Game Boy Color core |
 | `WalnutEmu::updateJoypad` | fn | `void updateJoypad()` | Syncs direct.joypad with buttons |
 | `WalnutEmu::runFrame` | fn | `void runFrame()` | Runs 1 frame inside startFrame/endFrame |
 | `WalnutEmu::destroy` | fn | `void destroy()` | Frees cart_ram in PSRAM |
+| `WalnutEmu::saveBatteryRam` | fn | `bool saveBatteryRam(const char* romFilename)` | Flushes GBC cartridge SRAM to `.sav` |
+| `WalnutEmu::loadBatteryRam` | fn | `bool loadBatteryRam(const char* romFilename)` | Restores GBC cartridge SRAM from `.sav` |
+| `WalnutEmu::saveState` | fn | `bool saveState(const char* romFilename, int slot)` | Writes GBC state + cart_ram snapshot |
+| `WalnutEmu::loadState` | fn | `bool loadState(const char* romFilename, int slot)` | Restores GBC state + cart_ram via PSRAM staging |
 | `NesEmu::begin` | fn | `static bool begin(const uint8_t* romData, size_t romSize)` | Starts Agnes NES core |
 | `NesEmu::updateJoypad` | fn | `static void updateJoypad()` | Syncs Agnes controller mask |
 | `NesEmu::runFrame` | fn | `static void runFrame()` | Runs 1 NES frame |
 | `NesEmu::destroy` | fn | `static void destroy()` | Shuts down Agnes NES core |
+| `NesEmu::saveBatteryRam` | fn | `static bool saveBatteryRam(const char* romFilename)` | Flushes 8 KB NES cartridge PRG-RAM (`$6000-$7FFF`) to `.sav` |
+| `NesEmu::loadBatteryRam` | fn | `static bool loadBatteryRam(const char* romFilename)` | Restores 8 KB NES cartridge PRG-RAM (`$6000-$7FFF`) from `.sav` |
+| `NesEmu::saveState` | fn | `static bool saveState(const char* romFilename, int slot)` | Writes full Agnes NES state snapshot |
+| `NesEmu::loadState` | fn | `static bool loadState(const char* romFilename, int slot)` | Restores full Agnes NES state snapshot |
+| `agnes_get_prg_ram` | fn | `uint8_t* agnes_get_prg_ram(agnes_t *agnes, size_t *out_size)` | Returns pointer to 8 KB mapper PRG-RAM (`$6000-$7FFF`) |
+| `doomgeneric_Destroy` | fn | `void doomgeneric_Destroy(void)` | Releases DOOM zone memory, WAD handles, lumpinfo, and screen buffer |
 | `DoomEmu::begin` | fn | `bool begin(const char* wadPath)` | Starts doomgeneric core |
 | `DoomEmu::runFrame` | fn | `void runFrame()` | Runs 1 DOOM engine tick |
 | `DoomEmu::destroy` | fn | `void destroy()` | Shuts down doomgeneric core |
@@ -1431,48 +1459,27 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 
 <!-- Section: 12_extensibility_contract.md -->
 
-# Extensibility Contract (New Emulator Cores)
-Purpose: adding a 5th console shouldn't require touching code that the
-existing 4 already depend on. Modeled on a "zero-touch core" pattern from
-another project, adapted to this one.
+# Extensibility Contract (Emulator Cores & Peripherals)
+Purpose: Every console emulator core in the 14-core architecture follows a uniform C++ wrapper lifecycle so cores can be initialized, stepped, saved/restored, and torn down deterministically without PSRAM leaks.
 
-## Adding a new emulator core
-- New files ONLY under `src/emulators/<name>/` (glue) and
-  `src/vendor/<name>/` (pristine third-party source), per
-  03_conventions.md's existing directory rule.
-- Every core must implement the same shared lifecycle contract: an init
-  function, a per-frame run function, an input-handling path that reads
-  the shared `gb_joypad_state`-style bitmask (not its own polling), and
-  an explicit teardown/dispose function (see below).
-- `BmoGameboy.ino`'s state-dispatch logic may be touched at exactly ONE
-  point: the registration/dispatch table that maps a ROM extension to a
-  core. Nothing else in `BmoGameboy.ino`, `display_emu.cpp`, or
-  `buttons.cpp` should need to change to add a core. If it does, that's a
-  sign the shared interface is missing something — fix the interface, not
-  the core files, and say so explicitly rather than patching around it.
+## Adding or modifying an emulator core
+- Wrapper files live under `src/emulators/emu_<name>.h/.cpp` and underlying C/C++ engines live under `src/vendor/<name>/` (or `src/engine/<name>/`), per `03_conventions.md`.
+- Every wrapper must implement the unified lifecycle contract:
+  - `begin(...)` — Allocates all required state, VRAM, and work RAM buffers in Octal PSRAM (`heap_caps_malloc(..., MALLOC_CAP_SPIRAM)`).
+  - `updateJoypad()` — Reads `Buttons::get(...)` or `Buttons::gb_joypad_state` (never calls `digitalRead()` directly).
+  - `runFrame()` — Executes one frame and streams to `DisplayEmu::stream*Frame(...)`.
+  - `destroy()` — Frees every PSRAM buffer allocated by the core and resets pointers to `nullptr`.
+  - `saveBatteryRam(const char* romFilename)` / `loadBatteryRam(const char* romFilename)` — Persists cartridge battery backup RAM (`.sav`).
+  - `saveState(const char* romFilename, int slot)` / `loadState(const char* romFilename, int slot)` — Persists 5-slot snapshots (`.s01`–`.s05`) via `SaveManager` using PSRAM staging buffers (never allocating large context structs on the 8 KB `loopTask` stack).
 
-## Emulator teardown on switch (NEW RULE — currently not enforced anywhere)
-When switching from one emulator core to another (returning to menu,
-loading a different ROM), the outgoing core MUST explicitly free every
-PSRAM buffer it allocated (ROM buffer, save-state buffer, any
-core-specific scratch memory) and reset its static state before the next
-core initializes. Repeated play sessions without this will fragment or
-exhaust PSRAM over time. Add this as an explicit `teardown()` step in
-every core's glue file, and call it from the state-machine transition in
-`BmoGameboy.ino`, not left implicit.
+## Deterministic emulator teardown (`destroyActiveEmulator()`)
+When exiting a game or switching ROMs in `BmoGameboy.ino`, `destroyActiveEmulator()` invokes `::destroy()` on the active emulator core and calls `SDCard::freeRom(currentRom)` to release the PSRAM ROM buffer. `scripts/validate_repo.py` Phase 2 enforces that all 14 `::destroy()` calls are wired in `BmoGameboy.ino`.
 
-## No per-frame heap allocation (NEW RULE)
-No emulator core's per-frame render or CPU-execution loop may call
-`malloc`, `heap_caps_malloc`, `new`, or any other heap allocation.
-Everything needed inside the hot loop must be allocated once at core
-init and reused. This applies with extra force to PSRAM allocations,
-which fragment badly on repeated alloc/free cycles on this hardware. If
-you find an existing violation while working on something else, log it in
-04_known_issues.md as `OPEN` rather than silently fixing it inline (per
-07_task_protocol.md's existing rule about unrelated bugs).
+## No per-frame heap allocation
+No emulator core's per-frame render or CPU-execution loop may call `malloc`, `heap_caps_malloc`, `new`, or any other heap allocation. Everything needed inside the hot loop must be allocated once at core initialization (or lazily allocated once in PSRAM and freed in `destroy()`) and reused across frames.
 
 ## General Peripheral Extensions
-The zero-touch / init-update-teardown / `FEATURE_*`-flag contract described above for emulator cores is the general pattern for **any** new hardware peripheral module (FRAM, audio, battery, a future second display). Additionally, the rules in `14_error_handling_and_fault_isolation.md` and `15_performance_budgets.md` apply to any such hardware addition.
+The init-update-teardown and `FEATURE_*`-flag contract above applies to any hardware peripheral module (`battery.h`, `audio_i2s.h`, `fram_save.h`). Keep `FEATURE_BATTERY_MONITOR = 0` and `FEATURE_AUDIO = 0` until physical hardware is soldered and verified per `00_hard_stops.md`.
 
 ---
 
@@ -1980,17 +1987,17 @@ When you flash and test a game:
 Purpose: Formalizes what every emulator core's teardown path must do on exit so PSRAM allocations are completely recovered and no session leaks heap across repeated game launches.
 
 ## Current State (Verified Across All 14 Cores)
-In [`BmoGameboy.ino`](file:///e:/BMO%20Gameboy/firmware/BmoGameboy/BmoGameboy.ino), exiting a game from `STATE_PAUSE_MENU` (`START + SELECT` -> `Exit to Menu`) calls:
+In [`BmoGameboy.ino`](file:///e:/BMO%20Gameboy/firmware/BmoGameboy/BmoGameboy.ino), exiting a game from `STATE_PAUSE_MENU` (`START + SELECT` -> `QUIT TO CONSOLE MENU` or `SELECT + UP` shortcut) calls:
 1. `autoSaveCurrentBatteryRam()` — Persists cartridge battery SRAM (`.sav`) to `/saves/` via `SaveManager::saveBatteryRam`.
-2. `teardownCurrentEmulator()` — Invokes `destroy()` on whichever of the **14** emulator cores is active:
+2. `destroyActiveEmulator()` — Invokes `destroy()` on whichever of the **14** emulator cores is active:
    - `WalnutEmu::destroy()`, `PeanutEmu::destroy()`, `NesEmu::destroy()`, `DoomEmu::destroy()`, `SmsEmu::destroy()`, `PceEmu::destroy()`, `AtariEmu::destroy()`, `PicoEmu::destroy()`, `GenesisEmu::destroy()`, `SNESEmu::destroy()`, `WSwanEmu::destroy()`, `NGPEmu::destroy()`, `LynxEmu::destroy()`, `ColemEmu::destroy()`.
-3. `SDCard::freeRom(currentRom, currentRomType)` — Frees the PSRAM ROM buffer (while leaving `.rodata` flash-baked pointers untouched).
+3. `SDCard::freeRom(currentRom)` — Frees the PSRAM ROM buffer inside `destroyActiveEmulator()` (while leaving `.rodata` flash-baked pointers untouched).
 
 ## What every emulator `destroy()` must do
 When called, a core's `destroy()` function must:
 1. Free every PSRAM buffer it allocated at `begin()` time (`heap_caps_free`).
-2. Reset all freed pointers back to `nullptr` and `initialized = false` so `begin()` can re-initialize cleanly on the next game launch.
-3. NOT free the caller-owned ROM buffer (`SDCard::freeRom()` handles that after `teardownCurrentEmulator()`).
+2. Reset all freed pointers back to `nullptr` and `running = false` / `initialized = false` so `begin()` can re-initialize cleanly on the next game launch.
+3. NOT free the caller-owned ROM buffer (`SDCard::freeRom(currentRom)` handles that inside `destroyActiveEmulator()`).
 4. Be idempotent (safe if called multiple times with null pointers).
 
 ## Why this matters
@@ -2075,12 +2082,13 @@ repo-root/
 ---
 
 ## Runtime State Machine (`BmoGameboy.ino`)
-Six states govern runtime control flow:
-- `STATE_CONSOLE_MENU` — Console carousel selector (14 systems + Konami Code easter egg). `A` enters `STATE_GAME_MENU`; `SELECT` enters `STATE_CONSOLE_SPECS`; `UP` enters `STATE_IDLE_MASCOT`.
-- `STATE_CONSOLE_SPECS` — Displays hardware history & specs for the selected console.
-- `STATE_GAME_MENU` — ROM browser with 64×64 box art, recursive folders, A–Z jump, and favorites (`SELECT`). `A` launches game into `STATE_EMULATOR`.
+Seven states in `enum SystemState` govern runtime control flow:
+- `STATE_BOOT_SPLASH` — Animated power-on BMO splash screen before entering the console menu.
+- `STATE_CONSOLE_MENU` — Console carousel selector (Favorites + 15 console platforms + Konami Code easter egg). `A` enters `STATE_GAME_MENU`; `SELECT` enters `STATE_CONSOLE_MUSEUM`; `UP` enters `STATE_IDLE_MASCOT`.
+- `STATE_CONSOLE_MUSEUM` — Displays hardware history & technical specifications (`DisplayEmu::drawConsoleMuseumModal`) for the selected console.
+- `STATE_GAME_MENU` — ROM browser with 64×64 box art, recursive folders, `<`/`>` A–Z jump, and favorites (`SELECT`). `A` launches game into `STATE_EMULATOR`.
 - `STATE_EMULATOR` — Active emulator frame loop (`runFrame()`). Holding `START + SELECT` opens `STATE_PAUSE_MENU`.
-- `STATE_PAUSE_MENU` — In-game overlay: Resume, Save State (Slots 0–4), Load State (Slots 0–4), Exit to Menu (auto-saves `.sav`, calls `teardownCurrentEmulator()`, frees ROM), plus `LEFT` (A/B swap), `RIGHT` (1:1 console bezel toggle), and `SELECT` (`.bmp` screenshot capture).
+- `STATE_PAUSE_MENU` — In-game overlay: Resume, Quick Save (Slots 1–5), Quick Load (Slots 1–5), Cycle Slot (1–5), Save Battery RAM (`.sav`), Quit to Console Menu (calls `autoSaveCurrentBatteryRam()` and `destroyActiveEmulator()`), plus `LEFT` (A/B swap), `RIGHT` (1:1 console bezel toggle), and `SELECT` (`.bmp` screenshot capture).
 - `STATE_IDLE_MASCOT` — Interactive 320×240 BMO companion mode (expressions, dialogue bubbles, dance mode).
 
 ---
@@ -2092,16 +2100,16 @@ Six states govern runtime control flow:
 | `.gb` | `ROM_GB` | `1` | `PeanutEmu` (`emu_peanut`) | 160×144 (scaled 240×216) |
 | `.nes` | `ROM_NES` | `2` | `NesEmu` (`emu_nes`) | 256×240 |
 | `.wad` | `ROM_WAD` | `3` | `DoomEmu` (`emu_doom`) | 320×200 |
-| `.sms`, `.gg` | `ROM_SMS`, `ROM_GG` | `4`, `5` | `SmsEmu` (`emu_sms`) | 256×192 / 160×144 |
-| `.pce` | `ROM_PCE` | `6` | `PceEmu` (`emu_pce`) | 256×240 |
-| `.a26` | `ROM_ATARI` | `7` | `AtariEmu` (`emu_atari`) | 160×192 |
-| `.p8` | `ROM_PICO8` | `8` | `PicoEmu` (`emu_pico`) | 128×128 |
-| `.gen`, `.md`, `.smd` | `ROM_GENESIS` | `9` | `GenesisEmu` (`emu_genesis`) | 320×224 |
-| `.sfc`, `.smc` | `ROM_SNES` | `10` | `SNESEmu` (`emu_snes`) | 256×224 |
-| `.ws`, `.wsc` | `ROM_WSWAN` | `11` | `WSwanEmu` (`emu_wswan`) | 224×144 |
-| `.ngp`, `.ngc` | `ROM_NGP` | `12` | `NGPEmu` (`emu_ngp`) | 160×152 |
-| `.lnx` | `ROM_LYNX` | `13` | `LynxEmu` (`emu_lynx`) | 160×102 |
-| `.col`, `.sg` | `ROM_COLEM` | `14` | `ColemEmu` (`emu_colem`) | 256×192 |
+| `.sms`, `.gg` | `ROM_SMS`, `ROM_GG` | `4` | `SmsEmu` (`emu_sms`) | 256×192 / 160×144 |
+| `.pce` | `ROM_PCE` | `5` | `PceEmu` (`emu_pce`) | 256×240 |
+| `.a26` | `ROM_ATARI` | `6` | `AtariEmu` (`emu_atari`) | 160×192 |
+| `.p8` | `ROM_PICO8` | `7` | `PicoEmu` (`emu_pico`) | 128×128 |
+| `.gen`, `.md`, `.smd` | `ROM_GENESIS` | `8` | `GenesisEmu` (`emu_genesis`) | 320×224 |
+| `.sfc`, `.smc` | `ROM_SNES` | `9` | `SNESEmu` (`emu_snes`) | 256×224 |
+| `.ws`, `.wsc` | `ROM_WSWAN` | `10` | `WSwanEmu` (`emu_wswan`) | 224×144 |
+| `.ngp`, `.ngc` | `ROM_NGP` | `11` | `NGPEmu` (`emu_ngp`) | 160×152 |
+| `.lnx` | `ROM_LYNX` | `12` | `LynxEmu` (`emu_lynx`) | 160×102 |
+| `.col`, `.sg` | `ROM_COLEM` | `13` | `ColemEmu` (`emu_colem`) | 256×192 |
 
 ---
 
@@ -2334,8 +2342,8 @@ this file. If the source file is newer than the staleness date in
 ## M-3: Calling SDCard::freeRom() on a baked ROM pointer
 **What happens:** Code path exits game and calls SDCard::freeRom(romData).
 If romData points to .rodata (baked ROM), heap_caps_free() is UB -- crash.
-**Prevention:** freeRom() already guards against the two registered baked
-ROMs. If you ADD a new baked ROM, you MUST add it to freeRom()'s guard.
+**Prevention:** freeRom() already guards against the 5 registered baked
+ROMs (`mario_deluxe`, `zelda_ages`, `aladdin`, `lego_racers`, `virtual_bmo`). If you ADD a new baked ROM, you MUST add it to freeRom()'s guard.
 See 29_adding_a_baked_rom.md step 4.
 
 ---
@@ -2365,10 +2373,10 @@ The menu path does: update() at top of menu state. Never both.
 ---
 
 ## M-7: Drawing to the display during STATE_EMULATOR
-**What happens:** BmoFace::draw() called mid-frame overwrites the SPI
+**What happens:** `BmoFace::renderToBuffer()` or menu rendering called mid-frame overwrites the SPI
 address window that startFrame() set, producing screen tearing or
 corrupting the ongoing frame transfer.
-**Prevention:** BmoFace::draw() and BmoFace::update() are NEVER called
+**Prevention:** `BmoFace::renderToBuffer()` and `BmoFace::update()` are NEVER called
 during STATE_EMULATOR. This is enforced by the loop() structure --
 do not move those calls inside the emulator branch. See also `35_bmo_face_contract.md` for the full mascot subsystem contract.
 
@@ -2434,19 +2442,19 @@ An agent looking for walnut_cgb.h in src/vendor/ will not find it.
 
 ---
 
-## M-15: Not calling WalnutEmu::destroy() or PeanutEmu::destroy() on exit
-**What happens:** cart_ram (128KB each) stays allocated in PSRAM.
+## M-15: Not calling `destroy()` on exit in `destroyActiveEmulator()`
+**What happens:** PSRAM buffers stay allocated across sessions.
 Repeated play sessions fragment PSRAM until a future allocation fails.
 **Prevention:** See 26_emulator_exit_contract.md. Follow the universal
-teardown contract in BmoGameboy.ino SELECT+UP handler.
+teardown contract in `BmoGameboy.ino` `destroyActiveEmulator()`.
 
 ---
 
-## M-16: Assuming the destroy() PSRAM gap is still open after the 2026-08-30 fix
-**What happens:** Agent reads an older document or prompt mentioning that Walnut/Peanut
+## M-16: Assuming the destroy() PSRAM gap is still open
+**What happens:** Agent reads an older document or prompt mentioning that emulator
 destroy() is not wired, assumes it is still missing, and attempts to re-add it or files a false bug.
-**Prevention:** Check BmoGameboy.ino SELECT+UP handler live in THIS session before claiming
-a teardown gap exists. All four cores (Walnut, Peanut, NES, DOOM) are wired to call destroy().
+**Prevention:** Check `BmoGameboy.ino` `destroyActiveEmulator()` live in THIS session before claiming
+a teardown gap exists. All 14 emulator cores are wired to call `destroy()`.
 
 ---
 
@@ -2521,14 +2529,14 @@ python -m tools.guardian export-harness <destination_dir>
 
 ## 4. Architecture in 30 Seconds
 - **Main State Machine ([`BmoGameboy.ino`](file:///e:/BMO%20Gameboy/firmware/BmoGameboy/BmoGameboy.ino)):**
-  - `STATE_CONSOLE_MENU` -> `STATE_GAME_MENU` -> `STATE_EMULATOR` (plus `STATE_CONSOLE_SPECS`, `STATE_PAUSE_MENU`, `STATE_IDLE_MASCOT`).
-  - Holding `START + SELECT` in-game opens `STATE_PAUSE_MENU` (Resume, Save/Load State Slots 0–4, `LEFT` = A/B swap, `RIGHT` = 1:1 console bezel, `SELECT` = 24-bit `.bmp` screenshot, Exit = auto-save `.sav` + `teardownCurrentEmulator()` + `SDCard::freeRom()`).
+  - `STATE_BOOT_SPLASH` -> `STATE_CONSOLE_MENU` -> `STATE_GAME_MENU` -> `STATE_EMULATOR` (plus `STATE_CONSOLE_MUSEUM`, `STATE_PAUSE_MENU`, `STATE_IDLE_MASCOT`).
+  - Holding `START + SELECT` in-game opens `STATE_PAUSE_MENU` (Resume, Save/Load State Slots 1–5, `LEFT` = A/B swap, `RIGHT` = 1:1 console bezel, `SELECT` = 24-bit `.bmp` screenshot, Quit = `autoSaveCurrentBatteryRam()` + `destroyActiveEmulator()`, which calls `::destroy()` and `SDCard::freeRom(currentRom)`).
 - **Display Streaming & Thread Safety:**
   - Landscape `320×240`, wire format **BGR565 byte-swapped** (`swapBytes()`).
   - Core 0 runs dedicated FreeRTOS display worker (`vDisplayTask`); Core 1 runs emulation and UI.
   - `SpiArbiter::lock()` protects the shared FSPI bus (`TFT_SCK=12`, `TFT_MOSI=11`) across display and MicroSD I/O.
 - **Storage, Cache & Box Art:**
-  - Recursive SD folder scan (depth 3) + binary cache (`/.bmo_index`), favorites (`/.favorites.txt`), and history (`/history.txt`).
+  - Recursive SD folder scan (depth 3) + binary cache (`/.bmo_index`), favorites (`/favorites.txt`), and history (`/history.txt`).
   - `BoxArt` streams 64×64 `.raw`/`.bmp` cover art into PSRAM (8,192 B, 0 internal DRAM).
 - **Button Polling:**
   - `Buttons::update()` samples all 8 active-low buttons atomically via `REG_READ(GPIO_IN_REG)` (`BTN_UP=4, BTN_DOWN=5, BTN_LEFT=6, BTN_RIGHT=7, BTN_A=16, BTN_B=17, BTN_START=18, BTN_SELECT=21`).
@@ -2873,8 +2881,8 @@ reference it rather than restate it.
 | `BmoGameboy.ino:332` | Emulator exit (`SELECT + UP`) return to menu | `IDLE` |
 | `src/emulators/emu_walnut.cpp:114` | Walnut-CGB `gb_error` panic | `ERROR` |
 | `src/emulators/emu_peanut.cpp:83` | Peanut-GB `gb_error` panic | `ERROR` |
-| `src/core/battery.cpp:50` | Low battery shutdown (`FEATURE_BATTERY_MONITOR=1`) | `SHUTDOWN` |
-| `src/core/battery.cpp:63` | Low battery warning (`FEATURE_BATTERY_MONITOR=1`) | `LOW_BATTERY` |
+| `src/core/battery.cpp:50` | Low battery shutdown (when `FEATURE_BATTERY_MONITOR` is enabled) | `SHUTDOWN` |
+| `src/core/battery.cpp:63` | Low battery warning (when `FEATURE_BATTERY_MONITOR` is enabled) | `LOW_BATTERY` |
 
 ## Memory & rendering contract
 - **Framebuffer Architecture:** Full 320×240 native canvas allocated in Octal PSRAM (`MALLOC_CAP_SPIRAM`, 153.6 KB), consuming 0 bytes of precious internal DRAM. Zero dynamic heap allocations inside `update()` or `draw()`.

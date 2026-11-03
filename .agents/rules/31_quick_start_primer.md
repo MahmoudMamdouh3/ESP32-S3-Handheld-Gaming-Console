@@ -40,14 +40,14 @@ python -m tools.guardian export-harness <destination_dir>
 
 ## 4. Architecture in 30 Seconds
 - **Main State Machine ([`BmoGameboy.ino`](file:///e:/BMO%20Gameboy/firmware/BmoGameboy/BmoGameboy.ino)):**
-  - `STATE_CONSOLE_MENU` -> `STATE_GAME_MENU` -> `STATE_EMULATOR` (plus `STATE_CONSOLE_SPECS`, `STATE_PAUSE_MENU`, `STATE_IDLE_MASCOT`).
-  - Holding `START + SELECT` in-game opens `STATE_PAUSE_MENU` (Resume, Save/Load State Slots 0–4, `LEFT` = A/B swap, `RIGHT` = 1:1 console bezel, `SELECT` = 24-bit `.bmp` screenshot, Exit = auto-save `.sav` + `teardownCurrentEmulator()` + `SDCard::freeRom()`).
+  - `STATE_BOOT_SPLASH` -> `STATE_CONSOLE_MENU` -> `STATE_GAME_MENU` -> `STATE_EMULATOR` (plus `STATE_CONSOLE_MUSEUM`, `STATE_PAUSE_MENU`, `STATE_IDLE_MASCOT`).
+  - Holding `START + SELECT` in-game opens `STATE_PAUSE_MENU` (Resume, Save/Load State Slots 1–5, `LEFT` = A/B swap, `RIGHT` = 1:1 console bezel, `SELECT` = 24-bit `.bmp` screenshot, Quit = `autoSaveCurrentBatteryRam()` + `destroyActiveEmulator()`, which calls `::destroy()` and `SDCard::freeRom(currentRom)`).
 - **Display Streaming & Thread Safety:**
   - Landscape `320×240`, wire format **BGR565 byte-swapped** (`swapBytes()`).
   - Core 0 runs dedicated FreeRTOS display worker (`vDisplayTask`); Core 1 runs emulation and UI.
   - `SpiArbiter::lock()` protects the shared FSPI bus (`TFT_SCK=12`, `TFT_MOSI=11`) across display and MicroSD I/O.
 - **Storage, Cache & Box Art:**
-  - Recursive SD folder scan (depth 3) + binary cache (`/.bmo_index`), favorites (`/.favorites.txt`), and history (`/history.txt`).
+  - Recursive SD folder scan (depth 3) + binary cache (`/.bmo_index`), favorites (`/favorites.txt`), and history (`/history.txt`).
   - `BoxArt` streams 64×64 `.raw`/`.bmp` cover art into PSRAM (8,192 B, 0 internal DRAM).
 - **Button Polling:**
   - `Buttons::update()` samples all 8 active-low buttons atomically via `REG_READ(GPIO_IN_REG)` (`BTN_UP=4, BTN_DOWN=5, BTN_LEFT=6, BTN_RIGHT=7, BTN_A=16, BTN_B=17, BTN_START=18, BTN_SELECT=21`).

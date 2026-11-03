@@ -107,7 +107,7 @@ checks file existence and string presence — it **cannot detect**:
 
 The canonical compile command must be run and pass before VERIFIED_HOST is claimed:
 ```powershell
-.\arduino-cli.exe compile --fqbn "esp32:esp32:esp32s3:FlashMode=opi,FlashSize=16M,PartitionScheme=custom,PSRAM=opi" firmware/BmoGameboy
+.\arduino-cli.exe compile --fqbn "esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi" firmware/BmoGameboy
 ```
 
 ## Numeric claims (counts, hit totals, percentages)

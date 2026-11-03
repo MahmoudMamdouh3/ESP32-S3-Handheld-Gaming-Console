@@ -46,8 +46,8 @@ reference it rather than restate it.
 | `BmoGameboy.ino:332` | Emulator exit (`SELECT + UP`) return to menu | `IDLE` |
 | `src/emulators/emu_walnut.cpp:114` | Walnut-CGB `gb_error` panic | `ERROR` |
 | `src/emulators/emu_peanut.cpp:83` | Peanut-GB `gb_error` panic | `ERROR` |
-| `src/core/battery.cpp:50` | Low battery shutdown (`FEATURE_BATTERY_MONITOR=1`) | `SHUTDOWN` |
-| `src/core/battery.cpp:63` | Low battery warning (`FEATURE_BATTERY_MONITOR=1`) | `LOW_BATTERY` |
+| `src/core/battery.cpp:50` | Low battery shutdown (when `FEATURE_BATTERY_MONITOR` is enabled) | `SHUTDOWN` |
+| `src/core/battery.cpp:63` | Low battery warning (when `FEATURE_BATTERY_MONITOR` is enabled) | `LOW_BATTERY` |
 
 ## Memory & rendering contract
 - **Framebuffer Architecture:** Full 320×240 native canvas allocated in Octal PSRAM (`MALLOC_CAP_SPIRAM`, 153.6 KB), consuming 0 bytes of precious internal DRAM. Zero dynamic heap allocations inside `update()` or `draw()`.

@@ -22,50 +22,25 @@ capable or careful the specific model is.
    and state which constraint applies.
 
 ## During
-5. Prefer the smallest change that satisfies the request. Don't bundle
-   unrelated cleanup into the same commit (see 05_git_workflow.md).
-6. If you hit an unrelated bug while working, do NOT silently fix it
-   inline — note it, ask, or log it as a new 04_known_issues.md entry
-   with status `OPEN`, and finish the requested task first, unless it's
-   blocking the requested task.
+5. Prefer clean, minimal changes that solve the root cause.
+6. **Proactive Defect Resolution:** If you discover an existing bug, memory safety hazard, stack overflow risk, or documentation drift while inspecting files for your task, fix it and verify it rather than walking past it, and document every fix in `CHANGELOG.md` and `04_known_issues.md`.
 7. If you're about to fabricate a plausible-sounding detail because you
    don't actually know it (a line number, a variable name, a test
-   result) — stop. State the uncertainty instead. This is the single
-   highest-value habit for this repo given past incidents.
+   result) — stop. State the uncertainty or verify it with a tool call instead.
 8. **Stop-after-2-failures rule:** if the same interaction/approach fails
    twice in a row (a build flag, a test invocation, a specific fix
    attempt), STOP retrying variations of the same approach. Switch
-   strategy entirely, or stop and ask. Never spend more than 5 tool calls
-   total on a single stuck sub-problem before changing approach or asking.
-9. **Implementation-plan gate for substantial changes:** for anything
-   multi-file, architectural, or that would trigger the review gate in
-   05_git_workflow.md (hard-stop-adjacent, history-rewriting, new
-   binaries) — write a short plan (a few bullets is fine, doesn't need to
-   be a separate file for most cases) and wait for explicit approval
-   before writing code or running risky commands. Trivial fixes and
-   single-line edits skip this, same as always.
+   strategy entirely, or stop and ask.
 
 ## Before reporting done
-10. Compile. A successful compile is necessary, never sufficient, for
-   "done" — see 06_verification_standards.md for what else is required
-   depending on what was touched.
-11. Update .agents/rules/ files per the Documentation Maintenance Protocol
-   in 03_conventions.md, using the status vocabulary from
-   06_verification_standards.md.
-12. Update 04_known_issues.md's Changelog section with a one-line dated
-    entry (see existing entries for format).
+9. Compile and run `python scripts/validate_repo.py` and `python -m tools.guardian diff-audit`. A successful compile and passing validator are required before reporting a code change complete.
+10. Update `.agents/rules/` files per the Documentation Maintenance Protocol in `03_conventions.md`, using the status vocabulary from `06_verification_standards.md`.
+11. Update `04_known_issues.md` and `CHANGELOG.md` with dated entries when firmware or tooling changes are made.
 
-## Final report format (always use these two headers, verbatim)
-```
-## Verified by me this session
-<only things you personally ran/read/confirmed in THIS session>
-
-## Waiting on you
-<anything requiring physical hardware, a human decision, or an external
-resource you don't have access to — with an exact checklist, per
-06_verification_standards.md's PASS/FAIL definition rules>
-```
-Never merge these two categories. Never imply the second category is done.
+## Reporting verification clearly
+Always clearly distinguish between:
+- **Verified in this session on host:** commands, compiles, unit tests, and native C harness runs you executed in this session.
+- **Requires physical hardware verification:** behavior that can only be confirmed after flashing onto the physical ESP32-S3 board.
 
 ## Definition of Done, by task type
 - **Docs-only change:** compiles N/A; diff reviewed; cross-references

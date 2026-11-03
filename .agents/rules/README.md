@@ -33,8 +33,8 @@
 | [`23_incident_postmortem_log.md`](file:///e:/BMO%20Gameboy/.agents/rules/23_incident_postmortem_log.md) | Record of historical hardware/process incidents | Reference |
 | [`24_vendor_flag_safety.md`](file:///e:/BMO%20Gameboy/.agents/rules/24_vendor_flag_safety.md) | Mandatory read-before-enable protocol for vendor `#define` flags | Touching vendor flags |
 | [`25_game_compatibility_ledger.md`](file:///e:/BMO%20Gameboy/.agents/rules/25_game_compatibility_ledger.md) | Per-game hardware test ledger | Emulator changes |
-| [`26_emulator_exit_contract.md`](file:///e:/BMO%20Gameboy/.agents/rules/26_emulator_exit_contract.md) | `teardownCurrentEmulator()` 14-core PSRAM cleanup contract | Emulator/menu tasks |
-| [`27_codebase_map.md`](file:///e:/BMO%20Gameboy/.agents/rules/27_codebase_map.md) | Full architecture map: directories, 6 states, 14 cores, SPI, PSRAM | Architecture lookup |
+| [`26_emulator_exit_contract.md`](file:///e:/BMO%20Gameboy/.agents/rules/26_emulator_exit_contract.md) | `destroyActiveEmulator()` 14-core PSRAM cleanup contract | Emulator/menu tasks |
+| [`27_codebase_map.md`](file:///e:/BMO%20Gameboy/.agents/rules/27_codebase_map.md) | Full architecture map: directories, 7 states, 14 cores, SPI, PSRAM | Architecture lookup |
 | [`28_display_and_spi_contract.md`](file:///e:/BMO%20Gameboy/.agents/rules/28_display_and_spi_contract.md) | BGR565 wire format, Core 0 worker, `SpiArbiter` sharing rules | Display/SPI tasks |
 | [`29_adding_a_baked_rom.md`](file:///e:/BMO%20Gameboy/.agents/rules/29_adding_a_baked_rom.md) | Step-by-step checklist for baking a new ROM into flash | Baking ROMs |
 | [`30_common_agent_mistakes.md`](file:///e:/BMO%20Gameboy/.agents/rules/30_common_agent_mistakes.md) | Anti-pattern catalogue (M-1 through M-20) | Debugging/preflight |

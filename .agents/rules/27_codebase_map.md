@@ -73,12 +73,13 @@ repo-root/
 ---
 
 ## Runtime State Machine (`BmoGameboy.ino`)
-Six states govern runtime control flow:
-- `STATE_CONSOLE_MENU` — Console carousel selector (14 systems + Konami Code easter egg). `A` enters `STATE_GAME_MENU`; `SELECT` enters `STATE_CONSOLE_SPECS`; `UP` enters `STATE_IDLE_MASCOT`.
-- `STATE_CONSOLE_SPECS` — Displays hardware history & specs for the selected console.
-- `STATE_GAME_MENU` — ROM browser with 64×64 box art, recursive folders, A–Z jump, and favorites (`SELECT`). `A` launches game into `STATE_EMULATOR`.
+Seven states in `enum SystemState` govern runtime control flow:
+- `STATE_BOOT_SPLASH` — Animated power-on BMO splash screen before entering the console menu.
+- `STATE_CONSOLE_MENU` — Console carousel selector (Favorites + 15 console platforms + Konami Code easter egg). `A` enters `STATE_GAME_MENU`; `SELECT` enters `STATE_CONSOLE_MUSEUM`; `UP` enters `STATE_IDLE_MASCOT`.
+- `STATE_CONSOLE_MUSEUM` — Displays hardware history & technical specifications (`DisplayEmu::drawConsoleMuseumModal`) for the selected console.
+- `STATE_GAME_MENU` — ROM browser with 64×64 box art, recursive folders, `<`/`>` A–Z jump, and favorites (`SELECT`). `A` launches game into `STATE_EMULATOR`.
 - `STATE_EMULATOR` — Active emulator frame loop (`runFrame()`). Holding `START + SELECT` opens `STATE_PAUSE_MENU`.
-- `STATE_PAUSE_MENU` — In-game overlay: Resume, Save State (Slots 0–4), Load State (Slots 0–4), Exit to Menu (auto-saves `.sav`, calls `teardownCurrentEmulator()`, frees ROM), plus `LEFT` (A/B swap), `RIGHT` (1:1 console bezel toggle), and `SELECT` (`.bmp` screenshot capture).
+- `STATE_PAUSE_MENU` — In-game overlay: Resume, Quick Save (Slots 1–5), Quick Load (Slots 1–5), Cycle Slot (1–5), Save Battery RAM (`.sav`), Quit to Console Menu (calls `autoSaveCurrentBatteryRam()` and `destroyActiveEmulator()`), plus `LEFT` (A/B swap), `RIGHT` (1:1 console bezel toggle), and `SELECT` (`.bmp` screenshot capture).
 - `STATE_IDLE_MASCOT` — Interactive 320×240 BMO companion mode (expressions, dialogue bubbles, dance mode).
 
 ---
@@ -90,16 +91,16 @@ Six states govern runtime control flow:
 | `.gb` | `ROM_GB` | `1` | `PeanutEmu` (`emu_peanut`) | 160×144 (scaled 240×216) |
 | `.nes` | `ROM_NES` | `2` | `NesEmu` (`emu_nes`) | 256×240 |
 | `.wad` | `ROM_WAD` | `3` | `DoomEmu` (`emu_doom`) | 320×200 |
-| `.sms`, `.gg` | `ROM_SMS`, `ROM_GG` | `4`, `5` | `SmsEmu` (`emu_sms`) | 256×192 / 160×144 |
-| `.pce` | `ROM_PCE` | `6` | `PceEmu` (`emu_pce`) | 256×240 |
-| `.a26` | `ROM_ATARI` | `7` | `AtariEmu` (`emu_atari`) | 160×192 |
-| `.p8` | `ROM_PICO8` | `8` | `PicoEmu` (`emu_pico`) | 128×128 |
-| `.gen`, `.md`, `.smd` | `ROM_GENESIS` | `9` | `GenesisEmu` (`emu_genesis`) | 320×224 |
-| `.sfc`, `.smc` | `ROM_SNES` | `10` | `SNESEmu` (`emu_snes`) | 256×224 |
-| `.ws`, `.wsc` | `ROM_WSWAN` | `11` | `WSwanEmu` (`emu_wswan`) | 224×144 |
-| `.ngp`, `.ngc` | `ROM_NGP` | `12` | `NGPEmu` (`emu_ngp`) | 160×152 |
-| `.lnx` | `ROM_LYNX` | `13` | `LynxEmu` (`emu_lynx`) | 160×102 |
-| `.col`, `.sg` | `ROM_COLEM` | `14` | `ColemEmu` (`emu_colem`) | 256×192 |
+| `.sms`, `.gg` | `ROM_SMS`, `ROM_GG` | `4` | `SmsEmu` (`emu_sms`) | 256×192 / 160×144 |
+| `.pce` | `ROM_PCE` | `5` | `PceEmu` (`emu_pce`) | 256×240 |
+| `.a26` | `ROM_ATARI` | `6` | `AtariEmu` (`emu_atari`) | 160×192 |
+| `.p8` | `ROM_PICO8` | `7` | `PicoEmu` (`emu_pico`) | 128×128 |
+| `.gen`, `.md`, `.smd` | `ROM_GENESIS` | `8` | `GenesisEmu` (`emu_genesis`) | 320×224 |
+| `.sfc`, `.smc` | `ROM_SNES` | `9` | `SNESEmu` (`emu_snes`) | 256×224 |
+| `.ws`, `.wsc` | `ROM_WSWAN` | `10` | `WSwanEmu` (`emu_wswan`) | 224×144 |
+| `.ngp`, `.ngc` | `ROM_NGP` | `11` | `NGPEmu` (`emu_ngp`) | 160×152 |
+| `.lnx` | `ROM_LYNX` | `12` | `LynxEmu` (`emu_lynx`) | 160×102 |
+| `.col`, `.sg` | `ROM_COLEM` | `13` | `ColemEmu` (`emu_colem`) | 256×192 |
 
 ---
 

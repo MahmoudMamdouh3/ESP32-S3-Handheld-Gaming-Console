@@ -1,42 +1,21 @@
-# Extensibility Contract (New Emulator Cores)
-Purpose: adding a 5th console shouldn't require touching code that the
-existing 4 already depend on. Modeled on a "zero-touch core" pattern from
-another project, adapted to this one.
+# Extensibility Contract (Emulator Cores & Peripherals)
+Purpose: Every console emulator core in the 14-core architecture follows a uniform C++ wrapper lifecycle so cores can be initialized, stepped, saved/restored, and torn down deterministically without PSRAM leaks.
 
-## Adding a new emulator core
-- New files ONLY under `src/emulators/<name>/` (glue) and
-  `src/vendor/<name>/` (pristine third-party source), per
-  03_conventions.md's existing directory rule.
-- Every core must implement the same shared lifecycle contract: an init
-  function, a per-frame run function, an input-handling path that reads
-  the shared `gb_joypad_state`-style bitmask (not its own polling), and
-  an explicit teardown/dispose function (see below).
-- `BmoGameboy.ino`'s state-dispatch logic may be touched at exactly ONE
-  point: the registration/dispatch table that maps a ROM extension to a
-  core. Nothing else in `BmoGameboy.ino`, `display_emu.cpp`, or
-  `buttons.cpp` should need to change to add a core. If it does, that's a
-  sign the shared interface is missing something — fix the interface, not
-  the core files, and say so explicitly rather than patching around it.
+## Adding or modifying an emulator core
+- Wrapper files live under `src/emulators/emu_<name>.h/.cpp` and underlying C/C++ engines live under `src/vendor/<name>/` (or `src/engine/<name>/`), per `03_conventions.md`.
+- Every wrapper must implement the unified lifecycle contract:
+  - `begin(...)` — Allocates all required state, VRAM, and work RAM buffers in Octal PSRAM (`heap_caps_malloc(..., MALLOC_CAP_SPIRAM)`).
+  - `updateJoypad()` — Reads `Buttons::get(...)` or `Buttons::gb_joypad_state` (never calls `digitalRead()` directly).
+  - `runFrame()` — Executes one frame and streams to `DisplayEmu::stream*Frame(...)`.
+  - `destroy()` — Frees every PSRAM buffer allocated by the core and resets pointers to `nullptr`.
+  - `saveBatteryRam(const char* romFilename)` / `loadBatteryRam(const char* romFilename)` — Persists cartridge battery backup RAM (`.sav`).
+  - `saveState(const char* romFilename, int slot)` / `loadState(const char* romFilename, int slot)` — Persists 5-slot snapshots (`.s01`–`.s05`) via `SaveManager` using PSRAM staging buffers (never allocating large context structs on the 8 KB `loopTask` stack).
 
-## Emulator teardown on switch (NEW RULE — currently not enforced anywhere)
-When switching from one emulator core to another (returning to menu,
-loading a different ROM), the outgoing core MUST explicitly free every
-PSRAM buffer it allocated (ROM buffer, save-state buffer, any
-core-specific scratch memory) and reset its static state before the next
-core initializes. Repeated play sessions without this will fragment or
-exhaust PSRAM over time. Add this as an explicit `teardown()` step in
-every core's glue file, and call it from the state-machine transition in
-`BmoGameboy.ino`, not left implicit.
+## Deterministic emulator teardown (`destroyActiveEmulator()`)
+When exiting a game or switching ROMs in `BmoGameboy.ino`, `destroyActiveEmulator()` invokes `::destroy()` on the active emulator core and calls `SDCard::freeRom(currentRom)` to release the PSRAM ROM buffer. `scripts/validate_repo.py` Phase 2 enforces that all 14 `::destroy()` calls are wired in `BmoGameboy.ino`.
 
-## No per-frame heap allocation (NEW RULE)
-No emulator core's per-frame render or CPU-execution loop may call
-`malloc`, `heap_caps_malloc`, `new`, or any other heap allocation.
-Everything needed inside the hot loop must be allocated once at core
-init and reused. This applies with extra force to PSRAM allocations,
-which fragment badly on repeated alloc/free cycles on this hardware. If
-you find an existing violation while working on something else, log it in
-04_known_issues.md as `OPEN` rather than silently fixing it inline (per
-07_task_protocol.md's existing rule about unrelated bugs).
+## No per-frame heap allocation
+No emulator core's per-frame render or CPU-execution loop may call `malloc`, `heap_caps_malloc`, `new`, or any other heap allocation. Everything needed inside the hot loop must be allocated once at core initialization (or lazily allocated once in PSRAM and freed in `destroy()`) and reused across frames.
 
 ## General Peripheral Extensions
-The zero-touch / init-update-teardown / `FEATURE_*`-flag contract described above for emulator cores is the general pattern for **any** new hardware peripheral module (FRAM, audio, battery, a future second display). Additionally, the rules in `14_error_handling_and_fault_isolation.md` and `15_performance_budgets.md` apply to any such hardware addition.
+The init-update-teardown and `FEATURE_*`-flag contract above applies to any hardware peripheral module (`battery.h`, `audio_i2s.h`, `fram_save.h`). Keep `FEATURE_BATTERY_MONITOR = 0` and `FEATURE_AUDIO = 0` until physical hardware is soldered and verified per `00_hard_stops.md`.

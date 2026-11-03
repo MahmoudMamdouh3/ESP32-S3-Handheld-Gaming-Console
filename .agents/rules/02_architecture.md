@@ -16,7 +16,7 @@
 - **Memory & Cache:** Place hot structures in internal DRAM aligned to the ESP32-S3 D-cache line size (`__attribute__((aligned(32)))`) where needed, and allocate all large emulator contexts, framebuffers, ROM payloads, save buffers, and box art in Octal PSRAM (`heap_caps_malloc(..., MALLOC_CAP_SPIRAM)`).
 - **Dual-Core FreeRTOS Pipeline:**
   - **Core 1 (Application & Emulation):** Runs Arduino `setup()` and `loop()`, emulator CPU/PPU step loops, button debouncing, and UI logic.
-  - **Core 0 (Display Worker Task):** Hosts `vDisplayTask` dedicated FreeRTOS worker. Core 1 hands off completed double-buffered PSRAM frames via `DisplayEmu::submitFrameAsync()` allowing CPU emulation and SPI display DMA transfers to run in parallel at 60 FPS.
+  - **Core 0 (Display Worker Task):** Hosts `vDisplayTask` dedicated FreeRTOS worker. Core 1 hands off completed double-buffered PSRAM frames via `DisplayEmu::streamGBFrame()` or `DisplayEmu::streamRawFrameAsync()`, allowing CPU emulation and SPI display DMA transfers to run in parallel at 60 FPS.
 - **SPI Bus Arbitration (`SpiArbiter`):**
   - ST7789 display and MicroSD card share the FSPI bus (`TFT_SCK` GPIO 12, `TFT_MOSI` GPIO 11).
   - All display transactions and SD card filesystem operations (save states, battery RAM, ROM index cache, box art loading, screenshots, favorites, history) MUST acquire `SpiArbiter::lock()` before asserting CS to eliminate bus contention between Core 0 and Core 1.

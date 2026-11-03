@@ -39,6 +39,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 from .core.ast_linter import FirmwareAstLinter
 from .core.bus_model import HardwareBusModel
+from .core.clang_tidy_runner import ClangTidyRunner
 from .core.cppcheck_runner import CppcheckRunner
 from .core.doc_verifier import DocTruthVerifier
 from .core.elf_analyzer import ElfAnalyzer
@@ -263,6 +264,36 @@ def cmd_cppcheck(args) -> int:
     errors = sum(finding.severity == "error" for finding in findings)
     print(f"Cppcheck findings: {len(findings)} total, {errors} errors.")
     return 1 if errors else 0
+
+
+def cmd_clang_tidy(args) -> int:
+    """Run LLVM clang-tidy deep static analysis across host-portable C/C++ cores and harnesses."""
+    runner = ClangTidyRunner(REPO_ROOT)
+    if not runner.is_available():
+        print("clang-tidy is not installed or could not be located.")
+        return 2
+
+    target_files = None
+    if getattr(args, "files", None):
+        target_files = [
+            Path(f) if Path(f).is_absolute() else (REPO_ROOT / f)
+            for f in args.files
+            if (Path(f) if Path(f).is_absolute() else (REPO_ROOT / f)).exists()
+        ]
+
+    findings = runner.run(target_files)
+    for f in findings:
+        print(f"[{f.severity.upper()}] {f.file_path}:{f.line}:{f.column} [{f.check_name}] {f.message}")
+
+    errors = sum(f.severity == "error" for f in findings)
+    print(f"clang-tidy findings: {len(findings)} total, {errors} errors.")
+    return 1 if errors else 0
+
+
+def cmd_mcp(args) -> int:
+    """Starts the BMO Guardian Model Context Protocol (MCP) JSON-RPC 2.0 stdio server."""
+    from .mcp_server import run_stdio_server
+    return run_stdio_server()
 
 
 def cmd_report(args) -> int:
@@ -724,10 +755,12 @@ def cmd_doctor(args) -> int:
         vcvars = Path(r"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat")
     elf_analyzer = ElfAnalyzer(REPO_ROOT)
     cppcheck = CppcheckRunner(REPO_ROOT)
+    clang_tidy = ClangTidyRunner(REPO_ROOT)
     print(f"  * arduino-cli           : {'READY' if arduino_cli.exists() or shutil.which('arduino-cli') else 'NOT FOUND'}")
     print(f"  * xtensa-esp32s3-elf-nm : {'READY' if elf_analyzer.get_tool('nm') else 'NOT FOUND'}")
     print(f"  * msvc cl.exe (x64)     : {'READY' if vcvars.exists() or shutil.which('cl') else 'NOT FOUND'}")
     print(f"  * cppcheck              : {'READY' if cppcheck.is_available() else 'NOT FOUND'}")
+    print(f"  * clang-tidy (LLVM)     : {'READY' if clang_tidy.is_available() else 'NOT FOUND'}")
 
     print("\n" + "=" * 70)
     if issues == 0:
@@ -1121,6 +1154,11 @@ def main() -> int:
     subparsers.add_parser("bench-host", help="Run host-side microbenchmarks")
     subparsers.add_parser("cppcheck", help="Run Cppcheck across all firmware sources")
 
+    p_tidy = subparsers.add_parser("clang-tidy", help="Run LLVM clang-tidy static analysis across host-portable C/C++ cores")
+    p_tidy.add_argument("--files", nargs="*", help="Specific C/C++ files to analyze")
+
+    subparsers.add_parser("mcp", help="Run the BMO Guardian Model Context Protocol (MCP) JSON-RPC 2.0 server")
+
     p_rep = subparsers.add_parser("report", help="Generate full performance & ground-truth report")
     p_rep.add_argument("--output", "-o", help="Output file path (e.g. docs/performance_report.md)")
     p_rep.add_argument("--json", action="store_true", help="Output JSON instead of Markdown")
@@ -1168,6 +1206,8 @@ def main() -> int:
         "profile-elf": cmd_profile_elf,
         "bench-host": cmd_bench_host,
         "cppcheck": cmd_cppcheck,
+        "clang-tidy": cmd_clang_tidy,
+        "mcp": cmd_mcp,
         "report": cmd_report,
         "index": cmd_index,
         "route": cmd_route,

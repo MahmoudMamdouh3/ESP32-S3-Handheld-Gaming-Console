@@ -7,7 +7,24 @@
 
 ---
 
-## Latest Agent Handoff — 2026-11-03 (Pre-Flash Hardware Safety & Runtime Audit Fixes)
+## Latest Agent Handoff — 2026-11-03 (AI Environment Overhaul, 11-Core Native C Harness & MCP Server)
+
+This is the current repository handoff. Read this section before continuing from an earlier changelog entry.
+
+- **AI Development Environment & Native Verification Upgrades (`tools/guardian/`, `tests/`, `.agents/rules/`, `agnes.c`):**
+  1. **Eliminated Split-Brain Rule Contradictions & Bug-Fix Prohibitions (`.agents/rules/*.md`, `tools/guardian/core/doc_verifier.py`):**
+     - Fixed the copy-paste compile command in `.agents/rules/06_verification_standards.md:110` from `FlashMode=opi` (which bootloops the Quad-SPI Flash ESP32-S3-N16R8) to `CDCOnBoot=cdc,FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi`.
+     - Removed the rule in `.agents/rules/07_task_protocol.md` and `.agents/rules/12_extensibility_contract.md` that forbade agents from fixing out-of-scope bugs (`"do NOT silently fix it inline"`), replacing it with a proactive defect resolution rule.
+     - Synchronized all stale symbol and state names across `.agents/rules/02_architecture.md`, `03_conventions.md`, `10_symbol_reference.md`, `12_extensibility_contract.md`, `26_emulator_exit_contract.md`, `27_codebase_map.md`, `30_common_agent_mistakes.md`, `31_quick_start_primer.md`, `35_bmo_face_contract.md`, and `.agents/rules/README.md` (`destroyActiveEmulator()`, `STATE_CONSOLE_MUSEUM`, `streamGBFrame()` / `streamRawFrameAsync()`, `SDCard::freeRom(currentRom)`, `Slots 1–5`, `/favorites.txt`, 14 cores, 5 baked ROMs).
+     - Upgraded `DocTruthVerifier` (`tools/guardian/core/doc_verifier.py`) to scan all active `.agents/rules/*.md` files and reject unguarded `FlashMode=opi` flags and obsolete symbol references.
+  2. **Made `agnes.c` Host-Portable & Upgraded Native C Test Harness to 11 Cores + Save-State Determinism (`agnes.c`, `tools/host_cores_runner.c`, `tests/test_native_cores_execution.py`):**
+     - Guarded ESP-IDF headers and macros in `firmware/BmoGameboy/src/vendor/agnes/agnes.c` (`#if defined(ESP32) || defined(ARDUINO)`) so the 2,600-line NES 6502 + PPU + Mapper 0/1/2/4 engine compiles natively on x64 `cl.exe` / `gcc`.
+     - Added `test_nes_agnes_core()` to `tools/host_cores_runner.c` and `tests/test_native_cores_execution.py`, testing 6502 instruction execution, PPU rendering, `$6000` `agnes_get_prg_ram()` persistence, and bit-exact save-state determinism (`save @ frame 25 -> run to 50 -> restore @ 25 -> re-run to 50 -> assert FNV-1a framebuffer hash and PRG-RAM match 100%`).
+  3. **Added LLVM `clang-tidy` Analyzer & Guardian Model Context Protocol (MCP) Server (`tools/guardian/core/clang_tidy_runner.py`, `tools/guardian/mcp_server.py`, `.mcp.json`):**
+     - Added `ClangTidyRunner` (`python -m tools.guardian clang-tidy`) running LLVM `clang-tidy` embedded defect checks across all 11 host-portable C cores and `tools/host_cores_runner.c` (`0` warnings/errors).
+     - Added a zero-dependency JSON-RPC 2.0 stdio MCP server (`python -m tools.guardian mcp` and `.mcp.json`) exposing `bmo_prompt_pack`, `bmo_lookup`, `bmo_explain`, `bmo_patch_check`, `bmo_run_host_cores`, `bmo_memory_budget`, and `bmo_doctor`.
+
+## Previous Handoff — 2026-11-03 (Pre-Flash Hardware Safety & Runtime Audit Fixes)
 
 This is the current repository handoff. Read this section before continuing from an earlier changelog entry.
 

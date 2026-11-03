@@ -16,12 +16,12 @@ repo-root/
         ├── BmoGameboy.ino            ← ONLY setup(), loop(), and state dispatch
         ├── partitions.csv            ← 8MB app0 custom partition table
         └── src/
-            ├── core/                 ← hardware drivers & storage (config.h, display, buttons, SDF face, spi_arbiter, save_manager, box_art, rom_index)
-            ├── emulators/            ← glue code per console (emu_peanut, emu_walnut, emu_nes, emu_doom)
+            ├── core/                 ← hardware drivers & storage (config.h, display_emu, buttons, bmo_face, spi_arbiter, save_manager, box_art, rom_index)
+            ├── emulators/            ← 14 C++ glue wrappers (emu_peanut, emu_walnut, emu_nes, emu_doom, emu_sms, emu_pce, emu_atari, emu_pico, emu_genesis, emu_snes, emu_wswan, emu_ngp, emu_lynx, emu_colem)
             ├── engine/               ← header-only engines (walnut_cgb)
-            ├── vendor/               ← third-party libraries (peanut_gb, agnes, doom)
+            ├── vendor/               ← 13 C emulator engines (peanut_gb, agnes, doom, smsplus, pce, stella, pico, genesis, snes, wswan, ngp, lynx, colem)
             ├── assets/               ← asset headers
-            │   └── roms/             ← baked commercial ROM headers (mario, zelda)
+            │   └── roms/             ← 5 baked ROM headers (mario_deluxe, zelda_ages, aladdin, lego_racers, virtual_bmo)
             └── tests/                ← on-device unit tests
 ```
 - **Rule:** Custom engines live in `src/engine/<name>/`, while third-party vendor libraries go under `src/vendor/<name>/`.

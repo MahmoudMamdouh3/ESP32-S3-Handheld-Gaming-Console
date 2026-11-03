@@ -14,7 +14,7 @@ signatures, macro `#define`s, and top-level struct declarations from:
 `src/core/`, `src/emulators/`, `src/engine/*/`, `src/vendor/*/`.
 
 ## Staleness detection
-This file was last regenerated: **2026-10-21**.
+This file was last regenerated: **2026-11-03**.
 If any of the following files have a newer git commit date than that,
 this file is stale — grep live and update before making any symbol claims:
 - `src/emulators/emu_walnut.cpp/h`
@@ -64,6 +64,13 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `DisplayEmu::drawConsoleSelectMenu` | fn | `void drawConsoleSelectMenu(int selectedIndex, const int* gameCounts, int consoleCount, bool sdMounted)` | Renders 1:1 Carousel Card console selector |
 | `DisplayEmu::drawConsoleMuseumModal` | fn | `void drawConsoleMuseumModal(RomType console)` | Renders console history/specs modal (STATE_CONSOLE_MUSEUM) |
 | `DisplayEmu::drawGameSelectMenu` | fn | `void drawGameSelectMenu(const RomFile* const* games, int count, int selectedIndex, RomType console, bool sdMounted)` | Renders game list menu |
+| `DisplayEmu::showToast` | fn | `void showToast(const char* message, uint16_t borderColor = 0xFFE0, unsigned long durationMs = 1800)` | Triggers floating toast notification pill |
+| `DisplayEmu::hasActiveToast` | fn | `bool hasActiveToast()` | Returns true if floating toast notification is active |
+| `DisplayEmu::triggerCarouselGlide` | fn | `void triggerCarouselGlide(bool directionRight)` | Triggers spring-damper carousel transition |
+| `DisplayEmu::showAlphaBadge` | fn | `void showAlphaBadge(char letter, unsigned long durationMs = 800)` | Displays A-Z alphabetical jump HUD badge |
+| `DisplayEmu::drawDiagnosticsDashboard` | fn | `void drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeDram, uint32_t freePsram, uint32_t freeIram, uint8_t buttonMask)` | Renders hardware self-test & memory dashboard |
+| `DisplayEmu::sanitizeRomTitle` | fn | `void sanitizeRomTitle(const char* src, char* dst, size_t maxLen)` | Strips path, extension, and region tags from ROM filename |
+| `DisplayEmu::setDoomPalette` | fn | `void setDoomPalette(const uint8_t* rgbPalette)` | Converts 256-entry RGB888 DOOM PLAYPAL to byte-swapped BGR565 |
 | `DisplayEmu::drawConsoleIcon` | fn | `void drawConsoleIcon(RomType type, int x, int y, uint16_t primaryColor = 0)` | Renders pixel-art console hardware silhouette |
 | `DisplayEmu::drawIdleMascotScreen` | fn | `void drawIdleMascotScreen(unsigned long idleSeconds, const char* stateMessage)` | Renders Living BMO Screensaver (STATE_IDLE_MASCOT) |
 | `DisplayEmu::setDmgPalette` | fn | `void setDmgPalette(int paletteIndex)` | Sets active DMG runtime palette |
@@ -225,13 +232,28 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 ## src/core/bmo_face.h (BmoFace)
 | Symbol | Kind | Signature | Notes |
 |---|---|---|---|
-| `BmoFace::begin` | fn | `void begin()` | Initializes RNG and clears dirty flag |
+| `BmoFace::begin` | fn | `void begin()` | Allocates PSRAM canvas and initializes spring-damper physics |
 | `BmoFace::setExpression` | fn | `void setExpression(BmoExpression expr)` | Sets target facial expression |
-| `BmoFace::update` | fn | `void update()` | Ticks procedural animation & blink |
+| `BmoFace::getExpression` | fn | `BmoExpression getExpression()` | Returns active facial expression |
+| `BmoFace::update` | fn | `void update()` | Ticks procedural animation, springs, & blink |
 | `BmoFace::draw` | fn | `void draw(int x, int y, int size)` | Renders & blits scaled face |
-| `BmoFace::draw` | fn | `void draw()` | Blits large centered face |
+| `BmoFace::draw` | fn | `void draw()` | Blits full-screen 320x240 BMO face |
+| `BmoFace::renderToBuffer` | fn | `void renderToBuffer(uint16_t* dst, int stride, int x, int y, int w, int h)` | Renders vector SDF face directly into caller buffer |
+| `BmoFace::renderFullScreen` | fn | `void renderFullScreen(uint16_t* dst, int width = 320, int height = 240)` | Renders full-screen 320x240 face into caller buffer |
+| `BmoFace::getScreenBgColor` | fn | `uint16_t getScreenBgColor()` | Returns current face background color (mint or dusk) |
+| `BmoFace::setGaze` | fn | `void setGaze(float gx, float gy)` | Sets normalized eye gaze offset (-1.0..1.0) |
+| `BmoFace::tickle` | fn | `void tickle(float intensity = 1.0f)` | Triggers tickle spring impulse |
+| `BmoFace::triggerWink` | fn | `void triggerWink()` | Triggers wink animation with star glint |
+| `BmoFace::triggerBlush` | fn | `void triggerBlush()` | Triggers coral cheek blush animation |
+| `BmoFace::triggerJoy` | fn | `void triggerJoy()` | Triggers joyful bounce expression |
+| `BmoFace::say` | fn | `void say(const char* quote, unsigned long durationMs = 3500)` | Shows typewriter speech bubble |
+| `BmoFace::clearSpeech` | fn | `void clearSpeech()` | Dismisses active speech bubble |
+| `BmoFace::triggerDance` | fn | `void triggerDance(float bpm = 125.0f)` | Starts rhythmic dance animation |
+| `BmoFace::stopDance` | fn | `void stopDance()` | Stops dance animation |
+| `BmoFace::isDancing` | fn | `bool isDancing()` | Returns true if dance mode is active |
+| `BmoFace::petCompanion` | fn | `void petCompanion()` | Increments happiness/buddy level on D-pad pet |
 | `BmoFace::isDirty` | fn | `bool isDirty()` | True if expression or blink changed |
-| `BmoFace::BmoExpression`| enum | `enum BmoExpression { IDLE, SURPRISED, HAPPY, SLEEPY, LOW_BATTERY, CHARGING, ERROR, SHUTDOWN, HIDDEN }` | Face emotion states |
+| `BmoFace::BmoExpression`| enum | `enum BmoExpression { IDLE, SURPRISED, HAPPY, SLEEPY, LOW_BATTERY, CHARGING, ERROR, SHUTDOWN, HIDDEN, JOY, SLEEPING, WINK, BLUSH, CONFUSED, ANNOYED, LOVE, TICKLED, CELEBRATING }` | 18-state face emotion enum |
 
 ---
 
@@ -253,14 +275,28 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `PeanutEmu::updateJoypad` | fn | `void updateJoypad()` | Syncs direct.joypad with buttons |
 | `PeanutEmu::runFrame` | fn | `void runFrame()` | Runs 1 frame inside startFrame/endFrame |
 | `PeanutEmu::destroy` | fn | `void destroy()` | Frees cart_ram in PSRAM |
+| `PeanutEmu::saveBatteryRam` | fn | `bool saveBatteryRam(const char* romFilename)` | Flushes DMG cartridge SRAM to `.sav` |
+| `PeanutEmu::loadBatteryRam` | fn | `bool loadBatteryRam(const char* romFilename)` | Restores DMG cartridge SRAM from `.sav` |
+| `PeanutEmu::saveState` | fn | `bool saveState(const char* romFilename, int slot)` | Writes DMG state + cart_ram snapshot |
+| `PeanutEmu::loadState` | fn | `bool loadState(const char* romFilename, int slot)` | Restores DMG state + cart_ram via PSRAM staging |
 | `WalnutEmu::begin` | fn | `bool begin(const uint8_t* rom_data, size_t rom_len)` | Starts Game Boy Color core |
 | `WalnutEmu::updateJoypad` | fn | `void updateJoypad()` | Syncs direct.joypad with buttons |
 | `WalnutEmu::runFrame` | fn | `void runFrame()` | Runs 1 frame inside startFrame/endFrame |
 | `WalnutEmu::destroy` | fn | `void destroy()` | Frees cart_ram in PSRAM |
+| `WalnutEmu::saveBatteryRam` | fn | `bool saveBatteryRam(const char* romFilename)` | Flushes GBC cartridge SRAM to `.sav` |
+| `WalnutEmu::loadBatteryRam` | fn | `bool loadBatteryRam(const char* romFilename)` | Restores GBC cartridge SRAM from `.sav` |
+| `WalnutEmu::saveState` | fn | `bool saveState(const char* romFilename, int slot)` | Writes GBC state + cart_ram snapshot |
+| `WalnutEmu::loadState` | fn | `bool loadState(const char* romFilename, int slot)` | Restores GBC state + cart_ram via PSRAM staging |
 | `NesEmu::begin` | fn | `static bool begin(const uint8_t* romData, size_t romSize)` | Starts Agnes NES core |
 | `NesEmu::updateJoypad` | fn | `static void updateJoypad()` | Syncs Agnes controller mask |
 | `NesEmu::runFrame` | fn | `static void runFrame()` | Runs 1 NES frame |
 | `NesEmu::destroy` | fn | `static void destroy()` | Shuts down Agnes NES core |
+| `NesEmu::saveBatteryRam` | fn | `static bool saveBatteryRam(const char* romFilename)` | Flushes 8 KB NES cartridge PRG-RAM (`$6000-$7FFF`) to `.sav` |
+| `NesEmu::loadBatteryRam` | fn | `static bool loadBatteryRam(const char* romFilename)` | Restores 8 KB NES cartridge PRG-RAM (`$6000-$7FFF`) from `.sav` |
+| `NesEmu::saveState` | fn | `static bool saveState(const char* romFilename, int slot)` | Writes full Agnes NES state snapshot |
+| `NesEmu::loadState` | fn | `static bool loadState(const char* romFilename, int slot)` | Restores full Agnes NES state snapshot |
+| `agnes_get_prg_ram` | fn | `uint8_t* agnes_get_prg_ram(agnes_t *agnes, size_t *out_size)` | Returns pointer to 8 KB mapper PRG-RAM (`$6000-$7FFF`) |
+| `doomgeneric_Destroy` | fn | `void doomgeneric_Destroy(void)` | Releases DOOM zone memory, WAD handles, lumpinfo, and screen buffer |
 | `DoomEmu::begin` | fn | `bool begin(const char* wadPath)` | Starts doomgeneric core |
 | `DoomEmu::runFrame` | fn | `void runFrame()` | Runs 1 DOOM engine tick |
 | `DoomEmu::destroy` | fn | `void destroy()` | Shuts down doomgeneric core |

@@ -27,8 +27,8 @@ this file. If the source file is newer than the staleness date in
 ## M-3: Calling SDCard::freeRom() on a baked ROM pointer
 **What happens:** Code path exits game and calls SDCard::freeRom(romData).
 If romData points to .rodata (baked ROM), heap_caps_free() is UB -- crash.
-**Prevention:** freeRom() already guards against the two registered baked
-ROMs. If you ADD a new baked ROM, you MUST add it to freeRom()'s guard.
+**Prevention:** freeRom() already guards against the 5 registered baked
+ROMs (`mario_deluxe`, `zelda_ages`, `aladdin`, `lego_racers`, `virtual_bmo`). If you ADD a new baked ROM, you MUST add it to freeRom()'s guard.
 See 29_adding_a_baked_rom.md step 4.
 
 ---
@@ -58,10 +58,10 @@ The menu path does: update() at top of menu state. Never both.
 ---
 
 ## M-7: Drawing to the display during STATE_EMULATOR
-**What happens:** BmoFace::draw() called mid-frame overwrites the SPI
+**What happens:** `BmoFace::renderToBuffer()` or menu rendering called mid-frame overwrites the SPI
 address window that startFrame() set, producing screen tearing or
 corrupting the ongoing frame transfer.
-**Prevention:** BmoFace::draw() and BmoFace::update() are NEVER called
+**Prevention:** `BmoFace::renderToBuffer()` and `BmoFace::update()` are NEVER called
 during STATE_EMULATOR. This is enforced by the loop() structure --
 do not move those calls inside the emulator branch. See also `35_bmo_face_contract.md` for the full mascot subsystem contract.
 
@@ -127,19 +127,19 @@ An agent looking for walnut_cgb.h in src/vendor/ will not find it.
 
 ---
 
-## M-15: Not calling WalnutEmu::destroy() or PeanutEmu::destroy() on exit
-**What happens:** cart_ram (128KB each) stays allocated in PSRAM.
+## M-15: Not calling `destroy()` on exit in `destroyActiveEmulator()`
+**What happens:** PSRAM buffers stay allocated across sessions.
 Repeated play sessions fragment PSRAM until a future allocation fails.
 **Prevention:** See 26_emulator_exit_contract.md. Follow the universal
-teardown contract in BmoGameboy.ino SELECT+UP handler.
+teardown contract in `BmoGameboy.ino` `destroyActiveEmulator()`.
 
 ---
 
-## M-16: Assuming the destroy() PSRAM gap is still open after the 2026-08-30 fix
-**What happens:** Agent reads an older document or prompt mentioning that Walnut/Peanut
+## M-16: Assuming the destroy() PSRAM gap is still open
+**What happens:** Agent reads an older document or prompt mentioning that emulator
 destroy() is not wired, assumes it is still missing, and attempts to re-add it or files a false bug.
-**Prevention:** Check BmoGameboy.ino SELECT+UP handler live in THIS session before claiming
-a teardown gap exists. All four cores (Walnut, Peanut, NES, DOOM) are wired to call destroy().
+**Prevention:** Check `BmoGameboy.ino` `destroyActiveEmulator()` live in THIS session before claiming
+a teardown gap exists. All 14 emulator cores are wired to call `destroy()`.
 
 ---
 

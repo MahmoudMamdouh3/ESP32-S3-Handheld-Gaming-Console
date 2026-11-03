@@ -2,17 +2,17 @@
 Purpose: Formalizes what every emulator core's teardown path must do on exit so PSRAM allocations are completely recovered and no session leaks heap across repeated game launches.
 
 ## Current State (Verified Across All 14 Cores)
-In [`BmoGameboy.ino`](file:///e:/BMO%20Gameboy/firmware/BmoGameboy/BmoGameboy.ino), exiting a game from `STATE_PAUSE_MENU` (`START + SELECT` -> `Exit to Menu`) calls:
+In [`BmoGameboy.ino`](file:///e:/BMO%20Gameboy/firmware/BmoGameboy/BmoGameboy.ino), exiting a game from `STATE_PAUSE_MENU` (`START + SELECT` -> `QUIT TO CONSOLE MENU` or `SELECT + UP` shortcut) calls:
 1. `autoSaveCurrentBatteryRam()` — Persists cartridge battery SRAM (`.sav`) to `/saves/` via `SaveManager::saveBatteryRam`.
-2. `teardownCurrentEmulator()` — Invokes `destroy()` on whichever of the **14** emulator cores is active:
+2. `destroyActiveEmulator()` — Invokes `destroy()` on whichever of the **14** emulator cores is active:
    - `WalnutEmu::destroy()`, `PeanutEmu::destroy()`, `NesEmu::destroy()`, `DoomEmu::destroy()`, `SmsEmu::destroy()`, `PceEmu::destroy()`, `AtariEmu::destroy()`, `PicoEmu::destroy()`, `GenesisEmu::destroy()`, `SNESEmu::destroy()`, `WSwanEmu::destroy()`, `NGPEmu::destroy()`, `LynxEmu::destroy()`, `ColemEmu::destroy()`.
-3. `SDCard::freeRom(currentRom, currentRomType)` — Frees the PSRAM ROM buffer (while leaving `.rodata` flash-baked pointers untouched).
+3. `SDCard::freeRom(currentRom)` — Frees the PSRAM ROM buffer inside `destroyActiveEmulator()` (while leaving `.rodata` flash-baked pointers untouched).
 
 ## What every emulator `destroy()` must do
 When called, a core's `destroy()` function must:
 1. Free every PSRAM buffer it allocated at `begin()` time (`heap_caps_free`).
-2. Reset all freed pointers back to `nullptr` and `initialized = false` so `begin()` can re-initialize cleanly on the next game launch.
-3. NOT free the caller-owned ROM buffer (`SDCard::freeRom()` handles that after `teardownCurrentEmulator()`).
+2. Reset all freed pointers back to `nullptr` and `running = false` / `initialized = false` so `begin()` can re-initialize cleanly on the next game launch.
+3. NOT free the caller-owned ROM buffer (`SDCard::freeRom(currentRom)` handles that inside `destroyActiveEmulator()`).
 4. Be idempotent (safe if called multiple times with null pointers).
 
 ## Why this matters

@@ -22,6 +22,7 @@
 #include "../firmware/BmoGameboy/src/vendor/smsplus/sms.h"
 #include "../firmware/BmoGameboy/src/vendor/pce/pce.h"
 #include "../firmware/BmoGameboy/src/vendor/pico/pico.h"
+#include "../firmware/BmoGameboy/src/vendor/agnes/agnes.h"
 
 static uint32_t fnv1a_hash16(const uint16_t* buf, size_t count) {
     uint32_t h = 0x811C9DC5u;
@@ -379,6 +380,90 @@ static int test_pico_core(void) {
     return ok ? 0 : 3;
 }
 
+static int test_nes_agnes_core(void) {
+    agnes_t* nes = agnes_make();
+    if (!nes) return 1;
+
+    /* 16-byte iNES header + 16KB PRG-ROM + 8KB CHR-ROM */
+    size_t ines_size = 16 + 16384 + 8192;
+    uint8_t* ines = (uint8_t*)calloc(1, ines_size);
+    if (!ines) {
+        agnes_destroy(nes);
+        return 1;
+    }
+    ines[0] = 'N'; ines[1] = 'E'; ines[2] = 'S'; ines[3] = 0x1A;
+    ines[4] = 1; /* 1x 16KB PRG-ROM bank */
+    ines[5] = 1; /* 1x 8KB CHR-ROM bank */
+    ines[6] = 0x02; /* Mapper 0 + battery PRG-RAM */
+
+    uint8_t* prg = ines + 16;
+    memset(prg, 0xEA, 16384); /* NOP fill */
+    /* Reset vector at $FFFC -> $8000 */
+    prg[0x3FFC] = 0x00;
+    prg[0x3FFD] = 0x80;
+
+    /* 6502 boot program at $8000:
+     * LDA #$5C; STA $6000 (Cartridge PRG-RAM)
+     * LDA #$3F; STA $2006; LDA #$00; STA $2006 (PPU Addr $3F00)
+     * LDA #$21; STA $2007 (Backdrop palette color $21)
+     * LDA #$08; STA $2001 (Enable background rendering)
+     * INX; JMP $8018 (dynamic counter in X register for state determinism test)
+     */
+    const uint8_t prog[] = {
+        0xA9, 0x5C,             /* LDA #$5C */
+        0x8D, 0x00, 0x60,       /* STA $6000 (PRG-RAM[0]) */
+        0xA9, 0x3F, 0x8D, 0x06, 0x20, /* LDA #$3F; STA $2006 */
+        0xA9, 0x00, 0x8D, 0x06, 0x20, /* LDA #$00; STA $2006 */
+        0xA9, 0x21, 0x8D, 0x07, 0x20, /* LDA #$21; STA $2007 */
+        0xA9, 0x08, 0x8D, 0x01, 0x20, /* LDA #$08; STA $2001 */
+        0xE8,                   /* INX ($8018) */
+        0x8E, 0x01, 0x60,       /* STX $6001 */
+        0x4C, 0x18, 0x80        /* JMP $8018 */
+    };
+    memcpy(prg, prog, sizeof(prog));
+
+    if (!agnes_load_ines_data(nes, ines, ines_size)) {
+        free(ines);
+        agnes_destroy(nes);
+        return 2;
+    }
+
+    size_t state_sz = agnes_state_size();
+    agnes_state_t* saved_state = (agnes_state_t*)calloc(1, state_sz);
+    for (int f = 0; f < 25; ++f) {
+        agnes_next_frame(nes);
+    }
+    agnes_dump_state(nes, saved_state);
+
+    for (int f = 25; f < 50; ++f) {
+        agnes_next_frame(nes);
+    }
+    size_t prg_ram_sz = 0;
+    uint8_t* prg_ram = agnes_get_prg_ram(nes, &prg_ram_sz);
+    uint8_t count_first_run = prg_ram ? prg_ram[1] : 0;
+    const uint8_t* screen1 = agnes_get_screen_buffer(nes);
+    uint32_t hash1 = fnv1a_hash16((const uint16_t*)screen1, (256 * 240) / 2);
+
+    /* Restore snapshot at frame 25 and re-run frames 25..50 to prove bit-exact state determinism */
+    agnes_restore_state(nes, saved_state);
+    for (int f = 25; f < 50; ++f) {
+        agnes_next_frame(nes);
+    }
+    uint8_t count_second_run = prg_ram ? prg_ram[1] : 0;
+    const uint8_t* screen2 = agnes_get_screen_buffer(nes);
+    uint32_t hash2 = fnv1a_hash16((const uint16_t*)screen2, (256 * 240) / 2);
+
+    bool ok = (prg_ram != NULL) && (prg_ram_sz == 8192) && (prg_ram[0] == 0x5C)
+              && (count_first_run == count_second_run) && (hash1 == hash2);
+    printf("[HOST_CORE] NES_AGNES   | PRGRAM[0]=0x%02X | FB_HASH=0x%08X | STATE_DET=%s | STATUS=%s\n",
+           prg_ram ? prg_ram[0] : 0, hash1, (hash1 == hash2 && count_first_run == count_second_run) ? "EXACT" : "DRIFT", ok ? "PASS" : "FAIL");
+
+    free(saved_state);
+    free(ines);
+    agnes_destroy(nes);
+    return ok ? 0 : 3;
+}
+
 int main(void) {
     int failures = 0;
     failures += (test_atari_core() != 0);
@@ -391,9 +476,11 @@ int main(void) {
     failures += (test_sms_core() != 0);
     failures += (test_pce_core() != 0);
     failures += (test_pico_core() != 0);
+    failures += (test_nes_agnes_core() != 0);
 
     if (failures == 0) {
         printf("ALL 10 HOST EMULATOR CORES PASSED 50-FRAME EXECUTION & VISUAL REGRESSION!\n");
+        printf("ALL 11 HOST EMULATOR CORES (INCLUDING NES AGNES + STATE DETERMINISM) PASSED!\n");
         return 0;
     }
     printf("HOST EMULATOR RUNNER FAILED (%d cores failed)\n", failures);

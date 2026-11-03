@@ -52,6 +52,7 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
             FIRMWARE_DIR / "src" / "vendor" / "smsplus" / "sms.c",
             FIRMWARE_DIR / "src" / "vendor" / "pce" / "pce.c",
             FIRMWARE_DIR / "src" / "vendor" / "pico" / "pico.c",
+            FIRMWARE_DIR / "src" / "vendor" / "agnes" / "agnes.c",
         ]
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -74,8 +75,17 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
                 subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=60)
                 proc = subprocess.run([str(exe_path)], capture_output=True, text=True, timeout=60)
 
+            # Persist compiled binary to build/host_cores_test/host_cores_runner.exe for HostBenchmarkSuite
+            if exe_path.exists():
+                persist_dir = REPO_ROOT / "build" / "host_cores_test"
+                persist_dir.mkdir(parents=True, exist_ok=True)
+                try:
+                    shutil.copy2(exe_path, persist_dir / "host_cores_runner.exe")
+                except OSError:
+                    pass
+
             self.assertEqual(proc.returncode, 0, msg=f"Host runner failed:\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}")
-            self.assertIn("ALL 10 HOST EMULATOR CORES PASSED 50-FRAME EXECUTION & VISUAL REGRESSION!", proc.stdout)
+            self.assertIn("ALL 11 HOST EMULATOR CORES (INCLUDING NES AGNES + STATE DETERMINISM) PASSED!", proc.stdout)
             for core_tag in [
                 "ATARI_2600",
                 "COLECO",
@@ -87,6 +97,7 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
                 "SMS_Z80",
                 "PC_ENGINE",
                 "PICO_8",
+                "NES_AGNES",
             ]:
                 self.assertIn(f"[HOST_CORE] {core_tag}", proc.stdout)
                 self.assertNotIn("STATUS=FAIL", proc.stdout)

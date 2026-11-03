@@ -1,6 +1,6 @@
 {
   "schema_version": "2.1.0",
-  "last_updated": "2026-11-03T11:23:00.717018",
+  "last_updated": "2026-11-03T11:51:25.733999",
   "task_decision_table": {
     "modify_gpio_or_pin": {
       "rules": [
@@ -136,7 +136,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "6. Known Issues, Technical Debt & Hardware Limitations Registry",
-      "lines": 452
+      "lines": 469
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -151,7 +151,7 @@
     "07_task_protocol.md": {
       "file": ".agents/rules/07_task_protocol.md",
       "title": "Standard Task Protocol",
-      "lines": 86
+      "lines": 61
     },
     "08_ui_style_guide.md": {
       "file": ".agents/rules/08_ui_style_guide.md",
@@ -166,7 +166,7 @@
     "10_symbol_reference.md": {
       "file": ".agents/rules/10_symbol_reference.md",
       "title": "Symbol Reference (Ground Truth for Names)",
-      "lines": 376
+      "lines": 412
     },
     "11_rules_meta.md": {
       "file": ".agents/rules/11_rules_meta.md",
@@ -175,8 +175,8 @@
     },
     "12_extensibility_contract.md": {
       "file": ".agents/rules/12_extensibility_contract.md",
-      "title": "Extensibility Contract (New Emulator Cores)",
-      "lines": 42
+      "title": "Extensibility Contract (Emulator Cores & Peripherals)",
+      "lines": 21
     },
     "13_code_style.md": {
       "file": ".agents/rules/13_code_style.md",
@@ -251,7 +251,7 @@
     "27_codebase_map.md": {
       "file": ".agents/rules/27_codebase_map.md",
       "title": "Codebase Map \u2014 Ground Truth for Architecture",
-      "lines": 125
+      "lines": 126
     },
     "28_display_and_spi_contract.md": {
       "file": ".agents/rules/28_display_and_spi_contract.md",
