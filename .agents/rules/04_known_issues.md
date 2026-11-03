@@ -7,11 +7,23 @@
 
 ---
 
-## Latest Agent Handoff — 2026-11-03 (AI Environment Overhaul, 11-Core Native C Harness & MCP Server)
+## Latest Agent Handoff — 2026-11-03 (Firmware BMO Companion and Playable Browser Cores)
 
-This is the current repository handoff. Read this section before continuing from an earlier changelog entry.
+- The browser compiles the firmware `BmoFace` SDF renderer and the vendored Peanut-GB, Agnes, Stella, and ColecoVision cores to WebAssembly. The BMO companion uses the real face/expression/gaze/dialogue/pet/dance functions; the console cores accept `.gb`, `.nes`, `.a26`, and `.col` uploads with firmware button mappings and viewports.
+- The browser still ports the state machine, menu artwork, and companion overlays; it does not execute the ESP32 firmware or reproduce the physical ST7789/SPI/SD hardware. The other 10 firmware cores remain firmware-only. Browser game save state is a single in-memory snapshot.
+- The UI lists only user-loaded ROMs and supports no other browser ROM formats. No game ROM is bundled.
+- `VERIFIED_SIMULATOR`: The firmware BMO renderer and interaction APIs pass generated-WASM regression checks. A generated 8 KiB ColecoVision ROM was uploaded in the local browser and ran past 400 frames in the 256×192 viewport. Generated Game Boy, iNES, and Atari 2600 test ROMs were also exercised in prior browser smoke tests.
+- `VERIFIED_HOST`: `python -m unittest tests.test_native_cores_execution.TestNativeCoresExecutionAndPhaseD` reported `Ran 10 tests in 7.500s` and `OK`. `python scripts/validate_repo.py` reported Flash `5,698,412 / 16,777,216` bytes (34.0%), SRAM `218,904 / 327,680` bytes (66.8%), and `VALIDATION PASSED in 26729 ms`.
+- `IN_PROGRESS`: The one-to-one request is not complete. Four of 14 game cores are browser-playable, the menus still are not firmware execution, physical SPI/SD behavior is not modeled in the browser, and Wokwi has no ST7789 model.
+- The Wokwi diagram has the ESP32-S3, button GPIOs, shared TFT/SD SPI lines, and separate chip selects from `config.h`. Wokwi lacks an ST7789 model and does not expose the display reset/backlight pins; it uses an ILI9341 visual substitute. Wokwi CLI execution requires `WOKWI_CLI_TOKEN`.
 
-- **Box art and simulator parity (2026-11-03):** 61 original box arts are downloaded by `scripts/fetch_covers.py`; titles outside that catalog still show the console badge placeholder. The Web Simulator library screen now follows `drawGameSelectMenu()`, but the other screens are still a hand-written canvas port, not the firmware code, so they can drift. Only freely distributable ROMs are bundled; commercial ROM sets are not downloaded by the repository tooling.
+## Previous Handoff — 2026-11-03 (Firmware-Backed Wokwi Hardware Simulation)
+
+## Previous Handoff — 2026-11-03 (AI Environment Overhaul, 11-Core Native C Harness & MCP Server)
+
+This was the previous repository handoff.
+
+- **Box art and simulator parity (2026-11-03):** 61 original box arts are downloaded by `scripts/fetch_covers.py`; titles outside that catalog still show the console badge placeholder. The browser library screen follows `drawGameSelectMenu()`, while all browser-rendered screens remain a hand-written preview rather than firmware execution. The Wokwi project runs the compiled firmware with mapped GPIO controls; Wokwi's available ILI9341 display model is not the physical ST7789 controller. Only freely distributable ROMs are bundled; commercial ROM sets are not downloaded by the repository tooling.
 - **AI Development Environment & Native Verification Upgrades (`tools/guardian/`, `tests/`, `.agents/rules/`, `agnes.c`):**
   1. **Eliminated Split-Brain Rule Contradictions & Bug-Fix Prohibitions (`.agents/rules/*.md`, `tools/guardian/core/doc_verifier.py`):**
      - Fixed the copy-paste compile command in `.agents/rules/06_verification_standards.md:110` from `FlashMode=opi` (which bootloops the Quad-SPI Flash ESP32-S3-N16R8) to `CDCOnBoot=cdc,FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi`.

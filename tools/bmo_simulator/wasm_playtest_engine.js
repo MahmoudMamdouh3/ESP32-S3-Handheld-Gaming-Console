@@ -1,307 +1,379 @@
 /**
- * tools/bmo_simulator/wasm_playtest_engine.js
- * WebAssembly Playtest Core Runner for the BMO Handheld Simulator.
- * Executes bmo_playtest_cores.wasm (16-page linear memory, FNV-1a ROM loader,
- * and 60 Hz RGB565 frame rasterizer) alongside format decoders for .p8, .gb/.gbc, and .nes.
+ * Browser adapter for firmware emulator cores compiled to WebAssembly.
  */
 
-const WASM_CORE_BASE64 =
-  "AGFzbQEAAAABEQNgA39/fwF/YAF/AX9gAAF/AwgHAAEBAgICAgUEAQEQEAerAQgGbWVtb3J5AgAOd2FzbV9jb3JlX2luaXQA" +
-  "ABJ3YXNtX2NvcmVfbG9hZF9yb20AARR3YXNtX2NvcmVfc3RlcF9mcmFtZQACFXdhc21fY29yZV9nZXRfcm9tX3B0cgADFHdh" +
-  "c21fY29yZV9nZXRfZmJfcHRyAAQWd2FzbV9jb3JlX2dldF9jaGVja3N1bQAFGXdhc21fY29yZV9nZXRfZnJhbWVfY291bnQA" +
-  "BgqpBAc0AEEAIAA2AgBBACABNgIEQQAgAjYCCEEAQQA2AgxBACABQQF2NgIYQQAgAkEBdjYCHEEBC0gBAn9BACAANgIQQcW7" +
-  "8oh4IQFBACECAkADQCACIABPDQEgASACLQCAgARzQZODgAhsIQEgAkEBaiECDAALC0EAIAE2AhQgAQuKAwELf0EAIAA2AiBB" +
-  "ACgCBCEBQQAoAgghAkEAKAIMQQFqIgNBACADNgIMGkEAKAIYIQRBACgCHCEFQQAoAhAhCUEAKAIUIQsgAEEBcQRAIAVBAmsh" +
-  "BSAFQQhIBEBBCCEFCwsgAEECcQRAIAVBAmohBSAFIAJBCGtKBEAgAkEIayEFCwsgAEEEcQRAIARBAmshBCAEQQhIBEBBCCEE" +
-  "CwsgAEEIcQRAIARBAmohBCAEIAFBCGtKBEAgAUEIayEECwtBACAENgIYQQAgBTYCHEGAgBghCEEAIQcCQANAIAcgAk8NAUEA" +
-  "IQYCQANAIAYgAU8NASAGIANqIAcgC0H/AXFqc0EfcUHBEGwhCiAJQYAITwRAIAZBA3YgB0EDdkEFdGogA0ECdmpB/wdxLQCA" +
-  "gARBA3QgCnMhCgsgBiAEa0EGakEMSSAHIAVrQQZqQQxJcQRAIABBMHEEf0Gf8AMFQeD/AwshCgsgCCAKOwEAIAhBAmohCCAG" +
-  "QQFqIQYMAAsLIAdBAWohBwwACwsgAwsGAEGAgAQLBgBBgIAYCwcAQQAoAhQLBwBBACgCDAs=";
-
-const CONSOLE_VIEWPORTS = {
-  ROM_FAVORITES: { id: 1, w: 160, h: 144, scale: 1.5, ox: 40, oy: 12 },
-  ROM_GB:        { id: 1, w: 160, h: 144, scale: 1.5, ox: 40, oy: 12 },
-  ROM_GBC:       { id: 2, w: 160, h: 144, scale: 1.5, ox: 40, oy: 12 },
-  ROM_NES:       { id: 3, w: 256, h: 240, scale: 1.0, ox: 32, oy: 0 },
-  ROM_WAD:       { id: 4, w: 320, h: 200, scale: 1.0, ox: 0,  oy: 20 },
-  ROM_SMS:       { id: 5, w: 256, h: 192, scale: 1.0, ox: 32, oy: 24 },
-  ROM_GG:        { id: 5, w: 160, h: 144, scale: 1.5, ox: 40, oy: 12 },
-  ROM_PCE:       { id: 6, w: 256, h: 240, scale: 1.0, ox: 32, oy: 0 },
-  ROM_ATARI:     { id: 7, w: 160, h: 192, scale: 1.0, ox: 80, oy: 24 },
-  ROM_PICO8:     { id: 8, w: 128, h: 128, scale: 1.5, ox: 64, oy: 24 },
-  ROM_GENESIS:   { id: 9, w: 320, h: 224, scale: 1.0, ox: 0,  oy: 8 },
-  ROM_SNES:      { id: 10, w: 256, h: 224, scale: 1.0, ox: 32, oy: 8 },
-  ROM_WSWAN:     { id: 11, w: 224, h: 144, scale: 1.0, ox: 48, oy: 48 },
-  ROM_NGP:       { id: 12, w: 160, h: 152, scale: 1.0, ox: 80, oy: 44 },
-  ROM_LYNX:      { id: 13, w: 160, h: 102, scale: 1.5, ox: 40, oy: 43 },
-  ROM_COLEM:     { id: 14, w: 256, h: 192, scale: 1.0, ox: 32, oy: 24 }
+const GAMEBOY_VIEWPORT = { w: 240, h: 216, scale: 1, ox: 40, oy: 12 };
+const NES_VIEWPORT = { w: 256, h: 240, scale: 1, ox: 32, oy: 0 };
+const ATARI_VIEWPORT = { w: 160, h: 192, scale: 1, ox: 80, oy: 24 };
+const COLECO_VIEWPORT = { w: 256, h: 192, scale: 1, ox: 32, oy: 24 };
+const CORE_CONFIG = {
+  ROM_GB: { prefix: "bmo_emu", name: "Peanut-GB", viewport: GAMEBOY_VIEWPORT, frameRate: 59.7275 },
+  ROM_NES: { prefix: "bmo_nes", name: "Agnes NES", viewport: NES_VIEWPORT, frameRate: 60.0988 },
+  ROM_ATARI: { prefix: "bmo_atari", name: "Stella Atari 2600", viewport: ATARI_VIEWPORT, frameRate: 60 },
+  ROM_COLEM: { prefix: "bmo_colem", name: "ColecoVision", viewport: COLECO_VIEWPORT, frameRate: 60 },
 };
-
-const PICO8_PALETTE_RGB = [
-  [0, 0, 0],       [29, 43, 83],    [126, 37, 83],   [0, 135, 81],
-  [171, 82, 54],   [95, 87, 79],    [194, 195, 199], [255, 241, 232],
-  [255, 0, 77],    [255, 163, 0],   [255, 236, 39],  [0, 228, 54],
-  [41, 173, 255],  [131, 118, 156], [255, 119, 168], [255, 204, 170]
-];
 
 class WasmPlaytestEngine {
   constructor() {
     this.instance = null;
     this.exports = null;
     this.ready = false;
+    this.bmoReady = false;
+    this.loaded = false;
     this.activeConsoleId = "ROM_GB";
-    this.activeTitle = "Virtual BMO (Official Game)";
-    this.viewport = CONSOLE_VIEWPORTS.ROM_GB;
+    this.activeTitle = "";
+    this.viewport = GAMEBOY_VIEWPORT;
+    this.corePrefix = CORE_CONFIG.ROM_GB.prefix;
+    this.coreName = CORE_CONFIG.ROM_GB.name;
+    this.frameIntervalMs = 1000 / CORE_CONFIG.ROM_GB.frameRate;
     this.romSize = 0;
     this.romChecksum = 0;
+    this.runtimeError = "";
     this.frameCount = 0;
     this.buttonsMask = 0;
     this.bezelEnabled = true;
     this.swapAB = false;
     this.activeSlot = 0;
-    this.picoGfx = null;
-    this.picoMap = null;
+    this.paletteColors = null;
+    this.lastRenderTime = 0;
+    this.frameAccumulator = 0;
     this.offscreenCanvas = typeof document !== "undefined" ? document.createElement("canvas") : null;
     this.offscreenCtx = this.offscreenCanvas ? this.offscreenCanvas.getContext("2d") : null;
   }
 
-  static decodeBase64(b64) {
-    if (typeof Buffer !== "undefined") {
-      return new Uint8Array(Buffer.from(b64, "base64"));
-    }
-    const bin = atob(b64);
-    const out = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) {
-      out[i] = bin.charCodeAt(i);
-    }
-    return out;
-  }
-
   async init() {
     if (this.ready) return true;
-    let wasmBytes = null;
-    if (typeof fetch !== "undefined" && typeof window !== "undefined" && window.location.protocol !== "file:") {
-      try {
-        const resp = await fetch("bmo_playtest_cores.wasm");
-        if (resp.ok) {
-          wasmBytes = new Uint8Array(await resp.arrayBuffer());
-        }
-      } catch (_) {
-        wasmBytes = null;
+    let wasmBytes;
+    if (typeof window === "undefined" && typeof require === "function" && typeof __dirname !== "undefined") {
+      const fs = require("fs");
+      const path = require("path");
+      wasmBytes = fs.readFileSync(path.join(__dirname, "bmo_playtest_cores.wasm"));
+    } else {
+      if (typeof fetch !== "function" || window.location.protocol === "file:") {
+        throw new Error("Open the simulator through run_simulator.py so the WebAssembly core can load.");
       }
+      const response = await fetch("bmo_playtest_cores.wasm");
+      if (!response.ok) {
+        throw new Error(`Could not load the WebAssembly emulator cores (HTTP ${response.status}).`);
+      }
+      wasmBytes = await response.arrayBuffer();
     }
-    if (!wasmBytes) {
-      wasmBytes = WasmPlaytestEngine.decodeBase64(WASM_CORE_BASE64);
-    }
-    const result = await WebAssembly.instantiate(wasmBytes, {});
-    this.instance = result.instance;
-    this.exports = this.instance.exports;
+    const wasi = {
+      random_get: (pointer, length) => {
+        const memory = this.exports && this.exports.memory;
+        if (!memory || !globalThis.crypto || !globalThis.crypto.getRandomValues) {
+          throw new Error("This browser cannot provide the WebAssembly runtime's secure random source.");
+        }
+        const target = new Uint8Array(memory.buffer, pointer, length);
+        for (let offset = 0; offset < target.length; offset += 65536) {
+          globalThis.crypto.getRandomValues(target.subarray(offset, Math.min(offset + 65536, target.length)));
+        }
+        return 0;
+      }
+    };
+    const { instance } = await WebAssembly.instantiate(wasmBytes, { wasi_snapshot_preview1: wasi });
+    this.instance = instance;
+    this.exports = instance.exports;
     this.ready = true;
-    this.loadRom("ROM_GB", this.activeTitle, null);
+    const bmoInitResult = this.exports.bmo_face_init(this.bmoTimeUs(performance.now()));
+    if (bmoInitResult !== 0) {
+      this.ready = false;
+      throw new Error(`The firmware BMO companion failed to initialize (${bmoInitResult}).`);
+    }
+    this.bmoReady = true;
     return true;
   }
 
-  loadRom(consoleId, title, romBytes) {
-    this.activeConsoleId = consoleId || "ROM_GB";
-    this.activeTitle = title || "Built-in Test ROM";
-    this.viewport = CONSOLE_VIEWPORTS[this.activeConsoleId] || CONSOLE_VIEWPORTS.ROM_GB;
-    this.picoGfx = null;
-    this.picoMap = null;
+  bmoTimeUs(nowMs) {
+    return Math.floor((nowMs % 4294967.296) * 1000) >>> 0;
+  }
 
+  updateBmoClock() {
+    this.exports.bmo_face_set_clock(this.bmoTimeUs(performance.now()));
+  }
+
+  renderBmoFrame(ctx, now = performance.now()) {
+    if (!this.bmoReady || !this.exports) throw new Error("The firmware BMO companion is not ready.");
+    const fbPtr = this.exports.bmo_face_step(this.bmoTimeUs(now));
+    if (!fbPtr) throw new Error("The firmware BMO companion did not return a framebuffer.");
+    const pixels = new Uint16Array(this.exports.memory.buffer, fbPtr, 320 * 240);
+    const image = ctx.createImageData(320, 240);
+    const rgba = image.data;
+    for (let i = 0; i < pixels.length; i++) {
+      const pixel = pixels[i];
+      const index = i * 4;
+      rgba[index] = ((pixel >> 11) & 0x1F) * 255 / 31;
+      rgba[index + 1] = ((pixel >> 5) & 0x3F) * 255 / 63;
+      rgba[index + 2] = (pixel & 0x1F) * 255 / 31;
+      rgba[index + 3] = 255;
+    }
+    ctx.putImageData(image, 0, 0);
+  }
+
+  setBmoExpression(expression) {
+    const values = {
+      IDLE: 0, SURPRISED: 1, HAPPY: 2, SLEEPY: 3, SLEEPING: 10, JOY: 9
+    };
+    const value = values[expression];
+    if (value === undefined) throw new Error(`Unsupported firmware BMO expression: ${expression}`);
+    this.exports.bmo_face_set_expression(value);
+  }
+
+  setBmoGaze(x, y) {
+    this.updateBmoClock();
+    this.exports.bmo_face_set_gaze(x, y);
+  }
+
+  triggerBmoWink() {
+    this.updateBmoClock();
+    this.exports.bmo_face_trigger_wink();
+  }
+
+  triggerBmoBlush() {
+    this.updateBmoClock();
+    this.exports.bmo_face_trigger_blush();
+  }
+
+  triggerBmoJoy() {
+    this.updateBmoClock();
+    this.exports.bmo_face_trigger_joy();
+  }
+
+  petBmoCompanion() {
+    this.updateBmoClock();
+    this.exports.bmo_face_pet_companion();
+  }
+
+  sayBmoQuote(index, durationMs) {
+    this.updateBmoClock();
+    const result = this.exports.bmo_face_say_quote(index, durationMs);
+    if (result !== 0) throw new Error(`The firmware BMO companion rejected quote ${index}.`);
+  }
+
+  clearBmoSpeech() {
+    this.updateBmoClock();
+    this.exports.bmo_face_clear_speech();
+  }
+
+  toggleBmoDance() {
+    this.updateBmoClock();
+    this.exports.bmo_face_toggle_dance();
+  }
+
+  bmoIsDancing() {
+    return this.exports.bmo_face_is_dancing() !== 0;
+  }
+
+  bmoHasSpeech() {
+    return this.exports.bmo_face_has_speech() !== 0;
+  }
+
+  bmoVisibleChars() {
+    return this.exports.bmo_face_visible_chars();
+  }
+
+  bmoCurrentQuote() {
+    const pointer = this.exports.bmo_face_current_quote();
+    if (!pointer) return "";
+    const memory = new Uint8Array(this.exports.memory.buffer);
+    let end = pointer;
+    while (end < pointer + 64 && memory[end] !== 0) end++;
+    return new TextDecoder().decode(memory.subarray(pointer, end));
+  }
+
+  bmoExpression() {
+    return this.exports.bmo_face_get_expression();
+  }
+
+  bmoBuddyLevel() {
+    return this.exports.bmo_face_buddy_level();
+  }
+
+  bmoHappiness() {
+    return this.exports.bmo_face_happiness();
+  }
+
+  loadRom(consoleId, title, romBytes) {
+    if (!this.ready || !this.exports) throw new Error("The WebAssembly emulator cores are not ready.");
+    const config = CORE_CONFIG[consoleId];
+    if (!config) throw new Error("Browser gameplay currently supports Game Boy (.gb), NES (.nes), Atari 2600 (.a26), and ColecoVision (.col) ROMs only.");
+    if (!(romBytes instanceof Uint8Array) || romBytes.length === 0) {
+      throw new Error("Choose a real .gb, .nes, .a26, or .col ROM file before starting a game.");
+    }
+
+    this.exports[`${this.corePrefix}_destroy`]();
+    this.loaded = false;
+    this.runtimeError = "";
+    this.romSize = 0;
+    this.romChecksum = 0;
+    this.frameCount = 0;
+    const capacity = this.exports.bmo_emu_rom_capacity();
+    if (romBytes.length > capacity) {
+      throw new Error(`This ROM is larger than the browser core limit (${capacity} bytes).`);
+    }
+    const romPointer = this.exports.bmo_emu_rom_buffer();
+    new Uint8Array(this.exports.memory.buffer, romPointer, romBytes.length).set(romBytes);
+    const result = this.exports[`${config.prefix}_load_rom`](romBytes.length);
+    if (result !== 0) {
+      const failures = consoleId === "ROM_GB"
+        ? {
+          "-1": "The file is too small or too large to be a Game Boy ROM.",
+          "-2": "The ROM header declares an unsupported or truncated cartridge size.",
+          "-3": "The Game Boy cartridge header checksum is invalid.",
+          "-4": "This Game Boy cartridge mapper is not supported by the vendored firmware core."
+        }
+        : consoleId === "ROM_NES"
+          ? {
+          "-1": "The file is too small or too large to be an NES ROM.",
+          "-2": "The NES ROM header is invalid or declares no PRG-ROM.",
+          "-3": "NES 2.0 headers are not supported by the vendored firmware core.",
+          "-4": "The NES ROM header declares a truncated cartridge image.",
+          "-5": "This NES mapper is not supported by the vendored firmware core (mappers 0, 1, 2, and 4 only).",
+          "-6": "The vendored NES core could not initialize this ROM or allocate its state."
+          }
+          : consoleId === "ROM_ATARI"
+            ? {
+            "-1": "Atari 2600 ROMs must be 2, 4, 8, 16, or 32 KiB.",
+            "-2": "The Atari 2600 core could not initialize this ROM or allocate its state."
+            }
+            : {
+              "-1": "ColecoVision ROM files must be at least 512 bytes.",
+              "-2": "The ColecoVision core could not allocate its working or save-state memory."
+            };
+      throw new Error(failures[String(result)] || `${config.name} rejected this ROM (${result}).`);
+    }
+
+    this.activeConsoleId = consoleId;
+    this.activeTitle = title || `${config.name} ROM`;
+    this.corePrefix = config.prefix;
+    this.coreName = config.name;
+    this.viewport = config.viewport;
+    this.frameIntervalMs = 1000 / config.frameRate;
+    this.romSize = romBytes.length;
+    this.romChecksum = this.exports[`${this.corePrefix}_rom_checksum`]() >>> 0;
+    this.frameCount = 0;
+    this.buttonsMask = 0;
+    this.loaded = true;
+    this.lastRenderTime = 0;
+    this.frameAccumulator = 0;
+    if (this.paletteColors && this.corePrefix === "bmo_emu") this.setPalette(this.paletteColors);
     if (this.offscreenCanvas) {
       this.offscreenCanvas.width = this.viewport.w;
       this.offscreenCanvas.height = this.viewport.h;
     }
-
-    if (!this.ready || !this.exports) return 0;
-
-    this.exports.wasm_core_init(this.viewport.id, this.viewport.w, this.viewport.h);
-    const romPtr = this.exports.wasm_core_get_rom_ptr();
-    const maxRomLen = 320 * 1024;
-    const memU8 = new Uint8Array(this.exports.memory.buffer);
-
-    let data = romBytes;
-    if (!data || data.length === 0) {
-      // Synthesize a deterministic 4096-byte test ROM seeded by the game title
-      data = new Uint8Array(4096);
-      let seed = 0x811c9dc5;
-      for (let i = 0; i < this.activeTitle.length; i++) {
-        seed ^= this.activeTitle.charCodeAt(i);
-        seed = Math.imul(seed, 0x01000193) >>> 0;
-      }
-      for (let i = 0; i < data.length; i++) {
-        seed ^= i & 0xff;
-        seed = Math.imul(seed, 0x01000193) >>> 0;
-        data[i] = (seed >>> 16) & 0xff;
-      }
-    }
-
-    // Parse PICO-8 .p8 text cartridge sections if applicable
-    if (this.activeConsoleId === "ROM_PICO8" && data.length > 16) {
-      try {
-        const text = new TextDecoder("utf-8").decode(data);
-        if (text.includes("__gfx__")) {
-          this.parsePico8Cart(text);
-        }
-      } catch (_) {}
-    }
-
-    const copyLen = Math.min(data.length, maxRomLen);
-    memU8.set(data.subarray(0, copyLen), romPtr);
-    this.romSize = copyLen;
-    this.romChecksum = this.exports.wasm_core_load_rom(copyLen) >>> 0;
-    this.frameCount = 0;
     return this.romChecksum;
   }
 
-  parsePico8Cart(text) {
-    const gfx = new Uint8Array(128 * 128);
-    const lines = text.split(/\r?\n/);
-    let mode = "";
-    let row = 0;
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith("__") && trimmed.endsWith("__")) {
-        mode = trimmed;
-        row = 0;
-        continue;
-      }
-      if (mode === "__gfx__" && row < 128 && trimmed.length >= 128) {
-        for (let x = 0; x < 128; x++) {
-          const v = parseInt(trimmed[x], 16);
-          gfx[row * 128 + x] = Number.isNaN(v) ? 0 : v;
-        }
-        row++;
-      }
-    }
-    this.picoGfx = gfx;
+  setPalette(colors) {
+    if (!Array.isArray(colors) || colors.length !== 4) return;
+    this.paletteColors = colors.slice();
+    if (!this.exports) return;
+    const packed = colors.map((hex) => Number.parseInt(hex.replace("#", ""), 16));
+    if (this.corePrefix === "bmo_emu") this.exports.bmo_emu_set_palette(...packed);
   }
 
   setButtonBit(bit, pressed) {
-    if (pressed) {
-      this.buttonsMask |= bit;
-    } else {
-      this.buttonsMask &= ~bit;
-    }
+    if (pressed) this.buttonsMask |= bit;
+    else this.buttonsMask &= ~bit;
   }
 
-  stepFrame() {
-    if (!this.ready || !this.exports) return 0;
+  _mappedButtons() {
     let mask = this.buttonsMask;
     if (this.swapAB) {
       const a = (mask >> 4) & 1;
       const b = (mask >> 5) & 1;
       mask = (mask & ~0x30) | (a << 5) | (b << 4);
     }
-    this.frameCount = this.exports.wasm_core_step_frame(mask) >>> 0;
+    return mask >>> 0;
+  }
+
+  stepFrame() {
+    if (!this.ready || !this.exports || !this.loaded) return this.frameCount;
+    this.exports[`${this.corePrefix}_set_buttons`](this._mappedButtons());
+    this.frameCount = this.exports[`${this.corePrefix}_run_frame`]() >>> 0;
+    const error = this.exports[`${this.corePrefix}_last_error`]();
+    if (error !== 0) {
+      this.runtimeError = `${this.coreName} runtime error ${error}.`;
+      this.loaded = false;
+    }
     return this.frameCount;
   }
 
-  saveState(slot = 0) {
-    if (!this.ready || !this.exports) return false;
-    const stateRegs = new Uint32Array(this.exports.memory.buffer, 0, 16);
-    const payload = {
-      consoleId: this.activeConsoleId,
-      title: this.activeTitle,
-      romChecksum: this.romChecksum,
-      regs: Array.from(stateRegs)
-    };
-    if (typeof window !== "undefined" && window.localStorage) {
-      window.localStorage.setItem(`bmo_wasm_state_${this.activeTitle}_s${slot}`, JSON.stringify(payload));
-    }
-    this.lastSavedState = payload;
+  saveState() {
+    if (!this.loaded || !this.exports) return false;
+    this.exports[`${this.corePrefix}_save_state`]();
     return true;
   }
 
-  loadState(slot = 0) {
-    if (!this.ready || !this.exports) return false;
-    let payload = this.lastSavedState;
-    if (typeof window !== "undefined" && window.localStorage) {
-      const raw = window.localStorage.getItem(`bmo_wasm_state_${this.activeTitle}_s${slot}`);
-      if (raw) {
-        try {
-          payload = JSON.parse(raw);
-        } catch (_) {}
-      }
-    }
-    if (!payload || !payload.regs || payload.regs.length < 9) return false;
-    const stateRegs = new Uint32Array(this.exports.memory.buffer, 0, 16);
-    for (let i = 0; i < Math.min(16, payload.regs.length); i++) {
-      stateRegs[i] = payload.regs[i];
-    }
-    this.frameCount = stateRegs[3] >>> 0;
-    return true;
+  loadState() {
+    if (!this.loaded || !this.exports) return false;
+    const restored = this.exports[`${this.corePrefix}_load_state`]() !== 0;
+    if (restored) this.frameCount = this.exports[`${this.corePrefix}_frame_count`]() >>> 0;
+    return restored;
   }
 
-  renderToCanvas(ctx, paletteColors) {
+  renderToCanvas(ctx, paletteColors, paused = false, now = performance.now()) {
     if (!this.ready || !this.exports || !this.offscreenCtx) return;
-    this.stepFrame();
+    this.setPalette(paletteColors);
 
-    const vp = this.viewport;
-    const fbPtr = this.exports.wasm_core_get_fb_ptr();
-    const fb16 = new Uint16Array(this.exports.memory.buffer, fbPtr, vp.w * vp.h);
-    const imgData = this.offscreenCtx.createImageData(vp.w, vp.h);
-    const out = imgData.data;
-
-    const isDmg = this.activeConsoleId === "ROM_GB" || this.activeConsoleId === "ROM_FAVORITES";
-    let dmgRgb = null;
-    if (isDmg && paletteColors && paletteColors.length === 4) {
-      dmgRgb = paletteColors.map((hex) => {
-        const v = parseInt(hex.replace("#", ""), 16);
-        return [(v >> 16) & 0xff, (v >> 8) & 0xff, v & 0xff];
-      });
-    }
-
-    for (let i = 0; i < fb16.length; i++) {
-      const px565 = fb16[i];
-      let r, g, b;
-      if (this.picoGfx && this.activeConsoleId === "ROM_PICO8" && px565 !== 0xffe0 && px565 !== 0xf81f) {
-        const cIdx = (this.picoGfx[i] + (px565 & 0x03)) & 0x0f;
-        [r, g, b] = PICO8_PALETTE_RGB[cIdx];
-      } else if (dmgRgb && px565 !== 0xffe0 && px565 !== 0xf81f) {
-        const shade = 3 - (((px565 >> 5) & 0x03));
-        [r, g, b] = dmgRgb[shade];
-      } else {
-        r = ((px565 >> 11) & 0x1f) * 8;
-        g = ((px565 >> 5) & 0x3f) * 4;
-        b = (px565 & 0x1f) * 8;
+    if (this.loaded && !paused) {
+      if (this.lastRenderTime === 0) this.lastRenderTime = now;
+      this.frameAccumulator += Math.min(now - this.lastRenderTime, 100);
+      this.lastRenderTime = now;
+      while (this.frameAccumulator >= this.frameIntervalMs) {
+        this.stepFrame();
+        this.frameAccumulator -= this.frameIntervalMs;
       }
-      const di = i * 4;
-      out[di] = r;
-      out[di + 1] = g;
-      out[di + 2] = b;
-      out[di + 3] = 255;
+    } else {
+      this.lastRenderTime = now;
+      this.frameAccumulator = 0;
     }
 
+    const fbPtr = this.exports[`${this.corePrefix}_framebuffer`]();
+    const fb16 = new Uint16Array(this.exports.memory.buffer, fbPtr, this.viewport.w * this.viewport.h);
+    const imgData = this.offscreenCtx.createImageData(this.viewport.w, this.viewport.h);
+    const out = imgData.data;
+    for (let i = 0; i < fb16.length; i++) {
+      const pixel = fb16[i];
+      const index = i * 4;
+      out[index] = ((pixel >> 11) & 0x1F) * 255 / 31;
+      out[index + 1] = ((pixel >> 5) & 0x3F) * 255 / 63;
+      out[index + 2] = (pixel & 0x1F) * 255 / 31;
+      out[index + 3] = 255;
+    }
     this.offscreenCtx.putImageData(imgData, 0, 0);
 
-    // Draw background & 1:1 console bezel on 320x240 display
     ctx.fillStyle = "#0a1214";
     ctx.fillRect(0, 0, 320, 240);
-
-    const drawW = Math.round(vp.w * vp.scale);
-    const drawH = Math.round(vp.h * vp.scale);
-
-    if (this.bezelEnabled && (drawW < 320 || drawH < 240)) {
+    if (this.bezelEnabled) {
       ctx.strokeStyle = "#5fb49c";
       ctx.lineWidth = 2;
-      ctx.strokeRect(vp.ox - 2, vp.oy - 2, drawW + 4, drawH + 4);
+      ctx.strokeRect(this.viewport.ox - 2, this.viewport.oy - 2, this.viewport.w + 4, this.viewport.h + 4);
       ctx.fillStyle = "#8cd7c2";
       ctx.font = "bold 9px 'JetBrains Mono', monospace";
       ctx.textAlign = "left";
-      ctx.fillText(`WASM CORE • ${vp.w}x${vp.h}`, 6, 10);
+      ctx.fillText(`${this.coreName.toUpperCase()} • ${this.viewport.w}x${this.viewport.h}`, 6, 10);
       ctx.textAlign = "right";
-      ctx.fillText(`CRC:${(this.romChecksum >>> 0).toString(16).toUpperCase().slice(0, 6)} F:${this.frameCount}`, 314, 10);
+      ctx.fillText(`F:${this.frameCount}`, 314, 10);
     }
-
+    if (!this.loaded) {
+      ctx.fillStyle = "#cef5e4";
+      ctx.font = "bold 12px 'JetBrains Mono', monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(this.runtimeError || "LOAD A SUPPORTED ROM TO PLAY", 160, 120);
+    }
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(this.offscreenCanvas, vp.ox, vp.oy, drawW, drawH);
+    ctx.drawImage(this.offscreenCanvas, this.viewport.ox, this.viewport.oy, this.viewport.w, this.viewport.h);
   }
 }
 
-if (typeof window !== "undefined") {
-  window.WasmPlaytestEngine = WasmPlaytestEngine;
-}
+if (typeof window !== "undefined") window.WasmPlaytestEngine = WasmPlaytestEngine;
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { WasmPlaytestEngine, CONSOLE_VIEWPORTS };
+  module.exports = {
+    WasmPlaytestEngine,
+    GAMEBOY_VIEWPORT,
+    NES_VIEWPORT,
+    ATARI_VIEWPORT,
+    COLECO_VIEWPORT,
+  };
 }
