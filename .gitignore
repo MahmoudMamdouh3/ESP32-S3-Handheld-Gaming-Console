@@ -1,13 +1,31 @@
-# Arduino build artifacts
+# Arduino & Host C/C++ build artifacts
 *.hex
 *.elf
 *.bin
 *.o
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.exe
 build/
+scratch/
+cppcheck.txt
+sizes.txt
+test.bmp
 
-# Editor
+# Local CLI binaries & archives
+arduino-cli.exe
+arduino-cli.zip
+arduino-cli-bin/
+zig.zip
+
+# Editor & Virtual Environments
 .vscode/
 *.code-workspace
+.venv/
+venv/
 
 # OS
 .DS_Store

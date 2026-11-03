@@ -1,3 +1,4 @@
 [wokwi]
 version = 1
-elf = "build/03_emulator.ino.elf"
+firmware = "firmware/BmoGameboy/build/esp32.esp32.esp32s3/BmoGameboy.ino.bin"
+elf = "firmware/BmoGameboy/build/esp32.esp32.esp32s3/BmoGameboy.ino.elf"
