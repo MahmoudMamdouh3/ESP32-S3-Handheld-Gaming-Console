@@ -1,7 +1,7 @@
 """
 tests/test_native_cores_execution.py — Native Host C Execution & 50-Frame Visual Regression Suite
 Compiles and executes tools/host_cores_runner.c against the actual C emulator sources
-(atari.c, colem.c, lynx.c, ngp.c, snes.c, wswan.c, genesis.c, sms.c, pce.c, pico.c)
+(atari.c, colem.c, lynx.c, ngp.c, snes.c, wswan.c, genesis.c, sms.c, pce.c, pico.c, agnes.c)
 and also tests Phase D QoL features (Recursive Folder Navigation, Console Bezels,
 Cover Art Converter, and Serial Telemetry Plotter).
 """
@@ -32,9 +32,9 @@ def _find_vcvars64() -> Path | None:
 
 
 class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
-    """Executes all 10 custom C emulator cores natively on host CPU and verifies Phase D tools."""
+    """Executes all 11 custom C emulator cores natively on host CPU and verifies Phase D tools."""
 
-    def test_01_compile_and_execute_all_10_c_emulator_cores_50_frames(self):
+    def test_01_compile_and_execute_all_11_c_emulator_cores_50_frames(self):
         vcvars = _find_vcvars64()
         gcc = shutil.which("gcc") or shutil.which("clang")
         if not vcvars and not gcc:
@@ -167,27 +167,171 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
 
         node_bin = shutil.which("node")
         if node_bin:
-            js_test = (
-                "const {WasmPlaytestEngine}=require('./tools/bmo_simulator/wasm_playtest_engine.js');"
-                "(async()=>{"
-                "  const eng=new WasmPlaytestEngine();"
-                "  await eng.init();"
-                "  const csum=eng.loadRom('ROM_GB','Tetris',new Uint8Array(2048).fill(0x5A));"
-                "  eng.setButtonBit(8,true);"
-                "  const f1=eng.stepFrame();"
-                "  eng.saveState(0);"
-                "  eng.stepFrame();"
-                "  eng.loadState(0);"
-                "  const fbPtr=eng.exports.wasm_core_get_fb_ptr();"
-                "  const fb=new Uint16Array(eng.exports.memory.buffer,fbPtr,160*144);"
-                "  let nz=0; for(let i=0;i<fb.length;i++) if(fb[i]) nz++;"
-                "  if(f1!==1 || eng.frameCount!==1 || nz<20000 || csum===0) process.exit(1);"
-                "  console.log('WASM_PLAYTEST_PASS csum=0x'+csum.toString(16)+' nz='+nz);"
-                "})();"
-            )
-            proc = subprocess.run([node_bin, "-e", js_test], cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=15)
-            self.assertEqual(proc.returncode, 0, msg=f"Node Wasm test failed: {proc.stderr}\n{proc.stdout}")
-            self.assertIn("WASM_PLAYTEST_PASS", proc.stdout)
+            rom = bytearray(32 * 1024)
+            rom[0x100:0x103] = bytes([0xC3, 0x50, 0x01])
+            rom[0x134:0x13C] = b"BMO TEST"
+            rom[0x147:0x14A] = bytes([0, 0, 0])
+            code = [0x3E, 0xE4, 0xE0, 0x47, 0x21, 0x00, 0x80]
+            for _ in range(8):
+                code.extend([0x3E, 0xAA, 0x22, 0x3E, 0x55, 0x22])
+            code.extend([0x3E, 0x91, 0xE0, 0x40, 0x18, 0xFE])
+            rom[0x150:0x150 + len(code)] = bytes(code)
+            checksum = 0
+            for byte in rom[0x134:0x14D]:
+                checksum = (checksum - byte - 1) & 0xFF
+            rom[0x14D] = checksum
+
+            nes_rom = bytearray(16 + 16384 + 8192)
+            nes_rom[:7] = b"NES\x1a\x01\x01\x02"
+            prg = memoryview(nes_rom)[16:16 + 16384]
+            prg[:] = b"\xEA" * len(prg)
+            prg[0x3FFC:0x3FFE] = b"\x00\x80"
+            nes_program = bytes([
+                0xA9, 0x5C, 0x8D, 0x00, 0x60,
+                0xA9, 0x3F, 0x8D, 0x06, 0x20,
+                0xA9, 0x00, 0x8D, 0x06, 0x20,
+                0xA9, 0x21, 0x8D, 0x07, 0x20,
+                0xA9, 0x08, 0x8D, 0x01, 0x20,
+                0xE8, 0x8E, 0x01, 0x60, 0x4C, 0x18, 0x80
+            ])
+            prg[:len(nes_program)] = nes_program
+            atari_rom = bytearray(b"\xEA" * 4096)
+            atari_rom[0xFFC:0xFFE] = b"\x00\xF0"
+            atari_program = bytes([
+                0xA9, 0x88, 0x85, 0x80,
+                0xA9, 0x2E, 0x85, 0x08,
+                0xA9, 0x44, 0x85, 0x09,
+                0xA9, 0xAA, 0x85, 0x0E,
+                0x4C, 0x10, 0xF0
+            ])
+            atari_rom[:len(atari_program)] = atari_program
+            colem_rom = bytearray(8192)
+            colem_rom[0] = 0x55
+            colem_rom[1] = 0xAA
+            colem_rom[0x0A:0x0C] = b"\x20\x80"
+            colem_program = bytes([
+                0x3E, 0x5A, 0x32, 0x00, 0x60, 0xD3, 0xBF,
+                0x3E, 0x87, 0xD3, 0xBF, 0xC3, 0x29, 0x80
+            ])
+            colem_rom[0x20:0x20 + len(colem_program)] = colem_program
+
+            with tempfile.TemporaryDirectory() as tmp:
+                rom_path = Path(tmp) / "homebrew_test.gb"
+                rom_path.write_bytes(rom)
+                nes_rom_path = Path(tmp) / "homebrew_test.nes"
+                nes_rom_path.write_bytes(nes_rom)
+                atari_rom_path = Path(tmp) / "homebrew_test.a26"
+                atari_rom_path.write_bytes(atari_rom)
+                colem_rom_path = Path(tmp) / "homebrew_test.col"
+                colem_rom_path.write_bytes(colem_rom)
+                js_test = (
+                    "const fs=require('fs');"
+                    "const {WasmPlaytestEngine}=require('./tools/bmo_simulator/wasm_playtest_engine.js');"
+                    "(async()=>{"
+                    "  const eng=new WasmPlaytestEngine();"
+                    "  await eng.init();"
+                    "  const facePtr=eng.exports.bmo_face_framebuffer();"
+                    "  const facePixels=new Uint16Array(eng.exports.memory.buffer,facePtr,320*240);"
+                    "  const faceColors=new Set(facePixels).size;"
+                    "  eng.exports.bmo_face_say_quote(0,3800);"
+                    "  if(eng.exports.bmo_face_has_speech()!==1 || eng.bmoCurrentQuote()!=='Who wants to play video games?!' || eng.bmoVisibleChars()<1)"
+                    "    throw new Error('firmware BMO dialogue did not initialize');"
+                    "  eng.exports.bmo_face_trigger_wink();"
+                    "  if(eng.exports.bmo_face_get_expression()!==11) throw new Error('firmware BMO wink expression did not activate');"
+                    "  eng.exports.bmo_face_pet_companion();"
+                    "  if(eng.exports.bmo_face_buddy_level()!==1) throw new Error('firmware BMO pet counter did not advance');"
+                    "  eng.exports.bmo_face_toggle_dance();"
+                    "  const bmoDanceStarted=eng.exports.bmo_face_is_dancing()===1;"
+                    "  eng.exports.bmo_face_toggle_dance();"
+                    "  if(faceColors<10 || !bmoDanceStarted || eng.exports.bmo_face_is_dancing()!==0)"
+                    "    throw new Error(JSON.stringify({faceColors,bmoDanceStarted,danceStopped:eng.exports.bmo_face_is_dancing()}));"
+                    "  eng.exports.bmo_face_set_gaze(0.85,-0.85);"
+                    "  if(!eng.exports.bmo_face_step((Math.floor(performance.now()*1000)+16667)>>>0))"
+                    "    throw new Error('firmware BMO face did not render a frame');"
+                    "  const rom=new Uint8Array(fs.readFileSync(process.argv[1]));"
+                    "  const csum=eng.loadRom('ROM_GB','Homebrew test',rom);"
+                    "  eng.stepFrame(); eng.stepFrame();"
+                    "  const fbPtr=eng.exports.bmo_emu_framebuffer();"
+                    "  const fb=new Uint16Array(eng.exports.memory.buffer,fbPtr,240*216);"
+                    "  const colors=new Set(fb);"
+                    "  eng.setButtonBit(1,true); eng.setButtonBit(16,true); eng.stepFrame();"
+                    "  const joypad=eng.exports.bmo_emu_joypad_state();"
+                    "  eng.saveState(); eng.stepFrame(); const restored=eng.loadState();"
+                    "  if(eng.frameCount!==3 || colors.size<2 || !csum || joypad!==(0xff^0x41) || !restored) "
+                    "    throw new Error(JSON.stringify({frames:eng.frameCount,colors:colors.size,csum,joypad,restored}));"
+                    "  if(eng.exports.bmo_emu_is_running()!==1) throw new Error('core stopped unexpectedly');"
+                    "  let unsupported=false; try{eng.loadRom('ROM_SNES','unsupported',rom)}catch(e){unsupported=/supports Game Boy/.test(e.message)}"
+                    "  const badRom=rom.slice();badRom[0x14d]^=1;let badChecksum=false;"
+                    "  try{eng.loadRom('ROM_GB','bad header',badRom)}catch(e){badChecksum=/checksum is invalid/.test(e.message)}"
+                    "  if(!unsupported || !badChecksum || eng.loaded || eng.exports.bmo_emu_is_running()!==0)"
+                    "    throw new Error('unsupported or invalid ROM was not rejected explicitly');"
+                    "  const nesRom=new Uint8Array(fs.readFileSync(process.argv[2]));"
+                    "  const nesChecksum=eng.loadRom('ROM_NES','NES homebrew test',nesRom);"
+                    "  eng.stepFrame(); eng.stepFrame();"
+                    "  const nesFbPtr=eng.exports.bmo_nes_framebuffer();"
+                    "  const nesFb=new Uint16Array(eng.exports.memory.buffer,nesFbPtr,256*240);"
+                    "  const nesColorCount=new Set(nesFb).size;"
+                    "  eng.setButtonBit(1,true); eng.setButtonBit(16,true); eng.stepFrame();"
+                    "  const nesButtons=eng.exports.bmo_nes_button_state();"
+                    "  eng.saveState(); eng.stepFrame(); const nesRestored=eng.loadState();"
+                    "  if(eng.frameCount!==3 || !nesChecksum || nesColorCount<1 || nesButtons!==0x11 || !nesRestored)"
+                    "    throw new Error(JSON.stringify({nesFrames:eng.frameCount,nesColorCount,nesChecksum,nesButtons,nesRestored}));"
+                    "  if(eng.exports.bmo_nes_is_running()!==1 || eng.viewport.w!==256 || eng.viewport.h!==240 || eng.viewport.ox!==32)"
+                    "    throw new Error('NES core state or firmware viewport mismatch');"
+                    "  eng.loadRom('ROM_GB','switch back to Game Boy',rom);"
+                    "  if(eng.exports.bmo_nes_is_running()!==0 || eng.exports.bmo_emu_is_running()!==1)"
+                    "    throw new Error('switching cores did not release the NES session');"
+                    "  const badMapper=nesRom.slice();badMapper[6]=0x30;let mapperRejected=false;"
+                    "  try{eng.loadRom('ROM_NES','unsupported mapper',badMapper)}catch(e){mapperRejected=/mappers 0, 1, 2, and 4/.test(e.message)}"
+                    "  if(!mapperRejected || eng.loaded || eng.exports.bmo_nes_is_running()!==0 || eng.exports.bmo_emu_is_running()!==0)"
+                    "    throw new Error('unsupported NES mapper was not rejected explicitly');"
+                    "  const atariRom=new Uint8Array(fs.readFileSync(process.argv[3]));"
+                    "  eng.loadRom('ROM_ATARI','Atari homebrew test',atariRom);"
+                    "  eng.stepFrame(); eng.stepFrame();"
+                    "  const atariFbPtr=eng.exports.bmo_atari_framebuffer();"
+                    "  const atariFb=new Uint16Array(eng.exports.memory.buffer,atariFbPtr,160*192);"
+                    "  const atariColorCount=new Set(atariFb).size;"
+                    "  eng.setButtonBit(1,true); eng.setButtonBit(16,true); eng.stepFrame();"
+                    "  const atariButtons=eng.exports.bmo_atari_joypad_state();"
+                    "  eng.saveState(); eng.stepFrame(); const atariRestored=eng.loadState();"
+                    "  if(eng.frameCount!==3 || atariColorCount<2 || atariButtons!==(0xff^0x11) || !atariRestored)"
+                    "    throw new Error(JSON.stringify({atariFrames:eng.frameCount,atariColorCount,atariButtons,atariRestored}));"
+                    "  if(eng.exports.bmo_atari_is_running()!==1 || eng.viewport.w!==160 || eng.viewport.h!==192 || eng.viewport.ox!==80 || eng.viewport.oy!==24)"
+                    "    throw new Error('Atari core state or firmware viewport mismatch');"
+                    "  const badAtari=new Uint8Array(2049);let badSize=false;"
+                    "  try{eng.loadRom('ROM_ATARI','bad size',badAtari)}catch(e){badSize=/must be 2, 4, 8, 16, or 32 KiB/.test(e.message)}"
+                    "  if(!badSize || eng.loaded || eng.exports.bmo_atari_is_running()!==0)"
+                    "    throw new Error('unsupported Atari ROM size was not rejected explicitly');"
+                    "  const colemRom=new Uint8Array(fs.readFileSync(process.argv[4]));"
+                    "  eng.loadRom('ROM_COLEM','Coleco homebrew test',colemRom);"
+                    "  eng.stepFrame(); eng.stepFrame();"
+                    "  const colemFbPtr=eng.exports.bmo_colem_framebuffer();"
+                    "  const colemFb=new Uint16Array(eng.exports.memory.buffer,colemFbPtr,256*192);"
+                    "  const colemColorCount=new Set(colemFb).size;"
+                    "  const colemRamPtr=eng.exports.bmo_colem_ram();"
+                    "  const colemRam=new Uint8Array(eng.exports.memory.buffer,colemRamPtr,8192);"
+                    "  eng.setButtonBit(1,true); eng.setButtonBit(8,true); eng.setButtonBit(16,true); eng.stepFrame();"
+                    "  const colemJoystick=eng.exports.bmo_colem_joystick_state();"
+                    "  eng.saveState(); eng.stepFrame(); const colemRestored=eng.loadState();"
+                    "  if(eng.frameCount!==3 || colemColorCount<1 || colemFb[0]===0 || colemRam[0]!==0x5A || colemJoystick!==0x13 || !colemRestored)"
+                    "    throw new Error(JSON.stringify({colemFrames:eng.frameCount,colemColorCount,colemFirstPixel:colemFb[0],colemRam:colemRam[0],colemJoystick,colemRestored}));"
+                    "  if(eng.exports.bmo_colem_is_running()!==1 || eng.viewport.w!==256 || eng.viewport.h!==192 || eng.viewport.ox!==32 || eng.viewport.oy!==24)"
+                    "    throw new Error('ColecoVision core state or firmware viewport mismatch');"
+                    "  let badColecoSize=false; try{eng.loadRom('ROM_COLEM','bad size',new Uint8Array(511))}catch(e){badColecoSize=/at least 512 bytes/.test(e.message)}"
+                    "  if(!badColecoSize || eng.loaded || eng.exports.bmo_colem_is_running()!==0)"
+                    "    throw new Error('unsupported ColecoVision ROM size was not rejected explicitly');"
+                    "  console.log('REAL_GB_NES_ATARI_COLECO_WASM_PASS gbFrames=3 gbColors='+colors.size+' nesFrames=3 nesColors='+nesColorCount+' atariFrames=3 atariColors='+atariColorCount+' colemFrames=3 colemColors='+colemColorCount);"
+                    "})().catch(err=>{console.error(err);process.exit(1);});"
+                )
+                proc = subprocess.run(
+                    [node_bin, "-e", js_test, str(rom_path), str(nes_rom_path), str(atari_rom_path), str(colem_rom_path)],
+                    cwd=str(REPO_ROOT),
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+                self.assertEqual(proc.returncode, 0, msg=f"Node Wasm test failed: {proc.stderr}\n{proc.stdout}")
+                self.assertIn("REAL_GB_NES_ATARI_COLECO_WASM_PASS", proc.stdout)
 
     def test_09_run_simulator_server_handler_endpoints(self):
         from tools.bmo_simulator import run_simulator

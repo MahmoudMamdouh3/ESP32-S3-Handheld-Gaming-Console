@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BMO Gameboy — 1:1 Live Handheld UI/UX Simulator & History Lab</title>
+  <title>BMO Gameboy — Browser Game Simulator</title>
   <link rel="stylesheet" href="simulator.css">
 </head>
 <body data-theme="bmo-teal">
@@ -12,13 +12,13 @@
   <header class="app-header">
     <div class="brand-wrapper">
       <div class="brand-badge">BMO</div>
-      <div class="brand-title">Handheld Console <span>1:1 Live Simulator</span></div>
+      <div class="brand-title">Handheld Console <span>Firmware BMO Companion / Playable ROM Cores</span></div>
     </div>
 
     <div class="header-actions">
       <!-- Scale Multiplier Selector -->
       <div class="scale-selector-group" style="display: flex; gap: 6px;">
-        <button class="control-pill scale-btn active" data-scale="1.0">1.0× (1:1 Physical)</button>
+        <button class="control-pill scale-btn active" data-scale="1.0">1.0× (reference)</button>
         <button class="control-pill scale-btn" data-scale="1.3">1.3×</button>
         <button class="control-pill scale-btn" data-scale="1.6">1.6×</button>
       </div>
@@ -55,7 +55,7 @@
     <!-- Viewport Stage -->
     <section class="stage-container">
 
-      <!-- Physical BMO Game Boy Chassis (1:1 Physical Form Factor) -->
+      <!-- Browser rendering of the handheld enclosure and controls -->
       <div class="bmo-gameboy-chassis" id="gameboy-chassis">
         <div class="chassis-top-ridges"></div>
 
@@ -63,16 +63,7 @@
         <div class="screen-bezel-housing">
           <div class="bezel-top-bar">
             <div class="bezel-brand">BMO COLOR</div>
-            <div class="battery-indicator-wrapper" id="battery-indicator" title="Click to cycle battery level">
-              <span class="battery-label">BATT</span>
-              <div class="pixel-battery-icon">
-                <div class="pixel-battery-shell">
-                  <div class="pixel-battery-fill" id="chassis-battery-fill"></div>
-                </div>
-                <div class="pixel-battery-cap"></div>
-              </div>
-              <span class="battery-pct-label" id="chassis-battery-pct">88%</span>
-            </div>
+            <div class="power-indicator">USB-C POWER</div>
           </div>
 
           <!-- Display Viewport (320x240 Native ST7789) -->
@@ -124,16 +115,6 @@
           </div>
         </div>
 
-        <!-- Speaker Grille Slits -->
-        <div class="speaker-grille">
-          <div class="speaker-slit"></div>
-          <div class="speaker-slit"></div>
-          <div class="speaker-slit"></div>
-          <div class="speaker-slit"></div>
-          <div class="speaker-slit"></div>
-          <div class="speaker-slit"></div>
-        </div>
-
       </div>
 
     </section>
@@ -144,34 +125,43 @@
       <!-- Live Telemetry Card -->
       <div class="panel-card">
         <div class="card-header">
-          <div class="card-title">⚡ Hardware Telemetry</div>
-          <div class="badge-counter" id="telemetry-fps">60 FPS</div>
+          <div class="card-title">Hardware Configuration</div>
+          <div class="badge-counter" id="telemetry-fps">Browser FPS</div>
         </div>
         <div class="telemetry-grid">
           <div class="telemetry-box">
-            <div class="telemetry-label">MCU Architecture</div>
-            <div class="telemetry-value">ESP32-S3 240MHz</div>
+            <div class="telemetry-label">Firmware target</div>
+            <div class="telemetry-value">ESP32-S3 N16R8, 240 MHz</div>
           </div>
           <div class="telemetry-box">
-            <div class="telemetry-label">Octal PSRAM</div>
-            <div class="telemetry-value">8 MB (Active)</div>
+            <div class="telemetry-label">Flash / PSRAM</div>
+            <div class="telemetry-value">16 MB QIO / 8 MB OPI</div>
           </div>
           <div class="telemetry-box">
-            <div class="telemetry-label">Internal SRAM</div>
-            <div class="telemetry-value">244 KB (0 Bloat)</div>
+            <div class="telemetry-label">Display</div>
+            <div class="telemetry-value">ST7789, 320×240, SPI</div>
           </div>
           <div class="telemetry-box">
-            <div class="telemetry-label">Display Bus</div>
-            <div class="telemetry-value">SPI DMA 80MHz</div>
+            <div class="telemetry-label">Shared FSPI Bus</div>
+            <div class="telemetry-value">TFT 80 MHz / SD 25 MHz</div>
+          </div>
+          <div class="telemetry-box">
+            <div class="telemetry-label">Buttons</div>
+            <div class="telemetry-value">8 active-low GPIO inputs</div>
+          </div>
+          <div class="telemetry-box">
+            <div class="telemetry-label">Battery / Audio</div>
+            <div class="telemetry-value">Not installed; features disabled</div>
           </div>
         </div>
+        <div class="telemetry-label">BMO's animated face runs the firmware BmoFace renderer compiled to WebAssembly. The menu shell remains browser-rendered; this page does not execute the ESP32 firmware or reproduce its physical SPI and SD hardware.</div>
       </div>
 
       <!-- Original full-resolution box art for the selected game -->
       <div class="panel-card" id="hd-boxart-panel">
         <div class="card-header">
           <div class="card-title">Original Box Art</div>
-          <div class="badge-counter">4K Master</div>
+          <div class="badge-counter">Original scan</div>
         </div>
         <div class="hd-boxart-frame">
           <img id="hd-boxart-preview-img" alt="Original box art of the selected game" style="visibility: hidden;">
@@ -247,8 +237,16 @@
             <kbd class="key-cap">Shift</kbd>
           </div>
           <div class="key-binding-row">
+            <span class="key-label">Pause while playing</span>
+            <kbd class="key-cap">Enter + Shift</kbd>
+          </div>
+          <div class="key-binding-row">
             <span class="key-label">Console Museum</span>
             <kbd class="key-cap">Space / M</kbd>
+          </div>
+          <div class="key-binding-row">
+            <span class="key-label">BMO companion controls</span>
+            <kbd class="key-cap">↑ enter / arrows gaze / Z wink / X blush / Shift talk / ↑ dance / Enter exit</kbd>
           </div>
         </div>
       </div>
@@ -256,52 +254,52 @@
       <!-- WebSerial SD Manager & ROM Dropzone Card -->
       <div class="panel-card" id="webserial-sd-manager">
         <div class="card-header">
-          <div class="card-title">🔌 WebSerial SD Manager</div>
+          <div class="card-title">🔌 Device Serial Connection</div>
           <div class="badge-counter" id="webserial-status">Offline</div>
         </div>
         <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
-          <button class="control-pill" id="btn-webserial-connect">Connect USB-C (WebSerial)</button>
-          <label class="control-pill" for="rom-file-upload" style="cursor: pointer;">+ Load ROM / .P8</label>
-          <input type="file" id="rom-file-upload" accept=".gb,.gbc,.nes,.sfc,.smc,.sms,.gg,.pce,.a26,.p8,.gen,.md,.ws,.wsc,.ngp,.ngc,.lnx,.col,.wad" style="display: none;" multiple>
+          <button class="control-pill" id="btn-webserial-connect">Connect Device (WebSerial)</button>
+          <label class="control-pill" for="rom-file-upload" style="cursor: pointer;">+ Load Game ROM (.gb, .nes, .a26, .col)</label>
+          <input type="file" id="rom-file-upload" accept=".gb,.nes,.a26,.col" style="display: none;" multiple>
         </div>
         <div id="webserial-log" style="margin-top: 8px; font-family: monospace; font-size: 11px; opacity: 0.85;">
-          Drop ROM files anywhere or connect ESP32-S3 via WebSerial (115200 baud).
+          Load a legally obtained .gb, .nes, .a26, or .col ROM to play. Serial currently only opens a port; it does not read or write SD-card files.
         </div>
       </div>
 
-      <!-- WebAssembly & Host Native Playtest Engine Card -->
+      <!-- Playable browser firmware cores and native host-core verification -->
       <div class="panel-card" id="wasm-playtest-panel">
         <div class="card-header">
-          <div class="card-title">⚙️ Playtest Engine (Wasm & Host C)</div>
-          <div class="badge-counter" id="wasm-engine-status">Wasm Ready</div>
+          <div class="card-title">Firmware BMO Companion & Playable ROM Cores</div>
+          <div class="badge-counter" id="wasm-engine-status">Loading</div>
         </div>
         <div class="telemetry-grid" style="margin-top: 8px;">
           <div class="telemetry-box">
-            <div class="telemetry-label">Engine Mode</div>
-            <div class="telemetry-value" id="playtest-mode-val">60Hz Wasm</div>
+            <div class="telemetry-label">Emulator</div>
+            <div class="telemetry-value" id="playtest-mode-val">BmoFace firmware SDF renderer</div>
           </div>
           <div class="telemetry-box">
-            <div class="telemetry-label">Active Core / Res</div>
-            <div class="telemetry-value" id="playtest-core-val">GB (160×144)</div>
+            <div class="telemetry-label">Supported system / output</div>
+            <div class="telemetry-value" id="playtest-core-val">BMO (320×240) / ROM cores</div>
           </div>
           <div class="telemetry-box">
-            <div class="telemetry-label">ROM Checksum</div>
+            <div class="telemetry-label">Loaded ROM checksum</div>
             <div class="telemetry-value" id="playtest-crc-val">0x00000000</div>
           </div>
           <div class="telemetry-box">
-            <div class="telemetry-label">Linear Memory</div>
-            <div class="telemetry-value">1 MiB (16 Pgs)</div>
+            <div class="telemetry-label">WASM memory</div>
+            <div class="telemetry-value">16 MiB initial</div>
           </div>
         </div>
         <div style="display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap;">
-          <button class="control-pill" id="btn-wasm-save-state">Save State (S0)</button>
-          <button class="control-pill" id="btn-wasm-load-state">Load State (S0)</button>
+          <button class="control-pill" id="btn-wasm-save-state">Save State (session)</button>
+          <button class="control-pill" id="btn-wasm-load-state">Load State (session)</button>
           <button class="control-pill" id="btn-wasm-toggle-bezel">Toggle Bezel</button>
           <button class="control-pill" id="btn-wasm-toggle-ab">Swap A/B</button>
-          <button class="control-pill" id="btn-verify-host-cores">Verify 10 Host Cores</button>
+          <button class="control-pill" id="btn-verify-host-cores">Verify 11 Host Cores</button>
         </div>
         <div id="playtest-engine-log" style="margin-top: 8px; font-family: monospace; font-size: 11px; opacity: 0.85;">
-          Wasm 60 Hz frame runner ready. Press P in-game for Pause Menu.
+          The BMO companion uses the firmware SDF renderer, expression system, speech timer, gaze, petting, and dance APIs in WebAssembly. Console ROM gameplay remains optional and does not execute the firmware menus.
         </div>
       </div>
 

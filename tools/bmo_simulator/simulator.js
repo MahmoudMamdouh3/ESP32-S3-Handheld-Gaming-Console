@@ -1,8 +1,7 @@
 /**
  * simulator.js
- * High-fidelity 1:1 BMO Handheld Console Simulator and UI/UX Interactive Lab.
- * Replicates the firmware's 2D SDF BMO Mascot, ST7789 SPI rendering, Console Carousel,
- * Game Select Menu, and Gaming History Museum.
+ * Browser simulator for local Game Boy, NES, Atari 2600, and ColecoVision ROMs.
+ * The menu shell is canvas-rendered; gameplay comes from firmware emulator cores in WebAssembly.
  */
 
 // State Machine Constants (Synchronized with BmoGameboy.ino)
@@ -14,25 +13,26 @@ const STATE = {
   EMULATION_VIEW: 4,
   IDLE_MASCOT: 5
 };
+const MAX_BROWSER_ROM_SIZE = 8 * 1024 * 1024;
 
 // Console Metadata
 const CONSOLES_LIST = [
-  { id: "ROM_FAVORITES", name: "★ Favorites", year: "Starred", ext: "★", badge: "FAV", color: "#FFE033", count: 5 },
-  { id: "ROM_GB", name: "Game Boy", year: "1989", ext: ".gb", badge: "DMG", color: "#5FB49C", count: 603 },
-  { id: "ROM_GBC", name: "Game Boy Color", year: "1998", ext: ".gbc", badge: "GBC", color: "#2ED573", count: 538 },
-  { id: "ROM_NES", name: "Nintendo NES", year: "1983", ext: ".nes", badge: "NES", color: "#FF5E57", count: 578 },
-  { id: "ROM_SNES", name: "Super Nintendo", year: "1990", ext: ".sfc", badge: "SNES", color: "#9C88FF", count: 818 },
-  { id: "ROM_GENESIS", name: "Sega Genesis", year: "1988", ext: ".gen", badge: "MD", color: "#2E86DE", count: 773 },
-  { id: "ROM_SMS", name: "Master System", year: "1985", ext: ".sms", badge: "SMS", color: "#3B82F6", count: 386 },
-  { id: "ROM_GG", name: "Game Gear", year: "1990", ext: ".gg", badge: "GG", color: "#F368E0", count: 305 },
-  { id: "ROM_PCE", name: "PC Engine / TG16", year: "1987", ext: ".pce", badge: "PCE", color: "#FF6B6B", count: 443 },
-  { id: "ROM_ATARI", name: "Atari 2600", year: "1977", ext: ".a26", badge: "A26", color: "#E056FD", count: 279 },
-  { id: "ROM_COLEM", name: "ColecoVision", year: "1982", ext: ".col", badge: "COL", color: "#00D2D3", count: 157 },
-  { id: "ROM_NGP", name: "Neo Geo Pocket", year: "1998", ext: ".ngc", badge: "NGP", color: "#FFA502", count: 114 },
-  { id: "ROM_LYNX", name: "Atari Lynx", year: "1989", ext: ".lnx", badge: "LNX", color: "#10AC84", count: 95 },
-  { id: "ROM_WSWAN", name: "WonderSwan Color", year: "1999", ext: ".wsc", badge: "WS", color: "#ECCC68", count: 83 },
-  { id: "ROM_PICO8", name: "PICO-8", year: "2015", ext: ".p8", badge: "P8", color: "#FF78C4", count: 12534 },
-  { id: "ROM_WAD", name: "DOOM", year: "1993", ext: ".wad", badge: "WAD", color: "#FF4757", count: 3 }
+  { id: "ROM_FAVORITES", name: "★ Favorites", year: "Starred", ext: "★", badge: "FAV", color: "#FFE033", count: 0 },
+  { id: "ROM_GB", name: "Game Boy", year: "1989", ext: ".gb", badge: "DMG", color: "#5FB49C", count: 0, browserSupported: true },
+  { id: "ROM_GBC", name: "Game Boy Color", year: "1998", ext: ".gbc", badge: "GBC", color: "#2ED573", count: 0 },
+  { id: "ROM_NES", name: "Nintendo NES", year: "1983", ext: ".nes", badge: "NES", color: "#FF5E57", count: 0, browserSupported: true },
+  { id: "ROM_SNES", name: "Super Nintendo", year: "1990", ext: ".sfc", badge: "SNES", color: "#9C88FF", count: 0 },
+  { id: "ROM_GENESIS", name: "Sega Genesis", year: "1988", ext: ".gen", badge: "MD", color: "#2E86DE", count: 0 },
+  { id: "ROM_SMS", name: "Master System", year: "1985", ext: ".sms", badge: "SMS", color: "#3B82F6", count: 0 },
+  { id: "ROM_GG", name: "Game Gear", year: "1990", ext: ".gg", badge: "GG", color: "#F368E0", count: 0 },
+  { id: "ROM_PCE", name: "PC Engine / TG16", year: "1987", ext: ".pce", badge: "PCE", color: "#FF6B6B", count: 0 },
+  { id: "ROM_ATARI", name: "Atari 2600", year: "1977", ext: ".a26", badge: "A26", color: "#E056FD", count: 0, browserSupported: true },
+  { id: "ROM_COLEM", name: "ColecoVision", year: "1982", ext: ".col", badge: "COL", color: "#00D2D3", count: 0, browserSupported: true },
+  { id: "ROM_NGP", name: "Neo Geo Pocket", year: "1998", ext: ".ngc", badge: "NGP", color: "#FFA502", count: 0 },
+  { id: "ROM_LYNX", name: "Atari Lynx", year: "1989", ext: ".lnx", badge: "LNX", color: "#10AC84", count: 0 },
+  { id: "ROM_WSWAN", name: "WonderSwan Color", year: "1999", ext: ".wsc", badge: "WS", color: "#ECCC68", count: 0 },
+  { id: "ROM_PICO8", name: "PICO-8", year: "2015", ext: ".p8", badge: "P8", color: "#FF78C4", count: 0 },
+  { id: "ROM_WAD", name: "DOOM", year: "1993", ext: ".wad", badge: "WAD", color: "#FF4757", count: 0 }
 ];
 
 class BmoSimulator {
@@ -65,6 +65,15 @@ class BmoSimulator {
       mouthCurve: 0.8,
       isBlinking: false
     };
+    this.bmoSessionStarted = false;
+    this.bmoEntryGreeting = true;
+    this.bmoQuoteIndex = 0;
+    this.bmoLastInputMs = performance.now();
+    this.lastInputActivityMs = this.bmoLastInputMs;
+    this.bmoButtonHoldStart = 0;
+    this.bmoLastGazeX = 0;
+    this.bmoLastDirectionChangeMs = 0;
+    this.bmoDirectionToggleCount = 0;
 
     // DMG Runtime Palettes
     this.palettes = {
@@ -76,26 +85,23 @@ class BmoSimulator {
     };
     this.activePalette = "classic";
 
-    // Battery State
-    this.batteryState = 88;
-    this.batteryLevel = 88;
-    this.isCharging = false;
+    // Browser library contains only user-selected ROM files.
+    this.gameLibrary = this.createGameLibrary();
 
-    // Audio SFX synthesis using Web Audio API
-    this.initAudio();
-
-    // Sample Game List Cache
-    this.mockGames = this.generateMockGameDatabase();
-
-    // WebAssembly Playtest Core Runner
+    // Firmware-derived Game Boy, NES, Atari, and ColecoVision cores compiled to WebAssembly.
     this.isPausedInGame = false;
     this.pauseMenuIndex = 0;
     this.wasmEngine = (typeof window !== "undefined" && window.WasmPlaytestEngine)
       ? new window.WasmPlaytestEngine()
       : null;
-    if (this.wasmEngine) {
-      this.wasmEngine.init();
-    }
+    this.engineLoadFailed = false;
+    this.engineReady = this.wasmEngine
+      ? this.wasmEngine.init().then(() => true).catch((error) => {
+        this.engineLoadFailed = true;
+        this.showSimulatorMessage(error.message, true);
+        return false;
+      })
+      : Promise.resolve(false);
 
     // Setup input listeners
     this.setupInputHandlers();
@@ -104,6 +110,16 @@ class BmoSimulator {
 
     // Start 60 FPS Render Loop
     requestAnimationFrame(this.renderLoop.bind(this));
+  }
+
+  showSimulatorMessage(message, isError = false) {
+    const log = document.getElementById("playtest-engine-log") || document.getElementById("webserial-log");
+    if (log) {
+      log.textContent = message;
+      log.dataset.status = isError ? "error" : "info";
+    }
+    const status = document.getElementById("wasm-engine-status");
+    if (status && isError) status.textContent = "Error";
   }
 
   applyUrlStateParams() {
@@ -127,7 +143,9 @@ class BmoSimulator {
       this.currentState = STATE.BOOT_SPLASH;
     } else if (stateParam === "mascot") {
       this.currentState = STATE.IDLE_MASCOT;
-      this.bmo.expression = "HAPPY";
+      this.bmoSessionStarted = false;
+      this.bmoEntryGreeting = true;
+      this.bmoLastInputMs = performance.now();
     } else if (stateParam === "carousel") {
       this.currentState = STATE.CONSOLE_SELECT;
       if (consoleParam === null) this.selectedConsoleIndex = 2; // Game Boy Color
@@ -145,87 +163,25 @@ class BmoSimulator {
       if (consoleParam === null) this.selectedConsoleIndex = 2;
       this.updateSidebarMuseumView();
     } else if (stateParam === "gameplay") {
-      if (consoleParam === null) this.selectedConsoleIndex = 2;
+      if (consoleParam === null) this.selectedConsoleIndex = 1;
       const cid = CONSOLES_LIST[this.selectedConsoleIndex].id;
-      const games = this.mockGames[cid] || [];
-      if (games.length > 0) {
-        this.launchSelectedGame(cid, games[0]);
-      } else {
-        this.currentState = STATE.EMULATION_VIEW;
-      }
+      const games = this.gameLibrary[cid] || [];
+      if (games.length > 0) this.launchSelectedGame(cid, games[0]);
+      else this.currentState = STATE.GAME_SELECT;
     }
   }
 
-  initAudio() {
-    try {
-      window.AudioContext = window.AudioContext || window.webkitAudioContext;
-      this.audioCtx = new AudioContext();
-    } catch (e) {
-      this.audioCtx = null;
-    }
-  }
-
-  playBeep(freq = 440, type = "square", duration = 0.04) {
-    if (!this.audioCtx) return;
-    if (this.audioCtx.state === "suspended") {
-      this.audioCtx.resume();
-    }
-    const osc = this.audioCtx.createOscillator();
-    const gain = this.audioCtx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.08, this.audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(this.audioCtx.destination);
-    osc.start();
-    osc.stop(this.audioCtx.currentTime + duration);
-  }
-
-  generateMockGameDatabase() {
+  createGameLibrary() {
     const db = {};
     CONSOLES_LIST.forEach(c => {
-      if (c.id === "ROM_FAVORITES") return;
-      const history = CONSOLE_HISTORY_DATABASE[c.id];
-      const games = [];
-      if (c.id === "ROM_GB") {
-        games.push({ title: "Virtual BMO (Official Game)", console: "GB", isFav: true, isPopular: true });
-        games.push({ title: "Tetris (World) (Rev A)", console: "GB", isFav: true, isPopular: true });
-        games.push({ title: "Pokemon Red Version", console: "GB", isFav: false, isPopular: true });
-        games.push({ title: "The Legend of Zelda - Link's Awakening", console: "GB", isFav: false, isPopular: true });
-        games.push({ title: "Teenage Mutant Ninja Turtles III - Radical Rescue", console: "GB", isFav: false, isPopular: false });
-        games.push({ title: "Alleyway", console: "GB", isFav: false, isPopular: false });
-        games.push({ title: "Tamagotchi", console: "GB", isFav: false, isPopular: false });
-      } else if (c.id === "ROM_GBC") {
-        games.push({ title: "Super Mario Bros. Deluxe", console: "GBC", isFav: true, isPopular: true });
-        games.push({ title: "The Legend of Zelda - Oracle of Ages", console: "GBC", isFav: true, isPopular: true });
-        games.push({ title: "Pokemon - Crystal Version", console: "GBC", isFav: false, isPopular: true });
-        games.push({ title: "Kirby - Tilt 'n' Tumble", console: "GBC", isFav: false, isPopular: true });
-        games.push({ title: "Donkey Kong Country", console: "GBC", isFav: false, isPopular: true });
-        games.push({ title: "Aladdin", console: "GBC", isFav: false, isPopular: false });
-        games.push({ title: "LEGO Racers", console: "GBC", isFav: false, isPopular: false });
-        games.push({ title: "Street Fighter Alpha - Warriors' Dreams", console: "GBC", isFav: false, isPopular: false });
-      } else if (c.id === "ROM_NES") {
-        games.push({ title: "Super Mario Bros 3", console: "NES", isFav: true, isPopular: true });
-        games.push({ title: "The Legend of Zelda", console: "NES", isFav: false, isPopular: true });
-        games.push({ title: "Mega Man 2", console: "NES", isFav: false, isPopular: true });
-        games.push({ title: "Castlevania III - Dracula's Curse", console: "NES", isFav: false, isPopular: true });
-      } else {
-        if (history && history.hallmarkGames) {
-          history.hallmarkGames.forEach(hg => games.push({ title: `${hg.title}`, console: c.badge, isFav: false, isPopular: true }));
-        }
-        for (let i = 1; i <= 15; i++) {
-          games.push({ title: `${c.name} Classic Title ${i}`, console: c.badge, isFav: false, isPopular: false });
-        }
-      }
-      db[c.id] = games;
+      db[c.id] = [];
     });
-    this.rebuildFavoritesInDatabase(db);
+    db.ROM_FAVORITES = [];
     return db;
   }
 
   getVisibleGames(consoleId) {
-    const all = this.mockGames[consoleId] || [];
+    const all = this.gameLibrary[consoleId] || [];
     if (consoleId === "ROM_FAVORITES" || !this.topPicksFilter) {
       return all;
     }
@@ -241,9 +197,14 @@ class BmoSimulator {
         if (g.isFav) favs.push(g);
       });
     });
-    db["ROM_FAVORITES"] = favs;
+    db.ROM_FAVORITES = favs;
     const favConsole = CONSOLES_LIST.find(c => c.id === "ROM_FAVORITES");
     if (favConsole) favConsole.count = favs.length;
+    CONSOLES_LIST.forEach((consoleInfo) => {
+      if (consoleInfo.id !== "ROM_FAVORITES") {
+        consoleInfo.count = (db[consoleInfo.id] || []).length;
+      }
+    });
   }
 
   setupInputHandlers() {
@@ -254,12 +215,9 @@ class BmoSimulator {
 
     // Keyboard Handler
     window.addEventListener("keydown", (e) => {
+      if (e.repeat && this.currentState === STATE.IDLE_MASCOT) return;
       if (this.wasmEngine && keyBitMap[e.key]) {
         this.wasmEngine.setButtonBit(keyBitMap[e.key], true);
-      }
-      if ((e.key === "p" || e.key === "P") && this.currentState === STATE.EMULATION_VIEW) {
-        this.isPausedInGame = !this.isPausedInGame;
-        return;
       }
       switch (e.key) {
         case "ArrowUp":
@@ -304,6 +262,11 @@ class BmoSimulator {
       if (this.wasmEngine && keyBitMap[e.key]) {
         this.wasmEngine.setButtonBit(keyBitMap[e.key], false);
       }
+      const releasedKey = {
+        ArrowUp: "UP", ArrowDown: "DOWN", ArrowLeft: "LEFT", ArrowRight: "RIGHT",
+        z: "A", Z: "A", x: "B", X: "B", Enter: "START", Shift: "SELECT"
+      }[e.key];
+      if (releasedKey) this.handleButtonRelease(releasedKey);
     });
 
     // Touch & Mouse On-Screen Physical Buttons
@@ -329,6 +292,7 @@ class BmoSimulator {
         window.addEventListener("mouseup", () => {
           el.classList.remove("pressed");
           if (this.wasmEngine) this.wasmEngine.setButtonBit(b.bit, false);
+          this.handleButtonRelease(b.key);
         });
         el.addEventListener("touchstart", (e) => {
           e.preventDefault();
@@ -339,14 +303,92 @@ class BmoSimulator {
         el.addEventListener("touchend", () => {
           el.classList.remove("pressed");
           if (this.wasmEngine) this.wasmEngine.setButtonBit(b.bit, false);
+          this.handleButtonRelease(b.key);
         });
       }
     });
   }
 
-  handleButtonPress(key) {
-    this.playBeep(key === "A" ? 520 : key === "B" ? 380 : 440, "square", 0.05);
+  enterBmoCompanion(showGreeting = true) {
+    this.currentState = STATE.IDLE_MASCOT;
+    this.bmoSessionStarted = false;
+    this.bmoEntryGreeting = showGreeting;
+    this.bmoQuoteIndex = 0;
+    this.bmoLastInputMs = performance.now();
+    this.lastInputActivityMs = this.bmoLastInputMs;
+    this.bmoButtonHoldStart = 0;
+    this.bmoLastGazeX = 0;
+    this.bmoDirectionToggleCount = 0;
+  }
 
+  exitBmoCompanion() {
+    this.currentState = STATE.CONSOLE_SELECT;
+    this.bmoSessionStarted = false;
+    this.bmoButtonHoldStart = 0;
+    if (this.wasmEngine && this.wasmEngine.bmoReady) {
+      this.wasmEngine.setBmoExpression("HAPPY");
+      this.wasmEngine.clearBmoSpeech();
+    }
+    this.bmoLastInputMs = performance.now();
+    this.lastInputActivityMs = this.bmoLastInputMs;
+  }
+
+  handleButtonRelease(key) {
+    if (key === "B") this.bmoButtonHoldStart = 0;
+  }
+
+  handleBmoButtonPress(key) {
+    const now = performance.now();
+    const engine = this.wasmEngine;
+    if (!engine || !engine.bmoReady) {
+      this.showSimulatorMessage("The firmware BMO companion is still loading.", false);
+      return;
+    }
+
+    if (key === "START") {
+      this.exitBmoCompanion();
+      return;
+    }
+    if (key === "LEFT" || key === "RIGHT") {
+      const gazeX = key === "LEFT" ? -0.85 : 0.85;
+      if (this.bmoLastGazeX !== 0 && gazeX !== this.bmoLastGazeX) {
+        if (now - this.bmoLastDirectionChangeMs < 350) {
+          this.bmoDirectionToggleCount++;
+          if (this.bmoDirectionToggleCount >= 2) {
+            engine.petBmoCompanion();
+            this.bmoDirectionToggleCount = 0;
+          }
+        } else {
+          this.bmoDirectionToggleCount = 0;
+        }
+        this.bmoLastDirectionChangeMs = now;
+      }
+      this.bmoLastGazeX = gazeX;
+      this.bmoLastInputMs = now;
+      return;
+    }
+    if (key === "UP" || key === "DOWN") {
+      this.bmoLastInputMs = now;
+      if (key === "UP") engine.toggleBmoDance();
+      return;
+    }
+    if (key === "A") {
+      engine.triggerBmoWink();
+      engine.sayBmoQuote(7, 3000);
+    } else if (key === "B") {
+      engine.triggerBmoBlush();
+      engine.sayBmoQuote(8, 3000);
+      if (this.bmoButtonHoldStart === 0) this.bmoButtonHoldStart = now;
+    } else if (key === "SELECT") {
+      engine.triggerBmoJoy();
+      engine.sayBmoQuote(this.bmoQuoteIndex % 7, 3800);
+      this.bmoQuoteIndex++;
+    }
+    this.bmoLastInputMs = now;
+  }
+
+  handleButtonPress(key) {
+    this.lastInputActivityMs = performance.now();
     // Visual button reflection
     const btnMap = {
       "UP": "btn-dpad-up", "DOWN": "btn-dpad-down", "LEFT": "btn-dpad-left", "RIGHT": "btn-dpad-right",
@@ -366,8 +408,21 @@ class BmoSimulator {
       return;
     }
 
+    if (
+      this.currentState === STATE.EMULATION_VIEW &&
+      !this.isPausedInGame &&
+      this.wasmEngine &&
+      (this.wasmEngine.buttonsMask & 0xC0) === 0xC0
+    ) {
+      this.isPausedInGame = true;
+      this.pauseMenuIndex = 0;
+      return;
+    }
+
     if (this.currentState === STATE.CONSOLE_SELECT) {
-      if (key === "RIGHT") {
+      if (key === "UP") {
+        this.enterBmoCompanion();
+      } else if (key === "RIGHT") {
         this.selectedConsoleIndex = (this.selectedConsoleIndex + 1) % CONSOLES_LIST.length;
         this.updateSidebarMuseumView();
       } else if (key === "LEFT") {
@@ -399,23 +454,20 @@ class BmoSimulator {
       } else if (key === "START" && activeConsole.id !== "ROM_FAVORITES") {
         this.topPicksFilter = !this.topPicksFilter;
         this.selectedGameIndex = 0;
-        this.playBeep(this.topPicksFilter ? 740 : 480, "triangle", 0.06);
       } else if (key === "SELECT") {
         if (games.length > 0) {
           const game = games[this.selectedGameIndex];
           if (game) {
             game.isFav = !game.isFav;
-            this.rebuildFavoritesInDatabase(this.mockGames);
+            this.rebuildFavoritesInDatabase(this.gameLibrary);
             if (game.isFav) {
-              this.playBeep(880, "triangle", 0.08);
               this.bmo.expression = "HAPPY";
             } else {
-              this.playBeep(330, "sine", 0.08);
               this.bmo.expression = "SURPRISED";
             }
             if (activeConsole.id === "ROM_FAVORITES") {
-              if (this.selectedGameIndex >= (this.mockGames["ROM_FAVORITES"] || []).length) {
-                this.selectedGameIndex = Math.max(0, (this.mockGames["ROM_FAVORITES"] || []).length - 1);
+              if (this.selectedGameIndex >= (this.gameLibrary.ROM_FAVORITES || []).length) {
+                this.selectedGameIndex = Math.max(0, (this.gameLibrary.ROM_FAVORITES || []).length - 1);
               }
             }
           }
@@ -430,12 +482,7 @@ class BmoSimulator {
         }
       }
     } else if (this.currentState === STATE.IDLE_MASCOT) {
-      if (key === "B" || key === "START") {
-        this.currentState = STATE.CONSOLE_SELECT;
-        this.bmo.expression = "IDLE";
-      } else if (key === "A" || key === "SELECT") {
-        this.bmo.expression = (this.bmo.expression === "HAPPY") ? "IDLE" : "HAPPY";
-      }
+      this.handleBmoButtonPress(key);
     } else if (this.currentState === STATE.EMULATION_VIEW) {
       if (this.isPausedInGame) {
         if (key === "UP") {
@@ -452,32 +499,44 @@ class BmoSimulator {
           if (this.pauseMenuIndex === 0) {
             this.isPausedInGame = false;
           } else if (this.pauseMenuIndex === 1 && this.wasmEngine) {
-            this.wasmEngine.saveState(this.wasmEngine.activeSlot);
+            const saved = this.wasmEngine.saveState(this.wasmEngine.activeSlot);
+            this.showSimulatorMessage(saved ? "Game state saved for this browser session." : "Could not save the current game state.", !saved);
             this.isPausedInGame = false;
           } else if (this.pauseMenuIndex === 2 && this.wasmEngine) {
-            this.wasmEngine.loadState(this.wasmEngine.activeSlot);
+            const loaded = this.wasmEngine.loadState(this.wasmEngine.activeSlot);
+            this.showSimulatorMessage(loaded ? "Game state restored." : "No saved state exists for this game in this browser session.", !loaded);
             this.isPausedInGame = false;
           } else if (this.pauseMenuIndex === 3) {
             this.isPausedInGame = false;
             this.currentState = STATE.GAME_SELECT;
           }
         }
-      } else if (key === "SELECT") {
-        this.isPausedInGame = true;
-        this.pauseMenuIndex = 0;
       }
     }
   }
 
-  launchSelectedGame(consoleId, gameObj) {
+  async launchSelectedGame(consoleId, gameObj) {
     const title = typeof gameObj === "string" ? gameObj : (gameObj.title || "Game");
     const romBytes = (typeof gameObj === "object" && gameObj.romBytes) ? gameObj.romBytes : null;
-    if (this.wasmEngine && this.wasmEngine.ready) {
-      this.wasmEngine.loadRom(consoleId, title, romBytes);
+    const gameConsoleId = typeof gameObj === "object" && gameObj.systemId
+      ? gameObj.systemId
+      : consoleId;
+    try {
+      if (!romBytes) throw new Error("This library entry has no ROM data. Load a supported local ROM file to play.");
+      if (!(await this.engineReady) || !this.wasmEngine) {
+        throw new Error("The WebAssembly emulator cores could not be initialized.");
+      }
+      this.wasmEngine.loadRom(gameConsoleId, title, romBytes);
+    } catch (error) {
+      this.showSimulatorMessage(error.message, true);
+      return false;
     }
     this.isPausedInGame = false;
     this.currentState = STATE.EMULATION_VIEW;
     this.bmo.expression = "HAPPY";
+    this.runtimeErrorShown = false;
+    this.showSimulatorMessage(`Running ${title} in the vendored ${this.wasmEngine.coreName} core.`);
+    return true;
   }
 
   setupUIControls() {
@@ -503,18 +562,6 @@ class BmoSimulator {
     if (paletteSelect) {
       paletteSelect.addEventListener("change", (e) => {
         this.activePalette = e.target.value;
-      });
-    }
-
-    // Battery indicator interactive cycle
-    const battIndicator = document.getElementById("battery-indicator");
-    if (battIndicator) {
-      battIndicator.addEventListener("click", () => {
-        const states = [100, 75, 45, 15, "charging"];
-        const curIdx = states.indexOf(this.batteryState);
-        const nextState = states[(curIdx + 1) % states.length];
-        this.setBatteryState(nextState);
-        this.playBeep(nextState === "charging" ? 750 : nextState <= 20 ? 300 : 550, "sine", 0.05);
       });
     }
 
@@ -546,7 +593,6 @@ class BmoSimulator {
           this.wasmEngine.saveState(0);
           const log = document.getElementById("playtest-engine-log");
           if (log) log.textContent = `State saved to Slot 0 for ${this.wasmEngine.activeTitle}`;
-          this.playBeep(660, "sine", 0.05);
         }
       });
     }
@@ -558,7 +604,6 @@ class BmoSimulator {
           const ok = this.wasmEngine.loadState(0);
           const log = document.getElementById("playtest-engine-log");
           if (log) log.textContent = ok ? `State loaded from Slot 0 (Frame ${this.wasmEngine.frameCount})` : "No saved state in Slot 0";
-          this.playBeep(ok ? 520 : 220, "sine", 0.05);
         }
       });
     }
@@ -589,12 +634,12 @@ class BmoSimulator {
     if (btnVerifyHost) {
       btnVerifyHost.addEventListener("click", async () => {
         const log = document.getElementById("playtest-engine-log");
-        if (log) log.textContent = "Running 10 native host C cores across 50 frames...";
+        if (log) log.textContent = "Running 11 native host C cores across 50 frames...";
         try {
           const resp = await fetch("/api/host-cores/run");
           if (resp.ok) {
             const data = await resp.json();
-            if (log) log.textContent = `Host Cores: ${data.message || "All 10 cores verified"}`;
+            if (log) log.textContent = `Host Cores: ${data.message || "All 11 cores verified"}`;
           } else {
             if (log) log.textContent = `Host runner returned HTTP ${resp.status}`;
           }
@@ -605,36 +650,6 @@ class BmoSimulator {
     }
 
     this.updateSidebarMuseumView();
-  }
-
-  setBatteryState(state) {
-    this.batteryState = state;
-    const fillEl = document.getElementById("chassis-battery-fill");
-    const pctEl = document.getElementById("chassis-battery-pct");
-    if (!fillEl || !pctEl) return;
-
-    fillEl.className = "pixel-battery-fill";
-    if (state === "charging") {
-      fillEl.classList.add("charging");
-      pctEl.innerText = "CHG";
-      this.batteryLevel = 100;
-      this.isCharging = true;
-      this.bmo.expression = "HAPPY";
-    } else {
-      this.isCharging = false;
-      this.batteryLevel = state;
-      fillEl.style.width = `${state}%`;
-      pctEl.innerText = `${state}%`;
-      if (state <= 20) {
-        fillEl.classList.add("charge-low");
-        this.bmo.expression = "SLEEPY";
-      } else if (state <= 50) {
-        fillEl.classList.add("charge-med");
-        this.bmo.expression = "IDLE";
-      } else {
-        this.bmo.expression = "IDLE";
-      }
-    }
   }
 
   updateSidebarMuseumView() {
@@ -675,6 +690,11 @@ class BmoSimulator {
     this.lastFrameTime = timestamp;
     this.fps = Math.round(1 / (dt || 0.016));
 
+    if (this.currentState === STATE.CONSOLE_SELECT
+        && timestamp - this.lastInputActivityMs > 30000) {
+      this.enterBmoCompanion(false);
+    }
+
     // Update BMO Blink & Animation timers
     this.updateBmoAnimation(dt);
 
@@ -700,7 +720,7 @@ class BmoSimulator {
         this.renderEmulationView();
         break;
       case STATE.IDLE_MASCOT:
-        this.renderIdleMascotScreen();
+        this.renderIdleMascotScreen(timestamp);
         break;
     }
 
@@ -708,19 +728,29 @@ class BmoSimulator {
     const fpsVal = document.getElementById("telemetry-fps");
     if (fpsVal) fpsVal.innerText = `${this.fps} FPS`;
 
-    // Playtest Wasm telemetry update
+    // Emulator telemetry update
     if (this.wasmEngine) {
       const crcEl = document.getElementById("playtest-crc-val");
       const coreEl = document.getElementById("playtest-core-val");
       const statusEl = document.getElementById("wasm-engine-status");
+      if (this.wasmEngine.runtimeError && !this.runtimeErrorShown) {
+        this.runtimeErrorShown = true;
+        this.showSimulatorMessage(this.wasmEngine.runtimeError, true);
+      }
       if (crcEl) crcEl.textContent = "0x" + (this.wasmEngine.romChecksum >>> 0).toString(16).toUpperCase();
       if (coreEl && this.wasmEngine.viewport) {
         coreEl.textContent = `${this.wasmEngine.activeConsoleId.replace("ROM_", "")} (${this.wasmEngine.viewport.w}×${this.wasmEngine.viewport.h})`;
       }
       if (statusEl) {
-        statusEl.textContent = (this.currentState === STATE.EMULATION_VIEW)
-          ? `Frame ${this.wasmEngine.frameCount}`
-          : "Wasm Ready";
+        statusEl.textContent = this.engineLoadFailed
+          ? "Error"
+          : this.wasmEngine.runtimeError
+            ? "Core error"
+          : this.wasmEngine.loaded
+            ? `Frame ${this.wasmEngine.frameCount}`
+            : this.wasmEngine.ready
+              ? "Core ready"
+              : "Loading";
       }
     }
 
@@ -804,7 +834,7 @@ class BmoSimulator {
     this.ctx.fillStyle = "#cef5e4";
     this.ctx.font = "11px 'Outfit', sans-serif";
     this.ctx.textAlign = "center";
-    this.ctx.fillText("15 Retro Consoles • Thousands of Adventures", 160, 182);
+    this.ctx.fillText("14 Emulation Cores • Thousands of Adventures", 160, 182);
 
     // Press A Prompt
     if (Math.floor(this.bootTimer * 2) % 2 === 0) {
@@ -1164,12 +1194,12 @@ class BmoSimulator {
     // Extension & Format Tag
     this.ctx.fillStyle = "#8cd7c2";
     this.ctx.font = "11px 'JetBrains Mono', monospace";
-    this.ctx.fillText(`Format: ${c.ext}`, cardX + 16, cardY + 95);
+    this.ctx.fillText(c.browserSupported ? `Browser core: ${c.ext}` : `Firmware core: ${c.ext}`, cardX + 16, cardY + 95);
 
     // Game Count Tag
     this.ctx.fillStyle = "#ffe033";
     this.ctx.font = "bold 13px 'JetBrains Mono', monospace";
-    this.ctx.fillText(`★ ${c.count.toLocaleString()} Games Ready`, cardX + 16, cardY + 124);
+    this.ctx.fillText(`${c.count.toLocaleString()} LOCAL ROMS`, cardX + 16, cardY + 124);
 
     // Carousel Navigation Arrows
     this.ctx.fillStyle = "#5fb49c";
@@ -1272,83 +1302,87 @@ class BmoSimulator {
     this.ctx.fillText("PRESS B TO RETURN", 160, 220);
   }
 
-  renderIdleMascotScreen() {
-    // Full-screen BMO Screen Mint backdrop (matches firmware BmoFace::renderToBuffer)
-    this.ctx.fillStyle = "#55efc4";
-    this.ctx.fillRect(0, 0, 320, 240);
+  renderIdleMascotScreen(now = performance.now()) {
+    const engine = this.wasmEngine;
+    if (!engine || !engine.bmoReady) {
+      this.ctx.fillStyle = "#8AD5C3";
+      this.ctx.fillRect(0, 0, 320, 240);
+      this.ctx.fillStyle = "#0F2620";
+      this.ctx.font = "bold 10px monospace";
+      this.ctx.textAlign = "center";
+      this.ctx.fillText("LOADING FIRMWARE BMO...", 160, 120);
+      return;
+    }
 
-    // Top HUD Pill ("LIVING BMO COMPANION")
-    this.ctx.fillStyle = "#1a4b42";
-    this.ctx.beginPath();
-    this.ctx.roundRect(60, 10, 200, 24, 6);
-    this.ctx.fill();
-    this.ctx.strokeStyle = "#ffe033";
-    this.ctx.lineWidth = 1.5;
-    this.ctx.stroke();
+    if (!this.bmoSessionStarted) {
+      if (this.bmoEntryGreeting) {
+        engine.setBmoExpression("HAPPY");
+        engine.sayBmoQuote(0, 3500);
+      } else {
+        engine.setBmoExpression("SLEEPY");
+      }
+      this.bmoSessionStarted = true;
+      this.bmoLastInputMs = now;
+    }
 
-    this.ctx.fillStyle = "#ffe033";
-    this.ctx.font = "bold 9px 'Press Start 2P', monospace";
-    this.ctx.textAlign = "center";
-    this.ctx.fillText("LIVING BMO COMPANION", 160, 26);
+    const mask = engine.buttonsMask;
+    let gazeX = 0;
+    let gazeY = 0;
+    if (mask & 0x04) gazeX -= 0.85;
+    if (mask & 0x08) gazeX += 0.85;
+    if (mask & 0x01) gazeY += 0.85;
+    if (mask & 0x02) gazeY -= 0.85;
+    if (gazeX !== 0 || gazeY !== 0) {
+      engine.setBmoGaze(gazeX, gazeY);
+      this.bmoLastInputMs = now;
+    }
 
-    // Large 2D SDF BMO Face on 320x240 screen
-    this.ctx.fillStyle = "#0f2620";
-    this.ctx.beginPath();
-    this.ctx.ellipse(98, 106, 9, 14, 0, 0, Math.PI * 2);
-    this.ctx.ellipse(222, 106, 9, 14, 0, 0, Math.PI * 2);
-    this.ctx.fill();
+    if ((mask & 0x20) && this.bmoButtonHoldStart !== 0
+        && now - this.bmoButtonHoldStart > 600) {
+      this.exitBmoCompanion();
+      return;
+    }
 
-    // Eye highlights
-    this.ctx.fillStyle = "#ffffff";
-    this.ctx.beginPath();
-    this.ctx.arc(95, 101, 3, 0, Math.PI * 2);
-    this.ctx.arc(219, 101, 3, 0, Math.PI * 2);
-    this.ctx.fill();
+    const idleSeconds = Math.floor((now - this.bmoLastInputMs) / 1000);
+    if (idleSeconds > 45 && engine.bmoExpression() !== 10) {
+      engine.setBmoExpression("SLEEPING");
+    } else if (idleSeconds > 20 && idleSeconds <= 45 && engine.bmoExpression() === 0) {
+      engine.setBmoExpression("SLEEPY");
+    }
 
-    // Rosy Cheeks
-    this.ctx.fillStyle = "rgba(255, 118, 117, 0.72)";
-    this.ctx.beginPath();
-    this.ctx.ellipse(68, 122, 13, 8, 0, 0, Math.PI * 2);
-    this.ctx.ellipse(252, 122, 13, 8, 0, 0, Math.PI * 2);
-    this.ctx.fill();
+    engine.renderBmoFrame(this.ctx, now);
+    if (engine.bmoHasSpeech()) {
+      const visibleChars = engine.bmoVisibleChars();
+      const speech = engine.bmoCurrentQuote().slice(0, visibleChars);
+      this.ctx.fillStyle = "#101E2B";
+      this.ctx.font = "8px monospace";
+      this.ctx.textAlign = "left";
+      this.ctx.fillText(speech, Math.max(36, 160 - visibleChars * 3), 31);
+    } else {
+      this.ctx.fillStyle = "#1A4B42";
+      this.ctx.fillRect(40, 8, 240, 22);
+      this.ctx.strokeStyle = "#CEF5E4";
+      this.ctx.lineWidth = 1;
+      this.ctx.strokeRect(40, 8, 240, 22);
+      const title = engine.bmoIsDancing() ? "* BMO DANCE PARTY! *"
+        : idleSeconds > 40 ? "BMO IS SLEEPING..."
+          : idleSeconds > 20 ? "BMO IS SLEEPY..." : "LIVING BMO COMPANION";
+      this.ctx.fillStyle = "#FFE033";
+      this.ctx.font = "bold 12px Arial, sans-serif";
+      this.ctx.textAlign = "center";
+      this.ctx.fillText(title, 160, 24);
+    }
 
-    // Happy Open Mouth
-    this.ctx.fillStyle = "#0f2620";
-    this.ctx.beginPath();
-    this.ctx.arc(160, 118, 28, 0.08 * Math.PI, 0.92 * Math.PI, false);
-    this.ctx.closePath();
-    this.ctx.fill();
-
-    this.ctx.fillStyle = "#ff5e57";
-    this.ctx.beginPath();
-    this.ctx.arc(160, 128, 15, 0.12 * Math.PI, 0.88 * Math.PI, false);
-    this.ctx.fill();
-
-    // Speech Bubble ("Who wants to play video games?!")
-    this.ctx.fillStyle = "#ffffff";
-    this.ctx.beginPath();
-    this.ctx.roundRect(44, 42, 232, 34, 8);
-    this.ctx.fill();
-    this.ctx.strokeStyle = "#0f2620";
-    this.ctx.lineWidth = 2;
-    this.ctx.stroke();
-
-    this.ctx.fillStyle = "#0f2620";
-    this.ctx.font = "bold 11px 'Outfit', sans-serif";
-    this.ctx.textAlign = "center";
-    this.ctx.fillText("Who wants to play video games?!", 160, 63);
-
-    // Bottom Interactive Footer Bar
-    this.ctx.fillStyle = "#0f2620";
-    this.ctx.fillRect(6, 212, 308, 22);
-    this.ctx.strokeStyle = "#5fb49c";
+    const prompt = "D-PAD:LOOK/PET  A:WINK  B:BLUSH  SEL:TALK  UP:DANCE  START:BACK";
+    this.ctx.fillStyle = "#0F2620";
+    this.ctx.fillRect(6, 214, 308, 22);
+    this.ctx.strokeStyle = "#5FB49C";
     this.ctx.lineWidth = 1;
-    this.ctx.strokeRect(6, 212, 308, 22);
-
-    this.ctx.fillStyle = "#cef5e4";
-    this.ctx.font = "9px 'JetBrains Mono', monospace";
+    this.ctx.strokeRect(6, 214, 308, 22);
+    this.ctx.fillStyle = "#CEF5E4";
+    this.ctx.font = "8px monospace";
     this.ctx.textAlign = "center";
-    this.ctx.fillText("D-PAD:LOOK/PET  A:WINK  B:BLUSH  SEL:TALK  START:MENU", 160, 226);
+    this.ctx.fillText(prompt, 160, 221);
   }
 
   // Same slug rule as scripts/fetch_covers.py slugify_title().
@@ -1441,13 +1475,22 @@ class BmoSimulator {
         ctx.fillText("NO FAVORITES YET!", 160, 100);
         ctx.fillStyle = T.mint;
         ctx.font = "12px 'Outfit', sans-serif";
-        ctx.fillText("Press SELECT on any game in any", 160, 128);
-        ctx.fillText("console library to star it *", 160, 148);
+        ctx.fillText("Load a supported ROM, then press SELECT", 160, 128);
+        ctx.fillText("in its library to star it *", 160, 148);
       } else {
-        ctx.fillText("NO GAMES", 160, 100);
+        ctx.fillText("NO LOCAL ROMS", 160, 100);
         ctx.fillStyle = T.mint;
         ctx.font = "12px 'Outfit', sans-serif";
-        ctx.fillText("Add compatible ROMs to the SD card.", 160, 138);
+        const browserRom = c.browserSupported === true;
+        const helpText = c.id === "ROM_FAVORITES"
+          ? "Load a supported ROM file to play it here."
+          : browserRom
+            ? `Load a ${c.ext} file to play it here.`
+            : "This system is not supported in browser gameplay yet.";
+        ctx.fillText(helpText, 160, 138);
+        if (browserRom || c.id === "ROM_FAVORITES") {
+          ctx.fillText("Use the Load ROM button beside the simulator.", 160, 158);
+        }
       }
       ctx.fillStyle = T.black;
       ctx.fillRect(0, 212, 320, 28);
@@ -1544,7 +1587,7 @@ class BmoSimulator {
     const pal = this.palettes[this.activePalette] || this.palettes.classic;
 
     if (this.wasmEngine && this.wasmEngine.ready) {
-      this.wasmEngine.renderToCanvas(this.ctx, pal);
+      this.wasmEngine.renderToCanvas(this.ctx, pal, this.isPausedInGame);
     } else {
       this.ctx.fillStyle = pal[3];
       this.ctx.fillRect(0, 0, 320, 240);
@@ -1566,7 +1609,7 @@ class BmoSimulator {
       this.ctx.fillStyle = "#FFE033";
       this.ctx.font = "bold 11px 'Press Start 2P', monospace";
       this.ctx.textAlign = "center";
-      this.ctx.fillText("PAUSE MENU (WASM)", 160, 50);
+      this.ctx.fillText("PAUSE MENU", 160, 50);
 
       const items = ["RESUME GAME", "SAVE STATE (S0)", "LOAD STATE (S0)", "QUIT TO MENU"];
       for (let i = 0; i < items.length; i++) {
@@ -1596,7 +1639,7 @@ class BmoSimulator {
       this.serialPort = await navigator.serial.requestPort();
       await this.serialPort.open({ baudRate: 115200 });
       if (statusEl) statusEl.textContent = "Connected";
-      if (logEl) logEl.textContent = "ESP32-S3 connected @ 115200 baud. Streaming telemetry...";
+      if (logEl) logEl.textContent = "ESP32-S3 serial port opened. This page does not send firmware commands or parse telemetry.";
       return true;
     } catch (err) {
       if (logEl) logEl.textContent = `Serial connection cancelled: ${err.message || err}`;
@@ -1604,41 +1647,63 @@ class BmoSimulator {
     }
   }
 
-  ingestUploadedRoms(fileList) {
+  async ingestUploadedRoms(fileList) {
     if (!fileList || fileList.length === 0) return 0;
-    const extMap = {
-      ".gb": "ROM_GB", ".gbc": "ROM_GBC", ".nes": "ROM_NES",
-      ".sfc": "ROM_SNES", ".smc": "ROM_SNES", ".gen": "ROM_GENESIS", ".md": "ROM_GENESIS",
-      ".sms": "ROM_SMS", ".gg": "ROM_GG", ".pce": "ROM_PCE", ".a26": "ROM_ATARI",
-      ".col": "ROM_COLEM", ".ngp": "ROM_NGP", ".ngc": "ROM_NGP", ".lnx": "ROM_LYNX",
-      ".ws": "ROM_WSWAN", ".wsc": "ROM_WSWAN", ".p8": "ROM_PICO8", ".wad": "ROM_WAD"
-    };
-    let added = 0;
-    Array.from(fileList).forEach(file => {
+    const added = [];
+    const rejected = [];
+    for (const file of Array.from(fileList)) {
       const dot = file.name.lastIndexOf(".");
       const ext = dot >= 0 ? file.name.slice(dot).toLowerCase() : "";
-      const cid = extMap[ext] || "ROM_GB";
-      const cleanTitle = file.name.replace(/\.[^/.]+$/, "");
-      if (!this.mockGames[cid]) this.mockGames[cid] = [];
-      const entry = { title: cleanTitle, console: ext.replace(".", "").toUpperCase(), isFav: true, romBytes: null };
-      this.mockGames[cid].unshift(entry);
-      if (typeof file.arrayBuffer === "function") {
-        file.arrayBuffer().then((buf) => {
-          entry.romBytes = new Uint8Array(buf);
-          if (fileList.length === 1) {
-            const cIdx = CONSOLES_LIST.findIndex(c => c.id === cid);
-            if (cIdx >= 0) this.selectedConsoleIndex = cIdx;
-            this.selectedGameIndex = 0;
-            this.launchSelectedGame(cid, entry);
-          }
-        }).catch(() => {});
+      const systemId = ext === ".gb" ? "ROM_GB"
+        : ext === ".nes" ? "ROM_NES"
+          : ext === ".a26" ? "ROM_ATARI"
+              : ext === ".col" ? "ROM_COLEM" : "";
+      if (!systemId) {
+          rejected.push(`${file.name}: browser gameplay currently supports .gb, .nes, .a26, and .col ROMs only.`);
+        continue;
       }
-      added++;
-    });
-    this.rebuildFavoritesInDatabase(this.mockGames);
-    const logEl = document.getElementById("webserial-log");
-    if (logEl) logEl.textContent = `Mounted ${added} ROM file(s) into Wasm playtest engine.`;
-    return added;
+      if (file.size > MAX_BROWSER_ROM_SIZE) {
+        rejected.push(`${file.name}: browser ROMs cannot exceed 8 MiB.`);
+        continue;
+      }
+      const cleanTitle = file.name.replace(/\.[^/.]+$/, "");
+      try {
+        if (typeof file.arrayBuffer !== "function") throw new Error("This browser cannot read the selected file.");
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const entry = {
+          title: cleanTitle,
+          console: systemId === "ROM_GB" ? "GB"
+            : systemId === "ROM_NES" ? "NES"
+              : systemId === "ROM_ATARI" ? "ATARI" : "COLEM",
+          systemId,
+          isFav: false,
+          isPopular: false,
+          romBytes: bytes
+        };
+        this.gameLibrary[systemId].unshift(entry);
+        added.push(entry);
+      } catch (error) {
+        rejected.push(`${file.name}: ${error.message}`);
+      }
+    }
+
+    this.rebuildFavoritesInDatabase(this.gameLibrary);
+    if (rejected.length > 0) this.showSimulatorMessage(rejected.join(" "), true);
+    if (added.length > 0) {
+      this.selectedConsoleIndex = CONSOLES_LIST.findIndex((consoleInfo) => consoleInfo.id === added[0].systemId);
+      this.selectedGameIndex = 0;
+      if (fileList.length === 1) {
+        if (!(await this.launchSelectedGame(added[0].systemId, added[0]))) {
+          this.gameLibrary[added[0].systemId] = this.gameLibrary[added[0].systemId]
+            .filter((entry) => entry !== added[0]);
+          this.rebuildFavoritesInDatabase(this.gameLibrary);
+        }
+      }
+      else this.showSimulatorMessage(`Added ${added.length} local supported ROM(s). Select a title in its console library to play.`);
+    } else if (rejected.length === 0) {
+      this.showSimulatorMessage("No ROM files were selected.", true);
+    }
+    return added.length;
   }
 }
 
@@ -1648,12 +1713,14 @@ window.addEventListener("DOMContentLoaded", () => {
   const btnSerial = document.getElementById("btn-webserial-connect");
   if (btnSerial) btnSerial.addEventListener("click", () => window.simulator.connectWebSerial());
   const fileInput = document.getElementById("rom-file-upload");
-  if (fileInput) fileInput.addEventListener("change", (e) => window.simulator.ingestUploadedRoms(e.target.files));
+  if (fileInput) fileInput.addEventListener("change", (e) => {
+    window.simulator.ingestUploadedRoms(e.target.files).catch((error) => window.simulator.showSimulatorMessage(error.message, true));
+  });
   window.addEventListener("dragover", (e) => e.preventDefault());
   window.addEventListener("drop", (e) => {
     e.preventDefault();
     if (e.dataTransfer && e.dataTransfer.files) {
-      window.simulator.ingestUploadedRoms(e.dataTransfer.files);
+      window.simulator.ingestUploadedRoms(e.dataTransfer.files).catch((error) => window.simulator.showSimulatorMessage(error.message, true));
     }
   });
 });

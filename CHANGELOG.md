@@ -5,6 +5,88 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Firmware-Backed Browser BMO Companion] - 2026-11-03
+### Added
+- **Actual firmware BMO face renderer in WebAssembly (`tools/bmo_simulator/bmo_face_firmware.cpp`, `bmo_face_wasm.cpp`)**: Compiles `firmware/BmoGameboy/src/core/bmo_face.cpp` and calls the real 320×240 SDF rendering, expression, gaze, blink, speech, petting, and dance APIs.
+- **BMO companion controls (`tools/bmo_simulator/simulator.js`)**: UP from the carousel opens the companion; D-pad gaze, A wink, B blush/hold-to-exit, SELECT dialogue, UP dance, START return, and the 30-second idle timeout follow the firmware companion flow.
+- **Firmware API regression coverage (`tests/test_native_cores_execution.py`)**: Checks rendered face colors, quote reveal, wink state, pet counter, dance toggle, and framebuffer output.
+
+### Changed
+- The browser's previous hand-drawn static BMO face was replaced with the firmware SDF output; the firmware-derived interaction and enablement are labeled separately from the browser-rendered menu shell.
+
+### Limitation
+- The BMO face/expression engine is the firmware source, but the browser still ports the surrounding device state machine and overlays. It does not run the ESP32 scheduler or reproduce physical ST7789/SPI/SD behavior; a literal 1:1 hardware replica is not claimed.
+
+## [Playable Browser ColecoVision Core] - 2026-11-03
+### Added
+- **ColecoVision WebAssembly gameplay (`tools/bmo_simulator/colem_wasm.cpp`, `scripts/build_wasm_cores.py`)**: Compiles the same vendored ColecoVision core used by firmware and executes uploaded `.col` ROMs with the firmware joystick mapping and centered 256×192 viewport.
+- **Generated ColecoVision regression ROM (`tests/test_native_cores_execution.py`)**: Exercises frame progression, framebuffer output, controller mapping, session save/restore, and coexistence with the existing Game Boy, NES, and Atari browser cores.
+
+### Changed
+- The browser accepts `.gb`, `.nes`, `.a26`, and `.col` ROMs. System carousel support labels and documentation identify remaining firmware-only systems.
+
+### Known limitation
+- Browser gameplay supports only the firmware Peanut-GB, Agnes, Stella Atari 2600, and ColecoVision cores. It does not execute the ESP32 firmware, the other 10 console cores, physical SPI/SD timing, or reproduce the physical enclosure electrically. Wokwi still uses an ILI9341 display substitute rather than the physical ST7789.
+
+### Verification
+- `python -m unittest tests.test_native_cores_execution.TestNativeCoresExecutionAndPhaseD`: `Ran 10 tests in 7.500s`; `OK`.
+- `python scripts/validate_repo.py`: `Flash: 5,698,412 / 16,777,216 bytes (34.0%)`; `SRAM: 218,904 / 327,680 bytes (66.8%)`; `VALIDATION PASSED in 26729 ms`.
+- Browser smoke test: uploaded a generated 8 KiB ColecoVision ROM, observed the core running beyond 400 frames at 256×192, and confirmed a ROM checksum was reported.
+
+## [Playable Browser Atari 2600 Core] - 2026-11-03
+### Added
+- **Atari 2600 WebAssembly gameplay (`tools/bmo_simulator/atari_wasm.cpp`, `scripts/build_wasm_cores.py`)**: Compiles the same vendored Stella engine used by firmware and executes uploaded `.a26` images with active-low Atari joystick mapping, firmware TIA palette, centered 160×192 output, and session save/restore.
+- **Generated Atari regression ROM (`tests/test_native_cores_execution.py`)**: Exercises Atari frame execution, rendered color output, input mapping, state restore, supported ROM image sizes, and the existing Game Boy/NES gameplay paths without bundling game ROMs.
+
+### Changed
+- The browser accepts `.gb`, `.nes`, and `.a26` ROMs. Atari ROM sizes not supported by the firmware core are explicitly rejected.
+- Updated simulator support labels and documentation to describe three playable cores and the remaining firmware-only systems.
+
+### Known limitation
+- Browser gameplay supports only the firmware Peanut-GB (`.gb`), Agnes (`.nes`), and Stella Atari 2600 (`.a26`) cores. It does not execute the ESP32 firmware, the other 11 console cores, physical SPI/SD timing, or reproduce the physical enclosure electrically. Wokwi still uses an ILI9341 display substitute rather than the physical ST7789.
+
+## [Playable Browser NES Core] - 2026-11-03
+### Added
+- **NES WebAssembly gameplay (`tools/bmo_simulator/nes_wasm.cpp`, `scripts/build_wasm_cores.py`)**: Compiles the same vendored Agnes C core used by firmware and executes uploaded `.nes` images with controller input, the firmware palette, a centered 256×240 viewport, frame pacing, and session save/restore.
+- **Generated NES regression ROM (`tests/test_native_cores_execution.py`)**: Exercises NES frames, framebuffer output, button mapping, state restore, unsupported mappers, and the existing Game Boy gameplay path without bundling game ROMs.
+
+### Changed
+- The browser accepts `.gb` and `.nes` ROMs up to 8 MiB and routes each to its firmware-derived WebAssembly core. Other systems remain explicitly unsupported.
+- Updated simulator descriptions and setup documentation to distinguish the two playable browser systems from the other firmware-only cores and from full hardware simulation.
+
+### Known limitation
+- Browser gameplay supports only the firmware Peanut-GB (`.gb`) and Agnes NES (`.nes`) cores. It does not execute the ESP32 firmware, the other 12 console cores, physical SPI/SD timing, or reproduce the physical enclosure electrically. Wokwi still uses an ILI9341 display substitute rather than the physical ST7789.
+
+### Verification
+- `python -m unittest tests.test_native_cores_execution.TestNativeCoresExecutionAndPhaseD`: `Ran 10 tests in 8.998s`; `OK`.
+- `python scripts/validate_repo.py`: `Flash: 5,698,412 / 16,777,216 bytes (34.0%)`; `VALIDATION PASSED in 25607 ms — all phases clean.`
+- `python -m tools.guardian ui-audit`: `UI-AUDIT CLEAN`.
+
+## [Playable Browser Game Boy Core] - 2026-11-03
+### Added
+- **Real Game Boy WebAssembly execution (`tools/bmo_simulator/gameboy_wasm.cpp`, `scripts/build_wasm_cores.py`)**: Compiles the same vendored Peanut-GB implementation used by firmware and runs uploaded `.gb` ROMs frame-by-frame with the browser's D-pad and A/B/Start/Select inputs.
+- **ROM and core regression coverage (`tests/test_native_cores_execution.py`)**: Builds a small generated homebrew ROM and verifies actual frame progression, rendered pixels, input state, and save/restore behavior without bundling a commercial ROM.
+
+### Changed
+- Replaced the synthetic framebuffer and fabricated game catalog with a ROM-backed Game Boy library. The browser now shows only user-loaded ROMs and rejects unsupported formats, malformed headers, and unsupported cartridge mappers with an explicit message.
+- Updated the browser interface and setup instructions to distinguish playable Game Boy emulation from the canvas-rendered menus and the separately simulated ESP32 firmware.
+
+### Known limitation
+- Browser gameplay currently supports only the firmware Peanut-GB core (`.gb`). It does not execute the ESP32 firmware, the other 13 console cores, physical SPI/SD timing, or reproduce the physical enclosure electrically. Wokwi still uses an ILI9341 display substitute rather than the physical ST7789.
+
+## [Firmware-Backed Wokwi Hardware Diagram] - 2026-11-03
+### Added
+- **Wokwi hardware wiring (`diagram.json`, `wokwi.toml`)**: Added the ESP32-S3 board, SPI TFT model, microSD card, and eight buttons wired from `config.h`; the display and SD share MOSI/SCK and use separate chip selects.
+- **Wokwi SD-card staging (`sdcard/README.md`)**: Added a dedicated card-content directory so Wokwi does not copy the repository's ROM and build trees into the virtual card.
+- **Hardware wiring contract test (`tests/test_wokwi_hardware_parity.py`)**: Checks simulator GPIO connections against firmware macros and rejects assignments to reserved or disabled peripheral pins.
+
+### Changed
+- The browser canvas is labeled as a UI preview, not a 1:1 firmware simulator. Removed its battery gauge and synthesized audio because battery monitoring and I2S audio are disabled on the physical board.
+- Corrected the simulator's native-C-core verification endpoint from 10 cores to the actual 11-core test.
+
+### Known limitation
+- Wokwi does not provide an ST7789 model; the diagram uses its ILI9341 SPI display model, which does not reproduce the physical panel reset/backlight connections.
+
 ## [Original Box Art Pipeline & Firmware-Matched Simulator Library Screen] - 2026-11-03
 ### Added
 - **Full-resolution box art pipeline (`scripts/fetch_covers.py`)**:

@@ -13,13 +13,13 @@ Firmware and tooling for a custom handheld game console built around an **ESP32-
 
 <br/>
 
-<img src="docs/assets/sim_full_workstation.png" width="760" alt="BMO Handheld Console 1:1 Simulator & Hardware Telemetry Lab" />
+<img src="docs/assets/sim_full_workstation.png" width="760" alt="BMO Handheld Console browser simulator interface" />
 
 </div>
 
 ---
 
-## Real Simulator & Native Emulator Screenshots
+## Browser Simulator & Native Emulator Screenshots
 
 <div align="center">
   <img src="docs/assets/sim_living_companion.png" width="460" alt="BMO Face Mode" />
@@ -28,12 +28,12 @@ Firmware and tooling for a custom handheld game console built around an **ESP32-
 
 <div align="center">
   <img src="docs/assets/sim_console_carousel.png" width="460" alt="System Carousel" />
-  <p><em>15-system console selector carousel with pixel-art hardware silhouettes and per-system ROM counts.</em></p>
+  <p><em>Console selector carousel. The browser library now lists only ROMs loaded by the user.</em></p>
 </div>
 
 <div align="center">
   <img src="docs/assets/sim_top_picks_library.png" width="460" alt="ROM Library Browser with Top Picks" />
-  <p><em>ROM browser with <code>[TOP PICK]</code> Hall-of-Fame curation badges, <code>★ FAV</code> stars, and one-button Top Picks filtering (<code>START</code>).</em></p>
+  <p><em>Earlier UI capture; current browser gameplay requires a user-supplied Game Boy ROM.</em></p>
 </div>
 
 <div align="center">
@@ -63,6 +63,51 @@ Firmware and tooling for a custom handheld game console built around an **ESP32-
 
 ---
 
+## Firmware Hardware Simulation
+
+The Wokwi project runs the compiled ESP32-S3 firmware and wires the simulator to the same GPIO assignments in `src/core/config.h`: all eight active-low buttons, the shared display/SD SPI clock and MOSI, separate chip selects, and the SD MISO line. Battery and I2S audio parts are intentionally absent.
+
+1. Compile with the repository's ESP32-S3 settings and the output path used by [`wokwi.toml`](wokwi.toml):
+
+   ```powershell
+   .\arduino-cli.exe compile --fqbn "esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi" --output-dir firmware\BmoGameboy\build\esp32.esp32.esp32s3 firmware\BmoGameboy
+   ```
+
+2. Open the repository in VS Code with the Wokwi extension and run **Wokwi: Start Simulator**. The project includes `diagram.json` and `wokwi.toml`.
+3. Optional ROM images for the virtual SD card go in `sdcard/`; do not add commercial ROMs to the repository.
+
+Wokwi currently provides an ILI9341 display model, not an ST7789 model. The diagram uses that SPI display as a visual panel substitute; Wokwi also does not expose the display reset/backlight pins. The firmware binary is the actual firmware, but panel-controller behavior is not a one-to-one electrical model. The Wokwi CLI requires a `WOKWI_CLI_TOKEN`; its local diagram linter does not.
+
+## Firmware-Backed BMO Companion
+
+The browser BMO companion compiles the firmware's [`bmo_face.cpp`](firmware/BmoGameboy/src/core/bmo_face.cpp) renderer and calls its real expression, gaze, blink, dialogue, pet, and dance APIs through WebAssembly. It is entered with **UP** from the console carousel and can also activate after 30 seconds without carousel input. In companion mode, use the D-pad to look, **A** to wink, **B** to blush (hold **B** to leave), **SELECT** to talk, **UP** to start/stop dancing, and **START** to return.
+
+The browser supplies a small Arduino timing/randomness shim and draws the face at the firmware's 320×240 resolution. It does not execute the ESP32 state machine, ST7789/SPI transfer, SD-card code, or physical button electrical behavior; the surrounding browser menus remain a port rather than firmware output. Battery and audio remain disabled to match the soldered hardware.
+
+## Playable Browser Game Boy, NES, Atari 2600, and ColecoVision
+
+The browser simulator runs the firmware's vendored Peanut-GB, Agnes, Stella, and ColecoVision sources compiled to WebAssembly. It executes uploaded Game Boy (`.gb`), NES (`.nes`), Atari 2600 (`.a26`), and ColecoVision (`.col`) ROMs with their firmware button mappings and framebuffer sizes. ColecoVision uses its centered 256×192 viewport. Atari uses the firmware's centered 160×192 framebuffer and pre-swapped TIA palette; supported image sizes are 2, 4, 8, 16, and 32 KiB. NES gameplay uses its firmware palette and centered 256×240 viewport; Agnes supports iNES mappers 0, 1, 2, and 4, not mapper 3 or NES 2.0. This does **not** run the ESP32 firmware: menus remain canvas-rendered, and the other 10 console cores remain firmware-only. Unsupported systems are reported instead of drawing a synthetic game.
+
+1. Build the WebAssembly cores (the repository's local WASI SDK is used when present; otherwise set `WASI_SDK_PATH`):
+
+   ```powershell
+   python scripts\build_wasm_cores.py
+   ```
+
+2. Start the local server:
+
+   ```powershell
+   python tools\bmo_simulator\run_simulator.py
+   ```
+
+3. Use **Load Game ROM (.gb, .nes, .a26, .col)** to select a ROM you have the right to use. Browser ROM files are limited to 8 MiB; Atari ROMs must also use one of the supported image sizes above. No game ROM is bundled by this simulator.
+
+Controls: arrow keys or the on-screen D-pad, **Z** = A, **X** = B, **Enter** = Start, **Shift** = Select. Hold **Enter + Shift** together to open the pause menu, matching the firmware's **START + SELECT** chord. The save slot is in-memory for the current page session.
+
+This is playable Game Boy, NES, Atari, and ColecoVision software emulation, not a one-to-one electrical/hardware model. The display bezel and system menus are browser-rendered; physical SPI behavior, the ESP32 scheduler, SD-card firmware, and the other 10 firmware emulators are not executed. Browser save state is one in-memory snapshot for the current page session, not the firmware's SD-backed five-slot saves or battery-RAM persistence. Use the separate Wokwi project to run the compiled firmware, noting its ILI9341 display substitute is not the physical ST7789.
+
+---
+
 ## Supported Systems (14 Cores)
 
 All 14 cores run in PSRAM and share a common lifecycle (`loadRom`, `runFrame`, `destroy`, `saveBatteryRam`, `loadBatteryRam`, `saveState`, `loadState`):
@@ -71,7 +116,7 @@ All 14 cores run in PSRAM and share a common lifecycle (`loadRom`, `runFrame`, `
 | :--- | :--- | :--- | :--- |
 | **Game Boy (DMG)** | `.gb` | Peanut-GB (MBC1, MBC2, MBC3+RTC, MBC5, MBC7) | 160×144 |
 | **Game Boy Color** | `.gbc` | Walnut-CGB (MBC1, MBC2, MBC3+RTC, MBC5, MBC7) | 160×144 |
-| **NES** | `.nes` | Agnes (Mappers 0, 1, 2, 3, 4) | 256×240 |
+| **NES** | `.nes` | Agnes (Mappers 0, 1, 2, 4) | 256×240 |
 | **Sega Master System / Game Gear** | `.sms`, `.gg`, `.sg` | Z80 + VDP + SN76489 | 256×192 / 160×144 |
 | **Sega Genesis / Mega Drive** | `.gen`, `.md`, `.smd` | M68000 + VDP | 320×224 |
 | **Super Nintendo (SNES)** | `.sfc`, `.smc` | 65C816 + PPU (LoROM/HiROM) | 256×224 |
@@ -131,9 +176,9 @@ All 14 cores run in PSRAM and share a common lifecycle (`loadRom`, `runFrame`, `
 │       ├── vendor/                # C emulator cores (peanut_gb, agnes, doom, sms, pce, etc.)
 │       └── assets/                # Built-in flash fallback ROM headers
 ├── tools/
-│   ├── host_cores_runner.c        # Native x64 test harness for all 10 custom C cores
+│   ├── host_cores_runner.c        # Native x64 test harness for all 11 custom C cores
 │   ├── telemetry_plotter.py       # Serial frame-time and jitter analyzer
-│   ├── bmo_simulator/             # Browser-based 320x240 UI simulator
+│   ├── bmo_simulator/             # Browser-based 320x240 UI preview
 │   └── guardian/                  # Local lint, test, and verification CLI
 ├── scripts/
 │   ├── validate_repo.py           # Full build + static check script
