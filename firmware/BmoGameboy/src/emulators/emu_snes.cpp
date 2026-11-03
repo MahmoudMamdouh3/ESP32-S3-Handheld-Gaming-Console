@@ -78,19 +78,33 @@ bool SNESEmu::loadBatteryRam(const char* romFilename) {
 }
 
 bool SNESEmu::saveState(const char* romFilename, int slot) {
-  if (!running || !snesWram || !romFilename) return false;
-  return SaveManager::saveState(romFilename, slot, SaveManager::CORE_SNES,
-                                &snesState, sizeof(snes_t), snesWram, 128 * 1024);
+  if (!running || !snesWram || !snesState.vram || !snesState.sram || !romFilename) return false;
+  const size_t totalRam = (128 + 64 + 32) * 1024;
+  uint8_t* combined = (uint8_t*)heap_caps_malloc(totalRam, MALLOC_CAP_SPIRAM);
+  if (!combined) return false;
+  memcpy(combined, snesWram, 128 * 1024);
+  memcpy(combined + 128 * 1024, snesState.vram, 64 * 1024);
+  memcpy(combined + (128 + 64) * 1024, snesState.sram, 32 * 1024);
+  bool ok = SaveManager::saveState(romFilename, slot, SaveManager::CORE_SNES,
+                                   &snesState, sizeof(snes_t), combined, totalRam);
+  heap_caps_free(combined);
+  return ok;
 }
 
 bool SNESEmu::loadState(const char* romFilename, int slot) {
-  if (!running || !snesWram || !romFilename) return false;
+  if (!running || !snesWram || !snesState.vram || !snesState.sram || !romFilename) return false;
+  const size_t totalRam = (128 + 64 + 32) * 1024;
+  uint8_t* combined = (uint8_t*)heap_caps_malloc(totalRam, MALLOC_CAP_SPIRAM);
+  if (!combined) return false;
   snes_t tempState;
   size_t stateSize = 0, ramSize = 0;
   bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_SNES,
                                    &tempState, sizeof(tempState), &stateSize,
-                                   snesWram, 128 * 1024, &ramSize);
-  if (ok && stateSize == sizeof(snes_t)) {
+                                   combined, totalRam, &ramSize);
+  if (ok && stateSize == sizeof(snes_t) && ramSize == totalRam) {
+    memcpy(snesWram, combined, 128 * 1024);
+    memcpy(snesState.vram, combined + 128 * 1024, 64 * 1024);
+    memcpy(snesState.sram, combined + (128 + 64) * 1024, 32 * 1024);
     uint8_t* rom = snesState.rom;
     uint32_t rom_size = snesState.rom_size;
     uint8_t* wram = snesState.wram;
@@ -104,7 +118,9 @@ bool SNESEmu::loadState(const char* romFilename, int slot) {
     snesState.vram = vram;
     snesState.sram = sram;
     snesState.framebuffer = fb;
+    heap_caps_free(combined);
     return true;
   }
+  heap_caps_free(combined);
   return false;
 }

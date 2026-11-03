@@ -77,19 +77,41 @@ bool GenesisEmu::loadBatteryRam(const char* romFilename) {
 }
 
 bool GenesisEmu::saveState(const char* romFilename, int slot) {
-  if (!running || !genesisRam || !romFilename) return false;
-  return SaveManager::saveState(romFilename, slot, SaveManager::CORE_GENESIS,
-                                &genesisState, sizeof(genesis_t), genesisRam, 64 * 1024);
+  if (!running || !genesisRam || !genesisState.vram || !genesisState.z80_ram ||
+      !genesisState.cram || !genesisState.vsram || !romFilename) return false;
+  const size_t totalRam = (64 + 64 + 8) * 1024 + 128 + 80;
+  uint8_t* combined = (uint8_t*)heap_caps_malloc(totalRam, MALLOC_CAP_SPIRAM);
+  if (!combined) return false;
+  size_t off = 0;
+  memcpy(combined + off, genesisRam, 64 * 1024); off += 64 * 1024;
+  memcpy(combined + off, genesisState.vram, 64 * 1024); off += 64 * 1024;
+  memcpy(combined + off, genesisState.z80_ram, 8 * 1024); off += 8 * 1024;
+  memcpy(combined + off, genesisState.cram, 128); off += 128;
+  memcpy(combined + off, genesisState.vsram, 80); off += 80;
+  bool ok = SaveManager::saveState(romFilename, slot, SaveManager::CORE_GENESIS,
+                                   &genesisState, sizeof(genesis_t), combined, totalRam);
+  heap_caps_free(combined);
+  return ok;
 }
 
 bool GenesisEmu::loadState(const char* romFilename, int slot) {
-  if (!running || !genesisRam || !romFilename) return false;
+  if (!running || !genesisRam || !genesisState.vram || !genesisState.z80_ram ||
+      !genesisState.cram || !genesisState.vsram || !romFilename) return false;
+  const size_t totalRam = (64 + 64 + 8) * 1024 + 128 + 80;
+  uint8_t* combined = (uint8_t*)heap_caps_malloc(totalRam, MALLOC_CAP_SPIRAM);
+  if (!combined) return false;
   genesis_t tempState;
   size_t stateSize = 0, ramSize = 0;
   bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_GENESIS,
                                    &tempState, sizeof(tempState), &stateSize,
-                                   genesisRam, 64 * 1024, &ramSize);
-  if (ok && stateSize == sizeof(genesis_t)) {
+                                   combined, totalRam, &ramSize);
+  if (ok && stateSize == sizeof(genesis_t) && ramSize == totalRam) {
+    size_t off = 0;
+    memcpy(genesisRam, combined + off, 64 * 1024); off += 64 * 1024;
+    memcpy(genesisState.vram, combined + off, 64 * 1024); off += 64 * 1024;
+    memcpy(genesisState.z80_ram, combined + off, 8 * 1024); off += 8 * 1024;
+    memcpy(genesisState.cram, combined + off, 128); off += 128;
+    memcpy(genesisState.vsram, combined + off, 80); off += 80;
     uint8_t* rom = genesisState.rom;
     uint32_t rom_size = genesisState.rom_size;
     uint8_t* ram = genesisState.ram;
@@ -107,7 +129,9 @@ bool GenesisEmu::loadState(const char* romFilename, int slot) {
     genesisState.cram = cram;
     genesisState.vsram = vsram;
     genesisState.framebuffer = fb;
+    heap_caps_free(combined);
     return true;
   }
+  heap_caps_free(combined);
   return false;
 }

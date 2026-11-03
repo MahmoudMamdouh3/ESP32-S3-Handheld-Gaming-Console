@@ -5,6 +5,7 @@
 #include "../core/buttons.h"
 #include "../core/save_manager.h"
 #include <Arduino.h>
+#include <esp_heap_caps.h>
 
 static sms_context_t* sms_ctx = nullptr;
 static bool s_is_gamegear = false;
@@ -86,19 +87,22 @@ bool SmsEmu::saveState(const char* romFilename, int slot) {
 
 bool SmsEmu::loadState(const char* romFilename, int slot) {
   if (!sms_ctx || !romFilename) return false;
-  sms_context_t tempCtx;
+  sms_context_t* tempCtx = (sms_context_t*)heap_caps_malloc(sizeof(sms_context_t), MALLOC_CAP_SPIRAM);
+  if (!tempCtx) return false;
   size_t ctxSize = 0;
   bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_SMS,
-                                   &tempCtx, sizeof(tempCtx), &ctxSize);
+                                   tempCtx, sizeof(sms_context_t), &ctxSize);
   if (ok && ctxSize == sizeof(sms_context_t)) {
     const uint8_t* rom = sms_ctx->rom;
     size_t rom_size = sms_ctx->rom_size;
     uint16_t* fb = sms_ctx->framebuffer;
-    memcpy(sms_ctx, &tempCtx, sizeof(sms_context_t));
+    memcpy(sms_ctx, tempCtx, sizeof(sms_context_t));
     sms_ctx->rom = rom;
     sms_ctx->rom_size = rom_size;
     sms_ctx->framebuffer = fb;
+    heap_caps_free(tempCtx);
     return true;
   }
+  heap_caps_free(tempCtx);
   return false;
 }

@@ -379,13 +379,17 @@ void SDCard::scanRoms() {
 #if FEATURE_SD_CARD
   SpiArbiter::lock();
 
+  const bool hasArtDirs = SD.exists("/boxart") || SD.exists("/covers");
+  for (int i = 0; i < BAKED_ROM_COUNT && i < numRoms; ++i) {
+    romList[i].hasBoxArt = hasArtDirs ? BoxArt::existsForRom(romList[i].filename) : false;
+  }
+
   // Try fast-loading cached index first (<15ms vs 3500ms directory crawl)
   if (loadIndex()) {
     SpiArbiter::unlock();
     return;
   }
 
-  const bool hasArtDirs = SD.exists("/boxart") || SD.exists("/covers");
   scanDirectory("/", 0, hasArtDirs);
 
   // Sort newly crawled ROMs alphabetically
@@ -559,6 +563,11 @@ void SDCard::loadFavorites() {
   if (!f) {
     SpiArbiter::unlock();
     return;
+  }
+  // Authoritative override when /favorites.txt exists on SD card.
+  s_favoritesCount = 0;
+  for (int i = 0; i < numRoms; ++i) {
+    romList[i].isFavorite = false;
   }
   // H-3 / L-5: Stack char[] instead of Arduino String — no heap alloc per line.
   char line[64];

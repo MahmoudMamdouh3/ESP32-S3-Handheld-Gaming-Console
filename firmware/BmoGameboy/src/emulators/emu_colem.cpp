@@ -82,19 +82,31 @@ bool ColemEmu::loadBatteryRam(const char* romFilename) {
 }
 
 bool ColemEmu::saveState(const char* romFilename, int slot) {
-  if (!running || !colemRam || !romFilename) return false;
-  return SaveManager::saveState(romFilename, slot, SaveManager::CORE_COLEM,
-                                &colemState, sizeof(colem_t), colemRam, 8 * 1024);
+  if (!running || !colemRam || !colemVram || !romFilename) return false;
+  const size_t totalRam = (8 + 16) * 1024;
+  uint8_t* combined = (uint8_t*)heap_caps_malloc(totalRam, MALLOC_CAP_SPIRAM);
+  if (!combined) return false;
+  memcpy(combined, colemRam, 8 * 1024);
+  memcpy(combined + 8 * 1024, colemVram, 16 * 1024);
+  bool ok = SaveManager::saveState(romFilename, slot, SaveManager::CORE_COLEM,
+                                   &colemState, sizeof(colem_t), combined, totalRam);
+  heap_caps_free(combined);
+  return ok;
 }
 
 bool ColemEmu::loadState(const char* romFilename, int slot) {
-  if (!running || !colemRam || !romFilename) return false;
+  if (!running || !colemRam || !colemVram || !romFilename) return false;
+  const size_t totalRam = (8 + 16) * 1024;
+  uint8_t* combined = (uint8_t*)heap_caps_malloc(totalRam, MALLOC_CAP_SPIRAM);
+  if (!combined) return false;
   colem_t tempState;
   size_t stateSize = 0, ramSize = 0;
   bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_COLEM,
                                    &tempState, sizeof(tempState), &stateSize,
-                                   colemRam, 8 * 1024, &ramSize);
-  if (ok && stateSize == sizeof(colem_t)) {
+                                   combined, totalRam, &ramSize);
+  if (ok && stateSize == sizeof(colem_t) && ramSize == totalRam) {
+    memcpy(colemRam, combined, 8 * 1024);
+    memcpy(colemVram, combined + 8 * 1024, 16 * 1024);
     uint8_t* rom = colemState.rom;
     uint32_t rom_size = colemState.rom_size;
     uint8_t* ram = colemState.ram;
@@ -106,7 +118,9 @@ bool ColemEmu::loadState(const char* romFilename, int slot) {
     colemState.ram = ram;
     colemState.vram = vram;
     colemState.framebuffer = fb;
+    heap_caps_free(combined);
     return true;
   }
+  heap_caps_free(combined);
   return false;
 }
