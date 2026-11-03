@@ -56,10 +56,19 @@ namespace {
   static uint16_t s_doomPalette[256];
   static struct color s_lastColors[256];
 
+  enum LastFrameFormat {
+    FRAME_FMT_NONE = 0,
+    FRAME_FMT_RAW16,
+    FRAME_FMT_NES8,
+    FRAME_FMT_DOOM8
+  };
+
   static uint8_t* s_asyncEmuBuf[2] = {nullptr, nullptr};
   static int s_activeEmuBuf = 0;
   static bool s_bezelEnabled = true;
   static const uint16_t* s_lastFramePtr = nullptr;
+  static const uint8_t* s_lastRaw8Ptr = nullptr;
+  static LastFrameFormat s_lastFrameFmt = FRAME_FMT_NONE;
   static int s_lastFrameW = 0;
   static int s_lastFrameH = 0;
 
@@ -130,7 +139,7 @@ namespace {
             memcpy(s_lastColors, colors, sizeof(s_lastColors));
             for (int i = 0; i < 256; ++i) {
               const struct color c = colors[i];
-              const uint16_t p = ((c.r & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.b >> 3);
+              const uint16_t p = ((c.b & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.r >> 3);
               s_doomPalette[i] = (p >> 8) | (p << 8);
             }
           }
@@ -583,6 +592,7 @@ void DisplayEmu::streamRawFrameAsync(const uint16_t* fb, int x, int y, int w, in
 
   s_lastFrameW = w;
   s_lastFrameH = h;
+  s_lastFrameFmt = FRAME_FMT_RAW16;
 
   if (s_displayTaskHandle && s_displayQueue && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
     waitForDisplay();
@@ -610,12 +620,17 @@ void DisplayEmu::streamRawFrameAsync(const uint16_t* fb, int x, int y, int w, in
 
 void DisplayEmu::streamNESFrame(const uint8_t* nes_framebuffer) {
   if (!nes_framebuffer) return;
+  s_lastFrameW = 256;
+  s_lastFrameH = 240;
+  s_lastFrameFmt = FRAME_FMT_NES8;
+
   if (s_displayTaskHandle && s_displayQueue && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
     waitForDisplay();
     xSemaphoreTake(s_displayDoneSem, 0);
 
     uint8_t* dst = s_asyncEmuBuf[s_activeEmuBuf];
     memcpy(dst, nes_framebuffer, 256 * 240);
+    s_lastRaw8Ptr = dst;
 
     DisplayTaskCmd cmd = { CMD_STREAM_NES, dst, 32, 0, 256, 240 };
     xQueueSend(s_displayQueue, &cmd, portMAX_DELAY);
@@ -623,6 +638,7 @@ void DisplayEmu::streamNESFrame(const uint8_t* nes_framebuffer) {
     return;
   }
 
+  s_lastRaw8Ptr = nes_framebuffer;
   // Fallback synchronous blit
   waitForDisplay();
   SpiArbiter::lock();
@@ -649,12 +665,17 @@ void DisplayEmu::streamNESFrame(const uint8_t* nes_framebuffer) {
 
 void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
   if (!cmap) return;
+  s_lastFrameW = 320;
+  s_lastFrameH = 200;
+  s_lastFrameFmt = FRAME_FMT_DOOM8;
+
   if (s_displayTaskHandle && s_displayQueue && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
     waitForDisplay();
     xSemaphoreTake(s_displayDoneSem, 0);
 
     uint8_t* dst = s_asyncEmuBuf[s_activeEmuBuf];
     memcpy(dst, cmap, 320 * 200);
+    s_lastRaw8Ptr = dst;
 
     DisplayTaskCmd cmd = { CMD_STREAM_DOOM, dst, 0, 20, 320, 200 };
     xQueueSend(s_displayQueue, &cmd, portMAX_DELAY);
@@ -662,6 +683,7 @@ void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
     return;
   }
 
+  s_lastRaw8Ptr = cmap;
   // Fallback synchronous blit
   waitForDisplay();
   SpiArbiter::lock();
@@ -672,7 +694,7 @@ void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
     memcpy(s_lastColors, colors, sizeof(s_lastColors));
     for (int i = 0; i < 256; ++i) {
       const struct color c = colors[i];
-      const uint16_t p = ((c.r & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.b >> 3);
+      const uint16_t p = ((c.b & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.r >> 3);
       s_doomPalette[i] = (p >> 8) | (p << 8);
     }
   }
@@ -696,8 +718,38 @@ void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
 }
 
 void DisplayEmu::streamSMSFrame(const uint16_t* sms_framebuffer, bool isGameGear) {
+  if (!sms_framebuffer) return;
   if (isGameGear) {
-    streamRawFrameAsync(sms_framebuffer, 80, 48, 160, 144);
+    // Game Gear renders its 160x144 viewport centered at (x=48, y=24) inside
+    // the 256x192 VDP framebuffer (stride 256). Extract the 160x144 window
+    // row-by-row so the display receives contiguous 160-wide scanlines.
+    s_lastFrameW = 160;
+    s_lastFrameH = 144;
+    s_lastFrameFmt = FRAME_FMT_RAW16;
+    if (s_displayTaskHandle && s_displayQueue && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
+      waitForDisplay();
+      xSemaphoreTake(s_displayDoneSem, 0);
+
+      uint16_t* dst = (uint16_t*)s_asyncEmuBuf[s_activeEmuBuf];
+      for (int r = 0; r < 144; ++r) {
+        memcpy(&dst[r * 160], &sms_framebuffer[(24 + r) * 256 + 48], 160 * sizeof(uint16_t));
+      }
+      s_lastFramePtr = dst;
+
+      DisplayTaskCmd cmd = { CMD_STREAM_RAW16, dst, 80, 48, 160, 144 };
+      xQueueSend(s_displayQueue, &cmd, portMAX_DELAY);
+      s_activeEmuBuf = 1 - s_activeEmuBuf;
+    } else {
+      waitForDisplay();
+      SpiArbiter::lock();
+      tft.startWrite();
+      tft.setAddrWindow(80, 48, 160, 144);
+      for (int r = 0; r < 144; ++r) {
+        SPI.writeBytes((const uint8_t*)&sms_framebuffer[(24 + r) * 256 + 48], 160 * 2);
+      }
+      tft.endWrite();
+      SpiArbiter::unlock();
+    }
   } else {
     streamRawFrameAsync(sms_framebuffer, 32, 24, 256, 192);
   }
@@ -1831,8 +1883,26 @@ bool DisplayEmu::toggleBezel() {
 }
 
 const uint16_t* DisplayEmu::getLastFramebuffer(int* outWidth, int* outHeight) {
+  waitForDisplay();
   if (outWidth) *outWidth = s_lastFrameW;
   if (outHeight) *outHeight = s_lastFrameH;
+
+  if (s_lastFrameFmt == FRAME_FMT_NES8 && s_lastRaw8Ptr && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
+    uint16_t* convBuf = (uint16_t*)((s_lastRaw8Ptr == s_asyncEmuBuf[0]) ? s_asyncEmuBuf[1] : s_asyncEmuBuf[0]);
+    for (int i = 0; i < 256 * 240; ++i) {
+      convBuf[i] = NES_PALETTE[s_lastRaw8Ptr[i] & 0x3F];
+    }
+    s_lastFramePtr = convBuf;
+    s_lastFrameFmt = FRAME_FMT_RAW16;
+  } else if (s_lastFrameFmt == FRAME_FMT_DOOM8 && s_lastRaw8Ptr && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
+    uint16_t* convBuf = (uint16_t*)((s_lastRaw8Ptr == s_asyncEmuBuf[0]) ? s_asyncEmuBuf[1] : s_asyncEmuBuf[0]);
+    for (int i = 0; i < 320 * 200; ++i) {
+      convBuf[i] = s_doomPalette[s_lastRaw8Ptr[i]];
+    }
+    s_lastFramePtr = convBuf;
+    s_lastFrameFmt = FRAME_FMT_RAW16;
+  }
+
   return s_lastFramePtr;
 }
 

@@ -5,6 +5,7 @@
 #include "../core/buttons.h"
 #include "../core/save_manager.h"
 #include <Arduino.h>
+#include <esp_heap_caps.h>
 
 static pce_context_t* pce_ctx = nullptr;
 
@@ -64,12 +65,12 @@ void PceEmu::destroy() {
 
 bool PceEmu::saveBatteryRam(const char* romFilename) {
   if (!pce_ctx || !romFilename) return false;
-  return SaveManager::saveBatteryRam(romFilename, pce_ctx->ram, sizeof(pce_ctx->ram));
+  return SaveManager::saveBatteryRam(romFilename, pce_ctx->bram, sizeof(pce_ctx->bram));
 }
 
 bool PceEmu::loadBatteryRam(const char* romFilename) {
   if (!pce_ctx || !romFilename) return false;
-  return SaveManager::loadBatteryRam(romFilename, pce_ctx->ram, sizeof(pce_ctx->ram));
+  return SaveManager::loadBatteryRam(romFilename, pce_ctx->bram, sizeof(pce_ctx->bram));
 }
 
 bool PceEmu::saveState(const char* romFilename, int slot) {
@@ -80,20 +81,23 @@ bool PceEmu::saveState(const char* romFilename, int slot) {
 
 bool PceEmu::loadState(const char* romFilename, int slot) {
   if (!pce_ctx || !romFilename) return false;
-  pce_context_t tempCtx;
+  pce_context_t* tempCtx = (pce_context_t*)heap_caps_malloc(sizeof(pce_context_t), MALLOC_CAP_SPIRAM);
+  if (!tempCtx) return false;
   size_t ctxSize = 0;
   bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_PCE,
-                                   &tempCtx, sizeof(tempCtx), &ctxSize);
+                                   tempCtx, sizeof(pce_context_t), &ctxSize);
   if (ok && ctxSize == sizeof(pce_context_t)) {
     const uint8_t* rom = pce_ctx->rom;
     size_t rom_size = pce_ctx->rom_size;
     uint16_t* fb = pce_ctx->framebuffer;
-    memcpy(pce_ctx, &tempCtx, sizeof(pce_context_t));
+    memcpy(pce_ctx, tempCtx, sizeof(pce_context_t));
     pce_ctx->rom = rom;
     pce_ctx->rom_size = rom_size;
     pce_ctx->framebuffer = fb;
+    heap_caps_free(tempCtx);
     return true;
   }
+  heap_caps_free(tempCtx);
   return false;
 }
 

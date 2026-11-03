@@ -268,10 +268,11 @@ void BoxArt::draw(GFXcanvas16* canvas, int x, int y, bool drawBorder, uint16_t b
     int canvasY = y + r;
     if (canvasY >= 0 && canvasY < 240) {
       int copyX = (x < 0) ? 0 : x;
-      int copyW = 64;
+      int srcOffsetX = copyX - x;
+      int copyW = 64 - srcOffsetX;
       if (copyX + copyW > 320) copyW = 320 - copyX;
       if (copyW > 0) {
-        memcpy(dst + (canvasY * 320 + copyX), s_boxArtBuf + (r * 64 + (copyX - x)), copyW * sizeof(uint16_t));
+        memcpy(dst + (canvasY * 320 + copyX), s_boxArtBuf + (r * 64 + srcOffsetX), copyW * sizeof(uint16_t));
       }
     }
   }

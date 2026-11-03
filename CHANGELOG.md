@@ -5,6 +5,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Pre-Flash Hardware Safety & Runtime Audit Fixes] - 2026-11-03
+### Fixed
+- **Stack Overflow Prevention in `loadState()` (`src/emulators/emu_walnut.cpp`, `emu_peanut.cpp`, `emu_sms.cpp`, `emu_pce.cpp`)**:
+  - Replaced stack-allocated `struct gb_s` (~50 KB / ~17 KB), `sms_context_t` (~56.5 KB), and `pce_context_t` (~76 KB) temporary buffers in `loadState()` with Octal PSRAM allocations (`heap_caps_malloc(..., MALLOC_CAP_SPIRAM)` + `heap_caps_free(...)`) to prevent overflowing the 8 KB `loopTask` stack on ESP32-S3.
+- **PC Engine Battery Backup RAM Persistence (`src/emulators/emu_pce.cpp`)**:
+  - Updated `PceEmu::saveBatteryRam` and `PceEmu::loadBatteryRam` to save and restore the 2 KB Backup RAM (`pce_ctx->bram`, MPR page `$F7`) instead of volatile main RAM (`pce_ctx->ram`).
+- **DOOM WAD VFS Path Resolution, Header Validation, BGR565 Palette & SPI Bus Locking (`src/emulators/emu_doom.cpp`, `src/core/display_emu.cpp`, `src/vendor/doom/src/m_misc.c`, `d_iwad.c`, `i_system.c`)**:
+  - Normalized `wadPath` in `DoomEmu::begin()` into a persistent static buffer with the `/sd/` ESP-IDF VFS mount point prefix required by C `fopen()`, and added pre-launch `IWAD`/`PWAD` 12-byte header validation under `SpiArbiter::lock()`.
+  - Wrapped SD filesystem operations (`mkdir`, `fopen`, `fread`, `fwrite`, `fclose`) in `m_misc.c` with `DOOM_SPI_LOCK()` / `DOOM_SPI_UNLOCK()`, guarded `ZenityErrorBox` in `i_system.c` on ESP32/Arduino, and guarded `BuildIWADDirList()` in `d_iwad.c`.
+  - Fixed `s_doomPalette` packing in `display_emu.cpp` to byte-swapped BGR565 so red and blue channels render accurately on the ST7789 display.
+- **Game Gear 160×144 Viewport Stride Extraction & NES/DOOM Screenshot Capture (`src/core/display_emu.cpp`)**:
+  - Extracted the centered 160×144 Game Gear LCD viewport `(x=48, y=24)` row-by-row from the 256-stride VDP framebuffer in `DisplayEmu::streamSMSFrame()`.
+  - Added on-demand 8-bit paletted-to-BGR565 conversion for NES (`256×240`) and DOOM (`320×200`) in `DisplayEmu::getLastFramebuffer()` so Pause Menu BMP screenshots work across all 14 cores.
+- **Multi-Buffer Save States & Atomic Restore (`src/emulators/emu_colem.cpp`, `emu_wswan.cpp`, `emu_snes.cpp`, `emu_genesis.cpp`)**:
+  - Included VDP VRAM and auxiliary RAM in save state payloads for ColecoVision, WonderSwan, SNES, and Genesis using PSRAM staging buffers so failed loads do not corrupt live RAM before CRC32 verification.
+- **Favorites Persistence & Negative-X Box Art Clipping (`src/core/sd_card.cpp`, `src/core/box_art.cpp`)**:
+  - Reset `isFavorite` flags before applying `/favorites.txt` in `SDCard::loadFavorites()` so unfavoriting persists across reboots, updated `hasBoxArt` for baked ROMs on SD mount, and fixed horizontal clipping in `BoxArt::draw()` when `x < 0`.
+
+---
+
 ## [Phase F: Design System, Anti-AI-Slop Craft Standards & UI Auditor] - 2026-10-21
 ### Added
 - **Design System Root Specification (`DESIGN.md`)**:

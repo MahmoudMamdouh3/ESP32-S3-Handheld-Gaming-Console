@@ -12,6 +12,8 @@ extern "C" {
 
 #include <Arduino.h>
 #include <esp_heap_caps.h>
+#include <stdio.h>
+#include <string.h>
 
 // PERF-H2: Ring-buffer for Doom key events — O(1) dequeue vs O(256) table scan.
 // Only 8 physical buttons exist; a 16-slot ring (power-of-2 for fast masking) is plenty.
@@ -54,9 +56,7 @@ void DG_Init() {
 }
 
 void DG_DrawFrame() {
-  // DG_ScreenBuffer is an 8-bit palette indexed array of size 320x200
-  // Since we defined CMAP256, we must map it through the palette and draw.
-  // We'll write a new method in DisplayEmu to stream an 8-bit paletted buffer.
+  // DG_ScreenBuffer is an 8-bit palette indexed array of size 320x200.
   DisplayEmu::streamDoomFrame((const uint8_t*)DG_ScreenBuffer);
 }
 
@@ -112,21 +112,58 @@ static void updateDoomKey(int doomKey, bool pressed) {
 
 namespace DoomEmu {
 
+static char s_wadPath[128];
+static char* s_argv[4];
+
 bool begin(const char* wadPath) {
+  if (!wadPath || wadPath[0] == '\0') return false;
+
   // Initialize key ring-buffer and per-key edge-detect state.
   memset(s_keyState, 0, sizeof(s_keyState));
   s_keyRingHead = s_keyRingTail = 0;
 
-  // We must pass the WAD path to doomgeneric using argv
-  // e.g. ["doom", "-iwad", "/sd/DOOM1.WAD"]
-  static char* argv[] = {
-    (char*)"doom",
-    (char*)"-iwad",
-    (char*)wadPath,
-    NULL
-  };
+  // Normalize WAD path for ESP-IDF VFS (Arduino SD mounts FATFS at "/sd").
+  if (strncmp(wadPath, "/sd/", 4) == 0) {
+    snprintf(s_wadPath, sizeof(s_wadPath), "%s", wadPath);
+  } else if (wadPath[0] == '/') {
+    snprintf(s_wadPath, sizeof(s_wadPath), "/sd%s", wadPath);
+  } else {
+    snprintf(s_wadPath, sizeof(s_wadPath), "/sd/%s", wadPath);
+  }
 
-  doomgeneric_Create(3, argv);
+  // Validate WAD existence and 12-byte IWAD/PWAD header before invoking doomgeneric_Create
+  // so missing or corrupt files return false instead of triggering I_Error -> exit(-1).
+  uint8_t hdr[12] = {0};
+  size_t bytesRead = 0;
+  SpiArbiter::lock();
+  FILE* f = fopen(s_wadPath, "rb");
+  if (f) {
+    bytesRead = fread(hdr, 1, sizeof(hdr), f);
+    fclose(f);
+  }
+  SpiArbiter::unlock();
+
+  if (bytesRead < 12) {
+    LOG_ERROR("[DOOM] Failed to open or read WAD header: %s", s_wadPath);
+    return false;
+  }
+  if (memcmp(hdr, "IWAD", 4) != 0 && memcmp(hdr, "PWAD", 4) != 0) {
+    LOG_ERROR("[DOOM] Invalid WAD signature in %s", s_wadPath);
+    return false;
+  }
+  int32_t numLumps = 0;
+  memcpy(&numLumps, hdr + 4, sizeof(int32_t));
+  if (numLumps <= 0) {
+    LOG_ERROR("[DOOM] Empty lump table in %s", s_wadPath);
+    return false;
+  }
+
+  s_argv[0] = (char*)"doom";
+  s_argv[1] = (char*)"-iwad";
+  s_argv[2] = s_wadPath;
+  s_argv[3] = NULL;
+
+  doomgeneric_Create(3, s_argv);
   return true;
 }
 

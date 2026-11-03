@@ -485,7 +485,9 @@ void I_Error (char *error, ...)
 
 #else
     {
+#if !defined(ESP32) && !defined(ARDUINO)
         ZenityErrorBox(msgbuf);
+#endif
     }
 #endif
 

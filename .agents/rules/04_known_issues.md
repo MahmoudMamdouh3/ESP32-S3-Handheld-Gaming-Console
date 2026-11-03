@@ -7,7 +7,30 @@
 
 ---
 
-## Latest Agent Handoff — 2026-10-21 (Phase F: Design System, Anti-AI-Slop Craft Standards & UI Auditor)
+## Latest Agent Handoff — 2026-11-03 (Pre-Flash Hardware Safety & Runtime Audit Fixes)
+
+This is the current repository handoff. Read this section before continuing from an earlier changelog entry.
+
+- **Pre-Flash Firmware Audit & Runtime Fixes (`firmware/BmoGameboy/`):**
+  1. **Eliminated Stack Overflow Panics in `loadState()` (`emu_walnut.cpp`, `emu_peanut.cpp`, `emu_sms.cpp`, `emu_pce.cpp`):**
+     - Replaced local stack allocations of `struct gb_s` (~50 KB in Walnut, ~17 KB in Peanut), `sms_context_t` (~56.5 KB in SMS/GG), and `pce_context_t` (~76 KB in PCE) inside `loadState()` with Octal PSRAM allocations via `heap_caps_malloc(..., MALLOC_CAP_SPIRAM)` + `heap_caps_free(...)`. Previously, invoking Quick Load (`SELECT + B` or Pause Menu -> Load State) on these cores overflowed the 8 KB `loopTask` stack on ESP32-S3.
+  2. **Fixed PC Engine Battery Backup RAM Persistence (`emu_pce.cpp`):**
+     - Updated `PceEmu::saveBatteryRam` and `PceEmu::loadBatteryRam` to persist the 2 KB non-volatile Backup RAM (`pce_ctx->bram`, MPR page `$F7`) rather than the 8 KB volatile work RAM (`pce_ctx->ram`, MPR page `$F8`).
+  3. **Fixed DOOM WAD VFS Path Resolution, Header Pre-Validation, BGR565 Palette & SPI Bus Locking (`emu_doom.cpp`, `display_emu.cpp`, `m_misc.c`, `d_iwad.c`, `i_system.c`):**
+     - Normalized `wadPath` in `DoomEmu::begin()` into a persistent static buffer with the ESP-IDF `/sd/` VFS mount prefix required by C `fopen()`, replacing the static `argv` initializer that pointed to a caller stack buffer and lacked the `/sd` prefix.
+     - Added pre-launch `fopen` + 12-byte `IWAD`/`PWAD` header validation under `SpiArbiter::lock()` so missing or corrupt `.wad` files return `false` to the menu UI instead of triggering `I_Error` -> `exit(-1)` reboot panics.
+     - Wrapped `M_MakeDirectory`, `M_FileExists`, `M_WriteFile`, and `M_ReadFile` in `m_misc.c` with `DOOM_SPI_LOCK()` / `DOOM_SPI_UNLOCK()` to prevent SPI2 bus collisions with Core 0 display transfers, guarded `ZenityErrorBox` in `i_system.c` on ESP32/Arduino, and guarded `BuildIWADDirList()` in `d_iwad.c`.
+     - Fixed `s_doomPalette` packing in `display_emu.cpp` from RGB565 to byte-swapped BGR565 (`((c.b & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.r >> 3)`) so red and blue channels are not swapped on the ST7789 panel.
+  4. **Fixed Game Gear 160×144 Viewport Stride Extraction (`display_emu.cpp`):**
+     - Updated `DisplayEmu::streamSMSFrame()` when `isGameGear` is `true` to extract the 144 scanlines of 160 pixels centered at `(x=48, y=24)` from the 256-pixel-stride VDP framebuffer before streaming to the display.
+  5. **Fixed In-Game BMP Screenshot Capture for 8-Bit Paletted Cores (`display_emu.cpp`):**
+     - Tracked the active frame format (`FRAME_FMT_RAW16`, `FRAME_FMT_NES8`, `FRAME_FMT_DOOM8`) in `DisplayEmu` and converted 8-bit NES (`256×240`) and DOOM (`320×200`) index buffers on-demand in `DisplayEmu::getLastFramebuffer()` so Pause Menu screenshots (`SELECT`) produce valid BGR565 images across all 14 cores.
+  6. **Complete Multi-Buffer Save State Serialization & Atomic Restore (`emu_colem.cpp`, `emu_wswan.cpp`, `emu_snes.cpp`, `emu_genesis.cpp`):**
+     - Included VDP VRAM and auxiliary RAM in save states (`ColemEmu`: 8 KB RAM + 16 KB VRAM; `WSwanEmu`: 64 KB IRAM + 64 KB SRAM; `SNESEmu`: 128 KB WRAM + 64 KB VRAM + 32 KB SRAM; `GenesisEmu`: 64 KB 68K RAM + 64 KB VRAM + 8 KB Z80 RAM + 128 B CRAM + 80 B VSRAM) via temporary PSRAM staging buffers so failed loads never clobber live memory before CRC verification.
+  7. **Fixed Favorites Unfavoriting Persistence & Negative-X Box Art Clipping (`sd_card.cpp`, `box_art.cpp`):**
+     - Reset `isFavorite = false` and `s_favoritesCount = 0` before applying `/favorites.txt` in `SDCard::loadFavorites()` so unfavoriting default baked ROMs or indexed ROMs persists across reboots, updated baked ROM `hasBoxArt` flags on SD mount, and fixed horizontal source offset clipping when `x < 0` in `BoxArt::draw()`.
+
+## Previous Handoff — 2026-10-21 (Phase F: Design System, Anti-AI-Slop Craft Standards & UI Auditor)
 
 This is the current repository handoff. Read this section before continuing from an earlier changelog entry.
 

@@ -47,6 +47,15 @@
 #include "v_video.h"
 #include "w_wad.h"
 #include "z_zone.h"
+#if defined(ESP32) || defined(ARDUINO)
+extern void Doom_SpiLock(void);
+extern void Doom_SpiUnlock(void);
+#define DOOM_SPI_LOCK()   Doom_SpiLock()
+#define DOOM_SPI_UNLOCK() Doom_SpiUnlock()
+#else
+#define DOOM_SPI_LOCK()   ((void)0)
+#define DOOM_SPI_UNLOCK() ((void)0)
+#endif
 
 //
 // Create a directory
@@ -57,7 +66,7 @@ void M_MakeDirectory(char *path)
 #ifdef _WIN32
     mkdir(path);
 #else
-    mkdir(path, 0755);
+    DOOM_SPI_LOCK(); mkdir(path, 0755); DOOM_SPI_UNLOCK();
 #endif
 }
 
@@ -67,7 +76,7 @@ boolean M_FileExists(char *filename)
 {
     FILE *fstream;
 
-    fstream = fopen(filename, "r");
+    DOOM_SPI_LOCK(); fstream = fopen(filename, "r"); if (fstream != NULL) { fclose(fstream); DOOM_SPI_UNLOCK(); return true; } DOOM_SPI_UNLOCK(); return errno == EISDIR;
 
     if (fstream != NULL)
     {
@@ -114,7 +123,7 @@ boolean M_WriteFile(char *name, void *source, int length)
     FILE *handle;
     int	count;
 	
-    handle = fopen(name, "wb");
+    DOOM_SPI_LOCK(); handle = fopen(name, "wb"); if (handle == NULL) { DOOM_SPI_UNLOCK(); return false; } count = fwrite(source, 1, length, handle); fclose(handle); DOOM_SPI_UNLOCK(); return count >= length;
 
     if (handle == NULL)
 	return false;
@@ -139,7 +148,7 @@ int M_ReadFile(char *name, byte **buffer)
     int	count, length;
     byte *buf;
 	
-    handle = fopen(name, "rb");
+    DOOM_SPI_LOCK(); handle = fopen(name, "rb"); if (handle == NULL) { DOOM_SPI_UNLOCK(); I_Error ("Couldn't read file %s", name); } length = M_FileLength(handle); DOOM_SPI_UNLOCK(); buf = Z_Malloc (length, PU_STATIC, NULL); DOOM_SPI_LOCK(); count = fread(buf, 1, length, handle); fclose (handle); DOOM_SPI_UNLOCK(); if (count < length) I_Error ("Couldn't read file %s", name); *buffer = buf; return length;
     if (handle == NULL)
 	I_Error ("Couldn't read file %s", name);
 

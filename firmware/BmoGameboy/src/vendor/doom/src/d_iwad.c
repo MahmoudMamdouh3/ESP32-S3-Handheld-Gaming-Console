@@ -613,7 +613,10 @@ static void BuildIWADDirList(void)
 
 #endif
 #else
+    if (iwad_dirs_built) return;
     AddIWADDir (FILES_DIR);
+    AddIWADDir ("/sd");
+    AddIWADDir ("/sd/roms");
 
     // Don't run this function again.
 

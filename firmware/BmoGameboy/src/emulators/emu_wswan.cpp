@@ -77,19 +77,31 @@ bool WSwanEmu::loadBatteryRam(const char* romFilename) {
 }
 
 bool WSwanEmu::saveState(const char* romFilename, int slot) {
-  if (!running || !wswanRam || !romFilename) return false;
-  return SaveManager::saveState(romFilename, slot, SaveManager::CORE_WSWAN,
-                                &wswanState, sizeof(wswan_t), wswanRam, 64 * 1024);
+  if (!running || !wswanRam || !wswanState.sram || !romFilename) return false;
+  const size_t totalRam = (64 + 64) * 1024;
+  uint8_t* combined = (uint8_t*)heap_caps_malloc(totalRam, MALLOC_CAP_SPIRAM);
+  if (!combined) return false;
+  memcpy(combined, wswanRam, 64 * 1024);
+  memcpy(combined + 64 * 1024, wswanState.sram, 64 * 1024);
+  bool ok = SaveManager::saveState(romFilename, slot, SaveManager::CORE_WSWAN,
+                                   &wswanState, sizeof(wswan_t), combined, totalRam);
+  heap_caps_free(combined);
+  return ok;
 }
 
 bool WSwanEmu::loadState(const char* romFilename, int slot) {
-  if (!running || !wswanRam || !romFilename) return false;
+  if (!running || !wswanRam || !wswanState.sram || !romFilename) return false;
+  const size_t totalRam = (64 + 64) * 1024;
+  uint8_t* combined = (uint8_t*)heap_caps_malloc(totalRam, MALLOC_CAP_SPIRAM);
+  if (!combined) return false;
   wswan_t tempState;
   size_t stateSize = 0, ramSize = 0;
   bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_WSWAN,
                                    &tempState, sizeof(tempState), &stateSize,
-                                   wswanRam, 64 * 1024, &ramSize);
-  if (ok && stateSize == sizeof(wswan_t)) {
+                                   combined, totalRam, &ramSize);
+  if (ok && stateSize == sizeof(wswan_t) && ramSize == totalRam) {
+    memcpy(wswanRam, combined, 64 * 1024);
+    memcpy(wswanState.sram, combined + 64 * 1024, 64 * 1024);
     uint8_t* rom = wswanState.rom;
     uint32_t rom_size = wswanState.rom_size;
     uint8_t* iram = wswanState.internal_ram;
@@ -101,7 +113,9 @@ bool WSwanEmu::loadState(const char* romFilename, int slot) {
     wswanState.internal_ram = iram;
     wswanState.sram = sram;
     wswanState.framebuffer = fb;
+    heap_caps_free(combined);
     return true;
   }
+  heap_caps_free(combined);
   return false;
 }
