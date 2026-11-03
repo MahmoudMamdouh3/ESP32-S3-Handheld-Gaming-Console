@@ -11,7 +11,8 @@ const STATE = {
   CONSOLE_SELECT: 1,
   GAME_SELECT: 2,
   CONSOLE_MUSEUM: 3,
-  EMULATION_VIEW: 4
+  EMULATION_VIEW: 4,
+  IDLE_MASCOT: 5
 };
 
 // Console Metadata
@@ -46,6 +47,7 @@ class BmoSimulator {
     this.selectedConsoleIndex = 0;
     this.selectedGameIndex = 0;
     this.gameListScrollOffset = 0;
+    this.topPicksFilter = false;
     this.bootTimer = 0;
     this.lastFrameTime = performance.now();
     this.fps = 60;
@@ -95,9 +97,55 @@ class BmoSimulator {
     // Setup input listeners
     this.setupInputHandlers();
     this.setupUIControls();
+    this.applyUrlStateParams();
 
     // Start 60 FPS Render Loop
     requestAnimationFrame(this.renderLoop.bind(this));
+  }
+
+  applyUrlStateParams() {
+    if (typeof window === "undefined" || !window.location) return;
+    const params = new URLSearchParams(window.location.search);
+    const consoleParam = params.get("console");
+    if (consoleParam !== null) {
+      const idx = parseInt(consoleParam, 10);
+      if (!isNaN(idx) && idx >= 0 && idx < CONSOLES_LIST.length) {
+        this.selectedConsoleIndex = idx;
+        this.updateSidebarMuseumView();
+      }
+    }
+    const stateParam = (params.get("state") || "").toLowerCase();
+    if (stateParam === "splash") {
+      this.currentState = STATE.BOOT_SPLASH;
+    } else if (stateParam === "mascot") {
+      this.currentState = STATE.IDLE_MASCOT;
+      this.bmo.expression = "HAPPY";
+    } else if (stateParam === "carousel") {
+      this.currentState = STATE.CONSOLE_SELECT;
+      if (consoleParam === null) this.selectedConsoleIndex = 2; // Game Boy Color
+      this.updateSidebarMuseumView();
+    } else if (stateParam === "library") {
+      this.currentState = STATE.GAME_SELECT;
+      if (consoleParam === null) this.selectedConsoleIndex = 2;
+      this.topPicksFilter = false;
+    } else if (stateParam === "toppicks") {
+      this.currentState = STATE.GAME_SELECT;
+      if (consoleParam === null) this.selectedConsoleIndex = 2;
+      this.topPicksFilter = true;
+    } else if (stateParam === "museum") {
+      this.currentState = STATE.CONSOLE_MUSEUM;
+      if (consoleParam === null) this.selectedConsoleIndex = 2;
+      this.updateSidebarMuseumView();
+    } else if (stateParam === "gameplay") {
+      if (consoleParam === null) this.selectedConsoleIndex = 2;
+      const cid = CONSOLES_LIST[this.selectedConsoleIndex].id;
+      const games = this.mockGames[cid] || [];
+      if (games.length > 0) {
+        this.launchSelectedGame(cid, games[0]);
+      } else {
+        this.currentState = STATE.EMULATION_VIEW;
+      }
+    }
   }
 
   initAudio() {
@@ -133,31 +181,48 @@ class BmoSimulator {
       const history = CONSOLE_HISTORY_DATABASE[c.id];
       const games = [];
       if (c.id === "ROM_GB") {
-        games.push({ title: "Virtual BMO (Official Game)", console: "GB", isFav: true });
-        games.push({ title: "Tetris (World) (Rev A)", console: "GB", isFav: true });
-        games.push({ title: "Pokemon Red Version", console: "GB", isFav: false });
-        games.push({ title: "The Legend of Zelda - Link's Awakening", console: "GB", isFav: false });
+        games.push({ title: "Virtual BMO (Official Game)", console: "GB", isFav: true, isPopular: true });
+        games.push({ title: "Tetris (World) (Rev A)", console: "GB", isFav: true, isPopular: true });
+        games.push({ title: "Pokemon Red Version", console: "GB", isFav: false, isPopular: true });
+        games.push({ title: "The Legend of Zelda - Link's Awakening", console: "GB", isFav: false, isPopular: true });
+        games.push({ title: "Teenage Mutant Ninja Turtles III - Radical Rescue", console: "GB", isFav: false, isPopular: false });
+        games.push({ title: "Alleyway", console: "GB", isFav: false, isPopular: false });
+        games.push({ title: "Tamagotchi", console: "GB", isFav: false, isPopular: false });
       } else if (c.id === "ROM_GBC") {
-        games.push({ title: "Super Mario Bros Deluxe", console: "GBC", isFav: true });
-        games.push({ title: "The Legend of Zelda - Oracle of Ages", console: "GBC", isFav: true });
-        games.push({ title: "Pokemon Crystal Version", console: "GBC", isFav: false });
-        games.push({ title: "Aladdin", console: "GBC", isFav: false });
+        games.push({ title: "Super Mario Bros. Deluxe", console: "GBC", isFav: true, isPopular: true });
+        games.push({ title: "The Legend of Zelda - Oracle of Ages", console: "GBC", isFav: true, isPopular: true });
+        games.push({ title: "Pokemon - Crystal Version", console: "GBC", isFav: false, isPopular: true });
+        games.push({ title: "Kirby - Tilt 'n' Tumble", console: "GBC", isFav: false, isPopular: true });
+        games.push({ title: "Donkey Kong Country", console: "GBC", isFav: false, isPopular: true });
+        games.push({ title: "Aladdin", console: "GBC", isFav: false, isPopular: false });
+        games.push({ title: "LEGO Racers", console: "GBC", isFav: false, isPopular: false });
+        games.push({ title: "Street Fighter Alpha - Warriors' Dreams", console: "GBC", isFav: false, isPopular: false });
       } else if (c.id === "ROM_NES") {
-        games.push({ title: "Super Mario Bros 3", console: "NES", isFav: true });
-        games.push({ title: "The Legend of Zelda", console: "NES", isFav: false });
-        games.push({ title: "Mega Man 2", console: "NES", isFav: false });
+        games.push({ title: "Super Mario Bros 3", console: "NES", isFav: true, isPopular: true });
+        games.push({ title: "The Legend of Zelda", console: "NES", isFav: false, isPopular: true });
+        games.push({ title: "Mega Man 2", console: "NES", isFav: false, isPopular: true });
+        games.push({ title: "Castlevania III - Dracula's Curse", console: "NES", isFav: false, isPopular: true });
       } else {
         if (history && history.hallmarkGames) {
-          history.hallmarkGames.forEach(hg => games.push({ title: `${hg.title}`, console: c.badge, isFav: false }));
+          history.hallmarkGames.forEach(hg => games.push({ title: `${hg.title}`, console: c.badge, isFav: false, isPopular: true }));
         }
         for (let i = 1; i <= 15; i++) {
-          games.push({ title: `${c.name} Classic Title ${i}`, console: c.badge, isFav: false });
+          games.push({ title: `${c.name} Classic Title ${i}`, console: c.badge, isFav: false, isPopular: false });
         }
       }
       db[c.id] = games;
     });
     this.rebuildFavoritesInDatabase(db);
     return db;
+  }
+
+  getVisibleGames(consoleId) {
+    const all = this.mockGames[consoleId] || [];
+    if (consoleId === "ROM_FAVORITES" || !this.topPicksFilter) {
+      return all;
+    }
+    const popular = all.filter(g => g && g.isPopular);
+    return popular.length > 0 ? popular : all;
   }
 
   rebuildFavoritesInDatabase(db) {
@@ -313,7 +378,7 @@ class BmoSimulator {
       }
     } else if (this.currentState === STATE.GAME_SELECT) {
       const activeConsole = CONSOLES_LIST[this.selectedConsoleIndex];
-      const games = this.mockGames[activeConsole.id] || [];
+      const games = this.getVisibleGames(activeConsole.id);
       
       if (key === "UP") {
         if (this.selectedGameIndex > 0) this.selectedGameIndex--;
@@ -323,6 +388,10 @@ class BmoSimulator {
         this.selectedGameIndex = Math.min(games.length - 1, this.selectedGameIndex + 8);
       } else if (key === "LEFT") {
         this.selectedGameIndex = Math.max(0, this.selectedGameIndex - 8);
+      } else if (key === "START" && activeConsole.id !== "ROM_FAVORITES") {
+        this.topPicksFilter = !this.topPicksFilter;
+        this.selectedGameIndex = 0;
+        this.playBeep(this.topPicksFilter ? 740 : 480, "triangle", 0.06);
       } else if (key === "SELECT") {
         if (games.length > 0) {
           const game = games[this.selectedGameIndex];
@@ -344,12 +413,20 @@ class BmoSimulator {
           }
         }
       } else if (key === "B") {
+        this.topPicksFilter = false;
         this.currentState = STATE.CONSOLE_SELECT;
         this.bmo.expression = "IDLE";
-      } else if (key === "A" || key === "START") {
+      } else if (key === "A") {
         if (games.length > 0) {
           this.launchSelectedGame(activeConsole.id, games[this.selectedGameIndex]);
         }
+      }
+    } else if (this.currentState === STATE.IDLE_MASCOT) {
+      if (key === "B" || key === "START") {
+        this.currentState = STATE.CONSOLE_SELECT;
+        this.bmo.expression = "IDLE";
+      } else if (key === "A" || key === "SELECT") {
+        this.bmo.expression = (this.bmo.expression === "HAPPY") ? "IDLE" : "HAPPY";
       }
     } else if (this.currentState === STATE.EMULATION_VIEW) {
       if (this.isPausedInGame) {
@@ -613,6 +690,9 @@ class BmoSimulator {
         break;
       case STATE.EMULATION_VIEW:
         this.renderEmulationView();
+        break;
+      case STATE.IDLE_MASCOT:
+        this.renderIdleMascotScreen();
         break;
     }
 
@@ -1184,9 +1264,88 @@ class BmoSimulator {
     this.ctx.fillText("PRESS B TO RETURN", 160, 220);
   }
 
+  renderIdleMascotScreen() {
+    // Full-screen BMO Screen Mint backdrop (matches firmware BmoFace::renderToBuffer)
+    this.ctx.fillStyle = "#55efc4";
+    this.ctx.fillRect(0, 0, 320, 240);
+
+    // Top HUD Pill ("LIVING BMO COMPANION")
+    this.ctx.fillStyle = "#1a4b42";
+    this.ctx.beginPath();
+    this.ctx.roundRect(60, 10, 200, 24, 6);
+    this.ctx.fill();
+    this.ctx.strokeStyle = "#ffe033";
+    this.ctx.lineWidth = 1.5;
+    this.ctx.stroke();
+
+    this.ctx.fillStyle = "#ffe033";
+    this.ctx.font = "bold 9px 'Press Start 2P', monospace";
+    this.ctx.textAlign = "center";
+    this.ctx.fillText("LIVING BMO COMPANION", 160, 26);
+
+    // Large 2D SDF BMO Face on 320x240 screen
+    this.ctx.fillStyle = "#0f2620";
+    this.ctx.beginPath();
+    this.ctx.ellipse(98, 106, 9, 14, 0, 0, Math.PI * 2);
+    this.ctx.ellipse(222, 106, 9, 14, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Eye highlights
+    this.ctx.fillStyle = "#ffffff";
+    this.ctx.beginPath();
+    this.ctx.arc(95, 101, 3, 0, Math.PI * 2);
+    this.ctx.arc(219, 101, 3, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Rosy Cheeks
+    this.ctx.fillStyle = "rgba(255, 118, 117, 0.72)";
+    this.ctx.beginPath();
+    this.ctx.ellipse(68, 122, 13, 8, 0, 0, Math.PI * 2);
+    this.ctx.ellipse(252, 122, 13, 8, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Happy Open Mouth
+    this.ctx.fillStyle = "#0f2620";
+    this.ctx.beginPath();
+    this.ctx.arc(160, 118, 28, 0.08 * Math.PI, 0.92 * Math.PI, false);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    this.ctx.fillStyle = "#ff5e57";
+    this.ctx.beginPath();
+    this.ctx.arc(160, 128, 15, 0.12 * Math.PI, 0.88 * Math.PI, false);
+    this.ctx.fill();
+
+    // Speech Bubble ("Who wants to play video games?!")
+    this.ctx.fillStyle = "#ffffff";
+    this.ctx.beginPath();
+    this.ctx.roundRect(44, 42, 232, 34, 8);
+    this.ctx.fill();
+    this.ctx.strokeStyle = "#0f2620";
+    this.ctx.lineWidth = 2;
+    this.ctx.stroke();
+
+    this.ctx.fillStyle = "#0f2620";
+    this.ctx.font = "bold 11px 'Outfit', sans-serif";
+    this.ctx.textAlign = "center";
+    this.ctx.fillText("Who wants to play video games?!", 160, 63);
+
+    // Bottom Interactive Footer Bar
+    this.ctx.fillStyle = "#0f2620";
+    this.ctx.fillRect(6, 212, 308, 22);
+    this.ctx.strokeStyle = "#5fb49c";
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeRect(6, 212, 308, 22);
+
+    this.ctx.fillStyle = "#cef5e4";
+    this.ctx.font = "9px 'JetBrains Mono', monospace";
+    this.ctx.textAlign = "center";
+    this.ctx.fillText("D-PAD:LOOK/PET  A:WINK  B:BLUSH  SEL:TALK  START:MENU", 160, 226);
+  }
+
   renderGameSelectMenu() {
     const c = CONSOLES_LIST[this.selectedConsoleIndex];
-    const games = this.mockGames[c.id] || [];
+    const games = this.getVisibleGames(c.id);
 
     // Background - Authentic BMO Mint Screen
     this.ctx.fillStyle = "#cef5e4";
@@ -1196,15 +1355,18 @@ class BmoSimulator {
     this.ctx.fillStyle = "#1a4b42";
     this.ctx.fillRect(0, 0, 320, 34);
 
-    this.ctx.fillStyle = (c.id === "ROM_FAVORITES") ? "#ffe033" : "#ffe033";
+    this.ctx.fillStyle = "#ffe033";
     this.ctx.font = "bold 13px 'Outfit', sans-serif";
     this.ctx.textAlign = "left";
-    this.ctx.fillText(c.id === "ROM_FAVORITES" ? "★ FAVORITE GAMES" : `📂 ${c.name} Games`, 12, 22);
+    const headerTitle = c.id === "ROM_FAVORITES"
+      ? "★ FAVORITE GAMES"
+      : (this.topPicksFilter ? `★ ${c.name} Top Picks` : `📂 ${c.name} Library`);
+    this.ctx.fillText(headerTitle, 12, 22);
 
     this.ctx.fillStyle = "#cef5e4";
     this.ctx.font = "bold 10px 'JetBrains Mono', monospace";
     this.ctx.textAlign = "right";
-    this.ctx.fillText(`${games.length > 0 ? this.selectedGameIndex + 1 : 0}/${games.length}`, 310, 22);
+    this.ctx.fillText(`${games.length > 0 ? this.selectedGameIndex + 1 : 0}/${games.length}${this.topPicksFilter ? ' [TOP]' : ''}`, 310, 22);
 
     if (games.length === 0) {
       this.ctx.fillStyle = "#0f2620";
@@ -1226,6 +1388,7 @@ class BmoSimulator {
         const game = games[i];
         const title = (typeof game === "string") ? game : (game.title || `Game ${i + 1}`);
         const isFav = (typeof game === "object") ? game.isFav : false;
+        const isPop = (typeof game === "object") ? Boolean(game.isPopular) : false;
         const badge = (typeof game === "object" && game.console) ? game.console : c.badge;
 
         if (isSelected) {
@@ -1248,16 +1411,21 @@ class BmoSimulator {
           this.ctx.fillStyle = "#0f2620";
         }
 
+        const displayTitle = title.length > 28 ? (title.slice(0, 26) + "..") : title;
         this.ctx.font = isSelected ? "bold 12px 'Outfit', sans-serif" : "12px 'Outfit', sans-serif";
         this.ctx.textAlign = "left";
-        this.ctx.fillText(`${isSelected ? '▶ ' : '  '}${title}`, 16, y + 20);
+        this.ctx.fillText(`${isSelected ? '▶ ' : '  '}${displayTitle}`, 16, y + 20);
 
-        // Right-aligned Star & Badge
+        // Right-aligned Star / Top Pick & Badge
         this.ctx.textAlign = "right";
         if (isFav) {
-          this.ctx.fillStyle = "#ffe033";
-          this.ctx.font = "bold 12px 'Outfit', sans-serif";
-          this.ctx.fillText(`★ [${badge}]`, 300, y + 20);
+          this.ctx.fillStyle = isSelected ? "#ffe033" : "#b8860b";
+          this.ctx.font = "bold 11px 'JetBrains Mono', monospace";
+          this.ctx.fillText(`★ FAV [${badge}]`, 300, y + 20);
+        } else if (isPop) {
+          this.ctx.fillStyle = isSelected ? "#55efc4" : "#1a4b42";
+          this.ctx.font = "bold 10px 'JetBrains Mono', monospace";
+          this.ctx.fillText(`TOP PICK [${badge}]`, 300, y + 20);
         } else {
           this.ctx.fillStyle = isSelected ? "#cef5e4" : "#438f7a";
           this.ctx.font = "10px 'JetBrains Mono', monospace";
@@ -1272,7 +1440,7 @@ class BmoSimulator {
     this.ctx.fillStyle = "#cef5e4";
     this.ctx.font = "10px 'Outfit', sans-serif";
     this.ctx.textAlign = "center";
-    this.ctx.fillText("A: Play  •  B: Back  •  SELECT: ★ Favorite  •  ◄/►: Jump ±8", 160, 231);
+    this.ctx.fillText(`A: Play  •  B: Back  •  START: ${this.topPicksFilter ? 'All Games' : 'Top Picks'}  •  SELECT: ★ Star`, 160, 231);
   }
 
   renderEmulationView() {

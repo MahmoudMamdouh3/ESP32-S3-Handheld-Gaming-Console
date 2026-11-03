@@ -42,6 +42,10 @@ namespace DisplayEmu {
   // Quick A-Z Alphabetical Jump HUD Indicator
   void showAlphaBadge(char letter, unsigned long durationMs = 800);
 
+  // Curated Top Picks / Popular Games Library Filter State
+  void setTopPicksFilter(bool enabled);
+  bool getTopPicksFilter();
+
   // Renders the Hardware Self-Test & Diagnostics dashboard
   void drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeDram, uint32_t freePsram,
                                 uint32_t freeIram, uint8_t buttonMask);

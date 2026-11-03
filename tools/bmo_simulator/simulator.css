@@ -181,12 +181,12 @@ main.simulator-workspace {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   position: relative;
   background: rgba(0, 0, 0, 0.3);
   border-radius: 20px;
   border: 1px solid var(--border-color);
-  padding: 40px;
+  padding: 28px 40px;
   overflow: auto;
 }
 

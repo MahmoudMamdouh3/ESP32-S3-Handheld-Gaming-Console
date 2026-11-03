@@ -238,6 +238,7 @@ static void resetFrameStats() {
 }
 
 static bool visibleGamesDirty = true;
+static bool s_topPicksOnly = false;
 
 // PERF-M3: File-scope so STATE_GAME_MENU (toggleFavorite) can invalidate the
 //          Favorites-count badge rendered in STATE_CONSOLE_MENU.
@@ -266,8 +267,17 @@ static void rebuildVisibleGames() {
   } else {
     for (int i = 0; i < totalRoms && visibleGameCount < maxVisibleCapacity; ++i) {
       const RomFile* game = SDCard::getRomInfo(i);
-      if (game && game->type == selectedType) {
+      if (game && game->type == selectedType && (!s_topPicksOnly || game->isPopular)) {
         visibleRomIndexes[visibleGameCount++] = i;
+      }
+    }
+    // If Top Picks filter yielded 0 matches on this library, gracefully fall back to all games
+    if (s_topPicksOnly && visibleGameCount == 0) {
+      for (int i = 0; i < totalRoms && visibleGameCount < maxVisibleCapacity; ++i) {
+        const RomFile* game = SDCard::getRomInfo(i);
+        if (game && game->type == selectedType) {
+          visibleRomIndexes[visibleGameCount++] = i;
+        }
       }
     }
   }
@@ -678,11 +688,27 @@ void loop() {
     bool a = Buttons::get(Buttons::A).pressed && Buttons::get(Buttons::A).changed;
     bool b = Buttons::get(Buttons::B).pressed && Buttons::get(Buttons::B).changed;
     bool select = Buttons::get(Buttons::SELECT).pressed && Buttons::get(Buttons::SELECT).changed;
+    bool start = Buttons::get(Buttons::START).pressed && Buttons::get(Buttons::START).changed;
 
     if (visibleGamesDirty) {
       rebuildVisibleGames();
     }
     if (canPress()) {
+      if (start && CONSOLES[selectedConsoleIndex] != ROM_FAVORITES) {
+        s_topPicksOnly = !s_topPicksOnly;
+        DisplayEmu::setTopPicksFilter(s_topPicksOnly);
+        visibleGamesDirty = true;
+        selectedGameIndex = 0;
+        rebuildVisibleGames();
+        if (visibleGameCount > 0 && selectedGame() && selectedGame()->hasBoxArt) {
+          BoxArt::load(selectedGame()->filename);
+        } else {
+          BoxArt::unload();
+        }
+        DisplayEmu::showToast(s_topPicksOnly ? "FILTER: TOP PICKS ONLY" : "FILTER: ALL GAMES",
+                              s_topPicksOnly ? Theme::BMO_SCREEN_MINT : Theme::BMO_BODY_TEAL, 1600);
+        lastButtonMs = millis();
+      }
       if (select && visibleGameCount > 0) {
         int romIdx = visibleRomIndexes[selectedGameIndex];
         SDCard::toggleFavorite(romIdx);
@@ -779,6 +805,8 @@ void loop() {
       }
       if (b) {
         BoxArt::unload();
+        s_topPicksOnly = false;
+        DisplayEmu::setTopPicksFilter(false);
         currentState = STATE_CONSOLE_MENU;
         BmoFace::setExpression(BmoFace::IDLE);
         lastButtonMs = millis();

@@ -27,6 +27,7 @@ struct RomFile {
   RomType type;
   bool isFavorite;
   bool hasBoxArt;
+  bool isPopular;
 };
 
 class SDCard {
@@ -39,6 +40,8 @@ public:
   static void scanDirectory(const char* dirPath, int depth, bool hasArtDirs);
   static int getRomCount();
   static int getRomCountForType(RomType type);
+  static int getPopularCountForType(RomType type);
+  static bool isPopularGame(const char* filename, RomType type);
   static const RomFile* getRomInfo(int index);
 
   // Favorites Management API
