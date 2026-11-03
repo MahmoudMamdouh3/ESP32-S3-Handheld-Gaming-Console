@@ -117,7 +117,7 @@ All 14 cores run in PSRAM and share a common lifecycle (`loadRom`, `runFrame`, `
 | **Game Boy (DMG)** | `.gb` | Peanut-GB (MBC1, MBC2, MBC3+RTC, MBC5, MBC7) | 160×144 |
 | **Game Boy Color** | `.gbc` | Walnut-CGB (MBC1, MBC2, MBC3+RTC, MBC5, MBC7) | 160×144 |
 | **NES** | `.nes` | Agnes (Mappers 0, 1, 2, 4) | 256×240 |
-| **Sega Master System / Game Gear** | `.sms`, `.gg`, `.sg` | Z80 + VDP + SN76489 | 256×192 / 160×144 |
+| **Sega Master System / Game Gear** | `.sms`, `.gg` | Z80 + VDP + SN76489 | 256×192 / 160×144 |
 | **Sega Genesis / Mega Drive** | `.gen`, `.md`, `.smd` | M68000 + VDP | 320×224 |
 | **Super Nintendo (SNES)** | `.sfc`, `.smc` | 65C816 + PPU (LoROM/HiROM) | 256×224 |
 | **PC Engine / TurboGrafx-16** | `.pce` | HuC6280 + VDC/VCE | 256×240 |
@@ -125,9 +125,15 @@ All 14 cores run in PSRAM and share a common lifecycle (`loadRom`, `runFrame`, `
 | **Atari Lynx** | `.lnx` | 65SC02 + Mikey/Suzy | 160×102 |
 | **Bandai WonderSwan / Color** | `.ws`, `.wsc` | NEC V30MZ + Swan VDP | 224×144 |
 | **Neo Geo Pocket / Color** | `.ngp`, `.ngc` | TLCS-900/H + K2GE | 160×152 |
-| **ColecoVision** | `.col` | Z80A + TMS9928A + HLE BIOS | 256×192 |
-| **PICO-8** | `.p8`, `.p8.png` | Built-in PICO-8 cart interpreter | 128×128 |
+| **ColecoVision / Sega SG-1000** | `.col`, `.sg` | Shared Z80A + TMS9918A core | 256×192 |
+| **PICO-8-style runtime** | `.p8` text carts | PICO-8 memory/graphics routines and custom draw-bytecode runner; does not execute Lua cart code or `.p8.png` carts | 128×128 |
 | **DOOM** | `.wad` | doomgeneric (streams WAD data from SD) | 320×200 |
+
+### SD-card layout and validation
+
+The firmware scans the SD-card root and subdirectories through three levels for the ROM extensions above. Place supported `.raw` or `.bmp` box art in `/boxart/` or `/covers/`, named to match the ROM basename. Raw images must be exactly 8,192 bytes; BMP images must be 64×64 and use the supported 16-bit or 24-bit formats. ROM indexing and menu arrays are configured for up to 36,000 entries with PSRAM; allocation failure is logged and falls back to 32 entries.
+
+`python scripts/deploy_to_sd.py --destination F:\` prints a dry-run plan using supported ROMs from the top level of `games/` and `.raw`/`.bmp` art from the top level of `roms/boxart/` (it does not copy the `hd/` subdirectory). Writing requires the explicit `--apply` flag and an SD volume labeled `GAMELIB` by default; `--expected-label` can select another label. File copies are content-verified and staged before replacement, and the derived `.bmo_index` is removed so firmware rescans after deployment. The script does not delete files from the card. Do not commit commercial ROMs or cover-art files to the repository.
 
 ---
 

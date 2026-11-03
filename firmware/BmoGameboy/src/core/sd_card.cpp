@@ -20,7 +20,7 @@
 
 namespace {
   bool mounted = false;
-  static const int MAX_ROMS = 16384;
+  static const int MAX_ROMS = 36000;
   static const int BAKED_ROM_COUNT = 5;
   static RomFile fallbackRomList[32];
   static RomFile* romList = fallbackRomList;

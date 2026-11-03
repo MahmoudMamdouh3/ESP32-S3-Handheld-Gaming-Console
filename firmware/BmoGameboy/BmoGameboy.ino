@@ -46,7 +46,7 @@ static const unsigned long IDLE_MASCOT_TIMEOUT_MS = 30000;
 int selectedConsoleIndex = 0;
 int selectedEmulatorIndex = 0;
 int selectedGameIndex = 0;
-static const int MAX_VISIBLE_ROMS = 16384;
+static const int MAX_VISIBLE_ROMS = 36000;
 static int fallbackRomIndexes[32];
 static int* visibleRomIndexes = fallbackRomIndexes;
 static const RomFile* fallbackVisibleGames[32];
@@ -340,13 +340,15 @@ void setup() {
   bootSplashStartMs = millis();
   
   int* psramIndexes = (int*)heap_caps_malloc(sizeof(int) * MAX_VISIBLE_ROMS, MALLOC_CAP_SPIRAM);
-  if (psramIndexes) {
-    visibleRomIndexes = psramIndexes;
-    maxVisibleCapacity = MAX_VISIBLE_ROMS;
-  }
   const RomFile** psramGames = (const RomFile**)heap_caps_malloc(sizeof(const RomFile*) * MAX_VISIBLE_ROMS, MALLOC_CAP_SPIRAM);
-  if (psramGames) {
+  if (psramIndexes && psramGames) {
+    visibleRomIndexes = psramIndexes;
     visibleGames = psramGames;
+    maxVisibleCapacity = MAX_VISIBLE_ROMS;
+  } else {
+    if (psramIndexes) heap_caps_free(psramIndexes);
+    if (psramGames) heap_caps_free(psramGames);
+    LOG_WARN_STR("PSRAM game-menu allocation failed; using 32-entry fallback.");
   }
 
   if (!SDCard::begin()) {
