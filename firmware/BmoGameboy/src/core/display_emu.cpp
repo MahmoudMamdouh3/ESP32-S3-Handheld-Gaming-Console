@@ -1243,7 +1243,7 @@ void DisplayEmu::drawConsoleMuseumModal(RomType console) {
       menuCanvas->setCursor(18, 100);
       menuCanvas->print("Legacy: Carmack & Romero transformed gaming;");
       menuCanvas->setCursor(18, 114);
-      menuCanvas->print("bioneered 3D FPS, multiplayer deathmatch, mods.");
+      menuCanvas->print("pioneered 3D FPS, multiplayer deathmatch, mods.");
       menuCanvas->setCursor(18, 134);
       menuCanvas->print("Landmarks: DOOM, DOOM II, Freedoom, FreeDM");
       break;
@@ -1264,14 +1264,9 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   menuCanvas->fillScreen(UI_BLACK);
   menuCanvas->fillRect(0, 0, 320, 38, UI_DEEP_TEAL);
 
-  // Mini BMO Mascot Face in top-left (8, 4, 40, 28)
-  menuCanvas->fillRoundRect(8, 4, 40, 28, 6, UI_TEAL);
-  menuCanvas->fillCircle(18, 14, 2, UI_BLACK);
-  menuCanvas->fillCircle(30, 14, 2, UI_BLACK);
-  menuCanvas->drawCircle(24, 18, 4, UI_BLACK);
-  menuCanvas->fillRect(20, 14, 8, 4, UI_TEAL);
-  menuCanvas->fillCircle(12, 19, 2, UI_CORAL);
-  menuCanvas->fillCircle(36, 19, 2, UI_CORAL);
+  // Animated Mini BMO Mascot Face in top-left (8, 4, 48, 30)
+  BmoFace::renderToBuffer(menuCanvas->getBuffer(), 320, 8, 4, 48, 30);
+  menuCanvas->drawRoundRect(8, 4, 48, 30, 4, UI_DEEP_TEAL);
   
   // Battery status block (Top right header)
 #if FEATURE_BATTERY_MONITOR
@@ -1288,7 +1283,7 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   menuCanvas->setFont(&FreeSans9pt7b);
   char heading[40];
   if (console == ROM_FAVORITES) {
-    snprintf(heading, sizeof(heading), "★ FAVORITE GAMES");
+    snprintf(heading, sizeof(heading), "* FAVORITE GAMES");
   } else {
     snprintf(heading, sizeof(heading), "%s LIBRARY", consoleName(console));
   }
@@ -1297,15 +1292,15 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   if (count == 0) {
     menuCanvas->setFont(&FreeSans12pt7b);
     if (console == ROM_FAVORITES) {
-      drawCentered("NO FAVORITES YET!", 100, UI_BLACK);
+      drawCentered("NO FAVORITES YET!", 100, UI_WHITE);
       menuCanvas->setFont(&FreeSans9pt7b);
-      drawCentered("Press SELECT on any game in any", 128, UI_DEEP_TEAL);
-      drawCentered("console library to star it ★", 148, UI_DEEP_TEAL);
+      drawCentered("Press SELECT on any game in any", 128, UI_MINT);
+      drawCentered("console library to star it *", 148, UI_MINT);
     } else {
-      drawCentered("NO GAMES", 100, UI_BLACK);
+      drawCentered("NO GAMES", 100, UI_WHITE);
       menuCanvas->setFont(&FreeSans9pt7b);
       drawCentered(sdMounted ? "Add compatible ROMs to the SD card." :
-                              "Insert an SD card to add more games.", 138, UI_DEEP_TEAL);
+                              "Insert an SD card to add more games.", 138, UI_MINT);
     }
     drawFooter("B: BACK");
     writeMenuCanvas();
@@ -1337,21 +1332,21 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   menuCanvas->setFont();
   if (isFav) {
     menuCanvas->setTextColor(UI_YELLOW);
-    menuCanvas->setCursor(120, 139);
-    menuCanvas->print("★ FAVORITE");
+    menuCanvas->setCursor(130, 132);
+    menuCanvas->print("* FAVORITE");
   } else {
     menuCanvas->setTextColor(UI_WHITE);
-    menuCanvas->setCursor(126, 139);
+    menuCanvas->setCursor(126, 132);
     menuCanvas->print(consoleBadge(actualType));
   }
 
   menuCanvas->setFont(&FreeSans9pt7b);
-  drawFittedCentered(title, 180, 290, UI_BLACK);
+  drawFittedCentered(title, 180, 290, UI_WHITE);
   
   menuCanvas->setFont();
   char position[36];
   snprintf(position, sizeof(position), "%d / %d  [%s]", selectedIndex + 1, count, consoleBadge(actualType));
-  drawCentered(position, 198, UI_DEEP_TEAL);
+  drawCentered(position, 198, UI_MINT);
 
   // Library scroll position track
   if (count > 1) {
@@ -1369,7 +1364,7 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   menuCanvas->drawFastHLine(0, 213, 320, UI_TEAL);
   drawButtonPill(8,   220, "A",   "PLAY", UI_CORAL,  UI_BLACK, UI_WHITE);
   drawButtonPill(78,  220, "B",   "BACK", UI_MINT,   UI_BLACK, UI_WHITE);
-  drawButtonPill(146, 220, "SEL", isFav ? "★ UNSTAR" : "★ STAR", UI_YELLOW, UI_BLACK, UI_WHITE);
+  drawButtonPill(146, 220, "SEL", isFav ? "* UNSTAR" : "* STAR", UI_YELLOW, UI_BLACK, UI_WHITE);
   drawButtonPill(245, 220, "< >", "A-Z",  UI_TEAL,   UI_BLACK, UI_WHITE);
 
   // Quick A-Z alphabetical jump HUD indicator
@@ -1469,7 +1464,7 @@ void DisplayEmu::drawPauseMenu(const char* romTitle, int currentSlot, bool hasSa
   }
 
   // Floating pill toast HUD
-  if (statusToast && strlen(statusToast) > 0 && strcmp(s_toastMessage, statusToast) != 0) {
+  if (statusToast && statusToast[0] != '\0') {
     DisplayEmu::showToast(statusToast, UI_YELLOW, 1800);
   }
 
@@ -1800,7 +1795,7 @@ void DisplayEmu::drawIdleMascotScreen(unsigned long idleSeconds, const char* sta
     menuCanvas->fillRect(40, 8, 240, 22, UI_DEEP_TEAL);
     menuCanvas->drawRect(40, 8, 240, 22, UI_MINT);
     menuCanvas->setFont(&FreeSans9pt7b);
-    const char* title = BmoFace::isDancing() ? "♪ BMO DANCE PARTY! ♪" :
+    const char* title = BmoFace::isDancing() ? "* BMO DANCE PARTY! *" :
                         (idleSeconds > 40) ? "BMO IS SLEEPING..." :
                         (idleSeconds > 20) ? "BMO IS SLEEPY..." : "LIVING BMO COMPANION";
     drawCentered(title, 24, UI_YELLOW);

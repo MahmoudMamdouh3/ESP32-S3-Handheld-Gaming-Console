@@ -7,6 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Pre-Flash Hardware Safety & Runtime Audit Fixes] - 2026-11-03
 ### Fixed
+- **Game Select Menu Visibility, UTF-8 CP437 Font Corruption & Theme Token Compliance (`src/core/display_emu.cpp`, `src/core/bmo_face.cpp`, `BmoGameboy.ino`, `tools/guardian/core/ui_auditor.py`)**:
+  - Fixed invisible `UI_BLACK`-on-`UI_BLACK` text (`#102624` on `#102624`) for the selected game title (`y = 180`), `"NO FAVORITES YET!"`, and `"NO GAMES"` in `DisplayEmu::drawGameSelectMenu()` by rendering primary titles in `UI_WHITE` and secondary subtitles/counters in `UI_MINT`, and upgraded the top-left header icon to use `BmoFace::renderToBuffer()`.
+  - Replaced multibyte UTF-8 characters (`★` `\u2605`, `♪` `\u266a`) across `BmoGameboy.ino`, `display_emu.cpp`, and `bmo_face.cpp` with 7-bit ASCII (`*`, `~`) so Adafruit GFX 5×7 CP437 and `FreeSans9pt7b` fonts do not render multi-byte garbage on the ST7789 display.
+  - Replaced raw un-swapped hex color literals (`0xFFE0`, `0x7BEF`) in `BmoGameboy.ino` `DisplayEmu::showToast()` calls with `Theme::BMO_DPAD_YELLOW` and `Theme::BMO_BODY_TEAL`, cleared `pauseToast` after `drawPauseMenu()` so repeated actions re-trigger toasts, and added `BmoGameboy.ino`, `showToast`, and `NON_ASCII_UI_TEXT` checks to `UiAuditor`.
+- **Atari Lynx Boot Image Protection & NES 8 KB PRG-RAM `.sav` Persistence (`src/emulators/emu_lynx.cpp`, `src/emulators/emu_nes.cpp`, `src/vendor/agnes/agnes.h`, `src/vendor/agnes/agnes.c`, `src/core/save_manager.cpp`)**:
+  - Relocated Atari Lynx 256-byte persistent battery RAM in `LynxEmu::saveBatteryRam`/`loadBatteryRam` to `&lynxRam[0xFE00]` so loading `.sav` on game launch never overwrites the ROM boot code loaded at `$0200`.
+  - Added 8 KB cartridge `prg_ram` (`$6000-$7FFF`) support across all mappers in `agnes.c` (`agnes_get_prg_ram()`, 0 extra bytes in `sizeof(agnes_t)` union) and updated `NesEmu::saveBatteryRam`/`loadBatteryRam` to persist only the 8 KB `prg_ram` instead of dumping/restoring a full 86 KB CPU/PPU snapshot on cold boot.
+  - Updated `SaveManager::loadState()` to stage both `stateData` and `ramData` in temporary PSRAM buffers and verify the CRC32 checksum before copying into live emulator buffers.
 - **Stack Overflow Prevention in `loadState()` (`src/emulators/emu_walnut.cpp`, `emu_peanut.cpp`, `emu_sms.cpp`, `emu_pce.cpp`)**:
   - Replaced stack-allocated `struct gb_s` (~50 KB / ~17 KB), `sms_context_t` (~56.5 KB), and `pce_context_t` (~76 KB) temporary buffers in `loadState()` with Octal PSRAM allocations (`heap_caps_malloc(..., MALLOC_CAP_SPIRAM)` + `heap_caps_free(...)`) to prevent overflowing the 8 KB `loopTask` stack on ESP32-S3.
 - **PC Engine Battery Backup RAM Persistence (`src/emulators/emu_pce.cpp`)**:

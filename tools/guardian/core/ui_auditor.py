@@ -38,6 +38,7 @@ class UiAuditor:
     """Static auditor for design tokens, accessibility, and anti-AI-slop UI standards."""
 
     CORE_FIRMWARE_UI_FILES = [
+        "firmware/BmoGameboy/BmoGameboy.ino",
         "firmware/BmoGameboy/src/core/display_emu.cpp",
         "firmware/BmoGameboy/src/core/box_art.cpp",
         "firmware/BmoGameboy/src/core/bmo_face.cpp",
@@ -61,8 +62,10 @@ class UiAuditor:
     ]
 
     DRAW_CALL_PATTERN = re.compile(
-        r"\b(?:drawRoundRect|drawRect|fillRect|fillRoundRect|setTextColor|drawPixel|drawLine|drawCircle|fillCircle)\s*\("
+        r"\b(?:drawRoundRect|drawRect|fillRect|fillRoundRect|setTextColor|drawPixel|drawLine|drawCircle|fillCircle|showToast|drawCentered|drawFittedCentered)\s*\("
     )
+
+    STRING_LITERAL_PATTERN = re.compile(r'"((?:\\.|[^"\\])*)"')
 
     RAW_HEX_PATTERN = re.compile(r"\b0x[0-9a-fA-F]{3,4}\b")
 
@@ -106,6 +109,20 @@ class UiAuditor:
                                 idx,
                                 "HARDCODED_COLOR",
                                 f"Raw hex color literal {hx} in drawing call; replace with Theme:: token from theme.h",
+                            )
+                        )
+
+                # Check for non-ASCII characters inside C/C++ string literals in UI files
+                # (Adafruit GFX CP437 5x7 and FreeSans 7-bit ASCII fonts render multibyte UTF-8 as garbage)
+                for str_match in self.STRING_LITERAL_PATTERN.finditer(stripped):
+                    literal_text = str_match.group(1)
+                    if any(ord(ch) > 127 for ch in literal_text):
+                        issues.append(
+                            UiAuditIssue(
+                                rel_path,
+                                idx,
+                                "NON_ASCII_UI_TEXT",
+                                "Multibyte UTF-8 character in firmware UI string literal renders as CP437 garbage on ST7789; use 7-bit ASCII",
                             )
                         )
 

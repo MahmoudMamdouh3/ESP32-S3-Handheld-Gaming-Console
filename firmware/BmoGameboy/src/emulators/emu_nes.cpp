@@ -84,23 +84,18 @@ void NesEmu::destroy() {
 
 bool NesEmu::saveBatteryRam(const char* romFilename) {
   if (!agnes_ctx || !romFilename) return false;
-  uint8_t* buf = getNesStateBuf();
-  if (!buf || s_nesStateSize == 0) return false;
-  agnes_dump_state(agnes_ctx, (agnes_state_t*)buf);
-  return SaveManager::saveBatteryRam(romFilename, buf, s_nesStateSize);
+  size_t prgRamSize = 0;
+  uint8_t* prgRam = agnes_get_prg_ram(agnes_ctx, &prgRamSize);
+  if (!prgRam || prgRamSize == 0) return false;
+  return SaveManager::saveBatteryRam(romFilename, prgRam, prgRamSize);
 }
 
 bool NesEmu::loadBatteryRam(const char* romFilename) {
   if (!agnes_ctx || !romFilename) return false;
-  uint8_t* buf = getNesStateBuf();
-  if (!buf || s_nesStateSize == 0) return false;
-  size_t loadedSize = 0;
-  if (SaveManager::loadBatteryRam(romFilename, buf, s_nesStateSize, &loadedSize)) {
-    if (loadedSize == s_nesStateSize) {
-      return agnes_restore_state(agnes_ctx, (const agnes_state_t*)buf);
-    }
-  }
-  return false;
+  size_t prgRamSize = 0;
+  uint8_t* prgRam = agnes_get_prg_ram(agnes_ctx, &prgRamSize);
+  if (!prgRam || prgRamSize == 0) return false;
+  return SaveManager::loadBatteryRam(romFilename, prgRam, prgRamSize);
 }
 
 bool NesEmu::saveState(const char* romFilename, int slot) {

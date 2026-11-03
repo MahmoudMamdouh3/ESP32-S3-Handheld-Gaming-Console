@@ -314,31 +314,70 @@ namespace SaveManager {
       return false;
     }
 
-    size_t stateRead = f.read((uint8_t*)stateData, header.stateSize);
+    if (header.ramSize > 0 && (!ramData || header.ramSize > maxRamSize)) {
+      f.close();
+      SpiArbiter::unlock();
+      LOG_ERROR("SaveManager: RAM buffer overflow (ramSize %u > max %u)",
+                (unsigned int)header.ramSize, (unsigned int)maxRamSize);
+      return false;
+    }
+
+    uint8_t* tempState = (uint8_t*)heap_caps_malloc(header.stateSize, MALLOC_CAP_SPIRAM);
+    if (!tempState) {
+      f.close();
+      SpiArbiter::unlock();
+      LOG_ERROR("SaveManager: Out of PSRAM staging state load (%u B)", (unsigned int)header.stateSize);
+      return false;
+    }
+
+    uint8_t* tempRam = nullptr;
+    if (header.ramSize > 0) {
+      tempRam = (uint8_t*)heap_caps_malloc(header.ramSize, MALLOC_CAP_SPIRAM);
+      if (!tempRam) {
+        heap_caps_free(tempState);
+        f.close();
+        SpiArbiter::unlock();
+        LOG_ERROR("SaveManager: Out of PSRAM staging RAM load (%u B)", (unsigned int)header.ramSize);
+        return false;
+      }
+    }
+
+    size_t stateRead = f.read(tempState, header.stateSize);
     size_t ramRead = 0;
-    if (header.ramSize > 0 && ramData && maxRamSize >= header.ramSize) {
-      ramRead = f.read(ramData, header.ramSize);
+    if (header.ramSize > 0) {
+      ramRead = f.read(tempRam, header.ramSize);
     }
 
     f.close();
     SpiArbiter::unlock();
 
     if (stateRead != header.stateSize || (header.ramSize > 0 && ramRead != header.ramSize)) {
+      heap_caps_free(tempState);
+      if (tempRam) heap_caps_free(tempRam);
       LOG_ERROR("SaveManager: Truncated state data in %s", path);
       return false;
     }
 
-    // Verify CRC32
-    uint32_t calcCrc = computeCRC32((const uint8_t*)stateData, header.stateSize, 0xFFFFFFFF);
-    if (ramData && header.ramSize > 0) {
-      calcCrc = computeCRC32(ramData, header.ramSize, calcCrc);
+    // Verify CRC32 before modifying caller's live emulator state or RAM buffers
+    uint32_t calcCrc = computeCRC32(tempState, header.stateSize, 0xFFFFFFFF);
+    if (tempRam && header.ramSize > 0) {
+      calcCrc = computeCRC32(tempRam, header.ramSize, calcCrc);
     }
     calcCrc ^= 0xFFFFFFFF;
 
     if (calcCrc != header.crc32) {
+      heap_caps_free(tempState);
+      if (tempRam) heap_caps_free(tempRam);
       LOG_ERROR("SaveManager: CRC32 mismatch in %s (calc 0x%08X != hdr 0x%08X)",
                 path, (unsigned int)calcCrc, (unsigned int)header.crc32);
       return false;
+    }
+
+    memcpy(stateData, tempState, header.stateSize);
+    heap_caps_free(tempState);
+    if (tempRam && ramData && header.ramSize > 0) {
+      memcpy(ramData, tempRam, header.ramSize);
+      heap_caps_free(tempRam);
     }
 
     if (outStateSize) *outStateSize = stateRead;
