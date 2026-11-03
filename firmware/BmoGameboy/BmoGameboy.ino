@@ -18,6 +18,7 @@
 #include "src/core/sd_card.h"
 #include "src/core/battery.h"
 #include "src/core/display_emu.h"
+#include "src/core/theme.h"
 #include "src/core/bmo_face.h"
 #include "src/core/spi_arbiter.h"
 #include "src/core/save_manager.h"
@@ -594,7 +595,7 @@ void loop() {
             BmoFace::triggerDance(140.0f);
             BmoFace::triggerWink();
             BmoFace::say("KONAMI CODE! +30 LIVES FOR BMO!", 4500);
-            DisplayEmu::showToast("★ KONAMI CODE UNLOCKED! ★", 0xFFE0, 2500);
+            DisplayEmu::showToast("* KONAMI CODE UNLOCKED! *", Theme::BMO_DPAD_YELLOW, 2500);
           }
         } else {
           s_konamiStep = (bi == kKonamiSeq[0]) ? 1 : 0;
@@ -690,10 +691,10 @@ void loop() {
         // Show BMO celebratory wink with sparkle burst when starring a game
         if (SDCard::isFavorite(romIdx)) {
           BmoFace::triggerWink();
-          DisplayEmu::showToast("★ ADDED TO FAVORITES", 0xFFE0, 1600);
+          DisplayEmu::showToast("* ADDED TO FAVORITES", Theme::BMO_DPAD_YELLOW, 1600);
         } else {
           BmoFace::setExpression(BmoFace::IDLE);
-          DisplayEmu::showToast("REMOVED FROM FAVORITES", 0x7BEF, 1600);
+          DisplayEmu::showToast("REMOVED FROM FAVORITES", Theme::BMO_BODY_TEAL, 1600);
         }
         
         if (CONSOLES[selectedConsoleIndex] == ROM_FAVORITES) {
@@ -1155,6 +1156,7 @@ void loop() {
     }
 
     DisplayEmu::drawPauseMenu(currentRomFilename, currentSlot, s_pauseHasSave, s_pauseHasBatt, pauseOption, pauseToast);
+    pauseToast[0] = '\0';
     delay(30);
   }
 }

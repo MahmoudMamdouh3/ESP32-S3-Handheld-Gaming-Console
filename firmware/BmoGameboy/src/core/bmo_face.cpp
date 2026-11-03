@@ -1110,7 +1110,7 @@ void triggerDance(float bpm) {
   s_dancePhase = 0.0f;
   s_danceEndMs = millis() + 10000;
   setExpression(JOY);
-  say("Dance party with BMO! Unce unce! ♪", 4000);
+  say("Dance party with BMO! Unce unce! ~", 4000);
   s_dirty = true;
 }
 

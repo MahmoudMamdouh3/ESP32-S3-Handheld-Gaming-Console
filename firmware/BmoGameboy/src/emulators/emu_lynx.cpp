@@ -67,12 +67,14 @@ bool LynxEmu::isRunning() {
 
 bool LynxEmu::saveBatteryRam(const char* romFilename) {
   if (!running || !lynxRam || !romFilename) return false;
-  return SaveManager::saveBatteryRam(romFilename, lynxRam, 1024);
+  // Save 256-byte EEPROM/high-RAM persistence block above $DFDF video buffer
+  // and below $FFF8 hardware vectors so loadBatteryRam never clobbers the $0200 boot code.
+  return SaveManager::saveBatteryRam(romFilename, &lynxRam[0xFE00], 256);
 }
 
 bool LynxEmu::loadBatteryRam(const char* romFilename) {
   if (!running || !lynxRam || !romFilename) return false;
-  return SaveManager::loadBatteryRam(romFilename, lynxRam, 1024);
+  return SaveManager::loadBatteryRam(romFilename, &lynxRam[0xFE00], 256);
 }
 
 bool LynxEmu::saveState(const char* romFilename, int slot) {

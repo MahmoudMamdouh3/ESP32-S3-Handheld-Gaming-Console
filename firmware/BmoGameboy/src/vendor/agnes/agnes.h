@@ -79,6 +79,7 @@ bool agnes_next_frame(agnes_t *agnes);
 
 agnes_color_t agnes_get_screen_pixel(const agnes_t *agnes, int x, int y);
 const uint8_t* agnes_get_screen_buffer(const agnes_t *agnes);
+uint8_t* agnes_get_prg_ram(agnes_t *agnes, size_t *out_size);
 
 #ifdef __cplusplus
 }

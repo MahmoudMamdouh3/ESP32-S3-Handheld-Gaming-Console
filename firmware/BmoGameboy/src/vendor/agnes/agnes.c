@@ -178,6 +178,7 @@ typedef struct mapper0 {
     unsigned prg_bank_offsets[2];
     bool use_chr_ram;
     uint8_t chr_ram[8 * 1024];
+    uint8_t prg_ram[8 * 1024];
 } mapper0_t;
 
 typedef struct mapper1 {
@@ -202,6 +203,7 @@ typedef struct mapper2 {
 
     unsigned prg_bank_offsets[2];
     uint8_t chr_ram[8 * 1024];
+    uint8_t prg_ram[8 * 1024];
 } mapper2_t;
 
 typedef struct mapper4 {
@@ -644,6 +646,23 @@ agnes_color_t agnes_get_screen_pixel(const agnes_t *agnes, int x, int y) {
 
 const uint8_t* agnes_get_screen_buffer(const agnes_t *agnes) {
     return agnes->ppu.screen_buffer;
+}
+
+uint8_t* agnes_get_prg_ram(agnes_t *agnes, size_t *out_size) {
+    if (!agnes) {
+        if (out_size) *out_size = 0;
+        return NULL;
+    }
+    if (out_size) *out_size = 8 * 1024;
+    switch (agnes->gamepack.mapper) {
+        case 0: return agnes->mapper.m0.prg_ram;
+        case 1: return agnes->mapper.m1.prg_ram;
+        case 2: return agnes->mapper.m2.prg_ram;
+        case 4: return agnes->mapper.m4.prg_ram;
+        default:
+            if (out_size) *out_size = 0;
+            return NULL;
+    }
 }
 
 void agnes_destroy(agnes_t *agnes) {
@@ -2251,6 +2270,8 @@ uint8_t mapper0_read(mapper0_t *mapper, uint16_t addr) {
         } else {
             res = mapper->agnes->gamepack.data[mapper->agnes->gamepack.chr_rom_offset + addr];
         }
+    } else if (addr >= 0x6000 && addr < 0x8000) {
+        res = mapper->prg_ram[addr - 0x6000];
     } else if (addr >= 0x8000) {
         int bank = addr >> 14 & 0x1;
         unsigned bank_offset = mapper->prg_bank_offsets[bank];
@@ -2264,6 +2285,8 @@ uint8_t mapper0_read(mapper0_t *mapper, uint16_t addr) {
 void mapper0_write(mapper0_t *mapper, uint16_t addr, uint8_t val) {
     if (mapper->use_chr_ram && addr < 0x2000) {
         mapper->chr_ram[addr] = val;
+    } else if (addr >= 0x6000 && addr < 0x8000) {
+        mapper->prg_ram[addr - 0x6000] = val;
     }
 }
 //FILE_END
@@ -2414,6 +2437,8 @@ uint8_t mapper2_read(mapper2_t *mapper, uint16_t addr) {
     uint8_t res = 0;
     if (addr < 0x2000) {
         res = mapper->chr_ram[addr];
+    } else if (addr >= 0x6000 && addr < 0x8000) {
+        res = mapper->prg_ram[addr - 0x6000];
     } else if (addr >= 0x8000) {
         int bank = (addr >> 14) & 0x1;
         unsigned bank_offset = mapper->prg_bank_offsets[bank];
@@ -2427,6 +2452,8 @@ uint8_t mapper2_read(mapper2_t *mapper, uint16_t addr) {
 void mapper2_write(mapper2_t *mapper, uint16_t addr, uint8_t val) {
     if (addr < 0x2000) {
         mapper->chr_ram[addr] = val;
+    } else if (addr >= 0x6000 && addr < 0x8000) {
+        mapper->prg_ram[addr - 0x6000] = val;
     } else if (addr >= 0x8000) {
         int bank = val % (mapper->agnes->gamepack.prg_rom_banks_count);
         mapper->prg_bank_offsets[0] = bank * (16 * 1024);

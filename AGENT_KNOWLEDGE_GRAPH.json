@@ -1,6 +1,6 @@
 {
   "schema_version": "2.2.0",
-  "generated_at": "2026-11-03T11:09:05.987745",
+  "generated_at": "2026-11-03T11:23:00.717018",
   "target_mcu": {
     "chip": "ESP32-S3-N16R8",
     "cpu_arch": "Xtensa dual-core 32-bit LX7 @ 240MHz",
@@ -9,7 +9,7 @@
     "internal_sram_dram_bytes": 327680,
     "iram_used_bytes": 77824,
     "dram_used_bytes": 218904,
-    "flash_used_bytes": 5694101
+    "flash_used_bytes": 5694541
   },
   "hard_stops": [
     {
@@ -437,50 +437,50 @@
     {
       "name": "BMO_SDF_Procedural_Face_Render_Unculled",
       "iterations": 100,
-      "avg_latency_us": 1669.4,
-      "throughput_mops": 2.45,
+      "avg_latency_us": 1403.749,
+      "throughput_mops": 2.92,
       "description": "Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling."
     },
     {
       "name": "BMO_SDF_Procedural_Face_Render_Culled",
       "iterations": 200,
-      "avg_latency_us": 558.554,
-      "throughput_mops": 7.33,
+      "avg_latency_us": 531.515,
+      "throughput_mops": 7.71,
       "description": "Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction)."
     },
     {
       "name": "4Pixel_Coalesced_Aligned_Store_Kernel",
       "iterations": 50000,
-      "avg_latency_us": 2.789,
-      "throughput_mops": 10.76,
+      "avg_latency_us": 2.459,
+      "throughput_mops": 12.2,
       "description": "Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling."
     },
     {
       "name": "O1_Palette_Scanline_Transformation",
       "iterations": 10000,
-      "avg_latency_us": 5.464,
-      "throughput_mops": 43.92,
+      "avg_latency_us": 4.59,
+      "throughput_mops": 52.29,
       "description": "Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput."
     },
     {
       "name": "CPU_Emulation_Opcode_Dispatch",
       "iterations": 500000,
-      "avg_latency_us": 0.09,
-      "throughput_mops": 11.14,
+      "avg_latency_us": 0.069,
+      "throughput_mops": 14.43,
       "description": "Simulates CPU opcode fetch-decode-execute cycle dispatch throughput."
     },
     {
       "name": "Direct_GPIO_Atomic_Bitmask_Sampling",
       "iterations": 100000,
-      "avg_latency_us": 0.636,
-      "throughput_mops": 12.58,
+      "avg_latency_us": 0.551,
+      "throughput_mops": 14.51,
       "description": "Measures atomic 8-pin bitmask unpacking (GPIO 4,5,6,7,16,17,18,21) replacing 8 digitalRead calls."
     },
     {
       "name": "SD_Catalog_O1_Query_And_Page_Jump",
       "iterations": 10000,
-      "avg_latency_us": 0.195,
-      "throughput_mops": 5.13,
+      "avg_latency_us": 0.155,
+      "throughput_mops": 6.45,
       "description": "Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations."
     }
   ],
@@ -508,7 +508,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "6. Known Issues, Technical Debt & Hardware Limitations Registry",
-      "lines": 447
+      "lines": 452
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -714,73 +714,73 @@
   "symbol_registry": {
     "autoSaveCurrentBatteryRam": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 73,
+      "line": 74,
       "signature": "static void autoSaveCurrentBatteryRam()",
       "is_iram": false
     },
     "quickSaveState": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 104,
+      "line": 105,
       "signature": "static bool quickSaveState(int slot)",
       "is_iram": false
     },
     "quickLoadState": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 136,
+      "line": 137,
       "signature": "static bool quickLoadState(int slot)",
       "is_iram": false
     },
     "destroyActiveEmulator": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 169,
+      "line": 170,
       "signature": "static void destroyActiveEmulator()",
       "is_iram": false
     },
     "canPress": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 211,
+      "line": 212,
       "signature": "inline bool canPress()",
       "is_iram": false
     },
     "recordFrameTime": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 225,
+      "line": 226,
       "signature": "static inline void recordFrameTime(unsigned long us)",
       "is_iram": false
     },
     "resetFrameStats": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 232,
+      "line": 233,
       "signature": "static void resetFrameStats()",
       "is_iram": false
     },
     "countGamesForConsole": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 246,
+      "line": 247,
       "signature": "static int countGamesForConsole(RomType type)",
       "is_iram": false
     },
     "rebuildVisibleGames": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 251,
+      "line": 252,
       "signature": "static void rebuildVisibleGames()",
       "is_iram": false
     },
     "selectedGame": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 285,
+      "line": 286,
       "signature": "static const RomFile* selectedGame()",
       "is_iram": false
     },
     "setup": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 297,
+      "line": 298,
       "signature": "void setup()",
       "is_iram": false
     },
     "loop": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 358,
+      "line": 359,
       "signature": "void loop()",
       "is_iram": false
     },
@@ -1530,115 +1530,115 @@
     },
     "DisplayEmu::showSDCardWarning": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1482,
+      "line": 1477,
       "signature": "void DisplayEmu::showSDCardWarning()",
       "is_iram": false
     },
     "DisplayEmu::sanitizeRomTitle": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1496,
+      "line": 1491,
       "signature": "void DisplayEmu::sanitizeRomTitle(const char* src, char* dst, size_t maxLen)",
       "is_iram": false
     },
     "DisplayEmu::setDmgPalette": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1540,
+      "line": 1535,
       "signature": "void DisplayEmu::setDmgPalette(int paletteIndex)",
       "is_iram": false
     },
     "DisplayEmu::getDmgPaletteIndex": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1546,
+      "line": 1541,
       "signature": "int DisplayEmu::getDmgPaletteIndex()",
       "is_iram": false
     },
     "DisplayEmu::cycleDmgPalette": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1550,
+      "line": 1545,
       "signature": "void DisplayEmu::cycleDmgPalette()",
       "is_iram": false
     },
     "DisplayEmu::getActiveDmgPalette": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1554,
+      "line": 1549,
       "signature": "const uint16_t* DisplayEmu::getActiveDmgPalette()",
       "is_iram": false
     },
     "DisplayEmu::drawConsoleIcon": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1663,
+      "line": 1658,
       "signature": "void DisplayEmu::drawConsoleIcon(RomType type, int x, int y, uint16_t primaryColor)",
       "is_iram": false
     },
     "DisplayEmu::drawIdleMascotScreen": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1777,
+      "line": 1772,
       "signature": "void DisplayEmu::drawIdleMascotScreen(unsigned long idleSeconds, const char* stateMessage)",
       "is_iram": false
     },
     "DisplayEmu::waitForDisplay": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1822,
+      "line": 1817,
       "signature": "void DisplayEmu::waitForDisplay()",
       "is_iram": false
     },
     "DisplayEmu::isDisplayBusy": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1830,
+      "line": 1825,
       "signature": "bool DisplayEmu::isDisplayBusy()",
       "is_iram": false
     },
     "DisplayEmu::showToast": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1838,
+      "line": 1833,
       "signature": "void DisplayEmu::showToast(const char* message, uint16_t borderColor, unsigned long durationMs)",
       "is_iram": false
     },
     "DisplayEmu::hasActiveToast": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1849,
+      "line": 1844,
       "signature": "bool DisplayEmu::hasActiveToast()",
       "is_iram": false
     },
     "DisplayEmu::triggerCarouselGlide": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1853,
+      "line": 1848,
       "signature": "void DisplayEmu::triggerCarouselGlide(bool directionRight)",
       "is_iram": false
     },
     "DisplayEmu::showAlphaBadge": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1864,
+      "line": 1859,
       "signature": "void DisplayEmu::showAlphaBadge(char letter, unsigned long durationMs)",
       "is_iram": false
     },
     "DisplayEmu::setBezelEnabled": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1872,
+      "line": 1867,
       "signature": "void DisplayEmu::setBezelEnabled(bool enabled)",
       "is_iram": false
     },
     "DisplayEmu::isBezelEnabled": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1876,
+      "line": 1871,
       "signature": "bool DisplayEmu::isBezelEnabled()",
       "is_iram": false
     },
     "DisplayEmu::toggleBezel": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1880,
+      "line": 1875,
       "signature": "bool DisplayEmu::toggleBezel()",
       "is_iram": false
     },
     "DisplayEmu::getLastFramebuffer": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1885,
+      "line": 1880,
       "signature": "const uint16_t* DisplayEmu::getLastFramebuffer(int* outWidth, int* outHeight)",
       "is_iram": false
     },
     "DisplayEmu::drawConsoleBezel": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1909,
+      "line": 1904,
       "signature": "void DisplayEmu::drawConsoleBezel(int consoleIndex)",
       "is_iram": false
     },
@@ -2712,19 +2712,19 @@
     },
     "LynxEmu::loadBatteryRam": {
       "file": "firmware/BmoGameboy/src/emulators/emu_lynx.cpp",
-      "line": 73,
+      "line": 75,
       "signature": "bool LynxEmu::loadBatteryRam(const char* romFilename)",
       "is_iram": false
     },
     "LynxEmu::saveState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_lynx.cpp",
-      "line": 78,
+      "line": 80,
       "signature": "bool LynxEmu::saveState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "LynxEmu::loadState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_lynx.cpp",
-      "line": 84,
+      "line": 86,
       "signature": "bool LynxEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
@@ -2772,13 +2772,13 @@
     },
     "NesEmu::saveState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_nes.cpp",
-      "line": 106,
+      "line": 101,
       "signature": "bool NesEmu::saveState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "NesEmu::loadState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_nes.cpp",
-      "line": 115,
+      "line": 110,
       "signature": "bool NesEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
@@ -3366,7 +3366,7 @@
     },
     "get_input_byte": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 653,
+      "line": 672,
       "signature": "static uint8_t get_input_byte(const agnes_input_t* input)",
       "is_iram": false
     },
@@ -3418,6 +3418,12 @@
       "signature": "const uint8_t* agnes_get_screen_buffer(const agnes_t *agnes);",
       "is_iram": false
     },
+    "agnes_get_prg_ram": {
+      "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.h",
+      "line": 82,
+      "signature": "uint8_t* agnes_get_prg_ram(agnes_t *agnes, size_t *out_size);",
+      "is_iram": false
+    },
     "agnes_destroy": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.h",
       "line": 71,
@@ -3426,667 +3432,667 @@
     },
     "cpu_read16_indirect_bug": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 845,
+      "line": 864,
       "signature": "static uint16_t cpu_read16_indirect_bug(cpu_t *cpu, uint16_t addr)",
       "is_iram": false
     },
     "get_instruction_operand": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 851,
+      "line": 870,
       "signature": "static uint16_t get_instruction_operand(cpu_t *cpu, addr_mode_t mode, bool *out_pages_differ)",
       "is_iram": false
     },
     "handle_interrupt": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 910,
+      "line": 929,
       "signature": "static int handle_interrupt(cpu_t *cpu)",
       "is_iram": false
     },
     "check_pages_differ": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 928,
+      "line": 947,
       "signature": "static bool check_pages_differ(uint16_t a, uint16_t b)",
       "is_iram": false
     },
     "cpu_init": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 684,
+      "line": 703,
       "signature": "void cpu_init(cpu_t *cpu, agnes_t *agnes)",
       "is_iram": false
     },
     "cpu_tick": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 692,
+      "line": 711,
       "signature": "int cpu_tick(cpu_t *cpu)",
       "is_iram": false
     },
     "cpu_update_zn_flags": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 728,
+      "line": 747,
       "signature": "void cpu_update_zn_flags(cpu_t *cpu, uint8_t val)",
       "is_iram": false
     },
     "cpu_stack_push8": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 733,
+      "line": 752,
       "signature": "void cpu_stack_push8(cpu_t *cpu, uint8_t val)",
       "is_iram": false
     },
     "cpu_stack_push16": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 739,
+      "line": 758,
       "signature": "void cpu_stack_push16(cpu_t *cpu, uint16_t val)",
       "is_iram": false
     },
     "cpu_stack_pop8": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 744,
+      "line": 763,
       "signature": "uint8_t cpu_stack_pop8(cpu_t *cpu)",
       "is_iram": false
     },
     "cpu_stack_pop16": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 751,
+      "line": 770,
       "signature": "uint16_t cpu_stack_pop16(cpu_t *cpu)",
       "is_iram": false
     },
     "cpu_get_flags": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 758,
+      "line": 777,
       "signature": "uint8_t cpu_get_flags(const cpu_t *cpu)",
       "is_iram": false
     },
     "cpu_restore_flags": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 769,
+      "line": 788,
       "signature": "void cpu_restore_flags(cpu_t *cpu, uint8_t flags)",
       "is_iram": false
     },
     "cpu_trigger_nmi": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 778,
+      "line": 797,
       "signature": "void cpu_trigger_nmi(cpu_t *cpu)",
       "is_iram": false
     },
     "cpu_trigger_irq": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 782,
+      "line": 801,
       "signature": "void cpu_trigger_irq(cpu_t *cpu)",
       "is_iram": false
     },
     "cpu_set_dma_stall": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 788,
+      "line": 807,
       "signature": "void cpu_set_dma_stall(cpu_t *cpu)",
       "is_iram": false
     },
     "cpu_read16": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 839,
+      "line": 858,
       "signature": "uint16_t cpu_read16(cpu_t *cpu, uint16_t addr)",
       "is_iram": false
     },
     "scanline_visible_pre": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1019,
+      "line": 1038,
       "signature": "static void scanline_visible_pre(ppu_t *ppu, bool *out_new_frame)",
       "is_iram": false
     },
     "inc_hori_v": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1118,
+      "line": 1137,
       "signature": "static void inc_hori_v(ppu_t *ppu)",
       "is_iram": false
     },
     "inc_vert_v": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1128,
+      "line": 1147,
       "signature": "static void inc_vert_v(ppu_t *ppu)",
       "is_iram": false
     },
     "emit_pixel": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1180,
+      "line": 1199,
       "signature": "static void emit_pixel(ppu_t *ppu)",
       "is_iram": false
     },
     "get_bg_color_addr": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1211,
+      "line": 1230,
       "signature": "static uint16_t get_bg_color_addr(ppu_t *ppu)",
       "is_iram": false
     },
     "get_sprite_color_addr": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1229,
+      "line": 1248,
       "signature": "static uint16_t get_sprite_color_addr(ppu_t *ppu, int *out_sprite_ix, bool *out_behind_bg)",
       "is_iram": false
     },
     "eval_sprites": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1153,
+      "line": 1172,
       "signature": "static void eval_sprites(ppu_t *ppu)",
       "is_iram": false
     },
     "set_pixel_color_ix": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1406,
+      "line": 1425,
       "signature": "static void set_pixel_color_ix(ppu_t *ppu, int x, int y, uint8_t color_ix)",
       "is_iram": false
     },
     "ppu_read8": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 953,
+      "line": 972,
       "signature": "static uint8_t ppu_read8(ppu_t *ppu, uint16_t addr);",
       "is_iram": false
     },
     "ppu_write8": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1426,
+      "line": 1445,
       "signature": "static void ppu_write8(ppu_t *ppu, uint16_t addr, uint8_t val)",
       "is_iram": false
     },
     "mirror_address": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1439,
+      "line": 1458,
       "signature": "static uint16_t mirror_address(ppu_t *ppu, uint16_t addr)",
       "is_iram": false
     },
     "ppu_init": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 962,
+      "line": 981,
       "signature": "void ppu_init(ppu_t *ppu, agnes_t *agnes)",
       "is_iram": false
     },
     "ppu_tick": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 970,
+      "line": 989,
       "signature": "void ppu_tick(ppu_t *ppu, bool *out_new_frame)",
       "is_iram": false
     },
     "ppu_write_register": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1323,
+      "line": 1342,
       "signature": "void ppu_write_register(ppu_t *ppu, uint16_t addr, uint8_t val)",
       "is_iram": false
     },
     "op_adc": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1808,
+      "line": 1827,
       "signature": "static int op_adc(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_and": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1819,
+      "line": 1838,
       "signature": "static int op_and(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_asl": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1826,
+      "line": 1845,
       "signature": "static int op_asl(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_bcc": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1841,
+      "line": 1860,
       "signature": "static int op_bcc(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_bcs": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1845,
+      "line": 1864,
       "signature": "static int op_bcs(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_beq": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1849,
+      "line": 1868,
       "signature": "static int op_beq(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_bit": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1853,
+      "line": 1872,
       "signature": "static int op_bit(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_bmi": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1862,
+      "line": 1881,
       "signature": "static int op_bmi(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_bne": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1866,
+      "line": 1885,
       "signature": "static int op_bne(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_bpl": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1870,
+      "line": 1889,
       "signature": "static int op_bpl(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_brk": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1874,
+      "line": 1893,
       "signature": "static int op_brk(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_bvc": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1883,
+      "line": 1902,
       "signature": "static int op_bvc(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_bvs": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1887,
+      "line": 1906,
       "signature": "static int op_bvs(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_clc": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1891,
+      "line": 1910,
       "signature": "static int op_clc(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_cld": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1896,
+      "line": 1915,
       "signature": "static int op_cld(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_cli": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1901,
+      "line": 1920,
       "signature": "static int op_cli(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_clv": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1906,
+      "line": 1925,
       "signature": "static int op_clv(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_cmp": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1911,
+      "line": 1930,
       "signature": "static int op_cmp(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_cpx": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1918,
+      "line": 1937,
       "signature": "static int op_cpx(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_cpy": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1925,
+      "line": 1944,
       "signature": "static int op_cpy(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_dec": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1932,
+      "line": 1951,
       "signature": "static int op_dec(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_dex": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1939,
+      "line": 1958,
       "signature": "static int op_dex(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_dey": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1945,
+      "line": 1964,
       "signature": "static int op_dey(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_eor": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1951,
+      "line": 1970,
       "signature": "static int op_eor(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_inc": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1958,
+      "line": 1977,
       "signature": "static int op_inc(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_inx": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1965,
+      "line": 1984,
       "signature": "static int op_inx(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_iny": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1971,
+      "line": 1990,
       "signature": "static int op_iny(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_jmp": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1977,
+      "line": 1996,
       "signature": "static int op_jmp(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_jsr": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1982,
+      "line": 2001,
       "signature": "static int op_jsr(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_lda": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1988,
+      "line": 2007,
       "signature": "static int op_lda(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_ldx": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1995,
+      "line": 2014,
       "signature": "static int op_ldx(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_ldy": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2002,
+      "line": 2021,
       "signature": "static int op_ldy(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_lsr": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2009,
+      "line": 2028,
       "signature": "static int op_lsr(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_nop": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2024,
+      "line": 2043,
       "signature": "static int op_nop(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_ora": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2028,
+      "line": 2047,
       "signature": "static int op_ora(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_pha": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2035,
+      "line": 2054,
       "signature": "static int op_pha(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_php": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2040,
+      "line": 2059,
       "signature": "static int op_php(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_pla": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2046,
+      "line": 2065,
       "signature": "static int op_pla(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_plp": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2052,
+      "line": 2071,
       "signature": "static int op_plp(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_rol": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2058,
+      "line": 2077,
       "signature": "static int op_rol(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_ror": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2074,
+      "line": 2093,
       "signature": "static int op_ror(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_rti": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2090,
+      "line": 2109,
       "signature": "static int op_rti(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_rts": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2097,
+      "line": 2116,
       "signature": "static int op_rts(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_sbc": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2102,
+      "line": 2121,
       "signature": "static int op_sbc(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_sec": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2113,
+      "line": 2132,
       "signature": "static int op_sec(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_sed": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2118,
+      "line": 2137,
       "signature": "static int op_sed(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_sei": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2123,
+      "line": 2142,
       "signature": "static int op_sei(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_sta": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2128,
+      "line": 2147,
       "signature": "static int op_sta(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_stx": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2133,
+      "line": 2152,
       "signature": "static int op_stx(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_sty": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2138,
+      "line": 2157,
       "signature": "static int op_sty(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_tax": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2143,
+      "line": 2162,
       "signature": "static int op_tax(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_tay": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2149,
+      "line": 2168,
       "signature": "static int op_tay(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_tsx": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2155,
+      "line": 2174,
       "signature": "static int op_tsx(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_txa": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2161,
+      "line": 2180,
       "signature": "static int op_txa(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_txs": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2167,
+      "line": 2186,
       "signature": "static int op_txs(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "op_tya": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2172,
+      "line": 2191,
       "signature": "static int op_tya(cpu_t *cpu, uint16_t addr, addr_mode_t mode)",
       "is_iram": false
     },
     "take_branch": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2178,
+      "line": 2197,
       "signature": "static int take_branch(cpu_t *cpu, uint16_t addr)",
       "is_iram": false
     },
     "instruction_get": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1783,
+      "line": 1802,
       "signature": "instruction_t* instruction_get(uint8_t opc)",
       "is_iram": false
     },
     "instruction_get_size": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 1787,
+      "line": 1806,
       "signature": "uint8_t instruction_get_size(addr_mode_t mode)",
       "is_iram": false
     },
     "mapper_init": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2196,
+      "line": 2215,
       "signature": "bool mapper_init(agnes_t *agnes)",
       "is_iram": false
     },
     "mapper_read": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2206,
+      "line": 2225,
       "signature": "uint8_t mapper_read(agnes_t *agnes, uint16_t addr)",
       "is_iram": false
     },
     "mapper_write": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2216,
+      "line": 2235,
       "signature": "void mapper_write(agnes_t *agnes, uint16_t addr, uint8_t val)",
       "is_iram": false
     },
     "mapper_pa12_rising_edge": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2225,
+      "line": 2244,
       "signature": "void mapper_pa12_rising_edge(agnes_t *agnes)",
       "is_iram": false
     },
     "mapper0_init": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2238,
+      "line": 2257,
       "signature": "void mapper0_init(mapper0_t *mapper, agnes_t *agnes)",
       "is_iram": false
     },
     "mapper0_read": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2246,
+      "line": 2265,
       "signature": "uint8_t mapper0_read(mapper0_t *mapper, uint16_t addr)",
       "is_iram": false
     },
     "mapper0_write": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2264,
+      "line": 2285,
       "signature": "void mapper0_write(mapper0_t *mapper, uint16_t addr, uint8_t val)",
       "is_iram": false
     },
     "mapper1_write_control": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2356,
+      "line": 2379,
       "signature": "static void mapper1_write_control(mapper1_t *mapper, uint8_t val)",
       "is_iram": false
     },
     "mapper1_set_offsets": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2368,
+      "line": 2391,
       "signature": "static void mapper1_set_offsets(mapper1_t *mapper)",
       "is_iram": false
     },
     "mapper1_init": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2280,
+      "line": 2303,
       "signature": "void mapper1_init(mapper1_t *mapper, agnes_t *agnes)",
       "is_iram": false
     },
     "mapper1_read": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2296,
+      "line": 2319,
       "signature": "uint8_t mapper1_read(mapper1_t *mapper, uint16_t addr)",
       "is_iram": false
     },
     "mapper1_write": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2321,
+      "line": 2344,
       "signature": "void mapper1_write(mapper1_t *mapper, uint16_t addr, uint8_t val)",
       "is_iram": false
     },
     "mapper2_init": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2407,
+      "line": 2430,
       "signature": "void mapper2_init(mapper2_t *mapper, agnes_t *agnes)",
       "is_iram": false
     },
     "mapper2_read": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2413,
+      "line": 2436,
       "signature": "uint8_t mapper2_read(mapper2_t *mapper, uint16_t addr)",
       "is_iram": false
     },
     "mapper2_write": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2427,
+      "line": 2452,
       "signature": "void mapper2_write(mapper2_t *mapper, uint16_t addr, uint8_t val)",
       "is_iram": false
     },
     "mapper4_write_register": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2523,
+      "line": 2550,
       "signature": "static void mapper4_write_register(mapper4_t *mapper, uint16_t addr, uint8_t val)",
       "is_iram": false
     },
     "mapper4_set_offsets": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2551,
+      "line": 2578,
       "signature": "static void mapper4_set_offsets(mapper4_t *mapper)",
       "is_iram": false
     },
     "mapper4_init": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2447,
+      "line": 2474,
       "signature": "void mapper4_init(mapper4_t *mapper, agnes_t *agnes)",
       "is_iram": false
     },
     "mapper4_pa12_rising_edge": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2471,
+      "line": 2498,
       "signature": "void mapper4_pa12_rising_edge(mapper4_t *mapper)",
       "is_iram": false
     },
     "mapper4_read": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2482,
+      "line": 2509,
       "signature": "uint8_t mapper4_read(mapper4_t *mapper, uint16_t addr)",
       "is_iram": false
     },
     "mapper4_write": {
       "file": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
-      "line": 2509,
+      "line": 2536,
       "signature": "void mapper4_write(mapper4_t *mapper, uint16_t addr, uint8_t val)",
       "is_iram": false
     },
@@ -9928,11 +9934,11 @@
     ".agents/rules/04_known_issues.md": {
       "path": ".agents/rules/04_known_issues.md",
       "category": "AGENT_RULES",
-      "total_lines": 447,
-      "sloc": 377,
+      "total_lines": 452,
+      "sloc": 382,
       "comments": 0,
       "blanks": 70,
-      "density_percent": 84.3,
+      "density_percent": 84.5,
       "symbols": [],
       "pins_accessed": [
         "TFT_SCLK",
@@ -10552,8 +10558,8 @@
     "AGENT_KNOWLEDGE_GRAPH.json": {
       "path": "AGENT_KNOWLEDGE_GRAPH.json",
       "category": "OTHER",
-      "total_lines": 18359,
-      "sloc": 18359,
+      "total_lines": 18366,
+      "sloc": 18366,
       "comments": 0,
       "blanks": 0,
       "density_percent": 100.0,
@@ -10661,11 +10667,11 @@
     "CHANGELOG.md": {
       "path": "CHANGELOG.md",
       "category": "OTHER",
-      "total_lines": 683,
-      "sloc": 607,
+      "total_lines": 691,
+      "sloc": 615,
       "comments": 0,
       "blanks": 76,
-      "density_percent": 88.9,
+      "density_percent": 89.0,
       "symbols": [],
       "pins_accessed": [
         "TFT_SCLK",
@@ -10701,8 +10707,8 @@
     "docs/consolidated-rules.md": {
       "path": "docs/consolidated-rules.md",
       "category": "DOCUMENTATION",
-      "total_lines": 3632,
-      "sloc": 2887,
+      "total_lines": 3637,
+      "sloc": 2892,
       "comments": 45,
       "blanks": 700,
       "density_percent": 79.5,
@@ -10942,8 +10948,8 @@
     "firmware/BmoGameboy/BmoGameboy.ino": {
       "path": "firmware/BmoGameboy/BmoGameboy.ino",
       "category": "FIRMWARE_TOP",
-      "total_lines": 1160,
-      "sloc": 1000,
+      "total_lines": 1162,
+      "sloc": 1002,
       "comments": 64,
       "blanks": 96,
       "density_percent": 86.2,
@@ -11453,8 +11459,8 @@
     "firmware/BmoGameboy/src/core/display_emu.cpp": {
       "path": "firmware/BmoGameboy/src/core/display_emu.cpp",
       "category": "FIRMWARE_CORE",
-      "total_lines": 1963,
-      "sloc": 1594,
+      "total_lines": 1958,
+      "sloc": 1589,
       "comments": 124,
       "blanks": 245,
       "density_percent": 81.2,
@@ -11659,11 +11665,11 @@
     "firmware/BmoGameboy/src/core/save_manager.cpp": {
       "path": "firmware/BmoGameboy/src/core/save_manager.cpp",
       "category": "FIRMWARE_CORE",
-      "total_lines": 487,
-      "sloc": 404,
+      "total_lines": 526,
+      "sloc": 439,
       "comments": 7,
-      "blanks": 76,
-      "density_percent": 83.0,
+      "blanks": 80,
+      "density_percent": 83.5,
       "symbols": [
         "computeCRC32",
         "extractBaseName",
@@ -12092,11 +12098,11 @@
     "firmware/BmoGameboy/src/emulators/emu_lynx.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_lynx.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 104,
+      "total_lines": 106,
       "sloc": 91,
-      "comments": 0,
+      "comments": 2,
       "blanks": 13,
-      "density_percent": 87.5,
+      "density_percent": 85.8,
       "symbols": [
         "LynxEmu::init",
         "LynxEmu::update",
@@ -12146,11 +12152,11 @@
     "firmware/BmoGameboy/src/emulators/emu_nes.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_nes.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 126,
-      "sloc": 104,
+      "total_lines": 121,
+      "sloc": 99,
       "comments": 5,
       "blanks": 17,
-      "density_percent": 82.5,
+      "density_percent": 81.8,
       "symbols": [
         "getNesStateBuf",
         "NesEmu::begin",
@@ -12728,11 +12734,11 @@
     "firmware/BmoGameboy/src/vendor/agnes/agnes.c": {
       "path": "firmware/BmoGameboy/src/vendor/agnes/agnes.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 2594,
-      "sloc": 2180,
+      "total_lines": 2621,
+      "sloc": 2206,
       "comments": 96,
-      "blanks": 318,
-      "density_percent": 84.0,
+      "blanks": 319,
+      "density_percent": 84.2,
       "symbols": [
         "get_input_byte",
         "agnes_make",
@@ -12743,6 +12749,7 @@
         "agnes_restore_state",
         "agnes_get_screen_pixel",
         "agnes_get_screen_buffer",
+        "agnes_get_prg_ram",
         "agnes_destroy",
         "get_input_byte",
         "cpu_read16_indirect_bug",
@@ -12752,8 +12759,7 @@
         "cpu_init",
         "cpu_tick",
         "cpu_update_zn_flags",
-        "cpu_stack_push8",
-        "cpu_stack_push16"
+        "cpu_stack_push8"
       ],
       "pins_accessed": [],
       "includes": [
@@ -12777,11 +12783,11 @@
     "firmware/BmoGameboy/src/vendor/agnes/agnes.h": {
       "path": "firmware/BmoGameboy/src/vendor/agnes/agnes.h",
       "category": "VENDOR_ENGINES",
-      "total_lines": 87,
-      "sloc": 50,
+      "total_lines": 88,
+      "sloc": 51,
       "comments": 21,
       "blanks": 16,
-      "density_percent": 57.5,
+      "density_percent": 58.0,
       "symbols": [
         "agnes_make",
         "agnes_destroy",
@@ -12793,7 +12799,8 @@
         "agnes_tick",
         "agnes_next_frame",
         "agnes_get_screen_pixel",
-        "agnes_get_screen_buffer"
+        "agnes_get_screen_buffer",
+        "agnes_get_prg_ram"
       ],
       "pins_accessed": [],
       "includes": [
@@ -18262,11 +18269,11 @@
     "tools/guardian/core/ui_auditor.py": {
       "path": "tools/guardian/core/ui_auditor.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 261,
-      "sloc": 207,
-      "comments": 15,
-      "blanks": 39,
-      "density_percent": 79.3,
+      "total_lines": 278,
+      "sloc": 220,
+      "comments": 17,
+      "blanks": 41,
+      "density_percent": 79.1,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
