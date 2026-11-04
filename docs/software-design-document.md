@@ -102,6 +102,10 @@ The ESP32-S3-N16R8 utilizes specific pin groupings. Strapping pins (GPIO 0, 3, 4
 | `BTN_B` | 17 | Action B | `INPUT_PULLUP` | Back / secondary action key |
 | `BTN_START` | 18 | Start Button | `INPUT_PULLUP` | Console pause / start key |
 | `BTN_SELECT`| 21 | Select Button | `INPUT_PULLUP` | Menu combo trigger (`SELECT + UP` exits emulator) |
+| `BTN_X` | 14 | X Button | `INPUT_PULLUP` | SNES X, Genesis C, DOOM next weapon |
+| `BTN_Y` | 42 | Y Button | `INPUT_PULLUP` | SNES Y, DOOM previous weapon; read from `GPIO_IN1_REG` |
+| `BTN_L` | 47 | L Trigger | `INPUT_PULLUP` | SNES L, DOOM strafe left; read from `GPIO_IN1_REG` |
+| `BTN_R` | 48 | R Trigger | `INPUT_PULLUP` | SNES R, DOOM strafe right; read from `GPIO_IN1_REG` |
 | `BATTERY_ADC_PIN` | 1 | ADC1 Channel 0 | Analog In | **DORMANT**; do not read when `FEATURE_BATTERY_MONITOR=0` |
 | `I2S_BCLK` | 38 | I2S Bit Clock | Output | **DORMANT**; reserved for MAX98357A DAC |
 | `I2S_LRC` | 39 | I2S Word Select | Output | **DORMANT**; reserved for MAX98357A DAC |
@@ -336,7 +340,7 @@ public:
 
 ## 8. Input Subsystem & Zero-Wait Hardware Polling
 
-- **Pin Assignments:** 8 GPIO inputs configured with internal pull-up resistors (`INPUT_PULLUP`).
+- **Pin Assignments:** 12 GPIO inputs configured with internal pull-up resistors (`INPUT_PULLUP`).
   - D-Pad: `UP` (GPIO 4), `DOWN` (GPIO 5), `LEFT` (GPIO 6), `RIGHT` (GPIO 7)
   - Action Keys: `A` (GPIO 16), `B` (GPIO 17), `START` (GPIO 18), `SELECT` (GPIO 21)
 - **Zero-Wait Atomic Register Polling:** The button engine (`buttons.cpp`) polls all button GPIOs in a single atomic hardware register read:

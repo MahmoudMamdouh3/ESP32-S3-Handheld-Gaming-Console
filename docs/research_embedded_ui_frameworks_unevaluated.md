@@ -28,7 +28,7 @@ the owner can test or learn from these projects instead of assuming the custom p
 - **Platform swap risk:** Tactility and MicroPythonOS would replace the Arduino framework,
   the custom `partitions.csv`, and the verified `arduino-cli` build. Hardware rules in this repo
   show that wrong flash or PSRAM modes can brick the board.
-- **Input model:** both target touch. This console has 8 GPIO buttons and no touch.
+- **Input model:** both target touch. This console has 12 GPIO buttons and no touch.
 - **Native emulator cores:** the cores are C/C++ and need native speed, which does not suit MicroPython.
 - **LVGL vs the display path:** frames stream via the Core 0 `vDisplayTask` with the
   `SpiArbiter` mutex shared with the SD card. LVGL has its own draw/flush buffers, so SPI

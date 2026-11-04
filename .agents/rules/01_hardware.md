@@ -3,6 +3,7 @@ Only the following hardware is *currently, physically soldered and wired* to the
 - **Power:** USB-C power only. (No battery, no TP4056 module, no voltage divider yet).
 - **Display:** ST7789 display (2.4", 240x320) wired to the shared FSPI bus.
 - **Input:** 8 standard Game Boy-layout tactile buttons wired with internal pull-ups (`INPUT_PULLUP`).
+- **Input (pending wiring):** 4 extra buttons (X, Y, L, R) are supported in firmware and the simulator but are not soldered yet. Unwired pins read released because of `INPUT_PULLUP`.
 - **Storage:** SD card module wired to the shared FSPI bus.
 - **Audio:** None. (No MAX98357A DAC, no I2S wiring).
 
@@ -23,6 +24,10 @@ This is the single source of truth for all pin assignments, synchronized with `c
 | **17** | `BTN_B` | `buttons.cpp` | `INPUT_PULLUP` |
 | **18** | `BTN_START` | `buttons.cpp` | `INPUT_PULLUP` |
 | **21** | `BTN_SELECT` | `buttons.cpp` | `INPUT_PULLUP` |
+| **14** | `BTN_X` | `buttons.cpp` | `INPUT_PULLUP`. Extra face button (SNES X, Genesis C, DOOM next weapon). Not yet soldered. |
+| **42** | `BTN_Y` | `buttons.cpp` | `INPUT_PULLUP`. Read from `GPIO_IN1_REG` (pin above 31). Not yet soldered. |
+| **47** | `BTN_L` | `buttons.cpp` | `INPUT_PULLUP`. Left shoulder trigger. Read from `GPIO_IN1_REG`. Not yet soldered. |
+| **48** | `BTN_R` | `buttons.cpp` | `INPUT_PULLUP`. Right shoulder trigger. Read from `GPIO_IN1_REG`. Not yet soldered. On many DevKitC-1 boards GPIO48 also drives the onboard RGB LED. |
 | **8** | `TFT_DC` | `display_emu.cpp` | Data/Command pin for ST7789. |
 | **9** | `TFT_RST` | `display_emu.cpp` | Reset pin for ST7789. |
 | **10** | `TFT_CS` | `display_emu.cpp` | Chip Select for ST7789 (FSPI). |

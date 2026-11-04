@@ -46,9 +46,9 @@ class TestWokwiHardwareParity(unittest.TestCase):
         self.assert_connection(f"esp:{self.config_pins['TFT_MOSI']}", "sd:DI")
         self.assert_connection(f"esp:{self.config_pins['TFT_SCK']}", "sd:SCK")
 
-    def test_all_eight_buttons_are_active_low_and_use_firmware_pins(self):
+    def test_all_twelve_buttons_are_active_low_and_use_firmware_pins(self):
         buttons = {part["id"]: part for part in self.diagram["parts"]}
-        for name in ("UP", "DOWN", "LEFT", "RIGHT", "A", "B", "START", "SELECT"):
+        for name in ("UP", "DOWN", "LEFT", "RIGHT", "A", "B", "START", "SELECT", "X", "Y", "L", "R"):
             part = f"btn_{name.lower()}"
             self.assertEqual(buttons[part]["type"], "wokwi-pushbutton")
             self.assert_connection(f"esp:{self.config_pins[f'BTN_{name}']}", f"{part}:1.l")
@@ -72,7 +72,7 @@ class TestWokwiHardwareParity(unittest.TestCase):
         self.assertIn("board-esp32-s3-devkitc-1", part_types)
         self.assertIn("wokwi-ili9341", part_types)
         self.assertIn("wokwi-microsd-card", part_types)
-        self.assertEqual(sum(part["type"] == "wokwi-pushbutton" for part in self.diagram["parts"]), 8)
+        self.assertEqual(sum(part["type"] == "wokwi-pushbutton" for part in self.diagram["parts"]), 12)
 
 
 if __name__ == "__main__":

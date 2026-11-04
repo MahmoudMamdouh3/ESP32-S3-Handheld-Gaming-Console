@@ -49,7 +49,7 @@ void testRomIntegrity() {
 
 void testButtonsCount() {
   TEST_CASE("Buttons Count Verification");
-  ASSERT_EQ(Buttons::count(), 8, "Expected exactly 8 physical buttons to be tracked");
+  ASSERT_EQ(Buttons::count(), 12, "Expected exactly 12 physical buttons to be tracked");
 }
 
 void testEmulatorRejection() {

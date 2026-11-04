@@ -9,7 +9,7 @@
 [![Display](https://img.shields.io/badge/Display-ST7789%20320x240-teal.svg)]()
 [![Emulators](https://img.shields.io/badge/Cores-14%20Systems-green.svg)]()
 
-Firmware and tooling for a custom handheld game console built around an **ESP32-S3-WROOM-1 (N16R8)**, a **320×240 ST7789 IPS display**, a **MicroSD slot**, and **8 physical buttons**. It runs 14 retro console and game engines alongside an interactive BMO face mode.
+Firmware and tooling for a custom handheld game console built around an **ESP32-S3-WROOM-1 (N16R8)**, a **320×240 ST7789 IPS display**, a **MicroSD slot**, and **12 physical buttons** (8 base plus X, Y, L, R). It runs 14 retro console and game engines alongside an interactive BMO face mode.
 
 <br/>
 
@@ -48,7 +48,7 @@ Firmware and tooling for a custom handheld game console built around an **ESP32-
 - **MCU:** ESP32-S3-WROOM-1 (`N16R8` — dual-core Xtensa LX7 @ 240 MHz, 16 MB Quad SPI Flash, 8 MB Octal SPI PSRAM)
 - **Display:** 2.0" ST7789 IPS TFT (320×240 landscape, 80 MHz SPI)
 - **Storage:** MicroSD over SPI (FAT32) + built-in flash fallback ROMs when no SD card is inserted
-- **Input:** 8 tactile buttons wired active-low (`INPUT_PULLUP`)
+- **Input:** 12 tactile buttons wired active-low (`INPUT_PULLUP`); X, Y, L, R are supported in firmware and the simulator and need to be wired
 
 | Component | Macro (`config.h`) | GPIO | Notes |
 | :--- | :--- | :--- | :--- |
@@ -57,6 +57,7 @@ Firmware and tooling for a custom handheld game console built around an **ESP32-
 | **MicroSD** | `SD_CS` / `SD_MISO` | `13` / `15` | Shares `TFT_MOSI` (`11`) & `TFT_SCK` (`12`) via `SpiArbiter` |
 | **D-Pad** | `BTN_UP` / `BTN_DOWN` / `BTN_LEFT` / `BTN_RIGHT` | `4` / `5` / `6` / `7` | `INPUT_PULLUP` (active-low, 25 ms debounce) |
 | **Buttons** | `BTN_A` / `BTN_B` / `BTN_START` / `BTN_SELECT` | `16` / `17` / `18` / `21` | `INPUT_PULLUP` (active-low, read via `GPIO_IN_REG`) |
+| **Extra buttons** | `BTN_X` / `BTN_Y` / `BTN_L` / `BTN_R` | `14` / `42` / `47` / `48` | `INPUT_PULLUP` (active-low, GPIO 42/47/48 read via `GPIO_IN1_REG`) |
 | **Reserved** | Strapping (`0, 3, 45, 46`), Octal PSRAM (`33–37`) | — | Do not assign to peripherals |
 
 > **Hardware note:** Battery ADC (`BATTERY_ADC_PIN = 1`) and I2S audio (`I2S_BCLK = 38`, `I2S_LRC = 39`, `I2S_DIN = 40`) are disabled in `config.h` (`FEATURE_BATTERY_MONITOR = 0`, `FEATURE_AUDIO = 0`) because those circuits are not soldered on the current board.
@@ -65,7 +66,7 @@ Firmware and tooling for a custom handheld game console built around an **ESP32-
 
 ## Firmware Hardware Simulation
 
-The Wokwi project runs the compiled ESP32-S3 firmware and wires the simulator to the same GPIO assignments in `src/core/config.h`: all eight active-low buttons, the shared display/SD SPI clock and MOSI, separate chip selects, and the SD MISO line. Battery and I2S audio parts are intentionally absent.
+The Wokwi project runs the compiled ESP32-S3 firmware and wires the simulator to the same GPIO assignments in `src/core/config.h`: all twelve active-low buttons, the shared display/SD SPI clock and MOSI, separate chip selects, and the SD MISO line. Battery and I2S audio parts are intentionally absent.
 
 1. Compile with the repository's ESP32-S3 settings and the output path used by [`wokwi.toml`](wokwi.toml):
 

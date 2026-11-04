@@ -430,7 +430,8 @@ def cmd_prompt_pack(args) -> int:
     print(
         f"   * Buttons (Active-LOW): UP={cfg.get('BTN_UP')}, DOWN={cfg.get('BTN_DOWN')}, "
         f"LEFT={cfg.get('BTN_LEFT')}, RIGHT={cfg.get('BTN_RIGHT')}, "
-        f"A={cfg.get('BTN_A')}, B={cfg.get('BTN_B')}, START={cfg.get('BTN_START')}, SELECT={cfg.get('BTN_SELECT')}"
+        f"A={cfg.get('BTN_A')}, B={cfg.get('BTN_B')}, START={cfg.get('BTN_START')}, SELECT={cfg.get('BTN_SELECT')}, "
+        f"X={cfg.get('BTN_X')}, Y={cfg.get('BTN_Y')}, L={cfg.get('BTN_L')}, R={cfg.get('BTN_R')}"
     )
     print(
         f"   * Hard-Stop Flags     : FEATURE_BATTERY_MONITOR={cfg.get('FEATURE_BATTERY_MONITOR')} (MUST STAY 0), "
@@ -900,6 +901,10 @@ def cmd_benchmark_ai(args) -> int:
         (hp.get("buttons", {}).get("btn_b"), cfg.get("BTN_B")),
         (hp.get("buttons", {}).get("btn_start"), cfg.get("BTN_START")),
         (hp.get("buttons", {}).get("btn_select"), cfg.get("BTN_SELECT")),
+        (hp.get("buttons", {}).get("btn_x"), cfg.get("BTN_X")),
+        (hp.get("buttons", {}).get("btn_y"), cfg.get("BTN_Y")),
+        (hp.get("buttons", {}).get("btn_l"), cfg.get("BTN_L")),
+        (hp.get("buttons", {}).get("btn_r"), cfg.get("BTN_R")),
     ]
     pin_hits = sum(1 for a, b in pin_checks if a == b and a is not None)
     pin_pct = (pin_hits / len(pin_checks)) * 100.0

@@ -147,7 +147,7 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 |---|---|---|---|
 | `Buttons::begin` | fn | `void begin()` | Configures button GPIOs as INPUT_PULLUP |
 | `Buttons::update` | fn | `void update()` | Reads GPIO_IN_REG atomically, updates state |
-| `Buttons::count` | fn | `int count()` | Returns number of buttons (8) |
+| `Buttons::count` | fn | `int count()` | Returns number of buttons (12) |
 | `Buttons::get` | fn | `const ButtonState& get(int index)` | Returns ButtonState struct |
 | `Buttons::setGameplayMode` | fn | `void setGameplayMode(bool inGame)` | Enables/disables in-game A/B remap and auto-fire turbo |
 | `Buttons::setSwapAB` | fn | `void setSwapAB(bool swap)` | Sets A/B button orientation swap |
@@ -157,7 +157,7 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `Buttons::isTurboEnabled` | fn | `bool isTurboEnabled()` | Returns true if auto-fire turbo is active |
 | `Buttons::toggleTurbo` | fn | `bool toggleTurbo()` | Toggles rapid auto-fire turbo |
 | `Buttons::gb_joypad_state` | var | `uint8_t gb_joypad_state` | Active-low joypad bitmask (0=pressed) |
-| `Buttons::Index` | enum | `enum Index : int { UP, DOWN, LEFT, RIGHT, A, B, START, SELECT }` | Button indices |
+| `Buttons::Index` | enum | `enum Index : int { UP, DOWN, LEFT, RIGHT, A, B, START, SELECT, X, Y, L, R }` | Button indices (12 total) |
 | `ButtonState` | struct | `struct ButtonState { const char* name; uint8_t pin; bool pressed; bool changed; }` | Button state info |
 
 ---

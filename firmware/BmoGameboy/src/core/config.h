@@ -47,6 +47,17 @@
 #define BTN_START  18
 #define BTN_SELECT 21
 
+// ---------- Extended Buttons (SNES / Genesis / DOOM layout) ----------
+// X/Y face buttons and L/R shoulder triggers. Same wiring as the buttons
+// above (GPIO -> switch -> GND, INPUT_PULLUP). Pins 42, 47 and 48 are above
+// GPIO 31, so Buttons::update() reads them from GPIO_IN1_REG.
+// None of these pins are strapping (0/3/45/46), PSRAM (33-37), or used by
+// the display, SD card, I2S, or I2C assignments in this file.
+#define BTN_X      14
+#define BTN_Y      42
+#define BTN_L      47
+#define BTN_R      48
+
 // ---------- Audio: I2S DAC (e.g. MAX98357A) ----------
 #define I2S_BCLK   38
 #define I2S_LRC    39

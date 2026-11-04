@@ -1,6 +1,6 @@
 {
   "schema_version": "2.1.0",
-  "last_updated": "2026-11-04T10:01:14.466574",
+  "last_updated": "2026-11-04T12:38:20.896638",
   "task_decision_table": {
     "modify_gpio_or_pin": {
       "rules": [
@@ -121,7 +121,7 @@
     "01_hardware.md": {
       "file": ".agents/rules/01_hardware.md",
       "title": "1. Physically Wired Hardware (Verified Ground Truth)",
-      "lines": 58
+      "lines": 63
     },
     "02_architecture.md": {
       "file": ".agents/rules/02_architecture.md",
@@ -136,7 +136,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "6. Known Issues, Technical Debt & Hardware Limitations Registry",
-      "lines": 492
+      "lines": 500
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",

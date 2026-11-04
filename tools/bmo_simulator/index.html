@@ -53,11 +53,37 @@
   <main class="simulator-workspace">
 
     <!-- Viewport Stage -->
-    <section class="stage-container">
+    <section class="stage-container view-3d" id="stage-container">
+
+      <!-- Viewport Stage Toolbar -->
+      <div class="stage-toolbar" role="toolbar" aria-label="Simulator camera and display view options">
+        <div class="stage-toolbar-group">
+          <span class="toolbar-label">Angle:</span>
+          <button class="control-pill cam-preset-btn active" data-cam="front">Front</button>
+          <button class="control-pill cam-preset-btn" data-cam="iso">3D Iso</button>
+          <button class="control-pill cam-preset-btn" data-cam="top">Top (L/R)</button>
+          <button class="control-pill cam-preset-btn" data-cam="left">Left (SD)</button>
+          <button class="control-pill cam-preset-btn" data-cam="right">Right (Pwr)</button>
+          <button class="control-pill cam-preset-btn" data-cam="back">Back (4×AA)</button>
+          <button class="control-pill cam-preset-btn" data-cam="reset">Reset</button>
+        </div>
+        <div class="stage-toolbar-group">
+          <button class="control-pill" id="btn-toggle-viewmode" aria-label="Switch between 3D console model and flat layout">2D Flat View</button>
+        </div>
+      </div>
+
+      <!-- 3D Interactive WebGL Console Viewport -->
+      <div id="three-viewport-container" class="three-viewport-frame" aria-label="3D BMO Console Model (drag to rotate, scroll to zoom, click buttons to play)"></div>
 
       <!-- Browser rendering of the handheld enclosure and controls -->
       <div class="bmo-gameboy-chassis" id="gameboy-chassis">
         <div class="chassis-top-ridges"></div>
+
+        <!-- L / R Shoulder Triggers (GPIO 47 / GPIO 48) -->
+        <div class="shoulder-buttons-row">
+          <button class="shoulder-btn shoulder-l" id="btn-l" aria-label="L shoulder trigger">L</button>
+          <button class="shoulder-btn shoulder-r" id="btn-r" aria-label="R shoulder trigger">R</button>
+        </div>
 
         <!-- Screen Bezel Housing -->
         <div class="screen-bezel-housing">
@@ -89,16 +115,12 @@
             <div class="dpad-center"></div>
           </div>
 
-          <!-- A / B Action Buttons -->
+          <!-- Standard Handheld Diamond Action Buttons (X North, Y West, B South, A East) -->
           <div class="action-buttons-cluster">
-            <div class="action-btn-wrapper">
-              <button class="round-btn btn-b" id="btn-b">B</button>
-              <div class="btn-engraved-label">B</div>
-            </div>
-            <div class="action-btn-wrapper">
-              <button class="round-btn btn-a" id="btn-a">A</button>
-              <div class="btn-engraved-label">A</div>
-            </div>
+            <button class="round-btn btn-x" id="btn-x" aria-label="X Button">X</button>
+            <button class="round-btn btn-y" id="btn-y" aria-label="Y Button">Y</button>
+            <button class="round-btn btn-b" id="btn-b" aria-label="B Button">B</button>
+            <button class="round-btn btn-a" id="btn-a" aria-label="A Button">A</button>
           </div>
 
         </div>
@@ -147,7 +169,7 @@
           </div>
           <div class="telemetry-box">
             <div class="telemetry-label">Buttons</div>
-            <div class="telemetry-value">8 active-low GPIO inputs</div>
+            <div class="telemetry-value">12 active-low GPIO inputs (8 base + X, Y, L, R)</div>
           </div>
           <div class="telemetry-box">
             <div class="telemetry-label">Battery / Audio</div>
@@ -229,6 +251,22 @@
             <kbd class="key-cap">X</kbd>
           </div>
           <div class="key-binding-row">
+            <span class="key-label">X Button (SNES, Genesis C, DOOM)</span>
+            <kbd class="key-cap">S</kbd>
+          </div>
+          <div class="key-binding-row">
+            <span class="key-label">Y Button (SNES, DOOM)</span>
+            <kbd class="key-cap">A</kbd>
+          </div>
+          <div class="key-binding-row">
+            <span class="key-label">L Trigger (SNES, DOOM)</span>
+            <kbd class="key-cap">Q</kbd>
+          </div>
+          <div class="key-binding-row">
+            <span class="key-label">R Trigger (SNES, DOOM)</span>
+            <kbd class="key-cap">W</kbd>
+          </div>
+          <div class="key-binding-row">
             <span class="key-label">Start Button</span>
             <kbd class="key-cap">Enter</kbd>
           </div>
@@ -307,6 +345,9 @@
 
   </main>
 
+  <script src="three.min.js"></script>
+  <script src="OrbitControls.js"></script>
+  <script src="bmo_3d_console.js"></script>
   <script src="console_history_data.js"></script>
   <script src="wasm_playtest_engine.js"></script>
   <script src="simulator.js"></script>

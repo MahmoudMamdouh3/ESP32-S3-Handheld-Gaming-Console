@@ -88,14 +88,17 @@ won't show a COM port reliably otherwise.
 ## 6. Power & Battery Management (Handheld Conversion)
 
 > [!WARNING]
-> **Optional Feature (Disabled by Default)**
-> The LiPo battery and TP4056 hardware modifications described below are for advanced handheld conversions only. They are NOT part of the baseline hardware spec. The `FEATURE_BATTERY_MONITOR` flag in `config.h` defaults to `0` and MUST be kept at `0` unless you have explicitly wired this conversion, otherwise the board will enter a fatal boot-loop.
+> **Optional Feature (Disabled by Default - Hard Stop)**  
+> The physical hardware runs on USB-C power. The `FEATURE_BATTERY_MONITOR` flag in `config.h` defaults to `0` and MUST be kept at `0` unless a verified voltage divider is soldered, otherwise reading floating GPIO1 triggers an ADC boot-loop.
 
 To move away from bench/USB power and make the device a true handheld:
-- **LiPo + TP4056:** Use a 3.7V Lithium Polymer battery connected to a TP4056 charge/protection module. 
-- **Physical Switch:** Wire a physical SPST slide switch on the positive output (`OUT+`) of the TP4056 *before* it reaches the ESP32 `Vin` or 5V rail. This ensures the battery can be fully disconnected from the load when powered off, preventing deep discharge.
-- **Battery Sensing (GPIO1):** The battery voltage is divided (via a 100k/100k resistor divider) and read on `GPIO 1` using the ESP32's internal ADC. The firmware uses this reading to display a battery icon in the UI and forcefully trigger `esp_deep_sleep_start()` to prevent LiPo damage when voltage drops too low.
-- **Power Budget:** The ST7789 backlight, Octal PSRAM, and ESP32-S3 CPU running at 240MHz can draw significant current (often >250mA total). Ensure your battery is sized appropriately (e.g., 1000mAh+ for a few hours of gameplay) and that the wiring gauge can handle the current without unacceptable voltage drops.
+- **Power Architecture (AA / NiMH vs Li-ion):**
+  - **NiMH / Alkaline AA Cells:** Use 4×AA cells (or 2×AA cells with a ≥1A boost converter to 5V feeding ESP32 VIN/5V and the SD module). NiMH cells must be removed and charged in an external dedicated NiMH charger. **DO NOT connect a TP4056 module to AA NiMH batteries** (TP4056 is strictly 4.2V CC/CV for 3.7V single-cell Lithium-ion).
+  - **LiPo Alternative:** A 3.7V LiPo with a TP4056 module can be used instead of AAs.
+  - **Dual USB / Battery Power Protection:** When combining battery power with USB programming power, place Schottky diodes on both 5V sources so they cannot back-feed each other.
+- **Physical Switch:** Wire a physical SPST slide switch on the battery positive output *before* it reaches the ESP32 `Vin` or 5V rail. This ensures the battery can be fully disconnected from the load when powered off.
+- **Battery Sensing (GPIO1):** When a physical voltage divider (via a 100k/100k resistor divider) is soldered to a battery, GPIO 1 can sample battery voltage.
+- **Power Budget:** The ST7789 backlight, Octal PSRAM, and ESP32-S3 CPU running at 240MHz draw ~250mA total during active emulation. Ensure your power supply/batteries can supply ≥1A peak.
 
 ---
 
@@ -152,10 +155,10 @@ The system now hosts four engines:
 
 ## 11. Firmware Compilation & ROM Legality
 
-- **OPI Flash Mode Crash (CRITICAL):** N16R8 boards typically use Octal SPI for BOTH their PSRAM and their internal Flash. If the Arduino IDE is set to `Flash Mode: QIO`, the bootloader loads the app, but the app configures the flash cache incorrectly, resulting in an immediate `E (504) esp_core_dump_flash: No core dump partition found!` boot loop panic. **Flash Mode must be set to `OPI 80MHz`.**
+- **Flash & PSRAM Modes (CRITICAL):** The ESP32-S3-WROOM-1 N16R8 module uses Quad SPI Flash and Octal SPI PSRAM. The Arduino IDE and `arduino-cli` MUST be set to `Flash Mode: QIO 80MHz` and `PSRAM: OPI PSRAM`. Setting Flash Mode to OPI causes an immediate cache panic / boot loop because the onboard Flash chip is Quad SPI.
 
-- **Static Constraints & Partitions:** The default `arduino-cli` ESP32-S3 compilation profile allocates a 1.2MB `app0` partition. Because our emulator cores along with bundled assets currently exceeds 2.5MB, compilation will fail at the linking stage with "text section exceeds available space". 
-- **Fix:** You must compile the firmware using the `PartitionScheme=custom` (or `huge_app`), along with `PSRAM=opi` and `FlashMode=OPI` configurations to correctly map the N16R8 hardware limits.
+- **Static Constraints & Partitions:** The default `arduino-cli` ESP32-S3 profile allocates a 1.2MB `app0` partition. Because our emulator cores exceed 2.5MB, compilation will fail at the linking stage with "text section exceeds available space". 
+- **Fix:** You must compile the firmware using `PartitionScheme=custom` (`partitions.csv`), along with `PSRAM=opi` and `FlashMode=qio` configurations to correctly map the 16MB Quad Flash and 8MB Octal PSRAM hardware limits.
 
 - **Baked ROM Limits (3MB Default Partition):** Baking multiple ~1MB ROMs (like Mario Deluxe and Zelda) via C headers can quickly exceed limits, resulting in compilation errors. The solution is correctly configuring the 16MB partition scheme in Arduino IDE, or simply relying on the SD card to load ROMs dynamically.
 

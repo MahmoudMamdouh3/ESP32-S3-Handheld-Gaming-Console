@@ -379,7 +379,7 @@ void loop() {
   if (currentState == STATE_BOOT_SPLASH) {
     DisplayEmu::initMenuUI();
     Buttons::update();
-    uint8_t btnMask = 0;
+    uint16_t btnMask = 0;
     if (Buttons::get(Buttons::UP).pressed) btnMask |= (1 << 0);
     if (Buttons::get(Buttons::DOWN).pressed) btnMask |= (1 << 1);
     if (Buttons::get(Buttons::LEFT).pressed) btnMask |= (1 << 2);
@@ -388,6 +388,10 @@ void loop() {
     if (Buttons::get(Buttons::B).pressed) btnMask |= (1 << 5);
     if (Buttons::get(Buttons::SELECT).pressed) btnMask |= (1 << 6);
     if (Buttons::get(Buttons::START).pressed) btnMask |= (1 << 7);
+    if (Buttons::get(Buttons::X).pressed) btnMask |= (1 << 8);
+    if (Buttons::get(Buttons::Y).pressed) btnMask |= (1 << 9);
+    if (Buttons::get(Buttons::L).pressed) btnMask |= (1 << 10);
+    if (Buttons::get(Buttons::R).pressed) btnMask |= (1 << 11);
 
     if ((btnMask != 0 && canPress()) || (millis() - bootSplashStartMs > 3500)) {
       currentState = STATE_CONSOLE_MENU;
@@ -521,7 +525,7 @@ void loop() {
     DisplayEmu::initMenuUI();
     Buttons::update();
 
-    uint8_t btnMask = 0;
+    uint16_t btnMask = 0;
     if (Buttons::get(Buttons::UP).pressed)     btnMask |= (1 << 0);
     if (Buttons::get(Buttons::DOWN).pressed)   btnMask |= (1 << 1);
     if (Buttons::get(Buttons::LEFT).pressed)   btnMask |= (1 << 2);
@@ -530,6 +534,10 @@ void loop() {
     if (Buttons::get(Buttons::B).pressed)      btnMask |= (1 << 5);
     if (Buttons::get(Buttons::SELECT).pressed) btnMask |= (1 << 6);
     if (Buttons::get(Buttons::START).pressed)  btnMask |= (1 << 7);
+    if (Buttons::get(Buttons::X).pressed)      btnMask |= (1 << 8);
+    if (Buttons::get(Buttons::Y).pressed)      btnMask |= (1 << 9);
+    if (Buttons::get(Buttons::L).pressed)      btnMask |= (1 << 10);
+    if (Buttons::get(Buttons::R).pressed)      btnMask |= (1 << 11);
 
     const auto& btnB = Buttons::get(Buttons::B);
     if (canPress() && btnB.pressed && btnB.changed) {

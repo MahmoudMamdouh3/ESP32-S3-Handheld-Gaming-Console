@@ -19,7 +19,7 @@ struct ButtonState {
 namespace Buttons {
   // Index into the button table. MUST stay in this exact order -
   // it has to match the states[] initializer order in buttons.cpp.
-  enum Index : int { UP = 0, DOWN, LEFT, RIGHT, A, B, START, SELECT };
+  enum Index : int { UP = 0, DOWN, LEFT, RIGHT, A, B, START, SELECT, X, Y, L, R };
 
   // Fast Game Boy-compatible bitmask for zero-wait state polling
   extern uint8_t gb_joypad_state;

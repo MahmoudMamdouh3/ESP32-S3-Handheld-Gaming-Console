@@ -1,6 +1,6 @@
 {
   "schema_version": "2.2.0",
-  "generated_at": "2026-11-04T10:01:14.466574",
+  "generated_at": "2026-11-04T12:38:20.896638",
   "target_mcu": {
     "chip": "ESP32-S3-N16R8",
     "cpu_arch": "Xtensa dual-core 32-bit LX7 @ 240MHz",
@@ -8,8 +8,8 @@
     "psram": "8MB Octal SPI (OPI 80MHz)",
     "internal_sram_dram_bytes": 327680,
     "iram_used_bytes": 77824,
-    "dram_used_bytes": 218904,
-    "flash_used_bytes": 5698789
+    "dram_used_bytes": 218936,
+    "flash_used_bytes": 5700545
   },
   "hard_stops": [
     {
@@ -50,6 +50,10 @@
       "btn_b": 17,
       "btn_start": 18,
       "btn_select": 21,
+      "btn_x": 14,
+      "btn_y": 42,
+      "btn_l": 47,
+      "btn_r": 48,
       "mode": "INPUT_PULLUP (Active LOW)"
     },
     "dormant_reserved": {
@@ -437,57 +441,57 @@
     {
       "name": "BMO_SDF_Procedural_Face_Render_Unculled",
       "iterations": 100,
-      "avg_latency_us": 1469.408,
-      "throughput_mops": 2.79,
+      "avg_latency_us": 1165.13,
+      "throughput_mops": 3.52,
       "description": "Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling."
     },
     {
       "name": "BMO_SDF_Procedural_Face_Render_Culled",
       "iterations": 200,
-      "avg_latency_us": 548.194,
-      "throughput_mops": 7.47,
+      "avg_latency_us": 436.276,
+      "throughput_mops": 9.39,
       "description": "Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction)."
     },
     {
       "name": "4Pixel_Coalesced_Aligned_Store_Kernel",
       "iterations": 50000,
-      "avg_latency_us": 2.619,
-      "throughput_mops": 11.46,
+      "avg_latency_us": 2.223,
+      "throughput_mops": 13.5,
       "description": "Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling."
     },
     {
       "name": "O1_Palette_Scanline_Transformation",
       "iterations": 10000,
-      "avg_latency_us": 5.825,
-      "throughput_mops": 41.2,
+      "avg_latency_us": 3.875,
+      "throughput_mops": 61.94,
       "description": "Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput."
     },
     {
       "name": "CPU_Emulation_Opcode_Dispatch",
       "iterations": 500000,
-      "avg_latency_us": 0.089,
-      "throughput_mops": 11.27,
+      "avg_latency_us": 0.065,
+      "throughput_mops": 15.38,
       "description": "Simulates CPU opcode fetch-decode-execute cycle dispatch throughput."
     },
     {
       "name": "Direct_GPIO_Atomic_Bitmask_Sampling",
       "iterations": 100000,
-      "avg_latency_us": 0.981,
-      "throughput_mops": 8.16,
+      "avg_latency_us": 0.483,
+      "throughput_mops": 16.58,
       "description": "Measures atomic 8-pin bitmask unpacking (GPIO 4,5,6,7,16,17,18,21) replacing 8 digitalRead calls."
     },
     {
       "name": "SD_Catalog_O1_Query_And_Page_Jump",
       "iterations": 10000,
-      "avg_latency_us": 0.188,
-      "throughput_mops": 5.33,
+      "avg_latency_us": 0.161,
+      "throughput_mops": 6.23,
       "description": "Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations."
     },
     {
       "name": "Native_C_11_Cores_575_Frames",
       "iterations": 575,
-      "avg_latency_us": 291.961,
-      "throughput_mops": 3.43,
+      "avg_latency_us": 276.658,
+      "throughput_mops": 3.61,
       "description": "Executes 50 frames across all 11 native C emulator engines + save-state replay (575 frames total, kFPS)."
     }
   ],
@@ -500,7 +504,7 @@
     "01_hardware.md": {
       "file": ".agents/rules/01_hardware.md",
       "title": "1. Physically Wired Hardware (Verified Ground Truth)",
-      "lines": 58
+      "lines": 63
     },
     "02_architecture.md": {
       "file": ".agents/rules/02_architecture.md",
@@ -515,7 +519,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "6. Known Issues, Technical Debt & Hardware Limitations Registry",
-      "lines": 492
+      "lines": 500
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -1147,61 +1151,61 @@
     },
     "Buttons::begin": {
       "file": "firmware/BmoGameboy/src/core/buttons.cpp",
-      "line": 34,
+      "line": 38,
       "signature": "void Buttons::begin()",
       "is_iram": false
     },
     "Buttons::setGameplayMode": {
       "file": "firmware/BmoGameboy/src/core/buttons.cpp",
-      "line": 40,
+      "line": 44,
       "signature": "void Buttons::setGameplayMode(bool inGame)",
       "is_iram": false
     },
     "Buttons::setSwapAB": {
       "file": "firmware/BmoGameboy/src/core/buttons.cpp",
-      "line": 44,
+      "line": 48,
       "signature": "void Buttons::setSwapAB(bool swap)",
       "is_iram": false
     },
     "Buttons::isSwapAB": {
       "file": "firmware/BmoGameboy/src/core/buttons.cpp",
-      "line": 48,
+      "line": 52,
       "signature": "bool Buttons::isSwapAB()",
       "is_iram": false
     },
     "Buttons::toggleSwapAB": {
       "file": "firmware/BmoGameboy/src/core/buttons.cpp",
-      "line": 52,
+      "line": 56,
       "signature": "bool Buttons::toggleSwapAB()",
       "is_iram": false
     },
     "Buttons::setTurboEnabled": {
       "file": "firmware/BmoGameboy/src/core/buttons.cpp",
-      "line": 57,
+      "line": 61,
       "signature": "void Buttons::setTurboEnabled(bool enabled, uint8_t periodFrames)",
       "is_iram": false
     },
     "Buttons::isTurboEnabled": {
       "file": "firmware/BmoGameboy/src/core/buttons.cpp",
-      "line": 62,
+      "line": 66,
       "signature": "bool Buttons::isTurboEnabled()",
       "is_iram": false
     },
     "Buttons::toggleTurbo": {
       "file": "firmware/BmoGameboy/src/core/buttons.cpp",
-      "line": 66,
+      "line": 70,
       "signature": "bool Buttons::toggleTurbo()",
       "is_iram": false
     },
     "Buttons::update": {
       "file": "firmware/BmoGameboy/src/core/buttons.cpp",
-      "line": 71,
+      "line": 75,
       "signature": "void Buttons::update()",
       "is_iram": false
     },
     "Buttons::count": {
       "file": "firmware/BmoGameboy/src/core/buttons.cpp",
-      "line": 115,
+      "line": 126,
       "signature": "int Buttons::count()",
       "is_iram": false
     },
@@ -1573,91 +1577,91 @@
     },
     "DisplayEmu::drawConsoleIcon": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1668,
+      "line": 1697,
       "signature": "void DisplayEmu::drawConsoleIcon(RomType type, int x, int y, uint16_t primaryColor)",
       "is_iram": false
     },
     "DisplayEmu::drawIdleMascotScreen": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1782,
+      "line": 1811,
       "signature": "void DisplayEmu::drawIdleMascotScreen(unsigned long idleSeconds, const char* stateMessage)",
       "is_iram": false
     },
     "DisplayEmu::waitForDisplay": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1827,
+      "line": 1856,
       "signature": "void DisplayEmu::waitForDisplay()",
       "is_iram": false
     },
     "DisplayEmu::isDisplayBusy": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1835,
+      "line": 1864,
       "signature": "bool DisplayEmu::isDisplayBusy()",
       "is_iram": false
     },
     "DisplayEmu::showToast": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1843,
+      "line": 1872,
       "signature": "void DisplayEmu::showToast(const char* message, uint16_t borderColor, unsigned long durationMs)",
       "is_iram": false
     },
     "DisplayEmu::hasActiveToast": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1854,
+      "line": 1883,
       "signature": "bool DisplayEmu::hasActiveToast()",
       "is_iram": false
     },
     "DisplayEmu::triggerCarouselGlide": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1858,
+      "line": 1887,
       "signature": "void DisplayEmu::triggerCarouselGlide(bool directionRight)",
       "is_iram": false
     },
     "DisplayEmu::showAlphaBadge": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1869,
+      "line": 1898,
       "signature": "void DisplayEmu::showAlphaBadge(char letter, unsigned long durationMs)",
       "is_iram": false
     },
     "DisplayEmu::setTopPicksFilter": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1877,
+      "line": 1906,
       "signature": "void DisplayEmu::setTopPicksFilter(bool enabled)",
       "is_iram": false
     },
     "DisplayEmu::getTopPicksFilter": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1881,
+      "line": 1910,
       "signature": "bool DisplayEmu::getTopPicksFilter()",
       "is_iram": false
     },
     "DisplayEmu::setBezelEnabled": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1885,
+      "line": 1914,
       "signature": "void DisplayEmu::setBezelEnabled(bool enabled)",
       "is_iram": false
     },
     "DisplayEmu::isBezelEnabled": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1889,
+      "line": 1918,
       "signature": "bool DisplayEmu::isBezelEnabled()",
       "is_iram": false
     },
     "DisplayEmu::toggleBezel": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1893,
+      "line": 1922,
       "signature": "bool DisplayEmu::toggleBezel()",
       "is_iram": false
     },
     "DisplayEmu::getLastFramebuffer": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1898,
+      "line": 1927,
       "signature": "const uint16_t* DisplayEmu::getLastFramebuffer(int* outWidth, int* outHeight)",
       "is_iram": false
     },
     "DisplayEmu::drawConsoleBezel": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1922,
+      "line": 1951,
       "signature": "void DisplayEmu::drawConsoleBezel(int consoleIndex)",
       "is_iram": false
     },
@@ -2629,19 +2633,19 @@
     },
     "Doom_FreePSRAM": {
       "file": "firmware/BmoGameboy/src/emulators/emu_doom.cpp",
-      "line": 36,
+      "line": 37,
       "signature": "void Doom_FreePSRAM(void* ptr)",
       "is_iram": false
     },
     "Doom_SpiLock": {
       "file": "firmware/BmoGameboy/src/emulators/emu_doom.cpp",
-      "line": 42,
+      "line": 43,
       "signature": "void Doom_SpiLock(void)",
       "is_iram": false
     },
     "Doom_SpiUnlock": {
       "file": "firmware/BmoGameboy/src/emulators/emu_doom.cpp",
-      "line": 46,
+      "line": 47,
       "signature": "void Doom_SpiUnlock(void)",
       "is_iram": false
     },
@@ -2683,7 +2687,7 @@
     },
     "updateDoomKey": {
       "file": "firmware/BmoGameboy/src/emulators/emu_doom.cpp",
-      "line": 91,
+      "line": 92,
       "signature": "static void updateDoomKey(int doomKey, bool pressed)",
       "is_iram": false
     },
@@ -2701,37 +2705,37 @@
     },
     "GenesisEmu::destroy": {
       "file": "firmware/BmoGameboy/src/emulators/emu_genesis.cpp",
-      "line": 51,
+      "line": 52,
       "signature": "void GenesisEmu::destroy()",
       "is_iram": false
     },
     "GenesisEmu::isRunning": {
       "file": "firmware/BmoGameboy/src/emulators/emu_genesis.cpp",
-      "line": 65,
+      "line": 66,
       "signature": "bool GenesisEmu::isRunning()",
       "is_iram": false
     },
     "GenesisEmu::saveBatteryRam": {
       "file": "firmware/BmoGameboy/src/emulators/emu_genesis.cpp",
-      "line": 69,
+      "line": 70,
       "signature": "bool GenesisEmu::saveBatteryRam(const char* romFilename)",
       "is_iram": false
     },
     "GenesisEmu::loadBatteryRam": {
       "file": "firmware/BmoGameboy/src/emulators/emu_genesis.cpp",
-      "line": 74,
+      "line": 75,
       "signature": "bool GenesisEmu::loadBatteryRam(const char* romFilename)",
       "is_iram": false
     },
     "GenesisEmu::saveState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_genesis.cpp",
-      "line": 79,
+      "line": 80,
       "signature": "bool GenesisEmu::saveState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "GenesisEmu::loadState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_genesis.cpp",
-      "line": 97,
+      "line": 98,
       "signature": "bool GenesisEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
@@ -3097,37 +3101,37 @@
     },
     "SNESEmu::destroy": {
       "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
-      "line": 52,
+      "line": 56,
       "signature": "void SNESEmu::destroy()",
       "is_iram": false
     },
     "SNESEmu::isRunning": {
       "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
-      "line": 66,
+      "line": 70,
       "signature": "bool SNESEmu::isRunning()",
       "is_iram": false
     },
     "SNESEmu::saveBatteryRam": {
       "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
-      "line": 70,
+      "line": 74,
       "signature": "bool SNESEmu::saveBatteryRam(const char* romFilename)",
       "is_iram": false
     },
     "SNESEmu::loadBatteryRam": {
       "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
-      "line": 75,
+      "line": 79,
       "signature": "bool SNESEmu::loadBatteryRam(const char* romFilename)",
       "is_iram": false
     },
     "SNESEmu::saveState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
-      "line": 80,
+      "line": 84,
       "signature": "bool SNESEmu::saveState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "SNESEmu::loadState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
-      "line": 94,
+      "line": 98,
       "signature": "bool SNESEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
@@ -9595,7 +9599,7 @@
     },
     "snes_write8": {
       "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
-      "line": 174,
+      "line": 180,
       "signature": "static void snes_write8(snes_t* emu, uint32_t addr24, uint8_t val)",
       "is_iram": false
     },
@@ -9607,67 +9611,67 @@
     },
     "snes_read16": {
       "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
-      "line": 256,
+      "line": 262,
       "signature": "static inline uint16_t snes_read16(snes_t* emu, uint32_t addr24)",
       "is_iram": false
     },
     "snes_write16": {
       "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
-      "line": 260,
+      "line": 266,
       "signature": "static inline void snes_write16(snes_t* emu, uint32_t addr24, uint16_t val)",
       "is_iram": false
     },
     "snes_fetch8": {
       "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
-      "line": 265,
+      "line": 271,
       "signature": "static inline uint8_t snes_fetch8(snes_t* emu)",
       "is_iram": false
     },
     "snes_fetch16": {
       "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
-      "line": 271,
+      "line": 277,
       "signature": "static inline uint16_t snes_fetch16(snes_t* emu)",
       "is_iram": false
     },
     "snes_push8": {
       "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
-      "line": 277,
+      "line": 283,
       "signature": "static inline void snes_push8(snes_t* emu, uint8_t v)",
       "is_iram": false
     },
     "snes_pop8": {
       "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
-      "line": 283,
+      "line": 289,
       "signature": "static inline uint8_t snes_pop8(snes_t* emu)",
       "is_iram": false
     },
     "snes_push16": {
       "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
-      "line": 289,
+      "line": 295,
       "signature": "static inline void snes_push16(snes_t* emu, uint16_t v)",
       "is_iram": false
     },
     "snes_pop16": {
       "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
-      "line": 294,
+      "line": 300,
       "signature": "static inline uint16_t snes_pop16(snes_t* emu)",
       "is_iram": false
     },
     "snes_cpu_step": {
       "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
-      "line": 300,
+      "line": 306,
       "signature": "static int snes_cpu_step(snes_t* emu)",
       "is_iram": false
     },
     "snes_render_bg_layer": {
       "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
-      "line": 526,
+      "line": 532,
       "signature": "static void snes_render_bg_layer(snes_t* emu, uint16_t* dst, int line, int bg_idx, bool is_4bpp)",
       "is_iram": false
     },
     "snes_render_scanline": {
       "file": "firmware/BmoGameboy/src/vendor/snes/snes.c",
-      "line": 567,
+      "line": 573,
       "signature": "static void snes_render_scanline(snes_t* emu, int line)",
       "is_iram": false
     },
@@ -9686,7 +9690,7 @@
     "snes_set_pad": {
       "file": "firmware/BmoGameboy/src/vendor/snes/snes.h",
       "line": 51,
-      "signature": "void snes_set_pad(snes_t* emu, uint8_t pad);",
+      "signature": "void snes_set_pad(snes_t* emu, uint16_t pad);",
       "is_iram": false
     },
     "snes_step_frame": {
@@ -9925,11 +9929,11 @@
     ".agents/rules/01_hardware.md": {
       "path": ".agents/rules/01_hardware.md",
       "category": "AGENT_RULES",
-      "total_lines": 58,
-      "sloc": 50,
+      "total_lines": 63,
+      "sloc": 55,
       "comments": 0,
       "blanks": 8,
-      "density_percent": 86.2,
+      "density_percent": 87.3,
       "symbols": [],
       "pins_accessed": [
         "BTN_UP",
@@ -9940,6 +9944,11 @@
         "BTN_B",
         "BTN_START",
         "BTN_SELECT",
+        "BTN_X",
+        "BTN_Y",
+        "BTN_L",
+        "BTN_R",
+        "GPIO48",
         "TFT_DC",
         "TFT_RST",
         "TFT_CS",
@@ -9989,13 +9998,18 @@
     ".agents/rules/04_known_issues.md": {
       "path": ".agents/rules/04_known_issues.md",
       "category": "AGENT_RULES",
-      "total_lines": 492,
-      "sloc": 414,
+      "total_lines": 500,
+      "sloc": 420,
       "comments": 0,
-      "blanks": 78,
-      "density_percent": 84.1,
+      "blanks": 80,
+      "density_percent": 84.0,
       "symbols": [],
       "pins_accessed": [
+        "BTN_X",
+        "BTN_Y",
+        "BTN_L",
+        "BTN_R",
+        "GPIO48",
         "TFT_SCLK",
         "TFT_DC",
         "TFT_RST",
@@ -10319,7 +10333,11 @@
         "BTN_RIGHT",
         "BTN_LEFT",
         "BTN_UP",
-        "BTN_DOWN"
+        "BTN_DOWN",
+        "BTN_X",
+        "BTN_Y",
+        "BTN_L",
+        "BTN_R"
       ],
       "includes": []
     },
@@ -10394,7 +10412,11 @@
         "BTN_A",
         "BTN_B",
         "BTN_START",
-        "BTN_SELECT"
+        "BTN_SELECT",
+        "BTN_X",
+        "BTN_Y",
+        "BTN_L",
+        "BTN_R"
       ],
       "includes": []
     },
@@ -281896,8 +281918,8 @@
     "AGENT_KNOWLEDGE_GRAPH.json": {
       "path": "AGENT_KNOWLEDGE_GRAPH.json",
       "category": "OTHER",
-      "total_lines": 290283,
-      "sloc": 290283,
+      "total_lines": 290349,
+      "sloc": 290349,
       "comments": 0,
       "blanks": 0,
       "density_percent": 100.0,
@@ -281915,6 +281937,11 @@
         "BTN_B",
         "BTN_START",
         "BTN_SELECT",
+        "BTN_X",
+        "BTN_Y",
+        "BTN_L",
+        "BTN_R",
+        "GPIO48",
         "TFT_DC",
         "TFT_RST",
         "TFT_CS",
@@ -282006,13 +282033,18 @@
     "CHANGELOG.md": {
       "path": "CHANGELOG.md",
       "category": "OTHER",
-      "total_lines": 841,
-      "sloc": 733,
+      "total_lines": 870,
+      "sloc": 759,
       "comments": 0,
-      "blanks": 108,
+      "blanks": 111,
       "density_percent": 87.2,
       "symbols": [],
       "pins_accessed": [
+        "BTN_X",
+        "BTN_Y",
+        "BTN_L",
+        "BTN_R",
+        "BTN_LEFT",
         "TFT_SCLK",
         "TFT_DC",
         "FEATURE_PROFILER"
@@ -282034,11 +282066,11 @@
     "diagram.json": {
       "path": "diagram.json",
       "category": "OTHER",
-      "total_lines": 122,
-      "sloc": 119,
+      "total_lines": 158,
+      "sloc": 155,
       "comments": 0,
       "blanks": 3,
-      "density_percent": 97.5,
+      "density_percent": 98.1,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -282046,10 +282078,10 @@
     "docs/consolidated-rules.md": {
       "path": "docs/consolidated-rules.md",
       "category": "DOCUMENTATION",
-      "total_lines": 3650,
-      "sloc": 2903,
+      "total_lines": 3685,
+      "sloc": 2931,
       "comments": 45,
-      "blanks": 702,
+      "blanks": 709,
       "density_percent": 79.5,
       "symbols": [],
       "pins_accessed": [
@@ -282063,6 +282095,11 @@
         "BTN_B",
         "BTN_START",
         "BTN_SELECT",
+        "BTN_X",
+        "BTN_Y",
+        "BTN_L",
+        "BTN_R",
+        "GPIO48",
         "TFT_DC",
         "TFT_RST",
         "TFT_CS",
@@ -282102,11 +282139,11 @@
     "docs/hardware-notes.md": {
       "path": "docs/hardware-notes.md",
       "category": "DOCUMENTATION",
-      "total_lines": 162,
-      "sloc": 112,
+      "total_lines": 165,
+      "sloc": 115,
       "comments": 0,
       "blanks": 50,
-      "density_percent": 69.1,
+      "density_percent": 69.7,
       "symbols": [],
       "pins_accessed": [
         "GPIO10",
@@ -282169,11 +282206,11 @@
     "docs/software-design-document.md": {
       "path": "docs/software-design-document.md",
       "category": "DOCUMENTATION",
-      "total_lines": 463,
-      "sloc": 378,
+      "total_lines": 467,
+      "sloc": 382,
       "comments": 0,
       "blanks": 85,
-      "density_percent": 81.6,
+      "density_percent": 81.8,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_SD_CARD",
@@ -282200,6 +282237,10 @@
         "BTN_B",
         "BTN_START",
         "BTN_SELECT",
+        "BTN_X",
+        "BTN_Y",
+        "BTN_L",
+        "BTN_R",
         "BATTERY_ADC_PIN"
       ],
       "includes": []
@@ -282287,11 +282328,11 @@
     "firmware/BmoGameboy/BmoGameboy.ino": {
       "path": "firmware/BmoGameboy/BmoGameboy.ino",
       "category": "FIRMWARE_TOP",
-      "total_lines": 1194,
-      "sloc": 1033,
+      "total_lines": 1202,
+      "sloc": 1041,
       "comments": 65,
       "blanks": 96,
-      "density_percent": 86.5,
+      "density_percent": 86.6,
       "symbols": [
         "autoSaveCurrentBatteryRam",
         "quickSaveState",
@@ -282722,11 +282763,11 @@
     "firmware/BmoGameboy/src/core/buttons.cpp": {
       "path": "firmware/BmoGameboy/src/core/buttons.cpp",
       "category": "FIRMWARE_CORE",
-      "total_lines": 123,
-      "sloc": 96,
-      "comments": 7,
+      "total_lines": 134,
+      "sloc": 104,
+      "comments": 10,
       "blanks": 20,
-      "density_percent": 78.0,
+      "density_percent": 77.6,
       "symbols": [
         "Buttons::begin",
         "Buttons::setGameplayMode",
@@ -282747,7 +282788,11 @@
         "BTN_A",
         "BTN_B",
         "BTN_START",
-        "BTN_SELECT"
+        "BTN_SELECT",
+        "BTN_X",
+        "BTN_Y",
+        "BTN_L",
+        "BTN_R"
       ],
       "includes": [
         "buttons.h",
@@ -282783,11 +282828,11 @@
     "firmware/BmoGameboy/src/core/config.h": {
       "path": "firmware/BmoGameboy/src/core/config.h",
       "category": "FIRMWARE_CORE",
-      "total_lines": 109,
-      "sloc": 63,
-      "comments": 31,
-      "blanks": 15,
-      "density_percent": 57.8,
+      "total_lines": 120,
+      "sloc": 67,
+      "comments": 37,
+      "blanks": 16,
+      "density_percent": 55.8,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_SD_CARD",
@@ -282810,6 +282855,10 @@
         "BTN_B",
         "BTN_START",
         "BTN_SELECT",
+        "BTN_X",
+        "BTN_Y",
+        "BTN_L",
+        "BTN_R",
         "I2S_BCLK",
         "I2S_LRC",
         "I2S_DIN",
@@ -282822,10 +282871,10 @@
     "firmware/BmoGameboy/src/core/display_emu.cpp": {
       "path": "firmware/BmoGameboy/src/core/display_emu.cpp",
       "category": "FIRMWARE_CORE",
-      "total_lines": 1976,
-      "sloc": 1605,
-      "comments": 124,
-      "blanks": 247,
+      "total_lines": 2005,
+      "sloc": 1629,
+      "comments": 125,
+      "blanks": 251,
       "density_percent": 81.2,
       "symbols": [
         "__attribute__",
@@ -283350,11 +283399,11 @@
     "firmware/BmoGameboy/src/emulators/emu_doom.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_doom.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 208,
-      "sloc": 152,
-      "comments": 24,
-      "blanks": 32,
-      "density_percent": 73.1,
+      "total_lines": 220,
+      "sloc": 159,
+      "comments": 28,
+      "blanks": 33,
+      "density_percent": 72.3,
       "symbols": [
         "Doom_FreePSRAM",
         "Doom_SpiLock",
@@ -283379,6 +283428,7 @@
         "../core/config.h",
         "../vendor/doom/src/doomgeneric.h",
         "../vendor/doom/src/doomkeys.h",
+        "../vendor/doom/src/m_controls.h",
         "Arduino.h",
         "esp_heap_caps.h",
         "stdio.h",
@@ -283407,11 +283457,11 @@
     "firmware/BmoGameboy/src/emulators/emu_genesis.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_genesis.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 137,
-      "sloc": 124,
+      "total_lines": 138,
+      "sloc": 125,
       "comments": 0,
       "blanks": 13,
-      "density_percent": 90.5,
+      "density_percent": 90.6,
       "symbols": [
         "GenesisEmu::init",
         "GenesisEmu::update",
@@ -283844,11 +283894,11 @@
     "firmware/BmoGameboy/src/emulators/emu_snes.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 126,
-      "sloc": 113,
+      "total_lines": 130,
+      "sloc": 117,
       "comments": 0,
       "blanks": 13,
-      "density_percent": 89.7,
+      "density_percent": 90.0,
       "symbols": [
         "SNESEmu::init",
         "SNESEmu::update",
@@ -288877,11 +288927,11 @@
     "firmware/BmoGameboy/src/vendor/snes/snes.c": {
       "path": "firmware/BmoGameboy/src/vendor/snes/snes.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 688,
-      "sloc": 592,
+      "total_lines": 694,
+      "sloc": 598,
       "comments": 26,
       "blanks": 70,
-      "density_percent": 86.0,
+      "density_percent": 86.2,
       "symbols": [
         "snes_bgr555_to_bgr565_swapped",
         "snes_m8",
@@ -289048,11 +289098,11 @@
     "README.md": {
       "path": "README.md",
       "category": "OTHER",
-      "total_lines": 228,
-      "sloc": 160,
+      "total_lines": 229,
+      "sloc": 161,
       "comments": 0,
       "blanks": 68,
-      "density_percent": 70.2,
+      "density_percent": 70.3,
       "symbols": [],
       "pins_accessed": [
         "TFT_MOSI",
@@ -289070,6 +289120,10 @@
         "BTN_B",
         "BTN_START",
         "BTN_SELECT",
+        "BTN_X",
+        "BTN_Y",
+        "BTN_L",
+        "BTN_R",
         "BATTERY_ADC_PIN",
         "I2S_BCLK",
         "I2S_LRC",
@@ -289290,11 +289344,11 @@
     "scripts/generate_ai_knowledge_base.py": {
       "path": "scripts/generate_ai_knowledge_base.py",
       "category": "SCRIPTS",
-      "total_lines": 430,
-      "sloc": 385,
+      "total_lines": 434,
+      "sloc": 389,
       "comments": 12,
       "blanks": 33,
-      "density_percent": 89.5,
+      "density_percent": 89.6,
       "symbols": [],
       "pins_accessed": [
         "GPIO1",
@@ -289315,6 +289369,10 @@
         "BTN_B",
         "BTN_START",
         "BTN_SELECT",
+        "BTN_X",
+        "BTN_Y",
+        "BTN_L",
+        "BTN_R",
         "BATTERY_ADC_PIN",
         "I2S_BCLK",
         "I2S_LRC",
@@ -289919,11 +289977,11 @@
     "tools/bmo_simulator/hal/soc/gpio_reg.h": {
       "path": "tools/bmo_simulator/hal/soc/gpio_reg.h",
       "category": "TOOLS",
-      "total_lines": 15,
-      "sloc": 11,
+      "total_lines": 18,
+      "sloc": 14,
       "comments": 2,
       "blanks": 2,
-      "density_percent": 73.3,
+      "density_percent": 77.8,
       "symbols": [],
       "pins_accessed": [],
       "includes": [
@@ -290002,11 +290060,11 @@
     "tools/guardian/cli.py": {
       "path": "tools/guardian/cli.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 1235,
-      "sloc": 997,
+      "total_lines": 1240,
+      "sloc": 1002,
       "comments": 54,
       "blanks": 184,
-      "density_percent": 80.7,
+      "density_percent": 80.8,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
@@ -290026,6 +290084,10 @@
         "BTN_B",
         "BTN_START",
         "BTN_SELECT",
+        "BTN_X",
+        "BTN_Y",
+        "BTN_L",
+        "BTN_R",
         "GPIO1"
       ],
       "includes": []
@@ -290097,11 +290159,11 @@
     "tools/guardian/core/doc_verifier.py": {
       "path": "tools/guardian/core/doc_verifier.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 261,
-      "sloc": 224,
+      "total_lines": 262,
+      "sloc": 225,
       "comments": 12,
       "blanks": 25,
-      "density_percent": 85.8,
+      "density_percent": 85.9,
       "symbols": [],
       "pins_accessed": [
         "PIN_DRIFT",
@@ -290121,6 +290183,10 @@
         "BTN_B",
         "BTN_START",
         "BTN_SELECT",
+        "BTN_X",
+        "BTN_Y",
+        "BTN_L",
+        "BTN_R",
         "BATTERY_ADC_PIN",
         "I2S_BCLK",
         "I2S_LRC",

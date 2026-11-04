@@ -8,6 +8,7 @@
 extern "C" {
 #include "../vendor/doom/src/doomgeneric.h"
 #include "../vendor/doom/src/doomkeys.h"
+#include "../vendor/doom/src/m_controls.h"
 }
 
 #include <Arduino.h>
@@ -16,7 +17,7 @@ extern "C" {
 #include <string.h>
 
 // PERF-H2: Ring-buffer for Doom key events — O(1) dequeue vs O(256) table scan.
-// Only 8 physical buttons exist; a 16-slot ring (power-of-2 for fast masking) is plenty.
+// Only 12 physical buttons exist; a 16-slot ring (power-of-2 for fast masking) is plenty.
 struct DoomKeyEvent { uint8_t key; uint8_t pressed; };
 static DoomKeyEvent s_keyRing[16];
 static int          s_keyRingHead = 0;
@@ -164,18 +165,25 @@ bool begin(const char* wadPath) {
   s_argv[3] = NULL;
 
   doomgeneric_Create(3, s_argv);
+
+  // Weapon cycling has no default key binding in this port. Bind it after
+  // doomgeneric_Create() so a saved config cannot override it.
+  key_nextweapon = ']';
+  key_prevweapon = '[';
   return true;
 }
 
 void runFrame() {
   // Update button state (handled globally in BmoGameboy.ino loop)
 
-  // Map Gameboy buttons to Doom keys
+  // Map console buttons to Doom keys
   // A = Fire (CTRL)
   // B = Use/Open (SPACE)
   // SELECT = Map (TAB)
   // START = Enter (ENTER)
   // DPAD = Arrows
+  // L / R = Strafe left / right
+  // X / Y = Next / previous weapon
   
   updateDoomKey(KEY_RCTRL, Buttons::get(Buttons::A).pressed);
   updateDoomKey(' ',       Buttons::get(Buttons::B).pressed);
@@ -185,6 +193,10 @@ void runFrame() {
   updateDoomKey(KEY_DOWNARROW, Buttons::get(Buttons::DOWN).pressed);
   updateDoomKey(KEY_LEFTARROW, Buttons::get(Buttons::LEFT).pressed);
   updateDoomKey(KEY_RIGHTARROW, Buttons::get(Buttons::RIGHT).pressed);
+  updateDoomKey(KEY_STRAFE_L, Buttons::get(Buttons::L).pressed);
+  updateDoomKey(KEY_STRAFE_R, Buttons::get(Buttons::R).pressed);
+  updateDoomKey(']', Buttons::get(Buttons::X).pressed);
+  updateDoomKey('[', Buttons::get(Buttons::Y).pressed);
 
   // Profile DOOM tick latency (this encompasses all internal SD fread()s).
   // DOOM frames target ~28ms (35Hz). If the tick takes >40ms, SD card reads

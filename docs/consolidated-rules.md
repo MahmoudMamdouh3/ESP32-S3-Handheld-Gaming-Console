@@ -74,6 +74,7 @@ Only the following hardware is *currently, physically soldered and wired* to the
 - **Power:** USB-C power only. (No battery, no TP4056 module, no voltage divider yet).
 - **Display:** ST7789 display (2.4", 240x320) wired to the shared FSPI bus.
 - **Input:** 8 standard Game Boy-layout tactile buttons wired with internal pull-ups (`INPUT_PULLUP`).
+- **Input (pending wiring):** 4 extra buttons (X, Y, L, R) are supported in firmware and the simulator but are not soldered yet. Unwired pins read released because of `INPUT_PULLUP`.
 - **Storage:** SD card module wired to the shared FSPI bus.
 - **Audio:** None. (No MAX98357A DAC, no I2S wiring).
 
@@ -94,6 +95,10 @@ This is the single source of truth for all pin assignments, synchronized with `c
 | **17** | `BTN_B` | `buttons.cpp` | `INPUT_PULLUP` |
 | **18** | `BTN_START` | `buttons.cpp` | `INPUT_PULLUP` |
 | **21** | `BTN_SELECT` | `buttons.cpp` | `INPUT_PULLUP` |
+| **14** | `BTN_X` | `buttons.cpp` | `INPUT_PULLUP`. Extra face button (SNES X, Genesis C, DOOM next weapon). Not yet soldered. |
+| **42** | `BTN_Y` | `buttons.cpp` | `INPUT_PULLUP`. Read from `GPIO_IN1_REG` (pin above 31). Not yet soldered. |
+| **47** | `BTN_L` | `buttons.cpp` | `INPUT_PULLUP`. Left shoulder trigger. Read from `GPIO_IN1_REG`. Not yet soldered. |
+| **48** | `BTN_R` | `buttons.cpp` | `INPUT_PULLUP`. Right shoulder trigger. Read from `GPIO_IN1_REG`. Not yet soldered. On many DevKitC-1 boards GPIO48 also drives the onboard RGB LED. |
 | **8** | `TFT_DC` | `display_emu.cpp` | Data/Command pin for ST7789. |
 | **9** | `TFT_RST` | `display_emu.cpp` | Reset pin for ST7789. |
 | **10** | `TFT_CS` | `display_emu.cpp` | Chip Select for ST7789 (FSPI). |
@@ -239,10 +244,40 @@ Routine bug fixes not touching hardware/architecture, or pure refactors that don
 
 ---
 
-## Latest Agent Handoff — 2026-11-03 (AI Environment Overhaul, 11-Core Native C Harness & MCP Server)
+## Latest Agent Handoff - 2026-11-04 (Extra Buttons X, Y, L, R)
 
-This is the current repository handoff. Read this section before continuing from an earlier changelog entry.
+- Added `BTN_X=14`, `BTN_Y=42`, `BTN_L=47`, `BTN_R=48` to firmware, Wokwi, and the browser simulator. See `CHANGELOG.md` for the file list.
+- `VERIFIED_HOST`: `python scripts/validate_repo.py` Phase 0 compiled the firmware (Flash 5,700,300 bytes, SRAM 218,936 bytes). `python -m tools.guardian verify` ran 147 tests, all OK.
+- `UNVERIFIED_HARDWARE`: the buttons are not soldered or tested on the board. GPIO 42/47/48 are read from `GPIO_IN1_REG`; confirm each press on the Diagnostics screen after wiring. GPIO48 also drives the onboard RGB LED on many DevKitC-1 boards.
+- `UNVERIFIED_BROWSER`: layout and key bindings were not checked in a browser; only JS syntax (`node --check`) and the Wokwi parity test were run.
+- Genesis maps X to C only; the core has no 6-button protocol. DOOM weapon cycling is bound in `DoomEmu::begin()` after `doomgeneric_Create()`.
 
+## Latest Agent Handoff — 2026-11-03 (Firmware BMO Companion and Playable Browser Cores)
+
+- The browser compiles the firmware `BmoFace` SDF renderer and the vendored Peanut-GB, Agnes, Stella, and ColecoVision cores to WebAssembly. The BMO companion uses the real face/expression/gaze/dialogue/pet/dance functions; the console cores accept `.gb`, `.nes`, `.a26`, and `.col` uploads with firmware button mappings and viewports.
+- The browser still ports the state machine, menu artwork, and companion overlays; it does not execute the ESP32 firmware or reproduce the physical ST7789/SPI/SD hardware. The other 10 firmware cores remain firmware-only. Browser game save state is a single in-memory snapshot.
+- The UI lists only user-loaded ROMs and supports no other browser ROM formats. No game ROM is bundled.
+- `VERIFIED_SIMULATOR`: The firmware BMO renderer and interaction APIs pass generated-WASM regression checks. A generated 8 KiB ColecoVision ROM was uploaded in the local browser and ran past 400 frames in the 256×192 viewport. Generated Game Boy, iNES, and Atari 2600 test ROMs were also exercised in prior browser smoke tests.
+- `VERIFIED_HOST`: `python -m unittest tests.test_native_cores_execution.TestNativeCoresExecutionAndPhaseD` reported `Ran 10 tests in 7.500s` and `OK`. `python scripts/validate_repo.py` reported Flash `5,698,412 / 16,777,216` bytes (34.0%), SRAM `218,904 / 327,680` bytes (66.8%), and `VALIDATION PASSED in 26729 ms`.
+- `IN_PROGRESS`: The one-to-one request is not complete. Four of 14 game cores are browser-playable, the menus still are not firmware execution, physical SPI/SD behavior is not modeled in the browser, and Wokwi has no ST7789 model.
+- The Wokwi diagram has the ESP32-S3, button GPIOs, shared TFT/SD SPI lines, and separate chip selects from `config.h`. Wokwi lacks an ST7789 model and does not expose the display reset/backlight pins; it uses an ILI9341 visual substitute. Wokwi CLI execution requires `WOKWI_CLI_TOKEN`.
+
+## Storage Audit Handoff — 2026-11-03
+
+- The local `games/` directory contains 31,326 firmware-recognized files (~16.1 GB); the attached FAT32 `GAMELIB` volume currently has 11,184 matching ROMs. 20,142 source ROMs are absent, and two same-name Game Boy Color files have different sizes than their local source versions. Do not claim the full library is deployed or replace these user files without permission.
+- The SD card has 15,677 box-art assets. Their raw sizes and BMP headers meet the firmware decoder's accepted formats, and SHA-256 comparison matched all corresponding files in `roms/boxart`. 12,659 source art files are not on the card. The folder placement (`/boxart/` plus ROMs at root) is recognized by the firmware.
+- Local root art in `roms/boxart/` contains 14,168 exact-size raw images and 14,168 BMPs with 64×64, 24-bit BI_RGB headers; no invalid files were found. Every filename in `sdcard/boxart/` exists in that source, but the staging folder has 112 fewer assets.
+- Windows reports the volume healthy; a complete read scan found no I/O errors or zero-byte files. `chkdsk F:` could not start because this environment lacks permission, so a filesystem-level repair scan is not verified. The card currently has no `/.bmo_index`; firmware will perform its full initial scan and create the cache.
+- `scripts/audit_all_games.py` uses shallow format heuristics and flagged 26 candidate files; treat them as unverified, not confirmed corrupt. It does not exercise every firmware emulator. PICO-8 handling is only a graphics/data plus custom draw-bytecode runtime, not a Lua interpreter; `.p8.png` is not supported despite older documentation.
+- `scripts/deploy_to_sd.py` now defaults to dry-run and supports sequential staged/checksummed writes only with explicit `--apply` to an existing `GAMELIB` volume. It invalidates the derived index and does not delete extra files. No ROM or cover-art data is to be committed to Git.
+
+## Previous Handoff — 2026-11-03 (Firmware-Backed Wokwi Hardware Simulation)
+
+## Previous Handoff — 2026-11-03 (AI Environment Overhaul, 11-Core Native C Harness & MCP Server)
+
+This was the previous repository handoff.
+
+- **Box art and simulator parity (2026-11-03):** 61 original box arts are downloaded by `scripts/fetch_covers.py`; titles outside that catalog still show the console badge placeholder. The browser library screen follows `drawGameSelectMenu()`, while all browser-rendered screens remain a hand-written preview rather than firmware execution. The Wokwi project runs the compiled firmware with mapped GPIO controls; Wokwi's available ILI9341 display model is not the physical ST7789 controller. Only freely distributable ROMs are bundled; commercial ROM sets are not downloaded by the repository tooling.
 - **AI Development Environment & Native Verification Upgrades (`tools/guardian/`, `tests/`, `.agents/rules/`, `agnes.c`):**
   1. **Eliminated Split-Brain Rule Contradictions & Bug-Fix Prohibitions (`.agents/rules/*.md`, `tools/guardian/core/doc_verifier.py`):**
      - Fixed the copy-paste compile command in `.agents/rules/06_verification_standards.md:110` from `FlashMode=opi` (which bootloops the Quad-SPI Flash ESP32-S3-N16R8) to `CDCOnBoot=cdc,FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi`.
@@ -1166,7 +1201,7 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 |---|---|---|---|
 | `Buttons::begin` | fn | `void begin()` | Configures button GPIOs as INPUT_PULLUP |
 | `Buttons::update` | fn | `void update()` | Reads GPIO_IN_REG atomically, updates state |
-| `Buttons::count` | fn | `int count()` | Returns number of buttons (8) |
+| `Buttons::count` | fn | `int count()` | Returns number of buttons (12) |
 | `Buttons::get` | fn | `const ButtonState& get(int index)` | Returns ButtonState struct |
 | `Buttons::setGameplayMode` | fn | `void setGameplayMode(bool inGame)` | Enables/disables in-game A/B remap and auto-fire turbo |
 | `Buttons::setSwapAB` | fn | `void setSwapAB(bool swap)` | Sets A/B button orientation swap |
@@ -1176,7 +1211,7 @@ One table per file, columns: `Symbol | Kind (fn/macro/struct) | Signature | Note
 | `Buttons::isTurboEnabled` | fn | `bool isTurboEnabled()` | Returns true if auto-fire turbo is active |
 | `Buttons::toggleTurbo` | fn | `bool toggleTurbo()` | Toggles rapid auto-fire turbo |
 | `Buttons::gb_joypad_state` | var | `uint8_t gb_joypad_state` | Active-low joypad bitmask (0=pressed) |
-| `Buttons::Index` | enum | `enum Index : int { UP, DOWN, LEFT, RIGHT, A, B, START, SELECT }` | Button indices |
+| `Buttons::Index` | enum | `enum Index : int { UP, DOWN, LEFT, RIGHT, A, B, START, SELECT, X, Y, L, R }` | Button indices (12 total) |
 | `ButtonState` | struct | `struct ButtonState { const char* name; uint8_t pin; bool pressed; bool changed; }` | Button state info |
 
 ---
@@ -2137,7 +2172,7 @@ Seven states in `enum SystemState` govern runtime control flow:
 
 ## Buttons Joypad Bitmask (`Buttons::gb_joypad_state`)
 Active-low (`0` = pressed, `1` = released), sampled atomically once per frame via `REG_READ(GPIO_IN_REG)`:
-- Bit 0: `BTN_A` (`16`), Bit 1: `BTN_B` (`17`), Bit 2: `BTN_SELECT` (`21`), Bit 3: `BTN_START` (`18`), Bit 4: `BTN_RIGHT` (`7`), Bit 5: `BTN_LEFT` (`6`), Bit 6: `BTN_UP` (`4`), Bit 7: `BTN_DOWN` (`5`).
+- Bit 0: `BTN_A` (`16`), Bit 1: `BTN_B` (`17`), Bit 2: `BTN_SELECT` (`21`), Bit 3: `BTN_START` (`18`), Bit 4: `BTN_RIGHT` (`7`), Bit 5: `BTN_LEFT` (`6`), Bit 6: `BTN_UP` (`4`), Bit 7: `BTN_DOWN` (`5`). The Game Boy mask covers the 8 base buttons only. `BTN_X`, `BTN_Y`, `BTN_L`, `BTN_R` are read through `Buttons::get()`.
 
 ---
 
@@ -2499,7 +2534,7 @@ Purpose: Any AI agent or developer starting a session with zero prior memory can
 
 ## 1. What Is This Repository? (3 Core Facts)
 1. **Target Hardware:** ESP32-S3-N16R8 (16MB Quad SPI Flash, 8MB Octal SPI PSRAM) soldered on a permanent perfboard.
-2. **Current Physical State:** USB-C powered, ST7789 320×240 landscape SPI display, 8 GPIO tactile buttons, MicroSD card. **No battery divider, no I2S audio DAC physically soldered.**
+2. **Current Physical State:** USB-C powered, ST7789 320×240 landscape SPI display, 8 soldered GPIO tactile buttons (plus 4 supported but unwired: X, Y, L, R), MicroSD card. **No battery divider, no I2S audio DAC physically soldered.**
 3. **Firmware Purpose:** 14-core retro gaming handheld (GB, GBC, NES, SMS/GG, Genesis, SNES, PCE, Atari 2600, Lynx, WonderSwan, NGP, ColecoVision, PICO-8, DOOM) + 320×240 procedural SDF BMO mascot companion.
 
 ---
@@ -2544,7 +2579,7 @@ python -m tools.guardian export-harness <destination_dir>
   - Recursive SD folder scan (depth 3) + binary cache (`/.bmo_index`), favorites (`/favorites.txt`), and history (`/history.txt`).
   - `BoxArt` streams 64×64 `.raw`/`.bmp` cover art into PSRAM (8,192 B, 0 internal DRAM).
 - **Button Polling:**
-  - `Buttons::update()` samples all 8 active-low buttons atomically via `REG_READ(GPIO_IN_REG)` (`BTN_UP=4, BTN_DOWN=5, BTN_LEFT=6, BTN_RIGHT=7, BTN_A=16, BTN_B=17, BTN_START=18, BTN_SELECT=21`).
+  - `Buttons::update()` samples all 12 active-low buttons via `REG_READ(GPIO_IN_REG)` and `REG_READ(GPIO_IN1_REG)` for pins above 31 (`BTN_UP=4, BTN_DOWN=5, BTN_LEFT=6, BTN_RIGHT=7, BTN_A=16, BTN_B=17, BTN_START=18, BTN_SELECT=21, BTN_X=14, BTN_Y=42, BTN_L=47, BTN_R=48`).
 
 ---
 

@@ -1562,7 +1562,7 @@ const uint16_t* DisplayEmu::getActiveDmgPalette() {
 
 void DisplayEmu::drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeDram,
                                          uint32_t freePsram, uint32_t freeIram,
-                                         uint8_t buttonMask) {
+                                         uint16_t buttonMask) {
   if (!menuCanvas) return;
   menuCanvas->fillScreen(UI_BLACK);
   menuCanvas->drawRoundRect(8, 8, 304, 224, 8, UI_TEAL);
@@ -1609,6 +1609,10 @@ void DisplayEmu::drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeD
   const bool bPressed     = (buttonMask & (1 << 5));
   const bool selPressed   = (buttonMask & (1 << 6));
   const bool startPressed = (buttonMask & (1 << 7));
+  const bool xPressed     = (buttonMask & (1 << 8));
+  const bool yPressed     = (buttonMask & (1 << 9));
+  const bool lPressed     = (buttonMask & (1 << 10));
+  const bool rPressed     = (buttonMask & (1 << 11));
 
   // D-Pad
   menuCanvas->fillRect(42, 146, 16, 14, upPressed    ? UI_YELLOW : UI_DEEP_TEAL);
@@ -1660,6 +1664,31 @@ void DisplayEmu::drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeD
   menuCanvas->setCursor(251, 168);
   menuCanvas->setTextColor(aPressed ? UI_BLACK : UI_WHITE);
   menuCanvas->print("A");
+
+  // Shoulder triggers (LT / RT) under the D-Pad and extra face buttons (Y / X)
+  menuCanvas->fillRect(24, 196, 26, 14, lPressed ? UI_YELLOW : UI_DEEP_TEAL);
+  menuCanvas->drawRect(24, 196, 26, 14, UI_WHITE);
+  menuCanvas->setCursor(29, 207);
+  menuCanvas->setTextColor(lPressed ? UI_BLACK : UI_WHITE);
+  menuCanvas->print("LT");
+
+  menuCanvas->fillRect(54, 196, 26, 14, rPressed ? UI_YELLOW : UI_DEEP_TEAL);
+  menuCanvas->drawRect(54, 196, 26, 14, UI_WHITE);
+  menuCanvas->setCursor(59, 207);
+  menuCanvas->setTextColor(rPressed ? UI_BLACK : UI_WHITE);
+  menuCanvas->print("RT");
+
+  menuCanvas->fillRect(212, 196, 22, 14, yPressed ? UI_YELLOW : UI_DEEP_TEAL);
+  menuCanvas->drawRect(212, 196, 22, 14, UI_WHITE);
+  menuCanvas->setCursor(219, 207);
+  menuCanvas->setTextColor(yPressed ? UI_BLACK : UI_WHITE);
+  menuCanvas->print("Y");
+
+  menuCanvas->fillRect(244, 196, 22, 14, xPressed ? UI_YELLOW : UI_DEEP_TEAL);
+  menuCanvas->drawRect(244, 196, 22, 14, UI_WHITE);
+  menuCanvas->setCursor(251, 207);
+  menuCanvas->setTextColor(xPressed ? UI_BLACK : UI_WHITE);
+  menuCanvas->print("X");
 
   drawFooter("PRESS B TO EXIT DIAGNOSTICS");
   writeMenuCanvas();

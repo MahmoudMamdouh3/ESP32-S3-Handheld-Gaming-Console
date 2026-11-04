@@ -123,4 +123,4 @@ Seven states in `enum SystemState` govern runtime control flow:
 
 ## Buttons Joypad Bitmask (`Buttons::gb_joypad_state`)
 Active-low (`0` = pressed, `1` = released), sampled atomically once per frame via `REG_READ(GPIO_IN_REG)`:
-- Bit 0: `BTN_A` (`16`), Bit 1: `BTN_B` (`17`), Bit 2: `BTN_SELECT` (`21`), Bit 3: `BTN_START` (`18`), Bit 4: `BTN_RIGHT` (`7`), Bit 5: `BTN_LEFT` (`6`), Bit 6: `BTN_UP` (`4`), Bit 7: `BTN_DOWN` (`5`).
+- Bit 0: `BTN_A` (`16`), Bit 1: `BTN_B` (`17`), Bit 2: `BTN_SELECT` (`21`), Bit 3: `BTN_START` (`18`), Bit 4: `BTN_RIGHT` (`7`), Bit 5: `BTN_LEFT` (`6`), Bit 6: `BTN_UP` (`4`), Bit 7: `BTN_DOWN` (`5`). The Game Boy mask covers the 8 base buttons only. `BTN_X`, `BTN_Y`, `BTN_L`, `BTN_R` are read through `Buttons::get()`.

@@ -5,7 +5,7 @@ Purpose: Any AI agent or developer starting a session with zero prior memory can
 
 ## 1. What Is This Repository? (3 Core Facts)
 1. **Target Hardware:** ESP32-S3-N16R8 (16MB Quad SPI Flash, 8MB Octal SPI PSRAM) soldered on a permanent perfboard.
-2. **Current Physical State:** USB-C powered, ST7789 320×240 landscape SPI display, 8 GPIO tactile buttons, MicroSD card. **No battery divider, no I2S audio DAC physically soldered.**
+2. **Current Physical State:** USB-C powered, ST7789 320×240 landscape SPI display, 8 soldered GPIO tactile buttons (plus 4 supported but unwired: X, Y, L, R), MicroSD card. **No battery divider, no I2S audio DAC physically soldered.**
 3. **Firmware Purpose:** 14-core retro gaming handheld (GB, GBC, NES, SMS/GG, Genesis, SNES, PCE, Atari 2600, Lynx, WonderSwan, NGP, ColecoVision, PICO-8, DOOM) + 320×240 procedural SDF BMO mascot companion.
 
 ---
@@ -50,7 +50,7 @@ python -m tools.guardian export-harness <destination_dir>
   - Recursive SD folder scan (depth 3) + binary cache (`/.bmo_index`), favorites (`/favorites.txt`), and history (`/history.txt`).
   - `BoxArt` streams 64×64 `.raw`/`.bmp` cover art into PSRAM (8,192 B, 0 internal DRAM).
 - **Button Polling:**
-  - `Buttons::update()` samples all 8 active-low buttons atomically via `REG_READ(GPIO_IN_REG)` (`BTN_UP=4, BTN_DOWN=5, BTN_LEFT=6, BTN_RIGHT=7, BTN_A=16, BTN_B=17, BTN_START=18, BTN_SELECT=21`).
+  - `Buttons::update()` samples all 12 active-low buttons via `REG_READ(GPIO_IN_REG)` and `REG_READ(GPIO_IN1_REG)` for pins above 31 (`BTN_UP=4, BTN_DOWN=5, BTN_LEFT=6, BTN_RIGHT=7, BTN_A=16, BTN_B=17, BTN_START=18, BTN_SELECT=21, BTN_X=14, BTN_Y=42, BTN_L=47, BTN_R=48`).
 
 ---
 

@@ -108,6 +108,28 @@ class BmoSimulator {
     this.setupUIControls();
     this.applyUrlStateParams();
 
+    // Initialize 3D WebGL Console Body
+    this.bmo3D = null;
+    this.is3DView = true;
+    if (typeof THREE !== "undefined" && typeof Bmo3DConsole !== "undefined") {
+      const threeContainer = document.getElementById("three-viewport-container");
+      if (threeContainer) {
+        try {
+          this.bmo3D = new Bmo3DConsole(
+            threeContainer,
+            this.canvas,
+            (key) => this.handleExternalButtonPress(key),
+            (key) => this.handleExternalButtonRelease(key)
+          );
+        } catch (err) {
+          console.warn("Failed to initialize 3D console view:", err);
+          this.switchTo2DView();
+        }
+      }
+    } else {
+      this.switchTo2DView();
+    }
+
     // Start 60 FPS Render Loop
     requestAnimationFrame(this.renderLoop.bind(this));
   }
@@ -208,9 +230,13 @@ class BmoSimulator {
   }
 
   setupInputHandlers() {
+    // Bits 0-7 match the 8 base buttons. Bits 8-11 are the extra X, Y, L, R
+    // buttons (firmware GPIO 14, 42, 47, 48). The WASM cores mask the value to
+    // 8 bits, so the extra bits are tracked for the UI without changing them.
     const keyBitMap = {
       ArrowUp: 1, ArrowDown: 2, ArrowLeft: 4, ArrowRight: 8,
-      z: 16, Z: 16, x: 32, X: 32, Enter: 64, Shift: 128
+      z: 16, Z: 16, x: 32, X: 32, Enter: 64, Shift: 128,
+      s: 256, S: 256, a: 512, A: 512, q: 1024, Q: 1024, w: 2048, W: 2048
     };
 
     // Keyboard Handler
@@ -250,6 +276,22 @@ class BmoSimulator {
         case "Shift":
           this.handleButtonPress("SELECT");
           break;
+        case "s":
+        case "S":
+          this.handleButtonPress("X");
+          break;
+        case "a":
+        case "A":
+          this.handleButtonPress("Y");
+          break;
+        case "q":
+        case "Q":
+          this.handleButtonPress("L");
+          break;
+        case "w":
+        case "W":
+          this.handleButtonPress("R");
+          break;
         case " ":
         case "m":
         case "M":
@@ -264,7 +306,8 @@ class BmoSimulator {
       }
       const releasedKey = {
         ArrowUp: "UP", ArrowDown: "DOWN", ArrowLeft: "LEFT", ArrowRight: "RIGHT",
-        z: "A", Z: "A", x: "B", X: "B", Enter: "START", Shift: "SELECT"
+        z: "A", Z: "A", x: "B", X: "B", Enter: "START", Shift: "SELECT",
+        s: "X", S: "X", a: "Y", A: "Y", q: "L", Q: "L", w: "R", W: "R"
       }[e.key];
       if (releasedKey) this.handleButtonRelease(releasedKey);
     });
@@ -278,7 +321,11 @@ class BmoSimulator {
       { id: "btn-a", key: "A", bit: 16 },
       { id: "btn-b", key: "B", bit: 32 },
       { id: "btn-start", key: "START", bit: 64 },
-      { id: "btn-select", key: "SELECT", bit: 128 }
+      { id: "btn-select", key: "SELECT", bit: 128 },
+      { id: "btn-x", key: "X", bit: 256 },
+      { id: "btn-y", key: "Y", bit: 512 },
+      { id: "btn-l", key: "L", bit: 1024 },
+      { id: "btn-r", key: "R", bit: 2048 }
     ];
 
     buttons.forEach(b => {
@@ -334,6 +381,9 @@ class BmoSimulator {
   }
 
   handleButtonRelease(key) {
+    if (this.bmo3D) {
+      this.bmo3D.releaseButton(key, false);
+    }
     if (key === "B") this.bmoButtonHoldStart = 0;
   }
 
@@ -389,10 +439,14 @@ class BmoSimulator {
 
   handleButtonPress(key) {
     this.lastInputActivityMs = performance.now();
+    if (this.bmo3D) {
+      this.bmo3D.pressButton(key, false);
+    }
     // Visual button reflection
     const btnMap = {
       "UP": "btn-dpad-up", "DOWN": "btn-dpad-down", "LEFT": "btn-dpad-left", "RIGHT": "btn-dpad-right",
-      "A": "btn-a", "B": "btn-b", "START": "btn-start", "SELECT": "btn-select"
+      "A": "btn-a", "B": "btn-b", "START": "btn-start", "SELECT": "btn-select",
+      "X": "btn-x", "Y": "btn-y", "L": "btn-l", "R": "btn-r"
     };
     if (btnMap[key]) {
       const el = document.getElementById(btnMap[key]);
@@ -555,6 +609,28 @@ class BmoSimulator {
     if (themeSelect) {
       themeSelect.addEventListener("change", (e) => {
         document.body.setAttribute("data-theme", e.target.value);
+        if (this.bmo3D) this.bmo3D.setTheme(e.target.value);
+      });
+    }
+
+    // 3D Camera Preset Buttons
+    document.querySelectorAll(".cam-preset-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".cam-preset-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const cam = btn.getAttribute("data-cam");
+        if (this.bmo3D) {
+          this.bmo3D.setCameraPreset(cam === "reset" ? "front" : cam);
+        }
+      });
+    });
+
+    // View Mode Toggle (3D WebGL Console vs 2D Flat Layout)
+    const btnToggleView = document.getElementById("btn-toggle-viewmode");
+    if (btnToggleView) {
+      btnToggleView.addEventListener("click", () => {
+        this.is3DView = !this.is3DView;
+        this.updateViewMode();
       });
     }
     // Palette selector
@@ -650,6 +726,51 @@ class BmoSimulator {
     }
 
     this.updateSidebarMuseumView();
+  }
+
+  handleExternalButtonPress(key) {
+    const keyBitMap = {
+      "UP": 1, "DOWN": 2, "LEFT": 4, "RIGHT": 8,
+      "A": 16, "B": 32, "START": 64, "SELECT": 128,
+      "X": 256, "Y": 512, "L": 1024, "R": 2048
+    };
+    if (this.wasmEngine && keyBitMap[key]) {
+      this.wasmEngine.setButtonBit(keyBitMap[key], true);
+    }
+    this.handleButtonPress(key);
+  }
+
+  handleExternalButtonRelease(key) {
+    const keyBitMap = {
+      "UP": 1, "DOWN": 2, "LEFT": 4, "RIGHT": 8,
+      "A": 16, "B": 32, "START": 64, "SELECT": 128,
+      "X": 256, "Y": 512, "L": 1024, "R": 2048
+    };
+    if (this.wasmEngine && keyBitMap[key]) {
+      this.wasmEngine.setButtonBit(keyBitMap[key], false);
+    }
+    this.handleButtonRelease(key);
+  }
+
+  updateViewMode() {
+    const stage = document.getElementById("stage-container");
+    const toggleBtn = document.getElementById("btn-toggle-viewmode");
+    if (!stage) return;
+    if (this.is3DView) {
+      stage.classList.remove("view-2d");
+      stage.classList.add("view-3d");
+      if (toggleBtn) toggleBtn.textContent = "2D Flat View";
+      if (this.bmo3D) this.bmo3D.onResize();
+    } else {
+      stage.classList.remove("view-3d");
+      stage.classList.add("view-2d");
+      if (toggleBtn) toggleBtn.textContent = "3D Console View";
+    }
+  }
+
+  switchTo2DView() {
+    this.is3DView = false;
+    this.updateViewMode();
   }
 
   updateSidebarMuseumView() {

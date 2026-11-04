@@ -7,6 +7,14 @@
 
 ---
 
+## Latest Agent Handoff - 2026-11-04 (Extra Buttons X, Y, L, R and 3D Console Simulator)
+
+- Added `BTN_X=14`, `BTN_Y=42`, `BTN_L=47`, `BTN_R=48` to firmware, Wokwi, and the browser simulator. See `CHANGELOG.md` for the file list.
+- Replaced the 2D flat chassis representation in the browser simulator with a full 3D interactive WebGL console body (`tools/bmo_simulator/bmo_3d_console.js`, `three.min.js`, `OrbitControls.js`) built to exact physical centimeter hardware dimensions (8.8 × 12.4 × 3.2 cm, ST7789 2.4" display active window, 2.54 mm perfboard square-grid ABXY diamond, L/R top shoulder bumpers, USB-C cutout, SD slot, power switch, rear 4×AA battery door, raycasting button depression, camera presets, and theme materials).
+- `VERIFIED_HOST`: `python scripts/validate_repo.py` Phase 0 compiled the firmware (Flash 5,700,300 bytes, SRAM 218,936 bytes). `python -m tools.guardian verify` ran 147 tests, all OK. `python -m tools.guardian ui-audit` and `diff-audit` passed clean.
+- `UNVERIFIED_HARDWARE`: the buttons are not soldered or tested on the physical board. GPIO 42/47/48 are read from `GPIO_IN1_REG`; confirm each press on the Diagnostics screen after wiring. GPIO48 also drives the onboard RGB LED on many DevKitC-1 boards.
+- Genesis maps X to C only; the core has no 6-button protocol. DOOM weapon cycling is bound in `DoomEmu::begin()` after `doomgeneric_Create()`.
+
 ## Latest Agent Handoff — 2026-11-03 (Firmware BMO Companion and Playable Browser Cores)
 
 - The browser compiles the firmware `BmoFace` SDF renderer and the vendored Peanut-GB, Agnes, Stella, and ColecoVision cores to WebAssembly. The BMO companion uses the real face/expression/gaze/dialogue/pet/dance functions; the console cores accept `.gb`, `.nes`, `.a26`, and `.col` uploads with firmware button mappings and viewports.

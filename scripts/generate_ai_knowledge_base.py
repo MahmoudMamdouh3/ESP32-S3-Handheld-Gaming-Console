@@ -243,6 +243,10 @@ def build_knowledge_base():
                 "btn_b": cfg.get("BTN_B", 17),
                 "btn_start": cfg.get("BTN_START", 18),
                 "btn_select": cfg.get("BTN_SELECT", 21),
+                "btn_x": cfg.get("BTN_X", 14),
+                "btn_y": cfg.get("BTN_Y", 42),
+                "btn_l": cfg.get("BTN_L", 47),
+                "btn_r": cfg.get("BTN_R", 48),
                 "mode": "INPUT_PULLUP (Active LOW)",
             },
             "dormant_reserved": {
