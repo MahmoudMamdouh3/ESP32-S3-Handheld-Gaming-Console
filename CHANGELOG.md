@@ -5,6 +5,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Four Extra Buttons and 3D Console Simulator] - 2026-11-04
+### Added
+- **Button pins (`firmware/BmoGameboy/src/core/config.h`)**: `BTN_X=14`, `BTN_Y=42`, `BTN_L=47`, `BTN_R=48`, all configured as `INPUT_PULLUP`. Avoiding boot strapping, PSRAM (33-37), display (8-12), and SD (13, 15) pins.
+- **Button driver (`buttons.h`, `buttons.cpp`)**: `Buttons::Index` expanded to 12 buttons (`UP, DOWN, LEFT, RIGHT, A, B, START, SELECT, X, Y, L, R`). `Buttons::update()` reads both `GPIO_IN_REG` (<32) and `GPIO_IN1_REG` (>=32).
+- **Core mappings**: SNES emulator pad registers widened to 16-bit (`JOY1L`/`JOY1H` returning X, Y, L, R). Genesis maps X to C. DOOM maps L/R to strafing and X/Y to weapon cycling.
+- **Diagnostics screen (`display_emu.cpp`)**: Live hardware tester matrix updated to display LT, RT, Y, X.
+- **Wokwi circuit (`diagram.json`)**: Four pushbuttons wired to GPIO 14, 42, 47, 48 and GND.
+- **3D Interactive WebGL Console Model (`tools/bmo_simulator/bmo_3d_console.js`, `three.min.js`, `OrbitControls.js`)**: Real-scale Three.js 3D handheld enclosure built to exact centimeter hardware reference dimensions:
+  - Chassis: 8.8 W × 12.4 H × 3.2 D cm, 0.6 cm corner radius with 1.5 cm asymmetric bottom-right corner.
+  - Screen window: 5.0 × 3.8 cm (scaled to active 4.88 × 3.66 cm 4:3 ST7789 display active area). Dynamic `THREE.CanvasTexture` projects native 320×240 companion and emulator rendering in real time.
+  - Square-grid ABXY diamond aligned to 2.54 mm perfboard holes: X at (6.6, 7.4), Y at (5.6, 8.4), A at (7.6, 8.4), B at (6.6, 9.4) cm.
+  - D-Pad: 2.8 × 2.8 cm centered at (2.2, 8.4) cm with directional arm switches.
+  - Select / Start pills: 1.4 × 0.5 cm centered at y=11.0 cm.
+  - Top edge L/R shoulder triggers: 2.2 × 0.6 cm bumpers with tactile spring depression.
+  - Cutouts: Top USB-C (1.0 × 0.45 cm), left MicroSD slot (1.3 × 0.25 cm), right power slide switch (1.0 × 0.4 cm), rear 4×AA battery compartment door (3.4 × 6.2 cm).
+  - Raycaster pointer interaction: Clicking 3D buttons depresses them and routes input to WASM/firmware state.
+  - Camera presets: Front, 3D Iso, Top (Shoulders & USB-C), Left (SD Slot), Right (Power), Back (4×AA Door), and Reset.
+  - Theme switching: Real-time shell material updates across BMO Teal, DMG Gray, Atomic Purple, and OLED Black.
+  - View mode toggle between 3D console model and flat layout.
+
+### Changed
+- `DocTruthVerifier` updated to match pin macros with word boundaries (`BTN_L` no longer false-positive matches `BTN_LEFT`).
+- `docs/hardware-notes.md` updated: Flash Mode corrected to QIO 80MHz with OPI PSRAM; power notes updated to document AA/NiMH boost architecture vs LiPo TP4056 restrictions.
+- Knowledge graph, AST index, and documentation regenerated.
+
+### Limitation
+- The four buttons are not soldered yet. Unwired pins read as released.
+- Genesis uses a 3-button pad; the core has no 6-button (X/Y/Z/Mode) protocol.
+
 ## [SD Library Audit and Safer Deployment] - 2026-11-03
 ### Changed
 - **FAT32 deployment (`scripts/deploy_to_sd.py`)**: Replaced size-only, concurrent in-place writes with an explicit-destination dry run, volume-label guard, content hashing, sequential staged copies, post-copy verification, and ROM-index invalidation. The tool deploys only supported root-level source files, does not delete destination files, and reports files that would be copied or replaced.

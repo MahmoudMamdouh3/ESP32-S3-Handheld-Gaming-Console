@@ -41,6 +41,7 @@ void GenesisEmu::update() {
   if (Buttons::get(Buttons::RIGHT).pressed)  pad |= 0x08;
   if (Buttons::get(Buttons::B).pressed)      pad |= 0x10; // A
   if (Buttons::get(Buttons::A).pressed)      pad |= 0x20; // B
+  if (Buttons::get(Buttons::X).pressed)      pad |= 0x40; // C (3-button pad; the core has no 6-button protocol)
   if (Buttons::get(Buttons::START).pressed)  pad |= 0x80; // Start
   genesis_set_pad(&genesisState, pad);
 

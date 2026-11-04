@@ -136,13 +136,19 @@ static uint8_t snes_read8(snes_t* emu, uint32_t addr24) {
             return (emu->rdnmi & 0x80);
         }
         if (off == 0x4218) {
-            // JOY1L: Bit 7 = A (0x20 in pad_state)
-            return (emu->pad_state & 0x20) ? 0x80 : 0x00;
+            // JOY1L: Bit 7 = A, 6 = X, 5 = L, 4 = R
+            uint8_t lo = 0;
+            if (emu->pad_state & 0x20)  lo |= 0x80; // A
+            if (emu->pad_state & 0x100) lo |= 0x40; // X
+            if (emu->pad_state & 0x400) lo |= 0x20; // L
+            if (emu->pad_state & 0x800) lo |= 0x10; // R
+            return lo;
         }
         if (off == 0x4219) {
             // JOY1H: Bit 7=B, 6=Y, 5=Select, 4=Start, 3=Up, 2=Down, 1=Left, 0=Right
             uint8_t hi = 0;
             if (emu->pad_state & 0x10) hi |= 0x80; // B
+            if (emu->pad_state & 0x200) hi |= 0x40; // Y
             if (emu->pad_state & 0x80) hi |= 0x20; // Select
             if (emu->pad_state & 0x40) hi |= 0x10; // Start
             if (emu->pad_state & 0x01) hi |= 0x08; // Up
@@ -657,7 +663,7 @@ void snes_destroy(snes_t* emu) {
     if (emu->sram) { SNES_FREE(emu->sram); emu->sram = NULL; }
 }
 
-void snes_set_pad(snes_t* emu, uint8_t pad) {
+void snes_set_pad(snes_t* emu, uint16_t pad) {
     if (emu) emu->pad_state = pad;
 }
 

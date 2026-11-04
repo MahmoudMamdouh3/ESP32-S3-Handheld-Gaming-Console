@@ -34,7 +34,7 @@ bool SNESEmu::init(uint8_t* romData, size_t romSize) {
 
 void SNESEmu::update() {
   if (!running || !snesFb) return;
-  uint8_t pad = 0;
+  uint16_t pad = 0;
   if (Buttons::get(Buttons::UP).pressed)     pad |= 0x01;
   if (Buttons::get(Buttons::DOWN).pressed)   pad |= 0x02;
   if (Buttons::get(Buttons::LEFT).pressed)   pad |= 0x04;
@@ -43,6 +43,10 @@ void SNESEmu::update() {
   if (Buttons::get(Buttons::A).pressed)      pad |= 0x20; // A
   if (Buttons::get(Buttons::START).pressed)  pad |= 0x40; // Start
   if (Buttons::get(Buttons::SELECT).pressed) pad |= 0x80; // Select
+  if (Buttons::get(Buttons::X).pressed)      pad |= 0x100; // X
+  if (Buttons::get(Buttons::Y).pressed)      pad |= 0x200; // Y
+  if (Buttons::get(Buttons::L).pressed)      pad |= 0x400; // L shoulder
+  if (Buttons::get(Buttons::R).pressed)      pad |= 0x800; // R shoulder
   snes_set_pad(&snesState, pad);
 
   snes_step_frame(&snesState);

@@ -82,6 +82,34 @@
       "top": 530,
       "left": 90,
       "attrs": { "color": "gray", "label": "SELECT" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_x",
+      "top": 330,
+      "left": 590,
+      "attrs": { "color": "green", "label": "X" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_y",
+      "top": 390,
+      "left": 500,
+      "attrs": { "color": "yellow", "label": "Y" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_l",
+      "top": 300,
+      "left": -70,
+      "attrs": { "color": "gray", "label": "L" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_r",
+      "top": 300,
+      "left": 110,
+      "attrs": { "color": "gray", "label": "R" }
     }
   ],
   "connections": [
@@ -117,6 +145,14 @@
     [ "esp:18", "btn_start:1.l", "orange", [] ],
     [ "esp:GND.1", "btn_start:2.l", "black", [] ],
     [ "esp:21", "btn_select:1.l", "orange", [] ],
-    [ "esp:GND.1", "btn_select:2.l", "black", [] ]
+    [ "esp:GND.1", "btn_select:2.l", "black", [] ],
+    [ "esp:14", "btn_x:1.l", "purple", [] ],
+    [ "esp:GND.1", "btn_x:2.l", "black", [] ],
+    [ "esp:42", "btn_y:1.l", "purple", [] ],
+    [ "esp:GND.1", "btn_y:2.l", "black", [] ],
+    [ "esp:47", "btn_l:1.l", "purple", [] ],
+    [ "esp:GND.1", "btn_l:2.l", "black", [] ],
+    [ "esp:48", "btn_r:1.l", "purple", [] ],
+    [ "esp:GND.1", "btn_r:2.l", "black", [] ]
   ]
 }

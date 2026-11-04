@@ -25,6 +25,7 @@ class DocTruthVerifier:
         "SD_MISO", "SD_CS",
         "BTN_UP", "BTN_DOWN", "BTN_LEFT", "BTN_RIGHT",
         "BTN_A", "BTN_B", "BTN_START", "BTN_SELECT",
+        "BTN_X", "BTN_Y", "BTN_L", "BTN_R",
         "BATTERY_ADC_PIN", "I2S_BCLK", "I2S_LRC", "I2S_DIN",
         "I2C_SDA", "I2C_SCL",
         "FEATURE_SD_CARD", "FEATURE_AUDIO", "FEATURE_BATTERY_MONITOR",
@@ -161,7 +162,7 @@ class DocTruthVerifier:
                         continue
                     expected = cfg[macro]
                     # Pattern A: `| **13** | `SD_CS` |`
-                    m_table = re.search(rf"\|\s*\*\*(\d+)\*\*\s*\|\s*`?{macro}`?", line)
+                    m_table = re.search(rf"\|\s*\*\*(\d+)\*\*\s*\|\s*`?{macro}\b`?", line)
                     if m_table and int(m_table.group(1)) != expected:
                         issues.append(
                             DocDriftIssue(

@@ -42,13 +42,13 @@ typedef struct {
   uint8_t oam[544];           // Object Attribute Memory (128 sprites)
   uint16_t palette_cache[256];// Pre-swapped BGR565 palette cache for ST7789
   uint16_t* framebuffer;      // 256 x 224 BGR565
-  uint8_t pad_state;          // Bit 0: Up, 1: Down, 2: Left, 3: Right, 4: B, 5: A, 6: Start, 7: Select
+  uint16_t pad_state;         // Bit 0: Up, 1: Down, 2: Left, 3: Right, 4: B, 5: A, 6: Start, 7: Select, 8: X, 9: Y, 10: L, 11: R
 } snes_t;
 
 void snes_init(snes_t* emu, uint8_t* rom, uint32_t rom_size, uint8_t* wram, uint16_t* fb);
 void snes_destroy(snes_t* emu);
 void snes_step_frame(snes_t* emu);
-void snes_set_pad(snes_t* emu, uint8_t pad);
+void snes_set_pad(snes_t* emu, uint16_t pad);
 
 #ifdef __cplusplus
 }

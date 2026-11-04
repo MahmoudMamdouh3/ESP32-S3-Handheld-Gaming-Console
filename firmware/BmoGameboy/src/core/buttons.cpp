@@ -12,13 +12,17 @@ namespace {
     {"B",      BTN_B,      false, false},
     {"Start",  BTN_START,  false, false},
     {"Select", BTN_SELECT, false, false},
+    {"X",      BTN_X,      false, false},
+    {"Y",      BTN_Y,      false, false},
+    {"L",      BTN_L,      false, false},
+    {"R",      BTN_R,      false, false},
   };
   const int NUM_BUTTONS = sizeof(states) / sizeof(states[0]);
 
   // FIX Q3: File-scope static_assert so the check is always evaluated at
   // compile time, not only when begin() happens to be called.
-  static_assert(sizeof(states) / sizeof(states[0]) == 8,
-                "Expected exactly 8 buttons for GB joypad mapping");
+  static_assert(sizeof(states) / sizeof(states[0]) == 12,
+                "Expected exactly 12 buttons (8 base + X, Y, L, R)");
 
   bool s_inGameplayMode = false;
   bool s_swapAB = false;
@@ -69,13 +73,20 @@ bool Buttons::toggleTurbo() {
 }
 
 void Buttons::update() {
-  // Read all GPIO pins 0-31 in a single CPU cycle.
-  // All button pins are guaranteed to be < 32 in config.h.
-  uint32_t gpio_in = REG_READ(GPIO_IN_REG);
+  // Read GPIO pins 0-31 and 32-48 in two register reads (one each).
+  // Pins below 32 come from GPIO_IN_REG; pins 32 and above come from
+  // GPIO_IN1_REG, where pin N is bit (N - 32). The Game Boy joypad bitmask
+  // below only covers the original 8 buttons; X, Y, L, R are read through
+  // Buttons::get() by the SNES, Genesis, and DOOM wrappers.
+  uint32_t gpio_in  = REG_READ(GPIO_IN_REG);
+  uint32_t gpio_in1 = REG_READ(GPIO_IN1_REG);
 
   bool rawPressed[NUM_BUTTONS];
   for (int i = 0; i < NUM_BUTTONS; i++) {
-    rawPressed[i] = ((gpio_in & (1UL << states[i].pin)) == 0);
+    const uint8_t pin = states[i].pin;
+    const uint32_t level = (pin < 32) ? (gpio_in & (1UL << pin))
+                                      : (gpio_in1 & (1UL << (pin - 32)));
+    rawPressed[i] = (level == 0);
   }
 
   // Apply A/B button swap and auto-fire turbo only during active gameplay

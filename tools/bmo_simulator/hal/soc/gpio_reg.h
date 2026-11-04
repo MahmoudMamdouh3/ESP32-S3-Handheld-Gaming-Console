@@ -7,9 +7,12 @@
 extern "C" {
 #endif
 uint32_t sim_gpio_in_reg(void);
+uint32_t sim_gpio_in1_reg(void);
 #ifdef __cplusplus
 }
 #endif
 
 #define GPIO_IN_REG 0x3FF44000
-#define REG_READ(addr) (((addr) == GPIO_IN_REG) ? sim_gpio_in_reg() : 0u)
+#define GPIO_IN1_REG 0x3FF4403C
+#define REG_READ(addr) (((addr) == GPIO_IN_REG) ? sim_gpio_in_reg() : \
+                        ((addr) == GPIO_IN1_REG) ? sim_gpio_in1_reg() : 0u)

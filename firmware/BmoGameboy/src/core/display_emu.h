@@ -48,7 +48,7 @@ namespace DisplayEmu {
 
   // Renders the Hardware Self-Test & Diagnostics dashboard
   void drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeDram, uint32_t freePsram,
-                                uint32_t freeIram, uint8_t buttonMask);
+                                uint32_t freeIram, uint16_t buttonMask);
 
   // Renders a hardware silhouette pixel-art icon for a retro console
   void drawConsoleIcon(RomType type, int x, int y, uint16_t primaryColor = 0);
