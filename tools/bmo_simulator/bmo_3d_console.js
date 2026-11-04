@@ -537,7 +537,7 @@ class Bmo3DConsole {
     const shadowTex = this.createDropShadowTexture(62);
     const shadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, opacity: 0.72 });
     const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
-    shadowMesh.position.set(0, -0.2, -D / 2 - 0.08);
+    shadowMesh.position.set(0, -0.2, -D / 2 - 0.35);
     this.rootGroup.add(shadowMesh);
 
     // -------------------------------------------------------------------------
@@ -1040,22 +1040,121 @@ class Bmo3DConsole {
     this.rootGroup.add(pwrNub);
 
     // -------------------------------------------------------------------------
-    // 11. REAR 4×AA BATTERY DOOR: 3.4 H × 6.2 W cm centered at x 4.4, y 9.0 cm
-    //     Three.js: X = 0.0 cm, Y = 6.2 - 9.0 = -2.8 cm, Z = -1.6 cm
+    // 11. CANONICAL REAR CHASSIS (Faithful to Adventure Time BMO):
+    //     Zone 1 (Top): 5 Vertical Vent Slits (| | | | |)
+    //     Zone 2 (Middle): Battery/Access Plate with Raised Frame & 4 Corner Screws
+    //     Zone 3 (Bottom): Horizontal Finger Latch / Handle Recess
     // -------------------------------------------------------------------------
-    const doorGeo = new THREE.BoxGeometry(6.2, 3.4, 0.18);
-    const doorMesh = new THREE.Mesh(doorGeo, this.materials.chassis);
-    doorMesh.position.set(0, hh - 9.0, -D / 2);
-    this.rootGroup.add(doorMesh);
+    const Z_BACK = -D / 2; // -1.60 cm
 
-    // Textured battery grip ridges
-    for (let i = 0; i < 4; i++) {
-      const slitGeo = new THREE.BoxGeometry(4.2, 0.1, 0.04);
-      const slitMat = new THREE.MeshBasicMaterial({ color: 0x438f7a });
-      const slit = new THREE.Mesh(slitGeo, slitMat);
-      slit.position.set(0, hh - 9.0 + 0.6 - i * 0.35, -D / 2 - 0.09);
-      this.rootGroup.add(slit);
+    // Zone 1: 5 Vertical Vent Slits (| | | | |)
+    const ventY = +3.6; // Upper back
+    const ventHeight = 2.4;
+    const ventWidth = 0.18;
+    const ventDepth = 0.06;
+    const ventMat = new THREE.MeshBasicMaterial({ color: 0x091814 }); // Deep dark recessed vent
+
+    for (let i = 0; i < 5; i++) {
+      const vx = (i - 2) * 0.82; // -1.64, -0.82, 0.0, +0.82, +1.64 cm
+      // Rounded capsule slit shape
+      const vShape = new THREE.Shape();
+      const vr = ventWidth / 2;
+      const vh = ventHeight - ventWidth;
+      vShape.moveTo(-vr, -vh / 2);
+      vShape.lineTo(vr, -vh / 2);
+      vShape.absarc(0, vh / 2, vr, 0, Math.PI, false);
+      vShape.lineTo(-vr, -vh / 2);
+      vShape.absarc(0, -vh / 2, vr, Math.PI, Math.PI * 2, false);
+
+      const vGeo = new THREE.ExtrudeGeometry(vShape, { depth: ventDepth, bevelEnabled: false });
+      vGeo.center();
+      const ventMesh = new THREE.Mesh(vGeo, ventMat);
+      ventMesh.position.set(vx, ventY, Z_BACK - ventDepth / 2);
+      this.rootGroup.add(ventMesh);
     }
+
+    // Zone 2: Rectangular Access / Battery Plate with Raised Beveled Frame
+    const plateY = +0.2; // Centered middle-back
+    const plateW = 5.5;
+    const plateH = 3.3;
+    const plateDepth = 0.12;
+
+    // Molded perimeter seam groove
+    const seamGeo = new THREE.BoxGeometry(plateW + 0.35, plateH + 0.35, 0.04);
+    const seamMat = new THREE.MeshBasicMaterial({ color: 0x14332c });
+    const seamMesh = new THREE.Mesh(seamGeo, seamMat);
+    seamMesh.position.set(0, plateY, Z_BACK - 0.02);
+    this.rootGroup.add(seamMesh);
+
+    // Raised beveled plate
+    const pShape = new THREE.Shape();
+    const pr = 0.12;
+    pShape.moveTo(-plateW / 2 + pr, -plateH / 2);
+    pShape.lineTo(plateW / 2 - pr, -plateH / 2);
+    pShape.quadraticCurveTo(plateW / 2, -plateH / 2, plateW / 2, -plateH / 2 + pr);
+    pShape.lineTo(plateW / 2, plateH / 2 - pr);
+    pShape.quadraticCurveTo(plateW / 2, plateH / 2, plateW / 2 - pr, plateH / 2);
+    pShape.lineTo(-plateW / 2 + pr, plateH / 2);
+    pShape.quadraticCurveTo(-plateW / 2, plateH / 2, -plateW / 2, plateH / 2 - pr);
+    pShape.lineTo(-plateW / 2, -plateH / 2 + pr);
+    pShape.quadraticCurveTo(-plateW / 2, -plateH / 2, -plateW / 2 + pr, -plateH / 2);
+
+    const pGeo = new THREE.ExtrudeGeometry(pShape, {
+      depth: plateDepth,
+      bevelEnabled: true,
+      bevelSegments: 4,
+      bevelSize: 0.03,
+      bevelThickness: 0.03,
+    });
+    pGeo.center();
+
+    const plateMesh = new THREE.Mesh(pGeo, this.materials.chassis);
+    plateMesh.position.set(0, plateY, Z_BACK - plateDepth / 2 - 0.02);
+    plateMesh.castShadow = true;
+    this.rootGroup.add(plateMesh);
+
+    // 4 Corner Metal Screws / Rivets
+    const screwInsetX = plateW / 2 - 0.36; // 2.39 cm
+    const screwInsetY = plateH / 2 - 0.36; // 1.29 cm
+    const screwPositions = [
+      [-screwInsetX, plateY + screwInsetY],
+      [+screwInsetX, plateY + screwInsetY],
+      [-screwInsetX, plateY - screwInsetY],
+      [+screwInsetX, plateY - screwInsetY],
+    ];
+
+    const screwGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.06, 24);
+    screwGeo.rotateX(Math.PI / 2);
+    const screwCrossGeo = new THREE.BoxGeometry(0.18, 0.03, 0.07);
+    const screwCrossMat = new THREE.MeshBasicMaterial({ color: 0x2c3e50 });
+
+    for (const [sx, sy] of screwPositions) {
+      const screwMesh = new THREE.Mesh(screwGeo, this.materials.metal);
+      screwMesh.position.set(sx, sy, Z_BACK - plateDepth - 0.025);
+      this.rootGroup.add(screwMesh);
+
+      // Slotted screw drive groove
+      const crossMesh = new THREE.Mesh(screwCrossGeo, screwCrossMat);
+      crossMesh.position.set(sx, sy, Z_BACK - plateDepth - 0.045);
+      this.rootGroup.add(crossMesh);
+    }
+
+    // Zone 3: Horizontal Finger Latch / Compartment Recess
+    const latchY = -2.4;
+    const latchW = 2.8;
+    const latchH = 0.45;
+    const latchGeo = new THREE.BoxGeometry(latchW, latchH, 0.06);
+    const latchMat = new THREE.MeshBasicMaterial({ color: 0x091814 });
+    const latchMesh = new THREE.Mesh(latchGeo, latchMat);
+    latchMesh.position.set(0, latchY, Z_BACK - 0.02);
+    this.rootGroup.add(latchMesh);
+
+    // Subtle inner shadow ridge inside the latch
+    const latchLipGeo = new THREE.BoxGeometry(latchW - 0.2, 0.12, 0.08);
+    const latchLipMat = new THREE.MeshBasicMaterial({ color: 0x14332c });
+    const latchLipMesh = new THREE.Mesh(latchLipGeo, latchLipMat);
+    latchLipMesh.position.set(0, latchY + 0.10, Z_BACK - 0.03);
+    this.rootGroup.add(latchLipMesh);
 
     // -------------------------------------------------------------------------
     // 12. CANONICAL SIDES: 7-Hole Acoustic Speaker Array & Vertical "B M O"
