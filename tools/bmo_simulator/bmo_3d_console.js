@@ -375,6 +375,72 @@ class Bmo3DConsole {
     return texture;
   }
 
+  createSideTexture() {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 1024;
+    const ctx = canvas.getContext("2d");
+
+    ctx.clearRect(0, 0, 512, 1024);
+
+    // 1. Canonical 7-Hole Acoustic Speaker Array (Upper side, matching Adventure Time BMO)
+    const cx = 256;
+    const cy = 185;
+    const holeRadius = 14;
+    const arrayRadius = 58;
+
+    const drawHole = (hx, hy) => {
+      const grad = ctx.createRadialGradient(hx, hy, holeRadius * 0.2, hx, hy, holeRadius);
+      grad.addColorStop(0, "#081411");
+      grad.addColorStop(0.85, "#0f2620");
+      grad.addColorStop(1, "#1a4b42");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(hx, hy, holeRadius, 0, Math.PI * 2);
+      ctx.fill();
+    };
+
+    // Center hole
+    drawHole(cx, cy);
+
+    // 6 Hexagonal outer acoustic holes
+    for (let i = 0; i < 6; i++) {
+      const angle = (i * Math.PI) / 3;
+      drawHole(cx + Math.cos(angle) * arrayRadius, cy + Math.sin(angle) * arrayRadius);
+    }
+
+    // 2. Bold Retro "B M O" Vertical Lettering (Faithful Adventure Time typography)
+    ctx.fillStyle = "#0c1f1a";
+    ctx.font = "900 135px 'Outfit', 'Press Start 2P', sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // B
+    ctx.fillText("B", 256, 420);
+    // M
+    ctx.fillText("M", 256, 580);
+
+    // O with Arm Socket Port in the center!
+    ctx.fillText("O", 256, 750);
+
+    // Arm Socket Port Ring inside the O
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = "#081411";
+    ctx.beginPath();
+    ctx.arc(256, 750, 36, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = "#122d26";
+    ctx.beginPath();
+    ctx.arc(256, 750, 31, 0, Math.PI * 2);
+    ctx.fill();
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    return texture;
+  }
+
   buildConsoleModel() {
     this.rootGroup = new THREE.Group();
     this.scene.add(this.rootGroup);
@@ -475,18 +541,7 @@ class Bmo3DConsole {
     this.rootGroup.add(shadowMesh);
 
     // -------------------------------------------------------------------------
-    // 2. TOP VENT RIDGES: 3 horizontal grooves matching 2D .chassis-top-ridges
-    // -------------------------------------------------------------------------
-    for (let i = 0; i < 3; i++) {
-      const ridgeGeo = new THREE.BoxGeometry(6.4, 0.08, 0.04);
-      const ridgeMat = new THREE.MeshBasicMaterial({ color: 0x438f7a });
-      const ridgeMesh = new THREE.Mesh(ridgeGeo, ridgeMat);
-      ridgeMesh.position.set(0, hh - 0.75 - i * 0.22, Z_FRONT + 0.01);
-      this.rootGroup.add(ridgeMesh);
-    }
-
-    // -------------------------------------------------------------------------
-    // 3. DISPLAY WINDOW: 5.0 W × 3.8 H cm centered at (4.4, 3.3) cm
+    // 2. DISPLAY WINDOW: 5.0 W × 3.8 H cm centered at (4.4, 3.3) cm
     //    Three.js: X = 0.0 cm, Y = 6.2 - 3.3 = +2.9 cm
     //    (Spans x 1.9-6.9, y 1.4-5.2 -> 56.8% body width, real 2.4" ST7789)
     // -------------------------------------------------------------------------
@@ -567,6 +622,30 @@ class Bmo3DConsole {
     const lensMesh = new THREE.Mesh(lensGeo, lensMat);
     lensMesh.position.set(0, DISP_Y, Z_FRONT + 0.088);
     this.rootGroup.add(lensMesh);
+
+    // -------------------------------------------------------------------------
+    // CANONICAL CASSETTE / FLOPPY DRIVE SLOT & EJECT BUTTON (Adventure Time BMO)
+    // -------------------------------------------------------------------------
+    const slotY = DISP_Y - BEZEL_H / 2 - 0.28; // +0.42 cm (centered between screen bezel and D-pad)
+    const slotGeo = new THREE.BoxGeometry(4.2, 0.24, 0.04);
+    const slotMat = new THREE.MeshBasicMaterial({ color: 0x091814 });
+    const slotMesh = new THREE.Mesh(slotGeo, slotMat);
+    slotMesh.position.set(0, slotY, Z_FRONT + 0.015);
+    this.rootGroup.add(slotMesh);
+
+    // Subtle slot inner recess depth
+    const slotInnerGeo = new THREE.BoxGeometry(4.0, 0.14, 0.06);
+    const slotInnerMat = new THREE.MeshBasicMaterial({ color: 0x040a08 });
+    const slotInnerMesh = new THREE.Mesh(slotInnerGeo, slotInnerMat);
+    slotInnerMesh.position.set(0, slotY, Z_FRONT + 0.02);
+    this.rootGroup.add(slotInnerMesh);
+
+    // Iconic circular blue eject button to the right of the slot
+    const ejectGeo = new THREE.CircleGeometry(0.15, 24);
+    const ejectMat = new THREE.MeshBasicMaterial({ color: 0x227093 });
+    const ejectMesh = new THREE.Mesh(ejectGeo, ejectMat);
+    ejectMesh.position.set(2.45, slotY, Z_FRONT + 0.022);
+    this.rootGroup.add(ejectMesh);
 
     // -------------------------------------------------------------------------
     // 4. D-PAD: 2.8 × 2.8 cm, arm width 0.95 cm centered at (2.2, 8.4) cm
@@ -756,30 +835,26 @@ class Bmo3DConsole {
     createActionButton("B Button", "B", "B", 6.6, 9.4, "#e8175d", "#ffffff"); // Bottom: Berry Magenta
 
     // -------------------------------------------------------------------------
-    // 6. SELECT / START PILL BUTTONS: 1.4 × 0.46 cm rubber pills tilted at -25°
-    //    * Select: (3.4, 11.0) -> Three.js: X = -1.0 cm, Y = -4.8 cm | #264B42
-    //    * Start:  (5.4, 11.0) -> Three.js: X = +1.0 cm, Y = -4.8 cm | #264B42
-    //    Text labels below have the EXACT SAME -25° angle tilt & symmetrical offset!
+    // 6. SELECT / START PILL BUTTONS: Canonical Adventure Time BMO Placement
+    //    Placed near left side down, directly under the yellow cross D-pad!
+    //    D-Pad centerline: X = -2.2 cm.
+    //    * Select: X = -2.90 cm, Y = -4.35 cm | #264B42
+    //    * Start:  X = -1.50 cm, Y = -4.35 cm | #264B42
+    //    Orientation: Perfectly horizontal ([ - ] [ - ]) matching Adventure Time BMO!
     // -------------------------------------------------------------------------
-    const PILL_ANGLE = -0.44; // ~-25.2 degrees slant
-
-    const createPill = (name, key, label, refX, refY) => {
-      const x = refX - hw;
-      const y = hh - refY;
-
-      // Drop Shadow under Pill (tilted parallel with pill)
-      const pDropGeo = new THREE.PlaneGeometry(1.6, 0.7);
-      const pDropTex = this.createDropShadowTexture(48);
+    const createPill = (name, key, label, x, y) => {
+      // Soft Drop Shadow under Pill
+      const pDropGeo = new THREE.PlaneGeometry(1.45, 0.60);
+      const pDropTex = this.createDropShadowTexture(44);
       const pDropMat = new THREE.MeshBasicMaterial({ map: pDropTex, transparent: true, opacity: 0.28 });
       const pDropMesh = new THREE.Mesh(pDropGeo, pDropMat);
-      pDropMesh.rotation.z = PILL_ANGLE;
       pDropMesh.position.set(x, y - 0.04, Z_FRONT + 0.005);
       this.rootGroup.add(pDropMesh);
 
-      // Ergonomic rounded capsule pill button
+      // Ergonomic rounded capsule pill button (horizontal)
       const pShape = new THREE.Shape();
-      const pw = 1.4 - 0.46; // 0.94 cm straight body
-      const pr = 0.23;       // 0.23 cm semicircular cap radius
+      const pw = 1.15 - 0.38; // 0.77 cm straight body
+      const pr = 0.19;        // 0.19 cm semicircular cap radius
       pShape.moveTo(-pw / 2, -pr);
       pShape.lineTo(pw / 2, -pr);
       pShape.absarc(pw / 2, 0, pr, -Math.PI / 2, Math.PI / 2, false);
@@ -796,7 +871,6 @@ class Bmo3DConsole {
       pillGeo.center();
 
       const pillMesh = new THREE.Mesh(pillGeo, this.materials.btnPill);
-      pillMesh.rotation.z = PILL_ANGLE;
       pillMesh.position.set(x, y, Z_FRONT + 0.12);
       pillMesh.castShadow = true;
       pillMesh.userData = { isButton: true, key: key, name: name, isPill: true };
@@ -813,80 +887,95 @@ class Bmo3DConsole {
         rotZ: pillMesh.rotation.z,
       });
 
-      // Engraved Pill Label directly below with EXACT SAME angle tilt & symmetrical spacing
+      // Engraved Pill Label directly below
       const lblCanvas = document.createElement("canvas");
       lblCanvas.width = 256;
       lblCanvas.height = 64;
       const lCtx = lblCanvas.getContext("2d");
       lCtx.fillStyle = "#1a4b42"; // Deep Teal
-      lCtx.font = "bold 28px 'Press Start 2P', monospace";
+      lCtx.font = "bold 26px 'Press Start 2P', monospace";
       lCtx.textAlign = "center";
       lCtx.textBaseline = "middle";
       lCtx.fillText(label, 128, 32);
 
       const lTex = new THREE.CanvasTexture(lblCanvas);
-      const lGeo = new THREE.PlaneGeometry(1.4, 0.35);
+      const lGeo = new THREE.PlaneGeometry(1.25, 0.30);
       const lMat = new THREE.MeshBasicMaterial({ map: lTex, transparent: true });
       const lMesh = new THREE.Mesh(lGeo, lMat);
-
-      // Perpendicular offset with clearance d = 0.65 cm
-      const d = 0.65;
-      const offsetX = d * Math.sin(PILL_ANGLE); // ~ -0.277 cm
-      const offsetY = -d * Math.cos(PILL_ANGLE); // ~ -0.588 cm
-      lMesh.rotation.z = PILL_ANGLE;
-      lMesh.position.set(x + offsetX, y + offsetY, Z_FRONT + 0.015);
+      lMesh.position.set(x, y - 0.48, Z_FRONT + 0.015);
       this.rootGroup.add(lMesh);
     };
 
-    createPill("Select", "SELECT", "SELECT", 3.4, 11.0);
-    createPill("Start", "START", "START", 5.4, 11.0);
+    // Both pills positioned side-by-side directly under the D-pad
+    createPill("Select", "SELECT", "SELECT", -2.90, -4.35);
+    createPill("Start", "START", "START", -1.50, -4.35);
 
     // -------------------------------------------------------------------------
     // 7. L / R SHOULDER BUTTONS: Side-Mounted Tact Switches on the Top Edge!
-    //    Size: 2.3 × 0.7 × 2.4 cm each (Extends flush with front face for reliable clicking!)
-    //    * L: (1.7, 0.3) -> Three.js: X = 1.7 - 4.4 = -2.7 cm, Y = +6.42 cm, Z = +0.4 cm
-    //    * R: (7.1, 0.3) -> Three.js: X = 7.1 - 4.4 = +2.7 cm, Y = +6.42 cm, Z = +0.4 cm
-    //    Color: #264B42
+    //    * L: X = -2.7 cm, Y = +6.475 cm, Z = 0.0 cm
+    //    * R: X = +2.7 cm, Y = +6.475 cm, Z = 0.0 cm
+    //    Mounted completely on the top rim (Y >= 6.20 cm, Z in [-0.8, +0.8 cm]).
+    //    ZERO overlap with front face or front bevel -> ZERO Z-FIGHTING / FLICKERING!
     // -------------------------------------------------------------------------
     const createShoulder = (name, key, label, refX) => {
       const x = refX - hw;
-      const y = hh + 0.22; // +6.42 cm (rises clearly above the chassis top edge at +6.20 cm)
-      const z = 0.40;       // Extends from Z = -0.8 cm to Z = +1.60 cm (flush with front face!)
+      const y = hh + 0.275; // +6.475 cm (rests directly on top chassis edge at +6.20 cm)
+      const z = 0.0;        // Centered along console thickness (spans Z from -0.8 to +0.8 cm)
 
       // Ergonomic Bumper Mesh protruding above the top edge
-      const sGeo = new THREE.BoxGeometry(2.3, 0.70, 2.4);
+      const sw = 2.1;
+      const sh = 0.55;
+      const sd = 1.6;
+      const sr = 0.14; // Top corner rounding
+
+      const sShape = new THREE.Shape();
+      sShape.moveTo(-sw / 2, -sh / 2);
+      sShape.lineTo(sw / 2, -sh / 2);
+      sShape.lineTo(sw / 2, sh / 2 - sr);
+      sShape.quadraticCurveTo(sw / 2, sh / 2, sw / 2 - sr, sh / 2);
+      sShape.lineTo(-sw / 2 + sr, sh / 2);
+      sShape.quadraticCurveTo(-sw / 2, sh / 2, -sw / 2, sh / 2 - sr);
+      sShape.closePath();
+
+      const sGeo = new THREE.ExtrudeGeometry(sShape, {
+        depth: sd,
+        bevelEnabled: true,
+        bevelSegments: 4,
+        bevelSize: 0.04,
+        bevelThickness: 0.04,
+      });
+      sGeo.center();
+
       const sMesh = new THREE.Mesh(sGeo, this.materials.shoulder);
       sMesh.position.set(x, y, z);
       sMesh.castShadow = true;
       sMesh.userData = { isButton: true, key: key, name: name, isShoulder: true };
       this.rootGroup.add(sMesh);
 
-      // Embossed "L" / "R" Label on front face (sits at front face Z = +1.61 cm)
+      // Embossed "L" / "R" Label on the front facet of the trigger (at local z = +sd/2 + 0.045)
       const fCanvas = document.createElement("canvas");
       fCanvas.width = 128;
       fCanvas.height = 64;
       const fCtx = fCanvas.getContext("2d");
-      fCtx.fillStyle = "#264b42";
-      fCtx.roundRect(0, 0, 128, 64, 10);
-      fCtx.fill();
-      fCtx.lineWidth = 3;
-      fCtx.strokeStyle = "rgba(255, 255, 255, 0.45)";
-      fCtx.stroke();
+      fCtx.clearRect(0, 0, 128, 64);
       fCtx.fillStyle = "#cef5e4";
       fCtx.font = "bold 34px 'Press Start 2P', monospace";
       fCtx.textAlign = "center";
       fCtx.textBaseline = "middle";
-      fCtx.fillText(label, 64, 34);
+      fCtx.shadowColor = "rgba(0, 0, 0, 0.45)";
+      fCtx.shadowBlur = 4;
+      fCtx.shadowOffsetY = 2;
+      fCtx.fillText(label, 64, 32);
 
       const fTex = new THREE.CanvasTexture(fCanvas);
-      const fGeo = new THREE.PlaneGeometry(2.1, 0.55);
-      const fMat = new THREE.MeshBasicMaterial({ map: fTex, transparent: true });
+      const fGeo = new THREE.PlaneGeometry(1.5, 0.42);
+      const fMat = new THREE.MeshBasicMaterial({ map: fTex, transparent: true, depthWrite: false });
       const fMesh = new THREE.Mesh(fGeo, fMat);
-      fMesh.position.set(0, 0, 1.205); // Absolute Z = 0.40 + 1.205 = 1.605 cm (flush with front face!)
+      fMesh.position.set(0, 0, sd / 2 + 0.045);
       sMesh.add(fMesh);
 
       // Generous Raycasting Click Hit Zone
-      const hitGeo = new THREE.BoxGeometry(2.6, 1.1, 2.8);
+      const hitGeo = new THREE.BoxGeometry(2.5, 0.9, 2.0);
       const hitMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.0001, depthWrite: false });
       const hitMesh = new THREE.Mesh(hitGeo, hitMat);
       hitMesh.position.set(0, 0, 0);
@@ -969,20 +1058,28 @@ class Bmo3DConsole {
     }
 
     // -------------------------------------------------------------------------
-    // 12. SPEAKER GRILLE: 6 Diagonal Slits in Bottom-Right Corner
+    // 12. CANONICAL SIDES: 7-Hole Acoustic Speaker Array & Vertical "B M O"
+    //     Faithful to Adventure Time BMO (Both Left and Right Sides!)
     // -------------------------------------------------------------------------
-    const speakerGroup = new THREE.Group();
-    speakerGroup.position.set(2.6, -4.8, Z_FRONT + 0.015);
-    speakerGroup.rotation.z = -0.52; // ~-30 degrees
-    this.rootGroup.add(speakerGroup);
+    const sideTex = this.createSideTexture();
+    const sideGeo = new THREE.PlaneGeometry(3.0, 10.5);
+    const sideMat = new THREE.MeshBasicMaterial({
+      map: sideTex,
+      transparent: true,
+      depthWrite: false,
+    });
 
-    for (let i = 0; i < 6; i++) {
-      const slitGeo = new THREE.BoxGeometry(0.1, 0.85 + (i < 3 ? i * 0.14 : (5 - i) * 0.14), 0.04);
-      const slitMat = new THREE.MeshBasicMaterial({ color: 0x438f7a });
-      const slit = new THREE.Mesh(slitGeo, slitMat);
-      slit.position.set(i * 0.22 - 0.55, 0, 0);
-      speakerGroup.add(slit);
-    }
+    // Left side: canonical speaker array + "B M O" with arm socket
+    const leftSideMesh = new THREE.Mesh(sideGeo, sideMat);
+    leftSideMesh.position.set(-hw - 0.005, 0.4, 0);
+    leftSideMesh.rotation.y = -Math.PI / 2;
+    this.rootGroup.add(leftSideMesh);
+
+    // Right side: canonical speaker array + "B M O" with arm socket
+    const rightSideMesh = new THREE.Mesh(sideGeo, sideMat);
+    rightSideMesh.position.set(hw + 0.005, 0.4, 0);
+    rightSideMesh.rotation.y = Math.PI / 2;
+    this.rootGroup.add(rightSideMesh);
   }
 
   setupRaycasting() {
@@ -1049,9 +1146,8 @@ class Bmo3DConsole {
       const orig = this.buttonOriginalPositions.get(mesh);
       if (orig) {
         if (mesh.userData.isShoulder) {
-          mesh.position.y = orig.y - 0.22; // Tactile downward click
-          mesh.position.z = orig.z - 0.12; // Sinks back into housing
-          mesh.rotation.x = -0.12;         // Hinged microswitch tilt
+          mesh.position.y = orig.y - 0.16; // Tactile downward click
+          mesh.rotation.x = -0.06;         // Subtle microswitch tilt
         } else if (mesh.userData.isPill) {
           mesh.position.z = orig.z - 0.12; // Pill button depression
         } else {
