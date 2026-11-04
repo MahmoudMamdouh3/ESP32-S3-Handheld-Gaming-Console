@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 - `DocTruthVerifier` updated to match pin macros with word boundaries (`BTN_L` no longer false-positive matches `BTN_LEFT`).
 - `docs/hardware-notes.md` updated: Flash Mode corrected to QIO 80MHz with OPI PSRAM; power notes updated to document AA/NiMH boost architecture vs LiPo TP4056 restrictions.
+- `tools/bmo_simulator/bmo_3d_console.js` color & lighting architecture overhauled: Switched WebGL rendering pipeline to `LinearEncoding` and `NoToneMapping` to prevent double-gamma bleaching, guaranteeing 100% color-picker parity with 2D CSS tokens (`#5FB49C` chassis, `#FFE033` D-pad, `#4CAF50` X, `#F48FB1` Y, `#52A6BA` A, `#E8175D` B, `#1A4B42` bezel). Normalized studio lighting rig to 1.00 front-face irradiance (0.74 ambient + 0.32 key * 0.80 cos). Added bezel header/footer textures, top vent ridges, contact drop shadows, and engraved button sub-labels.
 - Knowledge graph, AST index, and documentation regenerated.
 
 ### Limitation
