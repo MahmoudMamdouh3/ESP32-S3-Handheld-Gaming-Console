@@ -1,29 +1,29 @@
 /**
  * bmo_3d_console.js
  * 
- * Ultra-Premium 3D Physical Hardware Model & Interactive WebGL Simulator for BMO Handheld Console.
- * Built with Three.js (r128) strictly adhering to the Physical Hardware Reference Specification:
+ * 3D Physical Hardware Model & Interactive WebGL Simulator for BMO Handheld Console.
+ * Built with Three.js (r128) strictly adhering to:
+ *  1. Physical Hardware Reference Specification (Exact centimeter dimensions & 2.54 mm perfboard grid):
+ *     - Body: 8.8 W × 12.4 H × 3.2 D cm, corner radius 0.6 cm (1.5 cm asymmetric bottom-right curve)
+ *     - Display Window: 5.0 W × 3.8 H cm centered at (4.4, 3.3) cm (~56.8% body width, real 2.4" ST7789)
+ *     - Bezel Housing: Deep Forest Teal (#1A4B42) with "BMO COLOR", "USB-C POWER" header & "BMO GAMEBOY" footer
+ *     - D-Pad: 2.8 × 2.8 cm (arm width 0.95 cm) centered at (2.2, 8.4) cm in Warm Sunshine Golden Yellow (#FFE033)
+ *     - Action Diamond (aligned to 2.54 mm perfboard grid):
+ *         * X (Top):    cap dia 0.9 cm at (6.6, 7.4) cm -> Leaf Green (#4CAF50)
+ *         * Y (Left):   cap dia 0.9 cm at (5.6, 8.4) cm -> Rosy Pink (#F48FB1)
+ *         * A (Right):  cap dia 0.9 cm at (7.6, 8.4) cm -> Sky Aqua (#52A6BA)
+ *         * B (Bottom): cap dia 0.9 cm at (6.6, 9.4) cm -> Berry Magenta (#E8175D)
+ *     - Select / Start: 1.4 × 0.5 cm rubber pills at (3.4, 11.0) and (5.4, 11.0) cm in Deep Teal (#264B42)
+ *     - L / R Triggers: 2.2 × 0.6 cm top edge side-mounted tact switches at (1.7, 0.3) and (7.1, 0.3) cm (#264B42)
+ *     - Top USB-C Cutout: 1.0 × 0.45 cm at (4.4, 0.0) cm between L and R
+ *     - Left SD Slot: 1.3 × 0.25 cm at y ≈ 4.0 cm
+ *     - Right Power Slide Switch: 1.0 × 0.4 cm at y ≈ 3.0 cm
+ *     - Rear 4×AA Battery Door: 6.2 W × 3.4 H cm centered at (4.4, 9.0) cm with textured grip ridges
  * 
- * =========================================================================================
- * PHYSICAL REFERENCE SPECIFICATION (Exact Centimeter Coordinates from Top-Left Front Face):
- * =========================================================================================
- *  - Body: 8.8 W × 12.4 H × 3.2 D cm, corner radius 0.6 cm (1.5 cm asymmetric bottom-right)
- *  - Display Window: 5.0 W × 3.8 H cm centered at (4.4, 3.3) -> 56.8% body width (real 2.4" ST7789)
- *  - Logo Strip: 5.0 W × 0.8 H cm at y 5.2-6.0 cm centered at (4.4, 5.6)
- *  - D-Pad: 2.8 × 2.8 cm (arm width 0.95 cm) centered at (2.2, 8.4)
- *  - ABXY Square Grid (2.54 mm perfboard aligned):
- *      * X (Top):    cap Ø0.9 cm at (6.6, 7.4) [Three.js X: +2.2, Y: -1.2]
- *      * Y (Left):   cap Ø0.9 cm at (5.6, 8.4) [Three.js X: +1.2, Y: -2.2]
- *      * A (Right):  cap Ø0.9 cm at (7.6, 8.4) [Three.js X: +3.2, Y: -2.2]
- *      * B (Bottom): cap Ø0.9 cm at (6.6, 9.4) [Three.js X: +2.2, Y: -3.2]
- *      * Spacing: gap ~0.5 cm, centers 1.41 cm apart, X directly above B, Y level with A
- *  - Select / Start: 1.4 × 0.5 cm pills at (3.4, 11.0) and (5.4, 11.0)
- *  - Top Edge L / R Shoulders: 2.2 × 0.6 cm side-mounted tact switches at (1.7, 0.3) and (7.1, 0.3)
- *  - Top Edge USB-C Cutout: 1.0 × 0.45 cm at (4.4, 0.0) between L and R
- *  - Left Edge MicroSD Slot: 1.3 × 0.25 cm at y ≈ 4.0 cm
- *  - Right Edge Power Slide Switch: 1.0 × 0.4 cm at y ≈ 3.0 cm
- *  - Rear Battery Door: 3.4 H × 6.2 W cm centered at (4.4, 9.0) across width for 4×AA holder
- * =========================================================================================
+ *  2. 100% Color-Picker Parity with 2D Reference Model:
+ *     - LinearEncoding + NoToneMapping guarantees that diffuse hex tokens match CSS output directly.
+ *     - Studio lighting normalized to exact 1.00 front-face irradiance (0.74 ambient + 0.32 key * 0.80 cos).
+ *     - Zero gamma bleaching, zero color blowout, velvety satin matte plastic finish.
  */
 
 class Bmo3DConsole {
@@ -70,11 +70,11 @@ class Bmo3DConsole {
     // 1. Scene
     this.scene = new THREE.Scene();
 
-    // 2. Camera: 38 deg FOV for realistic product focal length
+    // 2. Camera: 38 deg FOV for authentic product focal length
     this.camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
     this.setCameraPreset("front");
 
-    // 3. Renderer with sRGB color space & Linear Tone Mapping (NO BLEACHING / FULL VIBRANCY)
+    // 3. Renderer with LinearEncoding (100% COLOR PARITY - ZERO GAMMA EXPANSION)
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
@@ -84,10 +84,9 @@ class Bmo3DConsole {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     if ("outputEncoding" in this.renderer) {
-      this.renderer.outputEncoding = THREE.sRGBEncoding;
+      this.renderer.outputEncoding = THREE.LinearEncoding;
     }
-    this.renderer.toneMapping = THREE.LinearToneMapping;
-    this.renderer.toneMappingExposure = 1.0;
+    this.renderer.toneMapping = THREE.NoToneMapping;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -103,10 +102,10 @@ class Bmo3DConsole {
       this.controls.target.set(0, 0, 0);
     }
 
-    // 5. Studio Lighting Rig
+    // 5. Studio Lighting Rig: Normalized to 1.00 front-face irradiance
     this.setupLighting();
 
-    // 6. Build the 3D Console Model strictly according to Reference Spec
+    // 6. Build the 3D Console Model strictly according to Reference Spec & 2D Palette
     this.buildConsoleModel();
 
     // 7. Raycasting & Interaction
@@ -121,13 +120,17 @@ class Bmo3DConsole {
   }
 
   setupLighting() {
-    // 1. Clean ambient illumination preserving rich color saturation
-    const ambient = new THREE.AmbientLight(0xffffff, 0.68);
+    // 1. Pure white ambient baseline (0.74)
+    // Ensures diffuse baseline color matches CSS hex values directly without color shifts
+    const ambient = new THREE.AmbientLight(0xffffff, 0.74);
     this.scene.add(ambient);
 
-    // 2. Key Light: Warm studio directional light from front-top-right for bevel highlights
-    const keyLight = new THREE.DirectionalLight(0xfffaf0, 0.58);
-    keyLight.position.set(7, 12, 14);
+    // 2. Directional Key Light (0.32) from front-top-right (3, 7, 10)
+    // Vector (3, 7, 10) normalized has Z = 0.80.
+    // Total front-face irradiance: 0.74 + 0.32 * 0.80 = 0.996 (exact 1.00 intensity!)
+    // Generates subtle specular bevel highlights along the top edge without washing out diffuse colors
+    const keyLight = new THREE.DirectionalLight(0xffffff, 0.32);
+    keyLight.position.set(3, 7, 10);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.width = 2048;
     keyLight.shadow.mapSize.height = 2048;
@@ -138,23 +141,14 @@ class Bmo3DConsole {
     keyLight.shadow.camera.top = 9;
     keyLight.shadow.camera.bottom = -9;
     keyLight.shadow.bias = -0.0004;
-    keyLight.shadow.radius = 2.5;
+    keyLight.shadow.radius = 2.0;
     this.scene.add(keyLight);
 
-    // 3. Fill Light: Soft cool fill from front-left
-    const fillLight = new THREE.DirectionalLight(0xd4eaff, 0.32);
-    fillLight.position.set(-10, -2, 10);
-    this.scene.add(fillLight);
-
-    // 4. Rim Light: Edge highlight along top shoulders and side silhouette
-    const rimLight = new THREE.DirectionalLight(0xffffff, 0.48);
-    rimLight.position.set(0, 14, -8);
+    // 3. Pure Rim Light from behind (0, 8, -12)
+    // Highlights the top edge, shoulders, and battery door in 3D orbit, casting ZERO light onto the front face
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.50);
+    rimLight.position.set(0, 8, -12);
     this.scene.add(rimLight);
-
-    // 5. Bounce Light: Subtle warm ground bounce
-    const bounceLight = new THREE.DirectionalLight(0x5fb49c, 0.18);
-    bounceLight.position.set(0, -10, 4);
-    this.scene.add(bounceLight);
   }
 
   createDropShadowTexture(radius = 64) {
@@ -162,9 +156,9 @@ class Bmo3DConsole {
     canvas.width = 128;
     canvas.height = 128;
     const ctx = canvas.getContext("2d");
-    const grad = ctx.createRadialGradient(64, 64, radius * 0.25, 64, 64, radius);
-    grad.addColorStop(0, "rgba(0, 0, 0, 0.48)");
-    grad.addColorStop(0.65, "rgba(0, 0, 0, 0.16)");
+    const grad = ctx.createRadialGradient(64, 64, radius * 0.20, 64, 64, radius);
+    grad.addColorStop(0, "rgba(0, 0, 0, 0.50)");
+    grad.addColorStop(0.65, "rgba(0, 0, 0, 0.15)");
     grad.addColorStop(1, "rgba(0, 0, 0, 0)");
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 128, 128);
@@ -180,41 +174,37 @@ class Bmo3DConsole {
     canvas.height = 256;
     const ctx = canvas.getContext("2d");
 
-    ctx.clearRect(0, 0, 256, 256);
-
-    // 1. Rich saturated solid base
+    // 1. SOLID, PURE, 100% SATURATED BASE (Exact 2D Color Match!)
     ctx.fillStyle = bgColorStr;
-    ctx.beginPath();
-    ctx.arc(128, 128, 122, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(0, 0, 256, 256);
 
-    // 2. Bottom shadow crescent for 3D depth
-    const btmGrad = ctx.createRadialGradient(128, 128, 55, 128, 128, 122);
+    // 2. Subtle bottom inner shadow crescent (matching inset 0 -4px)
+    const btmGrad = ctx.createRadialGradient(128, 128, 75, 128, 128, 122);
     btmGrad.addColorStop(0, "rgba(0, 0, 0, 0)");
-    btmGrad.addColorStop(0.7, "rgba(0, 0, 0, 0.1)");
-    btmGrad.addColorStop(1, "rgba(0, 0, 0, 0.35)");
+    btmGrad.addColorStop(0.75, "rgba(0, 0, 0, 0.06)");
+    btmGrad.addColorStop(1, "rgba(0, 0, 0, 0.26)");
     ctx.fillStyle = btmGrad;
     ctx.beginPath();
     ctx.arc(128, 128, 122, 0, Math.PI * 2);
     ctx.fill();
 
-    // 3. Top crescent highlight (giving authentic 3D candy button sheen)
-    const topHl = ctx.createLinearGradient(128, 10, 128, 90);
-    topHl.addColorStop(0, "rgba(255, 255, 255, 0.46)");
-    topHl.addColorStop(1, "rgba(255, 255, 255, 0.0)");
-    ctx.fillStyle = topHl;
+    // 3. Fine Top Edge Highlight Rim (matching 2D inset 0 2px 4px rgba(255,255,255,0.45))
+    ctx.save();
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
     ctx.beginPath();
-    ctx.ellipse(128, 60, 80, 36, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.arc(128, 128, 114, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.stroke();
+    ctx.restore();
 
-    // 4. Subtle outer border rim
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.32)";
+    // 4. Outer border ring (matching 2D border: 1px solid rgba(0,0,0,0.45))
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.38)";
     ctx.beginPath();
     ctx.arc(128, 128, 122, 0, Math.PI * 2);
     ctx.stroke();
 
-    // 5. Centered bold retro pixel letter
+    // 5. Centered Bold Retro Pixel Font Letter
     ctx.fillStyle = textColorStr;
     ctx.font = "900 84px 'Press Start 2P', monospace, sans-serif";
     ctx.textAlign = "center";
@@ -230,31 +220,56 @@ class Bmo3DConsole {
     return texture;
   }
 
-  createLogoStripTexture() {
+  createBezelFrameTexture() {
     const canvas = document.createElement("canvas");
-    canvas.width = 512;
-    canvas.height = 128;
+    canvas.width = 560;
+    canvas.height = 440;
     const ctx = canvas.getContext("2d");
 
-    ctx.clearRect(0, 0, 512, 128);
+    // Base deep teal bezel background (#1a4b42)
+    ctx.fillStyle = "#1a4b42";
+    ctx.fillRect(0, 0, 560, 440);
 
-    // Centered "BMO" and "GAMEBOY"
-    ctx.textAlign = "center";
+    // Inner window recess line
+    ctx.strokeStyle = "#0f2620";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(30, 48, 500, 344);
+
+    // TOP BAR:
+    // Left: "BMO COLOR"
+    ctx.font = "14px 'Press Start 2P', monospace";
+    ctx.fillStyle = "#747d8c";
+    ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.font = "bold 38px 'Press Start 2P', monospace";
+    ctx.fillText("BMO COLOR", 36, 28);
 
+    // Right: "USB-C POWER" with glowing mint power LED dot
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#8cd7c2";
+    ctx.fillText("USB-C POWER", 500, 28);
+
+    // Glowing LED dot
+    ctx.fillStyle = "#55efc4";
+    ctx.beginPath();
+    ctx.arc(516, 28, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // BOTTOM FOOTER:
+    // "BMO GAMEBOY" centered
+    ctx.font = "900 18px 'Press Start 2P', monospace";
     const bmoTxt = "BMO ";
     const gbTxt = "GAMEBOY";
     const totalW = ctx.measureText(bmoTxt + gbTxt).width;
-    const startX = 256 - totalW / 2;
+    const startX = 280 - totalW / 2;
 
     ctx.textAlign = "left";
-    ctx.fillStyle = "#1a4b42";
-    ctx.fillText(bmoTxt, startX, 64);
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#a4b0be";
+    ctx.fillText(bmoTxt, startX, 412);
 
     const bmoW = ctx.measureText(bmoTxt).width;
-    ctx.fillStyle = "#00d2d3";
-    ctx.fillText(gbTxt, startX + bmoW, 64);
+    ctx.fillStyle = "#00d2d3"; // Electric Cyan #00D2D3
+    ctx.fillText(gbTxt, startX + bmoW, 412);
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.minFilter = THREE.LinearFilter;
@@ -270,8 +285,8 @@ class Bmo3DConsole {
 
     ctx.clearRect(0, 0, 512, 512);
 
-    // 1. Subtle directional arrows matching 2D opacity
-    ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+    // 1. Subtle directional retro triangle arrows matching 2D view
+    ctx.fillStyle = "rgba(0, 0, 0, 0.32)";
     const drawTriangle = (cx, cy, size, angle) => {
       ctx.save();
       ctx.translate(cx, cy);
@@ -285,15 +300,15 @@ class Bmo3DConsole {
       ctx.restore();
     };
 
-    drawTriangle(256, 75, 18, 0);
-    drawTriangle(256, 437, 18, Math.PI);
-    drawTriangle(75, 256, 18, -Math.PI / 2);
-    drawTriangle(437, 256, 18, Math.PI / 2);
+    drawTriangle(256, 75, 20, 0);
+    drawTriangle(256, 437, 20, Math.PI);
+    drawTriangle(75, 256, 20, -Math.PI / 2);
+    drawTriangle(437, 256, 20, Math.PI / 2);
 
-    // 2. Clean, subtle circular thumb dish (clean outline, no black grease stain)
+    // 2. Center circular concave thumb dish
     ctx.fillStyle = "rgba(0, 0, 0, 0.22)";
     ctx.beginPath();
-    ctx.arc(256, 256, 48, 0, Math.PI * 2);
+    ctx.arc(256, 256, 52, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.lineWidth = 3;
@@ -310,51 +325,49 @@ class Bmo3DConsole {
     this.rootGroup = new THREE.Group();
     this.scene.add(this.rootGroup);
 
-    // Authentic Rich BMO Colors (Matching CSS exactly)
-    const bmoTealHex = 0x5fb49c;
-    const deepTealHex = 0x1a4b42;
-    const dpadYellowHex = 0xffe033;
+    // -------------------------------------------------------------------------
+    // EXACT 2D COLOR TOKENS (100% Color-Picker Parity)
+    // -------------------------------------------------------------------------
+    const bmoTealHex      = 0x5fb49c; // --chassis-color: #5fb49c
+    const deepTealHex     = 0x1a4b42; // --bezel-color: #1a4b42
+    const rubberTealHex   = 0x264b42; // --btn-shoulder-color & --btn-pill-color: #264b42
+    const dpadYellowHex   = 0xffe033; // --dpad-color: #ffe033
 
-    // Materials: Physical PBR with satin ABS finish & clearcoat sheen
-    this.materials.chassis = new THREE.MeshPhysicalMaterial({
+    // Standard PBR Materials (metalness: 0.0 prevents metallic color desaturation)
+    this.materials.chassis = new THREE.MeshStandardMaterial({
       color: bmoTealHex,
-      roughness: 0.28,
-      metalness: 0.02,
-      clearcoat: 0.18,
-      clearcoatRoughness: 0.12,
+      roughness: 0.42,
+      metalness: 0.0,
     });
 
-    this.materials.bezel = new THREE.MeshPhysicalMaterial({
+    this.materials.bezel = new THREE.MeshStandardMaterial({
       color: deepTealHex,
-      roughness: 0.3,
-      metalness: 0.04,
-      clearcoat: 0.22,
+      roughness: 0.35,
+      metalness: 0.0,
     });
 
-    this.materials.dpad = new THREE.MeshPhysicalMaterial({
+    this.materials.dpad = new THREE.MeshStandardMaterial({
       color: dpadYellowHex,
-      roughness: 0.24,
-      metalness: 0.02,
-      clearcoat: 0.12,
+      roughness: 0.30,
+      metalness: 0.0,
     });
 
     this.materials.btnPill = new THREE.MeshStandardMaterial({
-      color: deepTealHex,
-      roughness: 0.52,
-      metalness: 0.02,
+      color: rubberTealHex,
+      roughness: 0.45,
+      metalness: 0.0,
     });
 
-    this.materials.shoulder = new THREE.MeshPhysicalMaterial({
-      color: deepTealHex,
-      roughness: 0.26,
-      metalness: 0.04,
-      clearcoat: 0.2,
+    this.materials.shoulder = new THREE.MeshStandardMaterial({
+      color: rubberTealHex,
+      roughness: 0.35,
+      metalness: 0.0,
     });
 
     this.materials.metal = new THREE.MeshStandardMaterial({
       color: 0x95a5a6,
-      roughness: 0.2,
-      metalness: 0.9,
+      roughness: 0.20,
+      metalness: 0.90,
     });
 
     // -------------------------------------------------------------------------
@@ -380,7 +393,7 @@ class Bmo3DConsole {
     shape.lineTo(-hw, -hh + r);
     shape.quadraticCurveTo(-hw, -hh, -hw + r, -hh);
 
-    // Deep smooth multi-segment bevel
+    // Deep smooth multi-segment bevel creating the top edge highlight
     const extrudeSettings = {
       depth: D - 0.44,
       bevelEnabled: true,
@@ -408,17 +421,28 @@ class Bmo3DConsole {
     this.rootGroup.add(shadowMesh);
 
     // -------------------------------------------------------------------------
-    // 2. DISPLAY WINDOW: 5.0 W × 3.8 H cm centered at (4.4, 3.3) cm
+    // 2. TOP VENT RIDGES: 3 horizontal grooves matching 2D .chassis-top-ridges
+    // -------------------------------------------------------------------------
+    for (let i = 0; i < 3; i++) {
+      const ridgeGeo = new THREE.BoxGeometry(6.4, 0.08, 0.04);
+      const ridgeMat = new THREE.MeshBasicMaterial({ color: 0x438f7a });
+      const ridgeMesh = new THREE.Mesh(ridgeGeo, ridgeMat);
+      ridgeMesh.position.set(0, hh - 0.75 - i * 0.22, Z_FRONT + 0.01);
+      this.rootGroup.add(ridgeMesh);
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. DISPLAY WINDOW: 5.0 W × 3.8 H cm centered at (4.4, 3.3) cm
     //    Three.js: X = 0.0 cm, Y = 6.2 - 3.3 = +2.9 cm
-    //    (Spans x 1.9-6.9, y 1.4-5.2 -> 56.8% of body width, real 2.4" ST7789)
+    //    (Spans x 1.9-6.9, y 1.4-5.2 -> 56.8% body width, real 2.4" ST7789)
     // -------------------------------------------------------------------------
     const DISP_W = 5.0;
     const DISP_H = 3.8;
     const DISP_Y = hh - 3.3; // +2.9 cm
 
-    // Display Bezel Housing (subtle outer chamfer framing the 2.4" window)
-    const BEZEL_W = 5.4;
-    const BEZEL_H = 4.2;
+    // Display Bezel Housing: Outer frame framing the 2.4" window (Color: #1A4B42)
+    const BEZEL_W = 5.6;
+    const BEZEL_H = 4.4;
     const bShape = new THREE.Shape();
     const b_hw = BEZEL_W / 2;
     const b_hh = BEZEL_H / 2;
@@ -434,16 +458,25 @@ class Bmo3DConsole {
     bShape.quadraticCurveTo(-b_hw, -b_hh, -b_hw + b_r, -b_hh);
 
     const bezelGeo = new THREE.ExtrudeGeometry(bShape, {
-      depth: 0.06,
+      depth: 0.08,
       bevelEnabled: true,
       bevelSegments: 4,
-      bevelSize: 0.04,
-      bevelThickness: 0.04,
+      bevelSize: 0.03,
+      bevelThickness: 0.03,
     });
     bezelGeo.center();
     const bezelMesh = new THREE.Mesh(bezelGeo, this.materials.bezel);
-    bezelMesh.position.set(0, DISP_Y, Z_FRONT + 0.03);
+    bezelMesh.position.set(0, DISP_Y, Z_FRONT + 0.04);
+    bezelMesh.castShadow = true;
     this.rootGroup.add(bezelMesh);
+
+    // Bezel Face Texture with "BMO COLOR", "USB-C POWER", and "BMO GAMEBOY"
+    const bezelFaceGeo = new THREE.PlaneGeometry(BEZEL_W, BEZEL_H);
+    const bezelFaceTex = this.createBezelFrameTexture();
+    const bezelFaceMat = new THREE.MeshBasicMaterial({ map: bezelFaceTex });
+    const bezelFaceMesh = new THREE.Mesh(bezelFaceGeo, bezelFaceMat);
+    bezelFaceMesh.position.set(0, DISP_Y, Z_FRONT + 0.082);
+    this.rootGroup.add(bezelFaceMesh);
 
     // Active ST7789 LCD Panel (5.0 × 3.8 cm active display window)
     const screenGeo = new THREE.PlaneGeometry(DISP_W, DISP_H);
@@ -460,39 +493,31 @@ class Bmo3DConsole {
     });
 
     this.screenMesh = new THREE.Mesh(screenGeo, screenMat);
-    this.screenMesh.position.set(0, DISP_Y, Z_FRONT + 0.065);
+    this.screenMesh.position.set(0, DISP_Y, Z_FRONT + 0.085);
     this.rootGroup.add(this.screenMesh);
 
-    // Glossy Protective Glass Lens overlay with subtle transparent specular reflection
-    const lensGeo = new THREE.PlaneGeometry(DISP_W + 0.1, DISP_H + 0.1);
-    const lensMat = new THREE.MeshPhysicalMaterial({
-      roughness: 0.04,
-      metalness: 0.0,
-      clearcoat: 0.98,
-      clearcoatRoughness: 0.03,
-      transmission: 0.08,
-      transparent: true,
-      opacity: 0.15,
-      reflectivity: 0.45,
-    });
+    // Protective Glass Lens overlay with subtle diagonal reflection
+    const lensGeo = new THREE.PlaneGeometry(DISP_W, DISP_H);
+    const lensCanvas = document.createElement("canvas");
+    lensCanvas.width = 256;
+    lensCanvas.height = 192;
+    const lctx = lensCanvas.getContext("2d");
+    const lGrad = lctx.createLinearGradient(0, 0, 256, 192);
+    lGrad.addColorStop(0, "rgba(255, 255, 255, 0.12)");
+    lGrad.addColorStop(0.45, "rgba(255, 255, 255, 0.03)");
+    lGrad.addColorStop(0.70, "rgba(255, 255, 255, 0)");
+    lctx.fillStyle = lGrad;
+    lctx.fillRect(0, 0, 256, 192);
+    const lensTex = new THREE.CanvasTexture(lensCanvas);
+    const lensMat = new THREE.MeshBasicMaterial({ map: lensTex, transparent: true, opacity: 0.85 });
     const lensMesh = new THREE.Mesh(lensGeo, lensMat);
-    lensMesh.position.set(0, DISP_Y, Z_FRONT + 0.075);
+    lensMesh.position.set(0, DISP_Y, Z_FRONT + 0.088);
     this.rootGroup.add(lensMesh);
-
-    // -------------------------------------------------------------------------
-    // 3. LOGO STRIP: 5.0 W × 0.8 H cm at y 5.2-6.0 cm (Center y = 5.6 cm)
-    //    Three.js: X = 0.0 cm, Y = 6.2 - 5.6 = +0.6 cm
-    // -------------------------------------------------------------------------
-    const logoTex = this.createLogoStripTexture();
-    const logoGeo = new THREE.PlaneGeometry(5.0, 0.8);
-    const logoMat = new THREE.MeshBasicMaterial({ map: logoTex, transparent: true });
-    const logoMesh = new THREE.Mesh(logoGeo, logoMat);
-    logoMesh.position.set(0, hh - 5.6, Z_FRONT + 0.015);
-    this.rootGroup.add(logoMesh);
 
     // -------------------------------------------------------------------------
     // 4. D-PAD: 2.8 × 2.8 cm, arm width 0.95 cm centered at (2.2, 8.4) cm
     //    Three.js: X = 2.2 - 4.4 = -2.2 cm, Y = 6.2 - 8.4 = -2.2 cm
+    //    Color: #FFE033 (Warm Sunshine Golden Yellow)
     // -------------------------------------------------------------------------
     const DPAD_X = 2.2 - hw; // -2.2 cm
     const DPAD_Y = hh - 8.4; // -2.2 cm
@@ -504,7 +529,7 @@ class Bmo3DConsole {
     // Soft Drop Shadow Mesh under D-Pad
     const dpadDropGeo = new THREE.PlaneGeometry(3.6, 3.6);
     const dpadDropTex = this.createDropShadowTexture(60);
-    const dpadDropMat = new THREE.MeshBasicMaterial({ map: dpadDropTex, transparent: true, opacity: 0.62 });
+    const dpadDropMat = new THREE.MeshBasicMaterial({ map: dpadDropTex, transparent: true, opacity: 0.60 });
     const dpadDropMesh = new THREE.Mesh(dpadDropGeo, dpadDropMat);
     dpadDropMesh.position.set(DPAD_X, DPAD_Y - 0.08, Z_FRONT + 0.01);
     this.rootGroup.add(dpadDropMesh);
@@ -540,8 +565,8 @@ class Bmo3DConsole {
       depth: 0.22,
       bevelEnabled: true,
       bevelSegments: 4,
-      bevelSize: 0.05,
-      bevelThickness: 0.05,
+      bevelSize: 0.04,
+      bevelThickness: 0.04,
     });
     dpadGeo.center();
 
@@ -561,9 +586,10 @@ class Bmo3DConsole {
     const dpadTexMat = new THREE.MeshBasicMaterial({
       map: dpadTex,
       transparent: true,
+      depthWrite: false,
     });
     const dpadTexMesh = new THREE.Mesh(dpadTexGeo, dpadTexMat);
-    dpadTexMesh.position.set(0, 0, 0.165);
+    dpadTexMesh.position.set(0, 0, 0.155);
     this.dpadPivotGroup.add(dpadTexMesh);
 
     // 4 Raycasting Hit Zones
@@ -585,47 +611,62 @@ class Bmo3DConsole {
 
     // -------------------------------------------------------------------------
     // 5. ABXY SQUARE GRID DIAMOND (Aligned to 2.54 mm perfboard grid):
-    //    Cap Ø0.9 cm (radius 0.45 cm)
-    //    * X (Top):    (6.6, 7.4) -> Three.js: X = +2.2 cm, Y = -1.2 cm
-    //    * Y (Left):   (5.6, 8.4) -> Three.js: X = +1.2 cm, Y = -2.2 cm
-    //    * A (Right):  (7.6, 8.4) -> Three.js: X = +3.2 cm, Y = -2.2 cm
-    //    * B (Bottom): (6.6, 9.4) -> Three.js: X = +2.2 cm, Y = -3.2 cm
+    //    Cap dia 0.9 cm (radius 0.45 cm)
+    //    * X (Top):    (6.6, 7.4) -> Three.js: X = +2.2 cm, Y = -1.2 cm | #4CAF50
+    //    * Y (Left):   (5.6, 8.4) -> Three.js: X = +1.2 cm, Y = -2.2 cm | #F48FB1
+    //    * A (Right):  (7.6, 8.4) -> Three.js: X = +3.2 cm, Y = -2.2 cm | #52A6BA
+    //    * B (Bottom): (6.6, 9.4) -> Three.js: X = +2.2 cm, Y = -3.2 cm | #E8175D
     // -------------------------------------------------------------------------
     const CAP_RADIUS = 0.45;
-    const CAP_HEIGHT = 0.26;
+    const CAP_HEIGHT = 0.24;
 
     const createActionButton = (name, key, label, refX, refY, bgColorStr, textColorStr) => {
       const x = refX - hw;
       const y = hh - refY;
 
-      // 1. Soft Drop Shadow Mesh under each button (matching 2D box-shadow elevation!)
+      // 1. Soft Drop Shadow Mesh under each button
       const shadowDiscGeo = new THREE.PlaneGeometry(CAP_RADIUS * 2.8, CAP_RADIUS * 2.8);
       const shadowDiscTex = this.createDropShadowTexture(56);
       const shadowDiscMat = new THREE.MeshBasicMaterial({ map: shadowDiscTex, transparent: true, opacity: 0.58 });
       const shadowDisc = new THREE.Mesh(shadowDiscGeo, shadowDiscMat);
-      shadowDisc.position.set(x, y - 0.06, Z_FRONT + 0.01);
+      shadowDisc.position.set(x, y - 0.05, Z_FRONT + 0.01);
       this.rootGroup.add(shadowDisc);
 
-      // 2. Action Button Root Group
+      // 2. Engraved Letter Label on the chassis below the button (matching reference 2D)
+      const lblCanvas = document.createElement("canvas");
+      lblCanvas.width = 128;
+      lblCanvas.height = 64;
+      const lctx = lblCanvas.getContext("2d");
+      lctx.fillStyle = "#3a786a"; // Chassis shadow teal
+      lctx.font = "bold 30px 'Press Start 2P', monospace";
+      lctx.textAlign = "center";
+      lctx.textBaseline = "middle";
+      lctx.fillText(label, 64, 32);
+      const lblTex = new THREE.CanvasTexture(lblCanvas);
+      const lblGeo = new THREE.PlaneGeometry(0.5, 0.25);
+      const lblMat = new THREE.MeshBasicMaterial({ map: lblTex, transparent: true });
+      const lblMesh = new THREE.Mesh(lblGeo, lblMat);
+      lblMesh.position.set(x + (key === "A" ? 0.08 : (key === "Y" ? -0.08 : 0)), y - 0.65, Z_FRONT + 0.012);
+      this.rootGroup.add(lblMesh);
+
+      // 3. Action Button Root Group
       const btnGroup = new THREE.Group();
       btnGroup.position.set(x, y, Z_FRONT + CAP_HEIGHT / 2);
       this.rootGroup.add(btnGroup);
 
-      // Button Stem (Cylinder) with high-gloss injection molded finish
-      const cylGeo = new THREE.CylinderGeometry(CAP_RADIUS, CAP_RADIUS * 1.04, CAP_HEIGHT, 32);
+      // Button Stem (Cylinder) with matching pure color
+      const cylGeo = new THREE.CylinderGeometry(CAP_RADIUS, CAP_RADIUS, CAP_HEIGHT, 32);
       cylGeo.rotateX(Math.PI / 2);
-      const cylMat = new THREE.MeshPhysicalMaterial({
+      const cylMat = new THREE.MeshStandardMaterial({
         color: new THREE.Color(bgColorStr),
-        roughness: 0.16,
-        metalness: 0.02,
-        clearcoat: 0.45,
-        clearcoatRoughness: 0.06,
+        roughness: 0.30,
+        metalness: 0.0,
       });
       const stemMesh = new THREE.Mesh(cylGeo, cylMat);
       stemMesh.castShadow = true;
       btnGroup.add(stemMesh);
 
-      // Domed Button Top with Specular Sheen & Centered Bold Letter
+      // Button Cap Face with Specular Rim & Bold Retro Letter
       const topTex = this.createButtonTexture(label, bgColorStr, textColorStr);
       const topGeo = new THREE.CircleGeometry(CAP_RADIUS, 32);
       const topMat = new THREE.MeshBasicMaterial({
@@ -652,15 +693,15 @@ class Bmo3DConsole {
       return btnGroup;
     };
 
-    createActionButton("X Button", "X", "X", 6.6, 7.4, "#4caf50", "#0f2620"); // Top
-    createActionButton("Y Button", "Y", "Y", 5.6, 8.4, "#f48fb1", "#0f2620"); // Left
-    createActionButton("A Button", "A", "A", 7.6, 8.4, "#52a6ba", "#0f2620"); // Right
-    createActionButton("B Button", "B", "B", 6.6, 9.4, "#e8175d", "#ffffff"); // Bottom
+    createActionButton("X Button", "X", "X", 6.6, 7.4, "#4caf50", "#0f2620"); // Top: Leaf Green
+    createActionButton("Y Button", "Y", "Y", 5.6, 8.4, "#f48fb1", "#0f2620"); // Left: Rosy Pink
+    createActionButton("A Button", "A", "A", 7.6, 8.4, "#52a6ba", "#0f2620"); // Right: Sky Blue
+    createActionButton("B Button", "B", "B", 6.6, 9.4, "#e8175d", "#ffffff"); // Bottom: Berry Magenta
 
     // -------------------------------------------------------------------------
-    // 6. SELECT / START PILL BUTTONS: 1.4 × 0.5 cm pills
-    //    * Select: (3.4, 11.0) -> Three.js: X = -1.0 cm, Y = -4.8 cm
-    //    * Start:  (5.4, 11.0) -> Three.js: X = +1.0 cm, Y = -4.8 cm
+    // 6. SELECT / START PILL BUTTONS: 1.4 × 0.5 cm rubber pills
+    //    * Select: (3.4, 11.0) -> Three.js: X = -1.0 cm, Y = -4.8 cm | #264B42
+    //    * Start:  (5.4, 11.0) -> Three.js: X = +1.0 cm, Y = -4.8 cm | #264B42
     // -------------------------------------------------------------------------
     const createPill = (name, key, label, refX, refY) => {
       const x = refX - hw;
@@ -697,7 +738,7 @@ class Bmo3DConsole {
       lblCanvas.width = 256;
       lblCanvas.height = 64;
       const lCtx = lblCanvas.getContext("2d");
-      lCtx.fillStyle = "#1a4b42";
+      lCtx.fillStyle = "#1a4b42"; // Deep Teal
       lCtx.font = "bold 26px 'Press Start 2P', monospace";
       lCtx.textAlign = "center";
       lCtx.textBaseline = "middle";
@@ -719,6 +760,7 @@ class Bmo3DConsole {
     //    Size: 2.2 × 0.6 cm each
     //    * L: (1.7, 0.3) -> Three.js: X = 1.7 - 4.4 = -2.7 cm, Y = 6.2 - 0.3 = +5.9 cm
     //    * R: (7.1, 0.3) -> Three.js: X = 7.1 - 4.4 = +2.7 cm, Y = 6.2 - 0.3 = +5.9 cm
+    //    Color: #264B42
     // -------------------------------------------------------------------------
     const createShoulder = (name, key, label, refX) => {
       const x = refX - hw;
@@ -737,7 +779,7 @@ class Bmo3DConsole {
       fCanvas.width = 128;
       fCanvas.height = 64;
       const fCtx = fCanvas.getContext("2d");
-      fCtx.fillStyle = "#1a4b42";
+      fCtx.fillStyle = "#264b42";
       fCtx.roundRect(0, 0, 128, 64, 10);
       fCtx.fill();
       fCtx.lineWidth = 3;
@@ -969,7 +1011,7 @@ class Bmo3DConsole {
 
     let chassisHex = 0x5fb49c;
     let bezelHex = 0x1a4b42;
-    let roughness = 0.28;
+    let roughness = 0.42;
     let transmission = 0.0;
     let transparent = false;
     let opacity = 1.0;
@@ -978,12 +1020,12 @@ class Bmo3DConsole {
       case "dmg-gray":
         chassisHex = 0xd1ccc0;
         bezelHex = 0x57606f;
-        roughness = 0.42;
+        roughness = 0.45;
         break;
       case "atomic-purple":
         chassisHex = 0x9c88ff;
         bezelHex = 0x2f3542;
-        roughness = 0.18;
+        roughness = 0.20;
         transmission = 0.72;
         transparent = true;
         opacity = 0.88;
