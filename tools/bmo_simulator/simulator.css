@@ -232,6 +232,111 @@ main.simulator-workspace {
   padding: 4px 12px;
 }
 
+/* Studio Lighting & Tone Adjustments Bar */
+.studio-lighting-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 500px;
+  background: var(--bg-panel);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.slider-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 90px;
+}
+
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.slider-label span {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-cyan);
+}
+
+.slider-control-group input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.12);
+  outline: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.slider-control-group input[type="range"]:hover {
+  background: rgba(255, 255, 255, 0.20);
+}
+
+.slider-control-group input[type="range"]:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 2px;
+}
+
+.slider-control-group input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(0, 210, 211, 0.5);
+  transition: transform 0.1s ease, background-color 0.15s ease;
+}
+
+.slider-control-group input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  background: var(--accent-bmo);
+}
+
+.slider-control-group input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 6px rgba(0, 210, 211, 0.5);
+  transition: transform 0.1s ease, background-color 0.15s ease;
+}
+
+.slider-control-group input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  background: var(--accent-bmo);
+}
+
+.studio-reset-btn {
+  font-size: 11px;
+  padding: 4px 10px;
+  align-self: flex-end;
+  margin-bottom: 2px;
+}
+
 .three-viewport-frame {
   width: 100%;
   max-width: 500px;

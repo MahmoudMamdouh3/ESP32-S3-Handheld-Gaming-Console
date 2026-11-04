@@ -633,6 +633,56 @@ class BmoSimulator {
         this.updateViewMode();
       });
     }
+
+    // Studio Lighting, Saturation & Temperature Controls
+    const sliderLighting = document.getElementById("slider-lighting");
+    const sliderSaturation = document.getElementById("slider-saturation");
+    const sliderTemperature = document.getElementById("slider-temperature");
+    const valLighting = document.getElementById("val-lighting");
+    const valSaturation = document.getElementById("val-saturation");
+    const valTemperature = document.getElementById("val-temperature");
+    const btnResetStudio = document.getElementById("btn-reset-studio");
+
+    const updateStudio = () => {
+      const bVal = sliderLighting ? parseInt(sliderLighting.value, 10) : 100;
+      const sVal = sliderSaturation ? parseInt(sliderSaturation.value, 10) : 100;
+      const tVal = sliderTemperature ? parseInt(sliderTemperature.value, 10) : 0;
+
+      if (valLighting) valLighting.textContent = `${bVal}%`;
+      if (valSaturation) valSaturation.textContent = `${sVal}%`;
+      if (valTemperature) {
+        if (tVal > 0) valTemperature.textContent = `+${tVal} Warm`;
+        else if (tVal < 0) valTemperature.textContent = `${tVal} Cool`;
+        else valTemperature.textContent = "Neutral";
+      }
+
+      if (this.bmo3D) {
+        this.bmo3D.setStudioAdjustments({
+          brightness: bVal / 100,
+          saturation: sVal / 100,
+          temperature: tVal / 100,
+        });
+      }
+
+      // Also apply brightness & saturation to 2D view if active
+      const chassis2D = document.getElementById("gameboy-chassis");
+      if (chassis2D) {
+        chassis2D.style.filter = `brightness(${bVal / 100}) saturate(${sVal / 100})`;
+      }
+    };
+
+    if (sliderLighting) sliderLighting.addEventListener("input", updateStudio);
+    if (sliderSaturation) sliderSaturation.addEventListener("input", updateStudio);
+    if (sliderTemperature) sliderTemperature.addEventListener("input", updateStudio);
+
+    if (btnResetStudio) {
+      btnResetStudio.addEventListener("click", () => {
+        if (sliderLighting) sliderLighting.value = 100;
+        if (sliderSaturation) sliderSaturation.value = 100;
+        if (sliderTemperature) sliderTemperature.value = 0;
+        updateStudio();
+      });
+    }
     // Palette selector
     const paletteSelect = document.getElementById("palette-select");
     if (paletteSelect) {
