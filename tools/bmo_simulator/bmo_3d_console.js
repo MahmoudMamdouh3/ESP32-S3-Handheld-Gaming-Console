@@ -55,6 +55,16 @@ class Bmo3DConsole {
     this.materials = {};
     this.activeTheme = "bmo-teal";
 
+    // Studio Lighting, Saturation & Temperature State
+    this.ambientLight = null;
+    this.keyLight = null;
+    this.rimLight = null;
+    this.studioSettings = {
+      brightness: 1.0,
+      saturation: 1.0,
+      temperature: 0.0,
+    };
+
     // Raycasting state
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
@@ -122,33 +132,81 @@ class Bmo3DConsole {
   setupLighting() {
     // 1. Pure white ambient baseline (0.74)
     // Ensures diffuse baseline color matches CSS hex values directly without color shifts
-    const ambient = new THREE.AmbientLight(0xffffff, 0.74);
-    this.scene.add(ambient);
+    this.ambientLight = new THREE.AmbientLight(0xffffff, 0.74);
+    this.scene.add(this.ambientLight);
 
     // 2. Directional Key Light (0.32) from front-top-right (3, 7, 10)
     // Vector (3, 7, 10) normalized has Z = 0.80.
     // Total front-face irradiance: 0.74 + 0.32 * 0.80 = 0.996 (exact 1.00 intensity!)
     // Generates subtle specular bevel highlights along the top edge without washing out diffuse colors
-    const keyLight = new THREE.DirectionalLight(0xffffff, 0.32);
-    keyLight.position.set(3, 7, 10);
-    keyLight.castShadow = true;
-    keyLight.shadow.mapSize.width = 2048;
-    keyLight.shadow.mapSize.height = 2048;
-    keyLight.shadow.camera.near = 1;
-    keyLight.shadow.camera.far = 30;
-    keyLight.shadow.camera.left = -7;
-    keyLight.shadow.camera.right = 7;
-    keyLight.shadow.camera.top = 9;
-    keyLight.shadow.camera.bottom = -9;
-    keyLight.shadow.bias = -0.0004;
-    keyLight.shadow.radius = 2.0;
-    this.scene.add(keyLight);
+    this.keyLight = new THREE.DirectionalLight(0xffffff, 0.32);
+    this.keyLight.position.set(3, 7, 10);
+    this.keyLight.castShadow = true;
+    this.keyLight.shadow.mapSize.width = 2048;
+    this.keyLight.shadow.mapSize.height = 2048;
+    this.keyLight.shadow.camera.near = 1;
+    this.keyLight.shadow.camera.far = 30;
+    this.keyLight.shadow.camera.left = -7;
+    this.keyLight.shadow.camera.right = 7;
+    this.keyLight.shadow.camera.top = 9;
+    this.keyLight.shadow.camera.bottom = -9;
+    this.keyLight.shadow.bias = -0.0004;
+    this.keyLight.shadow.radius = 2.0;
+    this.scene.add(this.keyLight);
 
     // 3. Pure Rim Light from behind (0, 8, -12)
     // Highlights the top edge, shoulders, and battery door in 3D orbit, casting ZERO light onto the front face
-    const rimLight = new THREE.DirectionalLight(0xffffff, 0.50);
-    rimLight.position.set(0, 8, -12);
-    this.scene.add(rimLight);
+    this.rimLight = new THREE.DirectionalLight(0xffffff, 0.50);
+    this.rimLight.position.set(0, 8, -12);
+    this.scene.add(this.rimLight);
+  }
+
+  setStudioAdjustments(settings = {}) {
+    if (settings.brightness !== undefined) this.studioSettings.brightness = settings.brightness;
+    if (settings.saturation !== undefined) this.studioSettings.saturation = settings.saturation;
+    if (settings.temperature !== undefined) this.studioSettings.temperature = settings.temperature;
+
+    this.applyStudioAdjustments();
+  }
+
+  applyStudioAdjustments() {
+    const b = this.studioSettings.brightness;
+    const t = this.studioSettings.temperature; // -1.0 (cool blue) to +1.0 (warm amber)
+    const s = this.studioSettings.saturation;
+
+    // 1. Calculate color temperature RGB tint (Planckian approximation)
+    let r = 1.0, g = 1.0, bl = 1.0;
+    if (t > 0) {
+      // Warm amber/golden sunlight: maintain red, gentle green, drop blue
+      r = 1.0;
+      g = 1.0 - 0.14 * t;
+      bl = 1.0 - 0.40 * t;
+    } else if (t < 0) {
+      // Cool blue Nordic daylight: maintain blue, drop red, gentle green
+      const cool = -t;
+      r = 1.0 - 0.36 * cool;
+      g = 1.0 - 0.10 * cool;
+      bl = 1.0;
+    }
+
+    if (this.ambientLight) {
+      this.ambientLight.color.setRGB(r, g, bl);
+      this.ambientLight.intensity = 0.74 * b;
+    }
+
+    if (this.keyLight) {
+      this.keyLight.color.setRGB(r, g, bl);
+      this.keyLight.intensity = 0.32 * b;
+    }
+
+    if (this.rimLight) {
+      this.rimLight.intensity = 0.50 * b;
+    }
+
+    // 2. Hardware-accelerated GPU saturation on the WebGL canvas
+    if (this.renderer && this.renderer.domElement) {
+      this.renderer.domElement.style.filter = `saturate(${s})`;
+    }
   }
 
   createDropShadowTexture(radius = 64) {

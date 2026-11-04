@@ -72,6 +72,23 @@
         </div>
       </div>
 
+      <!-- Studio Lighting & Tone Controls (Light, Saturation, Temperature) -->
+      <div class="studio-lighting-controls" role="region" aria-label="Studio lighting, temperature, and color saturation adjustments">
+        <div class="slider-control-group">
+          <label for="slider-lighting" class="slider-label">Light <span id="val-lighting">100%</span></label>
+          <input type="range" id="slider-lighting" min="30" max="200" value="100" step="1" aria-label="Scene lighting brightness">
+        </div>
+        <div class="slider-control-group">
+          <label for="slider-saturation" class="slider-label">Saturation <span id="val-saturation">100%</span></label>
+          <input type="range" id="slider-saturation" min="0" max="200" value="100" step="1" aria-label="Color saturation">
+        </div>
+        <div class="slider-control-group">
+          <label for="slider-temperature" class="slider-label">Temp <span id="val-temperature">Neutral</span></label>
+          <input type="range" id="slider-temperature" min="-100" max="100" value="0" step="1" aria-label="Color temperature warmth and coolness">
+        </div>
+        <button class="control-pill studio-reset-btn" id="btn-reset-studio" aria-label="Reset lighting, saturation, and temperature to defaults">Reset</button>
+      </div>
+
       <!-- 3D Interactive WebGL Console Viewport -->
       <div id="three-viewport-container" class="three-viewport-frame" aria-label="3D BMO Console Model (drag to rotate, scroll to zoom, click buttons to play)"></div>
 
