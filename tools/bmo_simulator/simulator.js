@@ -675,14 +675,17 @@ class BmoSimulator {
     if (sliderSaturation) sliderSaturation.addEventListener("input", updateStudio);
     if (sliderTemperature) sliderTemperature.addEventListener("input", updateStudio);
 
-    if (btnResetStudio) {
-      btnResetStudio.addEventListener("click", () => {
-        if (sliderLighting) sliderLighting.value = 100;
-        if (sliderSaturation) sliderSaturation.value = 100;
-        if (sliderTemperature) sliderTemperature.value = 0;
-        updateStudio();
-      });
-    }
+      if (btnResetStudio) {
+        btnResetStudio.addEventListener("click", () => {
+          if (sliderLighting) sliderLighting.value = 100;
+          if (sliderSaturation) sliderSaturation.value = 100;
+          if (sliderTemperature) sliderTemperature.value = 0;
+          updateStudio();
+        });
+      }
+
+      // Initial studio adjustment apply
+      updateStudio();
     // Palette selector
     const paletteSelect = document.getElementById("palette-select");
     if (paletteSelect) {
