@@ -1,18 +1,29 @@
 /**
  * bmo_3d_console.js
  * 
- * High-End 3D Physical Hardware Model & Interactive WebGL Simulator for BMO Handheld Console.
- * Engineered for 100% color fidelity and visual parity with the authentic 2D reference console:
- *  - Chassis: 8.8 W × 12.4 H × 3.2 D cm, rounded corners (1.5 cm asymmetric bottom-right curve)
- *  - Colors: Rich, vibrant BMO Seafoam Teal (#5FB49C), Warm Golden D-Pad (#FFE033), Deep Teal Bezel (#1A4B42)
- *  - Screen Bezel: Exact 2D-matched curved housing with "BMO COLOR", "USB-C POWER", green LED, "BMO GAMEBOY"
- *  - Active ST7789 Display: Backlit emissive LCD panel streaming live companion & games in true retro mint
- *  - Shoulder Bumpers: Front-visible curved L & R pill bumpers with embossed labels and top wraparound
- *  - Action Buttons: High-gloss 3D candy domes (Green X, Pink Y, Blue A, Magenta B) with physical drop shadows
- *  - D-Pad: Seamless beveled cross with circular thumb dish, directional arrows, and tactile pivot tilt
- *  - Select / Start: Angled rubber pill capsules with drop shadows and engraved labels
- *  - Forehead Ridges & Speaker Grille: 2 molded ventilation lines and 6 diagonal acoustic slots
- *  - Color Engine: Linear tone mapping + sRGB output to eliminate bleaching, preserving rich saturation
+ * Ultra-Premium 3D Physical Hardware Model & Interactive WebGL Simulator for BMO Handheld Console.
+ * Built with Three.js (r128) strictly adhering to the Physical Hardware Reference Specification:
+ * 
+ * =========================================================================================
+ * PHYSICAL REFERENCE SPECIFICATION (Exact Centimeter Coordinates from Top-Left Front Face):
+ * =========================================================================================
+ *  - Body: 8.8 W × 12.4 H × 3.2 D cm, corner radius 0.6 cm (1.5 cm asymmetric bottom-right)
+ *  - Display Window: 5.0 W × 3.8 H cm centered at (4.4, 3.3) -> 56.8% body width (real 2.4" ST7789)
+ *  - Logo Strip: 5.0 W × 0.8 H cm at y 5.2-6.0 cm centered at (4.4, 5.6)
+ *  - D-Pad: 2.8 × 2.8 cm (arm width 0.95 cm) centered at (2.2, 8.4)
+ *  - ABXY Square Grid (2.54 mm perfboard aligned):
+ *      * X (Top):    cap Ø0.9 cm at (6.6, 7.4) [Three.js X: +2.2, Y: -1.2]
+ *      * Y (Left):   cap Ø0.9 cm at (5.6, 8.4) [Three.js X: +1.2, Y: -2.2]
+ *      * A (Right):  cap Ø0.9 cm at (7.6, 8.4) [Three.js X: +3.2, Y: -2.2]
+ *      * B (Bottom): cap Ø0.9 cm at (6.6, 9.4) [Three.js X: +2.2, Y: -3.2]
+ *      * Spacing: gap ~0.5 cm, centers 1.41 cm apart, X directly above B, Y level with A
+ *  - Select / Start: 1.4 × 0.5 cm pills at (3.4, 11.0) and (5.4, 11.0)
+ *  - Top Edge L / R Shoulders: 2.2 × 0.6 cm side-mounted tact switches at (1.7, 0.3) and (7.1, 0.3)
+ *  - Top Edge USB-C Cutout: 1.0 × 0.45 cm at (4.4, 0.0) between L and R
+ *  - Left Edge MicroSD Slot: 1.3 × 0.25 cm at y ≈ 4.0 cm
+ *  - Right Edge Power Slide Switch: 1.0 × 0.4 cm at y ≈ 3.0 cm
+ *  - Rear Battery Door: 3.4 H × 6.2 W cm centered at (4.4, 9.0) across width for 4×AA holder
+ * =========================================================================================
  */
 
 class Bmo3DConsole {
@@ -35,7 +46,7 @@ class Bmo3DConsole {
     this.pressedButtons = new Set();
     this.buttonOriginalPositions = new Map();
 
-    // D-Pad pivot state
+    // D-Pad pivot tilt state
     this.dpadPivotGroup = null;
     this.dpadTargetRotation = { x: 0, y: 0, z: 0 };
     this.dpadTargetZ = 0;
@@ -63,7 +74,7 @@ class Bmo3DConsole {
     this.camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
     this.setCameraPreset("front");
 
-    // 3. Renderer with sRGB color space & Linear tone mapping (NO BLEACHING / NO DESATURATION)
+    // 3. Renderer with sRGB color space & Linear Tone Mapping (NO BLEACHING / FULL VIBRANCY)
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
@@ -75,7 +86,6 @@ class Bmo3DConsole {
     if ("outputEncoding" in this.renderer) {
       this.renderer.outputEncoding = THREE.sRGBEncoding;
     }
-    // Linear tone mapping guarantees exact 1:1 color match with CSS hex tokens!
     this.renderer.toneMapping = THREE.LinearToneMapping;
     this.renderer.toneMappingExposure = 1.0;
     this.renderer.shadowMap.enabled = true;
@@ -96,7 +106,7 @@ class Bmo3DConsole {
     // 5. Studio Lighting Rig
     this.setupLighting();
 
-    // 6. Build the 3D Console Model
+    // 6. Build the 3D Console Model strictly according to Reference Spec
     this.buildConsoleModel();
 
     // 7. Raycasting & Interaction
@@ -111,13 +121,13 @@ class Bmo3DConsole {
   }
 
   setupLighting() {
-    // 1. Clean ambient illumination preserving 100% color saturation
-    const ambient = new THREE.AmbientLight(0xffffff, 0.78);
+    // 1. Clean ambient illumination preserving rich color saturation
+    const ambient = new THREE.AmbientLight(0xffffff, 0.68);
     this.scene.add(ambient);
 
-    // 2. Key Light: Soft directional light from front-top-right for bevel specular highlights
-    const keyLight = new THREE.DirectionalLight(0xffffff, 0.42);
-    keyLight.position.set(6, 10, 14);
+    // 2. Key Light: Warm studio directional light from front-top-right for bevel highlights
+    const keyLight = new THREE.DirectionalLight(0xfffaf0, 0.58);
+    keyLight.position.set(7, 12, 14);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.width = 2048;
     keyLight.shadow.mapSize.height = 2048;
@@ -131,10 +141,20 @@ class Bmo3DConsole {
     keyLight.shadow.radius = 2.5;
     this.scene.add(keyLight);
 
-    // 3. Rim Light: Edge highlight along top shoulders and side silhouette
-    const rimLight = new THREE.DirectionalLight(0xffffff, 0.32);
-    rimLight.position.set(0, 12, -8);
+    // 3. Fill Light: Soft cool fill from front-left
+    const fillLight = new THREE.DirectionalLight(0xd4eaff, 0.32);
+    fillLight.position.set(-10, -2, 10);
+    this.scene.add(fillLight);
+
+    // 4. Rim Light: Edge highlight along top shoulders and side silhouette
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.48);
+    rimLight.position.set(0, 14, -8);
     this.scene.add(rimLight);
+
+    // 5. Bounce Light: Subtle warm ground bounce
+    const bounceLight = new THREE.DirectionalLight(0x5fb49c, 0.18);
+    bounceLight.position.set(0, -10, 4);
+    this.scene.add(bounceLight);
   }
 
   createDropShadowTexture(radius = 64) {
@@ -142,9 +162,9 @@ class Bmo3DConsole {
     canvas.width = 128;
     canvas.height = 128;
     const ctx = canvas.getContext("2d");
-    const grad = ctx.createRadialGradient(64, 64, radius * 0.3, 64, 64, radius);
-    grad.addColorStop(0, "rgba(0, 0, 0, 0.46)");
-    grad.addColorStop(0.65, "rgba(0, 0, 0, 0.18)");
+    const grad = ctx.createRadialGradient(64, 64, radius * 0.25, 64, 64, radius);
+    grad.addColorStop(0, "rgba(0, 0, 0, 0.48)");
+    grad.addColorStop(0.65, "rgba(0, 0, 0, 0.16)");
     grad.addColorStop(1, "rgba(0, 0, 0, 0)");
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 128, 128);
@@ -162,32 +182,32 @@ class Bmo3DConsole {
 
     ctx.clearRect(0, 0, 256, 256);
 
-    // 1. Solid saturated base
+    // 1. Rich saturated solid base
     ctx.fillStyle = bgColorStr;
     ctx.beginPath();
     ctx.arc(128, 128, 122, 0, Math.PI * 2);
     ctx.fill();
 
     // 2. Bottom shadow crescent for 3D depth
-    const btmGrad = ctx.createRadialGradient(128, 128, 60, 128, 128, 122);
+    const btmGrad = ctx.createRadialGradient(128, 128, 55, 128, 128, 122);
     btmGrad.addColorStop(0, "rgba(0, 0, 0, 0)");
-    btmGrad.addColorStop(0.75, "rgba(0, 0, 0, 0.12)");
-    btmGrad.addColorStop(1, "rgba(0, 0, 0, 0.38)");
+    btmGrad.addColorStop(0.7, "rgba(0, 0, 0, 0.1)");
+    btmGrad.addColorStop(1, "rgba(0, 0, 0, 0.35)");
     ctx.fillStyle = btmGrad;
     ctx.beginPath();
     ctx.arc(128, 128, 122, 0, Math.PI * 2);
     ctx.fill();
 
-    // 3. Top crescent highlight (giving that authentic 2D box-shadow bevel)
+    // 3. Top crescent highlight (giving authentic 3D candy button sheen)
     const topHl = ctx.createLinearGradient(128, 10, 128, 90);
-    topHl.addColorStop(0, "rgba(255, 255, 255, 0.48)");
+    topHl.addColorStop(0, "rgba(255, 255, 255, 0.46)");
     topHl.addColorStop(1, "rgba(255, 255, 255, 0.0)");
     ctx.fillStyle = topHl;
     ctx.beginPath();
-    ctx.ellipse(128, 62, 82, 38, 0, 0, Math.PI * 2);
+    ctx.ellipse(128, 60, 80, 36, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // 4. Subtle outer rim border
+    // 4. Subtle outer border rim
     ctx.lineWidth = 4;
     ctx.strokeStyle = "rgba(0, 0, 0, 0.32)";
     ctx.beginPath();
@@ -210,79 +230,31 @@ class Bmo3DConsole {
     return texture;
   }
 
-  createBezelTexture() {
+  createLogoStripTexture() {
     const canvas = document.createElement("canvas");
-    canvas.width = 1024;
-    canvas.height = 768;
+    canvas.width = 512;
+    canvas.height = 128;
     const ctx = canvas.getContext("2d");
 
-    // Clear
-    ctx.clearRect(0, 0, 1024, 768);
+    ctx.clearRect(0, 0, 512, 128);
 
-    // 1. Deep forest teal gradient housing (exact 2D match)
-    const bgGrad = ctx.createLinearGradient(0, 0, 0, 768);
-    bgGrad.addColorStop(0, "#1a4b42");
-    bgGrad.addColorStop(0.5, "#153d36");
-    bgGrad.addColorStop(1, "#0f2620");
-    ctx.fillStyle = bgGrad;
-    ctx.beginPath();
-    // Rounded corners: 36px bottom-right (classic Game Boy), 16px others
-    ctx.roundRect(0, 0, 1024, 768, [24, 24, 52, 24]);
-    ctx.fill();
-
-    // Outer subtle bevel border
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.16)";
-    ctx.stroke();
-
-    // 2. Top Status Bar: "BMO COLOR" and "USB-C POWER"
-    ctx.fillStyle = "#cef5e4";
-    ctx.font = "bold 26px 'Press Start 2P', monospace";
-    ctx.textAlign = "left";
+    // Centered "BMO" and "GAMEBOY"
+    ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("BMO COLOR", 60, 52);
+    ctx.font = "bold 38px 'Press Start 2P', monospace";
 
-    ctx.fillStyle = "#84d0bc";
-    ctx.font = "bold 22px 'Press Start 2P', monospace";
-    ctx.textAlign = "right";
-    ctx.fillText("USB-C POWER", 916, 52);
-
-    // Glowing Power LED indicator dot
-    const ledX = 942;
-    const ledY = 52;
-    const ledGrad = ctx.createRadialGradient(ledX, ledY, 2, ledX, ledY, 12);
-    ledGrad.addColorStop(0, "#55efc4");
-    ledGrad.addColorStop(0.5, "#00d2d3");
-    ledGrad.addColorStop(1, "rgba(0, 210, 211, 0)");
-    ctx.fillStyle = ledGrad;
-    ctx.beginPath();
-    ctx.arc(ledX, ledY, 12, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.arc(ledX, ledY, 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 3. Inner Display Frame Recess Border (framing the ST7789 display window)
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = "#081512";
-    ctx.strokeRect(64, 88, 896, 584);
-
-    // 4. Bottom Footer Bar: "BMO GAMEBOY"
-    const footerY = 720;
-    ctx.font = "bold 34px 'Press Start 2P', monospace";
     const bmoTxt = "BMO ";
     const gbTxt = "GAMEBOY";
     const totalW = ctx.measureText(bmoTxt + gbTxt).width;
-    const startX = 512 - totalW / 2;
+    const startX = 256 - totalW / 2;
 
     ctx.textAlign = "left";
-    ctx.fillStyle = "#cef5e4";
-    ctx.fillText(bmoTxt, startX, footerY);
+    ctx.fillStyle = "#1a4b42";
+    ctx.fillText(bmoTxt, startX, 64);
 
     const bmoW = ctx.measureText(bmoTxt).width;
     ctx.fillStyle = "#00d2d3";
-    ctx.fillText(gbTxt, startX + bmoW, footerY);
+    ctx.fillText(gbTxt, startX + bmoW, 64);
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.minFilter = THREE.LinearFilter;
@@ -299,7 +271,7 @@ class Bmo3DConsole {
     ctx.clearRect(0, 0, 512, 512);
 
     // 1. Subtle directional arrows matching 2D opacity
-    ctx.fillStyle = "rgba(255, 255, 255, 0.38)";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
     const drawTriangle = (cx, cy, size, angle) => {
       ctx.save();
       ctx.translate(cx, cy);
@@ -318,8 +290,7 @@ class Bmo3DConsole {
     drawTriangle(75, 256, 18, -Math.PI / 2);
     drawTriangle(437, 256, 18, Math.PI / 2);
 
-    // 2. Clean, crisp circular thumb dish (NO UGLY BLACK GREASE STAIN!)
-    // Subtle indented well with clean outline
+    // 2. Clean, subtle circular thumb dish (clean outline, no black grease stain)
     ctx.fillStyle = "rgba(0, 0, 0, 0.22)";
     ctx.beginPath();
     ctx.arc(256, 256, 48, 0, Math.PI * 2);
@@ -339,40 +310,45 @@ class Bmo3DConsole {
     this.rootGroup = new THREE.Group();
     this.scene.add(this.rootGroup);
 
-    // Rich Authentic BMO Colors (Matching CSS exactly)
+    // Authentic Rich BMO Colors (Matching CSS exactly)
     const bmoTealHex = 0x5fb49c;
     const deepTealHex = 0x1a4b42;
     const dpadYellowHex = 0xffe033;
 
-    // Materials
-    this.materials.chassis = new THREE.MeshStandardMaterial({
+    // Materials: Physical PBR with satin ABS finish & clearcoat sheen
+    this.materials.chassis = new THREE.MeshPhysicalMaterial({
       color: bmoTealHex,
-      roughness: 0.32,
+      roughness: 0.28,
       metalness: 0.02,
+      clearcoat: 0.18,
+      clearcoatRoughness: 0.12,
     });
 
-    this.materials.bezel = new THREE.MeshStandardMaterial({
+    this.materials.bezel = new THREE.MeshPhysicalMaterial({
       color: deepTealHex,
-      roughness: 0.35,
+      roughness: 0.3,
       metalness: 0.04,
+      clearcoat: 0.22,
     });
 
-    this.materials.dpad = new THREE.MeshStandardMaterial({
+    this.materials.dpad = new THREE.MeshPhysicalMaterial({
       color: dpadYellowHex,
-      roughness: 0.25,
+      roughness: 0.24,
       metalness: 0.02,
+      clearcoat: 0.12,
     });
 
     this.materials.btnPill = new THREE.MeshStandardMaterial({
       color: deepTealHex,
-      roughness: 0.5,
+      roughness: 0.52,
       metalness: 0.02,
     });
 
-    this.materials.shoulder = new THREE.MeshStandardMaterial({
+    this.materials.shoulder = new THREE.MeshPhysicalMaterial({
       color: deepTealHex,
-      roughness: 0.28,
+      roughness: 0.26,
       metalness: 0.04,
+      clearcoat: 0.2,
     });
 
     this.materials.metal = new THREE.MeshStandardMaterial({
@@ -382,7 +358,8 @@ class Bmo3DConsole {
     });
 
     // -------------------------------------------------------------------------
-    // 1. MAIN CHASSIS BODY (8.8 cm W × 12.4 cm H × 3.2 cm D)
+    // 1. MAIN CHASSIS BODY: 8.8 W × 12.4 H × 3.2 D cm
+    //    Corner radius: 0.6 cm (1.5 cm asymmetric bottom-right curve)
     // -------------------------------------------------------------------------
     const W = 8.8;
     const H = 12.4;
@@ -390,7 +367,7 @@ class Bmo3DConsole {
     const hw = W / 2; // 4.4
     const hh = H / 2; // 6.2
     const r = 0.6;    // standard corner radius
-    const r_br = 1.5; // classic asymmetric bottom-right corner curve
+    const r_br = 1.5; // classic asymmetric bottom-right curve
 
     const shape = new THREE.Shape();
     shape.moveTo(-hw + r, -hh);
@@ -403,7 +380,7 @@ class Bmo3DConsole {
     shape.lineTo(-hw, -hh + r);
     shape.quadraticCurveTo(-hw, -hh, -hw + r, -hh);
 
-    // Deep smooth multi-segment bevel creating the top edge highlight
+    // Deep smooth multi-segment bevel
     const extrudeSettings = {
       depth: D - 0.44,
       bevelEnabled: true,
@@ -431,110 +408,45 @@ class Bmo3DConsole {
     this.rootGroup.add(shadowMesh);
 
     // -------------------------------------------------------------------------
-    // 2. TOP FOREHEAD MOLDED RIDGE LINES
+    // 2. DISPLAY WINDOW: 5.0 W × 3.8 H cm centered at (4.4, 3.3) cm
+    //    Three.js: X = 0.0 cm, Y = 6.2 - 3.3 = +2.9 cm
+    //    (Spans x 1.9-6.9, y 1.4-5.2 -> 56.8% of body width, real 2.4" ST7789)
     // -------------------------------------------------------------------------
-    for (let i = 0; i < 2; i++) {
-      const ridgeGeo = new THREE.BoxGeometry(4.8, 0.07, 0.04);
-      const ridgeMat = new THREE.MeshBasicMaterial({ color: 0x438f7a });
-      const ridgeMesh = new THREE.Mesh(ridgeGeo, ridgeMat);
-      ridgeMesh.position.set(0, hh - 0.5 - i * 0.16, Z_FRONT + 0.015);
-      this.rootGroup.add(ridgeMesh);
-    }
+    const DISP_W = 5.0;
+    const DISP_H = 3.8;
+    const DISP_Y = hh - 3.3; // +2.9 cm
 
-    // -------------------------------------------------------------------------
-    // 3. L / R SHOULDER BUTTONS (Visible on Front Face in Top Shoulder Row!)
-    //  - L: X -2.4 cm, Y +5.5 cm (above bezel)
-    //  - R: X +2.4 cm, Y +5.5 cm
-    // -------------------------------------------------------------------------
-    const createShoulder = (name, key, label, x) => {
-      // 1. Drop shadow under shoulder bumper
-      const sDropGeo = new THREE.PlaneGeometry(2.6, 0.9);
-      const sDropTex = this.createDropShadowTexture(56);
-      const sDropMat = new THREE.MeshBasicMaterial({ map: sDropTex, transparent: true, opacity: 0.5 });
-      const sDropMesh = new THREE.Mesh(sDropGeo, sDropMat);
-      sDropMesh.position.set(x, hh - 0.8, Z_FRONT + 0.01);
-      this.rootGroup.add(sDropMesh);
+    // Display Bezel Housing (subtle outer chamfer framing the 2.4" window)
+    const BEZEL_W = 5.4;
+    const BEZEL_H = 4.2;
+    const bShape = new THREE.Shape();
+    const b_hw = BEZEL_W / 2;
+    const b_hh = BEZEL_H / 2;
+    const b_r = 0.25;
+    bShape.moveTo(-b_hw + b_r, -b_hh);
+    bShape.lineTo(b_hw - b_r, -b_hh);
+    bShape.quadraticCurveTo(b_hw, -b_hh, b_hw, -b_hh + b_r);
+    bShape.lineTo(b_hw, b_hh - b_r);
+    bShape.quadraticCurveTo(b_hw, b_hh, b_hw - b_r, b_hh);
+    bShape.lineTo(-b_hw + b_r, b_hh);
+    bShape.quadraticCurveTo(-b_hw, b_hh, -b_hw, b_hh - b_r);
+    bShape.lineTo(-b_hw, -b_hh + b_r);
+    bShape.quadraticCurveTo(-b_hw, -b_hh, -b_hw + b_r, -b_hh);
 
-      // 2. Shoulder Bumper Body
-      const sGeo = new THREE.BoxGeometry(2.4, 0.52, 1.3);
-      const sMesh = new THREE.Mesh(sGeo, this.materials.shoulder);
-      sMesh.position.set(x, hh - 0.72, Z_FRONT - 0.45);
-      sMesh.castShadow = true;
-      sMesh.userData = { isButton: true, key: key, name: name, isShoulder: true };
-      this.rootGroup.add(sMesh);
-
-      // 3. Front Face Bevel with crisp embossed "L" / "R" label
-      const fCanvas = document.createElement("canvas");
-      fCanvas.width = 128;
-      fCanvas.height = 64;
-      const fCtx = fCanvas.getContext("2d");
-      fCtx.fillStyle = "#1a4b42";
-      fCtx.roundRect(0, 0, 128, 64, 12);
-      fCtx.fill();
-      fCtx.lineWidth = 3;
-      fCtx.strokeStyle = "rgba(255, 255, 255, 0.35)";
-      fCtx.stroke();
-      fCtx.fillStyle = "#cef5e4";
-      fCtx.font = "bold 34px 'Press Start 2P', monospace";
-      fCtx.textAlign = "center";
-      fCtx.textBaseline = "middle";
-      fCtx.fillText(label, 64, 34);
-
-      const fTex = new THREE.CanvasTexture(fCanvas);
-      const fGeo = new THREE.PlaneGeometry(2.35, 0.48);
-      const fMat = new THREE.MeshBasicMaterial({ map: fTex, transparent: true });
-      const fMesh = new THREE.Mesh(fGeo, fMat);
-      fMesh.position.set(0, 0, 0.66);
-      sMesh.add(fMesh);
-
-      this.buttonMeshes[key] = sMesh;
-      this.interactiveObjects.push(sMesh);
-      this.interactiveObjects.push(fMesh);
-      fMesh.userData = sMesh.userData;
-
-      this.buttonOriginalPositions.set(sMesh, {
-        x: sMesh.position.x,
-        y: sMesh.position.y,
-        z: sMesh.position.z,
-      });
-    };
-
-    createShoulder("L Trigger", "L", "L", -2.4);
-    createShoulder("R Trigger", "R", "R", 2.4);
-
-    // -------------------------------------------------------------------------
-    // 4. SCREEN BEZEL HOUSING & ACTIVE ST7789 DISPLAY
-    //  - Housing: 6.8 × 5.4 cm centered at X 0.0, Y +2.6 cm
-    //  - Active ST7789 display window: 5.0 × 3.8 cm
-    // -------------------------------------------------------------------------
-    const BEZEL_W = 6.8;
-    const BEZEL_H = 5.4;
-    const BEZEL_Y = hh - 3.6; // +2.6 cm
-
-    // Deep drop shadow behind screen bezel
-    const bezelDropGeo = new THREE.PlaneGeometry(BEZEL_W + 0.8, BEZEL_H + 0.8);
-    const bezelDropTex = this.createDropShadowTexture(58);
-    const bezelDropMat = new THREE.MeshBasicMaterial({ map: bezelDropTex, transparent: true, opacity: 0.6 });
-    const bezelDropMesh = new THREE.Mesh(bezelDropGeo, bezelDropMat);
-    bezelDropMesh.position.set(0, BEZEL_Y - 0.08, Z_FRONT + 0.01);
-    this.rootGroup.add(bezelDropMesh);
-
-    // Bezel housing plate with high-res branding texture
-    const bezelTex = this.createBezelTexture();
-    const bezelGeo = new THREE.PlaneGeometry(BEZEL_W, BEZEL_H);
-    const bezelMat = new THREE.MeshBasicMaterial({
-      map: bezelTex,
-      transparent: true,
+    const bezelGeo = new THREE.ExtrudeGeometry(bShape, {
+      depth: 0.06,
+      bevelEnabled: true,
+      bevelSegments: 4,
+      bevelSize: 0.04,
+      bevelThickness: 0.04,
     });
-    const bezelMesh = new THREE.Mesh(bezelGeo, bezelMat);
-    bezelMesh.position.set(0, BEZEL_Y, Z_FRONT + 0.025);
+    bezelGeo.center();
+    const bezelMesh = new THREE.Mesh(bezelGeo, this.materials.bezel);
+    bezelMesh.position.set(0, DISP_Y, Z_FRONT + 0.03);
     this.rootGroup.add(bezelMesh);
 
-    // Active ST7789 LCD Panel (5.0 × 3.8 cm active area)
-    // MeshBasicMaterial ensures TRUE 100% RETRO MINT COLORS without white blowout!
-    const SCREEN_W = 5.0;
-    const SCREEN_H = 3.8;
-    const screenGeo = new THREE.PlaneGeometry(SCREEN_W, SCREEN_H);
+    // Active ST7789 LCD Panel (5.0 × 3.8 cm active display window)
+    const screenGeo = new THREE.PlaneGeometry(DISP_W, DISP_H);
 
     if (this.tftCanvas) {
       this.screenTexture = new THREE.CanvasTexture(this.tftCanvas);
@@ -542,37 +454,48 @@ class Bmo3DConsole {
       this.screenTexture.magFilter = THREE.NearestFilter;
     }
 
+    // MeshBasicMaterial ensures TRUE 100% RETRO MINT COLORS without white blowout!
     const screenMat = new THREE.MeshBasicMaterial({
       map: this.screenTexture,
     });
 
     this.screenMesh = new THREE.Mesh(screenGeo, screenMat);
-    this.screenMesh.position.set(0, BEZEL_Y, Z_FRONT + 0.035);
+    this.screenMesh.position.set(0, DISP_Y, Z_FRONT + 0.065);
     this.rootGroup.add(this.screenMesh);
 
-    // Glossy Protective Glass Lens overlay with subtle transparent sheen
-    const lensGeo = new THREE.PlaneGeometry(BEZEL_W - 0.2, BEZEL_H - 0.2);
+    // Glossy Protective Glass Lens overlay with subtle transparent specular reflection
+    const lensGeo = new THREE.PlaneGeometry(DISP_W + 0.1, DISP_H + 0.1);
     const lensMat = new THREE.MeshPhysicalMaterial({
-      roughness: 0.05,
+      roughness: 0.04,
       metalness: 0.0,
-      clearcoat: 0.95,
-      clearcoatRoughness: 0.04,
-      transmission: 0.1,
+      clearcoat: 0.98,
+      clearcoatRoughness: 0.03,
+      transmission: 0.08,
       transparent: true,
-      opacity: 0.18,
-      reflectivity: 0.4,
+      opacity: 0.15,
+      reflectivity: 0.45,
     });
     const lensMesh = new THREE.Mesh(lensGeo, lensMat);
-    lensMesh.position.set(0, BEZEL_Y, Z_FRONT + 0.045);
+    lensMesh.position.set(0, DISP_Y, Z_FRONT + 0.075);
     this.rootGroup.add(lensMesh);
 
     // -------------------------------------------------------------------------
-    // 5. D-PAD: Single Seamless Sculpted Cross with Soft Drop Shadow & Pivot
-    //  - Center at (2.2, 8.4) cm => X -2.2, Y -2.3 cm
-    //  - Dimensions: 2.8 × 2.8 cm, arm width 0.95 cm
+    // 3. LOGO STRIP: 5.0 W × 0.8 H cm at y 5.2-6.0 cm (Center y = 5.6 cm)
+    //    Three.js: X = 0.0 cm, Y = 6.2 - 5.6 = +0.6 cm
     // -------------------------------------------------------------------------
-    const DPAD_X = -2.2;
-    const DPAD_Y = -2.3;
+    const logoTex = this.createLogoStripTexture();
+    const logoGeo = new THREE.PlaneGeometry(5.0, 0.8);
+    const logoMat = new THREE.MeshBasicMaterial({ map: logoTex, transparent: true });
+    const logoMesh = new THREE.Mesh(logoGeo, logoMat);
+    logoMesh.position.set(0, hh - 5.6, Z_FRONT + 0.015);
+    this.rootGroup.add(logoMesh);
+
+    // -------------------------------------------------------------------------
+    // 4. D-PAD: 2.8 × 2.8 cm, arm width 0.95 cm centered at (2.2, 8.4) cm
+    //    Three.js: X = 2.2 - 4.4 = -2.2 cm, Y = 6.2 - 8.4 = -2.2 cm
+    // -------------------------------------------------------------------------
+    const DPAD_X = 2.2 - hw; // -2.2 cm
+    const DPAD_Y = hh - 8.4; // -2.2 cm
     const ARM_W = 0.95;
     const L = 1.4;            // Half of 2.8
     const W_HALF = ARM_W / 2; // 0.475
@@ -661,18 +584,21 @@ class Bmo3DConsole {
     createDpadZone("RIGHT", 0.85, 0, 1.1, ARM_W);
 
     // -------------------------------------------------------------------------
-    // 6. ACTION BUTTONS (X, Y, A, B) - Premium High-Gloss Injection Molded Domes
-    //  - Square to 2.54 mm Perfboard Grid with Soft Drop Shadows!
-    //    * X (Top):   X +2.2, Y -1.3 cm (Leaf Green #4CAF50)
-    //    * Y (Left):  X +1.2, Y -2.3 cm (Bubblegum Pink #F48FB1)
-    //    * A (Right): X +3.2, Y -2.3 cm (Sky Blue #52A6BA)
-    //    * B (Bottom):X +2.2, Y -3.3 cm (Vivid Magenta #E8175D)
+    // 5. ABXY SQUARE GRID DIAMOND (Aligned to 2.54 mm perfboard grid):
+    //    Cap Ø0.9 cm (radius 0.45 cm)
+    //    * X (Top):    (6.6, 7.4) -> Three.js: X = +2.2 cm, Y = -1.2 cm
+    //    * Y (Left):   (5.6, 8.4) -> Three.js: X = +1.2 cm, Y = -2.2 cm
+    //    * A (Right):  (7.6, 8.4) -> Three.js: X = +3.2 cm, Y = -2.2 cm
+    //    * B (Bottom): (6.6, 9.4) -> Three.js: X = +2.2 cm, Y = -3.2 cm
     // -------------------------------------------------------------------------
-    const CAP_RADIUS = 0.44;
+    const CAP_RADIUS = 0.45;
     const CAP_HEIGHT = 0.26;
 
-    const createActionButton = (name, key, label, x, y, bgColorStr, textColorStr) => {
-      // 1. Soft Drop Shadow Mesh under each button (matching 2D box-shadow!)
+    const createActionButton = (name, key, label, refX, refY, bgColorStr, textColorStr) => {
+      const x = refX - hw;
+      const y = hh - refY;
+
+      // 1. Soft Drop Shadow Mesh under each button (matching 2D box-shadow elevation!)
       const shadowDiscGeo = new THREE.PlaneGeometry(CAP_RADIUS * 2.8, CAP_RADIUS * 2.8);
       const shadowDiscTex = this.createDropShadowTexture(56);
       const shadowDiscMat = new THREE.MeshBasicMaterial({ map: shadowDiscTex, transparent: true, opacity: 0.58 });
@@ -685,13 +611,15 @@ class Bmo3DConsole {
       btnGroup.position.set(x, y, Z_FRONT + CAP_HEIGHT / 2);
       this.rootGroup.add(btnGroup);
 
-      // Button Stem (Cylinder)
+      // Button Stem (Cylinder) with high-gloss injection molded finish
       const cylGeo = new THREE.CylinderGeometry(CAP_RADIUS, CAP_RADIUS * 1.04, CAP_HEIGHT, 32);
       cylGeo.rotateX(Math.PI / 2);
-      const cylMat = new THREE.MeshStandardMaterial({
+      const cylMat = new THREE.MeshPhysicalMaterial({
         color: new THREE.Color(bgColorStr),
-        roughness: 0.2,
+        roughness: 0.16,
         metalness: 0.02,
+        clearcoat: 0.45,
+        clearcoatRoughness: 0.06,
       });
       const stemMesh = new THREE.Mesh(cylGeo, cylMat);
       stemMesh.castShadow = true;
@@ -724,17 +652,20 @@ class Bmo3DConsole {
       return btnGroup;
     };
 
-    createActionButton("X Button", "X", "X", 2.2, -1.3, "#4caf50", "#0f2620");
-    createActionButton("Y Button", "Y", "Y", 1.2, -2.3, "#f48fb1", "#0f2620");
-    createActionButton("A Button", "A", "A", 3.2, -2.3, "#52a6ba", "#0f2620");
-    createActionButton("B Button", "B", "B", 2.2, -3.3, "#e8175d", "#ffffff");
+    createActionButton("X Button", "X", "X", 6.6, 7.4, "#4caf50", "#0f2620"); // Top
+    createActionButton("Y Button", "Y", "Y", 5.6, 8.4, "#f48fb1", "#0f2620"); // Left
+    createActionButton("A Button", "A", "A", 7.6, 8.4, "#52a6ba", "#0f2620"); // Right
+    createActionButton("B Button", "B", "B", 6.6, 9.4, "#e8175d", "#ffffff"); // Bottom
 
     // -------------------------------------------------------------------------
-    // 7. SELECT / START PILL BUTTONS (Angled Rubber Pills with Drop Shadows)
-    //  - Select: X -1.0, Y -4.8 cm
-    //  - Start:  X +1.0, Y -4.8 cm
+    // 6. SELECT / START PILL BUTTONS: 1.4 × 0.5 cm pills
+    //    * Select: (3.4, 11.0) -> Three.js: X = -1.0 cm, Y = -4.8 cm
+    //    * Start:  (5.4, 11.0) -> Three.js: X = +1.0 cm, Y = -4.8 cm
     // -------------------------------------------------------------------------
-    const createPill = (name, key, label, x, y) => {
+    const createPill = (name, key, label, refX, refY) => {
+      const x = refX - hw;
+      const y = hh - refY;
+
       // Drop Shadow under Pill
       const pDropGeo = new THREE.PlaneGeometry(1.8, 0.9);
       const pDropTex = this.createDropShadowTexture(56);
@@ -745,7 +676,7 @@ class Bmo3DConsole {
       this.rootGroup.add(pDropMesh);
 
       // Pill Mesh
-      const pillGeo = new THREE.BoxGeometry(1.38, 0.44, 0.22);
+      const pillGeo = new THREE.BoxGeometry(1.4, 0.5, 0.22);
       const pillMesh = new THREE.Mesh(pillGeo, this.materials.btnPill);
       pillMesh.rotation.z = -0.44;
       pillMesh.position.set(x, y, Z_FRONT + 0.12);
@@ -780,11 +711,124 @@ class Bmo3DConsole {
       this.rootGroup.add(lMesh);
     };
 
-    createPill("Select", "SELECT", "SELECT", -1.0, -4.8);
-    createPill("Start", "START", "START", 1.0, -4.8);
+    createPill("Select", "SELECT", "SELECT", 3.4, 11.0);
+    createPill("Start", "START", "START", 5.4, 11.0);
 
     // -------------------------------------------------------------------------
-    // 8. SPEAKER GRILLE (6 Diagonal Slits in Bottom-Right Corner)
+    // 7. L / R SHOULDER BUTTONS: Side-Mounted Tact Switches on the Top Edge!
+    //    Size: 2.2 × 0.6 cm each
+    //    * L: (1.7, 0.3) -> Three.js: X = 1.7 - 4.4 = -2.7 cm, Y = 6.2 - 0.3 = +5.9 cm
+    //    * R: (7.1, 0.3) -> Three.js: X = 7.1 - 4.4 = +2.7 cm, Y = 6.2 - 0.3 = +5.9 cm
+    // -------------------------------------------------------------------------
+    const createShoulder = (name, key, label, refX) => {
+      const x = refX - hw;
+      const y = hh - 0.3; // +5.9 cm
+
+      // Ergonomic Bumper Mesh protruding above the top edge
+      const sGeo = new THREE.BoxGeometry(2.2, 0.6, 1.4);
+      const sMesh = new THREE.Mesh(sGeo, this.materials.shoulder);
+      sMesh.position.set(x, y + 0.28, 0.5);
+      sMesh.castShadow = true;
+      sMesh.userData = { isButton: true, key: key, name: name, isShoulder: true };
+      this.rootGroup.add(sMesh);
+
+      // Embossed "L" / "R" Label on front face
+      const fCanvas = document.createElement("canvas");
+      fCanvas.width = 128;
+      fCanvas.height = 64;
+      const fCtx = fCanvas.getContext("2d");
+      fCtx.fillStyle = "#1a4b42";
+      fCtx.roundRect(0, 0, 128, 64, 10);
+      fCtx.fill();
+      fCtx.lineWidth = 3;
+      fCtx.strokeStyle = "rgba(255, 255, 255, 0.35)";
+      fCtx.stroke();
+      fCtx.fillStyle = "#cef5e4";
+      fCtx.font = "bold 34px 'Press Start 2P', monospace";
+      fCtx.textAlign = "center";
+      fCtx.textBaseline = "middle";
+      fCtx.fillText(label, 64, 34);
+
+      const fTex = new THREE.CanvasTexture(fCanvas);
+      const fGeo = new THREE.PlaneGeometry(2.1, 0.52);
+      const fMat = new THREE.MeshBasicMaterial({ map: fTex, transparent: true });
+      const fMesh = new THREE.Mesh(fGeo, fMat);
+      fMesh.position.set(0, 0, 0.71);
+      sMesh.add(fMesh);
+
+      this.buttonMeshes[key] = sMesh;
+      this.interactiveObjects.push(sMesh);
+      this.interactiveObjects.push(fMesh);
+      fMesh.userData = sMesh.userData;
+
+      this.buttonOriginalPositions.set(sMesh, {
+        x: sMesh.position.x,
+        y: sMesh.position.y,
+        z: sMesh.position.z,
+      });
+    };
+
+    createShoulder("L Trigger", "L", "L", 1.7);
+    createShoulder("R Trigger", "R", "R", 7.1);
+
+    // -------------------------------------------------------------------------
+    // 8. TOP EDGE USB-C CUTOUT: 1.0 × 0.45 cm at (4.4, 0.0) between L and R
+    //    Three.js: X = 0.0 cm, Y = +6.2 cm
+    // -------------------------------------------------------------------------
+    const usbcGeo = new THREE.BoxGeometry(1.0, 0.45, 0.6);
+    const usbcMat = new THREE.MeshBasicMaterial({ color: 0x0f2620 });
+    const usbcHole = new THREE.Mesh(usbcGeo, usbcMat);
+    usbcHole.position.set(0, hh, 0.4);
+    this.rootGroup.add(usbcHole);
+
+    const usbcTongueGeo = new THREE.BoxGeometry(0.7, 0.12, 0.35);
+    const usbcTongue = new THREE.Mesh(usbcTongueGeo, this.materials.metal);
+    usbcTongue.position.set(0, hh + 0.05, 0.4);
+    this.rootGroup.add(usbcTongue);
+
+    // -------------------------------------------------------------------------
+    // 9. LEFT EDGE MICROSD SLOT: 1.3 × 0.25 cm at y ≈ 4.0 cm
+    //    Three.js: X = -4.4 cm, Y = 6.2 - 4.0 = +2.2 cm
+    // -------------------------------------------------------------------------
+    const sdHoleGeo = new THREE.BoxGeometry(0.5, 0.25, 1.35);
+    const sdHole = new THREE.Mesh(sdHoleGeo, usbcMat);
+    sdHole.position.set(-hw, hh - 4.0, 0.4);
+    this.rootGroup.add(sdHole);
+
+    // -------------------------------------------------------------------------
+    // 10. RIGHT EDGE POWER SLIDE SWITCH: ~1.0 × 0.4 cm at y ≈ 3.0 cm
+    //     Three.js: X = +4.4 cm, Y = 6.2 - 3.0 = +3.2 cm
+    // -------------------------------------------------------------------------
+    const pwrHoleGeo = new THREE.BoxGeometry(0.4, 1.0, 0.45);
+    const pwrHole = new THREE.Mesh(pwrHoleGeo, usbcMat);
+    pwrHole.position.set(hw, hh - 3.0, 0.4);
+    this.rootGroup.add(pwrHole);
+
+    const pwrNubGeo = new THREE.BoxGeometry(0.25, 0.45, 0.35);
+    const pwrNub = new THREE.Mesh(pwrNubGeo, this.materials.btnPill);
+    pwrNub.position.set(hw + 0.08, hh - 2.8, 0.4);
+    this.rootGroup.add(pwrNub);
+
+    // -------------------------------------------------------------------------
+    // 11. REAR 4×AA BATTERY DOOR: 3.4 H × 6.2 W cm centered at x 4.4, y 9.0 cm
+    //     Three.js: X = 0.0 cm, Y = 6.2 - 9.0 = -2.8 cm, Z = -1.6 cm
+    // -------------------------------------------------------------------------
+    const doorGeo = new THREE.BoxGeometry(6.2, 3.4, 0.18);
+    const doorMesh = new THREE.Mesh(doorGeo, this.materials.chassis);
+    doorMesh.position.set(0, hh - 9.0, -D / 2);
+    this.rootGroup.add(doorMesh);
+
+    // Textured battery grip ridges
+    for (let i = 0; i < 4; i++) {
+      const slitGeo = new THREE.BoxGeometry(4.2, 0.1, 0.04);
+      const slitMat = new THREE.MeshBasicMaterial({ color: 0x438f7a });
+      const slit = new THREE.Mesh(slitGeo, slitMat);
+      slit.position.set(0, hh - 9.0 + 0.6 - i * 0.35, -D / 2 - 0.09);
+      this.rootGroup.add(slit);
+    }
+
+    // -------------------------------------------------------------------------
+    // 12. SPEAKER GRILLE: 6 Diagonal Slits in Bottom-Right Corner
     // -------------------------------------------------------------------------
     const speakerGroup = new THREE.Group();
     speakerGroup.position.set(2.6, -4.8, Z_FRONT + 0.015);
@@ -797,54 +841,6 @@ class Bmo3DConsole {
       const slit = new THREE.Mesh(slitGeo, slitMat);
       slit.position.set(i * 0.22 - 0.55, 0, 0);
       speakerGroup.add(slit);
-    }
-
-    // -------------------------------------------------------------------------
-    // 9. HARDWARE PORTS: USB-C, SD Slot, Power Switch
-    // -------------------------------------------------------------------------
-    // Top USB-C Cutout
-    const usbcGeo = new THREE.BoxGeometry(1.0, 0.45, 0.6);
-    const usbcMat = new THREE.MeshBasicMaterial({ color: 0x0f2620 });
-    const usbcHole = new THREE.Mesh(usbcGeo, usbcMat);
-    usbcHole.position.set(0, hh, 0.4);
-    this.rootGroup.add(usbcHole);
-
-    const usbcTongueGeo = new THREE.BoxGeometry(0.7, 0.12, 0.35);
-    const usbcTongue = new THREE.Mesh(usbcTongueGeo, this.materials.metal);
-    usbcTongue.position.set(0, hh + 0.05, 0.4);
-    this.rootGroup.add(usbcTongue);
-
-    // Left MicroSD Slot
-    const sdHoleGeo = new THREE.BoxGeometry(0.5, 0.25, 1.35);
-    const sdHole = new THREE.Mesh(sdHoleGeo, usbcMat);
-    sdHole.position.set(-hw, 2.2, 0.4);
-    this.rootGroup.add(sdHole);
-
-    // Right Power Switch
-    const pwrHoleGeo = new THREE.BoxGeometry(0.4, 1.1, 0.45);
-    const pwrHole = new THREE.Mesh(pwrHoleGeo, usbcMat);
-    pwrHole.position.set(hw, 3.2, 0.4);
-    this.rootGroup.add(pwrHole);
-
-    const pwrNubGeo = new THREE.BoxGeometry(0.25, 0.45, 0.35);
-    const pwrNub = new THREE.Mesh(pwrNubGeo, this.materials.btnPill);
-    pwrNub.position.set(hw + 0.08, 3.4, 0.4);
-    this.rootGroup.add(pwrNub);
-
-    // -------------------------------------------------------------------------
-    // 10. REAR 4×AA BATTERY COMPARTMENT DOOR
-    // -------------------------------------------------------------------------
-    const doorGeo = new THREE.BoxGeometry(6.2, 3.4, 0.18);
-    const doorMesh = new THREE.Mesh(doorGeo, this.materials.chassis);
-    doorMesh.position.set(0, -2.8, -D / 2);
-    this.rootGroup.add(doorMesh);
-
-    for (let i = 0; i < 4; i++) {
-      const slitGeo = new THREE.BoxGeometry(4.2, 0.1, 0.04);
-      const slitMat = new THREE.MeshBasicMaterial({ color: 0x438f7a });
-      const slit = new THREE.Mesh(slitGeo, slitMat);
-      slit.position.set(0, -2.2 - i * 0.35, -D / 2 - 0.09);
-      this.rootGroup.add(slit);
     }
   }
 
@@ -973,7 +969,7 @@ class Bmo3DConsole {
 
     let chassisHex = 0x5fb49c;
     let bezelHex = 0x1a4b42;
-    let roughness = 0.32;
+    let roughness = 0.28;
     let transmission = 0.0;
     let transparent = false;
     let opacity = 1.0;
