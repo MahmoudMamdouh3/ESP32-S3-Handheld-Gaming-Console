@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "author": "Antigravity",
+  "author": "BMO Gameboy",
   "editor": "wokwi",
   "parts": [
     {
@@ -8,11 +8,115 @@
       "id": "esp",
       "top": 0,
       "left": 0,
-      "attrs": { "flashSize": "16", "psramSize": "8" }
+      "attrs": {
+        "flashSize": "16",
+        "psramSize": "8"
+      }
+    },
+    {
+      "type": "wokwi-ili9341",
+      "id": "tft",
+      "top": -110,
+      "left": 390,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-microsd-card",
+      "id": "sd",
+      "top": 210,
+      "left": 390,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_up",
+      "top": 360,
+      "left": 20,
+      "attrs": { "color": "green", "label": "UP" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_down",
+      "top": 440,
+      "left": 20,
+      "attrs": { "color": "green", "label": "DOWN" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_left",
+      "top": 400,
+      "left": -70,
+      "attrs": { "color": "green", "label": "LEFT" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_right",
+      "top": 400,
+      "left": 110,
+      "attrs": { "color": "green", "label": "RIGHT" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_a",
+      "top": 390,
+      "left": 590,
+      "attrs": { "color": "red", "label": "A" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_b",
+      "top": 450,
+      "left": 500,
+      "attrs": { "color": "blue", "label": "B" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_start",
+      "top": 530,
+      "left": 180,
+      "attrs": { "color": "gray", "label": "START" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_select",
+      "top": 530,
+      "left": 90,
+      "attrs": { "color": "gray", "label": "SELECT" }
     }
   ],
   "connections": [
     [ "esp:TX", "$serialMonitor:RX", "", [] ],
-    [ "esp:RX", "$serialMonitor:TX", "", [] ]
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+
+    [ "esp:3V3.1", "tft:VCC", "red", [] ],
+    [ "esp:GND.1", "tft:GND", "black", [] ],
+    [ "esp:10", "tft:CS", "orange", [] ],
+    [ "esp:8", "tft:D/C", "yellow", [] ],
+    [ "esp:11", "tft:MOSI", "blue", [] ],
+    [ "esp:12", "tft:SCK", "green", [] ],
+
+    [ "esp:3V3.1", "sd:VCC", "red", [] ],
+    [ "esp:GND.1", "sd:GND", "black", [] ],
+    [ "esp:13", "sd:CS", "orange", [] ],
+    [ "esp:11", "sd:DI", "blue", [] ],
+    [ "esp:12", "sd:SCK", "green", [] ],
+    [ "esp:15", "sd:DO", "purple", [] ],
+
+    [ "esp:4", "btn_up:1.l", "green", [] ],
+    [ "esp:GND.1", "btn_up:2.l", "black", [] ],
+    [ "esp:5", "btn_down:1.l", "green", [] ],
+    [ "esp:GND.1", "btn_down:2.l", "black", [] ],
+    [ "esp:6", "btn_left:1.l", "green", [] ],
+    [ "esp:GND.1", "btn_left:2.l", "black", [] ],
+    [ "esp:7", "btn_right:1.l", "green", [] ],
+    [ "esp:GND.1", "btn_right:2.l", "black", [] ],
+    [ "esp:16", "btn_a:1.l", "cyan", [] ],
+    [ "esp:GND.1", "btn_a:2.l", "black", [] ],
+    [ "esp:17", "btn_b:1.l", "cyan", [] ],
+    [ "esp:GND.1", "btn_b:2.l", "black", [] ],
+    [ "esp:18", "btn_start:1.l", "orange", [] ],
+    [ "esp:GND.1", "btn_start:2.l", "black", [] ],
+    [ "esp:21", "btn_select:1.l", "orange", [] ],
+    [ "esp:GND.1", "btn_select:2.l", "black", [] ]
   ]
 }
