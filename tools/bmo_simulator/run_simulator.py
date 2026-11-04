@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
 run_simulator.py
-Launches the BMO Handheld Console 1:1 Live Simulator in a local web server
-and opens the user's default browser for real-time UI/UX design inspection.
+Launches the browser-based BMO game simulator.
 """
 
 import http.server
@@ -35,7 +34,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 sys.executable,
                 "-m",
                 "unittest",
-                "tests.test_native_cores_execution.TestNativeCoresExecutionAndPhaseD.test_01_compile_and_execute_all_10_c_emulator_cores_50_frames",
+                "tests.test_native_cores_execution.TestNativeCoresExecutionAndPhaseD.test_01_compile_and_execute_all_11_c_emulator_cores_50_frames",
             ]
             proc = subprocess.run(
                 cmd,
@@ -47,10 +46,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             passed = proc.returncode == 0
             payload = {
                 "status": "success" if passed else "failed",
-                "cores_tested": 10,
+                "cores_tested": 11,
                 "all_passed": passed,
                 "message": (
-                    "All 10 native C cores passed 50-frame execution and visual regression"
+                    "All 11 native C cores passed 50-frame execution and visual regression"
                     if passed
                     else "Host runner reported failure"
                 ),
@@ -73,7 +72,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 def main():
     os.chdir(DIRECTORY)
     print("==================================================================")
-    print(" BMO HANDHELD CONSOLE 1:1 LIVE SIMULATOR & UI/UX DESIGN LAB")
+    print(" BMO HANDHELD CONSOLE SIMULATOR")
     print("==================================================================")
     print(f"[*] Serving simulator at http://localhost:{PORT}")
     print("    Press Ctrl+C to stop the local simulator server.")

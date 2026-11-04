@@ -1,5 +1,5 @@
 /* ==========================================================================
-   BMO HANDHELD CONSOLE 1:1 LIVE SIMULATOR & UI/UX DESIGN LAB
+   BMO HANDHELD CONSOLE BROWSER UI PREVIEW
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=Press+Start+2P&family=JetBrains+Mono:wght@400;600;800&display=swap');
@@ -239,7 +239,7 @@ main.simulator-workspace {
   padding: calc(10px * var(--scale-multiplier));
 }
 
-/* Bezel Header & Battery LED */
+/* Bezel Header */
 .bezel-top-bar {
   width: 100%;
   display: flex;
@@ -255,91 +255,11 @@ main.simulator-workspace {
   letter-spacing: calc(1px * var(--scale-multiplier));
 }
 
-.battery-indicator-wrapper {
+.power-indicator {
   display: flex;
   align-items: center;
-  gap: calc(5px * var(--scale-multiplier));
-  cursor: pointer;
-  padding: calc(2px * var(--scale-multiplier)) calc(4px * var(--scale-multiplier));
-  border-radius: calc(4px * var(--scale-multiplier));
-  transition: background 0.2s ease;
-}
-
-.battery-indicator-wrapper:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.battery-label {
   font-family: 'Press Start 2P', monospace;
   font-size: calc(7px * var(--scale-multiplier));
-  color: #747d8c;
-}
-
-.pixel-battery-icon {
-  display: flex;
-  align-items: center;
-  gap: 1px;
-}
-
-.pixel-battery-shell {
-  width: calc(18px * var(--scale-multiplier));
-  height: calc(10px * var(--scale-multiplier));
-  border: calc(1.5px * var(--scale-multiplier)) solid #8cd7c2;
-  border-radius: calc(2px * var(--scale-multiplier));
-  padding: 1px;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-}
-
-.pixel-battery-cap {
-  width: calc(2px * var(--scale-multiplier));
-  height: calc(5px * var(--scale-multiplier));
-  background: #8cd7c2;
-  border-radius: 0 calc(1px * var(--scale-multiplier)) calc(1px * var(--scale-multiplier)) 0;
-}
-
-.pixel-battery-fill {
-  height: 100%;
-  width: 88%;
-  background: #2ed573;
-  border-radius: 1px;
-  box-shadow: 0 0 6px rgba(46, 213, 115, 0.8);
-  transition: width 0.3s ease, background 0.3s ease;
-}
-
-.pixel-battery-fill.charge-med {
-  background: #feca57;
-  box-shadow: 0 0 6px rgba(254, 202, 87, 0.8);
-}
-
-.pixel-battery-fill.charge-low {
-  background: #ff4757;
-  box-shadow: 0 0 6px rgba(255, 71, 87, 0.8);
-  animation: battPulse 1s infinite alternate;
-}
-
-.pixel-battery-fill.charging {
-  background: #00d2d3;
-  box-shadow: 0 0 8px rgba(0, 210, 211, 0.9);
-  animation: chargingFlow 1.2s infinite ease-in-out;
-}
-
-@keyframes battPulse {
-  0% { opacity: 1; }
-  100% { opacity: 0.3; }
-}
-
-@keyframes chargingFlow {
-  0% { width: 10%; }
-  50% { width: 100%; }
-  100% { width: 10%; }
-}
-
-.battery-pct-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: calc(8px * var(--scale-multiplier));
-  font-weight: 700;
   color: #8cd7c2;
 }
 
