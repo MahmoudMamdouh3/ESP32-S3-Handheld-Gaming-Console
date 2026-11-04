@@ -29,6 +29,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `DocTruthVerifier` updated to match pin macros with word boundaries (`BTN_L` no longer false-positive matches `BTN_LEFT`).
 - `docs/hardware-notes.md` updated: Flash Mode corrected to QIO 80MHz with OPI PSRAM; power notes updated to document AA/NiMH boost architecture vs LiPo TP4056 restrictions.
 - `tools/bmo_simulator/bmo_3d_console.js` color & lighting architecture overhauled: Switched WebGL rendering pipeline to `LinearEncoding` and `NoToneMapping` to prevent double-gamma bleaching, guaranteeing 100% color-picker parity with 2D CSS tokens (`#5FB49C` chassis, `#FFE033` D-pad, `#4CAF50` X, `#F48FB1` Y, `#52A6BA` A, `#E8175D` B, `#1A4B42` bezel). Normalized studio lighting rig to 1.00 front-face irradiance (0.74 ambient + 0.32 key * 0.80 cos). Added bezel header/footer textures, top vent ridges, contact drop shadows, and engraved button sub-labels.
+- **Adventure Time Canonical BMO Design & Tactile Fixes (`tools/bmo_simulator/`)**:
+  - Fixed L/R shoulder trigger flickering: mounted bumpers completely on the top rim ($Y \ge 6.20\text{ cm}$, $Z = 0.0\text{ cm}$), completely eliminating coplanar mesh overlap and Z-fighting with the front chassis bevel. Triggers feature smooth rounded outer corners, crisp embossed front facet labels, and downward tactile travel.
+  - Removed top vent ridge lines from front face and hid `.chassis-top-ridges` in `simulator.css`.
+  - Removed front diagonal speaker grille and implemented canonical 7-hole acoustic speaker arrays on both left and right sides.
+  - Added iconic bold vertical "B M O" typography with integrated circular arm socket port to both left and right sides.
+  - Re-anchored Select and Start pill buttons to canonical Adventure Time layout: horizontally side-by-side (`[ - ] [ - ]`) directly under the yellow cross D-pad in the lower-left area.
+  - Added iconic cassette/floppy drive slot and circular blue eject button directly beneath the screen bezel.
 - **3D Visual & Tactile Polish (`tools/bmo_simulator/bmo_3d_console.js`)**:
   - Removed dark outer stroke and reduced oversized shadow discs from action button textures, producing pure, borderless action button caps with subtle contact occlusion.
   - Repositioned L/R top shoulder bumper meshes flush with the front face ($Z = +1.60\text{ cm}$) and added an expanded invisible raycast hit box ($2.6 \times 1.1 \times 2.8\text{ cm}$) ensuring 100% click hit reliability from any camera angle. Implemented tactile 3D click animation (downward travel $Y - 0.22\text{ cm}$, housing sink $Z - 0.12\text{ cm}$, and microswitch tilt $X - 0.12\text{ rad}$).

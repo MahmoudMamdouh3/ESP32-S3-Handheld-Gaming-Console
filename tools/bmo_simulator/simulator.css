@@ -390,16 +390,9 @@ main.simulator-workspace {
   padding-top: calc(28px * var(--scale-multiplier));
 }
 
-/* Top Ridge & Vent Lines */
+/* Top Ridge & Vent Lines (Removed for authentic Adventure Time BMO character accuracy) */
 .chassis-top-ridges {
-  position: absolute;
-  top: calc(8px * var(--scale-multiplier));
-  left: calc(30px * var(--scale-multiplier));
-  right: calc(30px * var(--scale-multiplier));
-  height: calc(6px * var(--scale-multiplier));
-  border-top: calc(2px * var(--scale-multiplier)) solid var(--chassis-shadow);
-  border-bottom: calc(2px * var(--scale-multiplier)) solid var(--chassis-highlight);
-  opacity: 0.7;
+  display: none;
 }
 
 /* Screen Bezel Housing (ST7789 2.4" 320x240) */
