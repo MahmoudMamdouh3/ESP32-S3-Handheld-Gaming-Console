@@ -46,7 +46,7 @@ Firmware and tooling for a custom handheld game console built around an **ESP32-
 ## Hardware Specs & Pinout
 
 - **MCU:** ESP32-S3-WROOM-1 (`N16R8` — dual-core Xtensa LX7 @ 240 MHz, 16 MB Quad SPI Flash, 8 MB Octal SPI PSRAM)
-- **Display:** 2.0" ST7789 IPS TFT (320×240 landscape, 80 MHz SPI)
+- **Display:** 2.4" ST7789 IPS TFT (320×240 landscape, 80 MHz SPI)
 - **Storage:** MicroSD over SPI (FAT32) + built-in flash fallback ROMs when no SD card is inserted
 - **Input:** 12 tactile buttons wired active-low (`INPUT_PULLUP`); X, Y, L, R are supported in firmware and the simulator and need to be wired
 
@@ -185,7 +185,7 @@ The firmware scans the SD-card root and subdirectories through three levels for 
 ├── tools/
 │   ├── host_cores_runner.c        # Native x64 test harness for all 11 custom C cores
 │   ├── telemetry_plotter.py       # Serial frame-time and jitter analyzer
-│   ├── bmo_simulator/             # Browser-based 320x240 UI preview
+│   ├── bmo_simulator/             # 3D console simulator, companion & browser playtest
 │   └── guardian/                  # Local lint, test, and verification CLI
 ├── scripts/
 │   ├── validate_repo.py           # Full build + static check script

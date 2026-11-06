@@ -7,7 +7,17 @@
 
 ---
 
-## Latest Agent Handoff - 2026-11-04 (Extra Buttons X, Y, L, R and 3D Console Simulator)
+## Latest Agent Handoff - 2026-11-06 (Comprehensive Documentation Synchronization)
+
+- Synchronized wiring guides (`docs/wiring/01-display-and-buttons.md`, `docs/wiring/02-sd-card.md`) to the complete 12-button console input specification (`BTN_UP=4`, `BTN_DOWN=5`, `BTN_LEFT=6`, `BTN_RIGHT=7`, `BTN_A=16`, `BTN_B=17`, `BTN_START=18`, `BTN_SELECT=21`, `BTN_X=14`, `BTN_Y=42`, `BTN_L=47`, `BTN_R=48`).
+- Documented dual-register polling architecture: GPIO 0–31 via `GPIO_IN_REG` and GPIO 32–48 via `GPIO_IN1_REG`.
+- Documented physical 2.54 mm perfboard geometry, square-grid ABXY diamond coordinates, lower-left Select/Start pill placement, and top-edge right-angle shoulder switch mounting.
+- Synchronized `docs/hardware-notes.md` to all 14 active production emulator engines, and added Section 12 detailing the canonical Adventure Time BMO enclosure reference dimensions, side acoustic speaker arrays, flank B-M-O arm sockets, and rear cooling vents/battery access plate.
+- Updated `docs/software-design-document.md` Hardware Capability Matrix, topology diagram, and core engine list.
+- Regenerated `docs/consolidated-rules.md` via `scripts/bundle_rules.py`.
+- `VERIFIED_HOST`: `python scripts/validate_repo.py` passed all 9 phases (Phase 0–8) cleanly. `python -m tools.guardian doctor`, `ui-audit`, and `diff-audit` passed with 0 blocking issues.
+
+## Previous Agent Handoff - 2026-11-04 (Extra Buttons X, Y, L, R and 3D Console Simulator)
 
 - Added `BTN_X=14`, `BTN_Y=42`, `BTN_L=47`, `BTN_R=48` to firmware, Wokwi, and the browser simulator. See `CHANGELOG.md` for the file list.
 - Replaced the 2D flat chassis representation in the browser simulator with a full 3D interactive WebGL console body (`tools/bmo_simulator/bmo_3d_console.js`, `three.min.js`, `OrbitControls.js`) built to exact physical centimeter hardware dimensions (8.8 × 12.4 × 3.2 cm, ST7789 2.4" display active window, 2.54 mm perfboard square-grid ABXY diamond, L/R top shoulder bumpers, USB-C cutout, SD slot, power switch, rear 4×AA battery door, raycasting button depression, camera presets, and theme materials).

@@ -244,12 +244,26 @@ Routine bug fixes not touching hardware/architecture, or pure refactors that don
 
 ---
 
-## Latest Agent Handoff - 2026-11-04 (Extra Buttons X, Y, L, R)
+## Latest Agent Handoff - 2026-11-06 (Comprehensive Documentation Synchronization)
+
+- Synchronized wiring guides (`docs/wiring/01-display-and-buttons.md`, `docs/wiring/02-sd-card.md`) to the complete 12-button console input specification (`BTN_UP=4`, `BTN_DOWN=5`, `BTN_LEFT=6`, `BTN_RIGHT=7`, `BTN_A=16`, `BTN_B=17`, `BTN_START=18`, `BTN_SELECT=21`, `BTN_X=14`, `BTN_Y=42`, `BTN_L=47`, `BTN_R=48`).
+- Documented dual-register polling architecture: GPIO 0–31 via `GPIO_IN_REG` and GPIO 32–48 via `GPIO_IN1_REG`.
+- Documented physical 2.54 mm perfboard geometry, square-grid ABXY diamond coordinates, lower-left Select/Start pill placement, and top-edge right-angle shoulder switch mounting.
+- Synchronized `docs/hardware-notes.md` to all 14 active production emulator engines, and added Section 12 detailing the canonical Adventure Time BMO enclosure reference dimensions, side acoustic speaker arrays, flank B-M-O arm sockets, and rear cooling vents/battery access plate.
+- Updated `docs/software-design-document.md` Hardware Capability Matrix, topology diagram, and core engine list.
+- Regenerated `docs/consolidated-rules.md` via `scripts/bundle_rules.py`.
+- `VERIFIED_HOST`: `python scripts/validate_repo.py` passed all 9 phases (Phase 0–8) cleanly. `python -m tools.guardian doctor`, `ui-audit`, and `diff-audit` passed with 0 blocking issues.
+
+## Previous Agent Handoff - 2026-11-04 (Extra Buttons X, Y, L, R and 3D Console Simulator)
 
 - Added `BTN_X=14`, `BTN_Y=42`, `BTN_L=47`, `BTN_R=48` to firmware, Wokwi, and the browser simulator. See `CHANGELOG.md` for the file list.
-- `VERIFIED_HOST`: `python scripts/validate_repo.py` Phase 0 compiled the firmware (Flash 5,700,300 bytes, SRAM 218,936 bytes). `python -m tools.guardian verify` ran 147 tests, all OK.
-- `UNVERIFIED_HARDWARE`: the buttons are not soldered or tested on the board. GPIO 42/47/48 are read from `GPIO_IN1_REG`; confirm each press on the Diagnostics screen after wiring. GPIO48 also drives the onboard RGB LED on many DevKitC-1 boards.
-- `UNVERIFIED_BROWSER`: layout and key bindings were not checked in a browser; only JS syntax (`node --check`) and the Wokwi parity test were run.
+- Replaced the 2D flat chassis representation in the browser simulator with a full 3D interactive WebGL console body (`tools/bmo_simulator/bmo_3d_console.js`, `three.min.js`, `OrbitControls.js`) built to exact physical centimeter hardware dimensions (8.8 × 12.4 × 3.2 cm, ST7789 2.4" display active window, 2.54 mm perfboard square-grid ABXY diamond, L/R top shoulder bumpers, USB-C cutout, SD slot, power switch, rear 4×AA battery door, raycasting button depression, camera presets, and theme materials).
+- Overhauled 3D console rendering pipeline in `bmo_3d_console.js`: eliminated double-gamma bleaching by switching to `LinearEncoding` and `NoToneMapping`, normalizing studio lighting to 1.00 front-face irradiance, ensuring 100% color-picker parity with 2D tokens (`#5FB49C` chassis, `#FFE033` D-pad, `#4CAF50` X, `#F48FB1` Y, `#52A6BA` A, `#E8175D` B, `#1A4B42` bezel). Added bezel frame textures with top "BMO COLOR"/"USB-C POWER" and bottom "BMO GAMEBOY", contact drop shadows, top vent ridges, and engraved button sub-labels.
+- Fixed 3D tactile polish and alignment in `bmo_3d_console.js`: eliminated dark outer stroke rings on action buttons, moved L/R shoulder bumpers flush with front face with expanded raycast hit boxes and tactile click depression, aligned Select/Start labels symmetrically to -25.2° pill tilt with perpendicular clearance, and upgraded pill buttons to extruded stadium capsules.
+- Aligned 3D model with canonical Adventure Time BMO character design: resolved L/R trigger flickering by mounting triggers purely on the top rim ($Y \ge 6.20\text{ cm}$, $Z = 0.0\text{ cm}$) without front-face/bevel overlap; removed top accent ridge lines and front diagonal speaker slits; added canonical 7-hole acoustic speaker arrays and bold vertical "B M O" typography with arm socket ports to both left and right sides; moved Select and Start pill buttons to canonical lower-left placement horizontally side-by-side directly under the yellow cross D-pad; added front cassette/floppy slot and blue eject button beneath the screen bezel; overhauled rear chassis with 5 vertical cooling vent capsule slits (`| | | | |`), raised beveled access/battery plate with 4 corner metal slotted screws, and horizontal indented finger latch pocket.
+- Added interactive Studio Lighting, Saturation, and Color Temperature (Cool Blue to Warm Amber) sliders with instant Reset in the simulator stage. Live sliders dynamically adjust Three.js light intensities, light color temperature, and GPU compositor canvas saturation. Initialized calibration on load.
+- `VERIFIED_HOST`: `python scripts/validate_repo.py` Phase 0 compiled the firmware (Flash 5,700,300 bytes, SRAM 218,936 bytes). `python -m tools.guardian verify` ran 147 tests, all OK. `python -m tools.guardian ui-audit` and `diff-audit` passed clean.
+- `UNVERIFIED_HARDWARE`: the buttons are not soldered or tested on the physical board. GPIO 42/47/48 are read from `GPIO_IN1_REG`; confirm each press on the Diagnostics screen after wiring. GPIO48 also drives the onboard RGB LED on many DevKitC-1 boards.
 - Genesis maps X to C only; the core has no 6-button protocol. DOOM weapon cycling is bound in `DoomEmu::begin()` after `doomgeneric_Create()`.
 
 ## Latest Agent Handoff — 2026-11-03 (Firmware BMO Companion and Playable Browser Cores)

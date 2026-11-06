@@ -5,6 +5,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Comprehensive Documentation Synchronization] - 2026-11-06
+### Changed
+- **Wiring Guides (`docs/wiring/01-display-and-buttons.md`, `docs/wiring/02-sd-card.md`)**:
+  - Updated to full 12-button console input specification (`BTN_UP=4`, `BTN_DOWN=5`, `BTN_LEFT=6`, `BTN_RIGHT=7`, `BTN_A=16`, `BTN_B=17`, `BTN_START=18`, `BTN_SELECT=21`, `BTN_X=14`, `BTN_Y=42`, `BTN_L=47`, `BTN_R=48`).
+  - Documented dual-register polling architecture (`GPIO_IN_REG` for GPIO 0–31, `GPIO_IN1_REG` for GPIO 32–48).
+  - Detailed physical 2.54 mm perfboard geometry, square-grid ABXY diamond coordinates, Select/Start pill placement, and top-edge right-angle shoulder switch mounting.
+  - Documented shared FSPI bus wiring, explicit pin parameter initialization contract, and MISO 5V back-powering protection.
+- **Hardware Notes (`docs/hardware-notes.md`)**:
+  - Synchronized engine list to all 14 active production emulator engines (Peanut-GB, Walnut-CGB, Agnes, doomgeneric, SMSPlus, PCE, Stella Atari 2600, PICO-8 runtime, Genesis, SNES, WonderSwan, Neo Geo Pocket, Lynx, ColecoVision).
+  - Added Section 12 detailing the canonical Adventure Time BMO chassis reference specifications (8.8 × 12.4 × 3.2 cm, 5.0 × 3.8 cm display window, side 7-hole acoustic speakers and B-M-O arm sockets, rear 5 cooling vents and 4-screw access panel, and internal stackup).
+- **Software Design Document (`docs/software-design-document.md`)**:
+  - Updated Hardware Capability Matrix and hardware topology diagram to reflect all 12 console buttons.
+  - Documented all 14 emulator cores and dual-register polling in Section 7 and Section 8.
+- **Repository Documentation (`README.md`, `docs/consolidated-rules.md`)**:
+  - Synchronized display specification to 2.4" ST7789 IPS TFT across all documents.
+  - Regenerated consolidated ruleset v8 via `scripts/bundle_rules.py`.
+
 ## [Four Extra Buttons and 3D Console Simulator] - 2026-11-04
 ### Added
 - **Button pins (`firmware/BmoGameboy/src/core/config.h`)**: `BTN_X=14`, `BTN_Y=42`, `BTN_L=47`, `BTN_R=48`, all configured as `INPUT_PULLUP`. Avoiding boot strapping, PSRAM (33-37), display (8-12), and SD (13, 15) pins.

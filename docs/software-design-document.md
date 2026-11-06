@@ -45,7 +45,7 @@ The hardware is permanently soldered onto a custom perfboard. To eliminate guess
 | :--- | :--- | :--- | :--- | :--- |
 | **MCU Core** | Soldered & Active | ESP32-S3-N16R8 | Mandatory | Dual-core Xtensa LX7 @ 240MHz, 16MB QIO Flash @ 80MHz, 8MB Octal PSRAM @ 80MHz |
 | **Display** | Soldered & Active | `src/core/display_emu.cpp/h` | Mandatory | ST7789VW 240×320 TFT on shared FSPI @ 80MHz (`SCK=12, MOSI=11, CS=10, DC=8, RST=9`) |
-| **Input** | Soldered & Active | `src/core/buttons.cpp/h` | Mandatory | 8 Game Boy tactile buttons (GPIO 4-7, 16-18, 21), active-low internal pull-ups (`INPUT_PULLUP`) |
+| **Input** | Soldered & Active | `src/core/buttons.cpp/h` | Mandatory | 12 tactile buttons (D-Pad UP/DOWN/LEFT/RIGHT: 4-7, A/B/START/SELECT: 16-18, 21, X: 14, Y: 42, L: 47, R: 48), active-low internal pull-ups (`INPUT_PULLUP`) |
 | **MicroSD Storage** | Soldered & Active | `src/core/sd_card.cpp/h` | `FEATURE_SD_CARD = 1` | MicroSD on shared FSPI (`MISO=15, CS=13`); dynamic ROM/WAD streaming |
 | **Save States & Battery RAM** | Active | `src/core/save_manager.cpp/h` | Mandatory | Multi-slot save states (.s01-.s05) & battery RAM (.sav) on MicroSD with CRC32 verification |
 | **ROM Index Cache & Box Art** | Active | `src/core/box_art.cpp/h`, `src/core/rom_index.h` | Mandatory | Binary fast-cache (.bmo_index) < 15ms boot load & 64x64 raw/BMP cover art streaming |
@@ -74,12 +74,12 @@ The ESP32-S3-N16R8 utilizes specific pin groupings. Strapping pins (GPIO 0, 3, 4
      |                 |                                 |                 |
  [FSPI Bus]       [Button GPIOs]                   [Dormant I/O]    [Dormant I2C]
  (Shared 80MHz)   (Active-Low)                     (Gated = 0)      (Reserved)
-  SCK  : GPIO 12   UP    : GPIO 4   A      : GPIO 16  BATTERY: GPIO 1   SDA: GPIO 43
-  MOSI : GPIO 11   DOWN  : GPIO 5   B      : GPIO 17  I2S_BCLK:GPIO 38  SCL: GPIO 44
-  TFT_CS:GPIO 10   LEFT  : GPIO 6   START  : GPIO 18  I2S_LRC :GPIO 39
-  TFT_DC:GPIO 8    RIGHT : GPIO 7   SELECT : GPIO 21  I2S_DIN :GPIO 40
-  TFT_RST:GPIO 9
-  SD_CS: GPIO 13
+  SCK  : GPIO 12   UP    : GPIO 4   A     : GPIO 16  BATTERY: GPIO 1   SDA: GPIO 43
+  MOSI : GPIO 11   DOWN  : GPIO 5   B     : GPIO 17  I2S_BCLK:GPIO 38  SCL: GPIO 44
+  TFT_CS:GPIO 10   LEFT  : GPIO 6   START : GPIO 18  I2S_LRC :GPIO 39
+  TFT_DC:GPIO 8    RIGHT : GPIO 7   SELECT: GPIO 21  I2S_DIN :GPIO 40
+  TFT_RST:GPIO 9   X     : GPIO 14  Y     : GPIO 42
+  SD_CS: GPIO 13   L     : GPIO 47  R     : GPIO 48
   SD_MISO:GPIO 15
 ```
 
@@ -146,7 +146,7 @@ stateDiagram-v2
     
     state STATE_EMULATOR {
         [*] --> CoreExecution
-        CoreExecution --> PollInputs: Read REG_READ(GPIO_IN_REG)
+        CoreExecution --> PollInputs: Read GPIO_IN_REG & GPIO_IN1_REG
         PollInputs --> RunFrame: Core Step
         RunFrame --> StreamPixels: SPI DMA Stream
         StreamPixels --> FramePacing: 59.73 Hz Hardware Spin
@@ -336,6 +336,67 @@ public:
 - **Framebuffer:** With `CMAP256`, the 320×200 indexed framebuffer occupies 64,000 bytes in PSRAM (`sizeof(pixel_t)` per pixel).
 - **Teardown limitation:** `DoomEmu::destroy()` is currently a no-op. The framebuffer, DOOM zone, WAD handles, and engine globals do not have a verified reusable shutdown path; repeated DOOM sessions may retain memory or stale state.
 
+### 5. SMSPlus (`src/emulators/emu_sms.cpp`)
+- **Target:** Sega Master System (`.sms`) and Game Gear (`.gg`).
+- **Engine:** `smsplus` ported to PSRAM.
+- **Architecture:** Z80 CPU with TMS9918 / SMS VDP rendering to a native 256×192 (SMS) or 160×144 (Game Gear) viewport.
+- **Memory Management:** Dynamically allocates state and ROM in Octal PSRAM at `begin()`; releases buffers at `destroy()`.
+
+### 6. PCE-Core (`src/emulators/emu_pce.cpp`)
+- **Target:** PC Engine / TurboGrafx-16 (`.pce`).
+- **Engine:** Custom C core with HuC6280 CPU and HuC6270 VDC / HuC6260 VCE.
+- **Rendering:** Centered 256×240 native blit to ST7789 display.
+- **Memory Management:** Allocates Cartridge ROM and internal work RAM in PSRAM; resets and deallocates cleanly at `destroy()`.
+
+### 7. Atari-Core (`src/emulators/emu_atari.cpp`)
+- **Target:** Atari 2600 VCS (`.a26`).
+- **Engine:** MOS 6507 CPU + RIOT 6532 + TIA scanline renderer.
+- **Rendering:** Centered 160×192 viewport with pre-swapped NTSC TIA color palette. Supports 2, 4, 8, 16, and 32 KiB ROM images.
+- **Memory Management:** Static execution context; resets registers and cleans up state at `destroy()`.
+
+### 8. PICO-8-Core (`src/emulators/emu_pico.cpp`)
+- **Target:** PICO-8 text cart format (`.p8`).
+- **Engine:** 32KB RAM memory map and custom draw-bytecode runner (does not execute arbitrary Lua cart scripts or `.p8.png` cart steganography).
+- **Rendering:** 128×128 centered 1:1 viewport using the authentic 16-color PICO-8 palette.
+- **Memory Management:** Pre-allocated 32KB RAM buffer in PSRAM; safely cleared at `destroy()`.
+
+### 9. Genesis-Core (`src/emulators/emu_genesis.cpp`)
+- **Target:** Sega Genesis / Mega Drive (`.gen`, `.md`, `.smd`).
+- **Engine:** Motorola 68000 CPU core + YM7101 VDP.
+- **Rendering:** 320×224 1:1 viewport centered on the ST7789 display.
+- **Memory Management:** ROM buffers and 64KB main 68K RAM mapped in Octal PSRAM; cleanly unmapped at `destroy()`.
+
+### 10. SNES-Core (`src/emulators/emu_snes.cpp`)
+- **Target:** Super Nintendo Entertainment System (`.sfc`, `.smc`).
+- **Engine:** 65C816 CPU with S-PPU scanline rasterizer (supports LoROM and HiROM mappings).
+- **Rendering:** 256×224 native blit centered on the 320×240 display.
+- **Input:** 16-bit pad registers mapped to console face buttons (A, B, X, Y) and shoulder triggers (L, R).
+- **Memory Management:** Allocates WRAM and cartridge banks in PSRAM; releases memory at `destroy()`.
+
+### 11. WonderSwan-Core (`src/emulators/emu_wswan.cpp`)
+- **Target:** Bandai WonderSwan and WonderSwan Color (`.ws`, `.wsc`).
+- **Engine:** NEC V30MZ 16-bit CPU + custom Swan video ASIC.
+- **Rendering:** 224×144 centered 1:1 blit.
+- **Memory Management:** PSRAM-backed ROM and internal work RAM; frees state at `destroy()`.
+
+### 12. NGP-Core (`src/emulators/emu_ngp.cpp`)
+- **Target:** SNK Neo Geo Pocket and Neo Geo Pocket Color (`.ngp`, `.ngc`).
+- **Engine:** Toshiba TLCS-900/H CPU + K1GE / K2GE video processor.
+- **Rendering:** 160×152 centered 1:1 viewport.
+- **Memory Management:** Allocates ROM and 16KB system RAM in PSRAM; safe teardown at `destroy()`.
+
+### 13. Lynx-Core (`src/emulators/emu_lynx.cpp`)
+- **Target:** Atari Lynx (`.lnx`).
+- **Engine:** MOS 65SC02 CPU + Mikey sound/timer + Suzy hardware sprite blitter.
+- **Rendering:** 160×102 centered 1:1 display.
+- **Memory Management:** Dynamic PSRAM allocation; releases memory at `destroy()`.
+
+### 14. ColecoVision-Core (`src/emulators/emu_colem.cpp`)
+- **Target:** ColecoVision (`.col`) and Sega SG-1000 (`.sg`).
+- **Engine:** Z80A CPU + TMS9918A VDP + SN76489 sound chip.
+- **Rendering:** 256×192 centered viewport.
+- **Memory Management:** Allocates 1KB console RAM, 16KB VRAM, and ROM buffer in PSRAM; releases at `destroy()`.
+
 ---
 
 ## 8. Input Subsystem & Zero-Wait Hardware Polling
@@ -343,14 +404,13 @@ public:
 - **Pin Assignments:** 12 GPIO inputs configured with internal pull-up resistors (`INPUT_PULLUP`).
   - D-Pad: `UP` (GPIO 4), `DOWN` (GPIO 5), `LEFT` (GPIO 6), `RIGHT` (GPIO 7)
   - Action Keys: `A` (GPIO 16), `B` (GPIO 17), `START` (GPIO 18), `SELECT` (GPIO 21)
-- **Zero-Wait Atomic Register Polling:** The button engine (`buttons.cpp`) polls all button GPIOs in a single atomic hardware register read:
+  - Extended Keys: `X` (GPIO 14), `Y` (GPIO 42), `L` (GPIO 47), `R` (GPIO 48)
+- **Zero-Wait Atomic Dual-Register Polling:** The button engine (`buttons.cpp`) polls all button GPIOs across the two 32-bit hardware input registers:
   ```cpp
-  uint32_t gpio_in = REG_READ(GPIO_IN_REG);
+  uint32_t gpio_in  = REG_READ(GPIO_IN_REG);   // GPIO 0..31 (D-Pad, A, B, Start, Select, X)
+  uint32_t gpio_in1 = REG_READ(GPIO_IN1_REG);  // GPIO 32..48 (Y=42, L=47, R=48)
   ```
-- **Active-Low Bitmask Synchronization:** Maintains `Buttons::gb_joypad_state` (0 = pressed, 1 = released). Emulators update joypad state via a single branchless register assignment:
-  ```cpp
-  gb.direct.joypad = Buttons::gb_joypad_state;
-  ```
+- **Active-Low Bitmask Synchronization:** Maintains `Buttons::gb_joypad_state` (0 = pressed, 1 = released). Emulators update joypad state via direct bitmask assignments.
 - **Menu Debouncing:** Menu navigation uses non-blocking `millis()` timestamp tracking (`DEBOUNCE_MS = 200`) to guarantee responsive navigation without blocking FreeRTOS execution.
 
 ---
