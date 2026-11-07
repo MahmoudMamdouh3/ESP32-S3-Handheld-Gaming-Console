@@ -7,6 +7,18 @@
 
 ---
 
+## Latest Agent Handoff - 2026-11-07 (DOOM allocation guard fix)
+
+- **Status: VERIFIED_HOST** — `python scripts/validate_repo.py` passed all phases cleanly after the DOOM allocation guard fix. `python -m tools.guardian diff-audit` reported the prior fatal-allocation findings resolved in the ESP32 port and the quoted output was clean.
+- **Scope:** `firmware/BmoGameboy/src/vendor/doom/src/i_system.c`, `m_misc.c`.
+- **What changed:** replaced bare heap allocation paths with PSRAM-aware/zeroed allocation and removed fatal `I_Error()` calls on string-allocation failures so low-memory conditions fall back without aborting the engine.
+
+## Latest Agent Handoff - 2026-11-07 (battery status is truthful when no battery is fitted)
+
+- **Status: VERIFIED_HOST** — `python scripts/validate_repo.py` passed after the battery-status fix. `python -m tools.guardian validate` and the repo validation gate both stayed clean.
+- **Scope:** `firmware/BmoGameboy/src/core/battery.h`, `battery.cpp`, `display_emu.cpp`.
+- **What changed:** when `FEATURE_BATTERY_MONITOR` is `0`, the battery API now reports `0` instead of invented values and the diagnostics/UI show `BATTERY: NOT FITTED (USB power only)` with a USB/N-A glyph instead of a fake charge bar. The code never calls `analogRead(1)` in that disabled path.
+
 ## Latest Agent Handoff - 2026-11-07 (Software Design Document v5.0 Source-Verified Repository Specification)
 
 - Rewrote `docs/software-design-document.md` into a 17-section source-verified repository specification (v5.0) cross-checked line-by-line against `BmoGameboy.ino`, `src/core/*.h/.cpp`, `src/emulators/*.h/.cpp`, `src/vendor/*/*.h`, `tools/bmo_simulator/`, `diagram.json`, and `tools/guardian/`:

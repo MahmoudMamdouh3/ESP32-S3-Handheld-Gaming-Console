@@ -32,8 +32,12 @@ float getVoltage() {
     float batVoltage = adcVoltage * ((BATTERY_R1 + BATTERY_R2) / BATTERY_R2);
     return batVoltage;
 #else
-    return 4.2f;
+    return 0.0f;
 #endif
+}
+
+int getVoltageMv() {
+    return (int)(getVoltage() * 1000.0f);
 }
 
 int getPercentage() {
@@ -71,8 +75,9 @@ void update() {
 }
 #else
 void begin() {}
-float getVoltage() { return 4.2f; }
-int getPercentage() { return 100; }
+float getVoltage() { return 0.0f; }
+int getVoltageMv() { return 0; }
+int getPercentage() { return 0; }
 void safeShutdown() {}
 void update() {}
 #endif

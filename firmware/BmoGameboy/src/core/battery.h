@@ -4,10 +4,13 @@
 namespace Battery {
     void begin();
     
-    // Read the battery voltage (0.0 to ~4.2V)
+    // Read the battery voltage (0.0 to ~4.2V). Returns 0.0 when the board has no fitted battery monitor.
     float getVoltage();
+
+    // Read battery voltage in millivolts. Returns 0 when the board has no fitted battery monitor.
+    int getVoltageMv();
     
-    // Read battery percentage (0 to 100)
+    // Read battery percentage (0 to 100). Returns 0 when the board has no fitted battery monitor.
     int getPercentage();
     
     // Main processing loop: updates sliding average and triggers sleep if too low

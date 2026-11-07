@@ -906,7 +906,7 @@ Implemented in [`src/core/save_manager.h`](file:///e:/BMO%20Gameboy/firmware/Bmo
 ## 11. Dormant Hardware Subsystems, Hardware Cycle Profiler & Self-Tests
 
 1. **`Battery` (`src/core/battery.h/.cpp`, `BATTERY_ADC_PIN = 1`):**
-   - Guarded by `#if FEATURE_BATTERY_MONITOR` (`0` in `config.h`). When `0`, `Battery::getPercentage()` returns `100`, `Battery::getVoltageMv()` returns `3300`, and `Battery::isLow()` returns `false` without calling `analogRead(1)`. When enabled (`1`) on a board with a 2×100 kΩ voltage divider, applies a 16-sample moving average filter (`3200 mV` = 0%, `4200 mV` = 100%).
+   - Guarded by `#if FEATURE_BATTERY_MONITOR` (`0` in `config.h`). When `0`, the firmware shows a USB/N-A status and reports `Battery: NOT FITTED (USB power only)` without calling `analogRead(1)`; `Battery::getPercentage()` and `Battery::getVoltageMv()` return `0` to avoid inventing a battery value. When enabled (`1`) on a board with a 2×100 kΩ voltage divider, applies a 16-sample moving average filter (`3200 mV` = 0%, `4200 mV` = 100%).
 2. **`AudioI2S` (`src/core/audio_i2s.h/.cpp`, `I2S_BCLK = 38, I2S_LRC = 39, I2S_DIN = 40`):**
    - Guarded by `#if FEATURE_AUDIO` (`0` in `config.h`). When `0`, all methods (`init`, `pushSamples`, `playTone`, `setVolume`, `mute`) compile to inline no-ops. When enabled (`1`), drives a MAX98357A I2S amplifier via ESP-IDF `driver/i2s.h` (`I2S_NUM_0`, 32,768 Hz stereo 16-bit DMA, 4×256-sample DMA buffers).
 3. **`FramSave` (`src/core/fram_save.h/.cpp`, `I2C_SDA = 43, I2C_SCL = 44`, `0x50`):**
