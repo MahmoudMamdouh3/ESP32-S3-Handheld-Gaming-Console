@@ -66,13 +66,13 @@ bool NGPEmu::isRunning() {
 }
 
 bool NGPEmu::saveBatteryRam(const char* romFilename) {
-  if (!running || !ngpRam || !romFilename) return false;
-  return SaveManager::saveBatteryRam(romFilename, ngpRam, 16 * 1024);
+  (void)romFilename;
+  return false;
 }
 
 bool NGPEmu::loadBatteryRam(const char* romFilename) {
-  if (!running || !ngpRam || !romFilename) return false;
-  return SaveManager::loadBatteryRam(romFilename, ngpRam, 16 * 1024);
+  (void)romFilename;
+  return false;
 }
 
 bool NGPEmu::saveState(const char* romFilename, int slot) {

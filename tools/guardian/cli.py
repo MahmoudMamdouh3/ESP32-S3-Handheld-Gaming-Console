@@ -44,7 +44,9 @@ from .core.cppcheck_runner import CppcheckRunner
 from .core.doc_verifier import DocTruthVerifier
 from .core.elf_analyzer import ElfAnalyzer
 from .core.host_bench import HostBenchmarkSuite
+from .core.psram_budget import PsramBudgetAnalyzer
 from .core.report_gen import ReportGenerator
+from .core.symbols import SymbolsGenerator
 from .core.ui_auditor import UiAuditor
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -229,6 +231,11 @@ def cmd_profile_elf(args) -> int:
     print(f"DRAM Usage:  {res.dram_used_bytes:,} / {res.dram_total_bytes:,} bytes")
     print(f"Flash Usage: {res.flash_used_bytes:,} / {res.flash_total_bytes:,} bytes")
 
+    if res.sections:
+        print("\nELF section sizes:")
+        for section in res.sections:
+            print(f"  {section.name:28s} {section.size:>10,d} bytes  {section.memory_type}")
+
     if res.largest_functions:
         print("\nTop 10 Largest Functions:")
         for s in res.largest_functions[:10]:
@@ -337,6 +344,13 @@ def cmd_index(args) -> int:
     """Compiles the machine-readable AI knowledge base and graph."""
     from scripts.generate_ai_knowledge_base import build_knowledge_base
     build_knowledge_base()
+    return 0
+
+
+def cmd_symbols(args) -> int:
+    """Generates compact symbol reference pages from firmware headers."""
+    paths = SymbolsGenerator(REPO_ROOT).generate()
+    print(f"[PASS] Generated {len(paths) - 1} symbol pages and {paths[-1].relative_to(REPO_ROOT)}")
     return 0
 
 
@@ -622,7 +636,8 @@ def cmd_budget(args) -> int:
         baked_roms.append((f.name, bin_size))
 
     total_baked_bytes = sum(s for _, s in baked_roms)
-    elf_res = ElfAnalyzer(REPO_ROOT).analyze()
+    target_path = Path(args.elf) if hasattr(args, "elf") and args.elf else None
+    elf_res = ElfAnalyzer(REPO_ROOT).analyze(target_path)
 
     print("\nFlash & SRAM Allocation Overview (ESP32-S3-N16R8):")
     print(f"  * Physical Flash Chip         : {total_flash / (1024*1024):.1f} MB ({total_flash:,} bytes)")
@@ -1053,7 +1068,8 @@ def cmd_patch_check(args) -> int:
             continue
         lines = tf.read_text(encoding="utf-8", errors="ignore").splitlines()
         for idx, line in enumerate(lines, 1):
-            for m in verifier.BANNED_BUZZWORDS_REGEX.finditer(line):
+            scan_line = verifier.buzzword_scan_text(line)
+            for m in verifier.BANNED_BUZZWORDS_REGEX.finditer(scan_line):
                 print(f"[FAIL] [BUZZWORD] {rel}:{idx} -- Banned AI buzzword '{m.group(1)}' found (Rule 43)")
                 issues_found += 1
 
@@ -1144,6 +1160,19 @@ def cmd_export_harness(args) -> int:
     return 0
 
 
+def cmd_psram_budget(args) -> int:
+    """Computes source-derived persistent PSRAM ledger and DOOM zone sizing."""
+    analyzer = PsramBudgetAnalyzer(REPO_ROOT)
+    if getattr(args, "update_rule", False):
+        analyzer.update_rule_file()
+        print(f"[PASS] Updated generated PSRAM ledger in {REPO_ROOT / '.agents' / 'rules' / '15_performance_budgets.md'}")
+    if getattr(args, "json", False):
+        print(json.dumps(analyzer.to_dict(), indent=2))
+    else:
+        print(analyzer.format_markdown())
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="BMO Guardian Performance & Ground-Truth Suite")
     subparsers = parser.add_subparsers(dest="command", help="Available subcommands")
@@ -1169,6 +1198,7 @@ def main() -> int:
     p_rep.add_argument("--json", action="store_true", help="Output JSON instead of Markdown")
 
     subparsers.add_parser("index", help="Compile machine-readable AI knowledge graph and decision tree")
+    subparsers.add_parser("symbols", help="Generate compact firmware symbol reference pages")
 
     p_route = subparsers.add_parser("route", help="Zero-shot intent router for AI agents")
     p_route.add_argument("query", nargs="+", help="English task prompt or query keywords")
@@ -1181,7 +1211,11 @@ def main() -> int:
     p_lookup = subparsers.add_parser("lookup", help="Look up symbol, function, or pin definition in Knowledge Graph")
     p_lookup.add_argument("symbol", help="Symbol, function name, pin name, or console extension to inspect")
 
-    subparsers.add_parser("budget", help="Explore Flash memory partition allocation and baked ROM budget")
+    p_budget = subparsers.add_parser("budget", help="Explore Flash memory partition allocation and baked ROM budget")
+    p_budget.add_argument("--elf", help="Path to the fresh target ELF to analyze")
+    p_psram = subparsers.add_parser("psram-budget", help="Compute source-derived persistent PSRAM ledger and DOOM zone budget")
+    p_psram.add_argument("--json", action="store_true", help="Output JSON instead of Markdown")
+    p_psram.add_argument("--update-rule", action="store_true", help="Refresh the generated ledger in Rule 15")
     subparsers.add_parser("qol", help="View the system-wide Quality of Life (QoL) and UI/UX roadmap ledger")
     subparsers.add_parser("doctor", help="One-command health, hardware pin sync, doc truth, and guardrail preflight check")
 
@@ -1215,11 +1249,13 @@ def main() -> int:
         "mcp": cmd_mcp,
         "report": cmd_report,
         "index": cmd_index,
+        "symbols": cmd_symbols,
         "route": cmd_route,
         "prompt-pack": cmd_prompt_pack,
         "diff-audit": cmd_diff_audit,
         "lookup": cmd_lookup,
         "budget": cmd_budget,
+        "psram-budget": cmd_psram_budget,
         "qol": cmd_qol,
         "doctor": cmd_doctor,
         "explain": cmd_explain,

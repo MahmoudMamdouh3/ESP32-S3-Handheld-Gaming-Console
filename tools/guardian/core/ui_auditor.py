@@ -50,8 +50,11 @@ class UiAuditor:
         "BMO_DEEP_TEAL": ("--bezel-color", "#1A4B42"),
         "BMO_DARK_FOREST": ("--bezel-lens", "#0F2620"),
         "BMO_DPAD_YELLOW": ("--dpad-color", "#FFE033"),
-        "BMO_CORAL_RED": ("--btn-b-color", "#E8175D"),
+        "BMO_CORAL_RED": ("--btn-b-color", "#FF91A5"),
         "BMO_BLUE_BUTTON": ("--btn-a-color", "#52A6BA"),
+        "BMO_WHITE": ("--text-main", "#F8FDFA"),
+        "BMO_MOUTH_GREEN": ("--btn-x-color", "#4CAF50"),
+        "BMO_TONGUE_PINK": ("--btn-y-color", "#F48FB1"),
     }
 
     REQUIRED_FOCUS_SELECTORS = [
@@ -206,6 +209,7 @@ class UiAuditor:
 
         theme_text = self.theme_h.read_text(encoding="utf-8", errors="ignore")
         css_text = self.simulator_css.read_text(encoding="utf-8", errors="ignore")
+        theme_colors = self._parse_theme_colors(theme_text)
 
         # Parse :root block in simulator.css
         root_match = re.search(r":root\s*\{([^}]+)\}", css_text, re.DOTALL)
@@ -218,15 +222,21 @@ class UiAuditor:
 
         # Check each core token
         for token_name, (css_var, expected_hex) in self.CORE_TOKENS.items():
-            if token_name not in theme_text:
+            parsed = theme_colors.get(token_name)
+            if parsed is None:
                 issues.append(
                     UiAuditIssue(
                         "firmware/BmoGameboy/src/core/theme.h",
                         1,
                         "TOKEN_PARITY",
-                        f"Core token {token_name} missing from theme.h",
+                        f"Cannot derive RGB values for {token_name} from makeUiColor()",
                     )
                 )
+            elif parsed[0].lower() != expected_hex.lower():
+                issues.append(UiAuditIssue(
+                    "firmware/BmoGameboy/src/core/theme.h", parsed[3], "TOKEN_PARITY",
+                    f"RGB arguments for {token_name} produce {parsed[0]}, expected {expected_hex}",
+                ))
 
             if css_var not in css_vars:
                 issues.append(
@@ -239,7 +249,7 @@ class UiAuditor:
                 )
             else:
                 actual_css_val = css_vars[css_var]
-                if expected_hex.lower() not in actual_css_val:
+                if actual_css_val.lower() != expected_hex.lower():
                     issues.append(
                         UiAuditIssue(
                             "tools/bmo_simulator/simulator.css",
@@ -249,6 +259,83 @@ class UiAuditor:
                         )
                     )
 
+        issues.extend(self.audit_document_color_values(theme_colors))
+
+        return issues
+
+    @staticmethod
+    def _parse_theme_colors(theme_text: str) -> Dict[str, Tuple[str, int, int, int]]:
+        parsed: Dict[str, Tuple[str, int, int, int]] = {}
+        pattern = re.compile(
+            r"constexpr\s+uint16_t\s+(BMO_[A-Z0-9_]+)\s*=\s*makeUiColor\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)"
+        )
+        for line_number, line in enumerate(theme_text.splitlines(), start=1):
+            match = pattern.search(line)
+            if not match:
+                continue
+            name = match.group(1)
+            r, g, b = (int(value) for value in match.groups()[1:])
+            direct = ((b & 0xF8) << 8) | ((g & 0xFC) << 3) | (r >> 3)
+            swapped = ((direct & 0xFF) << 8) | (direct >> 8)
+            parsed[name] = (f"#{r:02X}{g:02X}{b:02X}", swapped, direct, line_number)
+        return parsed
+
+    def audit_document_color_values(
+        self, theme_colors: Dict[str, Tuple[str, int, int, int]]
+    ) -> List[UiAuditIssue]:
+        issues: List[UiAuditIssue] = []
+        design = self.repo_root / "DESIGN.md"
+        sdd = self.repo_root / "docs" / "software-design-document" / "section-07.md"
+        tables = [
+            (design, "design", 2, 4, 5, 6),
+            (sdd, "sdd", 1, 2, 3, 4),
+        ]
+        for path, table_kind, hex_col, ui_col, direct_col, css_col in tables:
+            rel_path = str(path.relative_to(self.repo_root)).replace("\\", "/")
+            if not path.exists():
+                issues.append(UiAuditIssue(rel_path, 1, "TOKEN_PARITY", "Color token table is missing"))
+                continue
+            seen_tokens = set()
+            for line_number, line in enumerate(path.read_text(encoding="utf-8", errors="ignore").splitlines(), start=1):
+                cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+                if not cells:
+                    continue
+                token_match = re.search(r"`(BMO_[A-Z0-9_]+)`", cells[0])
+                if not token_match:
+                    continue
+                token = token_match.group(1)
+                if token not in self.CORE_TOKENS:
+                    continue
+                seen_tokens.add(token)
+                expected = theme_colors.get(token)
+                if expected is None:
+                    continue
+                expected_hex, expected_ui, expected_direct, _ = expected
+                expected_cells = {
+                    hex_col: expected_hex,
+                    ui_col: f"0x{expected_ui:04X}",
+                    direct_col: f"0x{expected_direct:04X}",
+                    css_col: self.CORE_TOKENS[token][0],
+                }
+                for column, expected_value in expected_cells.items():
+                    if column >= len(cells):
+                        issues.append(UiAuditIssue(
+                            rel_path, line_number, "TOKEN_PARITY",
+                            f"{table_kind} color row for {token} is missing column {column + 1}",
+                        ))
+                        break
+                    actual = cells[column].replace("`", "").strip()
+                    if actual.lower() != expected_value.lower():
+                        issues.append(UiAuditIssue(
+                            rel_path, line_number, "TOKEN_PARITY",
+                            f"{table_kind} {token} value mismatch: expected {expected_value}, found {actual}",
+                        ))
+            for token in self.CORE_TOKENS:
+                if token not in seen_tokens:
+                    issues.append(UiAuditIssue(
+                        rel_path, 1, "TOKEN_PARITY",
+                        f"{table_kind} color table is missing {token}",
+                    ))
         return issues
 
     def run_all_checks(self) -> UiAuditReport:
@@ -266,7 +353,7 @@ class UiAuditor:
         parity_issues = self.audit_token_parity()
         all_issues.extend(parity_issues)
 
-        total_checks = len(self.CORE_FIRMWARE_UI_FILES) + 3 + len(self.CORE_TOKENS)
+        total_checks = len(self.CORE_FIRMWARE_UI_FILES) + 3 + len(self.CORE_TOKENS) * 4
         passed_checks = total_checks - len(all_issues)
         if passed_checks < 0:
             passed_checks = 0

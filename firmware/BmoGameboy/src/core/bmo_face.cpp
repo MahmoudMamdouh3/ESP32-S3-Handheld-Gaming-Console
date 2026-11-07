@@ -10,21 +10,20 @@
 //     * Soft glowing coral blush cheeks (#FF8BA7) with Gaussian falloff.
 //     * Expressive open mouth cavity with warm coral tongue (#FA7F8F).
 //   - Spring-Damper Motion:
-//     * 2nd-order critically damped harmonic spring-damper differential
+//     * 2nd-order damped harmonic spring-damper solve
 //       physics for squash-and-stretch, cartoon overshoot, and bounce.
 //     * Autonomous breathing oscillation (T ~ 3.2s).
 //     * Micro-saccade eye gaze wandering and non-linear blinks.
-//   - 16-State Emotion Matrix + Gamepad Controls:
-//     * IDLE, HAPPY, JOY, SURPRISED, SAD, SLEEPY, SLEEPING, WINK, BLUSH,
-//       CONFUSED, ANNOYED, LOVE, TICKLED, CELEBRATING, LOW_BATTERY, ERROR.
+//   - 18 expression targets, including idle, sleep, error, and interaction states.
 //     * Real-time D-pad gaze tracking, D-pad tickle squirming, A wink, B blush.
 //   - Octal PSRAM 320x240 Rendering:
 //     * Native 320×240 resolution allocated in PSRAM (0 bytes DRAM used).
 //     * Analytic 1.2-pixel subpixel anti-aliasing via smoothstep().
-//     * Spatial bounding-box culling skipping >70% of pixels (<2.8ms frame time).
+//     * Spatial bounding boxes limit signed-distance evaluation to face regions.
 // -----------------------------------------------------------------------
 
 #include "bmo_face.h"
+#include "harmonic_spring.h"
 #include "display_emu.h"
 #include "config.h"
 #include <Arduino.h>
@@ -36,6 +35,8 @@
 // ===========================================================================
 
 namespace {
+
+using BmoFaceInternal::HarmonicSpring;
 
 // ---------------------------------------------------------------------------
 // Colour packing — produces byte-swapped BGR565 for ST7789 display
@@ -78,48 +79,6 @@ static inline float lerpf(float a, float b, float t) {
 // ---------------------------------------------------------------------------
 // 2nd-Order Critically Damped Harmonic Oscillator (Spring-Damper)
 // ---------------------------------------------------------------------------
-struct HarmonicSpring {
-  float val;
-  float vel;
-  float target;
-  float omega; // natural frequency (~20-24 rad/s)
-  float zeta;  // damping ratio (~0.72)
-
-  void init(float initialVal, float om = 22.0f, float zt = 0.72f) {
-    val = target = initialVal;
-    vel = 0.0f;
-    omega = om;
-    zeta = zt;
-  }
-
-  void snap(float v) {
-    val = target = v;
-    vel = 0.0f;
-  }
-
-  void setTarget(float tgt) {
-    target = tgt;
-  }
-
-  bool update(float dt) {
-    if (dt <= 0.0f) return false;
-    if (dt > 0.05f) dt = 0.05f; // prevent explosion on long frame lags
-    float diff = val - target;
-    if (fabsf(diff) < 0.0002f && fabsf(vel) < 0.0005f) {
-      if (val != target) {
-        val = target;
-        vel = 0.0f;
-        return true;
-      }
-      return false;
-    }
-    float acc = -2.0f * zeta * omega * vel - (omega * omega) * diff;
-    vel += acc * dt;
-    val += vel * dt;
-    return true;
-  }
-};
-
 // ---------------------------------------------------------------------------
 // Facial geometry styles
 // ---------------------------------------------------------------------------
@@ -471,7 +430,7 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
     }
   }
 
-  // Feature screen-space bounding boxes for spatial culling (PERF-08: skips >70% pixels)
+  // Feature screen-space bounding boxes limit pixel evaluation to face regions.
   auto normToPixelX = [&](float nx) -> int {
     return (int)(((nx + 1.0f) * 0.5f) * (float)destW);
   };

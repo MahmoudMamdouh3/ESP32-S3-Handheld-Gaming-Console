@@ -61,13 +61,13 @@ void AtariEmu::destroy() {
 }
 
 bool AtariEmu::saveBatteryRam(const char* romFilename) {
-  if (!atari_ctx || !romFilename) return false;
-  return SaveManager::saveBatteryRam(romFilename, atari_ctx->ram, sizeof(atari_ctx->ram));
+  (void)romFilename;
+  return false;
 }
 
 bool AtariEmu::loadBatteryRam(const char* romFilename) {
-  if (!atari_ctx || !romFilename) return false;
-  return SaveManager::loadBatteryRam(romFilename, atari_ctx->ram, sizeof(atari_ctx->ram));
+  (void)romFilename;
+  return false;
 }
 
 bool AtariEmu::saveState(const char* romFilename, int slot) {

@@ -1,7 +1,5 @@
 """
-tools/telemetry_plotter.py — Real-Time Serial Telemetry Parser, Jitter Analyzer & Plotter
-Parses BMO Gameboy serial telemetry lines ("FPS: %d | Frame: avg=%luus min=%luus max=%luus | Dropped: %d"),
-computes frame-pacing jitter, p50/p95/p99 latency, and renders ASCII + HTML telemetry reports.
+tools/telemetry_plotter.py — BMO Gameboy serial telemetry parser and report renderer.
 """
 
 import argparse
@@ -12,11 +10,18 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
 
-FRAME_BUDGET_US = 16742  # 59.73 Hz Game Boy reference frame budget
+DEFAULT_FRAME_BUDGET_US = 16667
 
 TELEMETRY_LINE_RE = re.compile(
-    r"FPS:\s*(?P<fps>\d+)\s*\|\s*Frame:\s*avg=(?P<avg>\d+)us\s+min=(?P<min>\d+)us\s+max=(?P<max>\d+)us"
+    r"FPS:\s*(?P<fps>\d+)\s*"
+    r"(?:\|\s*Emu:\s*(?P<emu>\d+)\s+target=(?P<target>\d+)us\s*)?"
+    r"\|\s*Frame:\s*avg=(?P<avg>\d+)us\s+min=(?P<min>\d+)us\s+max=(?P<max>\d+)us"
     r"(?:\s*\|\s*Dropped:\s*(?P<dropped>\d+)\s*\(total\s*(?P<total_dropped>\d+)\))?"
+)
+FRAME_WINDOW_RE = re.compile(
+    r"Frame window:\s*emu=(?P<emu>\d+)\s+n=(?P<count>\d+)\s+"
+    r"target=(?P<target>\d+)us\s+p50=(?P<p50>\d+)us\s+"
+    r"p95=(?P<p95>\d+)us\s+p99=(?P<p99>\d+)us"
 )
 
 
@@ -27,6 +32,8 @@ class TelemetrySample:
     avg_us: int
     min_us: int
     max_us: int
+    emulator_index: Optional[int] = None
+    target_frame_us: int = DEFAULT_FRAME_BUDGET_US
     dropped: int = 0
     total_dropped: int = 0
 
@@ -36,7 +43,7 @@ class TelemetrySample:
 
     @property
     def headroom_percent(self) -> float:
-        return max(0.0, (1.0 - (self.avg_us / float(FRAME_BUDGET_US))) * 100.0)
+        return max(0.0, (1.0 - (self.avg_us / float(self.target_frame_us))) * 100.0)
 
 
 @dataclass
@@ -55,6 +62,36 @@ class TelemetrySummary:
     mean_headroom_percent: float
 
 
+@dataclass
+class FramePercentileWindow:
+    sample_index: int
+    emulator_index: int
+    target_frame_us: int
+    frame_count: int
+    p50_us: int
+    p95_us: int
+    p99_us: int
+
+
+def parse_frame_percentile_windows(text: str) -> List[FramePercentileWindow]:
+    """Read firmware percentile reports for unpaced emulator execution time."""
+    windows: List[FramePercentileWindow] = []
+    for line in text.splitlines():
+        match = FRAME_WINDOW_RE.search(line)
+        if not match:
+            continue
+        windows.append(FramePercentileWindow(
+            sample_index=len(windows),
+            emulator_index=int(match.group("emu")),
+            target_frame_us=int(match.group("target")),
+            frame_count=int(match.group("count")),
+            p50_us=int(match.group("p50")),
+            p95_us=int(match.group("p95")),
+            p99_us=int(match.group("p99")),
+        ))
+    return windows
+
+
 def parse_telemetry_stream(text: str) -> List[TelemetrySample]:
     """Extracts all structured TelemetrySample entries from serial log text."""
     samples: List[TelemetrySample] = []
@@ -69,6 +106,8 @@ def parse_telemetry_stream(text: str) -> List[TelemetrySample]:
                 avg_us=int(match.group("avg")),
                 min_us=int(match.group("min")),
                 max_us=int(match.group("max")),
+                emulator_index=(int(match.group("emu")) if match.group("emu") else None),
+                target_frame_us=int(match.group("target") or DEFAULT_FRAME_BUDGET_US),
                 dropped=int(match.group("dropped") or 0),
                 total_dropped=int(match.group("total_dropped") or 0),
             )
@@ -117,20 +156,28 @@ def summarize_telemetry(samples: List[TelemetrySample]) -> TelemetrySummary:
     )
 
 
-def render_ascii_plot(samples: List[TelemetrySample], width: int = 50) -> str:
+def render_ascii_plot(samples: List[TelemetrySample], width: int = 50,
+                      frame_windows: Optional[List[FramePercentileWindow]] = None,
+                      source_label: str = "CAPTURED") -> str:
     """Renders an ASCII bar chart of FPS and frame time latency."""
     summary = summarize_telemetry(samples)
     lines = [
         "=" * 70,
-        " BMO GAMEBOY REAL-TIME TELEMETRY & FRAME PACING REPORT",
+        f" BMO GAMEBOY TELEMETRY & FRAME PACING REPORT [{source_label}]",
         "=" * 70,
         f" Samples: {summary.sample_count} | Mean FPS: {summary.mean_fps:.2f} (min {summary.min_fps}, max {summary.max_fps})",
         f" Frame Latency: mean={summary.mean_frame_us:.1f}us | p50={summary.p50_frame_us:.1f}us | p95={summary.p95_frame_us:.1f}us | p99={summary.p99_frame_us:.1f}us",
         f" Jitter: mean={summary.mean_jitter_us:.1f}us (max {summary.max_jitter_us}us) | Headroom: {summary.mean_headroom_percent:.1f}% | Dropped: {summary.total_dropped_frames}",
         "-" * 70,
     ]
+    if frame_windows:
+        latest = frame_windows[-1]
+        lines.append(
+            f" Emulator execution (last {latest.frame_count} frames): "
+            f"p50={latest.p50_us}us p95={latest.p95_us}us p99={latest.p99_us}us"
+        )
     for s in samples[:30]:
-        ratio = min(1.0, s.avg_us / float(FRAME_BUDGET_US))
+        ratio = min(1.0, s.avg_us / float(s.target_frame_us))
         filled = int(round(ratio * width))
         bar = "#" * filled + "." * (width - filled)
         lines.append(f" [{s.sample_index:02d}] {s.fps:2d} FPS |{bar}| {s.avg_us:5d}us (jitter {s.jitter_us:4d}us)")
@@ -146,23 +193,47 @@ def generate_synthetic_telemetry(seconds: int = 12) -> str:
         avg = 4850 + ((i * 137) % 420)
         lo = avg - 280
         hi = avg + 510 + ((i % 3) * 110)
-        fps = 60 if hi < FRAME_BUDGET_US else 59
-        lines.append(f"[INFO] FPS: {fps} | Frame: avg={avg}us min={lo}us max={hi}us | Dropped: 0 (total {total_drop})")
+        fps = 60 if hi < DEFAULT_FRAME_BUDGET_US else 59
+        lines.append(f"[INFO] FPS: {fps} | Emu: 1 target=16742us | Frame: avg={avg}us min={lo}us max={hi}us | Dropped: 0 (total {total_drop})")
+    lines.append("[INFO] Frame window: emu=1 n=600 target=16742us p50=5100us p95=6200us p99=7400us (core execution)")
     return "\n".join(lines)
+
+
+def _with_synthetic_suffix(path: Path) -> Path:
+    if "synthetic" in path.stem.lower():
+        return path
+    return path.with_name(f"{path.stem}_SYNTHETIC{path.suffix}")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Analyze and plot BMO Gameboy serial telemetry logs.")
     parser.add_argument("--input", type=Path, default=None, help="Path to captured serial log file")
+    parser.add_argument("--output", type=Path, default=None, help="ASCII report output path")
     parser.add_argument("--json-out", type=Path, default=None, help="Optional JSON summary output path")
     args = parser.parse_args()
 
-    text = args.input.read_text(encoding="utf-8", errors="ignore") if (args.input and args.input.exists()) else generate_synthetic_telemetry()
+    synthetic = not (args.input and args.input.is_file())
+    text = args.input.read_text(encoding="utf-8", errors="ignore") if not synthetic else generate_synthetic_telemetry()
     samples = parse_telemetry_stream(text)
-    print(render_ascii_plot(samples))
+    frame_windows = parse_frame_percentile_windows(text)
+    source_label = "SYNTHETIC" if synthetic else "CAPTURED"
+    output_path = args.output or Path("bmo_telemetry_SYNTHETIC.txt" if synthetic else "bmo_telemetry.txt")
+    if synthetic:
+        output_path = _with_synthetic_suffix(output_path)
+    report_text = render_ascii_plot(samples, frame_windows=frame_windows, source_label=source_label)
+    output_path.write_text(report_text + "\n", encoding="utf-8")
+    print(f"Data source: {source_label}")
+    print(report_text)
+    print(f"Output: {output_path}")
     if args.json_out:
         summary = summarize_telemetry(samples)
-        args.json_out.write_text(json.dumps(asdict(summary), indent=2), encoding="utf-8")
+        report = {
+            "interval_telemetry": asdict(summary),
+            "frame_execution_windows": [asdict(window) for window in frame_windows],
+        }
+        json_path = _with_synthetic_suffix(args.json_out) if synthetic else args.json_out
+        json_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+        print(f"JSON output: {json_path}")
     return 0
 
 

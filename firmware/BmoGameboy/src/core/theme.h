@@ -58,7 +58,7 @@ namespace Theme {
   constexpr uint16_t BMO_DEEP_TEAL     = makeUiColor(26, 75, 66);    // #1A4B42 - Deep Forest Teal
   constexpr uint16_t BMO_DARK_FOREST   = makeUiColor(15, 38, 32);    // #0F2620 - High-Contrast Dark / Eyes
   constexpr uint16_t BMO_DPAD_YELLOW   = makeUiColor(255, 224, 51);  // #FFE033 - D-Pad Yellow / Star Badge
-  constexpr uint16_t BMO_CORAL_RED     = makeUiColor(232, 23, 93);   // #E8175D - BMO Red Button
+  constexpr uint16_t BMO_CORAL_RED     = makeUiColor(255, 145, 165); // #FF91A5 - accessible coral button fill
   constexpr uint16_t BMO_BLUE_BUTTON   = makeUiColor(82, 166, 186);  // #52A6BA - BMO Blue Button
   constexpr uint16_t BMO_WHITE         = makeUiColor(248, 253, 250); // Crisp Pure White
   constexpr uint16_t BMO_MOUTH_GREEN   = makeUiColor(76, 175, 80);   // #4CAF50 - Open Mouth Green
@@ -75,6 +75,7 @@ namespace Theme {
   constexpr uint16_t COLOR_TEXT_MUTED    = makeUiColor(140, 195, 180);
   constexpr uint16_t COLOR_SUCCESS       = makeUiColor(76, 217, 100);
   constexpr uint16_t COLOR_ERROR         = BMO_CORAL_RED;
+  constexpr uint16_t ACCENT_RED          = BMO_CORAL_RED;
 
   // -------------------------------------------------------------------------
   // Game Boy DMG 4-Color Runtime Palettes (in BGR565 byte-swapped for SPI)

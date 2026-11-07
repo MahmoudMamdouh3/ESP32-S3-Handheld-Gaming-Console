@@ -5,6 +5,7 @@
 #include "../core/buttons.h"
 #include "../core/save_manager.h"
 #include "../core/config.h"
+#include "../core/battery_save.h"
 #include <esp_heap_caps.h>
 #include <string.h>
 
@@ -13,6 +14,7 @@ namespace {
   uint16_t* snesFb = nullptr;  // 256 x 224 in PSRAM
   uint8_t* snesWram = nullptr; // 128KB WRAM in PSRAM
   bool running = false;
+  size_t sramSaveSize = 0;
 }
 
 bool SNESEmu::init(uint8_t* romData, size_t romSize) {
@@ -28,6 +30,11 @@ bool SNESEmu::init(uint8_t* romData, size_t romSize) {
   }
 
   snes_init(&snesState, romData, romSize, snesWram, snesFb);
+  const size_t headerOffset = ((romSize & 0x7FFFU) == 512U) ? 512U : 0U;
+  const size_t sramSizeOffset = headerOffset + 0x7FD8U;
+  sramSaveSize = sramSizeOffset < romSize
+      ? BatterySave::snesLoRomBatteryBytes(romData[sramSizeOffset])
+      : 0;
   running = true;
   return true;
 }
@@ -55,6 +62,7 @@ void SNESEmu::update() {
 
 void SNESEmu::destroy() {
   running = false;
+  sramSaveSize = 0;
   snes_destroy(&snesState);
   if (snesFb) {
     heap_caps_free(snesFb);
@@ -72,13 +80,13 @@ bool SNESEmu::isRunning() {
 }
 
 bool SNESEmu::saveBatteryRam(const char* romFilename) {
-  if (!running || !snesState.sram || !romFilename) return false;
-  return SaveManager::saveBatteryRam(romFilename, snesState.sram, 32 * 1024);
+  if (!running || !snesState.sram || !romFilename || sramSaveSize == 0) return false;
+  return SaveManager::saveBatteryRam(romFilename, snesState.sram, sramSaveSize);
 }
 
 bool SNESEmu::loadBatteryRam(const char* romFilename) {
-  if (!running || !snesState.sram || !romFilename) return false;
-  return SaveManager::loadBatteryRam(romFilename, snesState.sram, 32 * 1024);
+  if (!running || !snesState.sram || !romFilename || sramSaveSize == 0) return false;
+  return SaveManager::loadBatteryRam(romFilename, snesState.sram, sramSaveSize);
 }
 
 bool SNESEmu::saveState(const char* romFilename, int slot) {

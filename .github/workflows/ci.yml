@@ -1,0 +1,90 @@
+name: Firmware and host validation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      BMO_REQUIRE_TARGET_COMPILE: "1"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Arduino CLI
+        uses: arduino/setup-arduino-cli@81d310742121c928ea9c8bbd407b4217b432ae02 # v2.0.0
+
+      - name: Install pinned WASI SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/.tools"
+          archive="$RUNNER_TEMP/wasi-sdk-34.0-x86_64-linux.tar.gz"
+          curl --fail --location --retry 3 \
+            --output "$archive" \
+            https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-x86_64-linux.tar.gz
+          echo "b761e3a0721dbae9c09a0059e5fdb2bf917d1b4a8a7b430fb3b5aafb0984b2c4  $archive" | sha256sum --check
+          tar -xzf "$archive" -C "$GITHUB_WORKSPACE/.tools"
+          echo "WASI_SDK_PATH=$GITHUB_WORKSPACE/.tools/wasi-sdk-34.0-x86_64-linux" >> "$GITHUB_ENV"
+
+      - name: Install pinned ESP32-S3 build dependencies
+        run: |
+          arduino-cli config init --overwrite
+          arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32@3.3.11
+          arduino-cli lib update-index
+          arduino-cli lib install "Adafruit BusIO@1.17.4"
+          arduino-cli lib install "Adafruit GFX Library@1.12.6"
+          arduino-cli lib install "Adafruit ST7735 and ST7789 Library@1.11.0"
+
+      - name: Compile ESP32-S3 firmware
+        run: arduino-cli compile --profile esp32s3 --build-path build/target-compile firmware/BmoGameboy
+
+      - name: Analyze fresh target ELF
+        run: |
+          python -m tools.guardian budget --elf build/target-compile/BmoGameboy.ino.elf
+          python -m tools.guardian profile-elf --elf build/target-compile/BmoGameboy.ino.elf
+
+      - name: Run host tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Run strict repository validator
+        run: python scripts/validate_repo.py --require-target-compile
+
+      - name: Run Guardian verification
+        run: python -m tools.guardian verify
+
+      - name: Check Markdown links
+        run: python scripts/check_markdown_links.py
+
+      - name: Verify color tokens
+        run: python scripts/verify_color_tokens.py
+
+      - name: Run Guardian UI audit
+        run: python -m tools.guardian ui-audit
+
+      - name: Check generated artifact drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.guardian symbols
+          python -m tools.guardian index
+          python scripts/bundle_rules.py
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git status --short
+            echo "Generated artifacts differ from committed files."
+            exit 1
+          fi

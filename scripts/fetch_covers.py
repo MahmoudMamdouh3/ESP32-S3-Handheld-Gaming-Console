@@ -17,6 +17,8 @@ import zipfile
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 
+from scripts.rom_key import make_rom_key
+
 try:
     from PIL import Image, ImageDraw
 except ImportError:
@@ -218,13 +220,15 @@ def write_cover_files(
     pixels_rgb: Optional[List[Tuple[int, int, int]]] = None,
     width: int = COVER_WIDTH,
     height: int = COVER_HEIGHT,
+    rom_relative_path: Optional[str] = None,
 ) -> Tuple[Path, Path]:
-    """Writes both .raw and .bmp cover files for a ROM basename."""
+    """Writes both .raw and .bmp cover files using a ROM path key when supplied."""
     out_dir.mkdir(parents=True, exist_ok=True)
     if pixels_rgb is None:
         pixels_rgb = generate_procedural_cover_rgb(base_name, width, height)
-    raw_path = out_dir / f"{base_name}.raw"
-    bmp_path = out_dir / f"{base_name}.bmp"
+    output_name = make_rom_key(rom_relative_path) if rom_relative_path is not None else base_name
+    raw_path = out_dir / f"{output_name}.raw"
+    bmp_path = out_dir / f"{output_name}.bmp"
     raw_path.write_bytes(encode_raw_bgr565(pixels_rgb, expected_bytes=width * height * 2))
     bmp_path.write_bytes(encode_bmp_24bit(pixels_rgb, width=width, height=height))
     return raw_path, bmp_path
@@ -342,7 +346,24 @@ def sync_all_covers(
             sim_png = sim_covers_dir / f"{slug}.png"
             shutil.copy2(hd_png, sim_png)
             px = image_to_pixels_rgb(hd_png, target_width, target_height)
-            write_cover_files(base_name, sd_boxart_dir, px, target_width, target_height)
+            matching_roms = []
+            if rom_dir.exists():
+                matching_roms = [
+                    path for path in rom_dir.rglob("*")
+                    if path.is_file() and "boxart" not in path.parts
+                    and path.stem.casefold() == base_name.casefold()
+                ]
+            if matching_roms:
+                for rom_path in matching_roms:
+                    relative_path = rom_path.relative_to(rom_dir).as_posix()
+                    if len(relative_path.encode("utf-8")) >= 64:
+                        raise ValueError(f"ROM path is too long for firmware index: {relative_path}")
+                    write_cover_files(
+                        base_name, sd_boxart_dir, px, target_width, target_height,
+                        rom_relative_path=relative_path,
+                    )
+            else:
+                write_cover_files(base_name, sd_boxart_dir, px, target_width, target_height)
             manifest[base_name] = f"covers/{slug}.png"
 
     # 3. Also scan any additional ROM files in rom_dir
@@ -359,7 +380,13 @@ def sync_all_covers(
             if not hd_png.exists() and not offline:
                 download_libretro_hd_png(sys_name, f"{stem}.png", hd_png)
             px = image_to_pixels_rgb(hd_png, target_width, target_height) if hd_png.exists() else None
-            write_cover_files(stem, sd_boxart_dir, px, target_width, target_height)
+            relative_path = rom_path.relative_to(rom_dir).as_posix()
+            if len(relative_path.encode("utf-8")) >= 64:
+                raise ValueError(f"ROM path is too long for firmware index: {relative_path}")
+            write_cover_files(
+                stem, sd_boxart_dir, px, target_width, target_height,
+                rom_relative_path=relative_path,
+            )
             if hd_png.exists():
                 slug = slugify_title(stem)
                 sim_png = sim_covers_dir / f"{slug}.png"

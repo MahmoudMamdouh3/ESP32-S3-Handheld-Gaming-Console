@@ -6,7 +6,10 @@ import hashlib
 import os
 import shutil
 import tempfile
+import warnings
 from pathlib import Path
+
+from scripts.rom_key import make_rom_key
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SRC_GAMES = REPO_ROOT / "games"
@@ -40,17 +43,52 @@ def deployment_tasks(
         raise FileNotFoundError(f"Destination is not an existing directory: {dest_root}")
 
     games = sorted(
-        path for path in src_games.iterdir()
+        path for path in src_games.rglob("*")
         if path.is_file() and path.suffix.lower() in ROM_EXTENSIONS
     )
     boxart = sorted(
         path for path in src_boxart.iterdir()
         if path.is_file() and path.suffix.lower() in BOXART_EXTENSIONS
     )
-    tasks = (
-        [(path, dest_root / path.name) for path in games]
-        + [(path, dest_root / "boxart" / path.name) for path in boxart]
-    )
+    relative_paths = {path: path.relative_to(src_games).as_posix() for path in games}
+    for relative_path in relative_paths.values():
+        if len(relative_path.encode("utf-8")) >= 64:
+            raise ValueError(f"ROM path is too long for firmware index: {relative_path}")
+
+    games_by_stem: dict[str, list[Path]] = {}
+    for game in games:
+        games_by_stem.setdefault(game.stem.casefold(), []).append(game)
+
+    tasks = [
+        (path, dest_root / Path(relative_paths[path]))
+        for path in games
+    ]
+    keyed_art_targets: set[str] = set()
+    ambiguous_art: list[str] = []
+    for art_path in boxart:
+        matching_games = games_by_stem.get(art_path.stem.casefold(), [])
+        if len(matching_games) == 1:
+            relative_path = relative_paths[matching_games[0]]
+            target_name = f"{make_rom_key(relative_path)}{art_path.suffix.lower()}"
+            destination = dest_root / "boxart" / target_name
+        elif len(matching_games) > 1:
+            # Ambiguous basename art is omitted; firmware cannot associate it safely.
+            ambiguous_art.append(art_path.name)
+            continue
+        else:
+            destination = dest_root / "boxart" / art_path.name
+        target_key = str(destination.relative_to(dest_root)).casefold()
+        if target_key in keyed_art_targets:
+            # A path-keyed cover takes precedence over a legacy basename cover.
+            continue
+        keyed_art_targets.add(target_key)
+        tasks.append((art_path, destination))
+    if ambiguous_art:
+        warnings.warn(
+            f"Skipped {len(ambiguous_art)} box-art files with ambiguous ROM basenames.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
     validate_target_collisions(tasks, dest_root)
     return tasks
 
@@ -154,7 +192,7 @@ def deploy(
 ) -> int:
     verify_destination_root(dest_root)
     tasks = deployment_tasks(SRC_GAMES, SRC_BOXART, dest_root)
-    game_count = sum(dst.parent == dest_root for _, dst in tasks)
+    game_count = sum(src.suffix.lower() in ROM_EXTENSIONS for src, _ in tasks)
     art_count = len(tasks) - game_count
     updates, unchanged, update_bytes = deployment_plan(tasks, report_progress=True)
     missing_count = sum(not dst.exists() for _, dst in updates)

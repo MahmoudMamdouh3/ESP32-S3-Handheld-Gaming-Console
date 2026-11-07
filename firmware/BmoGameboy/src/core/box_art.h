@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <Adafruit_GFX.h>
+#include "theme.h"
 
 // BoxArt: 64x64 Retro Box Art & Thumbnail Engine
 // Supports 64x64 uncompressed raw 16-bit (RGB565/BGR565) and 16/24-bit BMP images
@@ -22,7 +23,7 @@ public:
   static const uint16_t* getBuffer();
 
   // Renders the box art onto the canvas with an optional border
-  static void draw(GFXcanvas16* canvas, int x, int y, bool drawBorder = true, uint16_t borderColor = 0xFFFF);
+  static void draw(GFXcanvas16* canvas, int x, int y, bool drawBorder = true, uint16_t borderColor = Theme::BMO_WHITE);
 
   // Checks if a box art file exists on the SD card for a given ROM
   static bool existsForRom(const char* romFilename);

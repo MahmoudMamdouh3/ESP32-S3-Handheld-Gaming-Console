@@ -63,14 +63,13 @@ void PicoEmu::destroy() {
 }
 
 bool PicoEmu::saveBatteryRam(const char* romFilename) {
-  if (!pico_ctx || !romFilename) return false;
-  // PICO-8 Cartridge Data RAM ($5E00-$5EFF, 256 bytes persistent cart data)
-  return SaveManager::saveBatteryRam(romFilename, &pico_ctx->ram[0x5E00], 256);
+  (void)romFilename;
+  return false;
 }
 
 bool PicoEmu::loadBatteryRam(const char* romFilename) {
-  if (!pico_ctx || !romFilename) return false;
-  return SaveManager::loadBatteryRam(romFilename, &pico_ctx->ram[0x5E00], 256);
+  (void)romFilename;
+  return false;
 }
 
 bool PicoEmu::saveState(const char* romFilename, int slot) {

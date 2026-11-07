@@ -9,17 +9,17 @@ import struct
 import zlib
 import unittest
 
-BMO_INDEX_MAGIC = b"BMOIDX01"
-BMO_INDEX_VERSION = 1
-HEADER_FORMAT = "<8s6I"      # 8s (magic), version, entryCount, entrySize, crc32, timestamp, reserved[0]... (36 bytes: 8s + 6*4)
-# Wait, struct BmoIndexHeader:
+BMO_INDEX_MAGIC = b"BMOIDX02"
+BMO_INDEX_VERSION = 2
+# struct BmoIndexHeader:
 # char magic[8] (8s)
 # uint32_t version (I)
 # uint32_t entryCount (I)
 # uint32_t entrySize (I)
 # uint32_t crc32 (I)
 # uint32_t timestamp (I)
-# uint32_t reserved[2] (2I)
+# uint32_t reserved[0] = catalog byte total (low word)
+# uint32_t reserved[1] = catalog fingerprint
 # Total: 8 + 4*7 = 36 bytes.
 HEADER_FORMAT = "<8s7I"
 HEADER_SIZE = 36
@@ -40,7 +40,8 @@ def compute_crc32(data: bytes) -> int:
     return zlib.crc32(data) & 0xFFFFFFFF
 
 
-def pack_header(entry_count: int, crc32: int, version: int = BMO_INDEX_VERSION, timestamp: int = 0) -> bytes:
+def pack_header(entry_count: int, crc32: int, version: int = BMO_INDEX_VERSION,
+                timestamp: int = 0, total_bytes: int = 0, fingerprint: int = 0) -> bytes:
     return struct.pack(
         HEADER_FORMAT,
         BMO_INDEX_MAGIC,
@@ -49,8 +50,8 @@ def pack_header(entry_count: int, crc32: int, version: int = BMO_INDEX_VERSION, 
         ENTRY_SIZE,
         crc32,
         timestamp,
-        0,  # reserved[0]
-        0   # reserved[1]
+        total_bytes & 0xFFFFFFFF,
+        fingerprint
     )
 
 
@@ -78,6 +79,8 @@ def unpack_header(data: bytes):
         "entry_size": entry_size,
         "crc32": crc,
         "timestamp": ts,
+        "total_bytes_low": r0,
+        "fingerprint": r1,
     }
 
 
@@ -107,7 +110,7 @@ class TestRomIndexBinary(unittest.TestCase):
         self.assertEqual(len(header_bytes), 36)
         parsed = unpack_header(header_bytes)
         self.assertEqual(parsed["magic"], BMO_INDEX_MAGIC)
-        self.assertEqual(parsed["version"], 1)
+        self.assertEqual(parsed["version"], BMO_INDEX_VERSION)
         self.assertEqual(parsed["entry_count"], 100)
         self.assertEqual(parsed["entry_size"], 72)
         self.assertEqual(parsed["crc32"], 0x12345678)
@@ -160,10 +163,15 @@ class TestRomIndexBinary(unittest.TestCase):
         self.assertNotEqual(parsed["magic"], BMO_INDEX_MAGIC)
 
     def test_version_validation(self):
-        header_v2 = pack_header(10, 0, version=2)
-        parsed = unpack_header(header_v2)
-        self.assertEqual(parsed["version"], 2)
+        header_v1 = pack_header(10, 0, version=1)
+        parsed = unpack_header(header_v1)
+        self.assertEqual(parsed["version"], 1)
         self.assertNotEqual(parsed["version"], BMO_INDEX_VERSION)
+
+    def test_catalog_fingerprint_encoding(self):
+        values = (3, 0x02030405, 1, 1700000000, 0x12345678)
+        fingerprint = zlib.crc32(struct.pack("<IIIII", *values)) & 0xFFFFFFFF
+        self.assertEqual(fingerprint, 0x4029590A)
 
     def test_alphabetical_sorting(self):
         titles = ["Zelda.gb", "Aladdin.gbc", "Mario.gb", "Batman.nes"]

@@ -97,9 +97,17 @@ void Z_ClearZone (memzone_t* zone)
 void Z_Init (void)
 {
     memblock_t*	block;
-    int		size;
+    int		size = 0;
 
     mainzone = (memzone_t *)I_ZoneBase (&size);
+    if (mainzone == NULL)
+    {
+#if defined(ESP32) || defined(ARDUINO)
+        extern void Doom_Bailout(const char* msg);
+        Doom_Bailout("Zone allocation returned NULL");
+#endif
+        return;
+    }
     mainzone->size = size;
 
     // set the entire zone to one free block
@@ -219,7 +227,11 @@ Z_Malloc
         if (rover == start)
         {
             // scanned all the way around the list
-            I_Error ("Z_Malloc: failed on allocation of %i bytes", size);
+#if defined(ESP32) || defined(ARDUINO)
+            extern void Doom_Bailout(const char* msg);
+            Doom_Bailout("Z_Malloc: zone exhausted");
+#endif
+            return NULL;
         }
 	
         if (rover->tag != PU_FREE)

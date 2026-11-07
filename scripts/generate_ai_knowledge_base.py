@@ -1,13 +1,12 @@
 """
 scripts/generate_ai_knowledge_base.py — Automated AI Agent Knowledge Base & Graph Generator
-Compiles an exhaustive, multi-dimensional machine-readable knowledge graph, AST index,
-decision tree, and context manifest across all files, symbols, hardware pins, and performance baselines.
+Compiles a deterministic machine-readable knowledge graph, AST index, decision tree,
+and context manifest from repository files, symbols, hardware pins, and build reports.
 """
 
 import json
 import re
 import sys
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
@@ -21,7 +20,6 @@ RULES_DIR = REPO_ROOT / ".agents" / "rules"
 from tools.guardian.core.ast_linter import FirmwareAstLinter
 from tools.guardian.core.bus_model import HardwareBusModel
 from tools.guardian.core.elf_analyzer import ElfAnalyzer
-from tools.guardian.core.host_bench import HostBenchmarkSuite
 
 
 def parse_config_h(config_path: Path) -> Dict[str, int]:
@@ -52,21 +50,24 @@ def build_knowledge_base():
     print(" BMO AI KNOWLEDGE BASE & AST INDEX COMPILER")
     print("=" * 70)
 
-    now_iso = datetime.now().isoformat()
-
     # 1. Gather Ground-Truth Telemetry from Guardian
-    print("\n[1/5] Gathering Hardware Bus, ELF, and Microbenchmark Baselines...")
+    print("\n[1/5] Gathering stable bus, ELF, and source metrics...")
     bus_model = HardwareBusModel()
     bus_metrics = bus_model.calculate_all()
 
     linter = FirmwareAstLinter(FIRMWARE_DIR)
     file_stats = linter.get_repo_line_stats()
 
+    generated_index_paths = {
+        "AGENT_KNOWLEDGE_GRAPH.json",
+        "AGENT_DECISION_TREE.json",
+        "AGENT_MANIFEST.json",
+        ".agents/rules/CONTEXT_INDEX.json",
+    }
+    file_stats = [fs for fs in file_stats if fs.rel_path not in generated_index_paths]
+
     elf_analyzer = ElfAnalyzer(REPO_ROOT)
     elf_res = elf_analyzer.analyze()
-
-    bench_suite = HostBenchmarkSuite()
-    bench_metrics = bench_suite.run_all()
 
     # 2. Extract AST Symbols & Hardware Pin Accesses from Files
     print(f"\n[2/5] Parsing Symbols & AST Signatures across {len(file_stats)} files...")
@@ -189,8 +190,8 @@ def build_knowledge_base():
         "gg": {"name": "Sega Game Gear", "core": "SMS Z80+VDP Core", "tier": 1, "status": "active", "res": "160x144", "ext": [".gg"], "fps": 59.92},
         "doom": {"name": "Classic DOOM", "core": "DoomGeneric", "tier": 1, "status": "active", "res": "320x200", "ext": [".wad"], "fps": 35.00},
         "pce": {"name": "PC Engine / TG-16", "core": "PCE HuC6280+VDC Core", "tier": 1, "status": pce_status, "res": "256x240", "ext": [".pce"], "fps": 59.82},
-        "a26": {"name": "Atari 2600", "core": "Stella Core", "tier": 1, "status": a26_status, "res": "160x192", "ext": [".a26", ".bin"], "fps": 60.00},
-        "p8": {"name": "PICO-8", "core": "PICO-8 Core", "tier": 1, "status": p8_status, "res": "128x128", "ext": [".p8", ".png"], "fps": 30.00},
+        "a26": {"name": "Atari 2600", "core": "Stella Core", "tier": 1, "status": a26_status, "res": "160x192", "ext": [".a26"], "fps": 60.00},
+        "p8": {"name": "PICO-8", "core": "PICO-8 Core", "tier": 1, "status": p8_status, "res": "128x128", "ext": [".p8"], "fps": 30.00},
         "gen": {"name": "Sega Genesis", "core": "Genesis 68000+VDP Core", "tier": 2, "status": gen_status, "res": "320x224", "ext": [".gen", ".md", ".smd"], "fps": 59.92},
         "snes": {"name": "Super Nintendo", "core": "SNES Core", "tier": 2, "status": snes_status, "res": "256x224", "ext": [".sfc", ".smc"], "fps": 60.10},
         "ws": {"name": "Bandai WonderSwan", "core": "WonderSwan V30MZ+VDC Core", "tier": 2, "status": ws_status, "res": "224x144", "ext": [".ws", ".wsc"], "fps": 75.47},
@@ -201,8 +202,7 @@ def build_knowledge_base():
 
     # 5. Build Knowledge Graph Data Structure (Hardware Pins Sourced Directly From config.h)
     knowledge_graph = {
-        "schema_version": "2.2.0",
-        "generated_at": now_iso,
+        "schema_version": "2.3.0",
         "target_mcu": {
             "chip": "ESP32-S3-N16R8",
             "cpu_arch": "Xtensa dual-core 32-bit LX7 @ 240MHz",
@@ -277,16 +277,7 @@ def build_knowledge_base():
             }
             for b in bus_metrics
         ],
-        "microbenchmark_baselines": [
-            {
-                "name": bm.name,
-                "iterations": bm.iterations,
-                "avg_latency_us": round(bm.avg_latency_us, 3),
-                "throughput_mops": round(bm.throughput_mops, 2),
-                "description": bm.description,
-            }
-            for bm in bench_metrics
-        ],
+        "benchmark_policy": "Live host measurements are not cached in this deterministic index. Run python -m tools.guardian bench-host for a fresh host-only report; use on-device capture for hardware timing.",
         "governance_rules": rules_index,
         "symbol_registry": symbol_registry,
         "files_index": file_nodes,
@@ -399,8 +390,7 @@ def build_knowledge_base():
         {"name": "ColecoVision", "wrapper": "src/emulators/emu_colem.cpp", "engine_status": detect_engine_status("src/vendor/colem/colem.c"), "extensions": [".col", ".sg"]},
     ]
     manifest_data = {
-        "manifest_version": "2.1.0",
-        "last_updated": now_iso,
+        "manifest_version": "2.2.0",
         "total_files": len(file_stats),
         "total_lines": sum(f.total_lines for f in file_stats),
         "total_sloc": sum(f.sloc for f in file_stats),
@@ -418,8 +408,7 @@ def build_knowledge_base():
 
     ctx_path = RULES_DIR / "CONTEXT_INDEX.json"
     ctx_data = {
-        "schema_version": "2.1.0",
-        "last_updated": now_iso,
+        "schema_version": "2.2.0",
         "task_decision_table": {k: {"rules": v["mandatory_rules"], "files": v["primary_files"]} for k, v in decision_tree["tasks"].items()},
         "rules": rules_index,
     }

@@ -37,7 +37,9 @@ exit 0
 # BMO Handheld Console — Multi-Line Bullet & Anti-Buzzword Commit Message Gate (Rules 05 & 43)
 MSG_FILE="$1"
 python -c '
-import re, sys, pathlib
+import sys, pathlib
+sys.path.insert(0, str(pathlib.Path.cwd()))
+from tools.guardian.core.doc_verifier import DocTruthVerifier
 text = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8", errors="ignore")
 lines = [l.rstrip() for l in text.splitlines() if not l.strip().startswith("#")]
 non_empty = [l for l in lines if l.strip()]
@@ -46,18 +48,7 @@ if len(non_empty) < 2 or not has_bullets:
     print("[Git Hook] ERROR: Commit message must include a summary line AND a bullet-point body (Rule 05).")
     print("  Example: git commit -m \"feat(scope): short summary\" -m \"- bullet 1\\n- bullet 2\\n- Verified: ...\"")
     sys.exit(1)
-buzz = re.search(
-    r"\b(apple/nintendo|nintendo-grade|apple-grade|nintendo-style|museum-grade|"
-    r"reviewer-grade|production-grade|ultra-high-end|state-of-the-art|"
-    r"groundbreaking|revolutionary|cutting-edge|world-class|god-tier|"
-    r"buttery-smooth|blazing-fast|lightning-fast|living companion|"
-    r"authoritative living|glanceable|delve|tapestry|testament|"
-    r"paradigm|synergy|holistic|meticulously|bespoke|"
-    r"seamlessly|flawlessly|unparalleled|unmatched|supercharge|supercharged|"
-    r"game-changing)\b",
-    "\n".join(non_empty),
-    re.IGNORECASE,
-)
+buzz = DocTruthVerifier.BANNED_BUZZWORDS_REGEX.search("\n".join(non_empty))
 if buzz:
     print(f"[Git Hook] ERROR: Commit message contains banned AI buzzword \"{buzz.group(1)}\" (Rule 43).")
     sys.exit(1)

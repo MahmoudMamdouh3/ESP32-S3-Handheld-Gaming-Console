@@ -1081,8 +1081,6 @@ static void D_Endoom(void)
     endoom = W_CacheLumpName(DEH_String("ENDOOM"), PU_STATIC);
 
     I_Endoom(endoom);
-
-	exit(0);
 }
 
 #if ORIGCODE
@@ -1112,30 +1110,34 @@ static void LoadIwadDeh(void)
     // and installed next to the IWAD.
     if (gameversion == exe_chex)
     {
+        char chex_deh_buf[256];
         char *chex_deh = NULL;
         char *sep;
+        size_t iwadfile_len = strlen(iwadfile);
 
         // Look for chex.deh in the same directory as the IWAD file.
         sep = strrchr(iwadfile, DIR_SEPARATOR);
 
         if (sep != NULL)
         {
-            size_t chex_deh_len = strlen(iwadfile) + 9;
-            chex_deh = malloc(chex_deh_len);
-            M_StringCopy(chex_deh, iwadfile, chex_deh_len);
-            chex_deh[sep - iwadfile + 1] = '\0';
-            M_StringConcat(chex_deh, "chex.deh", chex_deh_len);
+            if (iwadfile_len + sizeof("chex.deh") <= sizeof(chex_deh_buf))
+            {
+                M_StringCopy(chex_deh_buf, iwadfile, sizeof(chex_deh_buf));
+                chex_deh_buf[sep - iwadfile + 1] = '\0';
+                M_StringConcat(chex_deh_buf, "chex.deh", sizeof(chex_deh_buf));
+                chex_deh = chex_deh_buf;
+            }
         }
         else
         {
-            chex_deh = strdup("chex.deh");
+            M_StringCopy(chex_deh_buf, "chex.deh", sizeof(chex_deh_buf));
+            chex_deh = chex_deh_buf;
         }
 
         // If the dehacked patch isn't found, try searching the WAD
         // search path instead.  We might find it...
-        if (!M_FileExists(chex_deh))
+        if (chex_deh == NULL || !M_FileExists(chex_deh))
         {
-            free(chex_deh);
             chex_deh = D_FindWADByName("chex.deh");
         }
 
@@ -1204,7 +1206,7 @@ void D_DoomMain (void)
     if (M_CheckParm("-search"))
     {
         NET_MasterQuery();
-        exit(0);
+        return;
     }
 
     //!
@@ -1220,7 +1222,7 @@ void D_DoomMain (void)
     if (p)
     {
         NET_QueryAddress(myargv[p+1]);
-        exit(0);
+        return;
     }
 
     //!
@@ -1232,7 +1234,7 @@ void D_DoomMain (void)
     if (M_CheckParm("-localsearch"))
     {
         NET_LANQuery();
-        exit(0);
+        return;
     }
 
 #endif

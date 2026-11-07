@@ -375,6 +375,52 @@ class TestGuardianEngine(unittest.TestCase):
             self.assertIn("teardownCurrentEmulator", messages)
             self.assertIn("submitFrameAsync", messages)
 
+    def test_22_rule_size_limit_and_banned_union(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            rules = root / ".agents" / "rules"
+            rules.mkdir(parents=True)
+            (rules / "too_large.md").write_text("x" * 12_001, encoding="utf-8")
+            issues = DocTruthVerifier(root).verify_rule_file_sizes()
+            self.assertEqual(len(issues), 1)
+            self.assertEqual(issues[0].category, "RULE_FILE_TOO_LARGE")
+            self.assertIn("12,001", issues[0].message)
+
+        for term in ("masterclass", "overkill", "insane", "perfection", "miracle", "bulletproof", "unprecedented", "amazing", "ultra-optimized", "seamless", "flawless"):
+            with self.subTest(term=term):
+                self.assertIsNotNone(DocTruthVerifier.BANNED_BUZZWORDS_REGEX.search(term))
+
+    def test_23_markdown_link_audit_rejects_file_uris_and_missing_targets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "docs").mkdir()
+            (root / "docs" / "index.md").write_text(
+                "[local](../ok.md) [missing](gone.md) [legacy](file:///C:/old.md)\n",
+                encoding="utf-8",
+            )
+            (root / "ok.md").write_text("# okay\n", encoding="utf-8")
+            issues = DocTruthVerifier(root).verify_markdown_links()
+            self.assertEqual([issue.category for issue in issues], ["UNRESOLVED_LINK", "FILE_URI_LINK"])
+
+    def test_24_large_local_stack_array_rule_and_vendor_exemption(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            firmware = root / "firmware" / "BmoGameboy"
+            source = firmware / "src" / "core" / "probe.cpp"
+            source.parent.mkdir(parents=True)
+            source.write_text(
+                "void probe() {\n  uint8_t scratch[2048];\n  static uint8_t shared[4096];\n}\n",
+                encoding="utf-8",
+            )
+            linter = FirmwareAstLinter(firmware)
+            findings = linter.lint_file(source)
+            self.assertEqual([item.rule_id for item in findings], ["LARGE_LOCAL_STACK_ARRAY"])
+
+            vendor = firmware / "src" / "vendor" / "probe.c"
+            vendor.parent.mkdir(parents=True)
+            vendor.write_text("void probe() {\n  uint8_t scratch[4096];\n}\n", encoding="utf-8")
+            self.assertEqual(FirmwareAstLinter(firmware).lint_file(vendor), [])
+
 
 if __name__ == "__main__":
     unittest.main()

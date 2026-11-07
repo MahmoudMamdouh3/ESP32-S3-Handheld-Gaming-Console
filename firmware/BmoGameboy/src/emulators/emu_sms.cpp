@@ -70,13 +70,13 @@ void SmsEmu::destroy() {
 }
 
 bool SmsEmu::saveBatteryRam(const char* romFilename) {
-  if (!sms_ctx || !romFilename) return false;
-  return SaveManager::saveBatteryRam(romFilename, sms_ctx->cart_ram, sizeof(sms_ctx->cart_ram));
+  (void)romFilename;
+  return false;
 }
 
 bool SmsEmu::loadBatteryRam(const char* romFilename) {
-  if (!sms_ctx || !romFilename) return false;
-  return SaveManager::loadBatteryRam(romFilename, sms_ctx->cart_ram, sizeof(sms_ctx->cart_ram));
+  (void)romFilename;
+  return false;
 }
 
 bool SmsEmu::saveState(const char* romFilename, int slot) {

@@ -5,7 +5,7 @@
 2. **Web Simulator & Playtest Harness:** HTML5 Canvas 2D + WebAssembly Playtest Core (`tools/bmo_simulator/`, 60 Hz 1:1 pixel rendering).
 
 **Status:** Canonical Single-File Design Standard  
-**Governance:** Governed by Rule 08 ([`.agents/rules/08_ui_style_guide.md`](file:///.agents/rules/08_ui_style_guide.md)), Rule 43 ([`.agents/rules/43_no_ai_jargon_and_buzzwords.md`](file:///.agents/rules/43_no_ai_jargon_and_buzzwords.md)), and Rule 44 ([`.agents/rules/44_anti_ai_ui_design_standards.md`](file:///.agents/rules/44_anti_ai_ui_design_standards.md)).
+**Governance:** Governed by Rule 08 ([`.agents/rules/08_ui_style_guide.md`](.agents/rules/08_ui_style_guide.md)), Rule 43 ([`.agents/rules/43_no_ai_jargon_and_buzzwords.md`](.agents/rules/43_no_ai_jargon_and_buzzwords.md)), and Rule 44 ([`.agents/rules/44_anti_ai_ui_design_standards.md`](.agents/rules/44_anti_ai_ui_design_standards.md)).
 
 ---
 
@@ -17,7 +17,7 @@ The BMO Gameboy interface synthesizes two design disciplines:
 
 ### Design Principles
 - **Clarity Over Clutter:** Negative space and structural hierarchy replace nested containers. Information is grouped by spacing and typography rather than card-inside-card layering.
-- **Strict Color Token Discipline:** Every pixel on screen derives from a named semantic token in [`firmware/BmoGameboy/src/core/theme.h`](file:///firmware/BmoGameboy/src/core/theme.h) or `:root` in [`tools/bmo_simulator/simulator.css`](file:///tools/bmo_simulator/simulator.css). Zero inline hex values are permitted in view logic.
+- **Strict Color Token Discipline:** UI pixels derive from a named semantic token in [`firmware/BmoGameboy/src/core/theme.h`](firmware/BmoGameboy/src/core/theme.h) or `:root` in [`tools/bmo_simulator/simulator.css`](tools/bmo_simulator/simulator.css). The face renderer has a separate named palette registered and checked below. Zero inline hex values are permitted in UI view logic.
 - **Physical Motion Mechanics:** Interface motion adheres to second-order harmonic spring-damper equations ($\zeta \approx 0.72$, $\omega_n \approx 22.0\text{ rad/s}$). Transitions convey weight and mechanical tactile feedback without artificial delay.
 - **Accessibility & Contrast:** All text meets or exceeds WCAG 2.1 AA contrast requirements ($\ge 4.5:1$ for body text, $\ge 3:1$ for large text and interactive borders).
 
@@ -31,16 +31,33 @@ The color system maintains 1:1 fidelity between the embedded ST7789 display (BGR
 
 | Token Name | Semantic Role | Hex | RGB888 | Wire BGR565 (`Theme::*`) | Direct BGR565 | CSS Variable (`:root`) | WCAG Contrast vs BG |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `BMO_SCREEN_MINT` | Primary Screen Background | `#CEF5E4` | `(206, 245, 228)` | `0x7EF9` | `0xF97E` | `--screen-mint` | 11.8:1 (vs Dark Forest) |
-| `BMO_BODY_TEAL` | Chassis Shell & Primary Accent | `#5FB49C` | `(95, 180, 156)` | `0x4ECB` | `0xCB4E` | `--chassis-color` | 4.8:1 (vs Dark Forest) |
-| `BMO_DEEP_TEAL` | Bezel Frame & Outer Card Surface | `#1A4B42` | `(26, 75, 66)` | `0x8922` | `0x2289` | `--bezel-color` | 8.4:1 (vs White Text) |
-| `BMO_DARK_FOREST`| Mascot Eyes, Text & Deep Lens | `#0F2620` | `(15, 38, 32)` | `0x0311` | `0x1103` | `--bezel-lens` | 14.2:1 (vs Mint/White) |
-| `BMO_DPAD_YELLOW` | D-Pad, Active Badges & Highlights | `#FFE033` | `(255, 224, 51)` | `0x27FF` | `0xFF27` | `--dpad-color` | 7.2:1 (vs Deep Teal) |
-| `BMO_CORAL_RED` | B Button, Error States & Badges | `#E8175D` | `(232, 23, 93)` | `0xB95A` | `0x5AB9` | `--btn-b-color` | 5.1:1 (vs Deep Teal) |
-| `BMO_BLUE_BUTTON` | A Button & Interactive Highlights | `#52A6BA` | `(82, 166, 186)` | `0x51B5` | `0xB551` | `--btn-a-color` | 5.6:1 (vs Dark Forest) |
-| `BMO_WHITE` | Primary Body Text & Icons | `#F8FDFA` | `(248, 253, 250)` | `0xFFDF` | `0xDFFF` | `--text-main` | 12.6:1 (vs Deep Teal) |
-| `BMO_MOUTH_GREEN` | Mascot Expression & Success HUD | `#4CAF50` | `(76, 175, 80)` | `0x4AD2` | `0xD24A` | `--accent-teal` | 5.2:1 (vs Dark Forest) |
-| `BMO_TONGUE_PINK` | Mascot Expression Accent | `#F48FB1` | `(244, 143, 177)` | `0xF0FA` | `0xFAF0` | `--accent-red` | 6.5:1 (vs Dark Forest) |
+| `BMO_SCREEN_MINT` | Primary Screen Background | `#CEF5E4` | `(206, 245, 228)` | `0xB9E7` | `0xE7B9` | `--screen-mint` | 13.5:1 (vs Dark Forest) |
+| `BMO_BODY_TEAL` | Chassis Shell & Primary Accent | `#5FB49C` | `(95, 180, 156)` | `0xAB9D` | `0x9DAB` | `--chassis-color` | 6.4:1 (vs Dark Forest) |
+| `BMO_DEEP_TEAL` | Bezel Frame & Outer Card Surface | `#1A4B42` | `(26, 75, 66)` | `0x4342` | `0x4243` | `--bezel-color` | 9.6:1 (vs White Text) |
+| `BMO_DARK_FOREST`| Mascot Eyes, Text & Deep Lens | `#0F2620` | `(15, 38, 32)` | `0x2121` | `0x2121` | `--bezel-lens` | 13.5:1 (vs Screen Mint) |
+| `BMO_DPAD_YELLOW` | D-Pad, Active Badges & Highlights | `#FFE033` | `(255, 224, 51)` | `0x1F37` | `0x371F` | `--dpad-color` | 7.5:1 (vs Deep Teal) |
+| `BMO_CORAL_RED` | B button fill, error accents and badges; use dark text on the fill | `#FF91A5` | `(255, 145, 165)` | `0x9FA4` | `0xA49F` | `--btn-b-color` | 4.6:1 (vs Deep Teal); 7.5:1 dark text |
+| `BMO_BLUE_BUTTON` | A Button & Interactive Highlights | `#52A6BA` | `(82, 166, 186)` | `0x2ABD` | `0xBD2A` | `--btn-a-color` | 5.7:1 (vs Dark Forest) |
+| `BMO_WHITE` | Primary Body Text & Icons | `#F8FDFA` | `(248, 253, 250)` | `0xFFFF` | `0xFFFF` | `--text-main` | 9.6:1 (vs Deep Teal) |
+| `BMO_MOUTH_GREEN` | Mascot Expression & Success HUD | `#4CAF50` | `(76, 175, 80)` | `0x6955` | `0x5569` | `--btn-x-color` | 5.7:1 (vs Dark Forest) |
+| `BMO_TONGUE_PINK` | Mascot Expression Accent | `#F48FB1` | `(244, 143, 177)` | `0x7EB4` | `0xB47E` | `--btn-y-color` | 7.1:1 (vs Dark Forest) |
+
+### Face renderer palette
+
+These renderer-local colors are packed by `bmo_face.cpp` for the face canvas. `COL_TONGUE` is the renderer's coral-pink tongue shade (`#FA7F8F`), distinct from the theme tongue pink (`#F48FB1`). The source RGB arguments, source hex comments, and registrations are checked by `python scripts/verify_color_tokens.py`.
+
+| Source token | Registered RGB |
+| :--- | :--- |
+| `COL_MINT_BG` | `#8AD5C3` |
+| `COL_DUSK_BG` | `#6FB8A7` |
+| `COL_CHARCOAL` | `#101E2B` |
+| `COL_CAVITY` | `#121C26` |
+| `COL_BLUSH` | `#FF8BA7` |
+| `COL_TONGUE` | `#FA7F8F` |
+| `COL_GLINT` | `#FFFFFF` |
+| `COL_STAR` | `#FFE066` |
+| `COL_DREAM_Z` | `#D2F5EE` |
+| `COL_ERROR_RED` | `#E12430` |
 
 ### Game Boy DMG 4-Shade Runtime Palettes
 

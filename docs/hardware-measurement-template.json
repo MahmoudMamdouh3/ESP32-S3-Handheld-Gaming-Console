@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "status": "NOT RUN",
+  "test_name": "",
+  "date_utc": "",
+  "operator": "",
+  "board_revision": "",
+  "firmware_commit": "",
+  "build_flags": "",
+  "instruments": [],
+  "probe_location": "",
+  "configuration": {},
+  "procedure": [],
+  "acceptance_criterion": "",
+  "raw_result": {},
+  "raw_capture_path": "",
+  "notes_and_limitations": []
+}

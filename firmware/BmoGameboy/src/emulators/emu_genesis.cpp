@@ -68,13 +68,13 @@ bool GenesisEmu::isRunning() {
 }
 
 bool GenesisEmu::saveBatteryRam(const char* romFilename) {
-  if (!running || !genesisRam || !romFilename) return false;
-  return SaveManager::saveBatteryRam(romFilename, genesisRam, 64 * 1024);
+  (void)romFilename;
+  return false;
 }
 
 bool GenesisEmu::loadBatteryRam(const char* romFilename) {
-  if (!running || !genesisRam || !romFilename) return false;
-  return SaveManager::loadBatteryRam(romFilename, genesisRam, 64 * 1024);
+  (void)romFilename;
+  return false;
 }
 
 bool GenesisEmu::saveState(const char* romFilename, int slot) {

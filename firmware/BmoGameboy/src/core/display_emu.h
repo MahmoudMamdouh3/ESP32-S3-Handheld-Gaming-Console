@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include "sd_card.h"
+#include "theme.h"
 
 namespace DisplayEmu {
   // Initialize the display. MUST be called after SPI.begin().
@@ -30,10 +31,11 @@ namespace DisplayEmu {
 
   // Renders the In-Game Quick Pause & Save State Overlay Menu
   void drawPauseMenu(const char* romTitle, int currentSlot, bool hasSaveState,
-                     bool hasBatterySave, int selectedOption, const char* statusToast = nullptr);
+                     bool hasBatterySave, bool batterySaveSupported,
+                     int selectedOption, const char* statusToast = nullptr);
 
-  // Apple Dynamic Island / Floating Toast HUD System
-  void showToast(const char* message, uint16_t borderColor = 0xFFE0, unsigned long durationMs = 1800);
+  // Toast HUD
+  void showToast(const char* message, uint16_t borderColor = Theme::BMO_DPAD_YELLOW, unsigned long durationMs = 1800);
   bool hasActiveToast();
 
   // Kinetic Carousel Spring Physics (Nintendo Switch Elastic Snap)
@@ -48,7 +50,13 @@ namespace DisplayEmu {
 
   // Renders the Hardware Self-Test & Diagnostics dashboard
   void drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeDram, uint32_t freePsram,
-                                uint32_t freeIram, uint16_t buttonMask);
+                                uint32_t freeIram, uint16_t buttonMask, uint32_t largestPsramBlock = 0,
+                                uint32_t skippedRomCount = 0, uint32_t loopStackHighWaterWords = 0,
+                                uint32_t displayStackHighWaterWords = 0, bool sdMounted = false,
+                                uint32_t sdClockHz = 0);
+  uint32_t getDisplayStackHighWaterMarkWords();
+  void setDiagnosticSpiClock(uint32_t spiClockHz);
+  void drawSpiStressPattern(uint32_t spiClockHz, uint32_t frameNumber);
 
   // Renders a hardware silhouette pixel-art icon for a retro console
   void drawConsoleIcon(RomType type, int x, int y, uint16_t primaryColor = 0);

@@ -3,6 +3,7 @@
 #include "config.h"
 #include "spi_arbiter.h"
 #include "theme.h"
+#include "path_key.h"
 #include <esp_heap_caps.h>
 #include <string.h>
 #if FEATURE_SD_CARD
@@ -17,6 +18,76 @@ namespace {
   uint16_t rgbToDisplayColor(uint8_t r, uint8_t g, uint8_t b) {
     return Theme::makeUiColor(r, g, b);
   }
+
+#if FEATURE_SD_CARD
+  bool sameNameIgnoreAsciiCase(const char* left, const char* right) {
+    if (!left || !right) return false;
+    while (*left && *right) {
+      char a = *left++;
+      char b = *right++;
+      if (a >= 'A' && a <= 'Z') a = static_cast<char>(a + ('a' - 'A'));
+      if (b >= 'A' && b <= 'Z') b = static_cast<char>(b + ('a' - 'A'));
+      if (a != b) return false;
+    }
+    return *left == *right;
+  }
+
+  bool legacyBaseIsUnique(const char* romFilename, const char* legacyBase) {
+    if (!romFilename || !legacyBase || legacyBase[0] == '\0') return false;
+    const int romCount = SDCard::getRomCount();
+    for (int i = 0; i < romCount; ++i) {
+      const RomFile* other = SDCard::getRomInfo(i);
+      if (!other || strcmp(other->filename, romFilename) == 0) continue;
+      char otherBase[64];
+      BoxArt::getBaseName(other->filename, otherBase, sizeof(otherBase));
+      if (sameNameIgnoreAsciiCase(legacyBase, otherBase)) return false;
+    }
+    return true;
+  }
+
+  bool migrateLegacyArt(const char* sourcePath, const char* destinationPath) {
+    if (!sourcePath || !destinationPath || SD.exists(destinationPath)) return false;
+    char temporaryPath[144];
+    const int pathLength = snprintf(temporaryPath, sizeof(temporaryPath), "%s.tmp", destinationPath);
+    if (pathLength <= 0 || static_cast<size_t>(pathLength) >= sizeof(temporaryPath)) return false;
+    if (SD.exists(temporaryPath)) SD.remove(temporaryPath);
+
+    File source = SD.open(sourcePath, FILE_READ);
+    if (!source) return false;
+    const size_t expectedSize = source.size();
+    File target = SD.open(temporaryPath, FILE_WRITE);
+    if (!target) {
+      source.close();
+      return false;
+    }
+
+    uint8_t buffer[256];
+    size_t copied = 0;
+    bool writeOk = true;
+    while (source.available()) {
+      const int bytesRead = source.read(buffer, sizeof(buffer));
+      if (bytesRead <= 0 || target.write(buffer, static_cast<size_t>(bytesRead)) != static_cast<size_t>(bytesRead)) {
+        writeOk = false;
+        break;
+      }
+      copied += static_cast<size_t>(bytesRead);
+    }
+    target.flush();
+    target.close();
+    source.close();
+    if (!writeOk || copied != expectedSize) return false;
+
+    File verification = SD.open(temporaryPath, FILE_READ);
+    const bool verified = verification && verification.size() == expectedSize;
+    if (verification) verification.close();
+    if (!verified || !SD.rename(temporaryPath, destinationPath)) return false;
+
+    File migrated = SD.open(destinationPath, FILE_READ);
+    const bool finalVerified = migrated && migrated.size() == expectedSize;
+    if (migrated) migrated.close();
+    return finalVerified;
+  }
+#endif
 }
 
 bool BoxArt::init() {
@@ -69,25 +140,31 @@ void BoxArt::getBaseName(const char* romFilename, char* outBaseName, size_t maxL
 bool BoxArt::existsForRom(const char* romFilename) {
 #if FEATURE_SD_CARD
   if (!romFilename || !SDCard::isMounted()) return false;
-  
-  char baseName[64];
-  getBaseName(romFilename, baseName, sizeof(baseName));
-  if (baseName[0] == '\0') return false;
+
+  char key[33];
+  if (!RomKey::make(romFilename, key, sizeof(key))) return false;
+  char legacyBase[64];
+  getBaseName(romFilename, legacyBase, sizeof(legacyBase));
 
   char path[128];
   SpiArbiter::lock();
-  
-  snprintf(path, sizeof(path), "/boxart/%s.raw", baseName);
-  if (SD.exists(path)) { SpiArbiter::unlock(); return true; }
 
-  snprintf(path, sizeof(path), "/boxart/%s.bmp", baseName);
-  if (SD.exists(path)) { SpiArbiter::unlock(); return true; }
-
-  snprintf(path, sizeof(path), "/covers/%s.raw", baseName);
-  if (SD.exists(path)) { SpiArbiter::unlock(); return true; }
-
-  snprintf(path, sizeof(path), "/covers/%s.bmp", baseName);
-  if (SD.exists(path)) { SpiArbiter::unlock(); return true; }
+  const char* folders[] = {"/boxart", "/covers"};
+  const char* extensions[] = {"raw", "bmp"};
+  for (const char* folder : folders) {
+    for (const char* extension : extensions) {
+      snprintf(path, sizeof(path), "%s/%s.%s", folder, key, extension);
+      if (SD.exists(path)) { SpiArbiter::unlock(); return true; }
+    }
+  }
+  if (legacyBaseIsUnique(romFilename, legacyBase)) {
+    for (const char* folder : folders) {
+      for (const char* extension : extensions) {
+        snprintf(path, sizeof(path), "%s/%s.%s", folder, legacyBase, extension);
+        if (SD.exists(path)) { SpiArbiter::unlock(); return true; }
+      }
+    }
+  }
 
   SpiArbiter::unlock();
 #endif
@@ -114,43 +191,51 @@ bool BoxArt::load(const char* romFilename) {
   strncpy(s_cachedRomName, romFilename, sizeof(s_cachedRomName) - 1);
   s_cachedRomName[sizeof(s_cachedRomName) - 1] = '\0';
 
-  char baseName[64];
-  getBaseName(romFilename, baseName, sizeof(baseName));
-  if (baseName[0] == '\0') return false;
+  char key[33];
+  if (!RomKey::make(romFilename, key, sizeof(key))) return false;
+  char legacyBase[64];
+  getBaseName(romFilename, legacyBase, sizeof(legacyBase));
 
-  char path[128];
+  char paths[8][128];
+  const char* folders[] = {"/boxart", "/covers"};
+  const char* extensions[] = {"raw", "bmp"};
+  size_t pathCount = 0;
+  for (const char* folder : folders) {
+    for (const char* extension : extensions) {
+      snprintf(paths[pathCount++], sizeof(paths[0]), "%s/%s.%s", folder, key, extension);
+    }
+  }
+  const bool legacyBaseUnique = legacyBaseIsUnique(romFilename, legacyBase);
+  if (legacyBaseUnique) {
+    for (const char* folder : folders) {
+      for (const char* extension : extensions) {
+        snprintf(paths[pathCount++], sizeof(paths[0]), "%s/%s.%s", folder, legacyBase, extension);
+      }
+    }
+  }
   SpiArbiter::lock();
 
-  // 1. Try /boxart/<base>.raw
-  snprintf(path, sizeof(path), "/boxart/%s.raw", baseName);
-  if (loadRaw(path)) {
-    s_hasArt = true;
-    SpiArbiter::unlock();
-    return true;
-  }
-
-  // 2. Try /boxart/<base>.bmp
-  snprintf(path, sizeof(path), "/boxart/%s.bmp", baseName);
-  if (loadBmp(path)) {
-    s_hasArt = true;
-    SpiArbiter::unlock();
-    return true;
-  }
-
-  // 3. Try /covers/<base>.raw
-  snprintf(path, sizeof(path), "/covers/%s.raw", baseName);
-  if (loadRaw(path)) {
-    s_hasArt = true;
-    SpiArbiter::unlock();
-    return true;
-  }
-
-  // 4. Try /covers/<base>.bmp
-  snprintf(path, sizeof(path), "/covers/%s.bmp", baseName);
-  if (loadBmp(path)) {
-    s_hasArt = true;
-    SpiArbiter::unlock();
-    return true;
+  for (size_t i = 0; i < pathCount; ++i) {
+    const bool isBmp = strstr(paths[i], ".bmp") != nullptr;
+    if (isBmp ? loadBmp(paths[i]) : loadRaw(paths[i])) {
+      s_hasArt = true;
+      if (i >= 4 && legacyBaseUnique) {
+        char keyPath[128];
+        const char* folderEnd = strrchr(paths[i], '/');
+        const char* extension = isBmp ? ".bmp" : ".raw";
+        if (folderEnd) {
+          const size_t folderLength = static_cast<size_t>(folderEnd - paths[i]);
+          if (folderLength < sizeof(keyPath)) {
+            memcpy(keyPath, paths[i], folderLength);
+            keyPath[folderLength] = '\0';
+            snprintf(keyPath + folderLength, sizeof(keyPath) - folderLength, "/%s%s", key, extension);
+            migrateLegacyArt(paths[i], keyPath);
+          }
+        }
+      }
+      SpiArbiter::unlock();
+      return true;
+    }
   }
 
   SpiArbiter::unlock();

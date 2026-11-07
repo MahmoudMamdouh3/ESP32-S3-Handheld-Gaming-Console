@@ -29,11 +29,20 @@
 #define TFT_CS     10
 #define TFT_WIDTH  240
 #define TFT_HEIGHT 320
+#ifndef TFT_SPI_HZ
+#define TFT_SPI_HZ 80000000UL
+#endif
+#define TFT_SPI_FALLBACK_HZ 40000000UL // Diagnostics comparison only; default remains 80 MHz.
+
+#if TFT_SPI_HZ > 62500000UL
+#pragma message("TFT_SPI_HZ exceeds the ST7789VW 62.5 MHz published serial-write limit; board timing is unmeasured")
+#endif
 
 // ---------- SD Card Module (shares SPI bus with display) ----------
 // SCK and MOSI are shared with the display (GPIO 12 and 11).
 #define SD_MISO    15
 #define SD_CS      13
+#define SD_SPI_HZ  25000000UL
 
 // ---------- Buttons (Game Boy layout) ----------
 // Each button: one leg -> GPIO, other leg -> GND.

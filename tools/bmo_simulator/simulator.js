@@ -765,7 +765,18 @@ class BmoSimulator {
         const log = document.getElementById("playtest-engine-log");
         if (log) log.textContent = "Running 11 native host C cores across 50 frames...";
         try {
-          const resp = await fetch("/api/host-cores/run");
+          const tokenResp = await fetch("/api/host-cores/token", {
+            cache: "no-store",
+            credentials: "same-origin",
+          });
+          if (!tokenResp.ok) throw new Error("Could not open a local test session");
+          const session = await tokenResp.json();
+          const resp = await fetch("/api/host-cores/run", {
+            method: "POST",
+            cache: "no-store",
+            credentials: "same-origin",
+            headers: { "X-BMO-Session": session.token },
+          });
           if (resp.ok) {
             const data = await resp.json();
             if (log) log.textContent = `Host Cores: ${data.message || "All 11 cores verified"}`;
@@ -1104,7 +1115,7 @@ class BmoSimulator {
       this.ctx.fillRect(19, 39, 4, 9);
 
       // A / B Buttons
-      this.ctx.fillStyle = "#E8175D";
+      this.ctx.fillStyle = "#FF91A5";
       this.ctx.beginPath();
       this.ctx.arc(38, 43, 2.5, 0, Math.PI * 2);
       this.ctx.arc(32, 47, 2.5, 0, Math.PI * 2);
@@ -1609,7 +1620,7 @@ class BmoSimulator {
     const games = this.getVisibleGames(c.id);
     const T = {
       black: "#0f2620", deepTeal: "#1a4b42", teal: "#5fb49c", mint: "#cef5e4",
-      yellow: "#ffe033", coral: "#e8175d", blue: "#52a6ba", white: "#f8fdfa"
+      yellow: "#ffe033", coral: "#ff91a5", blue: "#52a6ba", white: "#f8fdfa"
     };
     const ctx = this.ctx;
 

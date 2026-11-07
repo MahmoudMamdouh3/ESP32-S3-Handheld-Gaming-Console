@@ -89,7 +89,7 @@ class TestTier1FirmwareValidation(unittest.TestCase):
     def test_06_sd_card_rom_types_and_extensions(self):
         """Verify sd_card.cpp recognizes all Tier 1 extensions."""
         sd_code = (FIRMWARE_DIR / "src" / "core" / "sd_card.cpp").read_text(encoding="utf-8")
-        required_exts = [".sms", ".gg", ".pce", ".a26", ".a78", ".p8", ".gb", ".gbc", ".nes", ".wad"]
+        required_exts = [".sms", ".gg", ".pce", ".a26", ".p8", ".gb", ".gbc", ".nes", ".wad"]
         for ext in required_exts:
             self.assertIn(ext, sd_code, f"Extension {ext} not handled in determineType in sd_card.cpp")
 

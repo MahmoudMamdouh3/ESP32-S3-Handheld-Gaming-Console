@@ -17,12 +17,14 @@ Phases:
   6  Rules & Manifest Integrity
 """
 
+import argparse
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -40,7 +42,15 @@ if str(SCRIPTS_DIR) not in sys.path:
 # Canonical build FQBN — CDCOnBoot=cdc, FlashMode=qio for Quad Flash + Octal PSRAM module
 ARDUINO_FQBN = (
     'esp32:esp32:esp32s3:'
-    'CDCOnBoot=cdc,FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi'
+    'CDCOnBoot=cdc,CPUFreq=240,FlashMode=qio,FlashSize=16M,'
+    'PartitionScheme=custom,PSRAM=opi,USBMode=default'
+)
+ARDUINO_PROFILE = 'esp32s3'
+TARGET_COMPILE_STATUS = 'NOT_RUN'
+
+DEBUG_LOG_MACROS = {'LOG_LEVEL_DEBUG', 'LOG_DEBUG', 'LOG_DEBUG_STR'}
+DEBUG_ONLY_MACRO_NAME = re.compile(
+    r'(?:^|_)(?:DEBUG|UNIT_TESTS?|TEST_MODE|TEST_ONLY)(?:_|$)', re.IGNORECASE
 )
 
 # All expected emulator wrapper stems
@@ -127,41 +137,49 @@ def _parse_partitions_csv(csv_path):
 # Phase 0 — Binary Compilation Gate
 # ---------------------------------------------------------------------------
 
-def check_arduino_compile():
+def check_arduino_compile(require_target_compile=False):
     """
     Run arduino-cli compile with the production FQBN.
-    If arduino-cli is not installed, emit a STRONG WARNING but do not fail —
-    CI environments without the toolchain cannot be blocked.
+    Missing arduino-cli is an explicit skip in local advisory mode and an
+    error in strict mode. A successful run also verifies the repository
+    partition table and checks the linked app image against app0.
     Returns list of error strings.
     """
+    global TARGET_COMPILE_STATUS
     issues = []
     cli = _find_arduino_cli()
     if not cli:
-        print(
-            '  [WARN] arduino-cli NOT FOUND — Binary Compilation Gate SKIPPED.\n'
-            '  [WARN] VERIFIED_HOST status CANNOT be claimed without a passing compile.\n'
-            '  [WARN] Install arduino-cli and re-run to close this gap.\n'
-            '  [WARN] The flash-overflow error (158%) is caused by using the wrong\n'
-            '  [WARN] partition scheme. In the Arduino IDE: Tools > Partition Scheme\n'
-            '  [WARN] > Custom.  Or compile via:\n'
-            f'  [WARN]   arduino-cli compile --fqbn "{ARDUINO_FQBN}" firmware/BmoGameboy'
-        )
-        return issues  # advisory — not a hard CI failure when CLI absent
+        TARGET_COMPILE_STATUS = 'SKIPPED'
+        print('  arduino-cli is unavailable; target compile was skipped.')
+        if require_target_compile:
+            issues.append('arduino-cli is unavailable in strict target-compile mode')
+        return issues
 
-    print(f'  Compiling with FQBN: {ARDUINO_FQBN}')
+    build_dir = REPO_ROOT / 'build' / 'target-compile'
+    build_dir.mkdir(parents=True, exist_ok=True)
+    print(f'  Compiling profile: {ARDUINO_PROFILE} ({ARDUINO_FQBN})')
     try:
         result = subprocess.run(
-            [cli, 'compile', '--fqbn', ARDUINO_FQBN, str(FIRMWARE_DIR)],
-            capture_output=True, text=True, timeout=360,
+            [cli, 'compile', '--clean', '--profile', ARDUINO_PROFILE,
+             '--build-path', str(build_dir), str(FIRMWARE_DIR)],
+            capture_output=True, text=True, timeout=1800,
         )
     except subprocess.TimeoutExpired:
-        issues.append('arduino-cli compile timed out after 360 s')
+        TARGET_COMPILE_STATUS = 'FAILED'
+        issues.append('arduino-cli compile timed out after 1800 s')
         return issues
     except Exception as exc:
+        TARGET_COMPILE_STATUS = 'FAILED'
         issues.append(f'arduino-cli invocation error: {exc}')
         return issues
 
     combined = result.stdout + result.stderr
+    if combined.strip():
+        print(combined.rstrip())
+    if result.returncode != 0:
+        TARGET_COMPILE_STATUS = 'FAILED'
+        issues.append('arduino-cli compile returned non-zero exit (see output above)')
+        return issues
 
     # Parse flash/SRAM numbers
     text_m = re.search(r'Sketch uses (\d+) bytes.*?Maximum is (\d+) bytes', combined)
@@ -172,7 +190,7 @@ def check_arduino_compile():
         pct = used / mx * 100
         headroom_pct = (mx - used) / mx * 100
         print(f'  Flash: {used:,} / {mx:,} bytes ({pct:.1f}%) — headroom {headroom_pct:.1f}%')
-        if result.returncode != 0 or used > mx:
+        if used > mx:
             issues.append(
                 f'FLASH OVERFLOW: {used:,} bytes = {pct:.1f}% of {mx:,} bytes max. '
                 'Select PartitionScheme=custom (8 MB app0) in IDE or CLI FQBN.'
@@ -183,10 +201,7 @@ def check_arduino_compile():
                 'must maintain >= 20% headroom.'
             )
     else:
-        if result.returncode != 0:
-            tail = combined[-2000:]
-            print(tail)
-            issues.append('arduino-cli returned non-zero exit (see output above)')
+        issues.append('arduino-cli output did not contain the sketch flash-usage line')
 
     if sram_m:
         sused, smx = int(sram_m.group(1)), int(sram_m.group(2))
@@ -197,6 +212,68 @@ def check_arduino_compile():
                 f'SRAM critically high: {spct:.1f}% — risk of stack overflow.'
             )
 
+    repo_partitions = FIRMWARE_DIR / 'partitions.csv'
+    built_partitions = build_dir / 'partitions.csv'
+    if not built_partitions.is_file():
+        issues.append('target build did not produce partitions.csv')
+    elif built_partitions.read_bytes() != repo_partitions.read_bytes():
+        issues.append('target build partition table differs from firmware/BmoGameboy/partitions.csv')
+
+    app0_size = _parse_partitions_csv(repo_partitions).get('app0', {}).get('size')
+    app_images = sorted(build_dir.glob('*.ino.bin'))
+    if app0_size is None:
+        issues.append('repository partition table has no app0 size')
+    elif len(app_images) != 1:
+        issues.append(f'target build produced {len(app_images)} candidate app images; expected one')
+    else:
+        image_size = app_images[0].stat().st_size
+        print(f'  App image: {image_size:,} / {app0_size:,} bytes (app0); '
+              f'{app0_size - image_size:,} bytes free')
+        if image_size > app0_size:
+            issues.append(f'app image exceeds app0 by {image_size - app0_size:,} bytes')
+
+    if issues:
+        TARGET_COMPILE_STATUS = 'FAILED'
+    else:
+        TARGET_COMPILE_STATUS = 'VERIFIED'
+    return issues
+
+
+def _debug_only_definitions(text):
+    """Return debug/test-only macro definitions found in a header or profile."""
+    found = []
+    definition = re.compile(
+        r'^\s*#\s*define\s+([A-Za-z_][A-Za-z0-9_]*)|(?:^|\s)-D([A-Za-z_][A-Za-z0-9_]*)',
+        re.MULTILINE,
+    )
+    for match in definition.finditer(text):
+        name = match.group(1) or match.group(2)
+        if name not in DEBUG_LOG_MACROS and DEBUG_ONLY_MACRO_NAME.search(name):
+            found.append(name)
+    return found
+
+
+def check_release_debug_macro_guardrails():
+    issues = []
+    ignored_dirs = {'.git', '.tools', 'build', 'node_modules', '__pycache__', 'games', 'roms', 'sdcard'}
+    for current_root, directory_names, file_names in os.walk(REPO_ROOT):
+        directory_names[:] = [name for name in directory_names if name not in ignored_dirs]
+        for file_name in file_names:
+            header = Path(current_root) / file_name
+            if header.suffix.lower() not in {'.h', '.hh', '.hpp', '.hxx'}:
+                continue
+            relative = header.relative_to(REPO_ROOT)
+            try:
+                text = header.read_text(encoding='utf-8', errors='ignore')
+            except OSError:
+                continue
+            for macro in _debug_only_definitions(text):
+                issues.append(f'{relative.as_posix()}: release header defines debug/test-only macro {macro}')
+
+    profile = FIRMWARE_DIR / 'sketch.yaml'
+    if profile.is_file():
+        for macro in _debug_only_definitions(profile.read_text(encoding='utf-8', errors='ignore')):
+            issues.append(f'{profile.relative_to(REPO_ROOT).as_posix()}: release profile defines debug/test-only macro {macro}')
     return issues
 
 
@@ -285,6 +362,7 @@ def check_firmware_safety_guardrails():
     else:
         issues.append('partitions.csv not found in sketch directory')
 
+    issues.extend(check_release_debug_macro_guardrails())
     return issues
 
 
@@ -513,7 +591,17 @@ PHASES = [
 ]
 
 
-def main():
+def main(argv=None):
+    parser = argparse.ArgumentParser(description='Validate BMO Gameboy source, build, and documentation contracts.')
+    parser.add_argument(
+        '--require-target-compile',
+        action='store_true',
+        help='fail if the Arduino CLI target compile cannot run (also honors BMO_REQUIRE_TARGET_COMPILE=1)',
+    )
+    args = parser.parse_args(argv)
+    env_strict = os.environ.get('BMO_REQUIRE_TARGET_COMPILE', '').strip().lower() in {'1', 'true', 'yes', 'on'}
+    require_target_compile = args.require_target_compile or env_strict
+
     start = time.perf_counter()
     print('=' * 62)
     print('BMO Gameboy — AI Guardian CI Validator')
@@ -521,6 +609,8 @@ def main():
 
     all_issues = []
     for phase_name, phase_fn in PHASES:
+        if phase_fn is check_arduino_compile:
+            phase_fn = lambda: check_arduino_compile(require_target_compile)
         print(f'\n[{phase_name}]')
         errors = phase_fn()
         if errors:
@@ -532,6 +622,12 @@ def main():
 
     duration_ms = (time.perf_counter() - start) * 1000
     print('\n' + '=' * 62)
+    if TARGET_COMPILE_STATUS == 'SKIPPED':
+        print('TARGET COMPILE: SKIPPED - NOT VERIFIED')
+    elif TARGET_COMPILE_STATUS == 'VERIFIED':
+        print('TARGET COMPILE: VERIFIED')
+    elif TARGET_COMPILE_STATUS == 'FAILED':
+        print('TARGET COMPILE: FAILED - NOT VERIFIED')
     if all_issues:
         print(f'VALIDATION FAILED in {duration_ms:.0f} ms — {len(all_issues)} issue(s):')
         for issue in all_issues:

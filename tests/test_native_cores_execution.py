@@ -14,6 +14,7 @@ from pathlib import Path
 
 from scripts import fetch_covers
 from tools import telemetry_plotter
+from host_test_support import require_compiler
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FIRMWARE_DIR = REPO_ROOT / "firmware" / "BmoGameboy"
@@ -38,7 +39,7 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         vcvars = _find_vcvars64()
         gcc = shutil.which("gcc") or shutil.which("clang")
         if not vcvars and not gcc:
-            self.skipTest("No host C compiler (MSVC cl.exe or gcc/clang) available on this machine")
+            require_compiler(self, None, "Native C compiler")
 
         c_sources = [
             REPO_ROOT / "tools" / "host_cores_runner.c",
@@ -137,11 +138,21 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         text = telemetry_plotter.generate_synthetic_telemetry(10)
         samples = telemetry_plotter.parse_telemetry_stream(text)
         self.assertEqual(len(samples), 10)
+        self.assertEqual(samples[0].emulator_index, 1)
+        self.assertEqual(samples[0].target_frame_us, 16742)
+        windows = telemetry_plotter.parse_frame_percentile_windows(text)
+        self.assertEqual(len(windows), 1)
+        self.assertEqual(windows[0].frame_count, 600)
+        self.assertEqual((windows[0].p50_us, windows[0].p95_us, windows[0].p99_us),
+                         (5100, 6200, 7400))
         summary = telemetry_plotter.summarize_telemetry(samples)
         self.assertGreaterEqual(summary.mean_fps, 59.0)
         self.assertGreater(summary.mean_headroom_percent, 50.0)
-        plot = telemetry_plotter.render_ascii_plot(samples)
-        self.assertIn("BMO GAMEBOY REAL-TIME TELEMETRY", plot)
+        plot = telemetry_plotter.render_ascii_plot(
+            samples, frame_windows=windows, source_label="SYNTHETIC"
+        )
+        self.assertIn("BMO GAMEBOY TELEMETRY & FRAME PACING REPORT [SYNTHETIC]", plot)
+        self.assertIn("p95=6200us", plot)
 
     def test_06_web_simulator_webserial_sd_manager_and_rom_dropzone(self):
         html = (REPO_ROOT / "tools" / "bmo_simulator" / "index.html").read_text(encoding="utf-8")
@@ -336,7 +347,12 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
     def test_09_run_simulator_server_handler_endpoints(self):
         from tools.bmo_simulator import run_simulator
         self.assertTrue(hasattr(run_simulator, "Handler"))
-        self.assertTrue(hasattr(run_simulator.Handler, "handle_host_cores_run"))
+        self.assertTrue(hasattr(run_simulator.Handler, "do_POST"))
+        self.assertEqual(run_simulator.HOST, "127.0.0.1")
+        self.assertTrue(run_simulator.valid_host_header("127.0.0.1:8080"))
+        self.assertFalse(run_simulator.valid_host_header("localhost:8080"))
+        self.assertTrue(run_simulator.valid_origin_header("http://127.0.0.1:8080"))
+        self.assertFalse(run_simulator.valid_origin_header("http://localhost:8080"))
         html = (REPO_ROOT / "tools" / "bmo_simulator" / "index.html").read_text(encoding="utf-8")
         self.assertIn("wasm-playtest-panel", html)
         self.assertIn("btn-wasm-save-state", html)

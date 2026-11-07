@@ -71,11 +71,24 @@ struct atexit_listentry_s
 static atexit_listentry_t *exit_funcs = NULL;
 static byte *s_zonemem_base = NULL;
 
+#if defined(ESP32) || defined(ARDUINO)
+extern void* Doom_MallocPSRAM(size_t size);
+#else
+static void *Doom_AllocBytes(size_t size)
+{
+    return calloc(1, size);
+}
+#endif
+
 void I_AtExit(atexit_func_t func, boolean run_on_error)
 {
     atexit_listentry_t *entry;
 
-    entry = malloc(sizeof(*entry));
+#if defined(ESP32) || defined(ARDUINO)
+    entry = (atexit_listentry_t *)Doom_MallocPSRAM(sizeof(*entry));
+#else
+    entry = (atexit_listentry_t *)Doom_AllocBytes(sizeof(*entry));
+#endif
     if (entry == NULL) return;
 
     entry->func = func;
@@ -96,49 +109,49 @@ void I_Tactile(int on, int off, int total)
 
 static byte *AutoAllocMemory(int *size, int default_ram, int min_ram)
 {
-    byte *zonemem;
-
-    // Allocate the zone memory.  This loop tries progressively smaller
-    // zone sizes until a size is found that can be allocated.
-    // If we used the -mb command line parameter, only the parameter
-    // provided is accepted.
-
-    zonemem = NULL;
-
-    while (zonemem == NULL)
-    {
-        // We need a reasonable minimum amount of RAM to start.
-
-        if (default_ram < min_ram)
-        {
-            I_Error("Unable to allocate %i MiB of RAM for zone", default_ram);
-        }
-
-        // Try to allocate the zone memory.
-
-        *size = default_ram * 1024 * 1024;
+    byte *zonemem = NULL;
 
 #if defined(ESP32) || defined(ARDUINO)
-        extern void* Doom_MallocPSRAM(size_t size);
-        zonemem = (byte*)Doom_MallocPSRAM(*size);
+    extern void* Doom_MallocPSRAM(size_t size);
+    extern size_t Doom_GetTargetZoneBytes(void);
+    size_t targetBytes = Doom_GetTargetZoneBytes();
+    const size_t floorBytes = 2560 * 1024;
+    if (targetBytes < floorBytes)
+    {
+        *size = 0;
+        return NULL;
+    }
+    while (zonemem == NULL && targetBytes >= floorBytes)
+    {
+        *size = (int)targetBytes;
+        zonemem = (byte*)Doom_MallocPSRAM(targetBytes);
+        if (zonemem == NULL)
+        {
+            if (targetBytes <= floorBytes) break;
+            targetBytes -= (256 * 1024);
+            if (targetBytes < floorBytes) targetBytes = floorBytes;
+        }
+    }
+    return zonemem;
 #else
-        zonemem = malloc(*size);
-#endif
-
-        // Failed to allocate?  Reduce zone size until we reach a size
-        // that is acceptable.
-
+    while (zonemem == NULL && default_ram >= min_ram)
+    {
+        *size = default_ram * 1024 * 1024;
+        zonemem = (byte*)calloc(1, (size_t)(*size));
         if (zonemem == NULL)
         {
             default_ram -= 1;
         }
     }
-
     return zonemem;
+#endif
 }
+
+static boolean already_quitting = false;
 
 void I_ShutdownZone(void)
 {
+    already_quitting = false;
     while (exit_funcs != NULL)
     {
         atexit_listentry_t *next = exit_funcs->next;
@@ -287,8 +300,10 @@ void I_Quit (void)
 
 #if ORIGCODE
     SDL_Quit();
-
-    exit(0);
+#endif
+#if defined(ESP32) || defined(ARDUINO)
+    extern void Doom_Bailout(const char* msg);
+    Doom_Bailout("Quit");
 #endif
 }
 
@@ -311,7 +326,7 @@ static char *EscapeShellString(char *string)
     char *r, *s;
 
     // In the worst case, every character might be escaped.
-    result = malloc(strlen(string) * 2 + 3);
+    result = (char *)calloc(1, strlen(string) * 2 + 3);
     if (result == NULL) return NULL;
     r = result;
 
@@ -364,7 +379,7 @@ static int ZenityErrorBox(char *message)
     escaped_message = EscapeShellString(message);
 
     errorboxpath_size = strlen(ZENITY_BINARY) + strlen(escaped_message) + 19;
-    errorboxpath = malloc(errorboxpath_size);
+    errorboxpath = (char *)calloc(1, errorboxpath_size);
     M_snprintf(errorboxpath, errorboxpath_size, "%s --error --text=%s",
                ZENITY_BINARY, escaped_message);
 
@@ -383,8 +398,6 @@ static int ZenityErrorBox(char *message)
 // I_Error
 //
 
-static boolean already_quitting = false;
-
 void I_Error (char *error, ...)
 {
     char msgbuf[512];
@@ -395,9 +408,11 @@ void I_Error (char *error, ...)
     if (already_quitting)
     {
         fprintf(stderr, "Warning: recursive call to I_Error detected.\n");
-#if ORIGCODE
-        exit(-1);
+#if defined(ESP32) || defined(ARDUINO)
+        extern void Doom_Bailout(const char* msg);
+        Doom_Bailout("Recursive I_Error");
 #endif
+        return;
     }
     else
     {
@@ -480,7 +495,6 @@ void I_Error (char *error, ...)
 #elif defined(__DJGPP__)
     {
         printf("%s\n", msgbuf);
-        exit(-1);
     }
 
 #else
@@ -491,13 +505,12 @@ void I_Error (char *error, ...)
     }
 #endif
 
-    // abort();
 #if ORIGCODE
     SDL_Quit();
-
-    exit(-1);
-#else
-    exit(-1);
+#endif
+#if defined(ESP32) || defined(ARDUINO)
+    extern void Doom_Bailout(const char* msg);
+    Doom_Bailout(msgbuf);
 #endif
 }
 
