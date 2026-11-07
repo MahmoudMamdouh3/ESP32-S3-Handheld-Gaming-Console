@@ -58,7 +58,7 @@ The display operates at 80 MHz on the shared FSPI bus:
 
 ## 4. Complete Console Button Map (12 Buttons)
 
-All 12 inputs are configured with internal pull-ups (`INPUT_PULLUP`) and switch directly to GND on contact closure.
+All 12 inputs are configured with internal pull-ups (`INPUT_PULLUP`) and switch directly to GND on contact closure. The 8 base controls (`UP, DOWN, LEFT, RIGHT, A, B, START, SELECT`) are physically soldered now; the 4 extended controls (`X, Y, L, R`) are supported in firmware, Wokwi, and the 3D simulator and are pending physical soldering (unwired pins safely read `HIGH` = released).
 
 | Button | Macro (`config.h`) | ESP32-S3 GPIO | Polling Register | Hardware Assignment |
 |---|---|---|---|---|
