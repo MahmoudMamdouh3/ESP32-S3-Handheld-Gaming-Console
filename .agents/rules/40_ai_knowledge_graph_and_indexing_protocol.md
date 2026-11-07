@@ -47,7 +47,7 @@ Before performing broad directory searches or file scans, an agent **MUST** quer
 - Execute the specified `verification_command`.
 
 ### Rule 40.3: Ground-Truth Telemetry Derivation
-All symbol signatures, memory section allocations (`IRAM`, `DRAM`, `PSRAM`, `FLASH`), line-by-line metrics, and latency budgets in generated artifacts **MUST** be derived directly from the Guardian engine (`tools/guardian/`). Never fabricate or estimate performance numbers.
+All symbol signatures, memory section allocations (`IRAM`, `DRAM`, `PSRAM`, `FLASH`), line-by-line metrics, and bus budgets in generated artifacts **MUST** be derived directly from the Guardian engine (`tools/guardian/`). The checked-in knowledge graph omits wall-clock timestamps and live host benchmark values so CI can verify generated-file drift. Run `python -m tools.guardian bench-host` for fresh host-only measurements; measure hardware timings on the device. Never present host results as device performance.
 
 ### Rule 40.4: Instant CLI Query & Navigation Tools
 To prevent context window saturation and hallucinations, agents may execute Guardian zero-shot query commands directly from the terminal:

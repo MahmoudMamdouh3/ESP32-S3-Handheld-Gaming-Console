@@ -100,8 +100,11 @@ static void ExtendLumpInfo(int newnumlumps)
 
     if (newlumpinfo == NULL)
     {
-	I_Error ("Couldn't realloc lumpinfo");
-	return;
+#if defined(ESP32) || defined(ARDUINO)
+        extern void Doom_Bailout(const char* msg);
+        Doom_Bailout("ExtendLumpInfo: lumpinfo allocation returned NULL");
+#endif
+        return;
     }
 
     // Copy over lumpinfo_t structures from the old array. If any of

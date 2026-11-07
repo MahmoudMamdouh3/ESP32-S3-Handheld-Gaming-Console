@@ -22,11 +22,18 @@
 #include "src/core/bmo_face.h"
 #include "src/core/spi_arbiter.h"
 #include "src/core/save_manager.h"
+#include "src/core/battery_save.h"
 #include "src/core/box_art.h"
 #include "src/core/rom_index.h"
+#include "src/core/pause_quit_policy.h"
+#include "src/core/frame_pacing.h"
+#include "src/core/frame_percentiles.h"
 #include <SPI.h>
+#include <stdlib.h>
 #include <rom/ets_sys.h>      // N7: ets_delay_us for tight hardware-timer spin
 #include <esp_heap_caps.h>    // BM2: IRAM usage reporting
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 enum SystemState {
   STATE_BOOT_SPLASH,
@@ -54,6 +61,30 @@ static const RomFile** visibleGames = fallbackVisibleGames;
 static int maxVisibleCapacity = 32;
 static int visibleGameCount = 0;
 
+static void syncVisiblePoolCapacity() {
+  int targetCap = SDCard::computePoolCapacity(SDCard::getRomCount());
+  if (targetCap < SDCard::getPoolCapacity()) {
+    targetCap = SDCard::getPoolCapacity();
+  }
+  if (targetCap <= maxVisibleCapacity) return;
+
+  int* psramIndexes = (int*)heap_caps_malloc(sizeof(int) * (size_t)targetCap, MALLOC_CAP_SPIRAM);
+  const RomFile** psramGames = (const RomFile**)heap_caps_malloc(sizeof(const RomFile*) * (size_t)targetCap, MALLOC_CAP_SPIRAM);
+  if (!psramIndexes || !psramGames) {
+    if (psramIndexes) heap_caps_free(psramIndexes);
+    if (psramGames) heap_caps_free(psramGames);
+    LOG_WARN_STR("PSRAM game-menu allocation failed; using the current bounded capacity.");
+    return;
+  }
+
+  if (visibleRomIndexes != fallbackRomIndexes) heap_caps_free(visibleRomIndexes);
+  if (visibleGames != fallbackVisibleGames) heap_caps_free(visibleGames);
+  visibleRomIndexes = psramIndexes;
+  visibleGames = psramGames;
+  maxVisibleCapacity = targetCap;
+  visibleGameCount = 0;
+}
+
 static const RomType CONSOLES[] = {
   ROM_FAVORITES,
   ROM_GB, ROM_GBC, ROM_NES, ROM_WAD,
@@ -64,42 +95,49 @@ static const int CONSOLE_COUNT = sizeof(CONSOLES) / sizeof(CONSOLES[0]);
 
 // Pointer to dynamically loaded ROM buffer in PSRAM
 uint8_t* currentRomBuffer = nullptr;
+size_t currentRomBufferSize = 0;
 char currentRomFilename[64] = "";
 static int pauseOption = 0;
+static PauseQuit::State s_pauseQuitState;
+static unsigned long s_pauseQuitArmedAt = 0;
 static char pauseToast[48] = "";
 static bool s_pauseMetaDirty = true;
 static bool s_pauseHasSave = false;
 static bool s_pauseHasBatt = false;
 
-static void autoSaveCurrentBatteryRam() {
-  if (currentRomFilename[0] == '\0') return;
-  if (selectedEmulatorIndex == 0) {
-    WalnutEmu::saveBatteryRam(currentRomFilename);
-  } else if (selectedEmulatorIndex == 1) {
-    PeanutEmu::saveBatteryRam(currentRomFilename);
-  } else if (selectedEmulatorIndex == 2) {
-    NesEmu::saveBatteryRam(currentRomFilename);
-  } else if (selectedEmulatorIndex == 4 || selectedEmulatorIndex == 5) {
-    SmsEmu::saveBatteryRam(currentRomFilename);
-  } else if (selectedEmulatorIndex == 6) {
-    PceEmu::saveBatteryRam(currentRomFilename);
-  } else if (selectedEmulatorIndex == 7) {
-    AtariEmu::saveBatteryRam(currentRomFilename);
-  } else if (selectedEmulatorIndex == 8) {
-    PicoEmu::saveBatteryRam(currentRomFilename);
-  } else if (selectedEmulatorIndex == 9) {
-    GenesisEmu::saveBatteryRam(currentRomFilename);
-  } else if (selectedEmulatorIndex == 10) {
-    SNESEmu::saveBatteryRam(currentRomFilename);
-  } else if (selectedEmulatorIndex == 11) {
-    WSwanEmu::saveBatteryRam(currentRomFilename);
-  } else if (selectedEmulatorIndex == 12) {
-    NGPEmu::saveBatteryRam(currentRomFilename);
-  } else if (selectedEmulatorIndex == 13) {
-    LynxEmu::saveBatteryRam(currentRomFilename);
-  } else if (selectedEmulatorIndex == 14) {
-    ColemEmu::saveBatteryRam(currentRomFilename);
+static bool currentGameHasBatterySaveSupport() {
+  if (!currentRomBuffer) return false;
+  if (selectedEmulatorIndex == 0 || selectedEmulatorIndex == 1) {
+    if (currentRomBufferSize <= 0x0149) return false;
+    return BatterySave::gameBoyBatteryBytes(currentRomBuffer[0x0147], currentRomBuffer[0x0149]) > 0;
   }
+  if (selectedEmulatorIndex == 2) {
+    return currentRomBufferSize >= 16 && BatterySave::nesHeaderHasBattery(currentRomBuffer[6]);
+  }
+  if (selectedEmulatorIndex == 6) return true; // PCE BRAM is modeled as backup RAM.
+  if (selectedEmulatorIndex == 10) {
+    const size_t offset = ((currentRomBufferSize & 0x7FFFU) == 512U) ? 512U : 0U;
+    const size_t codeOffset = offset + 0x7FD8U;
+    return codeOffset < currentRomBufferSize &&
+           BatterySave::snesLoRomBatteryBytes(currentRomBuffer[codeOffset]) > 0;
+  }
+  return false;
+}
+
+static bool autoSaveCurrentBatteryRam() {
+  if (currentRomFilename[0] == '\0' || !currentGameHasBatterySaveSupport()) return false;
+  if (selectedEmulatorIndex == 0) {
+    return WalnutEmu::saveBatteryRam(currentRomFilename);
+  } else if (selectedEmulatorIndex == 1) {
+    return PeanutEmu::saveBatteryRam(currentRomFilename);
+  } else if (selectedEmulatorIndex == 2) {
+    return NesEmu::saveBatteryRam(currentRomFilename);
+  } else if (selectedEmulatorIndex == 6) {
+    return PceEmu::saveBatteryRam(currentRomFilename);
+  } else if (selectedEmulatorIndex == 10) {
+    return SNESEmu::saveBatteryRam(currentRomFilename);
+  }
+  return false;
 }
 
 static bool quickSaveState(int slot) {
@@ -168,6 +206,7 @@ static bool quickLoadState(int slot) {
 
 
 static void destroyActiveEmulator() {
+  DisplayEmu::waitForDisplay();
   if (selectedEmulatorIndex == 0) {
     WalnutEmu::destroy();
   } else if (selectedEmulatorIndex == 1) {
@@ -202,7 +241,15 @@ static void destroyActiveEmulator() {
     SDCard::freeRom(currentRomBuffer);
     currentRomBuffer = nullptr;
   }
+  currentRomBufferSize = 0;
   currentRomFilename[0] = '\0';
+}
+
+static void finishQuitToConsole() {
+  destroyActiveEmulator();
+  currentState = STATE_CONSOLE_MENU;
+  BmoFace::setExpression(BmoFace::IDLE);
+  delay(300);
 }
 
 // P3: Timestamp-based debounce — non-blocking replacement for delay(200).
@@ -222,12 +269,25 @@ static unsigned long frameTimeMin = ULONG_MAX;
 static unsigned long frameTimeMax = 0;
 static unsigned long frameTimeSum = 0;
 static int          frameTimeCount = 0;
+static unsigned long framePercentileSamples[FramePercentiles::WINDOW_SIZE];
+static size_t framePercentileCount = 0;
 
-static inline void recordFrameTime(unsigned long us) {
+static inline void recordFrameTime(unsigned long us, int emulatorIndex) {
   if (us < frameTimeMin) frameTimeMin = us;
   if (us > frameTimeMax) frameTimeMax = us;
   frameTimeSum  += us;
   frameTimeCount++;
+  framePercentileSamples[framePercentileCount++] = us;
+  if (framePercentileCount == FramePercentiles::WINDOW_SIZE) {
+    FramePercentiles::Summary percentiles;
+    if (FramePercentiles::sortAndSummarize(framePercentileSamples,
+                                           FramePercentiles::WINDOW_SIZE, percentiles)) {
+      LOG_INFO("Frame window: emu=%d n=600 target=%luus p50=%luus p95=%luus p99=%luus (core execution)",
+               emulatorIndex, FramePacing::targetFrameUs(emulatorIndex), percentiles.p50,
+               percentiles.p95, percentiles.p99);
+    }
+    framePercentileCount = 0;
+  }
 }
 
 static void resetFrameStats() {
@@ -235,6 +295,10 @@ static void resetFrameStats() {
   frameTimeMax   = 0;
   frameTimeSum   = 0;
   frameTimeCount = 0;
+}
+
+static void resetFramePercentiles() {
+  framePercentileCount = 0;
 }
 
 static bool visibleGamesDirty = true;
@@ -307,6 +371,9 @@ int totalDroppedFramesThisSecond = 0;
 
 void setup() {
   Serial.begin(115200);
+  // USB CDC writes can wait under host backpressure; logging is best-effort so
+  // a connected-but-not-reading host cannot stall the emulator loop.
+  Serial.setTxTimeoutMs(0);
   
   // Wait 3 seconds for Serial to connect (avoids hang on UART port).
   // PERF-M5: In release builds skip the 3-second Serial wait — users see a black
@@ -338,18 +405,6 @@ void setup() {
   BmoFace::begin();
   BmoFace::setExpression(BmoFace::IDLE);
   bootSplashStartMs = millis();
-  
-  int* psramIndexes = (int*)heap_caps_malloc(sizeof(int) * MAX_VISIBLE_ROMS, MALLOC_CAP_SPIRAM);
-  const RomFile** psramGames = (const RomFile**)heap_caps_malloc(sizeof(const RomFile*) * MAX_VISIBLE_ROMS, MALLOC_CAP_SPIRAM);
-  if (psramIndexes && psramGames) {
-    visibleRomIndexes = psramIndexes;
-    visibleGames = psramGames;
-    maxVisibleCapacity = MAX_VISIBLE_ROMS;
-  } else {
-    if (psramIndexes) heap_caps_free(psramIndexes);
-    if (psramGames) heap_caps_free(psramGames);
-    LOG_WARN_STR("PSRAM game-menu allocation failed; using 32-entry fallback.");
-  }
 
   if (!SDCard::begin()) {
     LOG_ERROR_STR("Failed to mount SD card!");
@@ -357,6 +412,12 @@ void setup() {
     LOG_INFO("SD Card mounted. Found %d ROMs.", SDCard::getRomCount());
     SaveManager::begin();
   }
+  syncVisiblePoolCapacity();
+
+  LOG_INFO("PSRAM boot state: free=%u B, largest_block=%u B, pool_cap=%d",
+           (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
+           (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM),
+           SDCard::getPoolCapacity());
 
   // BM2: Report IRAM free size so we can verify IRAM_ATTR budget usage.
   LOG_INFO("IRAM free: %u bytes",
@@ -521,6 +582,10 @@ void loop() {
     if (elapsed < 16) delay(16 - elapsed);
 
   } else if (currentState == STATE_DIAGNOSTICS) {
+    static bool spiStressPattern = false;
+    static bool spiStressFallback = false;
+    static uint32_t spiStressFrame = 0;
+    static unsigned long lastStackLogMs = 0;
     const unsigned long diagFrameStart = millis();
     DisplayEmu::initMenuUI();
     Buttons::update();
@@ -540,16 +605,66 @@ void loop() {
     if (Buttons::get(Buttons::R).pressed)      btnMask |= (1 << 11);
 
     const auto& btnB = Buttons::get(Buttons::B);
+    const auto& btnA = Buttons::get(Buttons::A);
+    const auto& btnLeft = Buttons::get(Buttons::LEFT);
+    const auto& btnRight = Buttons::get(Buttons::RIGHT);
+    const auto& btnSelect = Buttons::get(Buttons::SELECT);
     if (canPress() && btnB.pressed && btnB.changed) {
+      if (spiStressFallback) DisplayEmu::setDiagnosticSpiClock(TFT_SPI_HZ);
+      spiStressPattern = false;
+      spiStressFallback = false;
       currentState = STATE_CONSOLE_MENU;
+      lastButtonMs = millis();
+    } else if (canPress() && btnA.pressed && btnA.changed) {
+      spiStressPattern = !spiStressPattern;
+      if (!spiStressPattern && spiStressFallback) {
+        DisplayEmu::setDiagnosticSpiClock(TFT_SPI_HZ);
+        spiStressFallback = false;
+      }
+      lastButtonMs = millis();
+    } else if (canPress() && spiStressPattern &&
+               ((btnLeft.pressed && btnLeft.changed) || (btnRight.pressed && btnRight.changed))) {
+      spiStressFallback = !spiStressFallback;
+      DisplayEmu::setDiagnosticSpiClock(spiStressFallback ? TFT_SPI_FALLBACK_HZ : TFT_SPI_HZ);
+      lastButtonMs = millis();
+    } else if (canPress() && !spiStressPattern && btnSelect.pressed && btnSelect.changed) {
+      if (!SDCard::isMounted()) {
+        const bool mounted = SDCard::begin();
+        if (mounted) SaveManager::begin();
+        DisplayEmu::showToast(mounted ? "SD CARD RETRY SUCCEEDED" : "SD CARD STILL NOT FOUND",
+                              Theme::BMO_DPAD_YELLOW, 3000);
+      } else {
+        DisplayEmu::showToast("RESCANNING SD LIBRARY", Theme::BMO_DPAD_YELLOW, 10000);
+        SDCard::rebuildIndex();
+        DisplayEmu::showToast(SDCard::getSkippedRomCount() == 0
+                                  ? "LIBRARY RESCAN COMPLETE"
+                                  : "RESCAN COMPLETE; SOME PATHS SKIPPED",
+                              Theme::BMO_DPAD_YELLOW, 3000);
+      }
       lastButtonMs = millis();
     }
 
     uint32_t freeDram = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     uint32_t freePsram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+    uint32_t largestPsramBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
     uint32_t freeIram = heap_caps_get_free_size(MALLOC_CAP_IRAM_8BIT);
+    uint32_t loopStackHighWaterWords = (uint32_t)uxTaskGetStackHighWaterMark(nullptr);
+    uint32_t displayStackHighWaterWords = DisplayEmu::getDisplayStackHighWaterMarkWords();
+    if (millis() - lastStackLogMs >= 5000) {
+      LOG_INFO("[STACK] loopTask HWM=%u words, displayTask HWM=%u words",
+               (unsigned int)loopStackHighWaterWords, (unsigned int)displayStackHighWaterWords);
+      lastStackLogMs = millis();
+    }
 
-    DisplayEmu::drawDiagnosticsDashboard(millis(), freeDram, freePsram, freeIram, btnMask);
+    if (spiStressPattern) {
+      DisplayEmu::drawSpiStressPattern(spiStressFallback ? TFT_SPI_FALLBACK_HZ : TFT_SPI_HZ,
+                                       spiStressFrame++);
+    } else {
+      DisplayEmu::drawDiagnosticsDashboard(millis(), freeDram, freePsram, freeIram, btnMask,
+                                           largestPsramBlock, (uint32_t)SDCard::getSkippedRomCount(),
+                                           loopStackHighWaterWords, displayStackHighWaterWords,
+                                           SDCard::isMounted(), SDCard::getClockHz());
+    }
 
     const unsigned long elapsed = millis() - diagFrameStart;
     if (elapsed < 16) delay(16 - elapsed);
@@ -831,6 +946,10 @@ void loop() {
 
         DisplayEmu::cleanupMenuUI();
         DisplayEmu::clearScreen();
+        LOG_INFO("PSRAM launch state (%s): free=%u B, largest_block=%u B",
+                 selectedRom->filename,
+                 (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
+                 (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM));
         size_t romSize = 0;
         // Doom reads its WAD directly from the SD VFS. Loading a second full
         // copy into PSRAM wastes memory and can prevent the engine from
@@ -905,6 +1024,7 @@ void loop() {
           LOG_ERROR_STR("Failed to start emulator. Check errors.");
           SDCard::freeRom(romData);
           currentRomBuffer = nullptr;
+          currentRomBufferSize = 0;
           if (selectedRom->hasBoxArt) BoxArt::load(selectedRom->filename);
           currentState = STATE_GAME_MENU;
           BmoFace::setExpression(BmoFace::IDLE);
@@ -913,6 +1033,7 @@ void loop() {
         }
         
         currentRomBuffer = romData; // Track it globally so we can free it later
+        currentRomBufferSize = romSize;
         strncpy(currentRomFilename, selectedRom->filename, sizeof(currentRomFilename) - 1);
         currentRomFilename[sizeof(currentRomFilename) - 1] = '\0';
         SDCard::recordRecentLaunch(currentRomFilename);
@@ -924,29 +1045,14 @@ void loop() {
           PeanutEmu::loadBatteryRam(currentRomFilename);
         } else if (selectedEmulatorIndex == 2) {
           NesEmu::loadBatteryRam(currentRomFilename);
-        } else if (selectedEmulatorIndex == 4 || selectedEmulatorIndex == 5) {
-          SmsEmu::loadBatteryRam(currentRomFilename);
         } else if (selectedEmulatorIndex == 6) {
           PceEmu::loadBatteryRam(currentRomFilename);
-        } else if (selectedEmulatorIndex == 7) {
-          AtariEmu::loadBatteryRam(currentRomFilename);
-        } else if (selectedEmulatorIndex == 8) {
-          PicoEmu::loadBatteryRam(currentRomFilename);
-        } else if (selectedEmulatorIndex == 9) {
-          GenesisEmu::loadBatteryRam(currentRomFilename);
         } else if (selectedEmulatorIndex == 10) {
           SNESEmu::loadBatteryRam(currentRomFilename);
-        } else if (selectedEmulatorIndex == 11) {
-          WSwanEmu::loadBatteryRam(currentRomFilename);
-        } else if (selectedEmulatorIndex == 12) {
-          NGPEmu::loadBatteryRam(currentRomFilename);
-        } else if (selectedEmulatorIndex == 13) {
-          LynxEmu::loadBatteryRam(currentRomFilename);
-        } else if (selectedEmulatorIndex == 14) {
-          ColemEmu::loadBatteryRam(currentRomFilename);
         }
 
         resetFrameStats();
+        resetFramePercentiles();
         currentState = STATE_EMULATOR;
         // Show a brief HAPPY expression as a "game launching" beat before
         // gameplay starts.  draw() is called once here; update()/draw() are
@@ -1018,15 +1124,15 @@ void loop() {
       Buttons::toggleTurbo();
     }
 
-    // Return to menu: SELECT + UP
+    // SELECT + UP opens the quit action; leaving requires a second A press.
     if (select && up) {
-      autoSaveCurrentBatteryRam();
-      destroyActiveEmulator();
-
-      currentState = STATE_CONSOLE_MENU;
-      BmoFace::setExpression(BmoFace::IDLE);
-      lastButtonMs = millis();
-      delay(300);
+      currentState = STATE_PAUSE_MENU;
+      pauseOption = 5;
+      PauseQuit::transition(s_pauseQuitState, PauseQuit::Input::Cancel, false);
+      s_pauseQuitArmedAt = 0;
+      snprintf(pauseToast, sizeof(pauseToast), "A TO CONFIRM QUIT; B TO RESUME");
+      s_pauseMetaDirty = true;
+      delay(200);
       return;
     }
 
@@ -1064,28 +1170,29 @@ void loop() {
     }
 
     unsigned long elapsed = micros() - frameStart;
+    const unsigned long targetFrameUs = FramePacing::targetFrameUs(selectedEmulatorIndex);
 
     // BM1: Record this frame's time for diagnostics.
-    recordFrameTime(elapsed);
+    recordFrameTime(elapsed, selectedEmulatorIndex);
     
     // ---------------------------------------------------------------------------
-    // N7/PERF-09: Frame pacing — target 16742 µs (59.73 Hz Game Boy vsync).
+    // Use nominal per-core pacing budgets; fast-forward bypasses the wait.
     // Use delay() for the bulk sleep (yields to FreeRTOS/watchdog), then
     // ets_delay_us() for a clean hardware-timer spin on the sub-ms remainder.
     // SELECT + RIGHT activates Fast-Forward (skips pacing delay).
     // ---------------------------------------------------------------------------
     const bool fastForwardActive = select && right;
     if (!fastForwardActive) {
-      if (elapsed < 16742) {
-        unsigned long remaining = 16742 - elapsed;
+      if (elapsed < targetFrameUs) {
+        unsigned long remaining = targetFrameUs - elapsed;
         if (remaining > 1000) {
           // Sleep bulk margin with 800us spin-tail guard (PERF-09)
           delay((remaining - 800) / 1000);
         }
         // Re-measure after sleep, then use hardware-timer spin for the tail.
         elapsed = micros() - frameStart;
-        if (elapsed < 16742) {
-          ets_delay_us(16742 - elapsed);
+        if (elapsed < targetFrameUs) {
+          ets_delay_us(targetFrameUs - elapsed);
         }
       } else {
         droppedFrames++;
@@ -1099,12 +1206,12 @@ void loop() {
     if (now - lastTime >= 1000) {
       unsigned long avg = (frameTimeCount > 0) ? frameTimeSum / frameTimeCount : 0;
       if (totalDroppedFramesThisSecond > 0) {
-        LOG_INFO("FPS: %d | Frame: avg=%luus min=%luus max=%luus | Dropped: %d (total %d)",
-                      frames, avg, frameTimeMin, frameTimeMax,
+        LOG_INFO("FPS: %d | Emu: %d target=%luus | Frame: avg=%luus min=%luus max=%luus | Dropped: %d (total %d)",
+                      frames, selectedEmulatorIndex, targetFrameUs, avg, frameTimeMin, frameTimeMax,
                       totalDroppedFramesThisSecond, droppedFrames);
       } else {
-        LOG_INFO("FPS: %d | Frame: avg=%luus min=%luus max=%luus",
-                      frames, avg, frameTimeMin, frameTimeMax);
+        LOG_INFO("FPS: %d | Emu: %d target=%luus | Frame: avg=%luus min=%luus max=%luus",
+                      frames, selectedEmulatorIndex, targetFrameUs, avg, frameTimeMin, frameTimeMax);
       }
       frames = 0;
       totalDroppedFramesThisSecond = 0;
@@ -1122,19 +1229,29 @@ void loop() {
     bool start = Buttons::get(Buttons::START).pressed && Buttons::get(Buttons::START).changed;
     bool sel   = Buttons::get(Buttons::SELECT).pressed && Buttons::get(Buttons::SELECT).changed;
 
+    if (s_pauseQuitState.confirmationArmed && (uint32_t)(millis() - s_pauseQuitArmedAt) > 3000U) {
+      PauseQuit::transition(s_pauseQuitState, PauseQuit::Input::Timeout, false);
+      s_pauseQuitArmedAt = 0;
+    }
+
     if (up) {
+      PauseQuit::transition(s_pauseQuitState, PauseQuit::Input::Cancel, false);
       pauseOption = (pauseOption + 5) % 6;
       pauseToast[0] = '\0';
     } else if (down) {
+      PauseQuit::transition(s_pauseQuitState, PauseQuit::Input::Cancel, false);
       pauseOption = (pauseOption + 1) % 6;
       pauseToast[0] = '\0';
     } else if (left) {
+      PauseQuit::transition(s_pauseQuitState, PauseQuit::Input::Cancel, false);
       bool swapped = Buttons::toggleSwapAB();
       snprintf(pauseToast, sizeof(pauseToast), swapped ? "A/B SWAP: ON" : "A/B SWAP: OFF");
     } else if (right) {
+      PauseQuit::transition(s_pauseQuitState, PauseQuit::Input::Cancel, false);
       bool bezel = DisplayEmu::toggleBezel();
       snprintf(pauseToast, sizeof(pauseToast), bezel ? "CONSOLE BEZEL: ON" : "CONSOLE BEZEL: OFF");
     } else if (sel) {
+      PauseQuit::transition(s_pauseQuitState, PauseQuit::Input::Screenshot, false);
       int shotW = 0, shotH = 0;
       const uint16_t* shotFb = DisplayEmu::getLastFramebuffer(&shotW, &shotH);
       if (shotFb && SaveManager::saveScreenshotBmp(currentRomFilename, shotFb, shotW, shotH)) {
@@ -1143,6 +1260,14 @@ void loop() {
         snprintf(pauseToast, sizeof(pauseToast), "SCREENSHOT FAILED!");
       }
     } else if (btnB || start) {
+      const PauseQuit::Action action = start && s_pauseQuitState.saveFailed
+          ? PauseQuit::transition(s_pauseQuitState, PauseQuit::Input::QuitAnyway, false)
+          : PauseQuit::transition(s_pauseQuitState, PauseQuit::Input::Resume, false);
+      if (action == PauseQuit::Action::Quit) {
+        finishQuitToConsole();
+        return;
+      }
+      s_pauseQuitArmedAt = 0;
       DisplayEmu::drawConsoleBezel(selectedEmulatorIndex);
       currentState = STATE_EMULATOR;
       delay(200);
@@ -1175,27 +1300,49 @@ void loop() {
         s_pauseMetaDirty = true;
         snprintf(pauseToast, sizeof(pauseToast), "ACTIVE SLOT: %d", SaveManager::getActiveSlot());
       } else if (pauseOption == 4) {
-        autoSaveCurrentBatteryRam();
         s_pauseMetaDirty = true;
-        snprintf(pauseToast, sizeof(pauseToast), "BATTERY RAM SAVED!");
+        if (!currentGameHasBatterySaveSupport()) {
+          snprintf(pauseToast, sizeof(pauseToast), "NO BATTERY SAVE");
+        } else if (autoSaveCurrentBatteryRam()) {
+          snprintf(pauseToast, sizeof(pauseToast), "BATTERY RAM SAVED!");
+        } else {
+          snprintf(pauseToast, sizeof(pauseToast), "SAVE FAILED!");
+        }
       } else if (pauseOption == 5) {
-        autoSaveCurrentBatteryRam();
-        destroyActiveEmulator();
-        currentState = STATE_CONSOLE_MENU;
-        BmoFace::setExpression(BmoFace::IDLE);
-        delay(300);
-        return;
+        const bool batterySaveSupported = currentGameHasBatterySaveSupport();
+        PauseQuit::Action action = PauseQuit::transition(
+            s_pauseQuitState, PauseQuit::Input::Confirm, batterySaveSupported);
+        if (action == PauseQuit::Action::Stay && s_pauseQuitState.confirmationArmed) {
+          s_pauseQuitArmedAt = millis();
+          snprintf(pauseToast, sizeof(pauseToast), "PRESS A AGAIN TO QUIT; B TO RESUME");
+        } else if (action == PauseQuit::Action::AttemptSave) {
+          s_pauseQuitArmedAt = 0;
+          if (autoSaveCurrentBatteryRam()) {
+            action = PauseQuit::transition(s_pauseQuitState, PauseQuit::Input::SaveSucceeded, batterySaveSupported);
+          } else {
+            action = PauseQuit::transition(s_pauseQuitState, PauseQuit::Input::SaveFailed, batterySaveSupported);
+            s_pauseMetaDirty = true;
+            snprintf(pauseToast, sizeof(pauseToast), "SAVE FAILED: A RETRY, START QUIT");
+          }
+        }
+        if (action == PauseQuit::Action::Quit) {
+          s_pauseQuitArmedAt = 0;
+          finishQuitToConsole();
+          return;
+        }
       }
     }
 
     int currentSlot = SaveManager::getActiveSlot();
+    const bool batterySaveSupported = currentGameHasBatterySaveSupport();
     if (s_pauseMetaDirty) {
       s_pauseHasSave = SaveManager::hasSaveState(currentRomFilename, currentSlot);
-      s_pauseHasBatt = SaveManager::hasBatteryRam(currentRomFilename);
+      s_pauseHasBatt = batterySaveSupported && SaveManager::hasBatteryRam(currentRomFilename);
       s_pauseMetaDirty = false;
     }
 
-    DisplayEmu::drawPauseMenu(currentRomFilename, currentSlot, s_pauseHasSave, s_pauseHasBatt, pauseOption, pauseToast);
+    DisplayEmu::drawPauseMenu(currentRomFilename, currentSlot, s_pauseHasSave,
+                               s_pauseHasBatt, batterySaveSupported, pauseOption, pauseToast);
     pauseToast[0] = '\0';
     delay(30);
   }

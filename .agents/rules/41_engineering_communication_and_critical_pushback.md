@@ -31,11 +31,7 @@ The agent **MUST NOT blindly execute the flawed instruction**. Instead, the agen
 All communication, commit messages, PR descriptions, documentation, code comments, and tool outputs must use **scientific, neutral, and precise software engineering terminology**.
 
 ### 2.1 Banned Hyperbolic & Marketing Words
-Never use the following terms or their variants:
-- ❌ *amazing*, *groundbreaking*, *game-changing*, *revolutionary*, *state-of-the-art*
-- ❌ *production-grade*, *reviewer-grade*, *living architectural specification*, *masterclass*
-- ❌ *overkill*, *insane*, *flawless*, *massive victory*, *perfection*, *miracle*, *blazing fast*
-- ❌ *ultra-optimized*, *bulletproof*, *unprecedented*, *seamless*, *supercharged*
+Rule 43 is the canonical banned-language list. Do not maintain a second list here.
 
 ### 2.2 Mandatory Objective Technical Vocabulary
 Use precise, empirical, and reproducible engineering terms:

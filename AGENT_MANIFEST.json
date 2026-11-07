@@ -1,15 +1,14 @@
 {
-  "manifest_version": "2.1.0",
-  "last_updated": "2026-11-07T14:12:45.271606",
-  "total_files": 14970,
-  "total_lines": 2583865,
-  "total_sloc": 1989319,
+  "manifest_version": "2.2.0",
+  "total_files": 15128,
+  "total_lines": 2295287,
+  "total_sloc": 1700365,
   "target_mcu": "ESP32-S3-N16R8 (16MB Flash, 8MB PSRAM)",
   "active_consoles": 15,
   "rules_count": 45,
-  "iram_budget_used_bytes": 77824,
-  "flash_budget_used_bytes": 5702629,
-  "dram_budget_used_bytes": 219112,
+  "iram_budget_used_bytes": 77312,
+  "flash_budget_used_bytes": 5774741,
+  "dram_budget_used_bytes": 253728,
   "emulators": [
     {
       "name": "Game Boy DMG",
@@ -216,8 +215,7 @@
       "status": "active",
       "res": "160x192",
       "ext": [
-        ".a26",
-        ".bin"
+        ".a26"
       ],
       "fps": 60.0
     },
@@ -228,8 +226,7 @@
       "status": "active",
       "res": "128x128",
       "ext": [
-        ".p8",
-        ".png"
+        ".p8"
       ],
       "fps": 30.0
     },

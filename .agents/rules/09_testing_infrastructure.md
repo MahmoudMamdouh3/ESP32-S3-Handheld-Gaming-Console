@@ -2,9 +2,9 @@
 Formalizes the host-side native C/C++ test harnesses and Python verification suites so CPU-execution correctness, framebuffer rendering, and hardware invariants can be verified without a physical board.
 
 ## Layout
-- [`tools/host_cores_runner.c`](file:///e:/BMO%20Gameboy/tools/host_cores_runner.c) — Native x64 C test harness that compiles and links all 10 custom C emulator cores (`atari.c`, `colem.c`, `lynx.c`, `ngp.c`, `snes.c`, `wswan.c`, `genesis.c`, `sms.c`, `pce.c`, `pico.c`), loads real machine-code test ROMs, executes 50 frames per core (500 frames total), verifies CPU register/RAM transitions, and checks deterministic FNV-1a BGR565 framebuffer hashes. Executed automatically by [`tests/test_native_cores_execution.py`](file:///e:/BMO%20Gameboy/tests/test_native_cores_execution.py).
-- [`tools/host_test.cpp`](file:///e:/BMO%20Gameboy/tools/host_test.cpp) — Host-side C++ test harness for `walnut_cgb.h` running Blargg's Game Boy CPU instruction test (`firmware/BmoGameboy/src/assets/roms/tests/cpu_instrs.gb`).
-- [`scripts/test_runner.py`](file:///e:/BMO%20Gameboy/scripts/test_runner.py) — Verifies the Game Boy / GBC cartridge header checksum (`0x0134..0x014D`) across all 6 baked ROM C headers in `firmware/BmoGameboy/src/assets/`.
+- [`tools/host_cores_runner.c`](../../tools/host_cores_runner.c) — Native x64 C test harness that compiles and links all 10 custom C emulator cores (`atari.c`, `colem.c`, `lynx.c`, `ngp.c`, `snes.c`, `wswan.c`, `genesis.c`, `sms.c`, `pce.c`, `pico.c`), loads real machine-code test ROMs, executes 50 frames per core (500 frames total), verifies CPU register/RAM transitions, and checks deterministic FNV-1a BGR565 framebuffer hashes. Executed automatically by [`tests/test_native_cores_execution.py`](../../tests/test_native_cores_execution.py).
+- [`tools/host_test.cpp`](../../tools/host_test.cpp) — Host-side C++ test harness for `walnut_cgb.h` running Blargg's Game Boy CPU instruction test (`firmware/BmoGameboy/src/assets/roms/tests/cpu_instrs.gb`).
+- [`scripts/test_runner.py`](../../scripts/test_runner.py) — Verifies the Game Boy / GBC cartridge header checksum (`0x0134..0x014D`) across all 6 baked ROM C headers in `firmware/BmoGameboy/src/assets/`.
 - **Host Compiler:** Microsoft Visual C++ (`cl.exe` via `vcvars64.bat`, Visual Studio 2022 / v18 Community) or system `gcc`/`clang`.
 
 ## Test ROM Ledger

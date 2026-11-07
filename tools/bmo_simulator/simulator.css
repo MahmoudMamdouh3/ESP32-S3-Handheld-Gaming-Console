@@ -14,7 +14,7 @@
   --accent-gold: #feca57;
   --accent-red: #ff6b6b;
   --accent-purple: #9c88ff;
-  --text-main: #f1f2f6;
+  --text-main: #f8fdfa;
   --text-dim: #a4b0be;
 
   /* Authentic OnionUI BMO Palette */
@@ -25,7 +25,7 @@
   --bezel-lens: #0f2620;
   --dpad-color: #ffe033;
   --btn-a-color: #52a6ba;
-  --btn-b-color: #e8175d;
+  --btn-b-color: #ff91a5;
   --btn-pill-color: #264b42;
   --btn-x-color: #4caf50;
   --btn-y-color: #f48fb1;
@@ -672,6 +672,10 @@ canvas#tft-display {
   bottom: 0;
   left: calc(36px * var(--scale-multiplier));
   background: var(--btn-b-color);
+  color: #0f2620;
+}
+
+body[data-theme="dmg-gray"] .btn-b {
   color: #ffffff;
 }
 

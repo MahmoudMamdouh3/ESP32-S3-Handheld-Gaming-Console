@@ -38,7 +38,7 @@
 namespace BmoFace {
 
   // -----------------------------------------------------------------------
-  // BmoExpression — 16-State Emotion Matrix for Living BMO Mascot
+  // BmoExpression — expression states for the BMO mascot
   //
   // Transitions between states interpolate smoothly via 2nd-order damped
   // harmonic oscillator springs (squash & stretch, bounce, overshoot)

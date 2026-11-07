@@ -178,14 +178,19 @@ class TestQualityOfLifeAndUnifiedPersistence(unittest.TestCase):
         self.assertIn("saveScreenshotBmp", sm_cpp)
         self.assertIn("/screenshots", sm_cpp)
 
-    def test_04_ino_wires_all_persistence_and_konami_code(self):
+    def test_04_ino_wires_supported_battery_persistence_and_all_save_states(self):
         ino = (FIRMWARE_DIR / "BmoGameboy.ino").read_text(encoding="utf-8")
-        for cls in ("WalnutEmu", "PeanutEmu", "NesEmu", "SmsEmu", "PceEmu", "AtariEmu",
-                    "PicoEmu", "GenesisEmu", "SNESEmu", "WSwanEmu", "NGPEmu", "LynxEmu", "ColemEmu"):
-            self.assertIn(f"{cls}::saveBatteryRam", ino)
-            self.assertIn(f"{cls}::loadBatteryRam", ino)
+        cores = ("WalnutEmu", "PeanutEmu", "NesEmu", "SmsEmu", "PceEmu", "AtariEmu",
+                 "PicoEmu", "GenesisEmu", "SNESEmu", "WSwanEmu", "NGPEmu", "LynxEmu", "ColemEmu")
+        battery_cores = ("WalnutEmu", "PeanutEmu", "NesEmu", "PceEmu", "SNESEmu")
+        for cls in cores:
             self.assertIn(f"{cls}::saveState", ino)
             self.assertIn(f"{cls}::loadState", ino)
+        for cls in battery_cores:
+            self.assertIn(f"{cls}::saveBatteryRam", ino)
+            self.assertIn(f"{cls}::loadBatteryRam", ino)
+        for cls in set(cores) - set(battery_cores):
+            self.assertNotIn(f"{cls}::loadBatteryRam", ino)
         self.assertIn("kKonamiSeq", ino)
         self.assertIn("SDCard::recordRecentLaunch", ino)
 

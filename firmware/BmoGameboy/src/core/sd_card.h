@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-enum RomType {
+enum RomType : uint8_t {
   ROM_UNKNOWN,
   ROM_FAVORITES,
   ROM_GB,
@@ -25,15 +25,36 @@ enum RomType {
 struct RomFile {
   char filename[64];
   RomType type;
-  bool isFavorite;
-  bool hasBoxArt;
-  bool isPopular;
+  uint8_t isFavorite;
+  uint8_t hasBoxArt;
+  uint8_t isPopular;
+  uint32_t fileSize;
 };
+
+static_assert(sizeof(RomFile) == 72, "RomFile cached index layout changed");
+static_assert(offsetof(RomFile, fileSize) == 68, "RomFile fileSize offset changed");
 
 class SDCard {
 public:
+  static constexpr int MIN_ROM_POOL = 256;
+  static constexpr int MAX_ROM_POOL = 36000;
+
+  static constexpr int computePoolCapacity(int catalogCount) {
+    if (catalogCount < 0) catalogCount = 0;
+    if (catalogCount >= MAX_ROM_POOL) return MAX_ROM_POOL;
+    int capacity = catalogCount + (catalogCount / 4) + ((catalogCount % 4) ? 1 : 0);
+    if (capacity < MIN_ROM_POOL) capacity = MIN_ROM_POOL;
+    if (capacity > MAX_ROM_POOL) capacity = MAX_ROM_POOL;
+    return capacity;
+  }
+  static int getPoolCapacity();
+  static int getSkippedRomCount();
+
   static bool begin();
   static bool isMounted();
+  // Nominal SPI clock selected for the successful mount attempt, derived from
+  // the pinned Arduino-ESP32 clock divider. Zero when the card is not mounted.
+  static uint32_t getClockHz();
   
   // Scans the SD directory hierarchy (up to depth 3) for ROMs and builds a list
   static void scanRoms();

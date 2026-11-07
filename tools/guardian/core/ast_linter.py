@@ -214,6 +214,51 @@ class FirmwareAstLinter:
             rel_path = path
         rel_path_str = str(rel_path).replace("\\", "/")
 
+        # Rule: forbid non-static local arrays larger than 1 KiB outside vendor code.
+        # This keeps large scratch buffers off the limited task stacks.
+        if "/src/vendor/" not in f"/{rel_path_str.strip('/')}" and "/vendor/" not in f"/{rel_path_str.strip('/')}" :
+            local_array_re = re.compile(
+                r"^\s*(?:(?:static|const|volatile|constexpr)\s+)*(?P<type>uint8_t|int8_t|char|bool|uint16_t|int16_t|short|uint32_t|int32_t|int|long|float|uint64_t|int64_t|double)\s+"
+                r"\w+\s*(?P<dims>(?:\[\s*\d+\s*\])+)")
+            type_sizes = {
+                "uint8_t": 1, "int8_t": 1, "char": 1, "bool": 1,
+                "uint16_t": 2, "int16_t": 2, "short": 2,
+                "uint32_t": 4, "int32_t": 4, "int": 4, "long": 4, "float": 4,
+                "uint64_t": 8, "int64_t": 8, "double": 8,
+            }
+            brace_depth = 0
+            function_depths: List[int] = []
+            function_open_re = re.compile(r"\b[\w:~]+\s*\([^;{}]*\)\s*(?:const\s*)?(?:noexcept\s*)?\{")
+            for idx, line in enumerate(lines, 1):
+                clean = line.split("//", 1)[0].strip()
+                if clean.startswith(("/*", "*", "#")):
+                    continue
+                match = local_array_re.match(clean)
+                if match and function_depths and brace_depth >= function_depths[-1] and "static" not in clean.split("[", 1)[0]:
+                    dimensions = [int(value) for value in re.findall(r"\[\s*(\d+)\s*\]", match.group("dims"))]
+                    element_count = 1
+                    for dimension in dimensions:
+                        element_count *= dimension
+                    byte_count = element_count * type_sizes[match.group("type")]
+                    if byte_count > 1024:
+                        findings.append(
+                            LintFinding(
+                                rule_id="LARGE_LOCAL_STACK_ARRAY",
+                                severity="CRITICAL",
+                                file_path=path,
+                                line_number=idx,
+                                line_content=clean,
+                                message=f"Local array occupies {byte_count} bytes on the task stack (limit is 1,024 B).",
+                                suggested_fix="Move the buffer to static storage or allocate it from an explicitly budgeted heap.",
+                            )
+                        )
+
+                opened_function = bool(function_open_re.search(clean))
+                brace_depth += clean.count("{") - clean.count("}")
+                if opened_function and "{" in clean:
+                    function_depths.append(brace_depth)
+                function_depths = [depth for depth in function_depths if depth <= brace_depth]
+
         # Rule 1: Check for naked Serial.print in emulator wrappers
         if "src/emulators/" in rel_path_str:
             for idx, line in enumerate(lines, 1):
@@ -448,5 +493,37 @@ class FirmwareAstLinter:
                         suggested_fix="Acquire `SpiArbiter::lock()` before SD I/O and `SpiArbiter::unlock()` after.",
                     )
                 )
+
+        # Rule 11: Forbid reachable exit() or I_Error() on allocation failure
+        for idx, line in enumerate(lines, 1):
+            clean = line.strip()
+            if clean.startswith("//") or clean.startswith("/*") or clean.startswith("*"):
+                continue
+            if re.search(r"\bexit\s*\(", clean):
+                findings.append(
+                    LintFinding(
+                        rule_id="EXIT_OR_ERROR_ON_ALLOC_FAILURE",
+                        severity="CRITICAL",
+                        file_path=path,
+                        line_number=idx,
+                        line_content=clean,
+                        message="Reachable exit() call in embedded firmware terminates RTOS execution.",
+                        suggested_fix="Return false or unwind via Doom_Bailout / setjmp recovery.",
+                    )
+                )
+            if re.search(r"\bI_Error\s*\(", clean):
+                window = " ".join(l.strip() for l in lines[max(0, idx - 5) : idx])
+                if re.search(r"(malloc|calloc|realloc|Doom_MallocPSRAM|heap_caps_malloc|default_ram\s*<\s*min_ram|newlumpinfo\s*==\s*NULL|new_open_wadfiles\s*==\s*NULL|rover\s*==\s*start|Unable to allocate|Z_Malloc:\s*failed|Couldn't realloc)", window + " " + clean):
+                    findings.append(
+                        LintFinding(
+                            rule_id="EXIT_OR_ERROR_ON_ALLOC_FAILURE",
+                            severity="CRITICAL",
+                            file_path=path,
+                            line_number=idx,
+                            line_content=clean,
+                            message="Reachable I_Error() on memory allocation failure instead of non-fatal recovery.",
+                            suggested_fix="Return NULL/false or unwind via Doom_Bailout so begin() returns false cleanly.",
+                        )
+                    )
 
         return findings

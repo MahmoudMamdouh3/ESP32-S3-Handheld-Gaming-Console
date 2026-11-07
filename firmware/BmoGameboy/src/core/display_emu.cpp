@@ -43,6 +43,11 @@ static PSRAMCanvas* menuCanvas = nullptr;
 namespace {
   Adafruit_ST7789 tft = Adafruit_ST7789(&SPI, TFT_CS, TFT_DC, TFT_RST);
 
+  // ST7789 MADCTL bit names: MY/MX mirror axes, MV swaps row/column order, BGR selects color order.
+  static constexpr uint8_t MADCTL_MY = 0x80;
+  static constexpr uint8_t MADCTL_MV = 0x20;
+  static constexpr uint8_t MADCTL_BGR = 0x08;
+
   struct color {
     uint32_t b:8;
     uint32_t g:8;
@@ -514,7 +519,7 @@ void DisplayEmu::begin() {
 
   SpiArbiter::lock();
   tft.init(TFT_WIDTH, TFT_HEIGHT);
-  tft.setSPISpeed(80000000); // 80 MHz SPI clock for max framerate
+  tft.setSPISpeed(TFT_SPI_HZ); // Keep the configured display clock for normal use.
   tft.setRotation(3); // Flipped Landscape mode (270 degrees)
 
   // FIX: Some ST7789 panels are configured for BGR instead of RGB by default,
@@ -526,7 +531,7 @@ void DisplayEmu::begin() {
   digitalWrite(TFT_CS, LOW);
   SPI.transfer(0x36); // MADCTL command
   digitalWrite(TFT_DC, HIGH);
-  SPI.transfer(0xA0 | 0x08); // Rotation 3 (0xA0) | BGR bit (0x08) = 0xA8
+  SPI.transfer(MADCTL_MY | MADCTL_MV | MADCTL_BGR); // Preserve configured 0xA8 orientation and BGR order.
   digitalWrite(TFT_CS, HIGH);
   SPI.endTransaction();
 
@@ -1044,7 +1049,7 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
     menuCanvas->setTextColor(UI_YELLOW);
     menuCanvas->print("BUILT-IN GAMES ONLY - SD CARD NOT FOUND");
   } else {
-    drawButtonPill(10,  220, "A",   "PLAY",   UI_CORAL,  UI_BLACK, UI_WHITE);
+    drawButtonPill(10,  220, "A",   "PLAY",   UI_CORAL,  UI_BLACK, UI_BLACK);
     drawButtonPill(88,  220, "UP",  "BMO",    UI_MINT,   UI_BLACK, UI_WHITE);
     drawButtonPill(160, 220, "SEL", "SPECS",  UI_TEAL,   UI_BLACK, UI_WHITE);
     drawButtonPill(238, 220, "< >", "SYSTEM", UI_YELLOW, UI_BLACK, UI_WHITE);
@@ -1316,6 +1321,12 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
       drawCentered(sdMounted ? "Add compatible ROMs to the SD card." :
                               "Insert an SD card to add more games.", 138, UI_MINT);
     }
+    if (SDCard::getSkippedRomCount() > 0) {
+      char skipped[40];
+      snprintf(skipped, sizeof(skipped), "SKIPPED PATHS: %d", SDCard::getSkippedRomCount());
+      menuCanvas->setFont();
+      drawCentered(skipped, 174, UI_YELLOW);
+    }
     drawFooter("B: BACK");
     writeMenuCanvas();
     return;
@@ -1368,6 +1379,15 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
            consoleBadge(actualType), s_topPicksFilter ? " TOP" : "");
   drawCentered(position, 198, UI_MINT);
 
+  if (SDCard::getSkippedRomCount() > 0) {
+    char skipped[40];
+    snprintf(skipped, sizeof(skipped), "SKIP %d", SDCard::getSkippedRomCount());
+    menuCanvas->setFont();
+    menuCanvas->setTextColor(UI_YELLOW);
+    menuCanvas->setCursor(6, 209);
+    menuCanvas->print(skipped);
+  }
+
   // Library scroll position track
   if (count > 1) {
     const int trackX = 60;
@@ -1382,7 +1402,7 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   // Footer action bar with button badges
   menuCanvas->fillRect(0, 214, 320, 26, UI_DEEP_TEAL);
   menuCanvas->drawFastHLine(0, 213, 320, UI_TEAL);
-  drawButtonPill(6,   220, "A",   "PLAY", UI_CORAL,  UI_BLACK, UI_WHITE);
+  drawButtonPill(6,   220, "A",   "PLAY", UI_CORAL,  UI_BLACK, UI_BLACK);
   drawButtonPill(56,  220, "B",   "BACK", UI_MINT,   UI_BLACK, UI_WHITE);
   drawButtonPill(106, 220, "SEL", isFav ? "UNSTAR" : "STAR", UI_YELLOW, UI_BLACK, UI_WHITE);
   drawButtonPill(180, 220, "ST",  s_topPicksFilter ? "ALL" : "TOP", UI_BLUE, UI_WHITE, UI_WHITE);
@@ -1412,7 +1432,8 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
 }
 
 void DisplayEmu::drawPauseMenu(const char* romTitle, int currentSlot, bool hasSaveState,
-                               bool hasBatterySave, int selectedOption, const char* statusToast) {
+                               bool hasBatterySave, bool batterySaveSupported,
+                               int selectedOption, const char* statusToast) {
   if (!menuCanvas) return;
   
   menuCanvas->fillScreen(UI_BLACK);
@@ -1475,7 +1496,11 @@ void DisplayEmu::drawPauseMenu(const char* romTitle, int currentSlot, bool hasSa
     } else if (i == 2) {
       snprintf(optStr, sizeof(optStr), "%s LOAD [SLOT %d]%s", isSel ? ">" : " ", currentSlot, hasSaveState ? "" : " (N/A)");
     } else if (i == 4) {
-      snprintf(optStr, sizeof(optStr), "%s SAVE BATTERY RAM (.SAV)%s", isSel ? ">" : " ", hasBatterySave ? " [OK]" : "");
+      if (batterySaveSupported) {
+        snprintf(optStr, sizeof(optStr), "%s SAVE BATTERY RAM (.SAV)%s", isSel ? ">" : " ", hasBatterySave ? " [OK]" : "");
+      } else {
+        snprintf(optStr, sizeof(optStr), "%s NO BATTERY SAVE", isSel ? ">" : " ");
+      }
     } else {
       snprintf(optStr, sizeof(optStr), "%s %s", isSel ? ">" : " ", options[i]);
     }
@@ -1573,7 +1598,10 @@ const uint16_t* DisplayEmu::getActiveDmgPalette() {
 
 void DisplayEmu::drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeDram,
                                          uint32_t freePsram, uint32_t freeIram,
-                                         uint16_t buttonMask, uint32_t largestPsramBlock) {
+                                         uint16_t buttonMask, uint32_t largestPsramBlock,
+                                         uint32_t skippedRomCount, uint32_t loopStackHighWaterWords,
+                                         uint32_t displayStackHighWaterWords, bool sdMounted,
+                                         uint32_t sdClockHz) {
   if (!menuCanvas) return;
 #if defined(ESP32) || defined(ARDUINO)
   if (largestPsramBlock == 0) {
@@ -1592,37 +1620,56 @@ void DisplayEmu::drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeD
   
   // System Telemetry
   menuCanvas->setCursor(18, 46);
-  menuCanvas->printf("MCU: ESP32-S3 Dual LX7 @ 240MHz");
-  menuCanvas->setCursor(18, 58);
+  if (TFT_SPI_HZ > 62500000UL) {
+    menuCanvas->printf("TFT %lu MHz (> 62.5 MHz datasheet limit,",
+                       (unsigned long)(TFT_SPI_HZ / 1000000UL));
+    menuCanvas->setCursor(18, 58);
+    menuCanvas->print("unmeasured)");
+  } else {
+    menuCanvas->printf("TFT %lu MHz (within published limit; unmeasured)",
+                       (unsigned long)(TFT_SPI_HZ / 1000000UL));
+  }
+  menuCanvas->setCursor(18, 70);
   unsigned long sec = uptimeMs / 1000;
-  menuCanvas->printf("Uptime: %lum %lus  |  Flash: 16MB QIO 80MHz", sec / 60, sec % 60);
+  if (sdMounted) {
+    menuCanvas->printf("Uptime: %lum %lus  |  SD: MOUNTED %luMHz", sec / 60, sec % 60,
+                       (unsigned long)(sdClockHz / 1000000UL));
+  } else {
+    menuCanvas->printf("Uptime: %lum %lus  |  SD: NOT MOUNTED", sec / 60, sec % 60);
+  }
 
   // Memory Telemetry
-  menuCanvas->setCursor(18, 74);
+  menuCanvas->setCursor(18, 82);
   menuCanvas->setTextColor(UI_YELLOW);
   menuCanvas->print("--- MEMORY TELEMETRY ---");
   menuCanvas->setTextColor(UI_WHITE);
   
-  menuCanvas->setCursor(18, 88);
+  menuCanvas->setCursor(18, 94);
   menuCanvas->printf("Internal DRAM Free : %6u / 327,680 B (%u%%)", 
                      (unsigned int)freeDram, (unsigned int)(freeDram * 100 / 327680));
-  menuCanvas->setCursor(18, 100);
+  menuCanvas->setCursor(18, 106);
   menuCanvas->printf("PSRAM Free / MaxBlk: %6u / %6u B",
                      (unsigned int)freePsram, (unsigned int)largestPsramBlock);
-  menuCanvas->setCursor(18, 112);
+  menuCanvas->setCursor(18, 118);
   menuCanvas->printf("IRAM Execution Free: %6u B", (unsigned int)freeIram);
-  menuCanvas->setCursor(18, 124);
+  menuCanvas->setCursor(18, 126);
 #if FEATURE_BATTERY_MONITOR
   menuCanvas->printf("Battery: %d%% (%d mV)", Battery::getPercentage(), Battery::getVoltageMv());
 #else
-  menuCanvas->print("Battery: NOT FITTED (USB power only)");
+  menuCanvas->print("Battery: NOT FITTED");
 #endif
+  menuCanvas->setCursor(148, 126);
+  menuCanvas->printf("HWM loop/disp: %u/%u w", (unsigned int)loopStackHighWaterWords,
+                     (unsigned int)displayStackHighWaterWords);
 
   // Live Button Tester
-  menuCanvas->setCursor(18, 130);
+  menuCanvas->setCursor(18, 134);
   menuCanvas->setTextColor(UI_YELLOW);
   menuCanvas->print("--- LIVE BUTTON MATRIX TESTER ---");
   menuCanvas->setTextColor(UI_WHITE);
+  menuCanvas->setCursor(18, 142);
+  menuCanvas->printf("BTN MASK: %03X | ROM paths skipped: %u",
+                     (unsigned int)(buttonMask & 0x0FFFU), (unsigned int)skippedRomCount);
 
   const bool upPressed    = (buttonMask & (1 << 0));
   const bool downPressed  = (buttonMask & (1 << 1));
@@ -1713,7 +1760,48 @@ void DisplayEmu::drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeD
   menuCanvas->setTextColor(xPressed ? UI_BLACK : UI_WHITE);
   menuCanvas->print("X");
 
-  drawFooter("PRESS B TO EXIT DIAGNOSTICS");
+  drawFooter("A SPI TEST  |  B EXIT");
+  writeMenuCanvas();
+}
+
+void DisplayEmu::setDiagnosticSpiClock(uint32_t spiClockHz) {
+  if (spiClockHz != TFT_SPI_HZ && spiClockHz != TFT_SPI_FALLBACK_HZ) return;
+  waitForDisplay();
+  SpiArbiter::lock();
+  tft.setSPISpeed(spiClockHz);
+  SpiArbiter::unlock();
+}
+
+uint32_t DisplayEmu::getDisplayStackHighWaterMarkWords() {
+  if (!s_displayTaskHandle) return 0;
+  return (uint32_t)uxTaskGetStackHighWaterMark(s_displayTaskHandle);
+}
+
+void DisplayEmu::drawSpiStressPattern(uint32_t spiClockHz, uint32_t frameNumber) {
+  if (!menuCanvas) return;
+
+  static const uint16_t patternColors[] = {
+    UI_BLACK, UI_WHITE, UI_MINT, UI_DEEP_TEAL, UI_YELLOW, UI_CORAL, UI_BLUE
+  };
+  const size_t colorCount = sizeof(patternColors) / sizeof(patternColors[0]);
+  const uint32_t phase = frameNumber & 1U;
+
+  for (int y = 0; y < 240; y += 20) {
+    for (int x = 0; x < 320; x += 20) {
+      const size_t colorIndex = (size_t)((x / 20 + y / 20 + phase) % colorCount);
+      menuCanvas->fillRect(x, y, 20, 20, patternColors[colorIndex]);
+    }
+  }
+
+  menuCanvas->fillRect(0, 92, 320, 56, UI_BLACK);
+  menuCanvas->setFont();
+  menuCanvas->setTextColor(UI_WHITE);
+  menuCanvas->setCursor(88, 112);
+  menuCanvas->print("SPI STRESS PATTERN");
+  menuCanvas->setTextColor(UI_YELLOW);
+  menuCanvas->setCursor(104, 130);
+  menuCanvas->printf("CLOCK: %u MHz", (unsigned int)(spiClockHz / 1000000U));
+  drawFooter("LEFT/RIGHT CLOCK  |  A RETURN  |  B EXIT");
   writeMenuCanvas();
 }
 

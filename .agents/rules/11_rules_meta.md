@@ -1,5 +1,5 @@
 # Meta-Rules for the Rules Directory Itself
-**RULESET_VERSION: 5** <!-- v5 = closed mascot contract, bug intake protocol, and ROM governance -->
+**RULESET_VERSION: 8** <!-- bundle_rules.py reads this release version -->
 
 - Every file in .agents/rules/ must stay under 12,000 characters (the
   original constraint that caused project-rules.md to be split). If a

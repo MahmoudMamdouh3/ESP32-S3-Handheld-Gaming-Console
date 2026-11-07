@@ -7,9 +7,9 @@
 ## 1. Scope & Authority
 
 This rule governs all user interface development in the repository, including:
-1. **Firmware Display Logic:** [`firmware/BmoGameboy/src/core/display_emu.cpp`](file:///firmware/BmoGameboy/src/core/display_emu.cpp), [`display_emu.h`](file:///firmware/BmoGameboy/src/core/display_emu.h), [`bmo_face.cpp`](file:///firmware/BmoGameboy/src/core/bmo_face.cpp), [`theme.h`](file:///firmware/BmoGameboy/src/core/theme.h).
-2. **Web Simulator Frontend:** [`tools/bmo_simulator/index.html`](file:///tools/bmo_simulator/index.html), [`simulator.css`](file:///tools/bmo_simulator/simulator.css), [`simulator.js`](file:///tools/bmo_simulator/simulator.js).
-3. **Design Specification:** [`DESIGN.md`](file:///DESIGN.md).
+1. **Firmware Display Logic:** [`firmware/BmoGameboy/src/core/display_emu.cpp`](../../firmware/BmoGameboy/src/core/display_emu.cpp), [`display_emu.h`](../../firmware/BmoGameboy/src/core/display_emu.h), [`bmo_face.cpp`](../../firmware/BmoGameboy/src/core/bmo_face.cpp), [`theme.h`](../../firmware/BmoGameboy/src/core/theme.h).
+2. **Web Simulator Frontend:** [`tools/bmo_simulator/index.html`](../../tools/bmo_simulator/index.html), [`simulator.css`](../../tools/bmo_simulator/simulator.css), [`simulator.js`](../../tools/bmo_simulator/simulator.js).
+3. **Design Specification:** [`DESIGN.md`](../../DESIGN.md).
 
 ---
 

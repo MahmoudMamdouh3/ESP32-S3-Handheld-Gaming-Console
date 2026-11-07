@@ -52,9 +52,8 @@ suspected cause of an incomplete run, that is itself something to fix and
 rerun, not something to reason past.
 
 ## Banned AI Marketing Jargon & Hyperbolic Slop
-No superlatives, hype, or marketing framing in status reports, PRs, docs, or commit messages.
-- Banned terms: "amazing", "groundbreaking", "state-of-the-art", "game-changing", "revolutionary", "production-grade", "reviewer-grade", "masterclass", "overkill", "insane", "flawlessly", "massive victory", "perfection", "miracle", "blazing fast", "ultra-optimized", "bulletproof", "unprecedented", "seamless", "supercharged".
-- Mandate: Report what ran, exact output numbers, measured latency in microseconds, memory consumption in bytes, and precise issue status. Use objective, scientific software engineering terminology (see 41_engineering_communication_and_critical_pushback.md). Neutral, empirical, and reproducible reporting is mandatory.
+Rule 43 is the canonical banned-language list. Do not maintain a second list here.
+Report exact command output, measurements, and issue status using plain technical language.
 
 ## Quoting code
 When asked to show code, or when justifying a claim about existing code,

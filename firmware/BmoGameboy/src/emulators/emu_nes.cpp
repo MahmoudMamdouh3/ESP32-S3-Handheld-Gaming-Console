@@ -4,6 +4,7 @@
 #include "../core/display_emu.h"
 #include "../core/buttons.h"
 #include "../core/save_manager.h"
+#include "../core/battery_save.h"
 #include <Arduino.h>
 
 #include <esp_heap_caps.h>
@@ -11,6 +12,7 @@
 static agnes_t* agnes_ctx = nullptr;
 static uint8_t* s_nesStateBuf = nullptr;
 static size_t s_nesStateSize = 0;
+static bool s_nesHasBatteryRam = false;
 
 static uint8_t* getNesStateBuf() {
   if (!s_nesStateBuf) {
@@ -23,6 +25,7 @@ static uint8_t* getNesStateBuf() {
 }
 
 bool NesEmu::begin(const uint8_t* romData, size_t romSize) {
+  s_nesHasBatteryRam = false;
   if (agnes_ctx) {
     agnes_destroy(agnes_ctx);
   }
@@ -37,6 +40,7 @@ bool NesEmu::begin(const uint8_t* romData, size_t romSize) {
     agnes_ctx = nullptr;
     return false;
   }
+  s_nesHasBatteryRam = romSize >= 16 && BatterySave::nesHeaderHasBattery(romData[6]);
   return true;
 }
 
@@ -75,6 +79,7 @@ void NesEmu::destroy() {
     agnes_destroy(agnes_ctx);
     agnes_ctx = nullptr;
   }
+  s_nesHasBatteryRam = false;
   if (s_nesStateBuf) {
     heap_caps_free(s_nesStateBuf);
     s_nesStateBuf = nullptr;
@@ -83,7 +88,7 @@ void NesEmu::destroy() {
 }
 
 bool NesEmu::saveBatteryRam(const char* romFilename) {
-  if (!agnes_ctx || !romFilename) return false;
+  if (!agnes_ctx || !romFilename || !s_nesHasBatteryRam) return false;
   size_t prgRamSize = 0;
   uint8_t* prgRam = agnes_get_prg_ram(agnes_ctx, &prgRamSize);
   if (!prgRam || prgRamSize == 0) return false;
@@ -91,7 +96,7 @@ bool NesEmu::saveBatteryRam(const char* romFilename) {
 }
 
 bool NesEmu::loadBatteryRam(const char* romFilename) {
-  if (!agnes_ctx || !romFilename) return false;
+  if (!agnes_ctx || !romFilename || !s_nesHasBatteryRam) return false;
   size_t prgRamSize = 0;
   uint8_t* prgRam = agnes_get_prg_ram(agnes_ctx, &prgRamSize);
   if (!prgRam || prgRamSize == 0) return false;

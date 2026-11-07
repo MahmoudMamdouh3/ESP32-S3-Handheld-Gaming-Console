@@ -1,19 +1,18 @@
 # Emulator Exit Contract
-Purpose: Formalizes what every emulator core's teardown path must do on exit so PSRAM allocations are completely recovered and no session leaks heap across repeated game launches.
 
-## Current State (Verified Across All 14 Cores)
-In [`BmoGameboy.ino`](file:///e:/BMO%20Gameboy/firmware/BmoGameboy/BmoGameboy.ino), exiting a game from `STATE_PAUSE_MENU` (`START + SELECT` -> `QUIT TO CONSOLE MENU` or `SELECT + UP` shortcut) calls:
-1. `autoSaveCurrentBatteryRam()` — Persists cartridge battery SRAM (`.sav`) to `/saves/` via `SaveManager::saveBatteryRam`.
-2. `destroyActiveEmulator()` — Invokes `destroy()` on whichever of the **14** emulator cores is active:
-   - `WalnutEmu::destroy()`, `PeanutEmu::destroy()`, `NesEmu::destroy()`, `DoomEmu::destroy()`, `SmsEmu::destroy()`, `PceEmu::destroy()`, `AtariEmu::destroy()`, `PicoEmu::destroy()`, `GenesisEmu::destroy()`, `SNESEmu::destroy()`, `WSwanEmu::destroy()`, `NGPEmu::destroy()`, `LynxEmu::destroy()`, `ColemEmu::destroy()`.
-3. `SDCard::freeRom(currentRom)` — Frees the PSRAM ROM buffer inside `destroyActiveEmulator()` (while leaving `.rodata` flash-baked pointers untouched).
+The launcher owns the ROM buffer and session transition. The wrapper owns only its emulator allocations. Check the live dispatch in firmware/BmoGameboy/BmoGameboy.ino before changing the sequence.
 
-## What every emulator `destroy()` must do
-When called, a core's `destroy()` function must:
-1. Free every PSRAM buffer it allocated at `begin()` time (`heap_caps_free`).
-2. Reset all freed pointers back to `nullptr` and `running = false` / `initialized = false` so `begin()` can re-initialize cleanly on the next game launch.
-3. NOT free the caller-owned ROM buffer (`SDCard::freeRom(currentRom)` handles that inside `destroyActiveEmulator()`).
-4. Be idempotent (safe if called multiple times with null pointers).
+## Current user interaction
 
-## Why this matters
-The ESP32-S3-N16R8 has 8MB of Octal PSRAM. Each emulator core allocates between 64KB and 512KB of PSRAM for CPU state, VRAM, work RAM, and cartridge SRAM, plus up to 4MB for the ROM image. Without deterministic teardown across all 14 cores, repeated game switches would exhaust or fragment PSRAM. `scripts/validate_repo.py` Phase 2 enforces that all 14 `::destroy()` calls remain wired in `BmoGameboy.ino`.
+- SELECT + START opens the pause menu.
+- SELECT + UP opens the pause menu with Quit selected; it does not immediately exit.
+- Quit requires two A presses within three seconds. B or Start resumes. Direction or Select input cancels the armed confirmation; timeout disarms it.
+- The ordinary Quit menu row uses the same confirmation.
+
+On confirmed exit, firmware attempts to save supported battery RAM, waits for display work to finish, calls the active wrapper destroy() path, releases the caller-owned SD ROM buffer, and returns to the console menu. Unsupported battery save formats return false and are not written as if supported.
+
+## Wrapper ownership contract
+
+Each wrapper destroy() should be safe when called more than once, release every allocation owned by that wrapper, clear freed pointers and running state, and not free the caller-owned ROM. SDCard::freeRom() releases SD-loaded ROM buffers and leaves the known baked flash ROM pointers alone.
+
+All fourteen wrapper teardown calls are present in the dispatcher and checked by the repository validator. This source check does not prove target allocation recovery. Repeated launch/exit and allocation-failure tests remain open; no hardware status may be inferred from the presence of the calls.

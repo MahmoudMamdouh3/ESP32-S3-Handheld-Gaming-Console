@@ -15,7 +15,7 @@ Check known issues         Run validate_repo.py       Verify build & host tests 
 ```
 
 ### Stage 1: Fast Orientation (First 90 Seconds)
-1. Read [`31_quick_start_primer.md`](file:///e:/BMO%20Gameboy/.agents/rules/31_quick_start_primer.md).
+1. Read [`31_quick_start_primer.md`](31_quick_start_primer.md).
 2. Check `04_known_issues.md` to see currently active bugs, debunked theories, and pending verifications.
 3. Review `AGENT_MANIFEST.json` for current pin maps and build commands.
 4. For any human-reported device-misbehavior task with no specific symptom yet, read `36_bug_intake_protocol.md` before Stage 2.
@@ -35,7 +35,7 @@ Check known issues         Run validate_repo.py       Verify build & host tests 
    - `VERIFIED_HOST`: Verified by desktop test harness (`tools/host_test.cpp`).
    - `VERIFIED_HARDWARE`: Confirmed functioning on physical perfboard console.
    - `DEBUNKED`: Investigated and proven to be a non-issue or false alarm.
-2. Append a dated entry to root [`CHANGELOG.md`](file:///e:/BMO%20Gameboy/CHANGELOG.md).
+2. Append a dated entry to root [`CHANGELOG.md`](../../CHANGELOG.md).
 3. If new public APIs were created or changed, update `10_symbol_reference.md`.
 
 ---

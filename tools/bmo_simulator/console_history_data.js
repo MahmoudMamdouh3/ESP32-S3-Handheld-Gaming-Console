@@ -97,7 +97,7 @@ const CONSOLE_HISTORY_DATABASE = {
       { title: "Super Mario Bros.", year: 1985, significance: "The gold standard of platforming physics, smooth horizontal scrolling, and level design." },
       { title: "The Legend of Zelda", year: 1986, significance: "First console game with battery-backed save RAM; created open-world exploration." },
       { title: "Metroid", year: 1986, significance: "Invented the Metroidvania genre with atmospheric backtracking, power-ups, and a female protagonist." },
-      { title: "Mega Man 2", year: 1988, significance: "Masterclass in non-linear boss order, tight controls, and chiptune sound engineering." }
+      { title: "Mega Man 2", year: 1988, significance: "Shows non-linear boss order, tight controls, and chiptune sound design." }
     ]
   },
 
@@ -255,7 +255,7 @@ const CONSOLE_HISTORY_DATABASE = {
       "Yuji Naka utilized the 68000's speed to develop full-loop track curvature and 60fps velocity physics in Sonic. " +
       "Composers like Yuzo Koshiro (Streets of Rage) pushed the YM2612 FM chip to create legendary house and techno club beats.",
     hallmarkGames: [
-      { title: "Sonic the Hedgehog 2", year: 1992, significance: "Masterclass in speed, level design, and momentum; introduced the Spin Dash and Tails." },
+      { title: "Sonic the Hedgehog 2", year: 1992, significance: "Built around speed, level design, and momentum; introduced the Spin Dash and Tails." },
       { title: "Streets of Rage 2", year: 1992, significance: "The pinnacle of 16-bit side-scrolling beat-'em-ups with an era-defining techno soundtrack." },
       { title: "Gunstar Heroes", year: 1993, significance: "Treasure's technical showcase with multi-jointed bosses, screen rotations, and explosive action." },
       { title: "Phantasy Star IV", year: 1993, significance: "One of the greatest 16-bit JRPGs with manga-panel cutscenes and deep macro battle systems." }
@@ -319,8 +319,8 @@ const CONSOLE_HISTORY_DATABASE = {
       "The 65C816 CPU ran at 3.58 MHz (slower than the Genesis 68000), but was augmented by specialized co-processors inside cartridges " +
       "like the Super FX (3D polygonal rendering in Star Fox), DSP-1 (Mario Kart trigonometry), and SA-1 co-processors.",
     hallmarkGames: [
-      { title: "Chrono Trigger", year: 1995, significance: "The Dream Team (Sakaguchi, Horii, Toriyama, Mitsuda) masterpiece: multiple endings, seamless active-time battles, and time travel." },
-      { title: "Super Metroid", year: 1994, significance: "Environmental storytelling, isolation, and sequence-breaking design perfection." },
+      { title: "Chrono Trigger", year: 1995, significance: "The Dream Team (Sakaguchi, Horii, Toriyama, Mitsuda) created multiple endings, active-time battles, and time travel." },
+      { title: "Super Metroid", year: 1994, significance: "Environmental storytelling, isolation, and sequence-breaking routes." },
       { title: "Super Mario World", year: 1990, significance: "The quintessential launch title; 96 exits, secret paths, and introduced Yoshi." },
       { title: "Donkey Kong Country", year: 1994, significance: "Rare's pre-rendered 3D SGI graphics wizardry that rejuvenated the 16-bit generation." }
     ]
@@ -408,7 +408,7 @@ const CONSOLE_HISTORY_DATABASE = {
       features: "Built-in Infrared (IR) Communication Port, full backward compatibility color palettes"
     },
     historicalSignificance:
-      "The Game Boy Color doubled CPU frequency and quadrupled RAM while retaining flawless backward compatibility with all 600+ original " +
+      "The Game Boy Color doubled CPU frequency and quadrupled RAM while retaining backward compatibility with all 600+ original " +
       "Game Boy cartridges (dynamically applying custom color palettes upon boot). It served as the launchpad for Pokémon Gold & Silver " +
       "and pushed portable pixel art into a radiant new era.",
     engineeringConstraints:
@@ -481,7 +481,7 @@ const CONSOLE_HISTORY_DATABASE = {
       { title: "Celeste (Classic)", year: 2015, significance: "Maddy Thorson & Noel Berry built the original Celeste prototype in 4 days on PICO-8 before the global hit." },
       { title: "Slipways", year: 2018, significance: "Grand space grand-strategy trade network game packed into 32KB." },
       { title: "High Stakes", year: 2021, significance: "Atmospheric gothic vampire poker thriller with fluid 16-color animations." },
-      { title: "Just One Boss", year: 2019, significance: "Masterclass in multi-phase boss fight choreography within strict memory limits." }
+      { title: "Just One Boss", year: 2019, significance: "Shows multi-phase boss fight design within strict memory limits." }
     ]
   }
 };

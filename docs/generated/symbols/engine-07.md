@@ -1,0 +1,196 @@
+# Firmware symbols: engine (7/8)
+
+Generated from the declarations in the listed headers. Edit the header, then run `python -m tools.guardian symbols`.
+
+## `firmware/BmoGameboy/src/engine/walnut_cgb/walnut_cgb.h` (continued)
+
+- `uint8_t h = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `uint16_t temp = WALNUT_GB_U8_TO_U16(h, l);`
+- `__gb_write(gb, temp++, gb->cpu_reg.sp.bytes.p);`
+- `__gb_write(gb, temp, gb->cpu_reg.sp.bytes.s);`
+- `(temp ^ gb->cpu_reg.hl.reg ^ gb->cpu_reg.bc.reg) & 0x1000 ? 1 : 0;`
+- `gb->cpu_reg.f.f_bits.c = (temp & 0xFFFF0000) ? 1 : 0;`
+- `gb->cpu_reg.hl.reg = (temp & 0x0000FFFF);`
+- `gb->cpu_reg.a = __gb_read(gb, gb->cpu_reg.bc.reg);`
+- `WGB_INSTR_INC_R8(gb->cpu_reg.bc.bytes.c);`
+- `WGB_INSTR_DEC_R8(gb->cpu_reg.bc.bytes.c);`
+- `gb->cpu_reg.bc.bytes.c = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `gb->cpu_reg.a = (gb->cpu_reg.a >> 1) | (gb->cpu_reg.a << 7);`
+- `gb->cpu_reg.de.reg = __gb_read16(gb, gb->cpu_reg.pc.reg);`
+- `gb->cpu_reg.de.bytes.e = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `gb->cpu_reg.de.bytes.d = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `__gb_write(gb, gb->cpu_reg.de.reg, gb->cpu_reg.a);`
+- `WGB_INSTR_INC_R8(gb->cpu_reg.de.bytes.d);`
+- `WGB_INSTR_DEC_R8(gb->cpu_reg.de.bytes.d);`
+- `gb->cpu_reg.de.bytes.d = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `gb->cpu_reg.a = (gb->cpu_reg.a << 1) | gb->cpu_reg.f.f_bits.c;`
+- `gb->cpu_reg.f.f_bits.c = (temp >> 7) & 0x01;`
+- `int8_t temp = (int8_t) __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `(temp ^ gb->cpu_reg.hl.reg ^ gb->cpu_reg.de.reg) & 0x1000 ? 1 : 0;`
+- `gb->cpu_reg.f.f_bits.c = (temp & 0xFFFF0000) ? 1 : 0;`
+- `gb->cpu_reg.hl.reg = (temp & 0x0000FFFF);`
+- `gb->cpu_reg.a = __gb_read(gb, gb->cpu_reg.de.reg);`
+- `WGB_INSTR_INC_R8(gb->cpu_reg.de.bytes.e);`
+- `WGB_INSTR_DEC_R8(gb->cpu_reg.de.bytes.e);`
+- `gb->cpu_reg.de.bytes.e = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `gb->cpu_reg.a = gb->cpu_reg.a >> 1 | (gb->cpu_reg.f.f_bits.c << 7);`
+- `int8_t temp = (int8_t) __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `gb->cpu_reg.hl.reg = __gb_read16(gb, gb->cpu_reg.pc.reg);`
+- `gb->cpu_reg.hl.bytes.l = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `gb->cpu_reg.hl.bytes.h = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, gb->cpu_reg.a);`
+- `WGB_INSTR_INC_R8(gb->cpu_reg.hl.bytes.h);`
+- `WGB_INSTR_DEC_R8(gb->cpu_reg.hl.bytes.h);`
+- `gb->cpu_reg.hl.bytes.h = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `a = (a - 0x06) & 0xFF;`
+- `gb->cpu_reg.a = (uint8_t)a;`
+- `gb->cpu_reg.f.f_bits.z = (gb->cpu_reg.a == 0);`
+- `int8_t temp = (int8_t) __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `gb->cpu_reg.f.f_bits.c = (gb->cpu_reg.hl.reg & 0x8000) > 0;`
+- `gb->cpu_reg.f.f_bits.h = (gb->cpu_reg.hl.reg & 0x1000) > 0;`
+- `gb->cpu_reg.a = __gb_read(gb, gb->cpu_reg.hl.reg++);`
+- `WGB_INSTR_INC_R8(gb->cpu_reg.hl.bytes.l);`
+- `WGB_INSTR_DEC_R8(gb->cpu_reg.hl.bytes.l);`
+- `gb->cpu_reg.hl.bytes.l = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `int8_t temp = (int8_t) __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `gb->cpu_reg.sp.reg = __gb_read16(gb, gb->cpu_reg.pc.reg);`
+- `gb->cpu_reg.sp.bytes.p = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `gb->cpu_reg.sp.bytes.s = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, gb->cpu_reg.a);`
+- `uint8_t temp = __gb_read(gb, gb->cpu_reg.hl.reg);`
+- `WGB_INSTR_INC_R8(temp);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, temp);`
+- `uint8_t temp = __gb_read(gb, gb->cpu_reg.hl.reg);`
+- `WGB_INSTR_DEC_R8(temp);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, temp);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, __gb_read(gb, gb->cpu_reg.pc.reg++));`
+- `int8_t temp = (int8_t) __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `((gb->cpu_reg.hl.reg & 0xFFF) + (gb->cpu_reg.sp.reg & 0xFFF)) & 0x1000 ? 1 : 0;`
+- `gb->cpu_reg.hl.reg = (uint16_t)temp;`
+- `gb->cpu_reg.a = __gb_read(gb, gb->cpu_reg.hl.reg--);`
+- `WGB_INSTR_INC_R8(gb->cpu_reg.a);`
+- `WGB_INSTR_DEC_R8(gb->cpu_reg.a);`
+- `gb->cpu_reg.a = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `gb->cpu_reg.bc.bytes.b = __gb_read(gb, gb->cpu_reg.hl.reg);`
+- `gb->cpu_reg.bc.bytes.c = __gb_read(gb, gb->cpu_reg.hl.reg);`
+- `gb->cpu_reg.de.bytes.d = __gb_read(gb, gb->cpu_reg.hl.reg);`
+- `gb->cpu_reg.de.bytes.e = __gb_read(gb, gb->cpu_reg.hl.reg);`
+- `gb->cpu_reg.hl.bytes.h = __gb_read(gb, gb->cpu_reg.hl.reg);`
+- `gb->cpu_reg.hl.bytes.l = __gb_read(gb, gb->cpu_reg.hl.reg);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, gb->cpu_reg.bc.bytes.b);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, gb->cpu_reg.bc.bytes.c);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, gb->cpu_reg.de.bytes.d);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, gb->cpu_reg.de.bytes.e);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, gb->cpu_reg.hl.bytes.h);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, gb->cpu_reg.hl.bytes.l);`
+- `inst_cycles = (uint_fast16_t)halt_cycles;`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, gb->cpu_reg.a);`
+- `gb->cpu_reg.a = __gb_read(gb, gb->cpu_reg.hl.reg);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.bc.bytes.b, 0);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.bc.bytes.c, 0);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.de.bytes.d, 0);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.de.bytes.e, 0);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.hl.bytes.h, 0);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.hl.bytes.l, 0);`
+- `WGB_INSTR_ADC_R8(__gb_read(gb, gb->cpu_reg.hl.reg), 0);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.a, 0);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.bc.bytes.b, gb->cpu_reg.f.f_bits.c);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.bc.bytes.c, gb->cpu_reg.f.f_bits.c);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.de.bytes.d, gb->cpu_reg.f.f_bits.c);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.de.bytes.e, gb->cpu_reg.f.f_bits.c);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.hl.bytes.h, gb->cpu_reg.f.f_bits.c);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.hl.bytes.l, gb->cpu_reg.f.f_bits.c);`
+- `WGB_INSTR_ADC_R8(__gb_read(gb, gb->cpu_reg.hl.reg), gb->cpu_reg.f.f_bits.c);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.a, gb->cpu_reg.f.f_bits.c);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.bc.bytes.b, 0);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.bc.bytes.c, 0);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.de.bytes.d, 0);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.de.bytes.e, 0);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.hl.bytes.h, 0);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.hl.bytes.l, 0);`
+- `WGB_INSTR_SBC_R8(__gb_read(gb, gb->cpu_reg.hl.reg), 0);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.bc.bytes.b, gb->cpu_reg.f.f_bits.c);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.bc.bytes.c, gb->cpu_reg.f.f_bits.c);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.de.bytes.d, gb->cpu_reg.f.f_bits.c);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.de.bytes.e, gb->cpu_reg.f.f_bits.c);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.hl.bytes.h, gb->cpu_reg.f.f_bits.c);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.hl.bytes.l, gb->cpu_reg.f.f_bits.c);`
+- `WGB_INSTR_SBC_R8(__gb_read(gb, gb->cpu_reg.hl.reg), gb->cpu_reg.f.f_bits.c);`
+- `WGB_INSTR_AND_R8(gb->cpu_reg.bc.bytes.b);`
+- `WGB_INSTR_AND_R8(gb->cpu_reg.bc.bytes.c);`
+- `WGB_INSTR_AND_R8(gb->cpu_reg.de.bytes.d);`
+- `WGB_INSTR_AND_R8(gb->cpu_reg.de.bytes.e);`
+- `WGB_INSTR_AND_R8(gb->cpu_reg.hl.bytes.h);`
+- `WGB_INSTR_AND_R8(gb->cpu_reg.hl.bytes.l);`
+- `WGB_INSTR_AND_R8(__gb_read(gb, gb->cpu_reg.hl.reg));`
+- `WGB_INSTR_AND_R8(gb->cpu_reg.a);`
+- `WGB_INSTR_XOR_R8(gb->cpu_reg.bc.bytes.b);`
+- `WGB_INSTR_XOR_R8(gb->cpu_reg.bc.bytes.c);`
+- `WGB_INSTR_XOR_R8(gb->cpu_reg.de.bytes.d);`
+- `WGB_INSTR_XOR_R8(gb->cpu_reg.de.bytes.e);`
+- `WGB_INSTR_XOR_R8(gb->cpu_reg.hl.bytes.h);`
+- `WGB_INSTR_XOR_R8(gb->cpu_reg.hl.bytes.l);`
+- `WGB_INSTR_XOR_R8(__gb_read(gb, gb->cpu_reg.hl.reg));`
+- `WGB_INSTR_XOR_R8(gb->cpu_reg.a);`
+- `WGB_INSTR_OR_R8(gb->cpu_reg.bc.bytes.b);`
+- `WGB_INSTR_OR_R8(gb->cpu_reg.bc.bytes.c);`
+- `WGB_INSTR_OR_R8(gb->cpu_reg.de.bytes.d);`
+- `WGB_INSTR_OR_R8(gb->cpu_reg.de.bytes.e);`
+- `WGB_INSTR_OR_R8(gb->cpu_reg.hl.bytes.h);`
+- `WGB_INSTR_OR_R8(gb->cpu_reg.hl.bytes.l);`
+- `WGB_INSTR_OR_R8(__gb_read(gb, gb->cpu_reg.hl.reg));`
+- `WGB_INSTR_OR_R8(gb->cpu_reg.a);`
+- `WGB_INSTR_CP_R8(gb->cpu_reg.bc.bytes.b);`
+- `WGB_INSTR_CP_R8(gb->cpu_reg.bc.bytes.c);`
+- `WGB_INSTR_CP_R8(gb->cpu_reg.de.bytes.d);`
+- `WGB_INSTR_CP_R8(gb->cpu_reg.de.bytes.e);`
+- `WGB_INSTR_CP_R8(gb->cpu_reg.hl.bytes.h);`
+- `WGB_INSTR_CP_R8(gb->cpu_reg.hl.bytes.l);`
+- `WGB_INSTR_CP_R8(__gb_read(gb, gb->cpu_reg.hl.reg));`
+- `gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.sp.reg);`
+- `gb->cpu_reg.pc.bytes.c = __gb_read(gb, gb->cpu_reg.sp.reg++);`
+- `gb->cpu_reg.pc.bytes.p = __gb_read(gb, gb->cpu_reg.sp.reg++);`
+- `gb->cpu_reg.bc.reg = __gb_read16(gb, gb->cpu_reg.sp.reg);`
+- `gb->cpu_reg.bc.bytes.c = __gb_read(gb, gb->cpu_reg.sp.reg++);`
+- `gb->cpu_reg.bc.bytes.b = __gb_read(gb, gb->cpu_reg.sp.reg++);`
+- `gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.pc.reg);`
+- `uint8_t c = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `uint8_t p = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.pc.reg);`
+- `uint8_t c = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `uint8_t p = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `uint16_t addr = __gb_read16(gb, gb->cpu_reg.pc.reg);`
+- `__gb_write(gb, --gb->cpu_reg.sp.reg, gb->cpu_reg.pc.bytes.p);`
+- `__gb_write(gb, --gb->cpu_reg.sp.reg, gb->cpu_reg.pc.bytes.c);`
+- `c = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `p = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `__gb_write(gb, --gb->cpu_reg.sp.reg, gb->cpu_reg.pc.bytes.p);`
+- `__gb_write(gb, --gb->cpu_reg.sp.reg, gb->cpu_reg.pc.bytes.c);`
+- `__gb_write(gb, --gb->cpu_reg.sp.reg, gb->cpu_reg.bc.bytes.b);`
+- `__gb_write(gb, --gb->cpu_reg.sp.reg, gb->cpu_reg.bc.bytes.c);`
+- `uint8_t val = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `WGB_INSTR_ADC_R8(val, 0);`
+- `__gb_write(gb, --gb->cpu_reg.sp.reg, gb->cpu_reg.pc.bytes.p);`
+- `__gb_write(gb, --gb->cpu_reg.sp.reg, gb->cpu_reg.pc.bytes.c);`
+- `gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.sp.reg);`
+- `gb->cpu_reg.pc.bytes.c = __gb_read(gb, gb->cpu_reg.sp.reg++);`
+- `gb->cpu_reg.pc.bytes.p = __gb_read(gb, gb->cpu_reg.sp.reg++);`
+- `gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.sp.reg);`
+- `gb->cpu_reg.pc.bytes.c = __gb_read(gb, gb->cpu_reg.sp.reg++);`
+- `gb->cpu_reg.pc.bytes.p = __gb_read(gb, gb->cpu_reg.sp.reg++);`
+- `gb->cpu_reg.pc.reg = __gb_read16(gb, gb->cpu_reg.pc.reg);`
+- `uint8_t c = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `uint8_t p = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `inst_cycles = __gb_execute_cb(gb);`
+- `uint16_t addr = __gb_read16(gb, gb->cpu_reg.pc.reg);`
+- `__gb_write(gb, --gb->cpu_reg.sp.reg, (gb->cpu_reg.pc.reg >> 8) & 0xFF);`
+- `__gb_write(gb, --gb->cpu_reg.sp.reg, gb->cpu_reg.pc.reg & 0xFF);`
+- `uint8_t c = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `uint8_t p = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `__gb_write(gb, --gb->cpu_reg.sp.reg, gb->cpu_reg.pc.bytes.p);`
+- `__gb_write(gb, --gb->cpu_reg.sp.reg, gb->cpu_reg.pc.bytes.c);`
+- `uint16_t addr = __gb_read16(gb, gb->cpu_reg.pc.reg);`
+- `__gb_write(gb, --gb->cpu_reg.sp.reg, (gb->cpu_reg.pc.reg >> 8) & 0xFF);`
+- `__gb_write(gb, --gb->cpu_reg.sp.reg, gb->cpu_reg.pc.reg & 0xFF);`
+- `uint8_t c = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `uint8_t p = __gb_read(gb, gb->cpu_reg.pc.reg++);`

@@ -7,6 +7,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List
+from urllib.parse import unquote, urlsplit
 
 
 @dataclass
@@ -41,19 +42,31 @@ class DocTruthVerifier:
         ("submitFrameAsync", "Non-existent DisplayEmu method; use streamGBFrame or streamRawFrameAsync"),
     ]
 
+    BANNED_BUZZWORDS = (
+        "apple/nintendo", "nintendo-grade", "apple-grade", "nintendo-style",
+        "museum-grade", "reviewer-grade", "production-grade", "ultra-high-end",
+        "state-of-the-art", "world-class", "god-tier", "next-gen",
+        "industry-leading", "best-in-class", "living architectural specification",
+        "buttery-smooth", "blazing-fast", "blazing fast", "lightning-fast",
+        "ultra-optimized", "supercharge", "supercharged", "amazing", "masterclass",
+        "overkill", "insane", "massive victory", "perfection", "miracle",
+        "bulletproof", "unprecedented", "seamless", "flawless", "delve",
+        "tapestry", "testament", "paradigm", "synergy", "holistic", "meticulously",
+        "bespoke", "seamlessly", "flawlessly", "unparalleled", "unmatched",
+        "groundbreaking", "revolutionary", "cutting-edge", "game-changing",
+        "elevate", "elevated", "empower", "empowered", "living companion",
+        "authoritative living", "glanceable",
+    )
     BANNED_BUZZWORDS_REGEX = re.compile(
-        r"\b("
-        r"apple/nintendo|nintendo-grade|apple-grade|nintendo-style|museum-grade|"
-        r"reviewer-grade|production-grade|ultra-high-end|state-of-the-art|"
-        r"groundbreaking|revolutionary|cutting-edge|world-class|god-tier|"
-        r"buttery-smooth|blazing-fast|lightning-fast|living companion|"
-        r"authoritative living|glanceable|delve|tapestry|testament|"
-        r"paradigm|synergy|holistic|meticulously|bespoke|"
-        r"seamlessly|flawlessly|unparalleled|unmatched|supercharge|supercharged|"
-        r"game-changing"
-        r")\b",
+        r"\b(" + "|".join(re.escape(term) for term in BANNED_BUZZWORDS) + r")\b",
         re.IGNORECASE,
     )
+    ALLOWED_PROPER_NOUNS = ("Amazing Spider-Man", "Alex Kidd in Miracle World")
+    MARKDOWN_LINK_REGEX = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+[^)]*)?\)")
+    LINK_SCAN_IGNORED_DIRS = {
+        ".git", ".tools", "build", "node_modules", "__pycache__", "venv",
+        "games", "roms", "sdcard",
+    }
 
     RULE_EXEMPT_FILES = {
         ".agents/rules/05_git_workflow.md",
@@ -88,6 +101,7 @@ class DocTruthVerifier:
         cfg = self.parse_config_defines()
         if not cfg:
             issues.append(DocDriftIssue("firmware/BmoGameboy/src/core/config.h", 1, "PIN_DRIFT", "config.h missing or empty"))
+            issues.extend(self.verify_markdown_links())
             return issues
 
         # 1. Verify 01_hardware.md documents every pin and flag in config.h accurately
@@ -210,8 +224,85 @@ class DocTruthVerifier:
 
         # 4. Scan repo files for banned AI buzzwords and marketing filler (Rule 43)
         issues.extend(self.verify_no_buzzwords())
+        issues.extend(self.verify_rule_file_sizes())
+        issues.extend(self.verify_markdown_links())
 
         return issues
+
+    def verify_markdown_links(self) -> List[DocDriftIssue]:
+        """Reject file:// links and Markdown links whose local target is missing."""
+        issues: List[DocDriftIssue] = []
+        for path in self.repo_root.rglob("*.md"):
+            relative = path.relative_to(self.repo_root)
+            if any(part in self.LINK_SCAN_IGNORED_DIRS for part in relative.parts):
+                continue
+            rel_str = relative.as_posix()
+            in_fence = False
+            for line_number, line in enumerate(path.read_text(encoding="utf-8", errors="ignore").splitlines(), 1):
+                if line.lstrip().startswith("```") or line.lstrip().startswith("~~~"):
+                    in_fence = not in_fence
+                    continue
+                if in_fence:
+                    continue
+                for match in self.MARKDOWN_LINK_REGEX.finditer(line):
+                    href = match.group(1).strip().strip("<>")
+                    if href.lower().startswith("file:"):
+                        issues.append(DocDriftIssue(
+                            rel_str, line_number, "FILE_URI_LINK",
+                            "Uses a file:// URI; replace it with a repository-relative link",
+                        ))
+                        continue
+                    parsed = urlsplit(href)
+                    if parsed.scheme or href.startswith("//") or not parsed.path:
+                        continue
+                    target_text = unquote(parsed.path).replace("\\", "/")
+                    target = (path.parent / target_text).resolve()
+                    try:
+                        target.relative_to(self.repo_root.resolve())
+                    except ValueError:
+                        issues.append(DocDriftIssue(
+                            rel_str, line_number, "UNRESOLVED_LINK",
+                            f"Relative link `{href}` resolves outside the repository",
+                        ))
+                        continue
+                    if not target.exists():
+                        issues.append(DocDriftIssue(
+                            rel_str, line_number, "UNRESOLVED_LINK",
+                            f"Relative link target does not exist: `{href}`",
+                        ))
+        return issues
+
+    def verify_rule_file_sizes(self) -> List[DocDriftIssue]:
+        issues: List[DocDriftIssue] = []
+        rules_dir = self.repo_root / ".agents" / "rules"
+        if not rules_dir.exists():
+            return issues
+        for path in sorted(rules_dir.glob("*.md")):
+            try:
+                char_count = len(path.read_text(encoding="utf-8"))
+            except OSError as exc:
+                issues.append(DocDriftIssue(
+                    str(path.relative_to(self.repo_root)).replace("\\", "/"),
+                    1,
+                    "RULE_FILE_TOO_LARGE",
+                    f"Unable to read rule file for size check: {exc}",
+                ))
+                continue
+            if char_count > 12_000:
+                issues.append(DocDriftIssue(
+                    str(path.relative_to(self.repo_root)).replace("\\", "/"),
+                    1,
+                    "RULE_FILE_TOO_LARGE",
+                    f"Rule file has {char_count:,} characters; limit is 12,000",
+                ))
+        return issues
+
+    @classmethod
+    def buzzword_scan_text(cls, line: str) -> str:
+        """Remove documented proper-name exceptions before language checks."""
+        for proper_noun in cls.ALLOWED_PROPER_NOUNS:
+            line = re.sub(re.escape(proper_noun), " ", line, flags=re.IGNORECASE)
+        return line
 
     def verify_no_buzzwords(self) -> List[DocDriftIssue]:
         issues: List[DocDriftIssue] = []
@@ -249,11 +340,14 @@ class DocTruthVerifier:
 
         for fpath in files_to_scan:
             rel_str = str(fpath.relative_to(self.repo_root)).replace("\\", "/")
-            if rel_str in self.RULE_EXEMPT_FILES:
+            if rel_str in self.RULE_EXEMPT_FILES or rel_str.startswith("docs/consolidated-rules/"):
                 continue
+            if rel_str.startswith("docs/archive/"):
+                continue  # Historical wording is preserved verbatim in the archive.
             lines = fpath.read_text(encoding="utf-8", errors="ignore").splitlines()
             for idx, line in enumerate(lines, 1):
-                for m in self.BANNED_BUZZWORDS_REGEX.finditer(line):
+                scan_line = self.buzzword_scan_text(line)
+                for m in self.BANNED_BUZZWORDS_REGEX.finditer(scan_line):
                     issues.append(
                         DocDriftIssue(
                             rel_str,

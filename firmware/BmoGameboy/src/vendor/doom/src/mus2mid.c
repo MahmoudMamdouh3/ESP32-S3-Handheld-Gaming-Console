@@ -708,7 +708,7 @@ int main(int argc, char *argv[])
     if (argc != 3)
     {
         printf("Usage: %s <musfile> <midfile>\n", argv[0]);
-        exit(-1);
+        return -1;
     }
 
     Z_Init();
@@ -721,7 +721,7 @@ int main(int argc, char *argv[])
     if (mus2mid(src, dst))
     {
         fprintf(stderr, "mus2mid() failed\n");
-        exit(-1);
+        return -1;
     }
 
     // Write result to output file:

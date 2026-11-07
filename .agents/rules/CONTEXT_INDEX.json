@@ -1,6 +1,5 @@
 {
-  "schema_version": "2.1.0",
-  "last_updated": "2026-11-07T14:12:45.271606",
+  "schema_version": "2.2.0",
   "task_decision_table": {
     "modify_gpio_or_pin": {
       "rules": [
@@ -125,8 +124,8 @@
     },
     "02_architecture.md": {
       "file": ".agents/rules/02_architecture.md",
-      "title": "4. Toolchain & Build Configuration",
-      "lines": 25
+      "title": "02. Architecture Overview",
+      "lines": 20
     },
     "03_conventions.md": {
       "file": ".agents/rules/03_conventions.md",
@@ -135,8 +134,8 @@
     },
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
-      "title": "6. Known Issues, Technical Debt & Hardware Limitations Registry",
-      "lines": 536
+      "title": "Known Issues and Audit Findings",
+      "lines": 69
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -146,7 +145,7 @@
     "06_verification_standards.md": {
       "file": ".agents/rules/06_verification_standards.md",
       "title": "Verification & Evidence Standards",
-      "lines": 118
+      "lines": 117
     },
     "07_task_protocol.md": {
       "file": ".agents/rules/07_task_protocol.md",
@@ -165,8 +164,8 @@
     },
     "10_symbol_reference.md": {
       "file": ".agents/rules/10_symbol_reference.md",
-      "title": "Symbol Reference (Ground Truth for Names)",
-      "lines": 416
+      "title": "Symbol Reference",
+      "lines": 21
     },
     "11_rules_meta.md": {
       "file": ".agents/rules/11_rules_meta.md",
@@ -190,8 +189,8 @@
     },
     "15_performance_budgets.md": {
       "file": ".agents/rules/15_performance_budgets.md",
-      "title": "Performance Engineering & Budgets",
-      "lines": 51
+      "title": "Performance Budgets and Measurements",
+      "lines": 19
     },
     "16_logging_and_diagnostics.md": {
       "file": ".agents/rules/16_logging_and_diagnostics.md",
@@ -211,7 +210,7 @@
     "19_security_and_data_integrity.md": {
       "file": ".agents/rules/19_security_and_data_integrity.md",
       "title": "Security & Data Integrity",
-      "lines": 34
+      "lines": 23
     },
     "20_multi_agent_protocol.md": {
       "file": ".agents/rules/20_multi_agent_protocol.md",
@@ -246,17 +245,17 @@
     "26_emulator_exit_contract.md": {
       "file": ".agents/rules/26_emulator_exit_contract.md",
       "title": "Emulator Exit Contract",
-      "lines": 19
+      "lines": 18
     },
     "27_codebase_map.md": {
       "file": ".agents/rules/27_codebase_map.md",
-      "title": "Codebase Map \u2014 Ground Truth for Architecture",
-      "lines": 126
+      "title": "27. Codebase Map",
+      "lines": 70
     },
     "28_display_and_spi_contract.md": {
       "file": ".agents/rules/28_display_and_spi_contract.md",
-      "title": "Display & SPI Bus Contract",
-      "lines": 85
+      "title": "28. Display and SPI Contract",
+      "lines": 25
     },
     "29_adding_a_baked_rom.md": {
       "file": ".agents/rules/29_adding_a_baked_rom.md",
@@ -270,13 +269,13 @@
     },
     "31_quick_start_primer.md": {
       "file": ".agents/rules/31_quick_start_primer.md",
-      "title": "31. Quick-Start Primer (Zero-Context Agent On-Ramp)",
-      "lines": 88
+      "title": "31. Quick-Start Primer",
+      "lines": 33
     },
     "32_modular_core_template.md": {
       "file": ".agents/rules/32_modular_core_template.md",
-      "title": "32. Modular Core Template & Scaffolding Guide",
-      "lines": 128
+      "title": "32. Emulator Wrapper Template",
+      "lines": 24
     },
     "33_agent_handoff_and_optimization_cycle.md": {
       "file": ".agents/rules/33_agent_handoff_and_optimization_cycle.md",
@@ -321,7 +320,7 @@
     "41_engineering_communication_and_critical_pushback.md": {
       "file": ".agents/rules/41_engineering_communication_and_critical_pushback.md",
       "title": "41. Engineering Communication, Critical Pushback & Toolchain Autonomy",
-      "lines": 80
+      "lines": 76
     },
     "42_quality_of_life_and_roadmap_ledger.md": {
       "file": ".agents/rules/42_quality_of_life_and_roadmap_ledger.md",
@@ -331,7 +330,7 @@
     "43_no_ai_jargon_and_buzzwords.md": {
       "file": ".agents/rules/43_no_ai_jargon_and_buzzwords.md",
       "title": "43. Mandatory Ban on AI Jargon, Buzzwords, and Marketing Filler",
-      "lines": 50
+      "lines": 51
     },
     "44_anti_ai_ui_design_standards.md": {
       "file": ".agents/rules/44_anti_ai_ui_design_standards.md",

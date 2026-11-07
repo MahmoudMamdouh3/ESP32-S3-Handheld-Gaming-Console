@@ -134,7 +134,9 @@ def build_wasm_module() -> bytes:
     """Compile and write the firmware-derived WebAssembly gameplay cores."""
     compiler = _find_compiler()
     WASM_OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="bmo-wasm-") as temp_dir:
+    temp_root = REPO_ROOT / "build" / "wasm-tmp"
+    temp_root.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="bmo-wasm-", dir=str(temp_root)) as temp_dir:
         temp_output = Path(temp_dir) / "bmo_playtest_cores.wasm"
         agnes_object = Path(temp_dir) / "agnes.o"
         c_compiler = _find_c_compiler()

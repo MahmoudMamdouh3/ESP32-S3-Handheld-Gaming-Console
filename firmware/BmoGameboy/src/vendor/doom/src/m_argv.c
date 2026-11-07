@@ -92,9 +92,7 @@ static void LoadResponseFile(int argv_index)
     if (handle == NULL)
     {
         printf ("\nNo such response file!");
-#if ORIGCODE
-        exit(1);
-#endif
+        return;
     }
 
     printf("Found response file %s!\n", response_filename);

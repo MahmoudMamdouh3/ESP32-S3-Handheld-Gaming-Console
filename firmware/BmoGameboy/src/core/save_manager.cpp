@@ -3,6 +3,7 @@
 #include "config.h"
 #include "spi_arbiter.h"
 #include "display_emu.h"
+#include "path_key.h"
 #if FEATURE_SD_CARD
 #include <SD.h>
 #include <SPI.h>
@@ -33,6 +34,111 @@ namespace SaveManager {
     return crc;
   }
 
+#if FEATURE_SD_CARD
+  static bool makeTemporaryPath(const char* finalPath, char* temporaryPath, size_t maxLen) {
+    if (!finalPath || !temporaryPath || maxLen == 0) return false;
+    const int written = snprintf(temporaryPath, maxLen, "%s.tmp", finalPath);
+    return written > 0 && static_cast<size_t>(written) < maxLen;
+  }
+
+  static bool makeBackupPath(const char* finalPath, char* backupPath, size_t maxLen) {
+    if (!finalPath || !backupPath || maxLen == 0) return false;
+    const int written = snprintf(backupPath, maxLen, "%s.bak", finalPath);
+    return written > 0 && static_cast<size_t>(written) < maxLen;
+  }
+
+  // Recover the last transaction before reading or replacing a save. If a
+  // reset happened after moving the old file aside, restore it when the final
+  // path is absent. If the new final path exists, it was renamed only after
+  // its temporary file passed verification, so the backup can be discarded.
+  static bool recoverAtomicWrite(const char* finalPath) {
+    char temporaryPath[112];
+    char backupPath[112];
+    if (!makeTemporaryPath(finalPath, temporaryPath, sizeof(temporaryPath)) ||
+        !makeBackupPath(finalPath, backupPath, sizeof(backupPath))) return false;
+
+    const bool hasFinal = SD.exists(finalPath);
+    const bool hasBackup = SD.exists(backupPath);
+    if (hasFinal) {
+      if (hasBackup && !SD.remove(backupPath)) return false;
+      if (SD.exists(temporaryPath) && !SD.remove(temporaryPath)) return false;
+      return true;
+    }
+
+    if (hasBackup) {
+      if (!SD.rename(backupPath, finalPath)) {
+        LOG_ERROR("SaveManager: Could not restore backup %s", finalPath);
+        return false;
+      }
+    }
+    if (SD.exists(temporaryPath) && !SD.remove(temporaryPath)) return false;
+    return !hasBackup || SD.exists(finalPath);
+  }
+
+  static bool verifyFilePayload(const char* path, size_t expectedFileSize,
+                                size_t payloadOffset, size_t payloadSize,
+                                uint32_t expectedCrc) {
+    File file = SD.open(path, FILE_READ);
+    if (!file) return false;
+    if (file.size() != expectedFileSize || payloadOffset > expectedFileSize ||
+        payloadSize > expectedFileSize - payloadOffset || !file.seek(payloadOffset)) {
+      file.close();
+      return false;
+    }
+
+    uint8_t buffer[512];
+    size_t remaining = payloadSize;
+    uint32_t crc = 0xFFFFFFFFU;
+    while (remaining > 0) {
+      const size_t request = remaining < sizeof(buffer) ? remaining : sizeof(buffer);
+      const int bytesRead = file.read(buffer, request);
+      if (bytesRead <= 0 || static_cast<size_t>(bytesRead) > request) {
+        file.close();
+        return false;
+      }
+      crc = computeCRC32(buffer, static_cast<size_t>(bytesRead), crc);
+      remaining -= static_cast<size_t>(bytesRead);
+    }
+    file.close();
+    return (crc ^ 0xFFFFFFFFU) == expectedCrc;
+  }
+
+  static bool finishAtomicWrite(const char* temporaryPath, const char* finalPath,
+                               size_t expectedFileSize, size_t payloadOffset,
+                               size_t payloadSize, uint32_t expectedCrc) {
+    if (!verifyFilePayload(temporaryPath, expectedFileSize, payloadOffset, payloadSize, expectedCrc)) {
+      LOG_ERROR("SaveManager: Verification failed for temporary file %s", temporaryPath);
+      return false;
+    }
+    char backupPath[112];
+    if (!makeBackupPath(finalPath, backupPath, sizeof(backupPath))) return false;
+    const bool hadFinal = SD.exists(finalPath);
+    if (hadFinal && !SD.rename(finalPath, backupPath)) {
+      LOG_ERROR("SaveManager: Could not preserve previous file %s", finalPath);
+      return false;
+    }
+    if (!SD.rename(temporaryPath, finalPath)) {
+      LOG_ERROR("SaveManager: Could not install new file %s", finalPath);
+      if (hadFinal && !SD.rename(backupPath, finalPath)) {
+        LOG_ERROR("SaveManager: Could not restore previous file %s", finalPath);
+      }
+      return false;
+    }
+    if (!verifyFilePayload(finalPath, expectedFileSize, payloadOffset, payloadSize, expectedCrc)) {
+      LOG_ERROR("SaveManager: Final verification failed for %s", finalPath);
+      SD.remove(finalPath);
+      if (hadFinal && !SD.rename(backupPath, finalPath)) {
+        LOG_ERROR("SaveManager: Could not restore previous file %s", finalPath);
+      }
+      return false;
+    }
+    if (hadFinal && SD.exists(backupPath) && !SD.remove(backupPath)) {
+      LOG_WARN("SaveManager: Verified new file; backup cleanup deferred for %s", finalPath);
+    }
+    return true;
+  }
+#endif
+
   // Extracts pure basename from filename, stripping directories and extensions
   static void extractBaseName(const char* fullPath, char* outBase, size_t maxLen) {
     if (!fullPath || !outBase || maxLen == 0) return;
@@ -51,18 +157,44 @@ namespace SaveManager {
     outBase[copyLen] = '\0';
   }
 
-  void getBatterySavePath(const char* romFilename, char* outPath, size_t maxLen) {
+  static bool makeLegacyBatterySavePath(const char* romFilename, char* outPath, size_t maxLen) {
+    if (!romFilename || !outPath || maxLen == 0) return false;
     char base[48];
     extractBaseName(romFilename, base, sizeof(base));
-    snprintf(outPath, maxLen, "/saves/%s.sav", base);
+    const int written = snprintf(outPath, maxLen, "/saves/%s.sav", base);
+    return written > 0 && static_cast<size_t>(written) < maxLen;
   }
 
-  void getSaveStatePath(const char* romFilename, int slot, char* outPath, size_t maxLen) {
+  static bool makeLegacySaveStatePath(const char* romFilename, int slot, char* outPath, size_t maxLen) {
+    if (!romFilename || !outPath || maxLen == 0) return false;
     if (slot < 1) slot = 1;
     if (slot > MAX_SAVE_SLOTS) slot = MAX_SAVE_SLOTS;
     char base[48];
     extractBaseName(romFilename, base, sizeof(base));
-    snprintf(outPath, maxLen, "/saves/%s.s0%d", base, slot);
+    const int written = snprintf(outPath, maxLen, "/saves/%s.s0%d", base, slot);
+    return written > 0 && static_cast<size_t>(written) < maxLen;
+  }
+
+  void getBatterySavePath(const char* romFilename, char* outPath, size_t maxLen) {
+    if (!outPath || maxLen == 0) return;
+    char key[33];
+    if (!RomKey::make(romFilename, key, sizeof(key))) {
+      outPath[0] = '\0';
+      return;
+    }
+    snprintf(outPath, maxLen, "/saves/%s.sav", key);
+  }
+
+  void getSaveStatePath(const char* romFilename, int slot, char* outPath, size_t maxLen) {
+    if (!outPath || maxLen == 0) return;
+    if (slot < 1) slot = 1;
+    if (slot > MAX_SAVE_SLOTS) slot = MAX_SAVE_SLOTS;
+    char key[33];
+    if (!RomKey::make(romFilename, key, sizeof(key))) {
+      outPath[0] = '\0';
+      return;
+    }
+    snprintf(outPath, maxLen, "/saves/%s.s0%d", key, slot);
   }
 
   bool begin() {
@@ -101,15 +233,24 @@ namespace SaveManager {
 
     char path[80];
     getBatterySavePath(romFilename, path, sizeof(path));
+    if (path[0] == '\0') return false;
+    char temporaryPath[96];
+    if (!makeTemporaryPath(path, temporaryPath, sizeof(temporaryPath))) return false;
 
     DisplayEmu::waitForDisplay();
     SpiArbiter::lock();
+
+    if (!recoverAtomicWrite(path)) {
+      SpiArbiter::unlock();
+      return false;
+    }
 
     if (!SD.exists("/saves")) {
       SD.mkdir("/saves");
     }
 
-    File f = SD.open(path, FILE_WRITE);
+    if (SD.exists(temporaryPath)) SD.remove(temporaryPath);
+    File f = SD.open(temporaryPath, FILE_WRITE);
     if (!f) {
       SpiArbiter::unlock();
       LOG_ERROR("SaveManager: Failed to open %s for write", path);
@@ -119,9 +260,12 @@ namespace SaveManager {
     size_t written = f.write(ram, ramSize);
     f.flush();
     f.close();
+    const uint32_t crc = computeCRC32(ram, ramSize, 0xFFFFFFFFU) ^ 0xFFFFFFFFU;
+    const bool committed = written == ramSize &&
+        finishAtomicWrite(temporaryPath, path, ramSize, 0, ramSize, crc);
     SpiArbiter::unlock();
 
-    if (written == ramSize) {
+    if (committed) {
       LOG_INFO("SaveManager: Saved battery RAM to %s (%u bytes)", path, (unsigned int)ramSize);
       return true;
     } else {
@@ -141,13 +285,31 @@ namespace SaveManager {
 
     char path[80];
     getBatterySavePath(romFilename, path, sizeof(path));
+    if (path[0] == '\0') return false;
+    char legacyPath[80];
+    const bool hasLegacyPath = makeLegacyBatterySavePath(romFilename, legacyPath, sizeof(legacyPath));
+    bool usedLegacyPath = false;
 
     DisplayEmu::waitForDisplay();
     SpiArbiter::lock();
 
-    if (!SD.exists(path)) {
+    if (!recoverAtomicWrite(path)) {
       SpiArbiter::unlock();
-      return false; // No existing save file
+      return false;
+    }
+    if (hasLegacyPath && !recoverAtomicWrite(legacyPath)) {
+      SpiArbiter::unlock();
+      return false;
+    }
+
+    if (!SD.exists(path)) {
+      if (!hasLegacyPath || !SD.exists(legacyPath)) {
+        SpiArbiter::unlock();
+        return false; // No existing save file
+      }
+      strncpy(path, legacyPath, sizeof(path) - 1);
+      path[sizeof(path) - 1] = '\0';
+      usedLegacyPath = true;
     }
 
     File f = SD.open(path, FILE_READ);
@@ -165,6 +327,10 @@ namespace SaveManager {
 
     if (outLoadedSize) *outLoadedSize = bytesRead;
     LOG_INFO("SaveManager: Loaded battery RAM from %s (%u bytes)", path, (unsigned int)bytesRead);
+    if (usedLegacyPath && bytesRead > 0 && fileSize <= maxRamSize) {
+      // Preserve the legacy file; write the new keyed copy only after a complete read.
+      saveBatteryRam(romFilename, ram, bytesRead);
+    }
     return (bytesRead > 0);
 #else
     return false;
@@ -176,10 +342,16 @@ namespace SaveManager {
     if (!romFilename || !SDCard::isMounted()) return false;
     char path[80];
     getBatterySavePath(romFilename, path, sizeof(path));
+    if (path[0] == '\0') return false;
+    char legacyPath[80];
+    const bool hasLegacyPath = makeLegacyBatterySavePath(romFilename, legacyPath, sizeof(legacyPath));
 
     DisplayEmu::waitForDisplay();
     SpiArbiter::lock();
-    bool exists = SD.exists(path);
+    const bool recovered = recoverAtomicWrite(path) &&
+        (!hasLegacyPath || recoverAtomicWrite(legacyPath));
+    bool exists = recovered &&
+        (SD.exists(path) || (hasLegacyPath && SD.exists(legacyPath)));
     SpiArbiter::unlock();
     return exists;
 #else
@@ -196,6 +368,9 @@ namespace SaveManager {
 
     char path[80];
     getSaveStatePath(romFilename, slot, path, sizeof(path));
+    if (path[0] == '\0') return false;
+    char temporaryPath[96];
+    if (!makeTemporaryPath(path, temporaryPath, sizeof(temporaryPath))) return false;
 
     // Calculate CRC32 of payload
     uint32_t crc = computeCRC32((const uint8_t*)stateData, stateSize, 0xFFFFFFFF);
@@ -218,11 +393,17 @@ namespace SaveManager {
     DisplayEmu::waitForDisplay();
     SpiArbiter::lock();
 
+    if (!recoverAtomicWrite(path)) {
+      SpiArbiter::unlock();
+      return false;
+    }
+
     if (!SD.exists("/saves")) {
       SD.mkdir("/saves");
     }
 
-    File f = SD.open(path, FILE_WRITE);
+    if (SD.exists(temporaryPath)) SD.remove(temporaryPath);
+    File f = SD.open(temporaryPath, FILE_WRITE);
     if (!f) {
       SpiArbiter::unlock();
       LOG_ERROR("SaveManager: Failed to open %s for write", path);
@@ -238,11 +419,14 @@ namespace SaveManager {
 
     f.flush();
     f.close();
+    const size_t expectedFileSize = sizeof(header) + stateSize + ramSize;
+    const bool committed = (headerWritten == sizeof(header)) &&
+        (stateWritten == stateSize) && (ramWritten == ramSize) &&
+        finishAtomicWrite(temporaryPath, path, expectedFileSize, sizeof(header),
+                         stateSize + ramSize, crc);
     SpiArbiter::unlock();
 
-    bool ok = (headerWritten == sizeof(header)) &&
-              (stateWritten == stateSize) &&
-              (ramWritten == ramSize);
+    bool ok = committed;
 
     if (ok) {
       LOG_INFO("SaveManager: Saved state to %s (Slot %d, core %u, state %u B, ram %u B)",
@@ -267,13 +451,31 @@ namespace SaveManager {
 
     char path[80];
     getSaveStatePath(romFilename, slot, path, sizeof(path));
+    if (path[0] == '\0') return false;
+    char legacyPath[80];
+    const bool hasLegacyPath = makeLegacySaveStatePath(romFilename, slot, legacyPath, sizeof(legacyPath));
+    bool usedLegacyPath = false;
 
     DisplayEmu::waitForDisplay();
     SpiArbiter::lock();
 
-    if (!SD.exists(path)) {
+    if (!recoverAtomicWrite(path)) {
       SpiArbiter::unlock();
       return false;
+    }
+    if (hasLegacyPath && !recoverAtomicWrite(legacyPath)) {
+      SpiArbiter::unlock();
+      return false;
+    }
+
+    if (!SD.exists(path)) {
+      if (!hasLegacyPath || !SD.exists(legacyPath)) {
+        SpiArbiter::unlock();
+        return false;
+      }
+      strncpy(path, legacyPath, sizeof(path) - 1);
+      path[sizeof(path) - 1] = '\0';
+      usedLegacyPath = true;
     }
 
     File f = SD.open(path, FILE_READ);
@@ -385,6 +587,10 @@ namespace SaveManager {
 
     LOG_INFO("SaveManager: Restored state from %s (Slot %d, core %u, state %u B, ram %u B)",
              path, slot, (unsigned int)expectedCoreId, (unsigned int)stateRead, (unsigned int)ramRead);
+    if (usedLegacyPath) {
+      saveState(romFilename, slot, expectedCoreId, stateData, stateRead,
+                ramData, ramRead);
+    }
     return true;
 #else
     return false;
@@ -396,10 +602,16 @@ namespace SaveManager {
     if (!romFilename || !SDCard::isMounted()) return false;
     char path[80];
     getSaveStatePath(romFilename, slot, path, sizeof(path));
+    if (path[0] == '\0') return false;
+    char legacyPath[80];
+    const bool hasLegacyPath = makeLegacySaveStatePath(romFilename, slot, legacyPath, sizeof(legacyPath));
 
     DisplayEmu::waitForDisplay();
     SpiArbiter::lock();
-    bool exists = SD.exists(path);
+    const bool recovered = recoverAtomicWrite(path) &&
+        (!hasLegacyPath || recoverAtomicWrite(legacyPath));
+    bool exists = recovered &&
+        (SD.exists(path) || (hasLegacyPath && SD.exists(legacyPath)));
     SpiArbiter::unlock();
     return exists;
 #else
@@ -413,13 +625,29 @@ namespace SaveManager {
     if (!SDCard::isMounted()) return false;
     char path[80];
     getSaveStatePath(romFilename, slot, path, sizeof(path));
+    if (path[0] == '\0') return false;
+    char legacyPath[80];
+    const bool hasLegacyPath = makeLegacySaveStatePath(romFilename, slot, legacyPath, sizeof(legacyPath));
 
     DisplayEmu::waitForDisplay();
     SpiArbiter::lock();
 
-    if (!SD.exists(path)) {
+    if (!recoverAtomicWrite(path)) {
       SpiArbiter::unlock();
       return false;
+    }
+    if (hasLegacyPath && !recoverAtomicWrite(legacyPath)) {
+      SpiArbiter::unlock();
+      return false;
+    }
+
+    if (!SD.exists(path)) {
+      if (!hasLegacyPath || !SD.exists(legacyPath)) {
+        SpiArbiter::unlock();
+        return false;
+      }
+      strncpy(path, legacyPath, sizeof(path) - 1);
+      path[sizeof(path) - 1] = '\0';
     }
 
     File f = SD.open(path, FILE_READ);
@@ -445,19 +673,27 @@ namespace SaveManager {
 #if FEATURE_SD_CARD
     if (!SDCard::isMounted()) return false;
 
-    char base[32];
-    extractBaseName(romFilename, base, sizeof(base));
+    char base[33];
+    if (!RomKey::make(romFilename, base, sizeof(base))) return false;
     char path[96];
     snprintf(path, sizeof(path), "/screenshots/%s_%lu.bmp", base, (unsigned long)millis());
+    char temporaryPath[112];
+    if (!makeTemporaryPath(path, temporaryPath, sizeof(temporaryPath))) return false;
 
     DisplayEmu::waitForDisplay();
     SpiArbiter::lock();
+
+    if (!recoverAtomicWrite(path)) {
+      SpiArbiter::unlock();
+      return false;
+    }
 
     if (!SD.exists("/screenshots")) {
       SD.mkdir("/screenshots");
     }
 
-    File f = SD.open(path, FILE_WRITE);
+    if (SD.exists(temporaryPath)) SD.remove(temporaryPath);
+    File f = SD.open(temporaryPath, FILE_WRITE);
     if (!f) {
       SpiArbiter::unlock();
       return false;
@@ -488,6 +724,7 @@ namespace SaveManager {
     header[36] = (uint8_t)((dataSize >> 16) & 0xFF);
     header[37] = (uint8_t)((dataSize >> 24) & 0xFF);
 
+    uint32_t screenshotCrc = computeCRC32(header, sizeof(header), 0xFFFFFFFFU);
     if (f.write(header, sizeof(header)) != sizeof(header)) {
       f.close();
       SpiArbiter::unlock();
@@ -513,11 +750,15 @@ namespace SaveManager {
         SpiArbiter::unlock();
         return false;
       }
+      screenshotCrc = computeCRC32(rowBuf, rowStride, screenshotCrc);
     }
 
+    f.flush();
     f.close();
+    const bool committed = finishAtomicWrite(temporaryPath, path, fileSize, 0,
+                                              fileSize, screenshotCrc ^ 0xFFFFFFFFU);
     SpiArbiter::unlock();
-    return true;
+    return committed;
 #else
     return false;
 #endif

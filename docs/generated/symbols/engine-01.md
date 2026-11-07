@@ -1,0 +1,212 @@
+# Firmware symbols: engine (1/8)
+
+Generated from the declarations in the listed headers. Edit the header, then run `python -m tools.guardian symbols`.
+
+## `firmware/BmoGameboy/src/engine/walnut_cgb/walnut_cgb.h`
+
+- `uint8_t __gb_read(struct gb_s *gb, uint16_t addr);`
+- `void __gb_write(struct gb_s *gb, uint_fast16_t addr, uint8_t val);`
+- `void __gb_write16(struct gb_s *gb, uint_fast16_t addr, uint16_t val);`
+- `void __gb_write32(struct gb_s *gb, uint16_t addr, uint32_t val);`
+- `void __gb_step_cpu_x(struct gb_s *gb);`
+- `uint16_t tempRGB565 = (b << 11) | (g << 5) | r;`
+- `return (r << 11) | (g << 5) | b;`
+- `struct cpu_registers_s`
+- `struct`
+- `uint8_t WALNUT_GB_LE_REG(c,b);`
+- `uint8_t WALNUT_GB_LE_REG(e,d);`
+- `uint8_t WALNUT_GB_LE_REG(l,h);`
+- `uint8_t WALNUT_GB_LE_REG(p, s);`
+- `uint8_t WALNUT_GB_LE_REG(c, p);`
+- `struct count_s`
+- `enum gb_error_e`
+- `enum gb_init_error_e`
+- `enum gb_serial_rx_ret_e`
+- `struct gb_s`
+- `uint8_t (*gb_rom_read)(struct gb_s*, const uint_fast32_t addr);`
+- `uint16_t (*gb_rom_read_16bit)(struct gb_s*, const uint_fast32_t addr);`
+- `uint32_t (*gb_rom_read_32bit)(struct gb_s*, const uint_fast32_t addr);`
+- `uint8_t (*gb_cart_ram_read)(struct gb_s*, const uint_fast32_t addr);`
+- `void (*gb_error)(struct gb_s*, const enum gb_error_e, const uint16_t addr);`
+- `void (*gb_serial_tx)(struct gb_s*, const uint8_t tx);`
+- `enum gb_serial_rx_ret_e (*gb_serial_rx)(struct gb_s*, uint8_t* rx);`
+- `uint8_t (*gb_bootrom_read)(struct gb_s*, const uint_fast16_t addr);`
+- `struct cpu_registers_s cpu_reg;`
+- `struct count_s counter;`
+- `struct`
+- `| ((uint16_t)gb->gb_bootrom_read(gb, addr + 1) << 8);`
+- `| ((uint16_t)gb->gb_bootrom_read(gb, addr + 1) << 8);`
+- `return gb->gb_rom_read_16bit(gb, addr);`
+- `uint32_t bank_offset = (gb->selected_rom_bank - 1) * ROM_BANK_SIZE;`
+- `return gb->gb_rom_read_16bit(gb, addr + bank_offset);`
+- `return *(uint16_t *)vram_base;`
+- `return (uint16_t)vram_base[0] | ((uint16_t)vram_base[1] << 8);`
+- `| ((uint16_t)gb->rtc_latched.bytes[gb->cart_ram_bank - 0x08 + 1] << 8);`
+- `offset = addr - CART_RAM_ADDR + (gb->cart_ram_bank * CRAM_BANK_SIZE);`
+- `| ((uint16_t)gb->gb_cart_ram_read(gb, offset + 1) << 8);`
+- `return *(uint16_t *)wram_ptr;`
+- `return (uint16_t)wram_ptr[0] | ((uint16_t)wram_ptr[1] << 8);`
+- `return *(uint16_t *)echo_ptr;`
+- `return (uint16_t)echo_ptr[0] | ((uint16_t)echo_ptr[1] << 8);`
+- `return *(uint16_t *)oam_ptr;`
+- `return (uint16_t)oam_ptr[0] | ((uint16_t)oam_ptr[1] << 8);`
+- `uint8_t lo = audio_read(addr);`
+- `uint8_t hi = audio_read(addr + 1);`
+- `return lo | ((uint16_t)hi << 8);`
+- `| ((uint16_t)gb->hram_io[addr + 1 - IO_ADDR] << 8);`
+- `(gb->gb_error)(gb, GB_INVALID_READ, addr);`
+- `WGB_UNREACHABLE();`
+- `| ((uint16_t)gb->gb_bootrom_read(gb, addr + 1) << 8);`
+- `| ((uint16_t)gb->gb_bootrom_read(gb, addr + 1) << 8);`
+- `return gb->gb_rom_read_16bit(gb,addr);`
+- `uint32_t bank_offset = (gb->selected_rom_bank - 1) * ROM_BANK_SIZE;`
+- `return gb->gb_rom_read_16bit(gb,addr + bank_offset);`
+- `return *(uint16_t *)&gb->vram[addr - gb->cgb.vramBankOffset];`
+- `return *(uint16_t *)&gb->vram[addr - VRAM_ADDR];`
+- `| ((uint16_t)gb->rtc_latched.bytes[gb->cart_ram_bank - 0x08 + 1] << 8);`
+- `offset = addr - CART_RAM_ADDR + (gb->cart_ram_bank * CRAM_BANK_SIZE);`
+- `return gb->gb_cart_ram_read(gb, offset) | ((uint16_t)gb->gb_cart_ram_read(gb, offset + 1) << 8);`
+- `return *(uint16_t *)&gb->wram[addr - gb->cgb.wramBankOffset];`
+- `return *(uint16_t *)&gb->wram[addr - WRAM_0_ADDR];`
+- `return *(uint16_t *)&gb->wram[addr - ECHO_ADDR];`
+- `return *(uint16_t *)&gb->oam[addr - OAM_ADDR];`
+- `uint8_t lo = audio_read(addr);`
+- `uint8_t hi = audio_read(addr + 1);`
+- `return lo | ((uint16_t)hi << 8);`
+- `return gb->cgb.doubleSpeed | ((uint16_t)gb->cgb.doubleSpeedPrep << 8);`
+- `return lo | ((uint16_t)hi << 8);`
+- `return gb->hram_io[0x56] | ((uint16_t)gb->hram_io[0x57] << 8);`
+- `return lo | ((uint16_t)hi << 8);`
+- `return *(uint16_t *)&gb->hram_io[addr - IO_ADDR];`
+- `return *(uint16_t *)&gb->hram_io[addr - IO_ADDR];`
+- `(gb->gb_error)(gb, GB_INVALID_READ, addr);`
+- `WGB_UNREACHABLE();`
+- `| ((uint32_t)gb->gb_bootrom_read(gb, addr + 3) << 24);`
+- `| ((uint32_t)gb->gb_bootrom_read(gb, addr + 3) << 24);`
+- `return gb->gb_rom_read_32bit(gb, addr);`
+- `uint32_t bank_offset = (gb->selected_rom_bank - 1) * ROM_BANK_SIZE;`
+- `return gb->gb_rom_read_32bit(gb, addr + bank_offset);`
+- `return *(uint32_t *)p;`
+- `| ((uint32_t)p[3] << 24);`
+- `| ((uint32_t)p[3] << 24);`
+- `(gb->cart_ram_bank * CRAM_BANK_SIZE);`
+- `| ((uint32_t)gb->gb_cart_ram_read(gb, offset + 3) << 24);`
+- `return *(uint32_t *)p;`
+- `| ((uint32_t)p[3] << 24);`
+- `return *(uint32_t *)p;`
+- `| ((uint32_t)p[3] << 24);`
+- `return *(uint32_t *)p;`
+- `| ((uint32_t)p[3] << 24);`
+- `return *(uint32_t *)p;`
+- `| ((uint32_t)p[3] << 24);`
+- `v |= ((uint32_t)audio_read(addr + i)) << (8 * i);`
+- `return *(uint32_t *)p;`
+- `| ((uint32_t)p[3] << 24);`
+- `(gb->gb_error)(gb, GB_INVALID_READ, addr);`
+- `WGB_UNREACHABLE();`
+- `| ((uint32_t)gb->gb_bootrom_read(gb, addr + 3) << 24);`
+- `| ((uint32_t)gb->gb_bootrom_read(gb, addr + 3) << 24);`
+- `return gb->gb_rom_read_32bit(gb,addr);`
+- `uint32_t bank_offset = (gb->selected_rom_bank - 1) * ROM_BANK_SIZE;`
+- `return gb->gb_rom_read_32bit(gb,addr + bank_offset);`
+- `return *(uint32_t *)&gb->vram[addr - gb->cgb.vramBankOffset];`
+- `return *(uint32_t *)&gb->vram[addr - VRAM_ADDR];`
+- `return *(uint16_t *)&gb->vram[addr - VRAM_ADDR];`
+- `| ((uint32_t)gb->rtc_latched.bytes[gb->cart_ram_bank - 0x08 + 3] << 24);`
+- `(gb->cart_ram_bank * CRAM_BANK_SIZE);`
+- `| ((uint32_t)gb->gb_cart_ram_read(gb, offset + 3) << 24);`
+- `return *(uint32_t *)&gb->wram[addr - gb->cgb.wramBankOffset];`
+- `return *(uint32_t *)&gb->wram[addr - WRAM_0_ADDR];`
+- `return *(uint32_t *)&gb->wram[addr - ECHO_ADDR];`
+- `return *(uint32_t *)&gb->oam[addr - OAM_ADDR];`
+- `v |= ((uint32_t)audio_read(addr + i)) << (8 * i);`
+- `((uint32_t)gb->cgb.doubleSpeedPrep << 8);`
+- `return *(uint32_t *)&gb->hram_io[addr - IO_ADDR];`
+- `return *(uint32_t *)&gb->hram_io[addr - IO_ADDR];`
+- `return *(uint32_t *)&gb->hram_io[addr - IO_ADDR];`
+- `(gb->gb_error)(gb, GB_INVALID_READ, addr);`
+- `WGB_UNREACHABLE();`
+- `return gb->gb_bootrom_read(gb, addr);`
+- `return gb->gb_bootrom_read(gb, addr);`
+- `return gb->gb_rom_read(gb, addr);`
+- `addr + ((gb->selected_rom_bank & 0x1F) - 1) * ROM_BANK_SIZE);`
+- `return gb->gb_rom_read(gb, addr + (gb->selected_rom_bank - 1) * ROM_BANK_SIZE);`
+- `if((gb->direct.joypad & JOYPAD_LEFT) == 0)  ax += 0x0070;`
+- `if((gb->direct.joypad & JOYPAD_RIGHT) == 0) ax -= 0x0070;`
+- `if((gb->direct.joypad & JOYPAD_UP) == 0)    ay += 0x0070;`
+- `if((gb->direct.joypad & JOYPAD_DOWN) == 0)  ay -= 0x0070;`
+- `case 0x2: return (uint8_t)(ax & 0xFF);`
+- `case 0x3: return (uint8_t)((ax >> 8) & 0xFF);`
+- `case 0x4: return (uint8_t)(ay & 0xFF);`
+- `case 0x5: return (uint8_t)((ay >> 8) & 0xFF);`
+- `case 0x8: return (uint8_t)(gb->gb_cart_ram_read(gb, 0x80) | 0x01);`
+- `return gb->gb_cart_ram_read(gb, addr);`
+- `(gb->cart_ram_bank * CRAM_BANK_SIZE));`
+- `return gb->gb_cart_ram_read(gb, addr - CART_RAM_ADDR);`
+- `return gb->wram[(addr - 0x2000) - gb->cgb.wramBankOffset];`
+- `return audio_read(addr);`
+- `return (gb->cgb.doubleSpeed << 7) + gb->cgb.doubleSpeedPrep;`
+- `return (gb->cgb.dmaSource >> 8);`
+- `return (gb->cgb.dmaSource & 0xF0);`
+- `return (gb->cgb.dmaDest >> 8);`
+- `return (gb->cgb.dmaDest & 0xF0);`
+- `return (gb->cgb.dmaActive << 7) | (gb->cgb.dmaSize - 1);`
+- `return (gb->cgb.BGPaletteID & 0x3F) + (gb->cgb.BGPaletteInc << 7);`
+- `return gb->cgb.BGPalette[(gb->cgb.BGPaletteID & 0x3F)];`
+- `return (gb->cgb.OAMPaletteID & 0x3F) + (gb->cgb.OAMPaletteInc << 7);`
+- `return gb->cgb.OAMPalette[(gb->cgb.OAMPaletteID & 0x3F)];`
+- `(gb->gb_error)(gb, GB_INVALID_READ, addr);`
+- `WGB_UNREACHABLE();`
+- `gb->enable_cart_ram = ((val & 0x0F) == 0x0A);`
+- `(gb->selected_rom_bank & 0x100) | val;`
+- `gb->selected_rom_bank = (val & 0x1F) | (gb->selected_rom_bank & 0x60);`
+- `gb->enable_cart_ram = ((val & 0x0F) == 0x0A);`
+- `gb->selected_rom_bank = (val & 0x01) << 8 | (gb->selected_rom_bank & 0xFF);`
+- `gb->cart_ram_bank = (val & 3);`
+- `gb->selected_rom_bank = ((val & 3) << 5) | (gb->selected_rom_bank & 0x1F);`
+- `gb->cart_ram_bank = (val & 0x0F);`
+- `memcpy(&gb->rtc_latched.bytes, &gb->rtc_real.bytes, sizeof(gb->rtc_latched.bytes));`
+- `gb->gb_cart_ram_write(gb, (addr >> 4) & 0xFF, val);`
+- `gb->gb_cart_ram_write(gb, addr, val);`
+- `addr - CART_RAM_ADDR + (gb->cart_ram_bank * CRAM_BANK_SIZE), val);`
+- `gb->gb_cart_ram_write(gb, addr - CART_RAM_ADDR, val);`
+- `gb->wram[(addr - 0x2000) - gb->cgb.wramBankOffset] = val;`
+- `audio_write(addr, val);`
+- `gb->hram_io[IO_JOYP] |= (gb->direct.joypad >> 4);`
+- `gb->hram_io[IO_JOYP] |= (gb->direct.joypad & 0x0F);`
+- `gb->hram_io[IO_IF] = (val | 0xE0);`
+- `lcd_enabled = (gb->hram_io[IO_LCDC] & LCDC_ENABLE);`
+- `gb->hram_io[IO_STAT] = (val & STAT_USER_BITS) | (gb->hram_io[IO_STAT] & STAT_MODE) | 0x80;`
+- `dma_addr = (uint_fast16_t)(val % 0xF1) << 8;`
+- `gb->hram_io[IO_DMA] = (val % 0xF1);`
+- `dma_addr = (uint_fast16_t)val << 8;`
+- `uint32_t v = __gb_read32(gb, dma_addr + i);`
+- `uint32_t v = __gb_read32(gb, dma_addr + i);`
+- `uint32_t v = __gb_read32(gb, dma_addr + i);`
+- `uint16_t v = __gb_read16(gb, dma_addr + i);`
+- `gb->oam[i] = __gb_read(gb, dma_addr + i);`
+- `gb->display.bg_palette[0] = (gb->hram_io[IO_BGP] & 0x03);`
+- `gb->display.bg_palette[1] = (gb->hram_io[IO_BGP] >> 2) & 0x03;`
+- `gb->display.bg_palette[2] = (gb->hram_io[IO_BGP] >> 4) & 0x03;`
+- `gb->display.bg_palette[3] = (gb->hram_io[IO_BGP] >> 6) & 0x03;`
+- `gb->display.sp_palette[0] = (gb->hram_io[IO_OBP0] & 0x03);`
+- `gb->display.sp_palette[1] = (gb->hram_io[IO_OBP0] >> 2) & 0x03;`
+- `gb->display.sp_palette[2] = (gb->hram_io[IO_OBP0] >> 4) & 0x03;`
+- `gb->display.sp_palette[3] = (gb->hram_io[IO_OBP0] >> 6) & 0x03;`
+- `gb->display.sp_palette[4] = (gb->hram_io[IO_OBP1] & 0x03);`
+- `gb->display.sp_palette[5] = (gb->hram_io[IO_OBP1] >> 2) & 0x03;`
+- `gb->display.sp_palette[6] = (gb->hram_io[IO_OBP1] >> 4) & 0x03;`
+- `gb->display.sp_palette[7] = (gb->hram_io[IO_OBP1] >> 6) & 0x03;`
+- `if(gb->cgb.cgbMode) gb->cgb.vramBankOffset = VRAM_ADDR - (gb->cgb.vramBank << 13);`
+- `gb->cgb.dmaSource = (gb->cgb.dmaSource & 0xFF) + (val << 8);`
+- `gb->cgb.dmaSource = (gb->cgb.dmaSource & 0xFF00) + val;`
+- `gb->cgb.dmaDest = (gb->cgb.dmaDest & 0xFF) + (val << 8);`
+- `gb->cgb.dmaDest = (gb->cgb.dmaDest & 0xFF00) + val;`
+- `gb->cgb.dmaSize = (val & 0x7F) + 1;`
+- `uint16_t dst = (gb->cgb.dmaDest & 0x1FF0) | 0x8000;`
+- `uint32_t val32 = __gb_read32(gb, src + i);`
+- `__gb_write32(gb, dst + i, val32);`
+- `uint16_t dst = (gb->cgb.dmaDest & 0x1FF0) | 0x8000;`
+- `uint16_t val16 = __gb_read16(gb, src + i);`
+- `__gb_write16(gb, dst + i, val16);`
+- `__gb_write(gb, ((gb->cgb.dmaDest & 0x1FF0) | 0x8000) + i, __gb_read(gb, (gb->cgb.dmaSource & 0xFFF0) + i));`

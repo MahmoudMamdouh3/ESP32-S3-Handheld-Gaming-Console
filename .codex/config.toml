@@ -1,0 +1,7 @@
+[mcp_servers.bmo-guardian]
+command = "python"
+args = [
+    "-m",
+    "tools.guardian",
+    "mcp",
+]

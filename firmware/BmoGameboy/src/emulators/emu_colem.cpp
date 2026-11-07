@@ -72,13 +72,13 @@ bool ColemEmu::isRunning() {
 }
 
 bool ColemEmu::saveBatteryRam(const char* romFilename) {
-  if (!running || !colemRam || !romFilename) return false;
-  return SaveManager::saveBatteryRam(romFilename, colemRam, 8 * 1024);
+  (void)romFilename;
+  return false;
 }
 
 bool ColemEmu::loadBatteryRam(const char* romFilename) {
-  if (!running || !colemRam || !romFilename) return false;
-  return SaveManager::loadBatteryRam(romFilename, colemRam, 8 * 1024);
+  (void)romFilename;
+  return false;
 }
 
 bool ColemEmu::saveState(const char* romFilename, int slot) {

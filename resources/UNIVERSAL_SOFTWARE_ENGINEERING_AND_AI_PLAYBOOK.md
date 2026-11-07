@@ -229,7 +229,7 @@ High performance on low-resource environments (or high-throughput backends) depe
       bgDark: "#0B121A",
       panelBg: "#1A4B42",
       accentGold: "#FFE033",
-      accentCoral: "#E8175D",
+      accentCoral: "#FF91A5",
       textWhite: "#FFFFFF",
       textMuted: "#8CD7C2",
     },

@@ -1,0 +1,249 @@
+# Firmware symbols: engine (3/8)
+
+Generated from the declarations in the listed headers. Edit the header, then run `python -m tools.guardian symbols`.
+
+## `firmware/BmoGameboy/src/engine/walnut_cgb/walnut_cgb.h` (continued)
+
+- `gb->cpu_reg.f.f_bits.c = (gb->cpu_reg.hl.reg & 0x8000) > 0;`
+- `gb->cpu_reg.f.f_bits.h = (gb->cpu_reg.hl.reg & 0x1000) > 0;`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `gb->cpu_reg.a = __gb_read(gb, gb->cpu_reg.hl.reg++);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_INC_R8(gb->cpu_reg.hl.bytes.l);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_DEC_R8(gb->cpu_reg.hl.bytes.l);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `gb->cpu_reg.hl.bytes.l = (uint8_t)(oppair >> 8);`
+- `opcode = __gb_read(gb, gb->cpu_reg.pc.reg);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `int8_t temp = (int8_t) (oppair >> 8);`
+- `opcode = __gb_read(gb, gb->cpu_reg.pc.reg);`
+- `gb->cpu_reg.sp.bytes.p = (uint8_t)(oppair >> 8);`
+- `oppair = __gb_read16(gb, gb->cpu_reg.pc.reg++);`
+- `gb->cpu_reg.sp.bytes.p = (uint8_t)(oppair >> 8);`
+- `gb->cpu_reg.sp.bytes.s = __gb_read(gb, gb->cpu_reg.pc.reg++);`
+- `opcode = __gb_read(gb, gb->cpu_reg.pc.reg);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, gb->cpu_reg.a);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `uint8_t temp = __gb_read(gb, gb->cpu_reg.hl.reg);`
+- `WGB_INSTR_INC_R8(temp);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, temp);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `uint8_t temp = __gb_read(gb, gb->cpu_reg.hl.reg);`
+- `WGB_INSTR_DEC_R8(temp);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, temp);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg,(uint8_t)(oppair >> 8));`
+- `opcode = __gb_read(gb, gb->cpu_reg.pc.reg);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `int8_t temp = (int8_t)(oppair >> 8);`
+- `opcode = __gb_read(gb, gb->cpu_reg.pc.reg);`
+- `((gb->cpu_reg.hl.reg & 0xFFF) + (gb->cpu_reg.sp.reg & 0xFFF)) & 0x1000 ? 1 : 0;`
+- `gb->cpu_reg.hl.reg = (uint16_t)temp;`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `gb->cpu_reg.a = __gb_read(gb, gb->cpu_reg.hl.reg--);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_INC_R8(gb->cpu_reg.a);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_DEC_R8(gb->cpu_reg.a);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `gb->cpu_reg.a = (uint8_t)(oppair >> 8);`
+- `opcode = __gb_read(gb, gb->cpu_reg.pc.reg);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `gb->cpu_reg.bc.bytes.b = __gb_read(gb, gb->cpu_reg.hl.reg);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `gb->cpu_reg.bc.bytes.c = __gb_read(gb, gb->cpu_reg.hl.reg);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `gb->cpu_reg.de.bytes.d = __gb_read(gb, gb->cpu_reg.hl.reg);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `gb->cpu_reg.de.bytes.e = __gb_read(gb, gb->cpu_reg.hl.reg);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `gb->cpu_reg.hl.bytes.h = __gb_read(gb, gb->cpu_reg.hl.reg);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `gb->cpu_reg.hl.bytes.l = __gb_read(gb, gb->cpu_reg.hl.reg);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, gb->cpu_reg.bc.bytes.b);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, gb->cpu_reg.bc.bytes.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, gb->cpu_reg.de.bytes.d);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, gb->cpu_reg.de.bytes.e);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, gb->cpu_reg.hl.bytes.h);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, gb->cpu_reg.hl.bytes.l);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `inst_cycles = (uint_fast16_t)halt_cycles;`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `__gb_write(gb, gb->cpu_reg.hl.reg, gb->cpu_reg.a);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `gb->cpu_reg.a = __gb_read(gb, gb->cpu_reg.hl.reg);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.bc.bytes.b, 0);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.bc.bytes.c, 0);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.de.bytes.d, 0);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.de.bytes.e, 0);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.hl.bytes.h, 0);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.hl.bytes.l, 0);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_ADC_R8(__gb_read(gb, gb->cpu_reg.hl.reg), 0);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.a, 0);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.bc.bytes.b, gb->cpu_reg.f.f_bits.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.bc.bytes.c, gb->cpu_reg.f.f_bits.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.de.bytes.d, gb->cpu_reg.f.f_bits.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.de.bytes.e, gb->cpu_reg.f.f_bits.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.hl.bytes.h, gb->cpu_reg.f.f_bits.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.hl.bytes.l, gb->cpu_reg.f.f_bits.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_ADC_R8(__gb_read(gb, gb->cpu_reg.hl.reg), gb->cpu_reg.f.f_bits.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_ADC_R8(gb->cpu_reg.a, gb->cpu_reg.f.f_bits.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.bc.bytes.b, 0);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.bc.bytes.c, 0);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.de.bytes.d, 0);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.de.bytes.e, 0);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.hl.bytes.h, 0);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.hl.bytes.l, 0);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_SBC_R8(__gb_read(gb, gb->cpu_reg.hl.reg), 0);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.bc.bytes.b, gb->cpu_reg.f.f_bits.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.bc.bytes.c, gb->cpu_reg.f.f_bits.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.de.bytes.d, gb->cpu_reg.f.f_bits.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.de.bytes.e, gb->cpu_reg.f.f_bits.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.hl.bytes.h, gb->cpu_reg.f.f_bits.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_SBC_R8(gb->cpu_reg.hl.bytes.l, gb->cpu_reg.f.f_bits.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_SBC_R8(__gb_read(gb, gb->cpu_reg.hl.reg), gb->cpu_reg.f.f_bits.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_AND_R8(gb->cpu_reg.bc.bytes.b);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_AND_R8(gb->cpu_reg.bc.bytes.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_AND_R8(gb->cpu_reg.de.bytes.d);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_AND_R8(gb->cpu_reg.de.bytes.e);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_AND_R8(gb->cpu_reg.hl.bytes.h);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_AND_R8(gb->cpu_reg.hl.bytes.l);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_AND_R8(__gb_read(gb, gb->cpu_reg.hl.reg));`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_AND_R8(gb->cpu_reg.a);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_XOR_R8(gb->cpu_reg.bc.bytes.b);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_XOR_R8(gb->cpu_reg.bc.bytes.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_XOR_R8(gb->cpu_reg.de.bytes.d);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_XOR_R8(gb->cpu_reg.de.bytes.e);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_XOR_R8(gb->cpu_reg.hl.bytes.h);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_XOR_R8(gb->cpu_reg.hl.bytes.l);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_XOR_R8(__gb_read(gb, gb->cpu_reg.hl.reg));`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_XOR_R8(gb->cpu_reg.a);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_OR_R8(gb->cpu_reg.bc.bytes.b);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_OR_R8(gb->cpu_reg.bc.bytes.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_OR_R8(gb->cpu_reg.de.bytes.d);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_OR_R8(gb->cpu_reg.de.bytes.e);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_OR_R8(gb->cpu_reg.hl.bytes.h);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_OR_R8(gb->cpu_reg.hl.bytes.l);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_OR_R8(__gb_read(gb, gb->cpu_reg.hl.reg));`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_OR_R8(gb->cpu_reg.a);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_CP_R8(gb->cpu_reg.bc.bytes.b);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_CP_R8(gb->cpu_reg.bc.bytes.c);`
+- `opcode = (uint8_t)(oppair >> 8);`
+- `WGB_INSTR_CP_R8(gb->cpu_reg.de.bytes.d);`

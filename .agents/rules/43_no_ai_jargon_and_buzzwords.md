@@ -19,9 +19,9 @@ Every piece of text written by an agent MUST use plain, measurable engineering l
 
 The following buzzwords and marketing phrases are strictly banned across the repository and will fail `python -m tools.guardian verify`, `python scripts/validate_repo.py` (Phase 7), and `.git/hooks/commit-msg`:
 
-- **Brand / Tier Vanity Labels:** `apple-grade`, `nintendo-grade`, `nintendo-style`, `apple/nintendo`, `museum-grade`, `reviewer-grade`, `production-grade`, `ultra-high-end`, `state-of-the-art`, `world-class`, `god-tier`, `next-gen`, `industry-leading`, `best-in-class`
-- **Speed / Motion Hyperbole:** `buttery-smooth`, `blazing-fast`, `lightning-fast`, `supercharge`, `supercharged`
-- **AI Prose Clichés:** `delve`, `tapestry`, `testament`, `paradigm`, `synergy`, `holistic`, `meticulously`, `bespoke`, `seamlessly`, `flawlessly`, `unparalleled`, `unmatched`, `groundbreaking`, `revolutionary`, `cutting-edge`, `game-changing`, `elevate`, `elevated`, `empower`, `empowered`, `living companion`, `authoritative living`, `glanceable`
+- **Brand / Tier Vanity Labels:** `apple-grade`, `nintendo-grade`, `nintendo-style`, `apple/nintendo`, `museum-grade`, `reviewer-grade`, `production-grade`, `ultra-high-end`, `state-of-the-art`, `world-class`, `god-tier`, `next-gen`, `industry-leading`, `best-in-class`, `living architectural specification`
+- **Speed / Motion Hyperbole:** `buttery-smooth`, `blazing-fast`, `blazing fast`, `lightning-fast`, `ultra-optimized`, `supercharge`, `supercharged`
+- **AI Prose Clichés:** `amazing`, `masterclass`, `overkill`, `insane`, `massive victory`, `perfection`, `miracle`, `bulletproof`, `unprecedented`, `seamless`, `flawless`, `delve`, `tapestry`, `testament`, `paradigm`, `synergy`, `holistic`, `meticulously`, `bespoke`, `seamlessly`, `flawlessly`, `unparalleled`, `unmatched`, `groundbreaking`, `revolutionary`, `cutting-edge`, `game-changing`, `elevate`, `elevated`, `empower`, `empowered`, `living companion`, `authoritative living`, `glanceable`
 
 ---
 
@@ -46,5 +46,6 @@ Always replace vague adjectives with exact technical facts, measurements, or alg
 
 1. **Repository Linter (`tools/guardian/core/doc_verifier.py`):**
    - Scans tracked `.md`, `.c`, `.cpp`, `.h`, `.ino`, `.py`, and `.js` files for banned buzzwords and emits `BUZZWORD_VIOLATION` errors.
+   - Preserves historical text under `docs/archive/` and allows the exact proper names `Amazing Spider-Man` and `Alex Kidd in Miracle World` in game-title data.
 2. **Git Commit Hook (`.git/hooks/commit-msg`):**
    - Rejects any commit message containing banned buzzwords before the commit is recorded.

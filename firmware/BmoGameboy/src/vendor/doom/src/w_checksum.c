@@ -50,7 +50,6 @@ static int GetFileNumber(wad_file_t *handle)
         open_wadfiles, sizeof(wad_file_t *) * (num_open_wadfiles + 1));
     if (new_open_wadfiles == NULL)
     {
-        I_Error("Unable to grow WAD checksum file list");
         return -1;
     }
 

@@ -1,15 +1,14 @@
 {
-  "schema_version": "2.2.0",
-  "generated_at": "2026-11-07T14:12:45.271606",
+  "schema_version": "2.3.0",
   "target_mcu": {
     "chip": "ESP32-S3-N16R8",
     "cpu_arch": "Xtensa dual-core 32-bit LX7 @ 240MHz",
     "flash": "16MB Quad SPI (QIO 80MHz)",
     "psram": "8MB Octal SPI (OPI 80MHz)",
     "internal_sram_dram_bytes": 327680,
-    "iram_used_bytes": 77824,
-    "dram_used_bytes": 219112,
-    "flash_used_bytes": 5702629
+    "iram_used_bytes": 77312,
+    "dram_used_bytes": 253728,
+    "flash_used_bytes": 5774741
   },
   "hard_stops": [
     {
@@ -153,8 +152,7 @@
       "status": "active",
       "res": "160x192",
       "ext": [
-        ".a26",
-        ".bin"
+        ".a26"
       ],
       "fps": 60.0
     },
@@ -165,8 +163,7 @@
       "status": "active",
       "res": "128x128",
       "ext": [
-        ".p8",
-        ".png"
+        ".p8"
       ],
       "fps": 30.0
     },
@@ -437,64 +434,7 @@
       "status": "PINCHED_NEEDS_DMA"
     }
   ],
-  "microbenchmark_baselines": [
-    {
-      "name": "BMO_SDF_Procedural_Face_Render_Unculled",
-      "iterations": 100,
-      "avg_latency_us": 1172.127,
-      "throughput_mops": 3.49,
-      "description": "Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling."
-    },
-    {
-      "name": "BMO_SDF_Procedural_Face_Render_Culled",
-      "iterations": 200,
-      "avg_latency_us": 432.065,
-      "throughput_mops": 9.48,
-      "description": "Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction)."
-    },
-    {
-      "name": "4Pixel_Coalesced_Aligned_Store_Kernel",
-      "iterations": 50000,
-      "avg_latency_us": 2.173,
-      "throughput_mops": 13.81,
-      "description": "Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling."
-    },
-    {
-      "name": "O1_Palette_Scanline_Transformation",
-      "iterations": 10000,
-      "avg_latency_us": 4.03,
-      "throughput_mops": 59.56,
-      "description": "Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput."
-    },
-    {
-      "name": "CPU_Emulation_Opcode_Dispatch",
-      "iterations": 500000,
-      "avg_latency_us": 0.064,
-      "throughput_mops": 15.54,
-      "description": "Simulates CPU opcode fetch-decode-execute cycle dispatch throughput."
-    },
-    {
-      "name": "Direct_GPIO_Atomic_Bitmask_Sampling",
-      "iterations": 100000,
-      "avg_latency_us": 0.478,
-      "throughput_mops": 16.73,
-      "description": "Measures atomic 8-pin bitmask unpacking (GPIO 4,5,6,7,16,17,18,21) replacing 8 digitalRead calls."
-    },
-    {
-      "name": "SD_Catalog_O1_Query_And_Page_Jump",
-      "iterations": 10000,
-      "avg_latency_us": 0.171,
-      "throughput_mops": 5.84,
-      "description": "Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations."
-    },
-    {
-      "name": "Native_C_11_Cores_575_Frames",
-      "iterations": 575,
-      "avg_latency_us": 853.676,
-      "throughput_mops": 1.17,
-      "description": "Executes 50 frames across all 11 native C emulator engines + save-state replay (575 frames total, kFPS)."
-    }
-  ],
+  "benchmark_policy": "Live host measurements are not cached in this deterministic index. Run python -m tools.guardian bench-host for a fresh host-only report; use on-device capture for hardware timing.",
   "governance_rules": {
     "00_hard_stops.md": {
       "file": ".agents/rules/00_hard_stops.md",
@@ -508,8 +448,8 @@
     },
     "02_architecture.md": {
       "file": ".agents/rules/02_architecture.md",
-      "title": "4. Toolchain & Build Configuration",
-      "lines": 25
+      "title": "02. Architecture Overview",
+      "lines": 20
     },
     "03_conventions.md": {
       "file": ".agents/rules/03_conventions.md",
@@ -518,8 +458,8 @@
     },
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
-      "title": "6. Known Issues, Technical Debt & Hardware Limitations Registry",
-      "lines": 536
+      "title": "Known Issues and Audit Findings",
+      "lines": 69
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -529,7 +469,7 @@
     "06_verification_standards.md": {
       "file": ".agents/rules/06_verification_standards.md",
       "title": "Verification & Evidence Standards",
-      "lines": 118
+      "lines": 117
     },
     "07_task_protocol.md": {
       "file": ".agents/rules/07_task_protocol.md",
@@ -548,8 +488,8 @@
     },
     "10_symbol_reference.md": {
       "file": ".agents/rules/10_symbol_reference.md",
-      "title": "Symbol Reference (Ground Truth for Names)",
-      "lines": 416
+      "title": "Symbol Reference",
+      "lines": 21
     },
     "11_rules_meta.md": {
       "file": ".agents/rules/11_rules_meta.md",
@@ -573,8 +513,8 @@
     },
     "15_performance_budgets.md": {
       "file": ".agents/rules/15_performance_budgets.md",
-      "title": "Performance Engineering & Budgets",
-      "lines": 51
+      "title": "Performance Budgets and Measurements",
+      "lines": 19
     },
     "16_logging_and_diagnostics.md": {
       "file": ".agents/rules/16_logging_and_diagnostics.md",
@@ -594,7 +534,7 @@
     "19_security_and_data_integrity.md": {
       "file": ".agents/rules/19_security_and_data_integrity.md",
       "title": "Security & Data Integrity",
-      "lines": 34
+      "lines": 23
     },
     "20_multi_agent_protocol.md": {
       "file": ".agents/rules/20_multi_agent_protocol.md",
@@ -629,17 +569,17 @@
     "26_emulator_exit_contract.md": {
       "file": ".agents/rules/26_emulator_exit_contract.md",
       "title": "Emulator Exit Contract",
-      "lines": 19
+      "lines": 18
     },
     "27_codebase_map.md": {
       "file": ".agents/rules/27_codebase_map.md",
-      "title": "Codebase Map \u2014 Ground Truth for Architecture",
-      "lines": 126
+      "title": "27. Codebase Map",
+      "lines": 70
     },
     "28_display_and_spi_contract.md": {
       "file": ".agents/rules/28_display_and_spi_contract.md",
-      "title": "Display & SPI Bus Contract",
-      "lines": 85
+      "title": "28. Display and SPI Contract",
+      "lines": 25
     },
     "29_adding_a_baked_rom.md": {
       "file": ".agents/rules/29_adding_a_baked_rom.md",
@@ -653,13 +593,13 @@
     },
     "31_quick_start_primer.md": {
       "file": ".agents/rules/31_quick_start_primer.md",
-      "title": "31. Quick-Start Primer (Zero-Context Agent On-Ramp)",
-      "lines": 88
+      "title": "31. Quick-Start Primer",
+      "lines": 33
     },
     "32_modular_core_template.md": {
       "file": ".agents/rules/32_modular_core_template.md",
-      "title": "32. Modular Core Template & Scaffolding Guide",
-      "lines": 128
+      "title": "32. Emulator Wrapper Template",
+      "lines": 24
     },
     "33_agent_handoff_and_optimization_cycle.md": {
       "file": ".agents/rules/33_agent_handoff_and_optimization_cycle.md",
@@ -704,7 +644,7 @@
     "41_engineering_communication_and_critical_pushback.md": {
       "file": ".agents/rules/41_engineering_communication_and_critical_pushback.md",
       "title": "41. Engineering Communication, Critical Pushback & Toolchain Autonomy",
-      "lines": 80
+      "lines": 76
     },
     "42_quality_of_life_and_roadmap_ledger.md": {
       "file": ".agents/rules/42_quality_of_life_and_roadmap_ledger.md",
@@ -714,7 +654,7 @@
     "43_no_ai_jargon_and_buzzwords.md": {
       "file": ".agents/rules/43_no_ai_jargon_and_buzzwords.md",
       "title": "43. Mandatory Ban on AI Jargon, Buzzwords, and Marketing Filler",
-      "lines": 50
+      "lines": 51
     },
     "44_anti_ai_ui_design_standards.md": {
       "file": ".agents/rules/44_anti_ai_ui_design_standards.md",
@@ -725,79 +665,97 @@
   "symbol_registry": {
     "syncVisiblePoolCapacity": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 57,
+      "line": 64,
       "signature": "static void syncVisiblePoolCapacity()",
+      "is_iram": false
+    },
+    "currentGameHasBatterySaveSupport": {
+      "file": "firmware/BmoGameboy/BmoGameboy.ino",
+      "line": 108,
+      "signature": "static bool currentGameHasBatterySaveSupport()",
       "is_iram": false
     },
     "autoSaveCurrentBatteryRam": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 103,
-      "signature": "static void autoSaveCurrentBatteryRam()",
+      "line": 127,
+      "signature": "static bool autoSaveCurrentBatteryRam()",
       "is_iram": false
     },
     "quickSaveState": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 134,
+      "line": 143,
       "signature": "static bool quickSaveState(int slot)",
       "is_iram": false
     },
     "quickLoadState": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 166,
+      "line": 175,
       "signature": "static bool quickLoadState(int slot)",
       "is_iram": false
     },
     "destroyActiveEmulator": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 199,
+      "line": 208,
       "signature": "static void destroyActiveEmulator()",
+      "is_iram": false
+    },
+    "finishQuitToConsole": {
+      "file": "firmware/BmoGameboy/BmoGameboy.ino",
+      "line": 248,
+      "signature": "static void finishQuitToConsole()",
       "is_iram": false
     },
     "canPress": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 241,
+      "line": 259,
       "signature": "inline bool canPress()",
       "is_iram": false
     },
     "recordFrameTime": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 255,
-      "signature": "static inline void recordFrameTime(unsigned long us)",
+      "line": 275,
+      "signature": "static inline void recordFrameTime(unsigned long us, int emulatorIndex)",
       "is_iram": false
     },
     "resetFrameStats": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 262,
+      "line": 293,
       "signature": "static void resetFrameStats()",
+      "is_iram": false
+    },
+    "resetFramePercentiles": {
+      "file": "firmware/BmoGameboy/BmoGameboy.ino",
+      "line": 300,
+      "signature": "static void resetFramePercentiles()",
       "is_iram": false
     },
     "countGamesForConsole": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 277,
+      "line": 312,
       "signature": "static int countGamesForConsole(RomType type)",
       "is_iram": false
     },
     "rebuildVisibleGames": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 282,
+      "line": 317,
       "signature": "static void rebuildVisibleGames()",
       "is_iram": false
     },
     "selectedGame": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 325,
+      "line": 360,
       "signature": "static const RomFile* selectedGame()",
       "is_iram": false
     },
     "setup": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 337,
+      "line": 372,
       "signature": "void setup()",
       "is_iram": false
     },
     "loop": {
       "file": "firmware/BmoGameboy/BmoGameboy.ino",
-      "line": 394,
+      "line": 432,
       "signature": "void loop()",
       "is_iram": false
     },
@@ -875,43 +833,25 @@
     },
     "packBGR565": {
       "file": "firmware/BmoGameboy/src/core/bmo_face.cpp",
-      "line": 43,
+      "line": 44,
       "signature": "static inline uint16_t packBGR565(uint8_t r, uint8_t g, uint8_t b)",
-      "is_iram": false
-    },
-    "init": {
-      "file": "firmware/BmoGameboy/src/emulators/emu_wswan.h",
-      "line": 7,
-      "signature": "static bool init(uint8_t* romData, size_t romSize, bool isColor);",
-      "is_iram": false
-    },
-    "snap": {
-      "file": "firmware/BmoGameboy/src/core/bmo_face.cpp",
-      "line": 95,
-      "signature": "void snap(float v)",
-      "is_iram": false
-    },
-    "setTarget": {
-      "file": "firmware/BmoGameboy/src/core/bmo_face.cpp",
-      "line": 100,
-      "signature": "void setTarget(float tgt)",
       "is_iram": false
     },
     "spawnParticle": {
       "file": "firmware/BmoGameboy/src/core/bmo_face.cpp",
-      "line": 273,
+      "line": 232,
       "signature": "static void spawnParticle(ParticleType type, float x, float y, float vx, float vy, float scale, float maxLife)",
       "is_iram": false
     },
     "updateParticles": {
       "file": "firmware/BmoGameboy/src/core/bmo_face.cpp",
-      "line": 290,
+      "line": 249,
       "signature": "static void updateParticles(float dt)",
       "is_iram": false
     },
     "renderMascotInternal": {
       "file": "firmware/BmoGameboy/src/core/bmo_face.cpp",
-      "line": 419,
+      "line": 378,
       "signature": "static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY, int destW, int destH)",
       "is_iram": false
     },
@@ -1031,8 +971,8 @@
     },
     "draw": {
       "file": "firmware/BmoGameboy/src/core/box_art.h",
-      "line": 25,
-      "signature": "static void draw(GFXcanvas16* canvas, int x, int y, bool drawBorder = true, uint16_t borderColor = 0xFFFF);",
+      "line": 26,
+      "signature": "static void draw(GFXcanvas16* canvas, int x, int y, bool drawBorder = true, uint16_t borderColor = Theme::BMO_WHITE);",
       "is_iram": false
     },
     "isDirty": {
@@ -1049,115 +989,139 @@
     },
     "rgbToDisplayColor": {
       "file": "firmware/BmoGameboy/src/core/box_art.cpp",
-      "line": 17,
+      "line": 18,
       "signature": "uint16_t rgbToDisplayColor(uint8_t r, uint8_t g, uint8_t b)",
+      "is_iram": false
+    },
+    "sameNameIgnoreAsciiCase": {
+      "file": "firmware/BmoGameboy/src/core/box_art.cpp",
+      "line": 23,
+      "signature": "bool sameNameIgnoreAsciiCase(const char* left, const char* right)",
+      "is_iram": false
+    },
+    "legacyBaseIsUnique": {
+      "file": "firmware/BmoGameboy/src/core/box_art.cpp",
+      "line": 35,
+      "signature": "bool legacyBaseIsUnique(const char* romFilename, const char* legacyBase)",
+      "is_iram": false
+    },
+    "migrateLegacyArt": {
+      "file": "firmware/BmoGameboy/src/core/box_art.cpp",
+      "line": 48,
+      "signature": "bool migrateLegacyArt(const char* sourcePath, const char* destinationPath)",
       "is_iram": false
     },
     "BoxArt::init": {
       "file": "firmware/BmoGameboy/src/core/box_art.cpp",
-      "line": 22,
+      "line": 93,
       "signature": "bool BoxArt::init()",
       "is_iram": false
     },
     "BoxArt::unload": {
       "file": "firmware/BmoGameboy/src/core/box_art.cpp",
-      "line": 33,
+      "line": 104,
       "signature": "void BoxArt::unload()",
       "is_iram": false
     },
     "BoxArt::hasArt": {
       "file": "firmware/BmoGameboy/src/core/box_art.cpp",
-      "line": 42,
+      "line": 113,
       "signature": "bool BoxArt::hasArt()",
       "is_iram": false
     },
     "BoxArt::getBuffer": {
       "file": "firmware/BmoGameboy/src/core/box_art.cpp",
-      "line": 46,
+      "line": 117,
       "signature": "const uint16_t* BoxArt::getBuffer()",
       "is_iram": false
     },
     "BoxArt::getBaseName": {
       "file": "firmware/BmoGameboy/src/core/box_art.cpp",
-      "line": 50,
+      "line": 121,
       "signature": "void BoxArt::getBaseName(const char* romFilename, char* outBaseName, size_t maxLen)",
       "is_iram": false
     },
     "BoxArt::existsForRom": {
       "file": "firmware/BmoGameboy/src/core/box_art.cpp",
-      "line": 69,
+      "line": 140,
       "signature": "bool BoxArt::existsForRom(const char* romFilename)",
       "is_iram": false
     },
     "BoxArt::load": {
       "file": "firmware/BmoGameboy/src/core/box_art.cpp",
-      "line": 97,
+      "line": 174,
       "signature": "bool BoxArt::load(const char* romFilename)",
       "is_iram": false
     },
     "BoxArt::loadRaw": {
       "file": "firmware/BmoGameboy/src/core/box_art.cpp",
-      "line": 161,
+      "line": 246,
       "signature": "bool BoxArt::loadRaw(const char* path)",
       "is_iram": false
     },
     "BoxArt::loadBmp": {
       "file": "firmware/BmoGameboy/src/core/box_art.cpp",
-      "line": 180,
+      "line": 265,
       "signature": "bool BoxArt::loadBmp(const char* path)",
       "is_iram": false
     },
     "BoxArt::draw": {
       "file": "firmware/BmoGameboy/src/core/box_art.cpp",
-      "line": 260,
+      "line": 345,
       "signature": "void BoxArt::draw(GFXcanvas16* canvas, int x, int y, bool drawBorder, uint16_t borderColor)",
+      "is_iram": false
+    },
+    "init": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_wswan.h",
+      "line": 7,
+      "signature": "static bool init(uint8_t* romData, size_t romSize, bool isColor);",
       "is_iram": false
     },
     "load": {
       "file": "firmware/BmoGameboy/src/core/box_art.h",
-      "line": 19,
+      "line": 20,
       "signature": "static bool load(const char* romFilename);",
       "is_iram": false
     },
     "unload": {
       "file": "firmware/BmoGameboy/src/core/box_art.h",
-      "line": 20,
+      "line": 21,
       "signature": "static void unload();",
       "is_iram": false
     },
     "hasArt": {
       "file": "firmware/BmoGameboy/src/core/box_art.h",
-      "line": 21,
+      "line": 22,
       "signature": "static bool hasArt();",
       "is_iram": false
     },
     "getBuffer": {
       "file": "firmware/BmoGameboy/src/core/box_art.h",
-      "line": 22,
+      "line": 23,
       "signature": "static const uint16_t* getBuffer();",
       "is_iram": false
     },
     "existsForRom": {
       "file": "firmware/BmoGameboy/src/core/box_art.h",
-      "line": 28,
+      "line": 29,
       "signature": "static bool existsForRom(const char* romFilename);",
       "is_iram": false
     },
     "getBaseName": {
       "file": "firmware/BmoGameboy/src/core/box_art.h",
-      "line": 31,
+      "line": 32,
       "signature": "static void getBaseName(const char* romFilename, char* outBaseName, size_t maxLen);",
       "is_iram": false
     },
     "loadRaw": {
       "file": "firmware/BmoGameboy/src/core/box_art.h",
-      "line": 34,
+      "line": 35,
       "signature": "static bool loadRaw(const char* path);",
       "is_iram": false
     },
     "loadBmp": {
       "file": "firmware/BmoGameboy/src/core/box_art.h",
-      "line": 35,
+      "line": 36,
       "signature": "static bool loadBmp(const char* path);",
       "is_iram": false
     },
@@ -1271,721 +1235,757 @@
     },
     "__attribute__": {
       "file": "firmware/BmoGameboy/src/emulators/emu_walnut.cpp",
-      "line": 55,
+      "line": 63,
       "signature": "static uint16_t __attribute__((aligned(4))) rowBuffer[480];",
       "is_iram": false
     },
     "displayWorkerTask": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 98,
+      "line": 103,
       "signature": "static void displayWorkerTask(void* pvParameters)",
       "is_iram": false
     },
     "centeredX": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 181,
+      "line": 186,
       "signature": "int centeredX(const char* str, int displayWidth)",
       "is_iram": false
     },
     "consoleName": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 220,
+      "line": 225,
       "signature": "const char* consoleName(RomType type)",
       "is_iram": false
     },
     "consoleYear": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 242,
+      "line": 247,
       "signature": "const char* consoleYear(RomType type)",
       "is_iram": false
     },
     "consoleBadge": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 264,
+      "line": 269,
       "signature": "const char* consoleBadge(RomType type)",
       "is_iram": false
     },
     "consoleExt": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 286,
+      "line": 291,
       "signature": "const char* consoleExt(RomType type)",
       "is_iram": false
     },
     "drawCentered": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 308,
+      "line": 313,
       "signature": "void drawCentered(const char* text, int y, uint16_t color)",
       "is_iram": false
     },
     "drawFittedCentered": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 314,
+      "line": 319,
       "signature": "void drawFittedCentered(const char* source, int y, int maxWidth, uint16_t color)",
       "is_iram": false
     },
     "gameTitle": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 335,
+      "line": 340,
       "signature": "void gameTitle(const char* filename, char* output, size_t outputSize)",
       "is_iram": false
     },
     "drawFooter": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 339,
+      "line": 344,
       "signature": "void drawFooter(const char* text)",
       "is_iram": false
     },
     "drawButtonPill": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 346,
+      "line": 351,
       "signature": "void drawButtonPill(int x, int y, const char* glyph, const char* label, uint16_t pillBg, uint16_t glyphCol, uint16_t labelCol)",
       "is_iram": false
     },
     "internalHasActiveToast": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 378,
+      "line": 383,
       "signature": "bool internalHasActiveToast()",
       "is_iram": false
     },
     "drawFloatingToastHUD": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 382,
+      "line": 387,
       "signature": "void drawFloatingToastHUD()",
       "is_iram": false
     },
     "writeMenuCanvas": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 428,
+      "line": 433,
       "signature": "void writeMenuCanvas()",
       "is_iram": false
     },
     "DisplayEmu::begin": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 487,
+      "line": 492,
       "signature": "void DisplayEmu::begin()",
       "is_iram": false
     },
     "DisplayEmu::clearScreen": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 539,
+      "line": 544,
       "signature": "void DisplayEmu::clearScreen()",
       "is_iram": false
     },
     "DisplayEmu::startFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 562,
+      "line": 567,
       "signature": "void DisplayEmu::startFrame()",
       "is_iram": false
     },
     "DisplayEmu::endFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 573,
+      "line": 578,
       "signature": "void DisplayEmu::endFrame()",
       "is_iram": false
     },
     "DisplayEmu::streamPixelRow": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 581,
+      "line": 586,
       "signature": "void DisplayEmu::streamPixelRow(const uint16_t* buf, int pixelCount)",
       "is_iram": false
     },
     "DisplayEmu::streamRawFrameAsync": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 589,
+      "line": 594,
       "signature": "void DisplayEmu::streamRawFrameAsync(const uint16_t* fb, int x, int y, int w, int h)",
       "is_iram": false
     },
     "DisplayEmu::streamNESFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 622,
+      "line": 627,
       "signature": "void DisplayEmu::streamNESFrame(const uint8_t* nes_framebuffer)",
       "is_iram": false
     },
     "DisplayEmu::streamDoomFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 667,
+      "line": 672,
       "signature": "void DisplayEmu::streamDoomFrame(const uint8_t* cmap)",
       "is_iram": false
     },
     "DisplayEmu::streamSMSFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 721,
+      "line": 726,
       "signature": "void DisplayEmu::streamSMSFrame(const uint16_t* sms_framebuffer, bool isGameGear)",
       "is_iram": false
     },
     "DisplayEmu::streamPCEFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 759,
+      "line": 764,
       "signature": "void DisplayEmu::streamPCEFrame(const uint16_t* pce_framebuffer)",
       "is_iram": false
     },
     "DisplayEmu::streamAtariFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 763,
+      "line": 768,
       "signature": "void DisplayEmu::streamAtariFrame(const uint16_t* atari_framebuffer)",
       "is_iram": false
     },
     "DisplayEmu::streamPicoFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 767,
+      "line": 772,
       "signature": "void DisplayEmu::streamPicoFrame(const uint16_t* pico_framebuffer)",
       "is_iram": false
     },
     "DisplayEmu::streamGenesisFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 771,
+      "line": 776,
       "signature": "void DisplayEmu::streamGenesisFrame(const uint16_t* genesis_framebuffer, int width, int height)",
       "is_iram": false
     },
     "DisplayEmu::streamSNESFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 776,
+      "line": 781,
       "signature": "void DisplayEmu::streamSNESFrame(const uint16_t* snes_framebuffer, int width, int height)",
       "is_iram": false
     },
     "DisplayEmu::streamWSwanFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 781,
+      "line": 786,
       "signature": "void DisplayEmu::streamWSwanFrame(const uint16_t* wswan_framebuffer, int width, int height)",
       "is_iram": false
     },
     "DisplayEmu::streamNGPFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 786,
+      "line": 791,
       "signature": "void DisplayEmu::streamNGPFrame(const uint16_t* ngp_framebuffer, int width, int height)",
       "is_iram": false
     },
     "DisplayEmu::streamLynxFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 791,
+      "line": 796,
       "signature": "void DisplayEmu::streamLynxFrame(const uint16_t* lynx_framebuffer, int width, int height)",
       "is_iram": false
     },
     "DisplayEmu::streamColemFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 796,
+      "line": 801,
       "signature": "void DisplayEmu::streamColemFrame(const uint16_t* colem_framebuffer, int width, int height)",
       "is_iram": false
     },
     "DisplayEmu::streamGBFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 801,
+      "line": 806,
       "signature": "void DisplayEmu::streamGBFrame(const uint16_t* gb_framebuffer)",
       "is_iram": false
     },
     "DisplayEmu::pushPixels": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 810,
+      "line": 815,
       "signature": "void DisplayEmu::pushPixels(int yOffset, const uint16_t* rowBuffer, int rowsToDraw)",
       "is_iram": false
     },
     "DisplayEmu::pushPixelsRaw": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 821,
+      "line": 826,
       "signature": "void DisplayEmu::pushPixelsRaw(int yOffset, const uint16_t* rowBuffer, int rowsToDraw)",
       "is_iram": false
     },
     "DisplayEmu::pushPixelsFullScreen": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 826,
+      "line": 831,
       "signature": "void DisplayEmu::pushPixelsFullScreen(const uint16_t* buffer)",
       "is_iram": false
     },
     "DisplayEmu::pushPixelsAt": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 832,
+      "line": 837,
       "signature": "void DisplayEmu::pushPixelsAt(int x, int y, int w, int h, const uint16_t* buf)",
       "is_iram": false
     },
     "DisplayEmu::startDirectWindow": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 842,
+      "line": 847,
       "signature": "void DisplayEmu::startDirectWindow(int x, int y, int w, int h)",
       "is_iram": false
     },
     "DisplayEmu::writeWindowBytes": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 849,
+      "line": 854,
       "signature": "void DisplayEmu::writeWindowBytes(const uint8_t* data, size_t len)",
       "is_iram": false
     },
     "DisplayEmu::endDirectWindow": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 853,
+      "line": 858,
       "signature": "void DisplayEmu::endDirectWindow()",
       "is_iram": false
     },
     "DisplayEmu::initMenuUI": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 858,
+      "line": 863,
       "signature": "void DisplayEmu::initMenuUI()",
       "is_iram": false
     },
     "DisplayEmu::cleanupMenuUI": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 876,
+      "line": 881,
       "signature": "void DisplayEmu::cleanupMenuUI()",
       "is_iram": false
     },
     "DisplayEmu::drawBootSplash": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 881,
+      "line": 886,
       "signature": "void DisplayEmu::drawBootSplash(bool pressAnyButtonBlink)",
       "is_iram": false
     },
     "DisplayEmu::drawConsoleSelectMenu": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 912,
+      "line": 917,
       "signature": "void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts, int consoleCount, bool sdMounted)",
       "is_iram": false
     },
     "DisplayEmu::drawConsoleMuseumModal": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1056,
+      "line": 1061,
       "signature": "void DisplayEmu::drawConsoleMuseumModal(RomType console)",
       "is_iram": false
     },
     "DisplayEmu::drawGameSelectMenu": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1260,
+      "line": 1265,
       "signature": "void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int selectedIndex, RomType console, bool sdMounted)",
       "is_iram": false
     },
     "DisplayEmu::showSDCardWarning": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1498,
+      "line": 1523,
       "signature": "void DisplayEmu::showSDCardWarning()",
       "is_iram": false
     },
     "DisplayEmu::sanitizeRomTitle": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1512,
+      "line": 1537,
       "signature": "void DisplayEmu::sanitizeRomTitle(const char* src, char* dst, size_t maxLen)",
       "is_iram": false
     },
     "DisplayEmu::setDmgPalette": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1556,
+      "line": 1581,
       "signature": "void DisplayEmu::setDmgPalette(int paletteIndex)",
       "is_iram": false
     },
     "DisplayEmu::getDmgPaletteIndex": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1562,
+      "line": 1587,
       "signature": "int DisplayEmu::getDmgPaletteIndex()",
       "is_iram": false
     },
     "DisplayEmu::cycleDmgPalette": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1566,
+      "line": 1591,
       "signature": "void DisplayEmu::cycleDmgPalette()",
       "is_iram": false
     },
     "DisplayEmu::getActiveDmgPalette": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1570,
+      "line": 1595,
       "signature": "const uint16_t* DisplayEmu::getActiveDmgPalette()",
+      "is_iram": false
+    },
+    "DisplayEmu::setDiagnosticSpiClock": {
+      "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
+      "line": 1767,
+      "signature": "void DisplayEmu::setDiagnosticSpiClock(uint32_t spiClockHz)",
+      "is_iram": false
+    },
+    "DisplayEmu::getDisplayStackHighWaterMarkWords": {
+      "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
+      "line": 1775,
+      "signature": "uint32_t DisplayEmu::getDisplayStackHighWaterMarkWords()",
+      "is_iram": false
+    },
+    "DisplayEmu::drawSpiStressPattern": {
+      "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
+      "line": 1780,
+      "signature": "void DisplayEmu::drawSpiStressPattern(uint32_t spiClockHz, uint32_t frameNumber)",
       "is_iram": false
     },
     "DisplayEmu::drawConsoleIcon": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1720,
+      "line": 1808,
       "signature": "void DisplayEmu::drawConsoleIcon(RomType type, int x, int y, uint16_t primaryColor)",
       "is_iram": false
     },
     "DisplayEmu::drawIdleMascotScreen": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1834,
+      "line": 1922,
       "signature": "void DisplayEmu::drawIdleMascotScreen(unsigned long idleSeconds, const char* stateMessage)",
       "is_iram": false
     },
     "DisplayEmu::waitForDisplay": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1879,
+      "line": 1967,
       "signature": "void DisplayEmu::waitForDisplay()",
       "is_iram": false
     },
     "DisplayEmu::isDisplayBusy": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1887,
+      "line": 1975,
       "signature": "bool DisplayEmu::isDisplayBusy()",
       "is_iram": false
     },
     "DisplayEmu::showToast": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1895,
+      "line": 1983,
       "signature": "void DisplayEmu::showToast(const char* message, uint16_t borderColor, unsigned long durationMs)",
       "is_iram": false
     },
     "DisplayEmu::hasActiveToast": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1906,
+      "line": 1994,
       "signature": "bool DisplayEmu::hasActiveToast()",
       "is_iram": false
     },
     "DisplayEmu::triggerCarouselGlide": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1910,
+      "line": 1998,
       "signature": "void DisplayEmu::triggerCarouselGlide(bool directionRight)",
       "is_iram": false
     },
     "DisplayEmu::showAlphaBadge": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1921,
+      "line": 2009,
       "signature": "void DisplayEmu::showAlphaBadge(char letter, unsigned long durationMs)",
       "is_iram": false
     },
     "DisplayEmu::setTopPicksFilter": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1929,
+      "line": 2017,
       "signature": "void DisplayEmu::setTopPicksFilter(bool enabled)",
       "is_iram": false
     },
     "DisplayEmu::getTopPicksFilter": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1933,
+      "line": 2021,
       "signature": "bool DisplayEmu::getTopPicksFilter()",
       "is_iram": false
     },
     "DisplayEmu::setBezelEnabled": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1937,
+      "line": 2025,
       "signature": "void DisplayEmu::setBezelEnabled(bool enabled)",
       "is_iram": false
     },
     "DisplayEmu::isBezelEnabled": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1941,
+      "line": 2029,
       "signature": "bool DisplayEmu::isBezelEnabled()",
       "is_iram": false
     },
     "DisplayEmu::toggleBezel": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1945,
+      "line": 2033,
       "signature": "bool DisplayEmu::toggleBezel()",
       "is_iram": false
     },
     "DisplayEmu::getLastFramebuffer": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1950,
+      "line": 2038,
       "signature": "const uint16_t* DisplayEmu::getLastFramebuffer(int* outWidth, int* outHeight)",
       "is_iram": false
     },
     "DisplayEmu::drawConsoleBezel": {
       "file": "firmware/BmoGameboy/src/core/display_emu.cpp",
-      "line": 1974,
+      "line": 2062,
       "signature": "void DisplayEmu::drawConsoleBezel(int consoleIndex)",
       "is_iram": false
     },
     "clearScreen": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 10,
+      "line": 11,
       "signature": "void clearScreen();",
       "is_iram": false
     },
     "showSDCardWarning": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 14,
+      "line": 15,
       "signature": "void showSDCardWarning();",
       "is_iram": false
     },
     "initMenuUI": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 15,
+      "line": 16,
       "signature": "void initMenuUI();",
       "is_iram": false
     },
     "drawBootSplash": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 18,
+      "line": 19,
       "signature": "void drawBootSplash(bool pressAnyButtonBlink);",
       "is_iram": false
     },
     "drawConsoleSelectMenu": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 21,
+      "line": 22,
       "signature": "void drawConsoleSelectMenu(int selectedIndex, const int* gameCounts, int consoleCount, bool sdMounted);",
       "is_iram": false
     },
     "drawConsoleMuseumModal": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 24,
+      "line": 25,
       "signature": "void drawConsoleMuseumModal(RomType console);",
       "is_iram": false
     },
     "cleanupMenuUI": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 29,
+      "line": 30,
       "signature": "void cleanupMenuUI();",
       "is_iram": false
     },
     "showToast": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 36,
-      "signature": "void showToast(const char* message, uint16_t borderColor = 0xFFE0, unsigned long durationMs = 1800);",
+      "line": 38,
+      "signature": "void showToast(const char* message, uint16_t borderColor = Theme::BMO_DPAD_YELLOW, unsigned long durationMs = 1800);",
       "is_iram": false
     },
     "hasActiveToast": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 37,
+      "line": 39,
       "signature": "bool hasActiveToast();",
       "is_iram": false
     },
     "triggerCarouselGlide": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 40,
+      "line": 42,
       "signature": "void triggerCarouselGlide(bool directionRight);",
       "is_iram": false
     },
     "showAlphaBadge": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 43,
+      "line": 45,
       "signature": "void showAlphaBadge(char letter, unsigned long durationMs = 800);",
       "is_iram": false
     },
     "setTopPicksFilter": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 46,
+      "line": 48,
       "signature": "void setTopPicksFilter(bool enabled);",
       "is_iram": false
     },
     "getTopPicksFilter": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 47,
+      "line": 49,
       "signature": "bool getTopPicksFilter();",
+      "is_iram": false
+    },
+    "getDisplayStackHighWaterMarkWords": {
+      "file": "firmware/BmoGameboy/src/core/display_emu.h",
+      "line": 57,
+      "signature": "uint32_t getDisplayStackHighWaterMarkWords();",
+      "is_iram": false
+    },
+    "setDiagnosticSpiClock": {
+      "file": "firmware/BmoGameboy/src/core/display_emu.h",
+      "line": 58,
+      "signature": "void setDiagnosticSpiClock(uint32_t spiClockHz);",
+      "is_iram": false
+    },
+    "drawSpiStressPattern": {
+      "file": "firmware/BmoGameboy/src/core/display_emu.h",
+      "line": 59,
+      "signature": "void drawSpiStressPattern(uint32_t spiClockHz, uint32_t frameNumber);",
       "is_iram": false
     },
     "drawConsoleIcon": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 54,
+      "line": 62,
       "signature": "void drawConsoleIcon(RomType type, int x, int y, uint16_t primaryColor = 0);",
       "is_iram": false
     },
     "drawIdleMascotScreen": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 57,
+      "line": 65,
       "signature": "void drawIdleMascotScreen(unsigned long idleSeconds, const char* stateMessage = nullptr);",
       "is_iram": false
     },
     "sanitizeRomTitle": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 60,
+      "line": 68,
       "signature": "void sanitizeRomTitle(const char* src, char* dst, size_t maxLen);",
       "is_iram": false
     },
     "setDmgPalette": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 63,
+      "line": 71,
       "signature": "void setDmgPalette(int paletteIndex);",
       "is_iram": false
     },
     "getDmgPaletteIndex": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 64,
+      "line": 72,
       "signature": "int getDmgPaletteIndex();",
       "is_iram": false
     },
     "cycleDmgPalette": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 65,
+      "line": 73,
       "signature": "void cycleDmgPalette();",
       "is_iram": false
     },
     "getActiveDmgPalette": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 66,
+      "line": 74,
       "signature": "const uint16_t* getActiveDmgPalette();",
       "is_iram": false
     },
     "setBezelEnabled": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 69,
+      "line": 77,
       "signature": "void setBezelEnabled(bool enabled);",
       "is_iram": false
     },
     "isBezelEnabled": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 70,
+      "line": 78,
       "signature": "bool isBezelEnabled();",
       "is_iram": false
     },
     "toggleBezel": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 71,
+      "line": 79,
       "signature": "bool toggleBezel();",
       "is_iram": false
     },
     "drawConsoleBezel": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 72,
+      "line": 80,
       "signature": "void drawConsoleBezel(int consoleIndex);",
       "is_iram": false
     },
     "getLastFramebuffer": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 73,
+      "line": 81,
       "signature": "const uint16_t* getLastFramebuffer(int* outWidth, int* outHeight);",
       "is_iram": false
     },
     "streamFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 84,
+      "line": 92,
       "signature": "void streamFrame(const uint8_t* gb_framebuffer, uint16_t* palette);",
       "is_iram": false
     },
     "streamNESFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 88,
+      "line": 96,
       "signature": "void streamNESFrame(const uint8_t* nes_framebuffer);",
       "is_iram": false
     },
     "streamDoomFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 91,
+      "line": 99,
       "signature": "void streamDoomFrame(const uint8_t* cmap);",
       "is_iram": false
     },
     "streamSMSFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 94,
+      "line": 102,
       "signature": "void streamSMSFrame(const uint16_t* sms_framebuffer, bool isGameGear = false);",
       "is_iram": false
     },
     "streamPCEFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 97,
+      "line": 105,
       "signature": "void streamPCEFrame(const uint16_t* pce_framebuffer);",
       "is_iram": false
     },
     "streamAtariFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 100,
+      "line": 108,
       "signature": "void streamAtariFrame(const uint16_t* atari_framebuffer);",
       "is_iram": false
     },
     "streamPicoFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 103,
+      "line": 111,
       "signature": "void streamPicoFrame(const uint16_t* pico_framebuffer);",
       "is_iram": false
     },
     "streamGenesisFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 106,
+      "line": 114,
       "signature": "void streamGenesisFrame(const uint16_t* genesis_framebuffer, int width, int height);",
       "is_iram": false
     },
     "streamSNESFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 109,
+      "line": 117,
       "signature": "void streamSNESFrame(const uint16_t* snes_framebuffer, int width, int height);",
       "is_iram": false
     },
     "streamWSwanFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 112,
+      "line": 120,
       "signature": "void streamWSwanFrame(const uint16_t* wswan_framebuffer, int width, int height);",
       "is_iram": false
     },
     "streamNGPFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 115,
+      "line": 123,
       "signature": "void streamNGPFrame(const uint16_t* ngp_framebuffer, int width, int height);",
       "is_iram": false
     },
     "streamLynxFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 118,
+      "line": 126,
       "signature": "void streamLynxFrame(const uint16_t* lynx_framebuffer, int width, int height);",
       "is_iram": false
     },
     "streamColemFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 121,
+      "line": 129,
       "signature": "void streamColemFrame(const uint16_t* colem_framebuffer, int width, int height);",
       "is_iram": false
     },
     "pushPixels": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 125,
+      "line": 133,
       "signature": "void pushPixels(int yOffset, const uint16_t* rowBuffer, int rowsToDraw);",
       "is_iram": false
     },
     "pushPixelsRaw": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 129,
+      "line": 137,
       "signature": "void pushPixelsRaw(int yOffset, const uint16_t* rowBuffer, int rowsToDraw);",
       "is_iram": false
     },
     "pushPixelsFullScreen": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 132,
+      "line": 140,
       "signature": "void pushPixelsFullScreen(const uint16_t* buffer);",
       "is_iram": false
     },
     "pushPixelsAt": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 138,
+      "line": 146,
       "signature": "void pushPixelsAt(int x, int y, int w, int h, const uint16_t* buf);",
       "is_iram": false
     },
     "startDirectWindow": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 141,
+      "line": 149,
       "signature": "void startDirectWindow(int x, int y, int w, int h);",
       "is_iram": false
     },
     "writeWindowBytes": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 142,
+      "line": 150,
       "signature": "void writeWindowBytes(const uint8_t* data, size_t len);",
       "is_iram": false
     },
     "endDirectWindow": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 143,
+      "line": 151,
       "signature": "void endDirectWindow();",
       "is_iram": false
     },
     "startFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 158,
+      "line": 166,
       "signature": "void startFrame();",
       "is_iram": false
     },
     "endFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 159,
+      "line": 167,
       "signature": "void endFrame();",
       "is_iram": false
     },
     "streamPixelRow": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 163,
+      "line": 171,
       "signature": "void streamPixelRow(const uint16_t* buf, int pixelCount);",
       "is_iram": false
     },
     "streamGBFrame": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 169,
+      "line": 177,
       "signature": "void streamGBFrame(const uint16_t* gb_framebuffer);",
       "is_iram": false
     },
     "streamRawFrameAsync": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 172,
+      "line": 180,
       "signature": "void streamRawFrameAsync(const uint16_t* fb, int x, int y, int w, int h);",
       "is_iram": false
     },
     "waitForDisplay": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 178,
+      "line": 186,
       "signature": "void waitForDisplay();",
       "is_iram": false
     },
     "isDisplayBusy": {
       "file": "firmware/BmoGameboy/src/core/display_emu.h",
-      "line": 181,
+      "line": 189,
       "signature": "bool isDisplayBusy();",
       "is_iram": false
     },
@@ -1999,6 +1999,36 @@
       "file": "firmware/BmoGameboy/src/core/fram_save.h",
       "line": 12,
       "signature": "bool writeSaveData(uint16_t offset, const uint8_t* buffer, size_t length);",
+      "is_iram": false
+    },
+    "compareUnsignedLong": {
+      "file": "firmware/BmoGameboy/src/core/frame_percentiles.h",
+      "line": 19,
+      "signature": "inline int compareUnsignedLong(const void* left, const void* right)",
+      "is_iram": false
+    },
+    "sortAndSummarize": {
+      "file": "firmware/BmoGameboy/src/core/frame_percentiles.h",
+      "line": 25,
+      "signature": "inline bool sortAndSummarize(unsigned long* samples, size_t count, Summary& summary)",
+      "is_iram": false
+    },
+    "snap": {
+      "file": "firmware/BmoGameboy/src/core/harmonic_spring.h",
+      "line": 21,
+      "signature": "void snap(float v)",
+      "is_iram": false
+    },
+    "setTarget": {
+      "file": "firmware/BmoGameboy/src/core/harmonic_spring.h",
+      "line": 26,
+      "signature": "void setTarget(float tgt)",
+      "is_iram": false
+    },
+    "make": {
+      "file": "firmware/BmoGameboy/src/core/path_key.h",
+      "line": 28,
+      "signature": "inline bool make(const char* relativePath, char* output, size_t outputSize)",
       "is_iram": false
     },
     "getCycles": {
@@ -2097,16 +2127,76 @@
       "signature": "static uint32_t getZoneMaxUs(ProfileZone zone);",
       "is_iram": false
     },
+    "equalIgnoreCase": {
+      "file": "firmware/BmoGameboy/src/core/rom_file_filter.h",
+      "line": 9,
+      "signature": "inline bool equalIgnoreCase(const char* a, const char* b)",
+      "is_iram": false
+    },
+    "extensionOf": {
+      "file": "firmware/BmoGameboy/src/core/rom_file_filter.h",
+      "line": 21,
+      "signature": "inline const char* extensionOf(const char* name)",
+      "is_iram": false
+    },
+    "isIgnoredName": {
+      "file": "firmware/BmoGameboy/src/core/rom_file_filter.h",
+      "line": 28,
+      "signature": "inline bool isIgnoredName(const char* name)",
+      "is_iram": false
+    },
+    "needsSample": {
+      "file": "firmware/BmoGameboy/src/core/rom_file_filter.h",
+      "line": 34,
+      "signature": "inline bool needsSample(const char* name)",
+      "is_iram": false
+    },
+    "looksLikeBinary": {
+      "file": "firmware/BmoGameboy/src/core/rom_file_filter.h",
+      "line": 41,
+      "signature": "inline bool looksLikeBinary(const uint8_t* bytes, size_t length)",
+      "is_iram": false
+    },
     "computeCRC32": {
       "file": "firmware/BmoGameboy/src/core/save_manager.h",
       "line": 65,
       "signature": "uint32_t computeCRC32(const uint8_t* data, size_t length, uint32_t crc = 0xFFFFFFFF);",
       "is_iram": false
     },
+    "makeTemporaryPath": {
+      "file": "firmware/BmoGameboy/src/core/save_manager.cpp",
+      "line": 38,
+      "signature": "static bool makeTemporaryPath(const char* finalPath, char* temporaryPath, size_t maxLen)",
+      "is_iram": false
+    },
+    "makeBackupPath": {
+      "file": "firmware/BmoGameboy/src/core/save_manager.cpp",
+      "line": 44,
+      "signature": "static bool makeBackupPath(const char* finalPath, char* backupPath, size_t maxLen)",
+      "is_iram": false
+    },
+    "recoverAtomicWrite": {
+      "file": "firmware/BmoGameboy/src/core/save_manager.cpp",
+      "line": 54,
+      "signature": "static bool recoverAtomicWrite(const char* finalPath)",
+      "is_iram": false
+    },
     "extractBaseName": {
       "file": "firmware/BmoGameboy/src/core/save_manager.cpp",
-      "line": 37,
+      "line": 143,
       "signature": "static void extractBaseName(const char* fullPath, char* outBase, size_t maxLen)",
+      "is_iram": false
+    },
+    "makeLegacyBatterySavePath": {
+      "file": "firmware/BmoGameboy/src/core/save_manager.cpp",
+      "line": 160,
+      "signature": "static bool makeLegacyBatterySavePath(const char* romFilename, char* outPath, size_t maxLen)",
+      "is_iram": false
+    },
+    "makeLegacySaveStatePath": {
+      "file": "firmware/BmoGameboy/src/core/save_manager.cpp",
+      "line": 168,
+      "signature": "static bool makeLegacySaveStatePath(const char* romFilename, int slot, char* outPath, size_t maxLen)",
       "is_iram": false
     },
     "getBatterySavePath": {
@@ -2177,337 +2267,385 @@
     },
     "ensurePoolCapacity": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 32,
+      "line": 41,
       "signature": "bool ensurePoolCapacity(int targetCapacity)",
       "is_iram": false
     },
     "compareRoms": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 76,
+      "line": 85,
       "signature": "int compareRoms(const void* a, const void* b)",
       "is_iram": false
     },
     "isIgnoredDirName": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 87,
+      "line": 96,
       "signature": "bool isIgnoredDirName(const char* baseName)",
       "is_iram": false
     },
-    "SDCard::computePoolCapacity": {
+    "rootDirectoryStamp": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 101,
-      "signature": "int SDCard::computePoolCapacity(int catalogCount)",
+      "line": 109,
+      "signature": "uint32_t rootDirectoryStamp()",
+      "is_iram": false
+    },
+    "verifyIndexFile": {
+      "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
+      "line": 124,
+      "signature": "bool verifyIndexFile(const char* path, size_t expectedSize, uint32_t expectedCrc)",
+      "is_iram": false
+    },
+    "indexFileIsValid": {
+      "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
+      "line": 163,
+      "signature": "bool indexFileIsValid(const char* path)",
+      "is_iram": false
+    },
+    "recoverIndexTransaction": {
+      "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
+      "line": 183,
+      "signature": "void recoverIndexTransaction()",
+      "is_iram": false
+    },
+    "recoverMetadataFile": {
+      "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
+      "line": 205,
+      "signature": "bool recoverMetadataFile(const char* finalPath)",
+      "is_iram": false
+    },
+    "verifyMetadataFile": {
+      "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
+      "line": 220,
+      "signature": "bool verifyMetadataFile(const char* path, size_t expectedSize, uint32_t expectedCrc)",
       "is_iram": false
     },
     "SDCard::getPoolCapacity": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 109,
+      "line": 281,
       "signature": "int SDCard::getPoolCapacity()",
+      "is_iram": false
+    },
+    "SDCard::getSkippedRomCount": {
+      "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
+      "line": 285,
+      "signature": "int SDCard::getSkippedRomCount()",
       "is_iram": false
     },
     "SDCard::begin": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 113,
+      "line": 289,
       "signature": "bool SDCard::begin()",
       "is_iram": false
     },
     "SDCard::isMounted": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 190,
+      "line": 401,
       "signature": "bool SDCard::isMounted()",
+      "is_iram": false
+    },
+    "SDCard::getClockHz": {
+      "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
+      "line": 405,
+      "signature": "uint32_t SDCard::getClockHz()",
       "is_iram": false
     },
     "SDCard::sortRoms": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 194,
+      "line": 409,
       "signature": "void SDCard::sortRoms()",
       "is_iram": false
     },
     "SDCard::loadIndex": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 200,
+      "line": 415,
       "signature": "bool SDCard::loadIndex()",
       "is_iram": false
     },
     "SDCard::saveIndex": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 278,
+      "line": 512,
       "signature": "bool SDCard::saveIndex()",
       "is_iram": false
     },
     "SDCard::rebuildIndex": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 325,
+      "line": 629,
       "signature": "void SDCard::rebuildIndex()",
       "is_iram": false
     },
     "SDCard::scanDirectory": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 350,
+      "line": 656,
       "signature": "void SDCard::scanDirectory(const char* dirPath, int depth, bool hasArtDirs)",
       "is_iram": false
     },
     "SDCard::scanRoms": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 420,
+      "line": 762,
       "signature": "void SDCard::scanRoms()",
       "is_iram": false
     },
     "SDCard::getRomCount": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 451,
+      "line": 800,
       "signature": "int SDCard::getRomCount()",
       "is_iram": false
     },
     "SDCard::getRomCountForType": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 455,
+      "line": 804,
       "signature": "int SDCard::getRomCountForType(RomType type)",
       "is_iram": false
     },
     "SDCard::isPopularGame": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 463,
+      "line": 812,
       "signature": "bool SDCard::isPopularGame(const char* filename, RomType type)",
       "is_iram": false
     },
     "SDCard::getPopularCountForType": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 568,
+      "line": 917,
       "signature": "int SDCard::getPopularCountForType(RomType type)",
       "is_iram": false
     },
     "SDCard::getRomInfo": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 578,
+      "line": 927,
       "signature": "const RomFile* SDCard::getRomInfo(int index)",
       "is_iram": false
     },
     "SDCard::isFavorite": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 588,
+      "line": 937,
       "signature": "bool SDCard::isFavorite(const char* filename)",
       "is_iram": false
     },
     "SDCard::toggleFavorite": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 598,
+      "line": 947,
       "signature": "void SDCard::toggleFavorite(int index)",
       "is_iram": false
     },
     "SDCard::recordRecentLaunch": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 617,
+      "line": 966,
       "signature": "void SDCard::recordRecentLaunch(const char* filename)",
       "is_iram": false
     },
     "SDCard::getRecentCount": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 635,
+      "line": 984,
       "signature": "int SDCard::getRecentCount()",
       "is_iram": false
     },
     "SDCard::getRecentFilename": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 639,
+      "line": 988,
       "signature": "const char* SDCard::getRecentFilename(int index)",
       "is_iram": false
     },
     "SDCard::saveRecentHistory": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 644,
+      "line": 993,
       "signature": "void SDCard::saveRecentHistory()",
       "is_iram": false
     },
     "SDCard::loadRecentHistory": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 659,
+      "line": 1021,
       "signature": "void SDCard::loadRecentHistory()",
       "is_iram": false
     },
     "SDCard::getFavoritesCount": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 691,
+      "line": 1057,
       "signature": "int SDCard::getFavoritesCount()",
       "is_iram": false
     },
     "SDCard::saveFavorites": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 696,
+      "line": 1062,
       "signature": "void SDCard::saveFavorites()",
       "is_iram": false
     },
     "SDCard::loadFavorites": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 715,
+      "line": 1096,
       "signature": "void SDCard::loadFavorites()",
       "is_iram": false
     },
     "SDCard::loadRom": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 759,
+      "line": 1144,
       "signature": "uint8_t* SDCard::loadRom(const char* filename, size_t* outSize)",
       "is_iram": false
     },
     "SDCard::freeRom": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 836,
+      "line": 1221,
       "signature": "void SDCard::freeRom(uint8_t* buffer)",
-      "is_iram": false
-    },
-    "computePoolCapacity": {
-      "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 38,
-      "signature": "static int computePoolCapacity(int catalogCount);",
       "is_iram": false
     },
     "getPoolCapacity": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 39,
+      "line": 50,
       "signature": "static int getPoolCapacity();",
+      "is_iram": false
+    },
+    "getSkippedRomCount": {
+      "file": "firmware/BmoGameboy/src/core/sd_card.h",
+      "line": 51,
+      "signature": "static int getSkippedRomCount();",
       "is_iram": false
     },
     "isMounted": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 42,
+      "line": 54,
       "signature": "static bool isMounted();",
+      "is_iram": false
+    },
+    "getClockHz": {
+      "file": "firmware/BmoGameboy/src/core/sd_card.h",
+      "line": 57,
+      "signature": "static uint32_t getClockHz();",
       "is_iram": false
     },
     "scanRoms": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 45,
+      "line": 60,
       "signature": "static void scanRoms();",
       "is_iram": false
     },
     "scanDirectory": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 46,
+      "line": 61,
       "signature": "static void scanDirectory(const char* dirPath, int depth, bool hasArtDirs);",
       "is_iram": false
     },
     "getRomCount": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 47,
+      "line": 62,
       "signature": "static int getRomCount();",
       "is_iram": false
     },
     "getRomCountForType": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 48,
+      "line": 63,
       "signature": "static int getRomCountForType(RomType type);",
       "is_iram": false
     },
     "getPopularCountForType": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 49,
+      "line": 64,
       "signature": "static int getPopularCountForType(RomType type);",
       "is_iram": false
     },
     "isPopularGame": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 50,
+      "line": 65,
       "signature": "static bool isPopularGame(const char* filename, RomType type);",
       "is_iram": false
     },
     "getRomInfo": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 51,
+      "line": 66,
       "signature": "static const RomFile* getRomInfo(int index);",
       "is_iram": false
     },
     "isFavorite": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 55,
+      "line": 70,
       "signature": "static bool isFavorite(const char* filename);",
       "is_iram": false
     },
     "toggleFavorite": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 56,
+      "line": 71,
       "signature": "static void toggleFavorite(int index);",
       "is_iram": false
     },
     "getFavoritesCount": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 57,
+      "line": 72,
       "signature": "static int getFavoritesCount();",
       "is_iram": false
     },
     "saveFavorites": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 58,
+      "line": 73,
       "signature": "static void saveFavorites();",
       "is_iram": false
     },
     "loadFavorites": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 59,
+      "line": 74,
       "signature": "static void loadFavorites();",
       "is_iram": false
     },
     "loadIndex": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 62,
+      "line": 77,
       "signature": "static bool loadIndex();",
       "is_iram": false
     },
     "saveIndex": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 63,
+      "line": 78,
       "signature": "static bool saveIndex();",
       "is_iram": false
     },
     "rebuildIndex": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 64,
+      "line": 79,
       "signature": "static void rebuildIndex();",
       "is_iram": false
     },
     "sortRoms": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 65,
+      "line": 80,
       "signature": "static void sortRoms();",
       "is_iram": false
     },
     "recordRecentLaunch": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 68,
+      "line": 83,
       "signature": "static void recordRecentLaunch(const char* filename);",
       "is_iram": false
     },
     "getRecentCount": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 69,
+      "line": 84,
       "signature": "static int getRecentCount();",
       "is_iram": false
     },
     "getRecentFilename": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 70,
+      "line": 85,
       "signature": "static const char* getRecentFilename(int index);",
       "is_iram": false
     },
     "loadRecentHistory": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 71,
+      "line": 86,
       "signature": "static void loadRecentHistory();",
       "is_iram": false
     },
     "saveRecentHistory": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 72,
+      "line": 87,
       "signature": "static void saveRecentHistory();",
       "is_iram": false
     },
     "loadRom": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 76,
+      "line": 91,
       "signature": "static uint8_t* loadRom(const char* filename, size_t* outSize);",
       "is_iram": false
     },
     "freeRom": {
       "file": "firmware/BmoGameboy/src/core/sd_card.h",
-      "line": 77,
+      "line": 92,
       "signature": "static void freeRom(uint8_t* buffer);",
       "is_iram": false
     },
@@ -2673,33 +2811,39 @@
       "signature": "static bool isRunning();",
       "is_iram": false
     },
+    "showDoomErrorToast": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_doom.cpp",
+      "line": 36,
+      "signature": "static void showDoomErrorToast()",
+      "is_iram": false
+    },
+    "Doom_Bailout": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_doom.cpp",
+      "line": 67,
+      "signature": "void Doom_Bailout(const char* msg)",
+      "is_iram": false
+    },
     "Doom_FreePSRAM": {
       "file": "firmware/BmoGameboy/src/emulators/emu_doom.cpp",
-      "line": 44,
+      "line": 57,
       "signature": "void Doom_FreePSRAM(void* ptr)",
       "is_iram": false
     },
     "Doom_GetTargetZoneBytes": {
       "file": "firmware/BmoGameboy/src/emulators/emu_doom.cpp",
-      "line": 50,
+      "line": 63,
       "signature": "size_t Doom_GetTargetZoneBytes(void)",
-      "is_iram": false
-    },
-    "Doom_Bailout": {
-      "file": "firmware/BmoGameboy/src/emulators/emu_doom.cpp",
-      "line": 54,
-      "signature": "void Doom_Bailout(const char* msg)",
       "is_iram": false
     },
     "Doom_SpiLock": {
       "file": "firmware/BmoGameboy/src/emulators/emu_doom.cpp",
-      "line": 67,
+      "line": 80,
       "signature": "void Doom_SpiLock(void)",
       "is_iram": false
     },
     "Doom_SpiUnlock": {
       "file": "firmware/BmoGameboy/src/emulators/emu_doom.cpp",
-      "line": 71,
+      "line": 84,
       "signature": "void Doom_SpiUnlock(void)",
       "is_iram": false
     },
@@ -2741,19 +2885,13 @@
     },
     "updateDoomKey": {
       "file": "firmware/BmoGameboy/src/emulators/emu_doom.cpp",
-      "line": 116,
+      "line": 129,
       "signature": "static void updateDoomKey(int doomKey, bool pressed)",
-      "is_iram": false
-    },
-    "computeZoneBytes": {
-      "file": "firmware/BmoGameboy/src/emulators/emu_doom.h",
-      "line": 11,
-      "signature": "size_t computeZoneBytes(size_t largestFreePsramBlock);",
       "is_iram": false
     },
     "lastError": {
       "file": "firmware/BmoGameboy/src/emulators/emu_doom.h",
-      "line": 14,
+      "line": 8,
       "signature": "const char* lastError();",
       "is_iram": false
     },
@@ -2837,73 +2975,73 @@
     },
     "LynxEmu::loadBatteryRam": {
       "file": "firmware/BmoGameboy/src/emulators/emu_lynx.cpp",
-      "line": 75,
+      "line": 73,
       "signature": "bool LynxEmu::loadBatteryRam(const char* romFilename)",
       "is_iram": false
     },
     "LynxEmu::saveState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_lynx.cpp",
-      "line": 80,
+      "line": 78,
       "signature": "bool LynxEmu::saveState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "LynxEmu::loadState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_lynx.cpp",
-      "line": 86,
+      "line": 84,
       "signature": "bool LynxEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "getNesStateBuf": {
       "file": "firmware/BmoGameboy/src/emulators/emu_nes.cpp",
-      "line": 15,
+      "line": 17,
       "signature": "static uint8_t* getNesStateBuf()",
       "is_iram": false
     },
     "NesEmu::begin": {
       "file": "firmware/BmoGameboy/src/emulators/emu_nes.cpp",
-      "line": 25,
+      "line": 27,
       "signature": "bool NesEmu::begin(const uint8_t* romData, size_t romSize)",
       "is_iram": false
     },
     "NesEmu::updateJoypad": {
       "file": "firmware/BmoGameboy/src/emulators/emu_nes.cpp",
-      "line": 43,
+      "line": 47,
       "signature": "void NesEmu::updateJoypad()",
       "is_iram": false
     },
     "NesEmu::runFrame": {
       "file": "firmware/BmoGameboy/src/emulators/emu_nes.cpp",
-      "line": 62,
+      "line": 66,
       "signature": "void NesEmu::runFrame()",
       "is_iram": false
     },
     "NesEmu::destroy": {
       "file": "firmware/BmoGameboy/src/emulators/emu_nes.cpp",
-      "line": 73,
+      "line": 77,
       "signature": "void NesEmu::destroy()",
       "is_iram": false
     },
     "NesEmu::saveBatteryRam": {
       "file": "firmware/BmoGameboy/src/emulators/emu_nes.cpp",
-      "line": 85,
+      "line": 90,
       "signature": "bool NesEmu::saveBatteryRam(const char* romFilename)",
       "is_iram": false
     },
     "NesEmu::loadBatteryRam": {
       "file": "firmware/BmoGameboy/src/emulators/emu_nes.cpp",
-      "line": 93,
+      "line": 98,
       "signature": "bool NesEmu::loadBatteryRam(const char* romFilename)",
       "is_iram": false
     },
     "NesEmu::saveState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_nes.cpp",
-      "line": 101,
+      "line": 106,
       "signature": "bool NesEmu::saveState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "NesEmu::loadState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_nes.cpp",
-      "line": 110,
+      "line": 115,
       "signature": "bool NesEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
@@ -3003,57 +3141,63 @@
       "signature": "bool PceEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
+    "batteryRamSize": {
+      "file": "firmware/BmoGameboy/src/emulators/emu_walnut.cpp",
+      "line": 54,
+      "signature": "static size_t batteryRamSize()",
+      "is_iram": false
+    },
     "gb_error": {
       "file": "firmware/BmoGameboy/src/emulators/emu_walnut.cpp",
-      "line": 112,
+      "line": 120,
       "signature": "void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16_t val)",
       "is_iram": false
     },
     "PeanutEmu::begin": {
       "file": "firmware/BmoGameboy/src/emulators/emu_peanut.cpp",
-      "line": 120,
+      "line": 128,
       "signature": "bool PeanutEmu::begin(const uint8_t* rom_data, size_t rom_len)",
       "is_iram": false
     },
     "PeanutEmu::updateJoypad": {
       "file": "firmware/BmoGameboy/src/emulators/emu_peanut.cpp",
-      "line": 159,
+      "line": 167,
       "signature": "void PeanutEmu::updateJoypad()",
       "is_iram": false
     },
     "PeanutEmu::runFrame": {
       "file": "firmware/BmoGameboy/src/emulators/emu_peanut.cpp",
-      "line": 164,
+      "line": 172,
       "signature": "void PeanutEmu::runFrame()",
       "is_iram": false
     },
     "PeanutEmu::destroy": {
       "file": "firmware/BmoGameboy/src/emulators/emu_peanut.cpp",
-      "line": 182,
+      "line": 190,
       "signature": "void PeanutEmu::destroy()",
       "is_iram": false
     },
     "PeanutEmu::saveBatteryRam": {
       "file": "firmware/BmoGameboy/src/emulators/emu_peanut.cpp",
-      "line": 189,
+      "line": 197,
       "signature": "bool PeanutEmu::saveBatteryRam(const char* romFilename)",
       "is_iram": false
     },
     "PeanutEmu::loadBatteryRam": {
       "file": "firmware/BmoGameboy/src/emulators/emu_peanut.cpp",
-      "line": 194,
+      "line": 204,
       "signature": "bool PeanutEmu::loadBatteryRam(const char* romFilename)",
       "is_iram": false
     },
     "PeanutEmu::saveState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_peanut.cpp",
-      "line": 199,
+      "line": 211,
       "signature": "bool PeanutEmu::saveState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "PeanutEmu::loadState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_peanut.cpp",
-      "line": 205,
+      "line": 217,
       "signature": "bool PeanutEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
@@ -3089,19 +3233,19 @@
     },
     "PicoEmu::loadBatteryRam": {
       "file": "firmware/BmoGameboy/src/emulators/emu_pico.cpp",
-      "line": 71,
+      "line": 70,
       "signature": "bool PicoEmu::loadBatteryRam(const char* romFilename)",
       "is_iram": false
     },
     "PicoEmu::saveState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_pico.cpp",
-      "line": 76,
+      "line": 75,
       "signature": "bool PicoEmu::saveState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "PicoEmu::loadState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_pico.cpp",
-      "line": 82,
+      "line": 81,
       "signature": "bool PicoEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
@@ -3155,97 +3299,97 @@
     },
     "SNESEmu::init": {
       "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
-      "line": 18,
+      "line": 20,
       "signature": "bool SNESEmu::init(uint8_t* romData, size_t romSize)",
       "is_iram": false
     },
     "SNESEmu::update": {
       "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
-      "line": 35,
+      "line": 42,
       "signature": "void SNESEmu::update()",
       "is_iram": false
     },
     "SNESEmu::destroy": {
       "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
-      "line": 56,
+      "line": 63,
       "signature": "void SNESEmu::destroy()",
       "is_iram": false
     },
     "SNESEmu::isRunning": {
       "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
-      "line": 70,
+      "line": 78,
       "signature": "bool SNESEmu::isRunning()",
       "is_iram": false
     },
     "SNESEmu::saveBatteryRam": {
       "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
-      "line": 74,
+      "line": 82,
       "signature": "bool SNESEmu::saveBatteryRam(const char* romFilename)",
       "is_iram": false
     },
     "SNESEmu::loadBatteryRam": {
       "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
-      "line": 79,
+      "line": 87,
       "signature": "bool SNESEmu::loadBatteryRam(const char* romFilename)",
       "is_iram": false
     },
     "SNESEmu::saveState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
-      "line": 84,
+      "line": 92,
       "signature": "bool SNESEmu::saveState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "SNESEmu::loadState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
-      "line": 98,
+      "line": 106,
       "signature": "bool SNESEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "WalnutEmu::begin": {
       "file": "firmware/BmoGameboy/src/emulators/emu_walnut.cpp",
-      "line": 190,
+      "line": 198,
       "signature": "bool WalnutEmu::begin(const uint8_t* rom_data, size_t rom_len)",
       "is_iram": false
     },
     "WalnutEmu::updateJoypad": {
       "file": "firmware/BmoGameboy/src/emulators/emu_walnut.cpp",
-      "line": 227,
+      "line": 235,
       "signature": "void WalnutEmu::updateJoypad()",
       "is_iram": false
     },
     "WalnutEmu::runFrame": {
       "file": "firmware/BmoGameboy/src/emulators/emu_walnut.cpp",
-      "line": 232,
+      "line": 240,
       "signature": "void WalnutEmu::runFrame()",
       "is_iram": false
     },
     "WalnutEmu::destroy": {
       "file": "firmware/BmoGameboy/src/emulators/emu_walnut.cpp",
-      "line": 240,
+      "line": 248,
       "signature": "void WalnutEmu::destroy()",
       "is_iram": false
     },
     "WalnutEmu::saveBatteryRam": {
       "file": "firmware/BmoGameboy/src/emulators/emu_walnut.cpp",
-      "line": 247,
+      "line": 255,
       "signature": "bool WalnutEmu::saveBatteryRam(const char* romFilename)",
       "is_iram": false
     },
     "WalnutEmu::loadBatteryRam": {
       "file": "firmware/BmoGameboy/src/emulators/emu_walnut.cpp",
-      "line": 252,
+      "line": 262,
       "signature": "bool WalnutEmu::loadBatteryRam(const char* romFilename)",
       "is_iram": false
     },
     "WalnutEmu::saveState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_walnut.cpp",
-      "line": 257,
+      "line": 269,
       "signature": "bool WalnutEmu::saveState(const char* romFilename, int slot)",
       "is_iram": false
     },
     "WalnutEmu::loadState": {
       "file": "firmware/BmoGameboy/src/emulators/emu_walnut.cpp",
-      "line": 263,
+      "line": 275,
       "signature": "bool WalnutEmu::loadState(const char* romFilename, int slot)",
       "is_iram": false
     },
@@ -10037,16 +10181,13 @@
     ".agents/rules/02_architecture.md": {
       "path": ".agents/rules/02_architecture.md",
       "category": "AGENT_RULES",
-      "total_lines": 25,
-      "sloc": 23,
+      "total_lines": 20,
+      "sloc": 15,
       "comments": 0,
-      "blanks": 2,
-      "density_percent": 92.0,
+      "blanks": 5,
+      "density_percent": 75.0,
       "symbols": [],
-      "pins_accessed": [
-        "TFT_SCK",
-        "TFT_MOSI"
-      ],
+      "pins_accessed": [],
       "includes": []
     },
     ".agents/rules/03_conventions.md": {
@@ -10064,45 +10205,18 @@
     ".agents/rules/04_known_issues.md": {
       "path": ".agents/rules/04_known_issues.md",
       "category": "AGENT_RULES",
-      "total_lines": 536,
-      "sloc": 448,
+      "total_lines": 69,
+      "sloc": 60,
       "comments": 0,
-      "blanks": 88,
-      "density_percent": 83.6,
+      "blanks": 9,
+      "density_percent": 87.0,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
-        "BTN_UP",
-        "BTN_DOWN",
-        "BTN_LEFT",
-        "BTN_RIGHT",
-        "BTN_A",
-        "BTN_B",
-        "BTN_START",
-        "BTN_SELECT",
-        "BTN_X",
-        "BTN_Y",
-        "BTN_L",
-        "BTN_R",
-        "GPIO48",
-        "TFT_SCLK",
-        "TFT_DC",
-        "TFT_RST",
-        "TFT_BL",
-        "SD_MISO",
-        "TFT_SCK",
-        "GPIO0",
         "GPIO1",
         "FEATURE_AUDIO",
-        "TFT_CS",
-        "TFT_MOSI",
-        "SD_CS",
-        "GPIO11",
-        "GPIO15",
-        "GPIO12",
-        "GPIO10",
-        "GPIO13",
-        "BATTERY_PIN"
+        "TFT_SPI_HZ",
+        "SD_SPI_HZ"
       ],
       "includes": []
     },
@@ -10121,11 +10235,11 @@
     ".agents/rules/06_verification_standards.md": {
       "path": ".agents/rules/06_verification_standards.md",
       "category": "AGENT_RULES",
-      "total_lines": 118,
-      "sloc": 101,
+      "total_lines": 117,
+      "sloc": 100,
       "comments": 0,
       "blanks": 17,
-      "density_percent": 85.6,
+      "density_percent": 85.5,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -10169,18 +10283,13 @@
     ".agents/rules/10_symbol_reference.md": {
       "path": ".agents/rules/10_symbol_reference.md",
       "category": "AGENT_RULES",
-      "total_lines": 416,
-      "sloc": 383,
+      "total_lines": 21,
+      "sloc": 14,
       "comments": 0,
-      "blanks": 33,
-      "density_percent": 92.1,
+      "blanks": 7,
+      "density_percent": 66.7,
       "symbols": [],
-      "pins_accessed": [
-        "FEATURE_SD_CARD",
-        "FEATURE_BATTERY_MONITOR",
-        "FEATURE_AUDIO",
-        "BTN_UP"
-      ],
+      "pins_accessed": [],
       "includes": []
     },
     ".agents/rules/11_rules_meta.md": {
@@ -10240,11 +10349,11 @@
     ".agents/rules/15_performance_budgets.md": {
       "path": ".agents/rules/15_performance_budgets.md",
       "category": "AGENT_RULES",
-      "total_lines": 51,
-      "sloc": 42,
+      "total_lines": 19,
+      "sloc": 10,
       "comments": 0,
       "blanks": 9,
-      "density_percent": 82.4,
+      "density_percent": 52.6,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -10288,11 +10397,11 @@
     ".agents/rules/19_security_and_data_integrity.md": {
       "path": ".agents/rules/19_security_and_data_integrity.md",
       "category": "AGENT_RULES",
-      "total_lines": 34,
-      "sloc": 26,
+      "total_lines": 23,
+      "sloc": 12,
       "comments": 0,
-      "blanks": 8,
-      "density_percent": 76.5,
+      "blanks": 11,
+      "density_percent": 52.2,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -10372,11 +10481,11 @@
     ".agents/rules/26_emulator_exit_contract.md": {
       "path": ".agents/rules/26_emulator_exit_contract.md",
       "category": "AGENT_RULES",
-      "total_lines": 19,
-      "sloc": 16,
+      "total_lines": 18,
+      "sloc": 11,
       "comments": 0,
-      "blanks": 3,
-      "density_percent": 84.2,
+      "blanks": 7,
+      "density_percent": 61.1,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -10384,53 +10493,27 @@
     ".agents/rules/27_codebase_map.md": {
       "path": ".agents/rules/27_codebase_map.md",
       "category": "AGENT_RULES",
-      "total_lines": 126,
-      "sloc": 113,
+      "total_lines": 70,
+      "sloc": 54,
       "comments": 0,
-      "blanks": 13,
-      "density_percent": 89.7,
+      "blanks": 16,
+      "density_percent": 77.1,
       "symbols": [],
       "pins_accessed": [
-        "FEATURE_BATTERY_MONITOR",
-        "FEATURE_AUDIO",
-        "TFT_SCK",
-        "TFT_MOSI",
-        "TFT_CS",
-        "TFT_DC",
-        "TFT_RST",
-        "SD_CS",
-        "SD_MISO",
-        "BTN_A",
-        "BTN_B",
-        "BTN_SELECT",
-        "BTN_START",
-        "BTN_RIGHT",
-        "BTN_LEFT",
-        "BTN_UP",
-        "BTN_DOWN",
-        "BTN_X",
-        "BTN_Y",
-        "BTN_L",
-        "BTN_R"
+        "GPIO42"
       ],
       "includes": []
     },
     ".agents/rules/28_display_and_spi_contract.md": {
       "path": ".agents/rules/28_display_and_spi_contract.md",
       "category": "AGENT_RULES",
-      "total_lines": 85,
-      "sloc": 76,
+      "total_lines": 25,
+      "sloc": 17,
       "comments": 0,
-      "blanks": 9,
-      "density_percent": 89.4,
+      "blanks": 8,
+      "density_percent": 68.0,
       "symbols": [],
-      "pins_accessed": [
-        "GPIO12",
-        "GPIO11",
-        "GPIO10",
-        "GPIO13",
-        "GPIO15"
-      ],
+      "pins_accessed": [],
       "includes": []
     },
     ".agents/rules/29_adding_a_baked_rom.md": {
@@ -10467,52 +10550,31 @@
     ".agents/rules/31_quick_start_primer.md": {
       "path": ".agents/rules/31_quick_start_primer.md",
       "category": "AGENT_RULES",
-      "total_lines": 88,
-      "sloc": 72,
+      "total_lines": 33,
+      "sloc": 21,
       "comments": 0,
-      "blanks": 16,
-      "density_percent": 81.8,
+      "blanks": 12,
+      "density_percent": 63.6,
       "symbols": [],
       "pins_accessed": [
-        "GPIO1",
+        "GPIO33",
         "FEATURE_BATTERY_MONITOR",
-        "FEATURE_AUDIO",
-        "TFT_SCK",
-        "TFT_MOSI",
-        "BTN_UP",
-        "BTN_DOWN",
-        "BTN_LEFT",
-        "BTN_RIGHT",
-        "BTN_A",
-        "BTN_B",
-        "BTN_START",
-        "BTN_SELECT",
-        "BTN_X",
-        "BTN_Y",
-        "BTN_L",
-        "BTN_R"
+        "GPIO1",
+        "FEATURE_AUDIO"
       ],
       "includes": []
     },
     ".agents/rules/32_modular_core_template.md": {
       "path": ".agents/rules/32_modular_core_template.md",
       "category": "AGENT_RULES",
-      "total_lines": 128,
-      "sloc": 96,
+      "total_lines": 24,
+      "sloc": 19,
       "comments": 0,
-      "blanks": 32,
-      "density_percent": 75.0,
+      "blanks": 5,
+      "density_percent": 79.2,
       "symbols": [],
       "pins_accessed": [],
-      "includes": [
-        "stdint.h",
-        "stddef.h",
-        "emu_mycore.h",
-        "../core/config.h",
-        "../core/display_emu.h",
-        "../core/buttons.h",
-        "esp_heap_caps.h"
-      ]
+      "includes": []
     },
     ".agents/rules/33_agent_handoff_and_optimization_cycle.md": {
       "path": ".agents/rules/33_agent_handoff_and_optimization_cycle.md",
@@ -10623,11 +10685,11 @@
     ".agents/rules/41_engineering_communication_and_critical_pushback.md": {
       "path": ".agents/rules/41_engineering_communication_and_critical_pushback.md",
       "category": "AGENT_RULES",
-      "total_lines": 80,
-      "sloc": 60,
+      "total_lines": 76,
+      "sloc": 56,
       "comments": 0,
       "blanks": 20,
-      "density_percent": 75.0,
+      "density_percent": 73.7,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -10650,11 +10712,11 @@
     ".agents/rules/43_no_ai_jargon_and_buzzwords.md": {
       "path": ".agents/rules/43_no_ai_jargon_and_buzzwords.md",
       "category": "AGENT_RULES",
-      "total_lines": 50,
-      "sloc": 35,
+      "total_lines": 51,
+      "sloc": 36,
       "comments": 0,
       "blanks": 15,
-      "density_percent": 70.0,
+      "density_percent": 70.6,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -10671,26 +10733,14 @@
       "pins_accessed": [],
       "includes": []
     },
-    ".agents/rules/CONTEXT_INDEX.json": {
-      "path": ".agents/rules/CONTEXT_INDEX.json",
-      "category": "AGENT_RULES",
-      "total_lines": 342,
-      "sloc": 342,
-      "comments": 0,
-      "blanks": 0,
-      "density_percent": 100.0,
-      "symbols": [],
-      "pins_accessed": [],
-      "includes": []
-    },
     ".agents/rules/README.md": {
       "path": ".agents/rules/README.md",
       "category": "AGENT_RULES",
-      "total_lines": 54,
-      "sloc": 52,
+      "total_lines": 61,
+      "sloc": 57,
       "comments": 0,
-      "blanks": 2,
-      "density_percent": 96.3,
+      "blanks": 4,
+      "density_percent": 93.4,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -281975,123 +282025,6 @@
       "pins_accessed": [],
       "includes": []
     },
-    "AGENT_DECISION_TREE.json": {
-      "path": "AGENT_DECISION_TREE.json",
-      "category": "OTHER",
-      "total_lines": 287,
-      "sloc": 287,
-      "comments": 0,
-      "blanks": 0,
-      "density_percent": 100.0,
-      "symbols": [],
-      "pins_accessed": [
-        "GPIO1"
-      ],
-      "includes": []
-    },
-    "AGENT_KNOWLEDGE_GRAPH.json": {
-      "path": "AGENT_KNOWLEDGE_GRAPH.json",
-      "category": "OTHER",
-      "total_lines": 290489,
-      "sloc": 290489,
-      "comments": 0,
-      "blanks": 0,
-      "density_percent": 100.0,
-      "symbols": [],
-      "pins_accessed": [
-        "GPIO1",
-        "FEATURE_BATTERY_MONITOR",
-        "FEATURE_AUDIO",
-        "FEATURE_SD_CARD",
-        "BTN_UP",
-        "BTN_DOWN",
-        "BTN_LEFT",
-        "BTN_RIGHT",
-        "BTN_A",
-        "BTN_B",
-        "BTN_START",
-        "BTN_SELECT",
-        "BTN_X",
-        "BTN_Y",
-        "BTN_L",
-        "BTN_R",
-        "GPIO48",
-        "TFT_DC",
-        "TFT_RST",
-        "TFT_CS",
-        "TFT_MOSI",
-        "TFT_SCK",
-        "SD_CS",
-        "SD_MISO",
-        "BATTERY_ADC_PIN",
-        "I2S_BCLK",
-        "I2S_LRC",
-        "I2S_DIN",
-        "I2C_SDA",
-        "I2C_SCL",
-        "TFT_SCLK",
-        "TFT_BL",
-        "GPIO0",
-        "GPIO11",
-        "GPIO15",
-        "GPIO12",
-        "GPIO10",
-        "GPIO13",
-        "BATTERY_PIN",
-        "GPIO16",
-        "GPIO17",
-        "GPIO21",
-        "GPIO18",
-        "GPIO7",
-        "GPIO6",
-        "GPIO4",
-        "GPIO5",
-        "GPIO32",
-        "BUTTON_START",
-        "BUTTON_SELECT",
-        "GPIO14",
-        "TFT_WIDTH",
-        "TFT_HEIGHT",
-        "BUTTON_AXIS_NEG",
-        "BUTTON_AXIS_POS",
-        "BUTTON_AXIS",
-        "GPIO9",
-        "GPIO8",
-        "SD_READ",
-        "SD_SPI_SPEED_SUBOPTIMAL",
-        "FEATURE_PROFILER",
-        "I2S_PORT",
-        "I2S_NUM_0",
-        "I2S_MODE_MASTER",
-        "I2S_MODE_TX",
-        "I2S_BITS_PER_SAMPLE_16BIT",
-        "I2S_CHANNEL_FMT_RIGHT_LEFT",
-        "I2S_COMM_FORMAT_STAND_I2S",
-        "I2S_PIN_NO_CHANGE",
-        "BATTERY_R1",
-        "BATTERY_R2",
-        "FEATURE_MULTIPLAYER",
-        "FEATURE_DEHACKED",
-        "FEATURE_WAD_MERGE",
-        "FEATURE_SOUND",
-        "PIN_DRIFT",
-        "PIN_MACROS",
-        "SD_BOXART_DIR"
-      ],
-      "includes": []
-    },
-    "AGENT_MANIFEST.json": {
-      "path": "AGENT_MANIFEST.json",
-      "category": "OTHER",
-      "total_lines": 309,
-      "sloc": 309,
-      "comments": 0,
-      "blanks": 0,
-      "density_percent": 100.0,
-      "symbols": [],
-      "pins_accessed": [],
-      "includes": []
-    },
     "AGENTS.md": {
       "path": "AGENTS.md",
       "category": "OTHER",
@@ -282107,40 +282040,26 @@
     "CHANGELOG.md": {
       "path": "CHANGELOG.md",
       "category": "OTHER",
-      "total_lines": 930,
-      "sloc": 815,
+      "total_lines": 22,
+      "sloc": 19,
       "comments": 0,
-      "blanks": 115,
-      "density_percent": 87.6,
+      "blanks": 3,
+      "density_percent": 86.4,
       "symbols": [],
       "pins_accessed": [
-        "FEATURE_BATTERY_MONITOR",
-        "BTN_UP",
-        "BTN_DOWN",
-        "BTN_LEFT",
-        "BTN_RIGHT",
-        "BTN_A",
-        "BTN_B",
-        "BTN_START",
-        "BTN_SELECT",
-        "BTN_X",
-        "BTN_Y",
-        "BTN_L",
-        "BTN_R",
-        "TFT_SCLK",
-        "TFT_DC",
-        "FEATURE_PROFILER"
+        "TFT_SPI_HZ",
+        "SD_SPI_HZ"
       ],
       "includes": []
     },
     "DESIGN.md": {
       "path": "DESIGN.md",
       "category": "OTHER",
-      "total_lines": 178,
-      "sloc": 137,
+      "total_lines": 195,
+      "sloc": 151,
       "comments": 0,
-      "blanks": 41,
-      "density_percent": 77.0,
+      "blanks": 44,
+      "density_percent": 77.4,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -282157,18 +282076,387 @@
       "pins_accessed": [],
       "includes": []
     },
-    "docs/consolidated-rules.md": {
-      "path": "docs/consolidated-rules.md",
+    "docs/archive/changelog-history-01.md": {
+      "path": "docs/archive/changelog-history-01.md",
       "category": "DOCUMENTATION",
-      "total_lines": 3709,
-      "sloc": 2951,
-      "comments": 45,
-      "blanks": 713,
-      "density_percent": 79.6,
+      "total_lines": 53,
+      "sloc": 46,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 86.8,
+      "symbols": [],
+      "pins_accessed": [
+        "FEATURE_BATTERY_MONITOR",
+        "BTN_UP",
+        "BTN_DOWN",
+        "BTN_LEFT",
+        "BTN_RIGHT",
+        "BTN_A",
+        "BTN_B",
+        "BTN_START",
+        "BTN_SELECT",
+        "BTN_X",
+        "BTN_Y",
+        "BTN_L",
+        "BTN_R"
+      ],
+      "includes": []
+    },
+    "docs/archive/changelog-history-02.md": {
+      "path": "docs/archive/changelog-history-02.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 86,
+      "sloc": 74,
+      "comments": 0,
+      "blanks": 12,
+      "density_percent": 86.0,
+      "symbols": [],
+      "pins_accessed": [
+        "BTN_X",
+        "BTN_Y",
+        "BTN_L",
+        "BTN_R",
+        "BTN_LEFT"
+      ],
+      "includes": []
+    },
+    "docs/archive/changelog-history-03.md": {
+      "path": "docs/archive/changelog-history-03.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 91,
+      "sloc": 71,
+      "comments": 0,
+      "blanks": 20,
+      "density_percent": 78.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/archive/changelog-history-04.md": {
+      "path": "docs/archive/changelog-history-04.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 76,
+      "sloc": 68,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 89.5,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/archive/changelog-history-05.md": {
+      "path": "docs/archive/changelog-history-05.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 31,
+      "sloc": 28,
+      "comments": 0,
+      "blanks": 3,
+      "density_percent": 90.3,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/archive/changelog-history-06.md": {
+      "path": "docs/archive/changelog-history-06.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 55,
+      "sloc": 51,
+      "comments": 0,
+      "blanks": 4,
+      "density_percent": 92.7,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/archive/changelog-history-07.md": {
+      "path": "docs/archive/changelog-history-07.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 105,
+      "sloc": 95,
+      "comments": 0,
+      "blanks": 10,
+      "density_percent": 90.5,
+      "symbols": [],
+      "pins_accessed": [
+        "TFT_SCLK",
+        "TFT_DC"
+      ],
+      "includes": []
+    },
+    "docs/archive/changelog-history-08.md": {
+      "path": "docs/archive/changelog-history-08.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 104,
+      "sloc": 96,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 92.3,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/archive/changelog-history-09.md": {
+      "path": "docs/archive/changelog-history-09.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 124,
+      "sloc": 112,
+      "comments": 0,
+      "blanks": 12,
+      "density_percent": 90.3,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/archive/changelog-history-10.md": {
+      "path": "docs/archive/changelog-history-10.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 99,
+      "sloc": 88,
+      "comments": 0,
+      "blanks": 11,
+      "density_percent": 88.9,
+      "symbols": [],
+      "pins_accessed": [
+        "FEATURE_PROFILER"
+      ],
+      "includes": []
+    },
+    "docs/archive/changelog-history-11.md": {
+      "path": "docs/archive/changelog-history-11.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 75,
+      "sloc": 63,
+      "comments": 0,
+      "blanks": 12,
+      "density_percent": 84.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/archive/changelog-history-12.md": {
+      "path": "docs/archive/changelog-history-12.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 44,
+      "sloc": 35,
+      "comments": 0,
+      "blanks": 9,
+      "density_percent": 79.5,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/archive/changelog-history.md": {
+      "path": "docs/archive/changelog-history.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 16,
+      "sloc": 14,
+      "comments": 0,
+      "blanks": 2,
+      "density_percent": 87.5,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/archive/known-issues-history-01.md": {
+      "path": "docs/archive/known-issues-history-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 64,
+      "sloc": 49,
+      "comments": 0,
+      "blanks": 15,
+      "density_percent": 76.6,
+      "symbols": [],
+      "pins_accessed": [
+        "FEATURE_BATTERY_MONITOR",
+        "BTN_UP",
+        "BTN_DOWN",
+        "BTN_LEFT",
+        "BTN_RIGHT",
+        "BTN_A",
+        "BTN_B",
+        "BTN_START",
+        "BTN_SELECT",
+        "BTN_X",
+        "BTN_Y",
+        "BTN_L",
+        "BTN_R",
+        "GPIO48"
+      ],
+      "includes": []
+    },
+    "docs/archive/known-issues-history-02.md": {
+      "path": "docs/archive/known-issues-history-02.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 53,
+      "sloc": 44,
+      "comments": 0,
+      "blanks": 9,
+      "density_percent": 83.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/archive/known-issues-history-03.md": {
+      "path": "docs/archive/known-issues-history-03.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 38,
+      "sloc": 32,
+      "comments": 0,
+      "blanks": 6,
+      "density_percent": 84.2,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/archive/known-issues-history-04.md": {
+      "path": "docs/archive/known-issues-history-04.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 26,
+      "sloc": 24,
+      "comments": 0,
+      "blanks": 2,
+      "density_percent": 92.3,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/archive/known-issues-history-05.md": {
+      "path": "docs/archive/known-issues-history-05.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 50,
+      "sloc": 48,
+      "comments": 0,
+      "blanks": 2,
+      "density_percent": 96.0,
+      "symbols": [],
+      "pins_accessed": [
+        "TFT_SCLK",
+        "TFT_DC",
+        "TFT_RST",
+        "TFT_BL",
+        "SD_MISO",
+        "TFT_SCK",
+        "GPIO0"
+      ],
+      "includes": []
+    },
+    "docs/archive/known-issues-history-06.md": {
+      "path": "docs/archive/known-issues-history-06.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 119,
+      "sloc": 97,
+      "comments": 0,
+      "blanks": 22,
+      "density_percent": 81.5,
       "symbols": [],
       "pins_accessed": [
         "GPIO1",
-        "FEATURE_SD_CARD",
+        "FEATURE_BATTERY_MONITOR",
+        "FEATURE_AUDIO",
+        "TFT_CS",
+        "TFT_DC",
+        "TFT_RST",
+        "TFT_MOSI",
+        "TFT_SCK",
+        "SD_CS",
+        "SD_MISO",
+        "GPIO11",
+        "GPIO15",
+        "GPIO12",
+        "GPIO10",
+        "GPIO13",
+        "BATTERY_PIN"
+      ],
+      "includes": []
+    },
+    "docs/archive/known-issues-history-07.md": {
+      "path": "docs/archive/known-issues-history-07.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 94,
+      "sloc": 77,
+      "comments": 0,
+      "blanks": 17,
+      "density_percent": 81.9,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/archive/known-issues-history-08.md": {
+      "path": "docs/archive/known-issues-history-08.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 90,
+      "sloc": 75,
+      "comments": 0,
+      "blanks": 15,
+      "density_percent": 83.3,
+      "symbols": [],
+      "pins_accessed": [
+        "FEATURE_AUDIO",
+        "FEATURE_BATTERY_MONITOR"
+      ],
+      "includes": []
+    },
+    "docs/archive/known-issues-history-09.md": {
+      "path": "docs/archive/known-issues-history-09.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 12,
+      "sloc": 11,
+      "comments": 0,
+      "blanks": 1,
+      "density_percent": 91.7,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/archive/known-issues-history.md": {
+      "path": "docs/archive/known-issues-history.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 13,
+      "sloc": 11,
+      "comments": 0,
+      "blanks": 2,
+      "density_percent": 84.6,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/archive/performance-report-2026-11-03.md": {
+      "path": "docs/archive/performance-report-2026-11-03.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 5,
+      "sloc": 3,
+      "comments": 0,
+      "blanks": 2,
+      "density_percent": 60.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-00_hard_stops-01.md": {
+      "path": "docs/consolidated-rules/rule-00_hard_stops-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 10,
+      "sloc": 8,
+      "comments": 0,
+      "blanks": 2,
+      "density_percent": 80.0,
+      "symbols": [],
+      "pins_accessed": [
+        "GPIO1",
+        "FEATURE_SD_CARD"
+      ],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-01_hardware-01.md": {
+      "path": "docs/consolidated-rules/rule-01_hardware-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 67,
+      "sloc": 57,
+      "comments": 0,
+      "blanks": 10,
+      "density_percent": 85.1,
+      "symbols": [],
+      "pins_accessed": [
         "BTN_UP",
         "BTN_DOWN",
         "BTN_LEFT",
@@ -282195,51 +282483,826 @@
         "I2S_DIN",
         "I2C_SDA",
         "I2C_SCL",
+        "FEATURE_SD_CARD",
         "FEATURE_BATTERY_MONITOR",
-        "FEATURE_AUDIO",
-        "TFT_SCLK",
-        "TFT_BL",
-        "GPIO0",
-        "GPIO11",
-        "GPIO15",
-        "GPIO12",
-        "GPIO10",
-        "GPIO13",
-        "BATTERY_PIN"
+        "FEATURE_AUDIO"
       ],
-      "includes": [
-        "../assets/roms/<name>.h",
-        "stdint.h",
-        "stddef.h",
-        "emu_mycore.h",
-        "../core/config.h",
-        "../core/display_emu.h",
-        "../core/buttons.h",
-        "esp_heap_caps.h"
-      ]
+      "includes": []
     },
-    "docs/handoffs/2026-11-07-remediation.md": {
-      "path": "docs/handoffs/2026-11-07-remediation.md",
+    "docs/consolidated-rules/rule-02_architecture-01.md": {
+      "path": "docs/consolidated-rules/rule-02_architecture-01.md",
       "category": "DOCUMENTATION",
-      "total_lines": 33,
-      "sloc": 27,
+      "total_lines": 24,
+      "sloc": 17,
       "comments": 0,
-      "blanks": 6,
-      "density_percent": 81.8,
+      "blanks": 7,
+      "density_percent": 70.8,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
     },
-    "docs/hardware-notes.md": {
-      "path": "docs/hardware-notes.md",
+    "docs/consolidated-rules/rule-03_conventions-01.md": {
+      "path": "docs/consolidated-rules/rule-03_conventions-01.md",
       "category": "DOCUMENTATION",
-      "total_lines": 178,
-      "sloc": 130,
+      "total_lines": 67,
+      "sloc": 55,
       "comments": 0,
-      "blanks": 48,
-      "density_percent": 73.0,
+      "blanks": 12,
+      "density_percent": 82.1,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-04_known_issues-01.md": {
+      "path": "docs/consolidated-rules/rule-04_known_issues-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 73,
+      "sloc": 62,
+      "comments": 0,
+      "blanks": 11,
+      "density_percent": 84.9,
       "symbols": [],
       "pins_accessed": [
+        "FEATURE_BATTERY_MONITOR",
+        "GPIO1",
+        "FEATURE_AUDIO",
+        "TFT_SPI_HZ",
+        "SD_SPI_HZ"
+      ],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-05_git_workflow-01.md": {
+      "path": "docs/consolidated-rules/rule-05_git_workflow-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 39,
+      "sloc": 31,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 79.5,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-06_verification_standards-01.md": {
+      "path": "docs/consolidated-rules/rule-06_verification_standards-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 121,
+      "sloc": 102,
+      "comments": 0,
+      "blanks": 19,
+      "density_percent": 84.3,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-07_task_protocol-01.md": {
+      "path": "docs/consolidated-rules/rule-07_task_protocol-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 65,
+      "sloc": 58,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 89.2,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-08_ui_style_guide-01.md": {
+      "path": "docs/consolidated-rules/rule-08_ui_style_guide-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 57,
+      "sloc": 49,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 86.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-09_testing_infrastructure-01.md": {
+      "path": "docs/consolidated-rules/rule-09_testing_infrastructure-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 24,
+      "sloc": 19,
+      "comments": 0,
+      "blanks": 5,
+      "density_percent": 79.2,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-10_symbol_reference-01.md": {
+      "path": "docs/consolidated-rules/rule-10_symbol_reference-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 25,
+      "sloc": 16,
+      "comments": 0,
+      "blanks": 9,
+      "density_percent": 64.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-11_rules_meta-01.md": {
+      "path": "docs/consolidated-rules/rule-11_rules_meta-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 26,
+      "sloc": 23,
+      "comments": 0,
+      "blanks": 3,
+      "density_percent": 88.5,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-12_extensibility_contract-01.md": {
+      "path": "docs/consolidated-rules/rule-12_extensibility_contract-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 25,
+      "sloc": 19,
+      "comments": 0,
+      "blanks": 6,
+      "density_percent": 76.0,
+      "symbols": [],
+      "pins_accessed": [
+        "FEATURE_BATTERY_MONITOR",
+        "FEATURE_AUDIO"
+      ],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-13_code_style-01.md": {
+      "path": "docs/consolidated-rules/rule-13_code_style-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 31,
+      "sloc": 23,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 74.2,
+      "symbols": [],
+      "pins_accessed": [
+        "FEATURE_SD_CARD",
+        "BTN_UP"
+      ],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-14_error_handling_and_fault_isolation-01.md": {
+      "path": "docs/consolidated-rules/rule-14_error_handling_and_fault_isolation-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 29,
+      "sloc": 22,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 75.9,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-15_performance_budgets-01.md": {
+      "path": "docs/consolidated-rules/rule-15_performance_budgets-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 23,
+      "sloc": 12,
+      "comments": 0,
+      "blanks": 11,
+      "density_percent": 52.2,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-16_logging_and_diagnostics-01.md": {
+      "path": "docs/consolidated-rules/rule-16_logging_and_diagnostics-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 24,
+      "sloc": 17,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 70.8,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-17_release_and_versioning-01.md": {
+      "path": "docs/consolidated-rules/rule-17_release_and_versioning-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 29,
+      "sloc": 22,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 75.9,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-18_dependency_and_vendor_sync-01.md": {
+      "path": "docs/consolidated-rules/rule-18_dependency_and_vendor_sync-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 38,
+      "sloc": 30,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 78.9,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-19_security_and_data_integrity-01.md": {
+      "path": "docs/consolidated-rules/rule-19_security_and_data_integrity-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 27,
+      "sloc": 14,
+      "comments": 0,
+      "blanks": 13,
+      "density_percent": 51.9,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-20_multi_agent_protocol-01.md": {
+      "path": "docs/consolidated-rules/rule-20_multi_agent_protocol-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 23,
+      "sloc": 17,
+      "comments": 0,
+      "blanks": 6,
+      "density_percent": 73.9,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-21_documentation_standards-01.md": {
+      "path": "docs/consolidated-rules/rule-21_documentation_standards-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 23,
+      "sloc": 17,
+      "comments": 0,
+      "blanks": 6,
+      "density_percent": 73.9,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-22_review_checklist-01.md": {
+      "path": "docs/consolidated-rules/rule-22_review_checklist-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 18,
+      "sloc": 14,
+      "comments": 0,
+      "blanks": 4,
+      "density_percent": 77.8,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-23_incident_postmortem_log-01.md": {
+      "path": "docs/consolidated-rules/rule-23_incident_postmortem_log-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 39,
+      "sloc": 31,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 79.5,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-24_vendor_flag_safety-01.md": {
+      "path": "docs/consolidated-rules/rule-24_vendor_flag_safety-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 82,
+      "sloc": 70,
+      "comments": 0,
+      "blanks": 12,
+      "density_percent": 85.4,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-25_game_compatibility_ledger-01.md": {
+      "path": "docs/consolidated-rules/rule-25_game_compatibility_ledger-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 56,
+      "sloc": 46,
+      "comments": 0,
+      "blanks": 10,
+      "density_percent": 82.1,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-26_emulator_exit_contract-01.md": {
+      "path": "docs/consolidated-rules/rule-26_emulator_exit_contract-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 22,
+      "sloc": 13,
+      "comments": 0,
+      "blanks": 9,
+      "density_percent": 59.1,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-27_codebase_map-01.md": {
+      "path": "docs/consolidated-rules/rule-27_codebase_map-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 74,
+      "sloc": 56,
+      "comments": 0,
+      "blanks": 18,
+      "density_percent": 75.7,
+      "symbols": [],
+      "pins_accessed": [
+        "GPIO42"
+      ],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-28_display_and_spi_contract-01.md": {
+      "path": "docs/consolidated-rules/rule-28_display_and_spi_contract-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 29,
+      "sloc": 19,
+      "comments": 0,
+      "blanks": 10,
+      "density_percent": 65.5,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-29_adding_a_baked_rom-01.md": {
+      "path": "docs/consolidated-rules/rule-29_adding_a_baked_rom-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 84,
+      "sloc": 69,
+      "comments": 0,
+      "blanks": 15,
+      "density_percent": 82.1,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": [
+        "../assets/roms/<name>.h"
+      ]
+    },
+    "docs/consolidated-rules/rule-30_common_agent_mistakes-01.md": {
+      "path": "docs/consolidated-rules/rule-30_common_agent_mistakes-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 173,
+      "sloc": 131,
+      "comments": 0,
+      "blanks": 42,
+      "density_percent": 75.7,
+      "symbols": [],
+      "pins_accessed": [
+        "FEATURE_BATTERY_MONITOR",
+        "FEATURE_AUDIO",
+        "GPIO1",
+        "TFT_CS"
+      ],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-31_quick_start_primer-01.md": {
+      "path": "docs/consolidated-rules/rule-31_quick_start_primer-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 37,
+      "sloc": 23,
+      "comments": 0,
+      "blanks": 14,
+      "density_percent": 62.2,
+      "symbols": [],
+      "pins_accessed": [
+        "GPIO33",
+        "FEATURE_BATTERY_MONITOR",
+        "GPIO1",
+        "FEATURE_AUDIO"
+      ],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-32_modular_core_template-01.md": {
+      "path": "docs/consolidated-rules/rule-32_modular_core_template-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 28,
+      "sloc": 21,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 75.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-33_agent_handoff_and_optimization_cycle-01.md": {
+      "path": "docs/consolidated-rules/rule-33_agent_handoff_and_optimization_cycle-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 63,
+      "sloc": 46,
+      "comments": 0,
+      "blanks": 17,
+      "density_percent": 73.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-34_ai_agent_sandbox_and_guardrails-01.md": {
+      "path": "docs/consolidated-rules/rule-34_ai_agent_sandbox_and_guardrails-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 55,
+      "sloc": 39,
+      "comments": 0,
+      "blanks": 16,
+      "density_percent": 70.9,
+      "symbols": [],
+      "pins_accessed": [
+        "FEATURE_BATTERY_MONITOR",
+        "FEATURE_AUDIO",
+        "GPIO1"
+      ],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-35_bmo_face_contract-01.md": {
+      "path": "docs/consolidated-rules/rule-35_bmo_face_contract-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 75,
+      "sloc": 66,
+      "comments": 0,
+      "blanks": 9,
+      "density_percent": 88.0,
+      "symbols": [],
+      "pins_accessed": [
+        "FEATURE_BATTERY_MONITOR",
+        "BTN_A",
+        "BTN_B"
+      ],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-36_bug_intake_protocol-01.md": {
+      "path": "docs/consolidated-rules/rule-36_bug_intake_protocol-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 72,
+      "sloc": 62,
+      "comments": 0,
+      "blanks": 10,
+      "density_percent": 86.1,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-37_rom_governance_and_flash_budget-01.md": {
+      "path": "docs/consolidated-rules/rule-37_rom_governance_and_flash_budget-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 63,
+      "sloc": 55,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 87.3,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-38_mandatory_documentation_update-01.md": {
+      "path": "docs/consolidated-rules/rule-38_mandatory_documentation_update-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 100,
+      "sloc": 76,
+      "comments": 0,
+      "blanks": 24,
+      "density_percent": 76.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-39_performance_and_benchmark_framework-01.md": {
+      "path": "docs/consolidated-rules/rule-39_performance_and_benchmark_framework-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 74,
+      "sloc": 53,
+      "comments": 0,
+      "blanks": 21,
+      "density_percent": 71.6,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-40_ai_knowledge_graph_and_indexing_protocol-01.md": {
+      "path": "docs/consolidated-rules/rule-40_ai_knowledge_graph_and_indexing_protocol-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 80,
+      "sloc": 61,
+      "comments": 0,
+      "blanks": 19,
+      "density_percent": 76.2,
+      "symbols": [],
+      "pins_accessed": [
+        "TFT_CS"
+      ],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-41_engineering_communication_and_critical_pushback-01.md": {
+      "path": "docs/consolidated-rules/rule-41_engineering_communication_and_critical_pushback-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 80,
+      "sloc": 58,
+      "comments": 0,
+      "blanks": 22,
+      "density_percent": 72.5,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-42_quality_of_life_and_roadmap_ledger-01.md": {
+      "path": "docs/consolidated-rules/rule-42_quality_of_life_and_roadmap_ledger-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 84,
+      "sloc": 62,
+      "comments": 0,
+      "blanks": 22,
+      "density_percent": 73.8,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-42_quality_of_life_and_roadmap_ledger-02.md": {
+      "path": "docs/consolidated-rules/rule-42_quality_of_life_and_roadmap_ledger-02.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 43,
+      "sloc": 32,
+      "comments": 0,
+      "blanks": 11,
+      "density_percent": 74.4,
+      "symbols": [],
+      "pins_accessed": [
+        "FEATURE_AUDIO",
+        "FEATURE_BATTERY_MONITOR"
+      ],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-43_no_ai_jargon_and_buzzwords-01.md": {
+      "path": "docs/consolidated-rules/rule-43_no_ai_jargon_and_buzzwords-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 55,
+      "sloc": 38,
+      "comments": 0,
+      "blanks": 17,
+      "density_percent": 69.1,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-44_anti_ai_ui_design_standards-01.md": {
+      "path": "docs/consolidated-rules/rule-44_anti_ai_ui_design_standards-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 79,
+      "sloc": 57,
+      "comments": 0,
+      "blanks": 22,
+      "density_percent": 72.2,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/consolidated-rules.md": {
+      "path": "docs/consolidated-rules.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 53,
+      "sloc": 49,
+      "comments": 0,
+      "blanks": 4,
+      "density_percent": 92.5,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/decisions/0001-hardware-configuration.md": {
+      "path": "docs/decisions/0001-hardware-configuration.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 17,
+      "sloc": 10,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 58.8,
+      "symbols": [],
+      "pins_accessed": [
+        "FEATURE_BATTERY_MONITOR",
+        "FEATURE_AUDIO",
+        "GPIO1",
+        "GPIO33",
+        "GPIO0"
+      ],
+      "includes": []
+    },
+    "docs/decisions/0002-shared-spi-bus.md": {
+      "path": "docs/decisions/0002-shared-spi-bus.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 17,
+      "sloc": 10,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 58.8,
+      "symbols": [],
+      "pins_accessed": [
+        "GPIO11",
+        "GPIO12"
+      ],
+      "includes": []
+    },
+    "docs/decisions/0003-rom-keys-and-index-v2.md": {
+      "path": "docs/decisions/0003-rom-keys-and-index-v2.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 17,
+      "sloc": 10,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 58.8,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/decisions/0004-battery-persistence.md": {
+      "path": "docs/decisions/0004-battery-persistence.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 17,
+      "sloc": 10,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 58.8,
+      "symbols": [],
+      "pins_accessed": [
+        "GPIO1"
+      ],
+      "includes": []
+    },
+    "docs/decisions/0005-psram-and-doom-budget.md": {
+      "path": "docs/decisions/0005-psram-and-doom-budget.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 17,
+      "sloc": 10,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 58.8,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/decisions/0006-portable-power.md": {
+      "path": "docs/decisions/0006-portable-power.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 17,
+      "sloc": 10,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 58.8,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/decisions/0007-fram-wiring.md": {
+      "path": "docs/decisions/0007-fram-wiring.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 17,
+      "sloc": 10,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 58.8,
+      "symbols": [],
+      "pins_accessed": [
+        "GPIO43",
+        "GPIO44"
+      ],
+      "includes": []
+    },
+    "docs/decisions/0008-rom-policy-and-licensing.md": {
+      "path": "docs/decisions/0008-rom-policy-and-licensing.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 17,
+      "sloc": 10,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 58.8,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/decisions/0009-emulator-exit-confirmation.md": {
+      "path": "docs/decisions/0009-emulator-exit-confirmation.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 18,
+      "sloc": 11,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 61.1,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/decisions/0010-simulator-boundary.md": {
+      "path": "docs/decisions/0010-simulator-boundary.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 17,
+      "sloc": 10,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 58.8,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/decisions/0011-index-path-storage.md": {
+      "path": "docs/decisions/0011-index-path-storage.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 17,
+      "sloc": 14,
+      "comments": 0,
+      "blanks": 3,
+      "density_percent": 82.4,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/decisions/0012-save-state-schema.md": {
+      "path": "docs/decisions/0012-save-state-schema.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 9,
+      "sloc": 8,
+      "comments": 0,
+      "blanks": 1,
+      "density_percent": 88.9,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/decisions/0013-partition-layout.md": {
+      "path": "docs/decisions/0013-partition-layout.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 8,
+      "sloc": 7,
+      "comments": 0,
+      "blanks": 1,
+      "density_percent": 87.5,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/decisions/0014-display-spi-clock.md": {
+      "path": "docs/decisions/0014-display-spi-clock.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 11,
+      "sloc": 10,
+      "comments": 0,
+      "blanks": 1,
+      "density_percent": 90.9,
+      "symbols": [],
+      "pins_accessed": [
+        "GPIO15"
+      ],
+      "includes": []
+    },
+    "docs/decisions/README.md": {
+      "path": "docs/decisions/README.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 22,
+      "sloc": 19,
+      "comments": 0,
+      "blanks": 3,
+      "density_percent": 86.4,
+      "symbols": [],
+      "pins_accessed": [
+        "GPIO43"
+      ],
+      "includes": []
+    },
+    "docs/face-render-measurement-template.md": {
+      "path": "docs/face-render-measurement-template.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 19,
+      "sloc": 18,
+      "comments": 0,
+      "blanks": 1,
+      "density_percent": 94.7,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/generated/symbols/core-01.md": {
+      "path": "docs/generated/symbols/core-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 262,
+      "sloc": 227,
+      "comments": 0,
+      "blanks": 35,
+      "density_percent": 86.6,
+      "symbols": [],
+      "pins_accessed": [
+        "FEATURE_SD_CARD",
+        "FEATURE_AUDIO",
+        "FEATURE_BATTERY_MONITOR",
+        "TFT_SCK",
+        "TFT_MOSI",
+        "TFT_RST",
+        "TFT_DC",
+        "TFT_CS",
+        "TFT_WIDTH",
+        "TFT_HEIGHT",
+        "TFT_SPI_HZ",
+        "TFT_SPI_FALLBACK_HZ",
+        "SD_MISO",
+        "SD_CS",
+        "SD_SPI_HZ",
         "BTN_UP",
         "BTN_DOWN",
         "BTN_LEFT",
@@ -282252,43 +283315,285 @@
         "BTN_Y",
         "BTN_L",
         "BTN_R",
-        "TFT_SCK",
-        "SD_MISO",
-        "TFT_MOSI",
-        "TFT_CS",
-        "TFT_DC",
-        "TFT_RST",
-        "SD_CS",
-        "FEATURE_BATTERY_MONITOR",
+        "FEATURE_PROFILER"
+      ],
+      "includes": []
+    },
+    "docs/generated/symbols/core-02.md": {
+      "path": "docs/generated/symbols/core-02.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 80,
+      "sloc": 71,
+      "comments": 0,
+      "blanks": 9,
+      "density_percent": 88.8,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/generated/symbols/emulators-01.md": {
+      "path": "docs/generated/symbols/emulators-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 172,
+      "sloc": 141,
+      "comments": 0,
+      "blanks": 31,
+      "density_percent": 82.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/generated/symbols/engine-01.md": {
+      "path": "docs/generated/symbols/engine-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 212,
+      "sloc": 209,
+      "comments": 0,
+      "blanks": 3,
+      "density_percent": 98.6,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/generated/symbols/engine-02.md": {
+      "path": "docs/generated/symbols/engine-02.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 225,
+      "sloc": 222,
+      "comments": 0,
+      "blanks": 3,
+      "density_percent": 98.7,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/generated/symbols/engine-03.md": {
+      "path": "docs/generated/symbols/engine-03.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 249,
+      "sloc": 246,
+      "comments": 0,
+      "blanks": 3,
+      "density_percent": 98.8,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/generated/symbols/engine-04.md": {
+      "path": "docs/generated/symbols/engine-04.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 209,
+      "sloc": 206,
+      "comments": 0,
+      "blanks": 3,
+      "density_percent": 98.6,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/generated/symbols/engine-05.md": {
+      "path": "docs/generated/symbols/engine-05.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 195,
+      "sloc": 192,
+      "comments": 0,
+      "blanks": 3,
+      "density_percent": 98.5,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/generated/symbols/engine-06.md": {
+      "path": "docs/generated/symbols/engine-06.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 189,
+      "sloc": 186,
+      "comments": 0,
+      "blanks": 3,
+      "density_percent": 98.4,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/generated/symbols/engine-07.md": {
+      "path": "docs/generated/symbols/engine-07.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 196,
+      "sloc": 193,
+      "comments": 0,
+      "blanks": 3,
+      "density_percent": 98.5,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/generated/symbols/engine-08.md": {
+      "path": "docs/generated/symbols/engine-08.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 117,
+      "sloc": 114,
+      "comments": 0,
+      "blanks": 3,
+      "density_percent": 97.4,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/generated/symbols.md": {
+      "path": "docs/generated/symbols.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 17,
+      "sloc": 14,
+      "comments": 0,
+      "blanks": 3,
+      "density_percent": 82.4,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/handoffs/2026-11-07-remediation.md": {
+      "path": "docs/handoffs/2026-11-07-remediation.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 112,
+      "sloc": 92,
+      "comments": 0,
+      "blanks": 20,
+      "density_percent": 82.1,
+      "symbols": [],
+      "pins_accessed": [
         "FEATURE_AUDIO",
-        "I2S_BCLK",
-        "I2S_LRC",
-        "I2S_DIN"
+        "FEATURE_BATTERY_MONITOR"
+      ],
+      "includes": []
+    },
+    "docs/hardware-measurement-template.json": {
+      "path": "docs/hardware-measurement-template.json",
+      "category": "DOCUMENTATION",
+      "total_lines": 18,
+      "sloc": 18,
+      "comments": 0,
+      "blanks": 0,
+      "density_percent": 100.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/hardware-measurement-template.md": {
+      "path": "docs/hardware-measurement-template.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 14,
+      "sloc": 13,
+      "comments": 0,
+      "blanks": 1,
+      "density_percent": 92.9,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/hardware-notes.md": {
+      "path": "docs/hardware-notes.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 51,
+      "sloc": 31,
+      "comments": 0,
+      "blanks": 20,
+      "density_percent": 60.8,
+      "symbols": [],
+      "pins_accessed": [
+        "GPIO1",
+        "GPIO43",
+        "TFT_SPI_HZ",
+        "TFT_SPI_FALLBACK_HZ",
+        "SD_SPI_HZ",
+        "GPIO15",
+        "FEATURE_BATTERY_MONITOR"
+      ],
+      "includes": []
+    },
+    "docs/hardware_measurements.md": {
+      "path": "docs/hardware_measurements.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 34,
+      "sloc": 22,
+      "comments": 0,
+      "blanks": 12,
+      "density_percent": 64.7,
+      "symbols": [],
+      "pins_accessed": [
+        "GPIO43"
       ],
       "includes": []
     },
     "docs/performance_and_benchmarking.md": {
       "path": "docs/performance_and_benchmarking.md",
       "category": "DOCUMENTATION",
-      "total_lines": 113,
-      "sloc": 89,
+      "total_lines": 28,
+      "sloc": 16,
       "comments": 0,
-      "blanks": 24,
-      "density_percent": 78.8,
+      "blanks": 12,
+      "density_percent": 57.1,
       "symbols": [],
-      "pins_accessed": [
-        "FEATURE_PROFILER"
-      ],
+      "pins_accessed": [],
       "includes": []
     },
     "docs/performance_report.md": {
       "path": "docs/performance_report.md",
       "category": "DOCUMENTATION",
-      "total_lines": 506,
-      "sloc": 484,
+      "total_lines": 24,
+      "sloc": 15,
       "comments": 0,
-      "blanks": 22,
-      "density_percent": 95.7,
+      "blanks": 9,
+      "density_percent": 62.5,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/readme/details-01.md": {
+      "path": "docs/readme/details-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 93,
+      "sloc": 62,
+      "comments": 0,
+      "blanks": 31,
+      "density_percent": 66.7,
+      "symbols": [],
+      "pins_accessed": [
+        "TFT_MOSI",
+        "TFT_SCK",
+        "TFT_CS",
+        "TFT_DC",
+        "TFT_RST",
+        "SD_CS",
+        "SD_MISO",
+        "BTN_UP",
+        "BTN_DOWN",
+        "BTN_LEFT",
+        "BTN_RIGHT",
+        "BTN_A",
+        "BTN_B",
+        "BTN_START",
+        "BTN_SELECT",
+        "BTN_X",
+        "BTN_Y",
+        "BTN_L",
+        "BTN_R",
+        "BATTERY_ADC_PIN",
+        "I2S_BCLK",
+        "I2S_LRC",
+        "I2S_DIN",
+        "FEATURE_BATTERY_MONITOR",
+        "FEATURE_AUDIO"
+      ],
+      "includes": []
+    },
+    "docs/readme/details-02.md": {
+      "path": "docs/readme/details-02.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 61,
+      "sloc": 44,
+      "comments": 0,
+      "blanks": 17,
+      "density_percent": 72.1,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -282309,61 +283614,371 @@
       ],
       "includes": []
     },
-    "docs/software-design-document.md": {
-      "path": "docs/software-design-document.md",
+    "docs/software-design-document/section-01.md": {
+      "path": "docs/software-design-document/section-01.md",
       "category": "DOCUMENTATION",
-      "total_lines": 1345,
-      "sloc": 1180,
+      "total_lines": 64,
+      "sloc": 47,
       "comments": 0,
-      "blanks": 165,
-      "density_percent": 87.7,
+      "blanks": 17,
+      "density_percent": 73.4,
       "symbols": [],
       "pins_accessed": [
-        "TFT_RST",
-        "SD_CS",
-        "SD_MISO",
-        "FEATURE_BATTERY_MONITOR",
+        "FEATURE_SD_CARD",
         "FEATURE_AUDIO",
+        "FEATURE_BATTERY_MONITOR",
+        "GPIO1",
+        "FEATURE_PROFILER",
+        "I2C_SDA",
+        "I2C_SCL"
+      ],
+      "includes": []
+    },
+    "docs/software-design-document/section-02.md": {
+      "path": "docs/software-design-document/section-02.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 48,
+      "sloc": 29,
+      "comments": 0,
+      "blanks": 19,
+      "density_percent": 60.4,
+      "symbols": [],
+      "pins_accessed": [
+        "FEATURE_SD_CARD",
+        "FEATURE_AUDIO",
+        "GPIO43",
+        "GPIO12",
+        "GPIO11",
+        "GPIO10",
+        "GPIO13",
+        "GPIO15",
+        "TFT_SPI_HZ",
+        "TFT_SPI_FALLBACK_HZ",
+        "SD_SPI_HZ",
+        "GPIO1",
+        "FEATURE_BATTERY_MONITOR"
+      ],
+      "includes": []
+    },
+    "docs/software-design-document/section-03.md": {
+      "path": "docs/software-design-document/section-03.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 63,
+      "sloc": 48,
+      "comments": 0,
+      "blanks": 15,
+      "density_percent": 76.2,
+      "symbols": [],
+      "pins_accessed": [
         "TFT_SCK",
         "TFT_MOSI",
-        "TFT_CS",
+        "TFT_RST",
         "TFT_DC",
+        "TFT_CS",
+        "SD_MISO",
+        "SD_CS",
+        "TFT_WIDTH",
+        "TFT_HEIGHT",
+        "TFT_SPI_HZ",
+        "TFT_SPI_FALLBACK_HZ",
+        "SD_SPI_HZ",
         "BTN_UP",
         "BTN_DOWN",
         "BTN_LEFT",
         "BTN_RIGHT",
-        "BTN_X",
-        "BTN_Y",
         "BTN_A",
         "BTN_B",
-        "BTN_L",
-        "BTN_R",
         "BTN_START",
         "BTN_SELECT",
+        "BTN_X",
+        "BTN_Y",
+        "BTN_L",
+        "BTN_R",
         "BATTERY_ADC_PIN",
+        "FEATURE_BATTERY_MONITOR",
+        "GPIO1",
         "I2S_BCLK",
         "I2S_LRC",
         "I2S_DIN",
+        "FEATURE_AUDIO",
         "I2C_SDA",
         "I2C_SCL",
         "FEATURE_SD_CARD",
-        "I2S_NUM_0"
+        "GPIO33",
+        "GPIO0",
+        "GPIO3",
+        "GPIO45",
+        "GPIO46"
+      ],
+      "includes": []
+    },
+    "docs/software-design-document/section-04.md": {
+      "path": "docs/software-design-document/section-04.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 59,
+      "sloc": 46,
+      "comments": 0,
+      "blanks": 13,
+      "density_percent": 78.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/software-design-document/section-05-part-01.md": {
+      "path": "docs/software-design-document/section-05-part-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 69,
+      "sloc": 52,
+      "comments": 0,
+      "blanks": 17,
+      "density_percent": 75.4,
+      "symbols": [],
+      "pins_accessed": [
+        "FEATURE_BATTERY_MONITOR",
+        "GPIO1"
+      ],
+      "includes": []
+    },
+    "docs/software-design-document/section-05-part-02.md": {
+      "path": "docs/software-design-document/section-05-part-02.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 35,
+      "sloc": 24,
+      "comments": 0,
+      "blanks": 11,
+      "density_percent": 68.6,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/software-design-document/section-05-part-03.md": {
+      "path": "docs/software-design-document/section-05-part-03.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 53,
+      "sloc": 36,
+      "comments": 0,
+      "blanks": 17,
+      "density_percent": 67.9,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/software-design-document/section-06.md": {
+      "path": "docs/software-design-document/section-06.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 53,
+      "sloc": 36,
+      "comments": 0,
+      "blanks": 17,
+      "density_percent": 67.9,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/software-design-document/section-07.md": {
+      "path": "docs/software-design-document/section-07.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 68,
+      "sloc": 51,
+      "comments": 0,
+      "blanks": 17,
+      "density_percent": 75.0,
+      "symbols": [],
+      "pins_accessed": [
+        "TFT_WIDTH",
+        "TFT_HEIGHT",
+        "GPIO12",
+        "GPIO11",
+        "GPIO15"
+      ],
+      "includes": []
+    },
+    "docs/software-design-document/section-08.md": {
+      "path": "docs/software-design-document/section-08.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 27,
+      "sloc": 14,
+      "comments": 0,
+      "blanks": 13,
+      "density_percent": 51.9,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/software-design-document/section-09-part-01.md": {
+      "path": "docs/software-design-document/section-09-part-01.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 37,
+      "sloc": 27,
+      "comments": 0,
+      "blanks": 10,
+      "density_percent": 73.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/software-design-document/section-09-part-02.md": {
+      "path": "docs/software-design-document/section-09-part-02.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 29,
+      "sloc": 18,
+      "comments": 0,
+      "blanks": 11,
+      "density_percent": 62.1,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/software-design-document/section-09-part-03.md": {
+      "path": "docs/software-design-document/section-09-part-03.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 13,
+      "sloc": 7,
+      "comments": 0,
+      "blanks": 6,
+      "density_percent": 53.8,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/software-design-document/section-10.md": {
+      "path": "docs/software-design-document/section-10.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 53,
+      "sloc": 33,
+      "comments": 0,
+      "blanks": 20,
+      "density_percent": 62.3,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/software-design-document/section-11.md": {
+      "path": "docs/software-design-document/section-11.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 19,
+      "sloc": 10,
+      "comments": 0,
+      "blanks": 9,
+      "density_percent": 52.6,
+      "symbols": [],
+      "pins_accessed": [
+        "FEATURE_BATTERY_MONITOR",
+        "FEATURE_AUDIO",
+        "GPIO1",
+        "GPIO43",
+        "FEATURE_PROFILER"
+      ],
+      "includes": []
+    },
+    "docs/software-design-document/section-12.md": {
+      "path": "docs/software-design-document/section-12.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 23,
+      "sloc": 15,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 65.2,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/software-design-document/section-13.md": {
+      "path": "docs/software-design-document/section-13.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 17,
+      "sloc": 9,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 52.9,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/software-design-document/section-14.md": {
+      "path": "docs/software-design-document/section-14.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 31,
+      "sloc": 21,
+      "comments": 0,
+      "blanks": 10,
+      "density_percent": 67.7,
+      "symbols": [],
+      "pins_accessed": [
+        "TFT_SPI_HZ"
+      ],
+      "includes": []
+    },
+    "docs/software-design-document/section-15.md": {
+      "path": "docs/software-design-document/section-15.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 34,
+      "sloc": 22,
+      "comments": 0,
+      "blanks": 12,
+      "density_percent": 64.7,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/software-design-document/section-16.md": {
+      "path": "docs/software-design-document/section-16.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 17,
+      "sloc": 9,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 52.9,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/software-design-document/section-17.md": {
+      "path": "docs/software-design-document/section-17.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 25,
+      "sloc": 17,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 68.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "docs/software-design-document.md": {
+      "path": "docs/software-design-document.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 67,
+      "sloc": 51,
+      "comments": 0,
+      "blanks": 16,
+      "density_percent": 76.1,
+      "symbols": [],
+      "pins_accessed": [
+        "GPIO43"
       ],
       "includes": []
     },
     "docs/wiring/01-display-and-buttons.md": {
       "path": "docs/wiring/01-display-and-buttons.md",
       "category": "DOCUMENTATION",
-      "total_lines": 92,
-      "sloc": 69,
+      "total_lines": 51,
+      "sloc": 37,
       "comments": 0,
-      "blanks": 23,
-      "density_percent": 75.0,
+      "blanks": 14,
+      "density_percent": 72.5,
       "symbols": [],
       "pins_accessed": [
-        "TFT_RST",
-        "TFT_DC",
+        "GPIO12",
+        "TFT_SCK",
+        "GPIO11",
+        "TFT_MOSI",
+        "GPIO10",
         "TFT_CS",
+        "GPIO8",
+        "TFT_DC",
+        "GPIO9",
+        "TFT_RST",
         "BTN_UP",
         "BTN_DOWN",
         "BTN_LEFT",
@@ -282376,44 +283991,34 @@
         "BTN_Y",
         "BTN_L",
         "BTN_R",
+        "GPIO1",
         "FEATURE_BATTERY_MONITOR",
+        "GPIO38",
         "FEATURE_AUDIO",
-        "TFT_SCK",
-        "TFT_MOSI",
-        "SD_MISO",
-        "SD_CS"
+        "GPIO43",
+        "GPIO15",
+        "GPIO13"
       ],
       "includes": []
     },
     "docs/wiring/02-sd-card.md": {
       "path": "docs/wiring/02-sd-card.md",
       "category": "DOCUMENTATION",
-      "total_lines": 79,
-      "sloc": 59,
+      "total_lines": 33,
+      "sloc": 23,
       "comments": 0,
-      "blanks": 20,
-      "density_percent": 74.7,
+      "blanks": 10,
+      "density_percent": 69.7,
       "symbols": [],
       "pins_accessed": [
-        "TFT_CS",
-        "SD_CS",
         "TFT_SCK",
         "TFT_MOSI",
-        "SD_MISO",
-        "TFT_RST",
+        "TFT_CS",
         "TFT_DC",
-        "BTN_UP",
-        "BTN_DOWN",
-        "BTN_LEFT",
-        "BTN_RIGHT",
-        "BTN_A",
-        "BTN_B",
-        "BTN_START",
-        "BTN_SELECT",
-        "BTN_X",
-        "BTN_Y",
-        "BTN_L",
-        "BTN_R"
+        "TFT_RST",
+        "SD_MISO",
+        "SD_CS",
+        "GPIO15"
       ],
       "includes": []
     },
@@ -282444,20 +284049,23 @@
     "firmware/BmoGameboy/BmoGameboy.ino": {
       "path": "firmware/BmoGameboy/BmoGameboy.ino",
       "category": "FIRMWARE_TOP",
-      "total_lines": 1230,
-      "sloc": 1068,
-      "comments": 65,
-      "blanks": 97,
-      "density_percent": 86.8,
+      "total_lines": 1349,
+      "sloc": 1180,
+      "comments": 67,
+      "blanks": 102,
+      "density_percent": 87.5,
       "symbols": [
         "syncVisiblePoolCapacity",
+        "currentGameHasBatterySaveSupport",
         "autoSaveCurrentBatteryRam",
         "quickSaveState",
         "quickLoadState",
         "destroyActiveEmulator",
+        "finishQuitToConsole",
         "canPress",
         "recordFrameTime",
         "resetFrameStats",
+        "resetFramePercentiles",
         "countGamesForConsole",
         "rebuildVisibleGames",
         "selectedGame",
@@ -282470,7 +284078,9 @@
         "FEATURE_BATTERY_MONITOR",
         "TFT_SCK",
         "SD_MISO",
-        "TFT_MOSI"
+        "TFT_MOSI",
+        "TFT_SPI_HZ",
+        "TFT_SPI_FALLBACK_HZ"
       ],
       "includes": [
         "src/core/config.h",
@@ -282743,20 +284353,31 @@
         "stdint.h"
       ]
     },
+    "firmware/BmoGameboy/src/core/battery_save.h": {
+      "path": "firmware/BmoGameboy/src/core/battery_save.h",
+      "category": "FIRMWARE_CORE",
+      "total_lines": 48,
+      "sloc": 43,
+      "comments": 0,
+      "blanks": 5,
+      "density_percent": 89.6,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": [
+        "stddef.h",
+        "stdint.h"
+      ]
+    },
     "firmware/BmoGameboy/src/core/bmo_face.cpp": {
       "path": "firmware/BmoGameboy/src/core/bmo_face.cpp",
       "category": "FIRMWARE_CORE",
-      "total_lines": 1190,
-      "sloc": 900,
-      "comments": 141,
-      "blanks": 149,
-      "density_percent": 75.6,
+      "total_lines": 1149,
+      "sloc": 865,
+      "comments": 139,
+      "blanks": 145,
+      "density_percent": 75.3,
       "symbols": [
         "packBGR565",
-        "init",
-        "snap",
-        "setTarget",
-        "update",
         "spawnParticle",
         "updateParticles",
         "renderMascotInternal",
@@ -282771,11 +284392,16 @@
         "say",
         "getCurrentQuote",
         "getVisibleChars",
-        "hasSpeech"
+        "hasSpeech",
+        "clearSpeech",
+        "triggerDance",
+        "stopDance",
+        "isDancing"
       ],
       "pins_accessed": [],
       "includes": [
         "bmo_face.h",
+        "harmonic_spring.h",
         "display_emu.h",
         "config.h",
         "Arduino.h",
@@ -282821,13 +284447,16 @@
     "firmware/BmoGameboy/src/core/box_art.cpp": {
       "path": "firmware/BmoGameboy/src/core/box_art.cpp",
       "category": "FIRMWARE_CORE",
-      "total_lines": 283,
-      "sloc": 225,
-      "comments": 13,
-      "blanks": 45,
-      "density_percent": 79.5,
+      "total_lines": 368,
+      "sloc": 313,
+      "comments": 9,
+      "blanks": 46,
+      "density_percent": 85.1,
       "symbols": [
         "rgbToDisplayColor",
+        "sameNameIgnoreAsciiCase",
+        "legacyBaseIsUnique",
+        "migrateLegacyArt",
         "BoxArt::init",
         "BoxArt::unload",
         "BoxArt::hasArt",
@@ -282848,6 +284477,7 @@
         "config.h",
         "spi_arbiter.h",
         "theme.h",
+        "path_key.h",
         "esp_heap_caps.h",
         "string.h",
         "SD.h"
@@ -282856,11 +284486,11 @@
     "firmware/BmoGameboy/src/core/box_art.h": {
       "path": "firmware/BmoGameboy/src/core/box_art.h",
       "category": "FIRMWARE_CORE",
-      "total_lines": 36,
-      "sloc": 22,
+      "total_lines": 37,
+      "sloc": 23,
       "comments": 7,
       "blanks": 7,
-      "density_percent": 61.1,
+      "density_percent": 62.2,
       "symbols": [
         "init",
         "load",
@@ -282877,7 +284507,8 @@
       "includes": [
         "stdint.h",
         "stddef.h",
-        "Adafruit_GFX.h"
+        "Adafruit_GFX.h",
+        "theme.h"
       ]
     },
     "firmware/BmoGameboy/src/core/buttons.cpp": {
@@ -282948,11 +284579,11 @@
     "firmware/BmoGameboy/src/core/config.h": {
       "path": "firmware/BmoGameboy/src/core/config.h",
       "category": "FIRMWARE_CORE",
-      "total_lines": 120,
-      "sloc": 67,
+      "total_lines": 129,
+      "sloc": 75,
       "comments": 37,
-      "blanks": 16,
-      "density_percent": 55.8,
+      "blanks": 17,
+      "density_percent": 58.1,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_SD_CARD",
@@ -282965,8 +284596,11 @@
         "TFT_CS",
         "TFT_WIDTH",
         "TFT_HEIGHT",
+        "TFT_SPI_HZ",
+        "TFT_SPI_FALLBACK_HZ",
         "SD_MISO",
         "SD_CS",
+        "SD_SPI_HZ",
         "BTN_UP",
         "BTN_DOWN",
         "BTN_LEFT",
@@ -282991,11 +284625,11 @@
     "firmware/BmoGameboy/src/core/display_emu.cpp": {
       "path": "firmware/BmoGameboy/src/core/display_emu.cpp",
       "category": "FIRMWARE_CORE",
-      "total_lines": 2028,
-      "sloc": 1652,
-      "comments": 125,
-      "blanks": 251,
-      "density_percent": 81.5,
+      "total_lines": 2116,
+      "sloc": 1731,
+      "comments": 126,
+      "blanks": 259,
+      "density_percent": 81.8,
       "symbols": [
         "__attribute__",
         "__attribute__",
@@ -283024,7 +284658,9 @@
         "TFT_RST",
         "TFT_WIDTH",
         "TFT_HEIGHT",
-        "FEATURE_BATTERY_MONITOR"
+        "TFT_SPI_HZ",
+        "FEATURE_BATTERY_MONITOR",
+        "TFT_SPI_FALLBACK_HZ"
       ],
       "includes": [
         "display_emu.h",
@@ -283047,11 +284683,11 @@
     "firmware/BmoGameboy/src/core/display_emu.h": {
       "path": "firmware/BmoGameboy/src/core/display_emu.h",
       "category": "FIRMWARE_CORE",
-      "total_lines": 182,
-      "sloc": 66,
+      "total_lines": 190,
+      "sloc": 74,
       "comments": 70,
       "blanks": 46,
-      "density_percent": 36.3,
+      "density_percent": 38.9,
       "symbols": [
         "begin",
         "clearScreen",
@@ -283067,17 +284703,18 @@
         "showAlphaBadge",
         "setTopPicksFilter",
         "getTopPicksFilter",
+        "getDisplayStackHighWaterMarkWords",
+        "setDiagnosticSpiClock",
+        "drawSpiStressPattern",
         "drawConsoleIcon",
         "drawIdleMascotScreen",
-        "sanitizeRomTitle",
-        "setDmgPalette",
-        "getDmgPaletteIndex",
-        "cycleDmgPalette"
+        "sanitizeRomTitle"
       ],
       "pins_accessed": [],
       "includes": [
         "stdint.h",
-        "sd_card.h"
+        "sd_card.h",
+        "theme.h"
       ]
     },
     "firmware/BmoGameboy/src/core/fram_save.cpp": {
@@ -283122,6 +284759,88 @@
         "stdint.h",
         "stddef.h"
       ]
+    },
+    "firmware/BmoGameboy/src/core/frame_pacing.h": {
+      "path": "firmware/BmoGameboy/src/core/frame_pacing.h",
+      "category": "FIRMWARE_CORE",
+      "total_lines": 26,
+      "sloc": 17,
+      "comments": 6,
+      "blanks": 3,
+      "density_percent": 65.4,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": [
+        "stdint.h"
+      ]
+    },
+    "firmware/BmoGameboy/src/core/frame_percentiles.h": {
+      "path": "firmware/BmoGameboy/src/core/frame_percentiles.h",
+      "category": "FIRMWARE_CORE",
+      "total_lines": 34,
+      "sloc": 27,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 79.4,
+      "symbols": [
+        "compareUnsignedLong",
+        "sortAndSummarize"
+      ],
+      "pins_accessed": [],
+      "includes": [
+        "stddef.h",
+        "stdlib.h"
+      ]
+    },
+    "firmware/BmoGameboy/src/core/harmonic_spring.h": {
+      "path": "firmware/BmoGameboy/src/core/harmonic_spring.h",
+      "category": "FIRMWARE_CORE",
+      "total_lines": 59,
+      "sloc": 51,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 86.4,
+      "symbols": [
+        "init",
+        "snap",
+        "setTarget",
+        "update"
+      ],
+      "pins_accessed": [],
+      "includes": [
+        "cmath"
+      ]
+    },
+    "firmware/BmoGameboy/src/core/path_key.h": {
+      "path": "firmware/BmoGameboy/src/core/path_key.h",
+      "category": "FIRMWARE_CORE",
+      "total_lines": 79,
+      "sloc": 71,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 89.9,
+      "symbols": [
+        "make"
+      ],
+      "pins_accessed": [],
+      "includes": [
+        "stddef.h",
+        "stdint.h",
+        "stdio.h",
+        "string.h"
+      ]
+    },
+    "firmware/BmoGameboy/src/core/pause_quit_policy.h": {
+      "path": "firmware/BmoGameboy/src/core/pause_quit_policy.h",
+      "category": "FIRMWARE_CORE",
+      "total_lines": 73,
+      "sloc": 60,
+      "comments": 0,
+      "blanks": 13,
+      "density_percent": 82.2,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
     },
     "firmware/BmoGameboy/src/core/profiler.cpp": {
       "path": "firmware/BmoGameboy/src/core/profiler.cpp",
@@ -283179,14 +284898,36 @@
         "Arduino.h"
       ]
     },
+    "firmware/BmoGameboy/src/core/rom_file_filter.h": {
+      "path": "firmware/BmoGameboy/src/core/rom_file_filter.h",
+      "category": "FIRMWARE_CORE",
+      "total_lines": 72,
+      "sloc": 63,
+      "comments": 0,
+      "blanks": 9,
+      "density_percent": 87.5,
+      "symbols": [
+        "equalIgnoreCase",
+        "extensionOf",
+        "isIgnoredName",
+        "needsSample",
+        "looksLikeBinary"
+      ],
+      "pins_accessed": [],
+      "includes": [
+        "stddef.h",
+        "stdint.h",
+        "string.h"
+      ]
+    },
     "firmware/BmoGameboy/src/core/rom_index.h": {
       "path": "firmware/BmoGameboy/src/core/rom_index.h",
       "category": "FIRMWARE_CORE",
-      "total_lines": 33,
-      "sloc": 25,
+      "total_lines": 64,
+      "sloc": 54,
       "comments": 2,
-      "blanks": 6,
-      "density_percent": 75.8,
+      "blanks": 8,
+      "density_percent": 84.4,
       "symbols": [],
       "pins_accessed": [],
       "includes": [
@@ -283197,14 +284938,19 @@
     "firmware/BmoGameboy/src/core/save_manager.cpp": {
       "path": "firmware/BmoGameboy/src/core/save_manager.cpp",
       "category": "FIRMWARE_CORE",
-      "total_lines": 526,
-      "sloc": 439,
-      "comments": 7,
-      "blanks": 80,
-      "density_percent": 83.5,
+      "total_lines": 767,
+      "sloc": 659,
+      "comments": 12,
+      "blanks": 96,
+      "density_percent": 85.9,
       "symbols": [
         "computeCRC32",
+        "makeTemporaryPath",
+        "makeBackupPath",
+        "recoverAtomicWrite",
         "extractBaseName",
+        "makeLegacyBatterySavePath",
+        "makeLegacySaveStatePath",
         "getBatterySavePath",
         "getSaveStatePath",
         "begin",
@@ -283227,6 +284973,7 @@
         "config.h",
         "spi_arbiter.h",
         "display_emu.h",
+        "path_key.h",
         "SD.h",
         "SPI.h",
         "string.h",
@@ -283265,35 +285012,36 @@
     "firmware/BmoGameboy/src/core/sd_card.cpp": {
       "path": "firmware/BmoGameboy/src/core/sd_card.cpp",
       "category": "FIRMWARE_CORE",
-      "total_lines": 850,
-      "sloc": 742,
-      "comments": 21,
-      "blanks": 87,
-      "density_percent": 87.3,
+      "total_lines": 1235,
+      "sloc": 1103,
+      "comments": 23,
+      "blanks": 109,
+      "density_percent": 89.3,
       "symbols": [
         "ensurePoolCapacity",
         "compareRoms",
         "isIgnoredDirName",
-        "SDCard::computePoolCapacity",
+        "rootDirectoryStamp",
+        "verifyIndexFile",
+        "indexFileIsValid",
+        "recoverIndexTransaction",
+        "recoverMetadataFile",
+        "verifyMetadataFile",
         "SDCard::getPoolCapacity",
+        "SDCard::getSkippedRomCount",
         "SDCard::begin",
         "SDCard::isMounted",
+        "SDCard::getClockHz",
         "SDCard::sortRoms",
         "SDCard::loadIndex",
         "SDCard::saveIndex",
         "SDCard::rebuildIndex",
         "SDCard::scanDirectory",
-        "SDCard::scanRoms",
-        "SDCard::getRomCount",
-        "SDCard::getRomCountForType",
-        "SDCard::isPopularGame",
-        "SDCard::getPopularCountForType",
-        "SDCard::getRomInfo",
-        "SDCard::isFavorite",
-        "SDCard::isFavorite"
+        "SDCard::scanRoms"
       ],
       "pins_accessed": [
         "FEATURE_SD_CARD",
+        "SD_SPI_HZ",
         "SD_CS"
       ],
       "includes": [
@@ -283301,32 +285049,33 @@
         "config.h",
         "spi_arbiter.h",
         "rom_index.h",
+        "rom_file_filter.h",
         "save_manager.h",
         "box_art.h",
         "SD.h",
         "SPI.h",
+        "esp32-hal-spi.h",
         "esp_heap_caps.h",
         "string.h",
         "stdlib.h",
-        "../assets/roms/virtual_bmo.h",
-        "../assets/roms/mario_deluxe.h",
-        "../assets/roms/zelda_ages.h",
-        "../assets/roms/aladdin.h"
+        "time.h",
+        "../assets/roms/virtual_bmo.h"
       ]
     },
     "firmware/BmoGameboy/src/core/sd_card.h": {
       "path": "firmware/BmoGameboy/src/core/sd_card.h",
       "category": "FIRMWARE_CORE",
-      "total_lines": 79,
-      "sloc": 62,
-      "comments": 6,
-      "blanks": 11,
-      "density_percent": 78.5,
+      "total_lines": 94,
+      "sloc": 74,
+      "comments": 8,
+      "blanks": 12,
+      "density_percent": 78.7,
       "symbols": [
-        "computePoolCapacity",
         "getPoolCapacity",
+        "getSkippedRomCount",
         "begin",
         "isMounted",
+        "getClockHz",
         "scanRoms",
         "scanDirectory",
         "getRomCount",
@@ -283341,8 +285090,7 @@
         "saveFavorites",
         "loadFavorites",
         "loadIndex",
-        "saveIndex",
-        "rebuildIndex"
+        "saveIndex"
       ],
       "pins_accessed": [],
       "includes": [
@@ -283519,12 +285267,14 @@
     "firmware/BmoGameboy/src/emulators/emu_doom.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_doom.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 296,
-      "sloc": 228,
+      "total_lines": 313,
+      "sloc": 244,
       "comments": 28,
-      "blanks": 40,
-      "density_percent": 77.0,
+      "blanks": 41,
+      "density_percent": 78.0,
       "symbols": [
+        "showDoomErrorToast",
+        "Doom_Bailout",
         "Doom_FreePSRAM",
         "Doom_GetTargetZoneBytes",
         "Doom_Bailout",
@@ -283537,7 +285287,6 @@
         "DG_GetKey",
         "DG_SetWindowTitle",
         "updateDoomKey",
-        "computeZoneBytes",
         "lastError",
         "begin",
         "runFrame",
@@ -283564,13 +285313,12 @@
     "firmware/BmoGameboy/src/emulators/emu_doom.h": {
       "path": "firmware/BmoGameboy/src/emulators/emu_doom.h",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 25,
-      "sloc": 13,
-      "comments": 6,
-      "blanks": 6,
-      "density_percent": 52.0,
+      "total_lines": 19,
+      "sloc": 10,
+      "comments": 5,
+      "blanks": 4,
+      "density_percent": 52.6,
       "symbols": [
-        "computeZoneBytes",
         "lastError",
         "begin",
         "runFrame",
@@ -283579,7 +285327,8 @@
       "pins_accessed": [],
       "includes": [
         "stdint.h",
-        "stddef.h"
+        "stddef.h",
+        "psram_zone_budget.h"
       ]
     },
     "firmware/BmoGameboy/src/emulators/emu_genesis.cpp": {
@@ -283639,11 +285388,11 @@
     "firmware/BmoGameboy/src/emulators/emu_lynx.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_lynx.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 106,
+      "total_lines": 104,
       "sloc": 91,
-      "comments": 2,
+      "comments": 0,
       "blanks": 13,
-      "density_percent": 85.8,
+      "density_percent": 87.5,
       "symbols": [
         "LynxEmu::init",
         "LynxEmu::update",
@@ -283693,11 +285442,11 @@
     "firmware/BmoGameboy/src/emulators/emu_nes.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_nes.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 121,
-      "sloc": 99,
+      "total_lines": 126,
+      "sloc": 104,
       "comments": 5,
       "blanks": 17,
-      "density_percent": 81.8,
+      "density_percent": 82.5,
       "symbols": [
         "getNesStateBuf",
         "NesEmu::begin",
@@ -283716,6 +285465,7 @@
         "../core/display_emu.h",
         "../core/buttons.h",
         "../core/save_manager.h",
+        "../core/battery_save.h",
         "Arduino.h",
         "esp_heap_caps.h"
       ]
@@ -283854,12 +285604,13 @@
     "firmware/BmoGameboy/src/emulators/emu_peanut.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_peanut.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 225,
-      "sloc": 165,
+      "total_lines": 237,
+      "sloc": 176,
       "comments": 24,
-      "blanks": 36,
-      "density_percent": 73.3,
+      "blanks": 37,
+      "density_percent": 74.3,
       "symbols": [
+        "batteryRamSize",
         "__attribute__",
         "gb_error",
         "PeanutEmu::begin",
@@ -283881,6 +285632,7 @@
         "../core/bmo_face.h",
         "../core/config.h",
         "../core/save_manager.h",
+        "../core/battery_save.h",
         "string.h",
         "Arduino.h",
         "esp_heap_caps.h",
@@ -283916,11 +285668,11 @@
     "firmware/BmoGameboy/src/emulators/emu_pico.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_pico.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 102,
+      "total_lines": 101,
       "sloc": 85,
-      "comments": 2,
+      "comments": 1,
       "blanks": 15,
-      "density_percent": 83.3,
+      "density_percent": 84.2,
       "symbols": [
         "PicoEmu::begin",
         "PicoEmu::updateJoypad",
@@ -284022,11 +285774,11 @@
     "firmware/BmoGameboy/src/emulators/emu_snes.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_snes.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 130,
-      "sloc": 117,
+      "total_lines": 138,
+      "sloc": 125,
       "comments": 0,
       "blanks": 13,
-      "density_percent": 90.0,
+      "density_percent": 90.6,
       "symbols": [
         "SNESEmu::init",
         "SNESEmu::update",
@@ -284045,6 +285797,7 @@
         "../core/buttons.h",
         "../core/save_manager.h",
         "../core/config.h",
+        "../core/battery_save.h",
         "esp_heap_caps.h",
         "string.h"
       ]
@@ -284076,12 +285829,13 @@
     "firmware/BmoGameboy/src/emulators/emu_walnut.cpp": {
       "path": "firmware/BmoGameboy/src/emulators/emu_walnut.cpp",
       "category": "EMULATOR_WRAPPERS",
-      "total_lines": 285,
-      "sloc": 186,
+      "total_lines": 297,
+      "sloc": 197,
       "comments": 58,
-      "blanks": 41,
-      "density_percent": 65.3,
+      "blanks": 42,
+      "density_percent": 66.3,
       "symbols": [
+        "batteryRamSize",
         "__attribute__",
         "gb_error",
         "WalnutEmu::begin",
@@ -284103,6 +285857,7 @@
         "../core/bmo_face.h",
         "../core/config.h",
         "../core/save_manager.h",
+        "../core/battery_save.h",
         "string.h",
         "Arduino.h",
         "esp_heap_caps.h",
@@ -284185,6 +285940,20 @@
       "pins_accessed": [],
       "includes": [
         "stdint.h",
+        "stddef.h"
+      ]
+    },
+    "firmware/BmoGameboy/src/emulators/psram_zone_budget.h": {
+      "path": "firmware/BmoGameboy/src/emulators/psram_zone_budget.h",
+      "category": "EMULATOR_WRAPPERS",
+      "total_lines": 20,
+      "sloc": 17,
+      "comments": 0,
+      "blanks": 3,
+      "density_percent": 85.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": [
         "stddef.h"
       ]
     },
@@ -284671,11 +286440,11 @@
     "firmware/BmoGameboy/src/vendor/doom/src/d_main.c": {
       "path": "firmware/BmoGameboy/src/vendor/doom/src/d_main.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 1843,
-      "sloc": 1088,
+      "total_lines": 1847,
+      "sloc": 1092,
       "comments": 418,
       "blanks": 337,
-      "density_percent": 59.0,
+      "density_percent": 59.1,
       "symbols": [
         "D_DoomLoop",
         "D_ConnectNetGame",
@@ -289226,39 +290995,13 @@
     "README.md": {
       "path": "README.md",
       "category": "OTHER",
-      "total_lines": 234,
-      "sloc": 166,
+      "total_lines": 43,
+      "sloc": 30,
       "comments": 0,
-      "blanks": 68,
-      "density_percent": 70.9,
+      "blanks": 13,
+      "density_percent": 69.8,
       "symbols": [],
-      "pins_accessed": [
-        "TFT_MOSI",
-        "TFT_SCK",
-        "TFT_CS",
-        "TFT_DC",
-        "TFT_RST",
-        "SD_CS",
-        "SD_MISO",
-        "BTN_UP",
-        "BTN_DOWN",
-        "BTN_LEFT",
-        "BTN_RIGHT",
-        "BTN_A",
-        "BTN_B",
-        "BTN_START",
-        "BTN_SELECT",
-        "BTN_X",
-        "BTN_Y",
-        "BTN_L",
-        "BTN_R",
-        "BATTERY_ADC_PIN",
-        "I2S_BCLK",
-        "I2S_LRC",
-        "I2S_DIN",
-        "FEATURE_BATTERY_MONITOR",
-        "FEATURE_AUDIO"
-      ],
+      "pins_accessed": [],
       "includes": []
     },
     "scripts/audit_all_games.py": {
@@ -289300,11 +291043,11 @@
     "scripts/build_wasm_cores.py": {
       "path": "scripts/build_wasm_cores.py",
       "category": "SCRIPTS",
-      "total_lines": 210,
-      "sloc": 194,
+      "total_lines": 212,
+      "sloc": 196,
       "comments": 3,
       "blanks": 13,
-      "density_percent": 92.4,
+      "density_percent": 92.5,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -289338,11 +291081,11 @@
     "scripts/bundle_rules.py": {
       "path": "scripts/bundle_rules.py",
       "category": "SCRIPTS",
-      "total_lines": 54,
-      "sloc": 32,
-      "comments": 7,
-      "blanks": 15,
-      "density_percent": 59.3,
+      "total_lines": 139,
+      "sloc": 116,
+      "comments": 3,
+      "blanks": 20,
+      "density_percent": 83.5,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -289355,6 +291098,18 @@
       "comments": 1,
       "blanks": 2,
       "density_percent": 90.3,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "scripts/check_markdown_links.py": {
+      "path": "scripts/check_markdown_links.py",
+      "category": "SCRIPTS",
+      "total_lines": 25,
+      "sloc": 17,
+      "comments": 1,
+      "blanks": 7,
+      "density_percent": 68.0,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -289398,11 +291153,11 @@
     "scripts/deploy_to_sd.py": {
       "path": "scripts/deploy_to_sd.py",
       "category": "SCRIPTS",
-      "total_lines": 247,
-      "sloc": 212,
-      "comments": 1,
-      "blanks": 34,
-      "density_percent": 85.8,
+      "total_lines": 285,
+      "sloc": 245,
+      "comments": 3,
+      "blanks": 37,
+      "density_percent": 86.0,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -289436,11 +291191,11 @@
     "scripts/fetch_covers.py": {
       "path": "scripts/fetch_covers.py",
       "category": "SCRIPTS",
-      "total_lines": 407,
-      "sloc": 344,
+      "total_lines": 434,
+      "sloc": 370,
       "comments": 18,
-      "blanks": 45,
-      "density_percent": 84.5,
+      "blanks": 46,
+      "density_percent": 85.3,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -289472,10 +291227,10 @@
     "scripts/generate_ai_knowledge_base.py": {
       "path": "scripts/generate_ai_knowledge_base.py",
       "category": "SCRIPTS",
-      "total_lines": 434,
-      "sloc": 389,
+      "total_lines": 423,
+      "sloc": 379,
       "comments": 12,
-      "blanks": 33,
+      "blanks": 32,
       "density_percent": 89.6,
       "symbols": [],
       "pins_accessed": [
@@ -289514,11 +291269,11 @@
     "scripts/install_git_hooks.py": {
       "path": "scripts/install_git_hooks.py",
       "category": "SCRIPTS",
-      "total_lines": 75,
-      "sloc": 58,
+      "total_lines": 66,
+      "sloc": 49,
       "comments": 8,
       "blanks": 9,
-      "density_percent": 77.3,
+      "density_percent": 74.2,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -289543,6 +291298,18 @@
       "comments": 0,
       "blanks": 9,
       "density_percent": 71.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "scripts/rom_key.py": {
+      "path": "scripts/rom_key.py",
+      "category": "SCRIPTS",
+      "total_lines": 38,
+      "sloc": 30,
+      "comments": 2,
+      "blanks": 6,
+      "density_percent": 78.9,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -289574,11 +291341,11 @@
     "scripts/validate_repo.py": {
       "path": "scripts/validate_repo.py",
       "category": "SCRIPTS",
-      "total_lines": 544,
-      "sloc": 411,
-      "comments": 58,
-      "blanks": 75,
-      "density_percent": 75.6,
+      "total_lines": 640,
+      "sloc": 497,
+      "comments": 59,
+      "blanks": 84,
+      "density_percent": 77.7,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
@@ -289598,6 +291365,18 @@
       "pins_accessed": [],
       "includes": []
     },
+    "scripts/verify_color_tokens.py": {
+      "path": "scripts/verify_color_tokens.py",
+      "category": "SCRIPTS",
+      "total_lines": 102,
+      "sloc": 82,
+      "comments": 1,
+      "blanks": 19,
+      "density_percent": 80.4,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
     "sdcard/README.md": {
       "path": "sdcard/README.md",
       "category": "OTHER",
@@ -289606,6 +291385,166 @@
       "comments": 0,
       "blanks": 1,
       "density_percent": 66.7,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "tests/host/battery_save_test.cpp": {
+      "path": "tests/host/battery_save_test.cpp",
+      "category": "TESTS",
+      "total_lines": 10,
+      "sloc": 9,
+      "comments": 0,
+      "blanks": 1,
+      "density_percent": 90.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": [
+        "battery_save.h"
+      ]
+    },
+    "tests/host/frame_pacing_test.cpp": {
+      "path": "tests/host/frame_pacing_test.cpp",
+      "category": "TESTS",
+      "total_lines": 14,
+      "sloc": 12,
+      "comments": 0,
+      "blanks": 2,
+      "density_percent": 85.7,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": [
+        "frame_pacing.h"
+      ]
+    },
+    "tests/host/frame_percentiles_test.cpp": {
+      "path": "tests/host/frame_percentiles_test.cpp",
+      "category": "TESTS",
+      "total_lines": 32,
+      "sloc": 25,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 78.1,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": [
+        "stddef.h",
+        "frame_percentiles.h"
+      ]
+    },
+    "tests/host/harmonic_spring_test.cpp": {
+      "path": "tests/host/harmonic_spring_test.cpp",
+      "category": "TESTS",
+      "total_lines": 44,
+      "sloc": 39,
+      "comments": 0,
+      "blanks": 5,
+      "density_percent": 88.6,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": [
+        "cmath",
+        "cstdio",
+        "initializer_list",
+        "harmonic_spring.h"
+      ]
+    },
+    "tests/host/pause_quit_policy_test.cpp": {
+      "path": "tests/host/pause_quit_policy_test.cpp",
+      "category": "TESTS",
+      "total_lines": 33,
+      "sloc": 24,
+      "comments": 2,
+      "blanks": 7,
+      "density_percent": 72.7,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": [
+        "pause_quit_policy.h"
+      ]
+    },
+    "tests/host/psram_zone_budget_test.cpp": {
+      "path": "tests/host/psram_zone_budget_test.cpp",
+      "category": "TESTS",
+      "total_lines": 26,
+      "sloc": 24,
+      "comments": 0,
+      "blanks": 2,
+      "density_percent": 92.3,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": [
+        "../../firmware/BmoGameboy/src/emulators/psram_zone_budget.h",
+        "../../firmware/BmoGameboy/src/core/sd_card.h"
+      ]
+    },
+    "tests/host/rom_file_filter_test.cpp": {
+      "path": "tests/host/rom_file_filter_test.cpp",
+      "category": "TESTS",
+      "total_lines": 27,
+      "sloc": 22,
+      "comments": 0,
+      "blanks": 5,
+      "density_percent": 81.5,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": [
+        "stdint.h",
+        "rom_file_filter.h"
+      ]
+    },
+    "tests/host/rom_index_layout_test.cpp": {
+      "path": "tests/host/rom_index_layout_test.cpp",
+      "category": "TESTS",
+      "total_lines": 10,
+      "sloc": 9,
+      "comments": 0,
+      "blanks": 1,
+      "density_percent": 90.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": [
+        "rom_index.h",
+        "sd_card.h"
+      ]
+    },
+    "tests/host/rom_key_parity.cpp": {
+      "path": "tests/host/rom_key_parity.cpp",
+      "category": "TESTS",
+      "total_lines": 15,
+      "sloc": 13,
+      "comments": 0,
+      "blanks": 2,
+      "density_percent": 86.7,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": [
+        "path_key.h",
+        "stdio.h"
+      ]
+    },
+    "tests/host/theme_color_test.cpp": {
+      "path": "tests/host/theme_color_test.cpp",
+      "category": "TESTS",
+      "total_lines": 22,
+      "sloc": 20,
+      "comments": 0,
+      "blanks": 2,
+      "density_percent": 90.9,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": [
+        "theme.h"
+      ]
+    },
+    "tests/host_test_support.py": {
+      "path": "tests/host_test_support.py",
+      "category": "TESTS",
+      "total_lines": 43,
+      "sloc": 33,
+      "comments": 1,
+      "blanks": 9,
+      "density_percent": 76.7,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -289637,14 +291576,38 @@
       "pins_accessed": [],
       "includes": []
     },
+    "tests/test_battery_save.py": {
+      "path": "tests/test_battery_save.py",
+      "category": "TESTS",
+      "total_lines": 27,
+      "sloc": 21,
+      "comments": 0,
+      "blanks": 6,
+      "density_percent": 77.8,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "tests/test_bmo_face_spring.py": {
+      "path": "tests/test_bmo_face_spring.py",
+      "category": "TESTS",
+      "total_lines": 60,
+      "sloc": 52,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 86.7,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
     "tests/test_bmo_mascot_engine.py": {
       "path": "tests/test_bmo_mascot_engine.py",
       "category": "TESTS",
-      "total_lines": 208,
-      "sloc": 141,
-      "comments": 35,
-      "blanks": 32,
-      "density_percent": 67.8,
+      "total_lines": 49,
+      "sloc": 40,
+      "comments": 0,
+      "blanks": 9,
+      "density_percent": 81.6,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -289657,6 +291620,42 @@
       "comments": 8,
       "blanks": 20,
       "density_percent": 75.2,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "tests/test_frame_pacing.py": {
+      "path": "tests/test_frame_pacing.py",
+      "category": "TESTS",
+      "total_lines": 44,
+      "sloc": 36,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 81.8,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "tests/test_frame_percentiles.py": {
+      "path": "tests/test_frame_percentiles.py",
+      "category": "TESTS",
+      "total_lines": 39,
+      "sloc": 32,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 82.1,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "tests/test_generated_artifacts_deterministic.py": {
+      "path": "tests/test_generated_artifacts_deterministic.py",
+      "category": "TESTS",
+      "total_lines": 35,
+      "sloc": 27,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 77.1,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -289676,11 +291675,11 @@
     "tests/test_native_cores_execution.py": {
       "path": "tests/test_native_cores_execution.py",
       "category": "TESTS",
-      "total_lines": 403,
-      "sloc": 364,
+      "total_lines": 419,
+      "sloc": 380,
       "comments": 5,
       "blanks": 34,
-      "density_percent": 90.3,
+      "density_percent": 90.7,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -289688,11 +291687,23 @@
     "tests/test_new_cores_and_qol.py": {
       "path": "tests/test_new_cores_and_qol.py",
       "category": "TESTS",
-      "total_lines": 194,
-      "sloc": 138,
+      "total_lines": 199,
+      "sloc": 143,
       "comments": 15,
       "blanks": 41,
-      "density_percent": 71.1,
+      "density_percent": 71.9,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "tests/test_pause_quit_policy.py": {
+      "path": "tests/test_pause_quit_policy.py",
+      "category": "TESTS",
+      "total_lines": 39,
+      "sloc": 32,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 82.1,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -289709,6 +291720,30 @@
       "pins_accessed": [],
       "includes": []
     },
+    "tests/test_platform_mapping.py": {
+      "path": "tests/test_platform_mapping.py",
+      "category": "TESTS",
+      "total_lines": 115,
+      "sloc": 101,
+      "comments": 0,
+      "blanks": 14,
+      "density_percent": 87.8,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "tests/test_psram_budget.py": {
+      "path": "tests/test_psram_budget.py",
+      "category": "TESTS",
+      "total_lines": 39,
+      "sloc": 30,
+      "comments": 0,
+      "blanks": 9,
+      "density_percent": 76.9,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
     "tests/test_repo_tools.py": {
       "path": "tests/test_repo_tools.py",
       "category": "TESTS",
@@ -289721,14 +291756,50 @@
       "pins_accessed": [],
       "includes": []
     },
+    "tests/test_rom_file_filter.py": {
+      "path": "tests/test_rom_file_filter.py",
+      "category": "TESTS",
+      "total_lines": 49,
+      "sloc": 41,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 83.7,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
     "tests/test_rom_index.py": {
       "path": "tests/test_rom_index.py",
       "category": "TESTS",
-      "total_lines": 175,
-      "sloc": 124,
-      "comments": 23,
-      "blanks": 28,
-      "density_percent": 70.9,
+      "total_lines": 183,
+      "sloc": 130,
+      "comments": 24,
+      "blanks": 29,
+      "density_percent": 71.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "tests/test_rom_index_layout.py": {
+      "path": "tests/test_rom_index_layout.py",
+      "category": "TESTS",
+      "total_lines": 27,
+      "sloc": 21,
+      "comments": 0,
+      "blanks": 6,
+      "density_percent": 77.8,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "tests/test_rom_key.py": {
+      "path": "tests/test_rom_key.py",
+      "category": "TESTS",
+      "total_lines": 86,
+      "sloc": 72,
+      "comments": 0,
+      "blanks": 14,
+      "density_percent": 83.7,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -289748,11 +291819,47 @@
     "tests/test_sd_deploy.py": {
       "path": "tests/test_sd_deploy.py",
       "category": "TESTS",
-      "total_lines": 102,
-      "sloc": 84,
+      "total_lines": 123,
+      "sloc": 103,
       "comments": 0,
-      "blanks": 18,
-      "density_percent": 82.4,
+      "blanks": 20,
+      "density_percent": 83.7,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "tests/test_simulator_security.py": {
+      "path": "tests/test_simulator_security.py",
+      "category": "TESTS",
+      "total_lines": 35,
+      "sloc": 27,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 77.1,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "tests/test_telemetry_plotter.py": {
+      "path": "tests/test_telemetry_plotter.py",
+      "category": "TESTS",
+      "total_lines": 55,
+      "sloc": 48,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 87.3,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "tests/test_theme_color.py": {
+      "path": "tests/test_theme_color.py",
+      "category": "TESTS",
+      "total_lines": 27,
+      "sloc": 21,
+      "comments": 0,
+      "blanks": 6,
+      "density_percent": 77.8,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -289777,6 +291884,18 @@
       "comments": 10,
       "blanks": 10,
       "density_percent": 79.6,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "tests/test_validate_repo_strict_mode.py": {
+      "path": "tests/test_validate_repo_strict_mode.py",
+      "category": "TESTS",
+      "total_lines": 55,
+      "sloc": 44,
+      "comments": 0,
+      "blanks": 11,
+      "density_percent": 80.0,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -290152,11 +292271,11 @@
     "tools/bmo_simulator/run_simulator.py": {
       "path": "tools/bmo_simulator/run_simulator.py",
       "category": "TOOLS",
-      "total_lines": 90,
-      "sloc": 77,
-      "comments": 3,
-      "blanks": 10,
-      "density_percent": 85.6,
+      "total_lines": 205,
+      "sloc": 171,
+      "comments": 5,
+      "blanks": 29,
+      "density_percent": 83.4,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -290188,10 +292307,10 @@
     "tools/guardian/cli.py": {
       "path": "tools/guardian/cli.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 1254,
-      "sloc": 1013,
-      "comments": 55,
-      "blanks": 186,
+      "total_lines": 1276,
+      "sloc": 1031,
+      "comments": 56,
+      "blanks": 189,
       "density_percent": 80.8,
       "symbols": [],
       "pins_accessed": [
@@ -290235,11 +292354,11 @@
     "tools/guardian/core/ast_linter.py": {
       "path": "tools/guardian/core/ast_linter.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 484,
-      "sloc": 426,
-      "comments": 18,
-      "blanks": 40,
-      "density_percent": 88.0,
+      "total_lines": 529,
+      "sloc": 467,
+      "comments": 20,
+      "blanks": 42,
+      "density_percent": 88.3,
       "symbols": [],
       "pins_accessed": [
         "SD_SPI_SPEED_SUBOPTIMAL",
@@ -290287,11 +292406,11 @@
     "tools/guardian/core/doc_verifier.py": {
       "path": "tools/guardian/core/doc_verifier.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 265,
-      "sloc": 228,
-      "comments": 12,
-      "blanks": 25,
-      "density_percent": 86.0,
+      "total_lines": 359,
+      "sloc": 317,
+      "comments": 14,
+      "blanks": 28,
+      "density_percent": 88.3,
       "symbols": [],
       "pins_accessed": [
         "PIN_DRIFT",
@@ -290354,11 +292473,11 @@
     "tools/guardian/core/psram_budget.py": {
       "path": "tools/guardian/core/psram_budget.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 270,
-      "sloc": 239,
-      "comments": 3,
-      "blanks": 28,
-      "density_percent": 88.5,
+      "total_lines": 336,
+      "sloc": 300,
+      "comments": 5,
+      "blanks": 31,
+      "density_percent": 89.3,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -290375,14 +292494,26 @@
       "pins_accessed": [],
       "includes": []
     },
+    "tools/guardian/core/symbols.py": {
+      "path": "tools/guardian/core/symbols.py",
+      "category": "GUARDIAN_TOOLCHAIN",
+      "total_lines": 116,
+      "sloc": 102,
+      "comments": 1,
+      "blanks": 13,
+      "density_percent": 87.9,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
     "tools/guardian/core/ui_auditor.py": {
       "path": "tools/guardian/core/ui_auditor.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 278,
-      "sloc": 220,
+      "total_lines": 365,
+      "sloc": 304,
       "comments": 17,
-      "blanks": 41,
-      "density_percent": 79.1,
+      "blanks": 44,
+      "density_percent": 83.3,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -290416,11 +292547,11 @@
     "tools/guardian/tests/test_guardian.py": {
       "path": "tools/guardian/tests/test_guardian.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 380,
-      "sloc": 304,
+      "total_lines": 426,
+      "sloc": 345,
       "comments": 26,
-      "blanks": 50,
-      "density_percent": 80.0,
+      "blanks": 55,
+      "density_percent": 81.0,
       "symbols": [],
       "pins_accessed": [
         "TFT_CS"
@@ -290476,11 +292607,11 @@
     "tools/telemetry_plotter.py": {
       "path": "tools/telemetry_plotter.py",
       "category": "TOOLS",
-      "total_lines": 170,
-      "sloc": 138,
-      "comments": 6,
-      "blanks": 26,
-      "density_percent": 81.2,
+      "total_lines": 241,
+      "sloc": 202,
+      "comments": 7,
+      "blanks": 32,
+      "density_percent": 83.8,
       "symbols": [],
       "pins_accessed": [],
       "includes": []

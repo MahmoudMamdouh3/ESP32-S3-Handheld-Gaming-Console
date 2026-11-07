@@ -67,13 +67,13 @@ bool WSwanEmu::isRunning() {
 }
 
 bool WSwanEmu::saveBatteryRam(const char* romFilename) {
-  if (!running || !wswanState.sram || !romFilename) return false;
-  return SaveManager::saveBatteryRam(romFilename, wswanState.sram, 64 * 1024);
+  (void)romFilename;
+  return false;
 }
 
 bool WSwanEmu::loadBatteryRam(const char* romFilename) {
-  if (!running || !wswanState.sram || !romFilename) return false;
-  return SaveManager::loadBatteryRam(romFilename, wswanState.sram, 64 * 1024);
+  (void)romFilename;
+  return false;
 }
 
 bool WSwanEmu::saveState(const char* romFilename, int slot) {

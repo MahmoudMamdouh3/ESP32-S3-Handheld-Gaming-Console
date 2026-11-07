@@ -8,6 +8,7 @@ from scripts.deploy_to_sd import (
     deployment_tasks,
     validate_target_collisions,
 )
+from scripts.rom_key import make_rom_key
 
 
 class TestSdDeployment(unittest.TestCase):
@@ -20,6 +21,8 @@ class TestSdDeployment(unittest.TestCase):
             for directory in (games, art, destination):
                 directory.mkdir()
             (games / "demo.nes").write_bytes(b"rom")
+            (games / "nested").mkdir()
+            (games / "nested" / "other.nes").write_bytes(b"nested rom")
             (games / "notes.txt").write_text("not a ROM")
             (art / "demo.raw").write_bytes(bytes(8192))
             (art / "demo.png").write_bytes(b"not firmware box art")
@@ -28,8 +31,26 @@ class TestSdDeployment(unittest.TestCase):
 
             self.assertEqual(
                 [(src.name, dst.relative_to(destination).as_posix()) for src, dst in tasks],
-                [("demo.nes", "demo.nes"), ("demo.raw", "boxart/demo.raw")],
+                [
+                    ("demo.nes", "demo.nes"),
+                    ("other.nes", "nested/other.nes"),
+                    ("demo.raw", f"boxart/{make_rom_key('demo.nes')}.raw"),
+                ],
             )
+
+    def test_rom_path_over_firmware_limit_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            games = root / "games"
+            art = root / "art"
+            destination = root / "card"
+            for directory in (games, art, destination):
+                directory.mkdir()
+            long_name = "a" * 60 + ".nes"
+            (games / long_name).write_bytes(b"rom")
+
+            with self.assertRaisesRegex(ValueError, "too long"):
+                deployment_tasks(games, art, destination)
 
     def test_task_plan_rejects_case_insensitive_filename_collisions(self):
         with tempfile.TemporaryDirectory() as temp_dir:

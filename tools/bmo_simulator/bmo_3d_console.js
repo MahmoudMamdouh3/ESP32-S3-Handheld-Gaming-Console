@@ -12,7 +12,7 @@
  *         * X (Top):    cap dia 0.9 cm at (6.6, 7.4) cm -> Leaf Green (#4CAF50)
  *         * Y (Left):   cap dia 0.9 cm at (5.6, 8.4) cm -> Rosy Pink (#F48FB1)
  *         * A (Right):  cap dia 0.9 cm at (7.6, 8.4) cm -> Sky Aqua (#52A6BA)
- *         * B (Bottom): cap dia 0.9 cm at (6.6, 9.4) cm -> Berry Magenta (#E8175D)
+ *         * B (Bottom): cap dia 0.9 cm at (6.6, 9.4) cm -> Coral (#FF91A5)
  *     - Select / Start: 1.4 × 0.5 cm rubber pills at (3.4, 11.0) and (5.4, 11.0) cm in Deep Teal (#264B42)
  *     - L / R Triggers: 2.2 × 0.6 cm top edge side-mounted tact switches at (1.7, 0.3) and (7.1, 0.3) cm (#264B42)
  *     - Top USB-C Cutout: 1.0 × 0.45 cm at (4.4, 0.0) cm between L and R
@@ -667,7 +667,7 @@ class Bmo3DConsole {
     dpadDropMesh.position.set(DPAD_X, DPAD_Y - 0.08, Z_FRONT + 0.01);
     this.rootGroup.add(dpadDropMesh);
 
-    // Extruded Seamless Cross Shape
+    // Extruded cross shape
     const dpadShape = new THREE.Shape();
     dpadShape.moveTo(-W_HALF + CR, L);
     dpadShape.lineTo(W_HALF - CR, L);
@@ -748,7 +748,7 @@ class Bmo3DConsole {
     //    * X (Top):    (6.6, 7.4) -> Three.js: X = +2.2 cm, Y = -1.2 cm | #4CAF50
     //    * Y (Left):   (5.6, 8.4) -> Three.js: X = +1.2 cm, Y = -2.2 cm | #F48FB1
     //    * A (Right):  (7.6, 8.4) -> Three.js: X = +3.2 cm, Y = -2.2 cm | #52A6BA
-    //    * B (Bottom): (6.6, 9.4) -> Three.js: X = +2.2 cm, Y = -3.2 cm | #E8175D
+    //    * B (Bottom): (6.6, 9.4) -> Three.js: X = +2.2 cm, Y = -3.2 cm | #FF91A5
     // -------------------------------------------------------------------------
     const CAP_RADIUS = 0.45;
     const CAP_HEIGHT = 0.24;
@@ -832,7 +832,7 @@ class Bmo3DConsole {
     createActionButton("X Button", "X", "X", 6.6, 7.4, "#4caf50", "#0f2620"); // Top: Leaf Green
     createActionButton("Y Button", "Y", "Y", 5.6, 8.4, "#f48fb1", "#0f2620"); // Left: Rosy Pink
     createActionButton("A Button", "A", "A", 7.6, 8.4, "#52a6ba", "#0f2620"); // Right: Sky Blue
-    createActionButton("B Button", "B", "B", 6.6, 9.4, "#e8175d", "#ffffff"); // Bottom: Berry Magenta
+    createActionButton("B Button", "B", "B", 6.6, 9.4, "#ff91a5", "#0f2620"); // Bottom: Coral
 
     // -------------------------------------------------------------------------
     // 6. SELECT / START PILL BUTTONS: Canonical Adventure Time BMO Placement

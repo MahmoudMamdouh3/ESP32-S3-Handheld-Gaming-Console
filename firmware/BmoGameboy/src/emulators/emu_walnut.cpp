@@ -5,6 +5,7 @@
 #include "../core/bmo_face.h"
 #include "../core/config.h"
 #include "../core/save_manager.h"
+#include "../core/battery_save.h"
 #include <string.h>
 #include <Arduino.h>
 #include <esp_heap_caps.h>
@@ -49,6 +50,13 @@ namespace {
   // cores do not consume internal DRAM while inactive.
   static constexpr size_t CART_RAM_SIZE = 128 * 1024;
   static uint8_t* cart_ram = nullptr;
+
+  static size_t batteryRamSize() {
+    const uint8_t type = gb.gb_rom_read ? gb.gb_rom_read(&gb, 0x0147) : 0;
+    const uint8_t sizeCode = gb.gb_rom_read ? gb.gb_rom_read(&gb, 0x0149) : 0;
+    const size_t size = BatterySave::gameBoyBatteryBytes(type, sizeCode);
+    return size <= CART_RAM_SIZE ? size : 0;
+  }
 
   // N5: Module-level, 4-byte aligned, outside the function so it doesn't
   // compete in the BSS region with the hot gb_s struct (~50KB).
@@ -246,12 +254,16 @@ void WalnutEmu::destroy() {
 
 bool WalnutEmu::saveBatteryRam(const char* romFilename) {
   if (!cart_ram || !romFilename) return false;
-  return SaveManager::saveBatteryRam(romFilename, cart_ram, CART_RAM_SIZE);
+  const size_t size = batteryRamSize();
+  if (size == 0) return false;
+  return SaveManager::saveBatteryRam(romFilename, cart_ram, size);
 }
 
 bool WalnutEmu::loadBatteryRam(const char* romFilename) {
   if (!cart_ram || !romFilename) return false;
-  return SaveManager::loadBatteryRam(romFilename, cart_ram, CART_RAM_SIZE);
+  const size_t size = batteryRamSize();
+  if (size == 0) return false;
+  return SaveManager::loadBatteryRam(romFilename, cart_ram, size);
 }
 
 bool WalnutEmu::saveState(const char* romFilename, int slot) {

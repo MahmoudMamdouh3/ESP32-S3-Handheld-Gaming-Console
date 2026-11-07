@@ -13,8 +13,10 @@ extern "C" {
 
 #include <Arduino.h>
 #include <esp_heap_caps.h>
+#include <setjmp.h>
 #include <stdio.h>
 #include <string.h>
+#include "../core/theme.h"
 
 // PERF-H2: Ring-buffer for Doom key events — O(1) dequeue vs O(256) table scan.
 // Only 12 physical buttons exist; a 16-slot ring (power-of-2 for fast masking) is plenty.
@@ -25,11 +27,29 @@ static int          s_keyRingTail = 0;
 // Per-key edge-detect: 0 = idle/released, 1 = pressed/held.
 static uint8_t      s_keyState[256];
 
+static size_t  s_targetZoneBytes = DoomEmu::DOOM_ZONE_FLOOR_BYTES;
+static jmp_buf s_doomBailoutJmp;
+static bool    s_doomJmpActive = false;
+static bool    s_doomInitialized = false;
+static char    s_lastError[96] = "";
+
+static void showDoomErrorToast() {
+    char message[40];
+    const char* reason = s_lastError[0] ? s_lastError : "ENGINE ERROR";
+    snprintf(message, sizeof(message), "DOOM: %.31s", reason);
+    DisplayEmu::showToast(message, Theme::ACCENT_RED, 3000);
+}
+
 extern "C" {
+    void Doom_Bailout(const char* msg);
+
     void* Doom_MallocPSRAM(size_t size) {
         void* ptr = heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
         if (!ptr) {
             LOG_ERROR("Failed to allocate %d bytes in PSRAM for DOOM!", (int)size);
+            if (s_doomJmpActive) {
+                Doom_Bailout("DOOM PSRAM allocation failed");
+            }
         }
         return ptr;
     }
@@ -37,6 +57,23 @@ extern "C" {
     void Doom_FreePSRAM(void* ptr) {
         if (ptr) {
             heap_caps_free(ptr);
+        }
+    }
+
+    size_t Doom_GetTargetZoneBytes(void) {
+        return s_targetZoneBytes;
+    }
+
+    void Doom_Bailout(const char* msg) {
+        if (msg && msg[0]) {
+            snprintf(s_lastError, sizeof(s_lastError), "%s", msg);
+        } else {
+            snprintf(s_lastError, sizeof(s_lastError), "DOOM engine error");
+        }
+        LOG_ERROR("[DOOM] Engine bailout: %s", s_lastError);
+        if (s_doomJmpActive) {
+            s_doomJmpActive = false;
+            longjmp(s_doomBailoutJmp, 1);
         }
     }
 
@@ -116,8 +153,34 @@ namespace DoomEmu {
 static char s_wadPath[128];
 static char* s_argv[4];
 
+const char* lastError() {
+  return s_lastError;
+}
+
 bool begin(const char* wadPath) {
-  if (!wadPath || wadPath[0] == '\0') return false;
+  if (s_doomInitialized) {
+    destroy();
+  }
+  s_doomInitialized = false;
+  s_lastError[0] = '\0';
+  if (!wadPath || wadPath[0] == '\0') {
+    snprintf(s_lastError, sizeof(s_lastError), "EMPTY WAD PATH");
+    return false;
+  }
+
+  size_t freePsram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+  size_t largestBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+  size_t zoneBytes = computeZoneBytes(largestBlock);
+  LOG_INFO("[DOOM] PSRAM pre-launch: free=%u B, largest_block=%u B, target_zone=%u B",
+           (unsigned)freePsram, (unsigned)largestBlock, (unsigned)zoneBytes);
+  if (zoneBytes < DOOM_ZONE_FLOOR_BYTES) {
+    snprintf(s_lastError, sizeof(s_lastError), "PSRAM BLOCK TOO SMALL FOR DOOM");
+    LOG_ERROR("[DOOM] Largest free PSRAM block (%u B) below floor (%u B required)",
+              (unsigned)largestBlock, (unsigned)(DOOM_ZONE_FLOOR_BYTES + DOOM_ZONE_MARGIN_BYTES));
+    DisplayEmu::showToast("DOOM: LOW PSRAM", Theme::ACCENT_RED, 2200);
+    return false;
+  }
+  s_targetZoneBytes = zoneBytes;
 
   // Initialize key ring-buffer and per-key edge-detect state.
   memset(s_keyState, 0, sizeof(s_keyState));
@@ -145,17 +208,23 @@ bool begin(const char* wadPath) {
   SpiArbiter::unlock();
 
   if (bytesRead < 12) {
+    snprintf(s_lastError, sizeof(s_lastError), "WAD READ ERROR");
     LOG_ERROR("[DOOM] Failed to open or read WAD header: %s", s_wadPath);
+    DisplayEmu::showToast("DOOM: WAD READ ERROR", Theme::ACCENT_RED, 2200);
     return false;
   }
   if (memcmp(hdr, "IWAD", 4) != 0 && memcmp(hdr, "PWAD", 4) != 0) {
+    snprintf(s_lastError, sizeof(s_lastError), "INVALID WAD HEADER");
     LOG_ERROR("[DOOM] Invalid WAD signature in %s", s_wadPath);
+    DisplayEmu::showToast("DOOM: INVALID WAD", Theme::ACCENT_RED, 2200);
     return false;
   }
   int32_t numLumps = 0;
   memcpy(&numLumps, hdr + 4, sizeof(int32_t));
   if (numLumps <= 0) {
+    snprintf(s_lastError, sizeof(s_lastError), "EMPTY WAD LUMP TABLE");
     LOG_ERROR("[DOOM] Empty lump table in %s", s_wadPath);
+    DisplayEmu::showToast("DOOM: EMPTY WAD", Theme::ACCENT_RED, 2200);
     return false;
   }
 
@@ -164,7 +233,17 @@ bool begin(const char* wadPath) {
   s_argv[2] = s_wadPath;
   s_argv[3] = NULL;
 
+  s_doomJmpActive = true;
+  if (setjmp(s_doomBailoutJmp) != 0) {
+    s_doomJmpActive = false;
+    doomgeneric_Destroy();
+    showDoomErrorToast();
+    return false;
+  }
+
   doomgeneric_Create(3, s_argv);
+  s_doomJmpActive = false;
+  s_doomInitialized = true;
 
   // Weapon cycling has no default key binding in this port. Bind it after
   // doomgeneric_Create() so a saved config cannot override it.
@@ -174,6 +253,7 @@ bool begin(const char* wadPath) {
 }
 
 void runFrame() {
+  if (!s_doomInitialized) return;
   // Update button state (handled globally in BmoGameboy.ino loop)
 
   // Map console buttons to Doom keys
@@ -202,7 +282,17 @@ void runFrame() {
   // DOOM frames target ~28ms (35Hz). If the tick takes >40ms, SD card reads
   // are likely stalling the SPI bus.
   unsigned long startTick = millis();
-  doomgeneric_Tick();
+  s_doomJmpActive = true;
+  if (setjmp(s_doomBailoutJmp) == 0) {
+    doomgeneric_Tick();
+    s_doomJmpActive = false;
+  } else {
+    s_doomJmpActive = false;
+    s_doomInitialized = false;
+    doomgeneric_Destroy();
+    showDoomErrorToast();
+    return;
+  }
   unsigned long elapsedTick = millis() - startTick;
   
   if (elapsedTick > 40) {
@@ -212,7 +302,10 @@ void runFrame() {
 
 void destroy() {
   DisplayEmu::waitForDisplay();
-  doomgeneric_Destroy();
+  if (s_doomInitialized) {
+    s_doomInitialized = false;
+    doomgeneric_Destroy();
+  }
   memset(s_keyState, 0, sizeof(s_keyState));
   s_keyRingHead = s_keyRingTail = 0;
 }

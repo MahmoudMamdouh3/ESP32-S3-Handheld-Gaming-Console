@@ -18,42 +18,42 @@ equivalent to skipping a test — it violates the Definition of Done.
 ## Required Updates by Change Type
 
 ### If you added or modified any C++ public API (function, struct, macro in a `.h` file):
-- **MUST update** [`10_symbol_reference.md`](.agents/rules/10_symbol_reference.md)
+- **MUST update** [`10_symbol_reference.md`](10_symbol_reference.md)
   - Update the table for the affected file.
   - Update the **staleness date** at the top.
   - Add any new `.h` files to the staleness watch list.
 
 ### If you added, removed, or changed an emulator core:
-- **MUST update** [`AGENT_MANIFEST.json`](AGENT_MANIFEST.json)
+- **MUST update** [`AGENT_MANIFEST.json`](../../AGENT_MANIFEST.json)
   - Add/remove the emulator entry.
   - Set `engine_status` (`production` / `stub` / `partial`).
   - Set `build_verified` and `last_hardware_verified`.
-- **MUST update** [`docs/software-design-document.md`](docs/software-design-document.md)
+- **MUST update** [`docs/software-design-document.md`](../../docs/software-design-document.md)
   - Update the Engine Status Registry table (Section 1).
   - Bump the document version minor number.
 - **MUST update** `10_symbol_reference.md` with new public APIs.
 
 ### If you changed verification status of any issue:
-- **MUST update** [`04_known_issues.md`](.agents/rules/04_known_issues.md)
+- **MUST update** [`04_known_issues.md`](04_known_issues.md)
   - Correct the status tag using only: OPEN, IN_PROGRESS, FIXED_UNVERIFIED,
     STUB, VERIFIED_HOST, VERIFIED_SIMULATOR, VERIFIED_HARDWARE, RESOLVED, WONT_FIX, DEBUNKED.
   - Quote the exact evidence (test output line, arduino-cli output line).
 
 ### After every task (mandatory, no exceptions):
-- **MUST append** a dated entry to [`CHANGELOG.md`](CHANGELOG.md)
+- **MUST append** a dated entry to [`CHANGELOG.md`](../../CHANGELOG.md)
   - One or more of: Added / Fixed / Changed / Deprecated / Removed.
   - Reference files modified.
 - **MUST update** [`04_known_issues.md`](04_known_issues.md) if any issue status changed.
 
 ### If you added a new agent rule file:
-- **MUST register** it in [`.agents/rules/README.md`](.agents/rules/README.md).
-- **MUST add** it to [`.agents/rules/CONTEXT_INDEX.json`](.agents/rules/CONTEXT_INDEX.json).
-- **MUST add** a reference in [`31_quick_start_primer.md`](.agents/rules/31_quick_start_primer.md) if it affects the task decision table.
+- **MUST register** it in [`README.md`](README.md).
+- **MUST add** it to [`CONTEXT_INDEX.json`](CONTEXT_INDEX.json).
+- **MUST add** a reference in [`31_quick_start_primer.md`](31_quick_start_primer.md) if it affects the task decision table.
 
 ### If you changed the flash/partition layout:
-- **MUST update** [`docs/software-design-document.md`](docs/software-design-document.md)
+- **MUST update** [`docs/software-design-document.md`](../../docs/software-design-document.md)
   - Hardware Capability Matrix section.
-- **MUST update** [`AGENT_MANIFEST.json`](AGENT_MANIFEST.json) if FQBN or partition scheme changed.
+- **MUST update** [`AGENT_MANIFEST.json`](../../AGENT_MANIFEST.json) if FQBN or partition scheme changed.
 
 ---
 

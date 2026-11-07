@@ -1,128 +1,24 @@
-# 32. Modular Core Template & Scaffolding Guide
+# 32. Emulator Wrapper Template
 
-**Purpose:** Any AI agent or developer adding a new console/emulator core (e.g. Chip-8, Sega Master System, Atari 2600, Pico-8) or major firmware subsystem can follow this exact copy-paste blueprint and step-by-step checklist to achieve zero friction, complete modularity, and zero memory leaks.
+This template is a checklist, not a second API contract. Read 12_extensibility_contract.md, 26_emulator_exit_contract.md, config.h, and the generated symbol index before adding a wrapper.
 
----
+## Integration checklist
 
-## 1. The 6-Step Integration Checklist
+1. Identify the engine license, source revision, supported image format, and limits. Keep third-party data and ROM policy separate.
+2. Add the engine under src/vendor/ when preserved as imported code or src/engine/ when project-owned/adapted. Record attribution and local patches.
+3. Implement a wrapper beside the other emu_*.h/.cpp files using the existing source style. Do not require one universal method spelling; the current wrappers use both begin() and init().
+4. Register the file extension in sd_card.cpp, the RomType, console selection, launch dispatch, frame path, pause actions, and destruction dispatch in BmoGameboy.ino.
+5. Add bounds/header checks before engine parsing. On partial allocation failure, release wrapper-owned resources. Keep the caller-owned ROM buffer under SDCard ownership.
+6. Add battery persistence only when the core exposes a mapped nonvolatile region and its image format identifies it. Otherwise return false and show no battery support. Save states are separate and need stable core IDs and pointer-safe restore logic.
+7. Match frame dimensions, pixel encoding, and display method to display_emu.*; balance all bus/frame ownership pairs.
+8. Add host fixtures for supported input and failure cases. Do not label the engine CPU-conformant without a standard test suite and recorded results.
+9. Wire destroy() into confirmed session exit and ensure it is idempotent.
+10. Update the SDD, issue ledger, manifest evidence, symbols, and changelog. Run the target compile, repository tests, Guardian checks, and diff audit.
 
-When adding a new emulator core (e.g. `MyCore`):
+## Design reminders
 
-1. [ ] **Place Core Engine:** Put vendor engine source in `src/vendor/my_core/` (if pristine) or `src/engine/my_core/` (if customized). Add `BMO-PATCH` tags to any edits.
-2. [ ] **Create C++ Wrapper:** Create `src/emulators/emu_mycore.h` and `src/emulators/emu_mycore.cpp` implementing `EmulatorCoreContract`.
-3. [ ] **Register `RomType`:** In `src/core/sd_card.h`, add `ROM_MYCORE` to `enum RomType` and update extension matching in `sd_card.cpp`.
-4. [ ] **Register Console Carousel:** In `BmoGameboy.ino`, add `ROM_MYCORE` to `CONSOLES[]` array and update `CONSOLE_COUNT`.
-5. [ ] **Integrate Teardown in `SELECT + UP`:** In `BmoGameboy.ino` under `STATE_EMULATOR`, add `MyCoreEmu::destroy()` to the teardown branch.
-6. [ ] **Verify Build & Run CI Validator:** Run `python scripts/validate_repo.py` and compile with `arduino-cli.exe`.
-
----
-
-## 2. Standard Header Template (`src/emulators/emu_mycore.h`)
-
-```cpp
-#pragma once
-
-#include <stdint.h>
-#include <stddef.h>
-
-namespace MyCoreEmu {
-  // Initializes the emulator core with ROM data.
-  // Returns true on success, false on invalid header / allocation failure.
-  bool begin(const uint8_t* romData, size_t romSize);
-
-  // Synchronizes physical button bitmask to emulator input registers.
-  void updateJoypad();
-
-  // Executes one frame of emulation and streams scanlines to ST7789 display.
-  void runFrame();
-
-  // Releases all allocated PSRAM/DRAM buffers (prevents memory leaks).
-  void destroy();
-}
-```
-
----
-
-## 3. Standard Implementation Template (`src/emulators/emu_mycore.cpp`)
-
-```cpp
-#include "emu_mycore.h"
-#include "../core/config.h"
-#include "../core/display_emu.h"
-#include "../core/buttons.h"
-#include <esp_heap_caps.h>
-
-namespace {
-  // Pointer to working state allocated in PSRAM/DRAM
-  uint8_t* s_cartRam = nullptr;
-  bool s_running = false;
-
-  // Scanline output buffer (4-byte aligned for fast 32-bit transfers)
-  uint16_t s_rowBuffer[320] __attribute__((aligned(4)));
-}
-
-namespace MyCoreEmu {
-
-bool begin(const uint8_t* romData, size_t romSize) {
-  if (!romData || romSize == 0) {
-    LOG_ERROR_STR("MyCore: Invalid ROM pointer or size.");
-    return false;
-  }
-
-  // 1. Allocate working memory in Octal PSRAM
-  s_cartRam = (uint8_t*)heap_caps_malloc(64 * 1024, MALLOC_CAP_SPIRAM);
-  if (!s_cartRam) {
-    LOG_ERROR_STR("MyCore: Failed to allocate PSRAM.");
-    return false;
-  }
-  memset(s_cartRam, 0, 64 * 1024);
-
-  // 2. Initialize vendor core structures here...
-
-  s_running = true;
-  LOG_INFO("MyCore: Core started successfully (%u bytes ROM)", (unsigned)romSize);
-  return true;
-}
-
-void updateJoypad() {
-  if (!s_running) return;
-  // Read Buttons::gb_joypad_state (0 = pressed, active-low)
-  // or poll Buttons::get(Buttons::A).pressed directly
-}
-
-void runFrame() {
-  if (!s_running) return;
-
-  // DisplayEmu N3 Streaming Protocol:
-  DisplayEmu::startFrame();
-
-  // Step emulator frame and stream scanlines:
-  for (int line = 0; line < 240; ++line) {
-    // Generate line into s_rowBuffer...
-    // Note: Colors must be pre-swapped BGR565 (Big-Endian on wire)
-    DisplayEmu::streamPixelRow(s_rowBuffer, 320);
-  }
-
-  DisplayEmu::endFrame();
-}
-
-void destroy() {
-  s_running = false;
-  if (s_cartRam) {
-    heap_caps_free(s_cartRam);
-    s_cartRam = nullptr;
-  }
-  LOG_INFO_STR("MyCore: Teardown complete. PSRAM freed.");
-}
-
-} // namespace MyCoreEmu
-```
-
----
-
-## 4. Invariants to Check Before Committing
-- [ ] No `malloc()` or `heap_caps_malloc()` called during `runFrame()`.
-- [ ] Wire pixel format is **BGR565 byte-swapped**.
-- [ ] Little-endian byte reconstruction used for any ROM data access.
-- [ ] All diagnostic prints use `LOG_INFO` / `LOG_ERROR`, never bare `Serial.print`.
-- [ ] Teardown `destroy()` safely handles being called multiple times (`nullptr` checks).
+- Large buffers use PSRAM and every allocation is checked.
+- Per-frame code performs no heap allocation.
+- Button input comes from Buttons, not repeated digitalRead() calls.
+- The physical pin map and partition table are fixed unless the owner changes the hardware plan.
+- Never claim full emulation support from a successful build or a synthetic-frame smoke test.

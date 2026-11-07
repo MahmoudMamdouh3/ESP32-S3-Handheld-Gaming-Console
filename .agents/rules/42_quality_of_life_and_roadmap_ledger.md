@@ -1,10 +1,10 @@
 # 42. Quality of Life (QoL), UI/UX & System Roadmap Ledger
 
-**Purpose:** This document is the single ground-truth ledger for all Quality of Life (QoL) tools, UI/UX enhancements, emulator ergonomics, and developer utilities across the entire BMO Gameboy platform. It tracks active implementations, prioritizes backlog initiatives, and defines standards for handheld user experience.
+**Purpose:** Track BMO handheld quality-of-life features, UI work, emulator controls, and developer tools.
 
-**Project direction (user-stated, 2026-10-21):** Build the handheld and its AI development environment together. The AI environment should help models with limited capability or context work accurately and efficiently through grounded navigation, clear safety constraints, reliable tools, executable tests, and evidence-based handoffs. Treat improvements to Guardian, routing/indexing, agent rules, issue tracking, and developer utilities as first-class engineering work alongside firmware. Do not trade verification or hardware safety for model autonomy.
+**Project direction (user-stated, 2026-10-21):** Develop the handheld and its grounded tools together. Keep verification and hardware safety requirements in place.
 
-**Status note:** `[IMPLEMENTED]` describes feature/tool availability in this ledger; it does not by itself mean `VERIFIED_HARDWARE` or establish correctness. Use `.agents/rules/06_verification_standards.md` and `.agents/rules/04_known_issues.md` for evidence and verification status.
+**Status note:** `[IMPLEMENTED]` means present in code or tooling; it does not establish hardware verification. See Rules 06 and 04 for evidence and issue status.
 
 ---
 
@@ -46,7 +46,7 @@ Every feature or tool in this ledger is categorized into one of four states:
 | **Universal Multi-Console Favorites (★)** | `[IMPLEMENTED]` | Star games across all 15 platforms (`SELECT` toggle), auto-dispatch to matching core, SD persistence (`/favorites.txt`). | `src/core/sd_card`, `display_emu`, `BmoGameboy.ino` |
 | **Virtual BMO Official Game** | `[IMPLEMENTED]` | Pre-loaded featured title with BMO Desktop, Guardians of Sunshine action platformer, and BMO Talk. | `src/assets/roms/virtual_bmo.h`, `sd_card` |
 | **1:1 Carousel Card UI & Hardware Silhouettes** | `[IMPLEMENTED]` | 1:1 replica of web simulator carousel card with dedicated retro hardware silhouette pixel-art per system. | `src/core/display_emu`, `theme.h` |
-| **Retro Pixel-Art Dynamic Battery Indicator** | `[IMPLEMENTED]` | Pixel-art battery shell with color-changing fill bars (Green > 50%, Gold 20-50%, Pulsing Red < 20%, Cyan Charge Pulse). | `display_emu`, `tools/bmo_simulator` |
+| **Battery Status UI** | `[IMPLEMENTED]` | Shows a gauge only when monitoring is enabled; current configuration shows USB/N/A and a not-fitted diagnostic. | `display_emu`, `tools/bmo_simulator` |
 | **Binary ROM Fast-Cache (`.bmo_index`)**| `[IMPLEMENTED]` | Binary cache reducing 2,000-ROM SD boot enumeration from ~3.5s to < 15ms. | `src/core/sd_card`, `src/core/rom_index` |
 | **Recently Played History Playlist** | `[IMPLEMENTED]` | Dynamic playlist tracking last 10 games launched (`SDCard::recordRecentLaunch`, persisted to `/history.txt`). | `src/core/sd_card`, `BmoGameboy.ino` |
 | **Box Art / Screenshot Preview** | `[IMPLEMENTED]` | Renders 64×64 cover thumbnail next to selected ROM from `/boxart/` or `/covers/`. | `src/core/box_art`, `src/core/display_emu` |

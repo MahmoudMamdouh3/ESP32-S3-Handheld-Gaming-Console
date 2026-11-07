@@ -5,6 +5,7 @@
 #include "../core/bmo_face.h"
 #include "../core/config.h"
 #include "../core/save_manager.h"
+#include "../core/battery_save.h"
 #include <string.h>
 #include <Arduino.h>
 #include <esp_heap_caps.h>
@@ -46,6 +47,13 @@ namespace {
   // because cartridge-RAM access is far less frequent than CPU registers.
   static constexpr size_t CART_RAM_SIZE = 128 * 1024;
   static uint8_t* cart_ram = nullptr;
+
+  static size_t batteryRamSize() {
+    const uint8_t type = gb.gb_rom_read ? gb.gb_rom_read(&gb, 0x0147) : 0;
+    const uint8_t sizeCode = gb.gb_rom_read ? gb.gb_rom_read(&gb, 0x0149) : 0;
+    const size_t size = BatterySave::gameBoyBatteryBytes(type, sizeCode);
+    return size <= CART_RAM_SIZE ? size : 0;
+  }
 
   // N5: Module-level, 4-byte aligned — avoids BSS contention with gb_s data.
   static uint16_t __attribute__((aligned(4))) rowBuffer[480];
@@ -188,12 +196,16 @@ void PeanutEmu::destroy() {
 
 bool PeanutEmu::saveBatteryRam(const char* romFilename) {
   if (!cart_ram || !romFilename) return false;
-  return SaveManager::saveBatteryRam(romFilename, cart_ram, CART_RAM_SIZE);
+  const size_t size = batteryRamSize();
+  if (size == 0) return false;
+  return SaveManager::saveBatteryRam(romFilename, cart_ram, size);
 }
 
 bool PeanutEmu::loadBatteryRam(const char* romFilename) {
   if (!cart_ram || !romFilename) return false;
-  return SaveManager::loadBatteryRam(romFilename, cart_ram, CART_RAM_SIZE);
+  const size_t size = batteryRamSize();
+  if (size == 0) return false;
+  return SaveManager::loadBatteryRam(romFilename, cart_ram, size);
 }
 
 bool PeanutEmu::saveState(const char* romFilename, int slot) {
