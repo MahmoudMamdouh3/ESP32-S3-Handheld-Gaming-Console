@@ -1279,6 +1279,17 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   if (fillW > 0) {
     menuCanvas->fillRect(282, 15, fillW, 8, battColor);
   }
+#else
+  menuCanvas->drawRoundRect(280, 13, 30, 12, 2, UI_MINT);
+  menuCanvas->fillRect(282, 15, 10, 8, UI_MINT);
+  menuCanvas->drawRect(294, 15, 10, 8, UI_WHITE);
+  menuCanvas->setFont();
+  menuCanvas->setTextColor(UI_WHITE);
+  menuCanvas->setCursor(286, 15);
+  menuCanvas->print("U");
+  menuCanvas->setTextColor(UI_MINT);
+  menuCanvas->setCursor(255, 16);
+  menuCanvas->print("N/A");
 #endif
 
   menuCanvas->setFont(&FreeSans9pt7b);
@@ -1562,8 +1573,13 @@ const uint16_t* DisplayEmu::getActiveDmgPalette() {
 
 void DisplayEmu::drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeDram,
                                          uint32_t freePsram, uint32_t freeIram,
-                                         uint16_t buttonMask) {
+                                         uint16_t buttonMask, uint32_t largestPsramBlock) {
   if (!menuCanvas) return;
+#if defined(ESP32) || defined(ARDUINO)
+  if (largestPsramBlock == 0) {
+    largestPsramBlock = (uint32_t)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+  }
+#endif
   menuCanvas->fillScreen(UI_BLACK);
   menuCanvas->drawRoundRect(8, 8, 304, 224, 8, UI_TEAL);
   menuCanvas->fillRect(0, 0, 320, 36, UI_DEEP_TEAL);
@@ -1591,9 +1607,16 @@ void DisplayEmu::drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeD
   menuCanvas->printf("Internal DRAM Free : %6u / 327,680 B (%u%%)", 
                      (unsigned int)freeDram, (unsigned int)(freeDram * 100 / 327680));
   menuCanvas->setCursor(18, 100);
-  menuCanvas->printf("Octal PSRAM Free   : %6u / 8,388,608 B", (unsigned int)freePsram);
+  menuCanvas->printf("PSRAM Free / MaxBlk: %6u / %6u B",
+                     (unsigned int)freePsram, (unsigned int)largestPsramBlock);
   menuCanvas->setCursor(18, 112);
   menuCanvas->printf("IRAM Execution Free: %6u B", (unsigned int)freeIram);
+  menuCanvas->setCursor(18, 124);
+#if FEATURE_BATTERY_MONITOR
+  menuCanvas->printf("Battery: %d%% (%d mV)", Battery::getPercentage(), Battery::getVoltageMv());
+#else
+  menuCanvas->print("Battery: NOT FITTED (USB power only)");
+#endif
 
   // Live Button Tester
   menuCanvas->setCursor(18, 130);

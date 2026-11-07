@@ -5,6 +5,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Battery status truthfulness fix] - 2026-11-07
+### Changed
+- **Battery API + diagnostics (`firmware/BmoGameboy/src/core/battery.h`, `battery.cpp`, `display_emu.cpp`)**:
+  - When `FEATURE_BATTERY_MONITOR` is `0`, the firmware now reports a truthful no-battery state instead of inventing a 100% charge and a 3300 mV value.
+  - The diagnostics screen shows `BATTERY: NOT FITTED (USB power only)` and the top-right header uses a USB/N-A indicator instead of a fake battery bar.
+  - Verified with `python scripts/validate_repo.py` and `python -m tools.guardian diff-audit` in this session.
+
+## [DOOM allocation guard fix] - 2026-11-07
+### Changed
+- **DOOM vendor allocation guard (`firmware/BmoGameboy/src/vendor/doom/src/i_system.c`, `m_misc.c`)**:
+  - Replaced bare heap allocations with PSRAM-aware or zeroed allocation paths for the ESP32 port.
+  - Removed fatal `I_Error()` calls from string-allocation failures so the engine returns a soft failure instead of aborting on low-memory paths.
+  - Verified with `python scripts/validate_repo.py` and `python -m tools.guardian diff-audit` in this session.
+
+---
+
 ## [Software Design Document v5.0 Source-Verified Repository Specification] - 2026-11-07
 ### Changed
 - **Software Design Document (`docs/software-design-document.md`)**:
