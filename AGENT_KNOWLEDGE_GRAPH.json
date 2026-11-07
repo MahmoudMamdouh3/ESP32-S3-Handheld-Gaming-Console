@@ -1,6 +1,6 @@
 {
   "schema_version": "2.2.0",
-  "generated_at": "2026-11-07T12:46:14.212939",
+  "generated_at": "2026-11-07T13:09:20.538292",
   "target_mcu": {
     "chip": "ESP32-S3-N16R8",
     "cpu_arch": "Xtensa dual-core 32-bit LX7 @ 240MHz",
@@ -441,57 +441,57 @@
     {
       "name": "BMO_SDF_Procedural_Face_Render_Unculled",
       "iterations": 100,
-      "avg_latency_us": 1325.724,
-      "throughput_mops": 3.09,
+      "avg_latency_us": 1368.009,
+      "throughput_mops": 2.99,
       "description": "Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling."
     },
     {
       "name": "BMO_SDF_Procedural_Face_Render_Culled",
       "iterations": 200,
-      "avg_latency_us": 470.72,
-      "throughput_mops": 8.7,
+      "avg_latency_us": 504.488,
+      "throughput_mops": 8.12,
       "description": "Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction)."
     },
     {
       "name": "4Pixel_Coalesced_Aligned_Store_Kernel",
       "iterations": 50000,
-      "avg_latency_us": 2.367,
-      "throughput_mops": 12.67,
+      "avg_latency_us": 2.79,
+      "throughput_mops": 10.75,
       "description": "Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling."
     },
     {
       "name": "O1_Palette_Scanline_Transformation",
       "iterations": 10000,
-      "avg_latency_us": 4.575,
-      "throughput_mops": 52.46,
+      "avg_latency_us": 4.681,
+      "throughput_mops": 51.27,
       "description": "Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput."
     },
     {
       "name": "CPU_Emulation_Opcode_Dispatch",
       "iterations": 500000,
-      "avg_latency_us": 0.069,
-      "throughput_mops": 14.57,
+      "avg_latency_us": 0.09,
+      "throughput_mops": 11.1,
       "description": "Simulates CPU opcode fetch-decode-execute cycle dispatch throughput."
     },
     {
       "name": "Direct_GPIO_Atomic_Bitmask_Sampling",
       "iterations": 100000,
-      "avg_latency_us": 0.497,
-      "throughput_mops": 16.09,
+      "avg_latency_us": 0.551,
+      "throughput_mops": 14.51,
       "description": "Measures atomic 8-pin bitmask unpacking (GPIO 4,5,6,7,16,17,18,21) replacing 8 digitalRead calls."
     },
     {
       "name": "SD_Catalog_O1_Query_And_Page_Jump",
       "iterations": 10000,
-      "avg_latency_us": 0.176,
-      "throughput_mops": 5.69,
+      "avg_latency_us": 0.182,
+      "throughput_mops": 5.48,
       "description": "Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations."
     },
     {
       "name": "Native_C_11_Cores_575_Frames",
       "iterations": 575,
-      "avg_latency_us": 666.832,
-      "throughput_mops": 1.5,
+      "avg_latency_us": 311.008,
+      "throughput_mops": 3.22,
       "description": "Executes 50 frames across all 11 native C emulator engines + save-state replay (575 frames total, kFPS)."
     }
   ],
@@ -519,7 +519,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "6. Known Issues, Technical Debt & Hardware Limitations Registry",
-      "lines": 521
+      "lines": 524
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -9998,11 +9998,11 @@
     ".agents/rules/04_known_issues.md": {
       "path": ".agents/rules/04_known_issues.md",
       "category": "AGENT_RULES",
-      "total_lines": 521,
-      "sloc": 437,
+      "total_lines": 524,
+      "sloc": 440,
       "comments": 0,
       "blanks": 84,
-      "density_percent": 83.9,
+      "density_percent": 84.0,
       "symbols": [],
       "pins_accessed": [
         "BTN_UP",
@@ -281926,8 +281926,8 @@
     "AGENT_KNOWLEDGE_GRAPH.json": {
       "path": "AGENT_KNOWLEDGE_GRAPH.json",
       "category": "OTHER",
-      "total_lines": 290384,
-      "sloc": 290384,
+      "total_lines": 290386,
+      "sloc": 290386,
       "comments": 0,
       "blanks": 0,
       "density_percent": 100.0,
@@ -282041,8 +282041,8 @@
     "CHANGELOG.md": {
       "path": "CHANGELOG.md",
       "category": "OTHER",
-      "total_lines": 909,
-      "sloc": 797,
+      "total_lines": 914,
+      "sloc": 802,
       "comments": 0,
       "blanks": 112,
       "density_percent": 87.7,
@@ -282093,11 +282093,11 @@
     "docs/consolidated-rules.md": {
       "path": "docs/consolidated-rules.md",
       "category": "DOCUMENTATION",
-      "total_lines": 3706,
-      "sloc": 2948,
+      "total_lines": 3709,
+      "sloc": 2951,
       "comments": 45,
       "blanks": 713,
-      "density_percent": 79.5,
+      "density_percent": 79.6,
       "symbols": [],
       "pins_accessed": [
         "GPIO1",
@@ -282233,40 +282233,42 @@
     "docs/software-design-document.md": {
       "path": "docs/software-design-document.md",
       "category": "DOCUMENTATION",
-      "total_lines": 620,
-      "sloc": 522,
+      "total_lines": 1345,
+      "sloc": 1180,
       "comments": 0,
-      "blanks": 98,
-      "density_percent": 84.2,
+      "blanks": 165,
+      "density_percent": 87.7,
       "symbols": [],
       "pins_accessed": [
-        "FEATURE_BATTERY_MONITOR",
-        "FEATURE_AUDIO",
-        "I2S_BCLK",
-        "TFT_CS",
-        "I2S_LRC",
-        "TFT_DC",
-        "I2S_DIN",
         "TFT_RST",
         "SD_CS",
         "SD_MISO",
+        "FEATURE_BATTERY_MONITOR",
+        "FEATURE_AUDIO",
         "TFT_SCK",
         "TFT_MOSI",
+        "TFT_CS",
+        "TFT_DC",
         "BTN_UP",
         "BTN_DOWN",
         "BTN_LEFT",
         "BTN_RIGHT",
-        "BTN_A",
-        "BTN_B",
-        "BTN_START",
-        "BTN_SELECT",
         "BTN_X",
         "BTN_Y",
+        "BTN_A",
+        "BTN_B",
         "BTN_L",
         "BTN_R",
+        "BTN_START",
+        "BTN_SELECT",
         "BATTERY_ADC_PIN",
+        "I2S_BCLK",
+        "I2S_LRC",
+        "I2S_DIN",
         "I2C_SDA",
-        "I2C_SCL"
+        "I2C_SCL",
+        "FEATURE_SD_CARD",
+        "I2S_NUM_0"
       ],
       "includes": []
     },
@@ -289133,11 +289135,11 @@
     "README.md": {
       "path": "README.md",
       "category": "OTHER",
-      "total_lines": 229,
-      "sloc": 161,
+      "total_lines": 234,
+      "sloc": 166,
       "comments": 0,
       "blanks": 68,
-      "density_percent": 70.3,
+      "density_percent": 70.9,
       "symbols": [],
       "pins_accessed": [
         "TFT_MOSI",
@@ -290194,11 +290196,11 @@
     "tools/guardian/core/doc_verifier.py": {
       "path": "tools/guardian/core/doc_verifier.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 262,
-      "sloc": 225,
+      "total_lines": 265,
+      "sloc": 228,
       "comments": 12,
       "blanks": 25,
-      "density_percent": 85.9,
+      "density_percent": 86.0,
       "symbols": [],
       "pins_accessed": [
         "PIN_DRIFT",

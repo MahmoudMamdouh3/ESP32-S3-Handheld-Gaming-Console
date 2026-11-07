@@ -21,9 +21,9 @@ The console uses a 2.4" ST7789 SPI TFT display (240×320 physical, 320×240 land
 
 ## 2. Buttons (12x Active-Low Configuration)
 
-The console features 12 tactile pushbuttons: 8 standard base controls (D-Pad, A, B, Start, Select) plus 4 extended controls (X, Y, L, R) for SNES, Genesis, and DOOM.
+The console features 12 tactile pushbuttons: 8 standard base controls (D-Pad, A, B, Start, Select — physically soldered on the current board) plus 4 extended controls (X, Y, L, R — supported in firmware, Wokwi, and the 3D simulator, pending physical soldering) for SNES, Genesis, and DOOM.
 
-All buttons are wired active-low: **one terminal connects to the designated GPIO pin, the other terminal connects to common ground (GND)**. Internal pull-ups are configured in firmware (`INPUT_PULLUP`), so no external pull-up resistors are required. A pressed button reads as `LOW` (0), and a released button reads as `HIGH` (1).
+All buttons are wired active-low: **one terminal connects to the designated GPIO pin, the other terminal connects to common ground (GND)**. Internal pull-ups are configured in firmware (`INPUT_PULLUP`), so no external pull-up resistors are required. A pressed button reads as `LOW` (0), and a released (or unwired) button reads as `HIGH` (1).
 
 | Button | Macro (`config.h`) | ESP32-S3 GPIO | Polling Register | Physical Function |
 |---|---|---|---|---|

@@ -7,12 +7,15 @@
 
 ---
 
-## Latest Agent Handoff - 2026-11-07 (Software Design Document v4.0 Master Architectural Specification)
+## Latest Agent Handoff - 2026-11-07 (Software Design Document v5.0 Source-Verified Repository Specification)
 
-- Overhauled and expanded `docs/software-design-document.md` into a 14-section comprehensive master architectural specification (v4.0).
-- Detailed every core subsystem: physical hardware ground truth, 80MHz FSPI bus physics, dual-core RTOS tasking, deterministic FSM, 3-tier memory hierarchy with cache invariants, procedural 2D SDF mascot engine with harmonic spring dynamics, 14-core emulator suite lifecycle and teardown contracts, zero-wait dual-register GPIO polling, SD card indexing and binary `.bmo_index` caching, dormant subsystem safety guardrails, 3D WebGL simulator and WebAssembly playtesting, host test harnesses and 9-phase CI validation, and AI agent governance rules.
+- Rewrote `docs/software-design-document.md` into a 17-section source-verified repository specification (v5.0) cross-checked line-by-line against `BmoGameboy.ino`, `src/core/*.h/.cpp`, `src/emulators/*.h/.cpp`, `src/vendor/*/*.h`, `tools/bmo_simulator/`, `diagram.json`, and `tools/guardian/`:
+  - Fixed all prior documentation discrepancies: corrected save state extensions from `.st0`–`.st4` to `/saves/<base>.s01`–`.s05` (`SaveStateHeader` magic `0x31535342` `"BSS1"` v1, 60 B), corrected `/.bmo_index` binary layout (`BMOIDX01` v1, 36 B `BmoIndexHeader`, 72 B `BmoIndexEntry`), documented all 18 real `BmoFace::BmoExpression` enum states and 13 `HarmonicSpring` variables, corrected FSM button routing (`START` in carousel opens `STATE_DIAGNOSTICS`; `START` in `STATE_GAME_MENU` toggles Top Picks filter; `UP`/`DOWN` steps ±1 game; `LEFT`/`RIGHT` jumps A–Z), and corrected PICO-8 (`src/emulators/emu_pico.*`, `src/vendor/pico/`) and Walnut-CGB (`src/engine/walnut_cgb/walnut_cgb.h`) paths.
+  - Added complete per-core C++ wrapper and vendor C struct layouts (`gb_s`, `agnes_t`, `sms_context_t`, `pce_context_t`, `atari_context_t`, `pico_context_t`, `genesis_t`, `snes_t`, `wswan_t`, `ngp_t`, `lynx_t`, `colem_t`), joypad bitmasks, `.sav` and `.s01`–`.s05` multi-buffer persistence mechanics, 80 MHz FSPI viewport coordinates and wire timings, 25-point performance registry (`PERF-01`..`PERF-25`), and full public symbol reference.
+- Updated `README.md` save state filenames (`.s01`–`.s05`), in-game `SELECT + ...` hotkeys, and 6-option Pause Menu controls; clarified soldered (8 base buttons) vs pending-solder (`X=14, Y=42, L=47, R=48`) status in `docs/wiring/01-display-and-buttons.md` and `docs/wiring/02-sd-card.md`.
+- Expanded `DocTruthVerifier` (`tools/guardian/core/doc_verifier.py`) to scan `docs/software-design-document.md`, `docs/wiring/01-display-and-buttons.md`, and `docs/wiring/02-sd-card.md` for pin drift and obsolete symbol references.
 - Re-bundled single-file consolidated ruleset v8 (`docs/consolidated-rules.md`) via `scripts/bundle_rules.py`.
-- `VERIFIED_HOST`: `python scripts/validate_repo.py` passed all 9 phases (Phase 0–8) cleanly. `python -m tools.guardian doctor`, `ui-audit`, and `diff-audit` passed with 0 blocking issues.
+- `VERIFIED_HOST`: `python scripts/validate_repo.py` passed all 9 phases (Phase 0–8) cleanly. `python -m tools.guardian doctor`, `ui-audit`, `diff-audit`, and `verify` passed with 0 blocking issues.
 
 ## Previous Agent Handoff - 2026-11-06 (Comprehensive Documentation Synchronization)
 

@@ -5,11 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Software Design Document v4.0 Master Architectural Specification] - 2026-11-07
+## [Software Design Document v5.0 Source-Verified Repository Specification] - 2026-11-07
 ### Changed
 - **Software Design Document (`docs/software-design-document.md`)**:
-  - Overhauled and expanded into a 14-section comprehensive master architectural specification (v4.0) designed for external multi-agent evaluation and senior engineering review.
-  - Formulated full system architecture across: Architectural Authority, Physical Hardware & Electrical Ground Truth, Hardware Topology & Register Mapping, RTOS Tasking & Finite State Machine, Memory Hierarchy & Cache Invariants, 80MHz FSPI Bus Physics & Atomic Streaming, Procedural Signed Distance Field (SDF) Math & Harmonic Spring Dynamics, Complete 14-Core Emulator Suite & Universal Teardown Contract, Zero-Wait Dual-Register Hardware Polling, Storage Subsystem & Binary `.bmo_index` Caching, Dormant Subsystem Guardrails, 3D WebGL Handheld Simulator & WebAssembly Playtest Platform, Host Verification Harness & 9-Phase CI Pipeline, and Autonomous AI Governance Invariants.
+  - Rewrote and expanded into a 17-section source-verified repository specification (v5.0) cross-checked against all firmware headers, vendor C cores, simulator modules, and verification tools for external multi-agent review.
+  - Documented the Environment Truth Matrix (Physical ESP32-S3 Board vs. Wokwi vs. Browser 3D/WASM Simulator vs. Native x64 C Harness), physical hardware and electrical ground truth (Quad-SPI Flash vs. Octal-SPI PSRAM, ST7789 `MADCTL = 0xA8` BGR565 wire format, MicroSD 5V LDO & MISO 5V back-powering physics, 8.8×12.4×3.2 cm enclosure and 2.54 mm perfboard coordinates), complete GPIO pin matrix and dual-register (`GPIO_IN_REG` / `GPIO_IN1_REG`) polling, repository file encyclopedia, 10-step boot sequence, dual-core FreeRTOS display pipeline, and complete 8-state FSM with exact button transitions and `SELECT + ...` hotkeys.
+  - Verified and documented exact binary structures (`BmoIndexHeader` 36 B / `BmoIndexEntry` 72 B with `BMOIDX01` v1 magic; `SaveStateHeader` 60 B with `0x31535342` `"BSS1"` v1 magic and `.s01`–`.s05` slot paths), all 18 `BmoFace::BmoExpression` states and 13 `HarmonicSpring` variables, all 14 emulator wrappers and vendor C struct definitions (`gb_s`, `agnes_t`, `sms_context_t`, `pce_context_t`, `atari_context_t`, `pico_context_t`, `genesis_t`, `snes_t`, `wswan_t`, `ngp_t`, `lynx_t`, `colem_t`), public C/C++ symbol catalog, 25-point performance registry (`PERF-01`..`PERF-25`), and step-by-step core extensibility playbook.
+- **README, Wiring Guides & Doc Verifier (`README.md`, `docs/wiring/*.md`, `tools/guardian/core/doc_verifier.py`)**:
+  - Fixed save-state extension reference in `README.md` from `.st0`–`.st4` to `.s01`–`.s05` and listed all in-game `SELECT + ...` hotkeys and 6 Pause Menu actions.
+  - Clarified in `docs/wiring/01-display-and-buttons.md` and `docs/wiring/02-sd-card.md` that the 8 base buttons are physically soldered now while `X (14), Y (42), L (47), R (48)` are supported in firmware/Wokwi/simulator and pending physical soldering.
+  - Added `docs/software-design-document.md` and `docs/wiring/*.md` to `DocTruthVerifier` target files.
 - **Rules & Knowledge Index**:
   - Re-bundled single-file consolidated ruleset v8 (`docs/consolidated-rules.md`).
   - Synchronized AI Knowledge Graph (`AGENT_KNOWLEDGE_GRAPH.json`) and Context Index.

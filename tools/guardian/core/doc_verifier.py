@@ -120,6 +120,9 @@ class DocTruthVerifier:
             self.repo_root / "README.md",
             self.repo_root / "AGENTS.md",
             self.repo_root / "docs" / "hardware-notes.md",
+            self.repo_root / "docs" / "software-design-document.md",
+            self.repo_root / "docs" / "wiring" / "01-display-and-buttons.md",
+            self.repo_root / "docs" / "wiring" / "02-sd-card.md",
         ] + rule_docs
 
         for doc_path in target_docs:

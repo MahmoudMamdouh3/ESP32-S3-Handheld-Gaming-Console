@@ -142,14 +142,19 @@ The firmware scans the SD-card root and subdirectories through three levels for 
 
 - **Dual-Core Display Pipeline:** Emulation and UI run on Core 1 while Core 0 pushes framebuffers over SPI to the ST7789 display.
 - **Fast SD Indexing & Folders:** Scans up to 3 levels of subdirectories on the SD card and caches the ROM list in `/.bmo_index` for fast boot times.
-- **Save States & Battery Saves:** 5 save state slots per game (`/saves/<game>.st0`–`.st4`) plus automatic `.sav` battery SRAM backup on exit.
+- **Save States & Battery Saves:** 5 save state slots per game (`/saves/<game>.s01`–`.s05`) plus automatic `.sav` battery SRAM backup on exit.
 - **Cover Art & Screenshots:** Loads 64×64 RGB565 `.raw` or `.bmp` box art from `/boxart` or `/covers`, and saves 24-bit `.bmp` screenshots to `/screenshots`.
 - **Favorites, History & Curated Top Picks:** Star games in the menu (`/favorites.txt`), track recently played titles (`/history.txt`), or press **`START`** inside any console library to filter large SD card ROM sets down to curated **`[TOP PICK]`** Hall-of-Fame titles per console.
 
 ### In-Game & Pause Controls
 
-- **`START + SELECT` (Hold):** Open the in-game pause menu
-- **Pause Menu — `UP` / `DOWN`:** Select Resume, Save State, Load State, or Exit to Menu
+- **`SELECT + START`:** Open the in-game pause menu
+- **`SELECT + A` / `SELECT + B`:** Quick Save / Quick Load active slot (Slots `1–5`)
+- **`SELECT + DOWN`:** Cycle the 5 Game Boy DMG color palettes
+- **`SELECT + LEFT`:** Toggle 15 Hz auto-fire turbo for `A` and `B`
+- **`SELECT + RIGHT` (Hold):** Fast-forward (unthrottled frame pacing)
+- **`SELECT + UP`:** Auto-save `.sav` battery RAM and quit directly to the console carousel
+- **Pause Menu — `UP` / `DOWN` + `A`:** Select Resume Game, Quick Save, Quick Load, Cycle Next Slot (1–5), Save Battery RAM (`.SAV`), or Quit to Console Menu
 - **Pause Menu — `LEFT`:** Toggle A/B button swap for the current console
 - **Pause Menu — `RIGHT`:** Toggle 1:1 pixel scaling with console bezel vs. full-screen scaling
 - **Pause Menu — `SELECT`:** Save a 24-bit `.bmp` screenshot to `/screenshots/`
