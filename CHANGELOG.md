@@ -5,7 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Comprehensive Documentation Synchronization] - 2026-11-06
+## [Software Design Document v4.0 Master Architectural Specification] - 2026-11-07
+### Changed
+- **Software Design Document (`docs/software-design-document.md`)**:
+  - Overhauled and expanded into a 14-section comprehensive master architectural specification (v4.0) designed for external multi-agent evaluation and senior engineering review.
+  - Formulated full system architecture across: Architectural Authority, Physical Hardware & Electrical Ground Truth, Hardware Topology & Register Mapping, RTOS Tasking & Finite State Machine, Memory Hierarchy & Cache Invariants, 80MHz FSPI Bus Physics & Atomic Streaming, Procedural Signed Distance Field (SDF) Math & Harmonic Spring Dynamics, Complete 14-Core Emulator Suite & Universal Teardown Contract, Zero-Wait Dual-Register Hardware Polling, Storage Subsystem & Binary `.bmo_index` Caching, Dormant Subsystem Guardrails, 3D WebGL Handheld Simulator & WebAssembly Playtest Platform, Host Verification Harness & 9-Phase CI Pipeline, and Autonomous AI Governance Invariants.
+- **Rules & Knowledge Index**:
+  - Re-bundled single-file consolidated ruleset v8 (`docs/consolidated-rules.md`).
+  - Synchronized AI Knowledge Graph (`AGENT_KNOWLEDGE_GRAPH.json`) and Context Index.
 ### Changed
 - **Wiring Guides (`docs/wiring/01-display-and-buttons.md`, `docs/wiring/02-sd-card.md`)**:
   - Updated to full 12-button console input specification (`BTN_UP=4`, `BTN_DOWN=5`, `BTN_LEFT=6`, `BTN_RIGHT=7`, `BTN_A=16`, `BTN_B=17`, `BTN_START=18`, `BTN_SELECT=21`, `BTN_X=14`, `BTN_Y=42`, `BTN_L=47`, `BTN_R=48`).

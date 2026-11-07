@@ -7,7 +7,14 @@
 
 ---
 
-## Latest Agent Handoff - 2026-11-06 (Comprehensive Documentation Synchronization)
+## Latest Agent Handoff - 2026-11-07 (Software Design Document v4.0 Master Architectural Specification)
+
+- Overhauled and expanded `docs/software-design-document.md` into a 14-section comprehensive master architectural specification (v4.0).
+- Detailed every core subsystem: physical hardware ground truth, 80MHz FSPI bus physics, dual-core RTOS tasking, deterministic FSM, 3-tier memory hierarchy with cache invariants, procedural 2D SDF mascot engine with harmonic spring dynamics, 14-core emulator suite lifecycle and teardown contracts, zero-wait dual-register GPIO polling, SD card indexing and binary `.bmo_index` caching, dormant subsystem safety guardrails, 3D WebGL simulator and WebAssembly playtesting, host test harnesses and 9-phase CI validation, and AI agent governance rules.
+- Re-bundled single-file consolidated ruleset v8 (`docs/consolidated-rules.md`) via `scripts/bundle_rules.py`.
+- `VERIFIED_HOST`: `python scripts/validate_repo.py` passed all 9 phases (Phase 0–8) cleanly. `python -m tools.guardian doctor`, `ui-audit`, and `diff-audit` passed with 0 blocking issues.
+
+## Previous Agent Handoff - 2026-11-06 (Comprehensive Documentation Synchronization)
 
 - Synchronized wiring guides (`docs/wiring/01-display-and-buttons.md`, `docs/wiring/02-sd-card.md`) to the complete 12-button console input specification (`BTN_UP=4`, `BTN_DOWN=5`, `BTN_LEFT=6`, `BTN_RIGHT=7`, `BTN_A=16`, `BTN_B=17`, `BTN_START=18`, `BTN_SELECT=21`, `BTN_X=14`, `BTN_Y=42`, `BTN_L=47`, `BTN_R=48`).
 - Documented dual-register polling architecture: GPIO 0–31 via `GPIO_IN_REG` and GPIO 32–48 via `GPIO_IN1_REG`.
