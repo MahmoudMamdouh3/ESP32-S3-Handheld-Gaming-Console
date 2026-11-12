@@ -63,7 +63,7 @@ Generated from the declarations in the listed headers. Edit the header, then run
 
 - `namespace SpiArbiter`
 - `void init();`
-- `bool lock(TickType_t waitTicks = portMAX_DELAY);`
+- `void lock();`
 - `void unlock();`
 
 ## `firmware/BmoGameboy/src/core/theme.h`

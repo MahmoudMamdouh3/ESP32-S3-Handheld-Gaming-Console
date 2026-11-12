@@ -204,10 +204,9 @@ class BusMetrics:
     max_theoretical_fps: float
     sequential_cpu_budget_ms: float
     sequential_cpu_budget_percent: float
-    parallel_dma_cpu_budget_ms: float
-    parallel_dma_cpu_budget_percent: float
+    ideal_overlap_cpu_budget_ms: float
+    ideal_overlap_cpu_budget_percent: float
     spi_bus_utilization_percent: float
-    dma_required_for_60fps: bool
     status: str
 
 
@@ -238,24 +237,18 @@ class HardwareBusModel:
         sequential_cpu_budget_ms = max(0.0, frame_period_ms - transfer_ms)
         sequential_cpu_budget_percent = (sequential_cpu_budget_ms / frame_period_ms) * 100.0
         
-        # In parallel execution (with DMA double-buffering): CPU can use 100% of frame period
-        # as long as CPU computation <= frame_period_ms and transfer_ms <= frame_period_ms
-        parallel_dma_cpu_budget_ms = frame_period_ms
-        parallel_dma_cpu_budget_percent = 100.0
+        # Idealized overlap is an upper bound, not a claim about DMA or measured firmware behavior.
+        ideal_overlap_cpu_budget_ms = frame_period_ms
+        ideal_overlap_cpu_budget_percent = 100.0
         
         spi_bus_utilization = (transfer_ms / frame_period_ms) * 100.0
         
-        # Is DMA required for 60 FPS without dropping frames?
-        # If SPI transfer consumes > 50% of the frame budget in sequential mode,
-        # CPU emulator cycles are heavily pinched and will drop frames on complex scenes.
-        dma_required = sequential_cpu_budget_percent < 40.0 or transfer_ms > frame_period_ms
-        
         if transfer_ms > frame_period_ms:
-            status = "CRITICAL_SPI_SATURATION"
-        elif dma_required:
-            status = "PINCHED_NEEDS_DMA"
+            status = "BUS_SATURATED"
+        elif sequential_cpu_budget_percent < 40.0:
+            status = "LOW_SEQUENTIAL_HEADROOM"
         else:
-            status = "HEALTHY_SEQUENTIAL"
+            status = "SEQUENTIAL_HEADROOM_AVAILABLE"
             
         return BusMetrics(
             resolution_key=res_key,
@@ -267,10 +260,9 @@ class HardwareBusModel:
             max_theoretical_fps=max_theoretical_fps,
             sequential_cpu_budget_ms=sequential_cpu_budget_ms,
             sequential_cpu_budget_percent=sequential_cpu_budget_percent,
-            parallel_dma_cpu_budget_ms=parallel_dma_cpu_budget_ms,
-            parallel_dma_cpu_budget_percent=parallel_dma_cpu_budget_percent,
+            ideal_overlap_cpu_budget_ms=ideal_overlap_cpu_budget_ms,
+            ideal_overlap_cpu_budget_percent=ideal_overlap_cpu_budget_percent,
             spi_bus_utilization_percent=spi_bus_utilization,
-            dma_required_for_60fps=dma_required,
             status=status,
         )
 

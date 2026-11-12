@@ -1,5 +1,20 @@
 # Changelog
 
+## [Logical and performance audit] - 2026-11-12
+
+### Fixed
+- Made SPI mutex initialization/acquisition/release fail-stop instead of reporting or tolerating unlocked access; added a native regression test.
+- Moved ROM sorting and final pool sizing outside the shared-bus lock while retaining exclusion during SD operations.
+- Reframed Guardian bus metrics as theoretical sequential/ideal-overlap estimates; removed unsupported DMA and frame-drop conclusions.
+- Guarded DOOM ammo-array access when the fatal-error callback returns; deep Cppcheck now reports 0 errors and 43 remaining vendored-source findings.
+- Corrected stale hard-coded memory health values and stopped presenting estimated ROM capacity as measured dynamic PSRAM usage.
+
+### Documented
+- Recorded Guardian baseline, confirmed findings, unresolved cold-scan limitation, and verification boundaries in [the audit handoff](docs/handoffs/2026-11-12-logical-performance-audit.md).
+
+### Verification
+- Native SPI arbiter regression, focused bus-model tests, Guardian verification (190 tests), Cppcheck (0 errors), and diff-audit passed. `python scripts/validate_repo.py` passed all nine phases and target compile (5,774,672 B app0, 253,728 B SRAM). No physical hardware test was run.
+
 ## [Clean-checkout CI fixes] - 2026-11-12
 
 ### Fixed

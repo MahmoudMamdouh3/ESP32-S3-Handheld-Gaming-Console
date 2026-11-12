@@ -398,10 +398,10 @@ bool SDCard::begin() {
                                            spiFrequencyToClockDiv(nullptr, cappedRequestHz));
   LOG_INFO("SD mounted with nominal SPI clock %lu Hz (request %lu Hz)",
            (unsigned long)mountedClockHz, (unsigned long)successfulRequestHz);
+  SpiArbiter::unlock();
   scanRoms();
   loadFavorites();
   loadRecentHistory();
-  SpiArbiter::unlock();
 #else
   mounted = false;
 #endif
@@ -657,9 +657,9 @@ void SDCard::rebuildIndex() {
     }
   }
 
+  SpiArbiter::unlock();
   scanRoms();
   loadFavorites();
-  SpiArbiter::unlock();
 #endif
 }
 
@@ -790,20 +790,23 @@ void SDCard::scanRoms() {
   // Grow the PSRAM pool as the cold scan finds ROMs; small libraries do not
   // reserve the 36,000-entry maximum up front.
   scanDirectory("/", 0, hasArtDirs);
+  SpiArbiter::unlock();
 
   // Sort newly crawled ROMs alphabetically
   sortRoms();
 
   // Do not cache an incomplete library. The next boot will retry the scan.
   if (skippedRomCount == 0) {
+    SpiArbiter::lock();
     saveIndex();
-  } else {
+    SpiArbiter::unlock();
+  }
+  if (skippedRomCount != 0) {
     LOG_WARN("SDCard: skipped %d ROM paths; library index not saved", skippedRomCount);
   }
 
   ensurePoolCapacity(computePoolCapacity(numRoms));
 
-  SpiArbiter::unlock();
 #endif
 }
 
@@ -1244,6 +1247,4 @@ void SDCard::freeRom(uint8_t* buffer) {
     heap_caps_free(buffer);
   }
 }
-
-
 

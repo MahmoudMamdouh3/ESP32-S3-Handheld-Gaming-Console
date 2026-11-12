@@ -128,9 +128,11 @@ def cmd_audit(args) -> int:
     print("\n[1/5] Calculating Hardware Bus & Frame Budgets (80MHz SPI)...")
     bus_model = HardwareBusModel()
     bus_metrics = bus_model.calculate_all()
-    pinched = [b for b in bus_metrics if b.dma_required_for_60fps]
+    pinched = [b for b in bus_metrics if b.status == "LOW_SEQUENTIAL_HEADROOM"]
+    saturated = [b for b in bus_metrics if b.status == "BUS_SATURATED"]
     print(f"  Processed {len(bus_metrics)} console viewport modes.")
-    print(f"  Modes requiring DMA double-buffering for 60 FPS: {len(pinched)}")
+    print(f"  Modes with low sequential CPU headroom (<40%): {len(pinched)}")
+    print(f"  Modes where SPI alone exceeds the target frame period: {len(saturated)}")
 
     # 2. Static AST Linter & Line-by-Line Code Density
     print("\n[2/5] Running Embedded Firmware AST Linter & Line-by-Line Audit...")
@@ -319,7 +321,12 @@ def cmd_report(args) -> int:
     bench_metrics = bench_suite.run_all()
 
     cppcheck = CppcheckRunner(REPO_ROOT)
-    cppcheck_findings = cppcheck.run() if (hasattr(args, "cppcheck") and args.cppcheck and cppcheck.is_available()) else []
+    cppcheck_findings = None
+    if args.cppcheck:
+        if not cppcheck.is_available():
+            print("[ERROR] Cppcheck was requested but is not available.")
+            return 2
+        cppcheck_findings = cppcheck.run()
 
     if hasattr(args, "json") and args.json:
         content = ReportGenerator.generate_json(
@@ -1196,6 +1203,7 @@ def main() -> int:
     p_rep = subparsers.add_parser("report", help="Generate full performance & ground-truth report")
     p_rep.add_argument("--output", "-o", help="Output file path (e.g. docs/performance_report.md)")
     p_rep.add_argument("--json", action="store_true", help="Output JSON instead of Markdown")
+    p_rep.add_argument("--cppcheck", action="store_true", help="Include Cppcheck findings in the report")
 
     subparsers.add_parser("index", help="Compile machine-readable AI knowledge graph and decision tree")
     subparsers.add_parser("symbols", help="Generate compact firmware symbol reference pages")

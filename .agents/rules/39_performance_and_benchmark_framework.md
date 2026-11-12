@@ -22,7 +22,7 @@ python -m tools.guardian profile-elf
 python -m tools.guardian bench-host
 
 # Generate comprehensive Markdown or JSON audit reports
-python -m tools.guardian report --output docs/performance_report.md
+python -m tools.guardian report --cppcheck --output docs/performance_report.md
 ```
 
 ---
@@ -36,9 +36,9 @@ Agents must **never** create one-off benchmarking or AST checking scripts in `sc
 
 ### Rule 2.2: Hard Bus Physics Invariants
 The ST7789 display communicates over a shared 80 MHz FSPI bus with 100 ns byte-transfer latency.
-- At 320×240 (153,600 bytes), raw SPI transfer consumes **15.36 ms** (92.1% of a 60 FPS frame).
-- Sequential blocking transfers leave only **1.31 ms** for CPU execution at 60 FPS.
-- For high-resolution systems (Genesis 320×224, NES 256×240, Menu 320×240), agents must plan for **DMA double-buffering** or scanline interleaving.
+- At 320×240 (153,600 bytes), the idealized wire-time estimate is **15.36 ms** (92.1% of a 60 FPS frame), before command and driver overhead.
+- A strictly sequential transfer-and-compute schedule leaves at most **1.31 ms** for CPU work at 60 FPS. This is not a measurement of the current multi-task firmware.
+- The Guardian model reports an ideal overlap upper bound and bus saturation; it cannot infer required DMA, achieved FPS, or dropped frames without CPU timing and on-device measurements. The firmware currently uses blocking SPI writes on a display worker task. Do not prescribe DMA solely from this model.
 
 ### Rule 2.3: Memory Section Allocation Ground Truth
 Every memory allocation must respect the ESP32-S3-N16R8 physical partition constraints:

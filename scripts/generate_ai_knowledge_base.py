@@ -269,7 +269,9 @@ def build_knowledge_base():
                 "sequential_cpu_budget_ms": round(b.sequential_cpu_budget_ms, 2),
                 "sequential_cpu_budget_percent": round(b.sequential_cpu_budget_percent, 1),
                 "spi_bus_utilization_percent": round(b.spi_bus_utilization_percent, 1),
-                "dma_required": b.dma_required_for_60fps,
+                "ideal_overlap_cpu_budget_ms": round(b.ideal_overlap_cpu_budget_ms, 2),
+                "ideal_overlap_cpu_budget_percent": round(b.ideal_overlap_cpu_budget_percent, 1),
+                "bus_saturated": b.status == "BUS_SATURATED",
                 "status": b.status,
             }
             for b in bus_metrics

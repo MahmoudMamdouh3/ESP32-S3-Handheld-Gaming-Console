@@ -251,8 +251,10 @@
       "sequential_cpu_budget_ms": 6.37,
       "sequential_cpu_budget_percent": 38.1,
       "spi_bus_utilization_percent": 61.9,
-      "dma_required": true,
-      "status": "PINCHED_NEEDS_DMA"
+      "ideal_overlap_cpu_budget_ms": 16.74,
+      "ideal_overlap_cpu_budget_percent": 100.0,
+      "bus_saturated": false,
+      "status": "LOW_SEQUENTIAL_HEADROOM"
     },
     {
       "key": "GAMEBOY_COLOR_SCALED",
@@ -263,8 +265,10 @@
       "sequential_cpu_budget_ms": 6.37,
       "sequential_cpu_budget_percent": 38.1,
       "spi_bus_utilization_percent": 61.9,
-      "dma_required": true,
-      "status": "PINCHED_NEEDS_DMA"
+      "ideal_overlap_cpu_budget_ms": 16.74,
+      "ideal_overlap_cpu_budget_percent": 100.0,
+      "bus_saturated": false,
+      "status": "LOW_SEQUENTIAL_HEADROOM"
     },
     {
       "key": "NES_NATIVE",
@@ -275,8 +279,10 @@
       "sequential_cpu_budget_ms": 4.35,
       "sequential_cpu_budget_percent": 26.1,
       "spi_bus_utilization_percent": 73.9,
-      "dma_required": true,
-      "status": "PINCHED_NEEDS_DMA"
+      "ideal_overlap_cpu_budget_ms": 16.64,
+      "ideal_overlap_cpu_budget_percent": 100.0,
+      "bus_saturated": false,
+      "status": "LOW_SEQUENTIAL_HEADROOM"
     },
     {
       "key": "DOOM_NATIVE",
@@ -287,8 +293,10 @@
       "sequential_cpu_budget_ms": 15.77,
       "sequential_cpu_budget_percent": 55.2,
       "spi_bus_utilization_percent": 44.8,
-      "dma_required": false,
-      "status": "HEALTHY_SEQUENTIAL"
+      "ideal_overlap_cpu_budget_ms": 28.57,
+      "ideal_overlap_cpu_budget_percent": 100.0,
+      "bus_saturated": false,
+      "status": "SEQUENTIAL_HEADROOM_AVAILABLE"
     },
     {
       "key": "SMS_NATIVE",
@@ -299,8 +307,10 @@
       "sequential_cpu_budget_ms": 6.86,
       "sequential_cpu_budget_percent": 41.1,
       "spi_bus_utilization_percent": 58.9,
-      "dma_required": false,
-      "status": "HEALTHY_SEQUENTIAL"
+      "ideal_overlap_cpu_budget_ms": 16.69,
+      "ideal_overlap_cpu_budget_percent": 100.0,
+      "bus_saturated": false,
+      "status": "SEQUENTIAL_HEADROOM_AVAILABLE"
     },
     {
       "key": "GAMEGEAR_NATIVE",
@@ -311,8 +321,10 @@
       "sequential_cpu_budget_ms": 12.08,
       "sequential_cpu_budget_percent": 72.4,
       "spi_bus_utilization_percent": 27.6,
-      "dma_required": false,
-      "status": "HEALTHY_SEQUENTIAL"
+      "ideal_overlap_cpu_budget_ms": 16.69,
+      "ideal_overlap_cpu_budget_percent": 100.0,
+      "bus_saturated": false,
+      "status": "SEQUENTIAL_HEADROOM_AVAILABLE"
     },
     {
       "key": "PCE_NATIVE",
@@ -323,8 +335,10 @@
       "sequential_cpu_budget_ms": 4.43,
       "sequential_cpu_budget_percent": 26.5,
       "spi_bus_utilization_percent": 73.5,
-      "dma_required": true,
-      "status": "PINCHED_NEEDS_DMA"
+      "ideal_overlap_cpu_budget_ms": 16.72,
+      "ideal_overlap_cpu_budget_percent": 100.0,
+      "bus_saturated": false,
+      "status": "LOW_SEQUENTIAL_HEADROOM"
     },
     {
       "key": "ATARI2600_NATIVE",
@@ -335,8 +349,10 @@
       "sequential_cpu_budget_ms": 10.52,
       "sequential_cpu_budget_percent": 63.1,
       "spi_bus_utilization_percent": 36.9,
-      "dma_required": false,
-      "status": "HEALTHY_SEQUENTIAL"
+      "ideal_overlap_cpu_budget_ms": 16.67,
+      "ideal_overlap_cpu_budget_percent": 100.0,
+      "bus_saturated": false,
+      "status": "SEQUENTIAL_HEADROOM_AVAILABLE"
     },
     {
       "key": "PICO8_NATIVE",
@@ -347,8 +363,10 @@
       "sequential_cpu_budget_ms": 30.06,
       "sequential_cpu_budget_percent": 90.2,
       "spi_bus_utilization_percent": 9.8,
-      "dma_required": false,
-      "status": "HEALTHY_SEQUENTIAL"
+      "ideal_overlap_cpu_budget_ms": 33.33,
+      "ideal_overlap_cpu_budget_percent": 100.0,
+      "bus_saturated": false,
+      "status": "SEQUENTIAL_HEADROOM_AVAILABLE"
     },
     {
       "key": "GENESIS_NATIVE",
@@ -359,8 +377,10 @@
       "sequential_cpu_budget_ms": 2.35,
       "sequential_cpu_budget_percent": 14.1,
       "spi_bus_utilization_percent": 85.9,
-      "dma_required": true,
-      "status": "PINCHED_NEEDS_DMA"
+      "ideal_overlap_cpu_budget_ms": 16.69,
+      "ideal_overlap_cpu_budget_percent": 100.0,
+      "bus_saturated": false,
+      "status": "LOW_SEQUENTIAL_HEADROOM"
     },
     {
       "key": "SNES_NATIVE",
@@ -371,8 +391,10 @@
       "sequential_cpu_budget_ms": 5.17,
       "sequential_cpu_budget_percent": 31.1,
       "spi_bus_utilization_percent": 68.9,
-      "dma_required": true,
-      "status": "PINCHED_NEEDS_DMA"
+      "ideal_overlap_cpu_budget_ms": 16.64,
+      "ideal_overlap_cpu_budget_percent": 100.0,
+      "bus_saturated": false,
+      "status": "LOW_SEQUENTIAL_HEADROOM"
     },
     {
       "key": "WONDERSWAN_NATIVE",
@@ -383,8 +405,10 @@
       "sequential_cpu_budget_ms": 6.8,
       "sequential_cpu_budget_percent": 51.3,
       "spi_bus_utilization_percent": 48.7,
-      "dma_required": false,
-      "status": "HEALTHY_SEQUENTIAL"
+      "ideal_overlap_cpu_budget_ms": 13.25,
+      "ideal_overlap_cpu_budget_percent": 100.0,
+      "bus_saturated": false,
+      "status": "SEQUENTIAL_HEADROOM_AVAILABLE"
     },
     {
       "key": "NGP_NATIVE",
@@ -395,8 +419,10 @@
       "sequential_cpu_budget_ms": 11.88,
       "sequential_cpu_budget_percent": 70.9,
       "spi_bus_utilization_percent": 29.1,
-      "dma_required": false,
-      "status": "HEALTHY_SEQUENTIAL"
+      "ideal_overlap_cpu_budget_ms": 16.74,
+      "ideal_overlap_cpu_budget_percent": 100.0,
+      "bus_saturated": false,
+      "status": "SEQUENTIAL_HEADROOM_AVAILABLE"
     },
     {
       "key": "LYNX_NATIVE",
@@ -407,8 +433,10 @@
       "sequential_cpu_budget_ms": 10.07,
       "sequential_cpu_budget_percent": 75.5,
       "spi_bus_utilization_percent": 24.5,
-      "dma_required": false,
-      "status": "HEALTHY_SEQUENTIAL"
+      "ideal_overlap_cpu_budget_ms": 13.33,
+      "ideal_overlap_cpu_budget_percent": 100.0,
+      "bus_saturated": false,
+      "status": "SEQUENTIAL_HEADROOM_AVAILABLE"
     },
     {
       "key": "COLECO_NATIVE",
@@ -419,8 +447,10 @@
       "sequential_cpu_budget_ms": 6.84,
       "sequential_cpu_budget_percent": 41.0,
       "spi_bus_utilization_percent": 59.0,
-      "dma_required": false,
-      "status": "HEALTHY_SEQUENTIAL"
+      "ideal_overlap_cpu_budget_ms": 16.67,
+      "ideal_overlap_cpu_budget_percent": 100.0,
+      "bus_saturated": false,
+      "status": "SEQUENTIAL_HEADROOM_AVAILABLE"
     },
     {
       "key": "MENU_FULLSCREEN",
@@ -431,8 +461,10 @@
       "sequential_cpu_budget_ms": 1.31,
       "sequential_cpu_budget_percent": 7.8,
       "spi_bus_utilization_percent": 92.2,
-      "dma_required": true,
-      "status": "PINCHED_NEEDS_DMA"
+      "ideal_overlap_cpu_budget_ms": 16.67,
+      "ideal_overlap_cpu_budget_percent": 100.0,
+      "bus_saturated": false,
+      "status": "LOW_SEQUENTIAL_HEADROOM"
     }
   ],
   "benchmark_policy": "Live host measurements are not cached in this deterministic index. Run python -m tools.guardian bench-host for a fresh host-only report; use on-device capture for hardware timing.",
@@ -460,7 +492,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "Known Issues and Audit Findings",
-      "lines": 77
+      "lines": 78
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -2376,103 +2408,103 @@
     },
     "SDCard::getRomCount": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 810,
+      "line": 813,
       "signature": "int SDCard::getRomCount()",
       "is_iram": false
     },
     "SDCard::getRomCountForType": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 814,
+      "line": 817,
       "signature": "int SDCard::getRomCountForType(RomType type)",
       "is_iram": false
     },
     "SDCard::isPopularGame": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 822,
+      "line": 825,
       "signature": "bool SDCard::isPopularGame(const char* filename, RomType type)",
       "is_iram": false
     },
     "SDCard::getPopularCountForType": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 927,
+      "line": 930,
       "signature": "int SDCard::getPopularCountForType(RomType type)",
       "is_iram": false
     },
     "SDCard::getRomInfo": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 937,
+      "line": 940,
       "signature": "const RomFile* SDCard::getRomInfo(int index)",
       "is_iram": false
     },
     "SDCard::isFavorite": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 947,
+      "line": 950,
       "signature": "bool SDCard::isFavorite(const char* filename)",
       "is_iram": false
     },
     "SDCard::toggleFavorite": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 957,
+      "line": 960,
       "signature": "void SDCard::toggleFavorite(int index)",
       "is_iram": false
     },
     "SDCard::recordRecentLaunch": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 976,
+      "line": 979,
       "signature": "void SDCard::recordRecentLaunch(const char* filename)",
       "is_iram": false
     },
     "SDCard::getRecentCount": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 994,
+      "line": 997,
       "signature": "int SDCard::getRecentCount()",
       "is_iram": false
     },
     "SDCard::getRecentFilename": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 998,
+      "line": 1001,
       "signature": "const char* SDCard::getRecentFilename(int index)",
       "is_iram": false
     },
     "SDCard::saveRecentHistory": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 1003,
+      "line": 1006,
       "signature": "void SDCard::saveRecentHistory()",
       "is_iram": false
     },
     "SDCard::loadRecentHistory": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 1031,
+      "line": 1034,
       "signature": "void SDCard::loadRecentHistory()",
       "is_iram": false
     },
     "SDCard::getFavoritesCount": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 1067,
+      "line": 1070,
       "signature": "int SDCard::getFavoritesCount()",
       "is_iram": false
     },
     "SDCard::saveFavorites": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 1072,
+      "line": 1075,
       "signature": "void SDCard::saveFavorites()",
       "is_iram": false
     },
     "SDCard::loadFavorites": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 1106,
+      "line": 1109,
       "signature": "void SDCard::loadFavorites()",
       "is_iram": false
     },
     "SDCard::loadRom": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 1154,
+      "line": 1157,
       "signature": "uint8_t* SDCard::loadRom(const char* filename, size_t* outSize)",
       "is_iram": false
     },
     "SDCard::freeRom": {
       "file": "firmware/BmoGameboy/src/core/sd_card.cpp",
-      "line": 1233,
+      "line": 1236,
       "signature": "void SDCard::freeRom(uint8_t* buffer)",
       "is_iram": false
     },
@@ -2640,31 +2672,31 @@
     },
     "SpiArbiter::init": {
       "file": "firmware/BmoGameboy/src/core/spi_arbiter.cpp",
-      "line": 7,
+      "line": 10,
       "signature": "void SpiArbiter::init()",
       "is_iram": false
     },
     "SpiArbiter::lock": {
       "file": "firmware/BmoGameboy/src/core/spi_arbiter.cpp",
-      "line": 13,
-      "signature": "bool SpiArbiter::lock(TickType_t waitTicks)",
+      "line": 17,
+      "signature": "void SpiArbiter::lock()",
       "is_iram": false
     },
     "SpiArbiter::unlock": {
       "file": "firmware/BmoGameboy/src/core/spi_arbiter.cpp",
-      "line": 18,
+      "line": 23,
       "signature": "void SpiArbiter::unlock()",
       "is_iram": false
     },
     "lock": {
       "file": "firmware/BmoGameboy/src/core/spi_arbiter.h",
-      "line": 23,
-      "signature": "bool lock(TickType_t waitTicks = portMAX_DELAY);",
+      "line": 20,
+      "signature": "void lock();",
       "is_iram": false
     },
     "unlock": {
       "file": "firmware/BmoGameboy/src/core/spi_arbiter.h",
-      "line": 26,
+      "line": 23,
       "signature": "void unlock();",
       "is_iram": false
     },
@@ -10194,11 +10226,11 @@
     ".agents/rules/04_known_issues.md": {
       "path": ".agents/rules/04_known_issues.md",
       "category": "AGENT_RULES",
-      "total_lines": 77,
-      "sloc": 68,
+      "total_lines": 78,
+      "sloc": 69,
       "comments": 0,
       "blanks": 9,
-      "density_percent": 88.3,
+      "density_percent": 88.5,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
@@ -10761,11 +10793,11 @@
     "CHANGELOG.md": {
       "path": "CHANGELOG.md",
       "category": "OTHER",
-      "total_lines": 66,
-      "sloc": 54,
+      "total_lines": 81,
+      "sloc": 65,
       "comments": 0,
-      "blanks": 12,
-      "density_percent": 81.8,
+      "blanks": 16,
+      "density_percent": 80.2,
       "symbols": [],
       "pins_accessed": [
         "TFT_SPI_HZ",
@@ -12226,6 +12258,18 @@
       ],
       "includes": []
     },
+    "docs/handoffs/2026-11-12-logical-performance-audit.md": {
+      "path": "docs/handoffs/2026-11-12-logical-performance-audit.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 37,
+      "sloc": 27,
+      "comments": 0,
+      "blanks": 10,
+      "density_percent": 73.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
     "docs/handoffs/2026-11-12-production-readiness.md": {
       "path": "docs/handoffs/2026-11-12-production-readiness.md",
       "category": "DOCUMENTATION",
@@ -12323,11 +12367,11 @@
     "docs/performance_report.md": {
       "path": "docs/performance_report.md",
       "category": "DOCUMENTATION",
-      "total_lines": 24,
-      "sloc": 15,
+      "total_lines": 760,
+      "sloc": 735,
       "comments": 0,
-      "blanks": 9,
-      "density_percent": 62.5,
+      "blanks": 25,
+      "density_percent": 96.7,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -13715,11 +13759,11 @@
     "firmware/BmoGameboy/src/core/sd_card.cpp": {
       "path": "firmware/BmoGameboy/src/core/sd_card.cpp",
       "category": "FIRMWARE_CORE",
-      "total_lines": 1249,
-      "sloc": 1118,
+      "total_lines": 1250,
+      "sloc": 1121,
       "comments": 23,
-      "blanks": 108,
-      "density_percent": 89.5,
+      "blanks": 106,
+      "density_percent": 89.7,
       "symbols": [
         "ensurePoolCapacity",
         "compareRoms",
@@ -13804,11 +13848,11 @@
     "firmware/BmoGameboy/src/core/spi_arbiter.cpp": {
       "path": "firmware/BmoGameboy/src/core/spi_arbiter.cpp",
       "category": "FIRMWARE_CORE",
-      "total_lines": 22,
-      "sloc": 18,
+      "total_lines": 25,
+      "sloc": 21,
       "comments": 0,
       "blanks": 4,
-      "density_percent": 81.8,
+      "density_percent": 84.0,
       "symbols": [
         "SpiArbiter::init",
         "SpiArbiter::lock",
@@ -13816,17 +13860,20 @@
       ],
       "pins_accessed": [],
       "includes": [
-        "spi_arbiter.h"
+        "spi_arbiter.h",
+        "freertos/FreeRTOS.h",
+        "freertos/semphr.h",
+        "stdlib.h"
       ]
     },
     "firmware/BmoGameboy/src/core/spi_arbiter.h": {
       "path": "firmware/BmoGameboy/src/core/spi_arbiter.h",
       "category": "FIRMWARE_CORE",
-      "total_lines": 27,
-      "sloc": 9,
+      "total_lines": 24,
+      "sloc": 6,
       "comments": 14,
       "blanks": 4,
-      "density_percent": 33.3,
+      "density_percent": 25.0,
       "symbols": [
         "init",
         "lock",
@@ -13840,11 +13887,7 @@
         "GPIO11",
         "GPIO12"
       ],
-      "includes": [
-        "freertos/FreeRTOS.h",
-        "freertos/semphr.h",
-        "stdbool.h"
-      ]
+      "includes": []
     },
     "firmware/BmoGameboy/src/core/theme.h": {
       "path": "firmware/BmoGameboy/src/core/theme.h",
@@ -17333,11 +17376,11 @@
     "firmware/BmoGameboy/src/vendor/doom/src/p_inter.c": {
       "path": "firmware/BmoGameboy/src/vendor/doom/src/p_inter.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 922,
-      "sloc": 643,
+      "total_lines": 924,
+      "sloc": 646,
       "comments": 115,
-      "blanks": 164,
-      "density_percent": 69.7,
+      "blanks": 163,
+      "density_percent": 69.9,
       "symbols": [],
       "pins_accessed": [],
       "includes": [
@@ -19918,8 +19961,8 @@
     "scripts/generate_ai_knowledge_base.py": {
       "path": "scripts/generate_ai_knowledge_base.py",
       "category": "SCRIPTS",
-      "total_lines": 421,
-      "sloc": 378,
+      "total_lines": 423,
+      "sloc": 380,
       "comments": 12,
       "blanks": 31,
       "density_percent": 89.8,
@@ -20097,6 +20140,34 @@
         "battery_save.h"
       ]
     },
+    "tests/host/fakes/freertos/FreeRTOS.h": {
+      "path": "tests/host/fakes/freertos/FreeRTOS.h",
+      "category": "TESTS",
+      "total_lines": 10,
+      "sloc": 7,
+      "comments": 0,
+      "blanks": 3,
+      "density_percent": 70.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": [
+        "stdint.h"
+      ]
+    },
+    "tests/host/fakes/freertos/semphr.h": {
+      "path": "tests/host/fakes/freertos/semphr.h",
+      "category": "TESTS",
+      "total_lines": 10,
+      "sloc": 7,
+      "comments": 0,
+      "blanks": 3,
+      "density_percent": 70.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": [
+        "FreeRTOS.h"
+      ]
+    },
     "tests/host/frame_pacing_test.cpp": {
       "path": "tests/host/frame_pacing_test.cpp",
       "category": "TESTS",
@@ -20215,6 +20286,21 @@
       "includes": [
         "path_key.h",
         "stdio.h"
+      ]
+    },
+    "tests/host/spi_arbiter_test.cpp": {
+      "path": "tests/host/spi_arbiter_test.cpp",
+      "category": "TESTS",
+      "total_lines": 59,
+      "sloc": 51,
+      "comments": 0,
+      "blanks": 8,
+      "density_percent": 86.4,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": [
+        "freertos/semphr.h",
+        "spi_arbiter.h"
       ]
     },
     "tests/host/theme_color_test.cpp": {
@@ -20566,6 +20652,18 @@
       "comments": 0,
       "blanks": 8,
       "density_percent": 77.1,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "tests/test_spi_arbiter.py": {
+      "path": "tests/test_spi_arbiter.py",
+      "category": "TESTS",
+      "total_lines": 48,
+      "sloc": 39,
+      "comments": 0,
+      "blanks": 9,
+      "density_percent": 81.2,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -21049,11 +21147,11 @@
     "tools/guardian/cli.py": {
       "path": "tools/guardian/cli.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 1276,
-      "sloc": 1031,
+      "total_lines": 1284,
+      "sloc": 1039,
       "comments": 56,
       "blanks": 189,
-      "density_percent": 80.8,
+      "density_percent": 80.9,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
@@ -21112,11 +21210,11 @@
     "tools/guardian/core/bus_model.py": {
       "path": "tools/guardian/core/bus_model.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 278,
-      "sloc": 245,
-      "comments": 11,
-      "blanks": 22,
-      "density_percent": 88.1,
+      "total_lines": 270,
+      "sloc": 242,
+      "comments": 7,
+      "blanks": 21,
+      "density_percent": 89.6,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -21227,11 +21325,11 @@
     "tools/guardian/core/report_gen.py": {
       "path": "tools/guardian/core/report_gen.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 243,
-      "sloc": 220,
+      "total_lines": 295,
+      "sloc": 269,
       "comments": 3,
-      "blanks": 20,
-      "density_percent": 90.5,
+      "blanks": 23,
+      "density_percent": 91.2,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -21289,11 +21387,11 @@
     "tools/guardian/tests/test_guardian.py": {
       "path": "tools/guardian/tests/test_guardian.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 426,
-      "sloc": 345,
-      "comments": 26,
-      "blanks": 55,
-      "density_percent": 81.0,
+      "total_lines": 469,
+      "sloc": 383,
+      "comments": 27,
+      "blanks": 59,
+      "density_percent": 81.7,
       "symbols": [],
       "pins_accessed": [
         "TFT_CS"

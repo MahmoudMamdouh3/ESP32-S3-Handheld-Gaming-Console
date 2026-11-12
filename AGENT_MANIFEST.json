@@ -1,8 +1,8 @@
 {
   "manifest_version": "2.3.0",
-  "total_files": 585,
-  "total_lines": 397908,
-  "total_sloc": 361221,
+  "total_files": 590,
+  "total_lines": 398924,
+  "total_sloc": 362184,
   "target_mcu": "ESP32-S3-N16R8 (16MB Flash, 8MB PSRAM)",
   "active_consoles": 15,
   "rules_count": 45,
