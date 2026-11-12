@@ -1,5 +1,27 @@
 # Changelog
 
+## [Production-readiness assessment and workstream handoff] - 2026-11-12
+
+### Added
+- Documented the 2026-11-12 production-readiness review, recorded design decisions (40 MHz in-spec display clock default with NVS 80 MHz opt-in and boot-button revert; isolated `fix/production-readiness` CI branch), and full specifications for workstreams `WS1`–`WS4` in [the production-readiness handoff](docs/handoffs/2026-11-12-production-readiness.md).
+- Added native C++17 AddressSanitizer/UBSan test runner `build_and_run_native_cxx()` (`find_vcvars64()`, `find_native_cxx()`) in `tests/host_test_support.py` and verified ASan detection in `tests/test_host_test_support.py`.
+- Added static codebase visualization generator (`scripts/generate_code_visualizations.py`) and exported HTML/JSON/Mermaid views under `visualizations/` (`gitdiagram`, `understand_anything`, `codegraphcontext`, `codecharta`).
+
+### Verification
+- `python -m unittest discover -s tests` passed (`Ran 163 tests in 69.689s`, `OK`), including 5 enclosure geometry checks (`tests.test_enclosure_generator`) and 1 ASan native runner check (`tests.test_host_test_support`).
+- `python -m tools.guardian verify` passed (`Ran 187 tests in 76.429s`, `OK`), `python scripts/check_markdown_links.py` passed (`0 issues`), and `python -m tools.guardian diff-audit` passed (`0` AST/drift issues).
+- Full `python scripts/validate_repo.py` validation and target compile results are recorded in the commit verification notes and [the production-readiness handoff](docs/handoffs/2026-11-12-production-readiness.md). Physical fit, printing, thermal, and hardware tests remain unverified.
+
+## [3D simulator and enclosure] - 2026-11-07
+
+### Changed
+- Reworked the WebGL console body, black display glass, button caps, shoulder legends, side BMO marks, speaker holes, and rear details to share the printable model's nominal envelope and feature coordinates.
+- Added a parametric split-shell generator for seven printable STL parts and a metre-scale GLB assembly, with display rebate, button retainers, screw features, board placeholders, battery door tabs, ports, side cuts, and vents.
+- Added generator tests and pinned mesh dependencies to host CI; documented print setup, export/import, clearances, and the required physical survey.
+
+### Verification
+- Generator tests, manifold imports, assembled-part intersection checks, and the five-angle browser review are recorded after final verification below. Physical fit, printing, and thermal tests are not claimed.
+
 ## [Audit remediation and repository handoff] - 2026-11-07
 
 ### Changed

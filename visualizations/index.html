@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BMO Codebase Visualization Hub</title>
+  <style>
+    :root {
+      --bg: #0A1316;
+      --panel: #112024;
+      --card: #162B30;
+      --card-hover: #1D373E;
+      --border: #264B42;
+      --accent: #5FB49C;
+      --gold: #FFE033;
+      --text: #E0F2F1;
+      --text-muted: #80CBC4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .header h1 {
+      font-size: 32px;
+      color: var(--gold);
+      margin-bottom: 10px;
+    }
+    .header p {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+      gap: 24px;
+      margin-bottom: 48px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      text-decoration: none;
+      color: inherit;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: var(--gold);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.4);
+      background: var(--card-hover);
+    }
+    .card-badge {
+      display: inline-block;
+      align-self: flex-start;
+      background: var(--accent);
+      color: #051B17;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 14px;
+    }
+    .card h2 {
+      font-size: 20px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .card p {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      flex: 1;
+    }
+    .card-footer {
+      font-size: 13px;
+      color: var(--gold);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .mental-model {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 30px;
+    }
+    .mental-model h2 {
+      color: var(--gold);
+      font-size: 20px;
+      margin-bottom: 14px;
+    }
+    .mental-model ol {
+      padding-left: 20px;
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+    .mental-model li {
+      margin-bottom: 10px;
+    }
+    .mental-model strong {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>BMO Codebase Visualizations</h1>
+    <p>Zero-install interactive architecture maps, guided walkthrough tours, physics networks, and 3D cityscapes generated directly from live repository source code.</p>
+  </div>
+
+  <div class="grid">
+    <a href="gitdiagram/index.html" class="card">
+      <div>
+        <span class="card-badge">ARCHITECTURE FLOW</span>
+        <h2>GitDiagram</h2>
+        <p>Interactive block diagram mapping the physical ESP32 pins, hardware drivers, the 14 emulator cores, and safety testing suites.</p>
+      </div>
+      <div class="card-footer">Launch GitDiagram View &rarr;</div>
+    </a>
+
+    <a href="understand_anything/index.html" class="card">
+      <div>
+        <span class="card-badge">GUIDED TOURS</span>
+        <h2>Understand-Anything</h2>
+        <p>Domain concept clusters and step-by-step guided walkthroughs ("Boot sequence", "Button to pixel", "Why safety rules exist").</p>
+      </div>
+      <div class="card-footer">Launch Guided Tours &rarr;</div>
+    </a>
+
+    <a href="codegraphcontext/index.html" class="card">
+      <div>
+        <span class="card-badge">PHYSICS NETWORK</span>
+        <h2>CodeGraphContext (CGC)</h2>
+        <p>Interactive force-directed graph (D3.js). Explore file include links, dependency chains, and module clusters by dragging nodes.</p>
+      </div>
+      <div class="card-footer">Launch Force Graph &rarr;</div>
+    </a>
+
+    <a href="codecharta/index.html" class="card">
+      <div>
+        <span class="card-badge">3D METROPOLIS</span>
+        <h2>CodeCharta 3D City</h2>
+        <p>Three.js 3D city where source files are skyscrapers. Building height = lines of code; district color = subsystem category.</p>
+      </div>
+      <div class="card-footer">Launch 3D City &rarr;</div>
+    </a>
+  </div>
+
+  <div class="mental-model">
+    <h2>The 3 Pillars of Your Handheld Console</h2>
+    <ol>
+      <li><strong>Hardware Interface (<code>firmware/BmoGameboy/src/core/</code>):</strong> Talks to your soldered screen (ST7789), 12 input buttons, SD card reader, and animated BMO expressions.</li>
+      <li><strong>14 Console Engines (<code>src/emulators/</code> &amp; <code>src/engine/</code>):</strong> Standalone emulator cores (GB, GBC, NES, SMS, PCE, Atari, Pico-8, Genesis, SNES, WonderSwan, NGP, Lynx, Coleco, DOOM).</li>
+      <li><strong>Safety Guardrails &amp; Simulator (<code>tools/guardian/</code> &amp; <code>tools/bmo_simulator/</code>):</strong> Automated test suite verifying memory limits before flashing, plus the web playtester and 3D enclosure CAD.</li>
+    </ol>
+  </div>
+</body>
+</html>

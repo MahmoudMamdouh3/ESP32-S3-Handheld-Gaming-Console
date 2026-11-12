@@ -1,6 +1,6 @@
 # Known Issues and Audit Findings
 
-The active registry contains current constraints and findings. Historical logs are indexed in [the archive](../../docs/archive/known-issues-history.md). Evidence and handoff details for the 2026-11-07 audit are in [the remediation handoff](../../docs/handoffs/2026-11-07-remediation.md).
+The active registry contains current constraints and findings. Historical logs are indexed in [the archive](../../docs/archive/known-issues-history.md). Evidence and handoff details for the 2026-11-07 audit are in [the remediation handoff](../../docs/handoffs/2026-11-07-remediation.md), and the 2026-11-12 assessment and deferred workstreams (`WS1`–`WS4`) are in [the production-readiness handoff](../../docs/handoffs/2026-11-12-production-readiness.md).
 
 ## Active constraints
 
@@ -41,8 +41,9 @@ The active registry contains current constraints and findings. Historical logs a
 | P2-04 | IN_PROGRESS | SDD claims were corrected against firmware and pinned core sources; a broader contradiction sweep across every hardware document remains. |
 | P2-05 | IN_PROGRESS | `python -m tools.guardian symbols` generated 11 header-derived pages and `docs/generated/symbols.md`; API and declaration coverage review remains. |
 | P2-06 | OPEN | Hardware-document truthfulness review and physical measurements are pending. |
+| 3D-01 | FIXED_UNVERIFIED | The WebGL model and parametric shell have aligned outer and feature coordinates. Seven printable meshes pass closure, winding, positive-volume, Manifold3D, and assembled-part intersection checks; GLB lens-to-rebate overlap is checked. Physical board/module fit, fastener selection, print calibration, switch travel, and thermal performance remain `WAITING`. |
 | P2-07 | IN_PROGRESS | ADRs 0011–0014 were added; remaining ADR backfill is open. |
-| P3-01 | IN_PROGRESS | Host C++ checks cover sizing, save gating, ROM keys, index layout, springs, pacing, quit policy, and palette parity; sanitizer coverage is pending. |
+| P3-01 | IN_PROGRESS | Host C++ checks cover sizing, save gating, ROM keys, index layout, springs, pacing, quit policy, and palette parity; `tests/host_test_support.py` now provides `build_and_run_native_cxx()` (ASan/UBSan), while seeded mutation fuzzing and `WS1`–`WS4` remain open. |
 | P3-02 | OPEN | Per-core CPU conformance suite is pending. |
 | P3-03 | IN_PROGRESS | Guardian gained rule-size, banned-language, file-URI, unresolved Markdown-link, and large-local-array checks; duplicate symbol, flag, lock, and timeout analyzers remain. |
 | P3-04 | OPEN | On-device measurement kit is pending. |
@@ -57,6 +58,8 @@ The active registry contains current constraints and findings. Historical logs a
 - 2026-11-07: Added path-key, battery-save, PSRAM-budget, and index-layout remediation; see the dated handoff for exact evidence and remaining work.
 - 2026-11-07: Added explicit SPI clock constants and a Diagnostics clock comparison pattern. The 80 MHz display setting exceeds the ST7789VW datasheet's 62.5 MHz serial-write limit; a human perfboard check is still required.
 - 2026-11-07: Fresh 80 MHz and 40 MHz profile builds passed; strict repository validation, all 155 host tests, diff-audit, UI audit, color parity, and Markdown links passed. RAM usage is 253,728/327,680 B (77.4%) and requires on-device headroom measurements. See the remediation handoff for exact output and open items.
+- 2026-11-07: Added the 3D simulator/enclosure update, parametric STL/GLB generator, geometry tests, and survey/printing guide. `3D-01` is `FIXED_UNVERIFIED`; no physical fit, print, or thermal result is recorded.
+- 2026-11-12: Recorded production-readiness blockers (tracked commercial ROMs, MIT vs GPL/vendor license gaps, unverified hardware, 80 MHz display clock risk, open audit items), user decisions (40 MHz default + NVS 80 MHz opt-in; isolated `fix/production-readiness` branch), `WS0` ASan/UBSan native test helper (`tests/host_test_support.py`), `WS1`–`WS4` specifications blocked by subagent 429 quota exhaustion in `docs/handoffs/2026-11-12-production-readiness.md`, and static codebase visualizations (`scripts/generate_code_visualizations.py`, `visualizations/`).
 
 ## Remaining work from the A1–F16 audit
 

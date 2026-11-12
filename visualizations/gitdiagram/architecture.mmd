@@ -1,0 +1,76 @@
+flowchart TD
+    subgraph Physical_Hardware ["1. Physical Hardware & Soldered Pins"]
+        ESP32["ESP32-S3 Dual LX7 (240MHz, 16MB Flash, 8MB PSRAM)"]
+        Display["2.4-inch ST7789 SPI LCD (320x240, 80MHz SPI)"]
+        Buttons["12 Tactile Buttons (GPIO Direct Matrix)"]
+        SD["MicroSD Card Slot (SPI Mode, 25MHz)"]
+        Battery["LiPo / USB-C Power Rail"]
+    end
+
+    subgraph Firmware_Core ["2. Firmware Driver Layer (firmware/BmoGameboy/src/core/)"]
+        Arbiter["SpiArbiter (Mutex between Display & SD)"]
+        DisplayDriver["DisplayEmu (Frame Streaming, Menus & Bezels)"]
+        ButtonDriver["Buttons (Atomic 64-bit GPIO Reading & Debounce)"]
+        SDDriver["SDCard (ROM Indexing, PSRAM Streaming & Metadata)"]
+        SaveMgr["SaveManager (Atomic .sav & .s01-.s05 State Persistence)"]
+        FaceDriver["BmoFace (Animated Facial Expressions & Mascot Physics)"]
+        Theme["Theme Tokens (Pre-swapped BGR565 Color Math)"]
+    end
+
+    subgraph Emulator_Engines ["3. The 14 Retro Emulator Engines"]
+        GB["Peanut-GB (Game Boy DMG)"]
+        GBC["Walnut-CGB (Game Boy Color)"]
+        NES["Agnes-NES (Nintendo Entertainment System)"]
+        SMS["SMS Plus (Sega Master System & Game Gear)"]
+        PCE["HuPCE (PC Engine / TurboGrafx-16)"]
+        ATARI["Stella2600 (Atari 2600 VCS)"]
+        PICO["Pico-8 VM (Fantasy Console)"]
+        GENESIS["GenesisCore (Sega Mega Drive / Genesis)"]
+        SNES["SnesCore (Super Nintendo Entertainment System)"]
+        WSWAN["WSwanCore (Bandai WonderSwan & Color)"]
+        NGP["NGPCore (SNK Neo Geo Pocket & Color)"]
+        LYNX["LynxCore (Atari Lynx Handheld)"]
+        COLEM["ColemCore (ColecoVision Console)"]
+        DOOM["DoomGeneric (Classic PC DOOM Engine)"]
+    end
+
+    subgraph Orchestration ["4. Main Firmware Dispatch (BmoGameboy.ino)"]
+        MainLoop["Main Loop State Machine (Boot, Carousel, Museum, Game, Pause, Mascot)"]
+    end
+
+    subgraph Guardian_Suite ["5. Safety Guardrails & Host Testing (tools/guardian/)"]
+        AstLinter["AST Linter (Catches naked mallocs & leaks)"]
+        DocTruth["DocTruthVerifier (Syncs docs with live pins & symbols)"]
+        ElfAnalyzer["ElfAnalyzer (SRAM 327KB & Flash budgets)"]
+        BusModel["HardwareBusModel (80MHz SPI 60 FPS timing budget)"]
+        Simulator["Web Simulator & 3D BMO Console (tools/bmo_simulator/)"]
+        CAD["Parametric 3D Enclosure Generator (tools/enclosure/)"]
+    end
+
+    %% Hardware Connections
+    ESP32 --> Arbiter
+    Arbiter --> Display
+    Arbiter --> SD
+    Buttons --> ButtonDriver
+    Battery --> ESP32
+
+    %% Driver Layer
+    Arbiter --> DisplayDriver
+    Arbiter --> SDDriver
+    DisplayDriver --> Theme
+    ButtonDriver --> MainLoop
+    DisplayDriver --> MainLoop
+    SDDriver --> MainLoop
+    SaveMgr --> SDDriver
+    FaceDriver --> DisplayDriver
+
+    %% Engines to Core
+    MainLoop --> Emulator_Engines
+    Emulator_Engines --> DisplayDriver
+    Emulator_Engines --> ButtonDriver
+    Emulator_Engines --> SaveMgr
+
+    %% Guardrails to Codebase
+    Guardian_Suite -.-> Firmware_Core
+    Guardian_Suite -.-> Emulator_Engines
+    Guardian_Suite -.-> Orchestration

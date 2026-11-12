@@ -459,7 +459,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "Known Issues and Audit Findings",
-      "lines": 69
+      "lines": 72
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -10205,11 +10205,11 @@
     ".agents/rules/04_known_issues.md": {
       "path": ".agents/rules/04_known_issues.md",
       "category": "AGENT_RULES",
-      "total_lines": 69,
-      "sloc": 60,
+      "total_lines": 72,
+      "sloc": 63,
       "comments": 0,
       "blanks": 9,
-      "density_percent": 87.0,
+      "density_percent": 87.5,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
@@ -282040,11 +282040,11 @@
     "CHANGELOG.md": {
       "path": "CHANGELOG.md",
       "category": "OTHER",
-      "total_lines": 22,
-      "sloc": 19,
+      "total_lines": 44,
+      "sloc": 35,
       "comments": 0,
-      "blanks": 3,
-      "density_percent": 86.4,
+      "blanks": 9,
+      "density_percent": 79.5,
       "symbols": [],
       "pins_accessed": [
         "TFT_SPI_HZ",
@@ -282516,11 +282516,11 @@
     "docs/consolidated-rules/rule-04_known_issues-01.md": {
       "path": "docs/consolidated-rules/rule-04_known_issues-01.md",
       "category": "DOCUMENTATION",
-      "total_lines": 73,
-      "sloc": 62,
+      "total_lines": 66,
+      "sloc": 57,
       "comments": 0,
-      "blanks": 11,
-      "density_percent": 84.9,
+      "blanks": 9,
+      "density_percent": 86.4,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
@@ -282529,6 +282529,18 @@
         "TFT_SPI_HZ",
         "SD_SPI_HZ"
       ],
+      "includes": []
+    },
+    "docs/consolidated-rules/rule-04_known_issues-02.md": {
+      "path": "docs/consolidated-rules/rule-04_known_issues-02.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 13,
+      "sloc": 10,
+      "comments": 0,
+      "blanks": 3,
+      "density_percent": 76.9,
+      "symbols": [],
+      "pins_accessed": [],
       "includes": []
     },
     "docs/consolidated-rules/rule-05_git_workflow-01.md": {
@@ -283266,6 +283278,21 @@
       ],
       "includes": []
     },
+    "docs/enclosure-3d-printing.md": {
+      "path": "docs/enclosure-3d-printing.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 99,
+      "sloc": 67,
+      "comments": 0,
+      "blanks": 32,
+      "density_percent": 67.7,
+      "symbols": [],
+      "pins_accessed": [
+        "FEATURE_BATTERY_MONITOR",
+        "FEATURE_AUDIO"
+      ],
+      "includes": []
+    },
     "docs/face-render-measurement-template.md": {
       "path": "docs/face-render-measurement-template.md",
       "category": "DOCUMENTATION",
@@ -283463,6 +283490,30 @@
       "pins_accessed": [
         "FEATURE_AUDIO",
         "FEATURE_BATTERY_MONITOR"
+      ],
+      "includes": []
+    },
+    "docs/handoffs/2026-11-12-production-readiness.md": {
+      "path": "docs/handoffs/2026-11-12-production-readiness.md",
+      "category": "DOCUMENTATION",
+      "total_lines": 138,
+      "sloc": 109,
+      "comments": 0,
+      "blanks": 29,
+      "density_percent": 79.0,
+      "symbols": [],
+      "pins_accessed": [
+        "TFT_SPI_HZ",
+        "FEATURE_BATTERY_MONITOR",
+        "GPIO1",
+        "FEATURE_AUDIO",
+        "GPIO14",
+        "GPIO42",
+        "GPIO47",
+        "GPIO48",
+        "TFT_SPI_DEFAULT_HZ",
+        "TFT_SPI_FAST_HZ",
+        "SD_SPI_HZ"
       ],
       "includes": []
     },
@@ -283886,11 +283937,11 @@
     "docs/software-design-document/section-13.md": {
       "path": "docs/software-design-document/section-13.md",
       "category": "DOCUMENTATION",
-      "total_lines": 17,
-      "sloc": 9,
+      "total_lines": 21,
+      "sloc": 11,
       "comments": 0,
-      "blanks": 8,
-      "density_percent": 52.9,
+      "blanks": 10,
+      "density_percent": 52.4,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -283948,11 +283999,11 @@
     "docs/software-design-document.md": {
       "path": "docs/software-design-document.md",
       "category": "DOCUMENTATION",
-      "total_lines": 67,
-      "sloc": 51,
+      "total_lines": 68,
+      "sloc": 52,
       "comments": 0,
       "blanks": 16,
-      "density_percent": 76.1,
+      "density_percent": 76.5,
       "symbols": [],
       "pins_accessed": [
         "GPIO43"
@@ -291266,6 +291317,21 @@
       ],
       "includes": []
     },
+    "scripts/generate_code_visualizations.py": {
+      "path": "scripts/generate_code_visualizations.py",
+      "category": "SCRIPTS",
+      "total_lines": 1562,
+      "sloc": 1407,
+      "comments": 37,
+      "blanks": 118,
+      "density_percent": 90.1,
+      "symbols": [],
+      "pins_accessed": [
+        "FEATURE_BATTERY_MONITOR",
+        "FEATURE_AUDIO"
+      ],
+      "includes": []
+    },
     "scripts/install_git_hooks.py": {
       "path": "scripts/install_git_hooks.py",
       "category": "SCRIPTS",
@@ -291540,11 +291606,11 @@
     "tests/host_test_support.py": {
       "path": "tests/host_test_support.py",
       "category": "TESTS",
-      "total_lines": 43,
-      "sloc": 33,
-      "comments": 1,
-      "blanks": 9,
-      "density_percent": 76.7,
+      "total_lines": 135,
+      "sloc": 112,
+      "comments": 4,
+      "blanks": 19,
+      "density_percent": 83.0,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -291624,6 +291690,18 @@
       "pins_accessed": [],
       "includes": []
     },
+    "tests/test_enclosure_generator.py": {
+      "path": "tests/test_enclosure_generator.py",
+      "category": "TESTS",
+      "total_lines": 103,
+      "sloc": 87,
+      "comments": 1,
+      "blanks": 15,
+      "density_percent": 84.5,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
     "tests/test_frame_pacing.py": {
       "path": "tests/test_frame_pacing.py",
       "category": "TESTS",
@@ -291668,6 +291746,18 @@
       "comments": 36,
       "blanks": 22,
       "density_percent": 65.3,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "tests/test_host_test_support.py": {
+      "path": "tests/test_host_test_support.py",
+      "category": "TESTS",
+      "total_lines": 40,
+      "sloc": 34,
+      "comments": 0,
+      "blanks": 6,
+      "density_percent": 85.0,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -292280,6 +292370,18 @@
       "pins_accessed": [],
       "includes": []
     },
+    "tools/enclosure/generate_bmo_enclosure.py": {
+      "path": "tools/enclosure/generate_bmo_enclosure.py",
+      "category": "TOOLS",
+      "total_lines": 576,
+      "sloc": 493,
+      "comments": 23,
+      "blanks": 60,
+      "density_percent": 85.6,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
     "tools/guardian/__init__.py": {
       "path": "tools/guardian/__init__.py",
       "category": "GUARDIAN_TOOLCHAIN",
@@ -292614,6 +292716,57 @@
       "density_percent": 83.8,
       "symbols": [],
       "pins_accessed": [],
+      "includes": []
+    },
+    "visualizations/codecharta/bmo_gameboy.cc.json": {
+      "path": "visualizations/codecharta/bmo_gameboy.cc.json",
+      "category": "OTHER",
+      "total_lines": 4269,
+      "sloc": 4269,
+      "comments": 0,
+      "blanks": 0,
+      "density_percent": 100.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "visualizations/codegraphcontext/cgc_graph.json": {
+      "path": "visualizations/codegraphcontext/cgc_graph.json",
+      "category": "OTHER",
+      "total_lines": 550,
+      "sloc": 550,
+      "comments": 0,
+      "blanks": 0,
+      "density_percent": 100.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "visualizations/README.md": {
+      "path": "visualizations/README.md",
+      "category": "OTHER",
+      "total_lines": 25,
+      "sloc": 18,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 72.0,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
+    "visualizations/understand_anything/graph.json": {
+      "path": "visualizations/understand_anything/graph.json",
+      "category": "OTHER",
+      "total_lines": 174,
+      "sloc": 174,
+      "comments": 0,
+      "blanks": 0,
+      "density_percent": 100.0,
+      "symbols": [],
+      "pins_accessed": [
+        "FEATURE_BATTERY_MONITOR",
+        "FEATURE_AUDIO"
+      ],
       "includes": []
     }
   }

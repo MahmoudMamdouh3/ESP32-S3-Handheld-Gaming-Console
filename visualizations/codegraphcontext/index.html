@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CodeGraphContext (CGC) — Visual Code Network</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    :root {
+      --bg: #0D1619;
+      --card: #142428;
+      --border: #264B42;
+      --accent: #5FB49C;
+      --gold: #FFE033;
+      --text: #E0F2F1;
+      --text-muted: #80CBC4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    #header {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: rgba(20, 36, 40, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      backdrop-filter: blur(8px);
+      z-index: 10;
+      max-width: 380px;
+    }
+    #header h1 {
+      font-size: 18px;
+      color: var(--gold);
+      margin-bottom: 4px;
+    }
+    #header p {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-bottom: 12px;
+    }
+    .back-btn {
+      display: inline-block;
+      background: var(--accent);
+      color: #051B17;
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    #tooltip {
+      position: absolute;
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--gold);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: var(--text);
+      pointer-events: none;
+      z-index: 20;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    }
+    svg { width: 100%; height: 100%; cursor: grab; }
+    svg:active { cursor: grabbing; }
+    .link { stroke: #264B42; stroke-opacity: 0.6; stroke-width: 1.2px; }
+    .node { stroke: #E0F2F1; stroke-width: 1px; cursor: pointer; }
+    .node:hover { stroke: var(--gold); stroke-width: 2.5px; }
+    .label { fill: #80CBC4; font-size: 10px; pointer-events: none; text-shadow: 0 1px 3px #000; }
+  </style>
+</head>
+<body>
+  <div id="header">
+    <h1>CodeGraphContext (CGC)</h1>
+    <p>Physics force-directed code network. Circles represent key source files (radius = lines of code). Lines represent includes and function dependencies. Drag nodes to explore!</p>
+    <a href="../index.html" class="back-btn">Back to Hub</a>
+  </div>
+  <div id="tooltip"></div>
+  <svg id="canvas"></svg>
+
+  <script>
+    const data = {"nodes": [{"id": "aladdin.h", "path": "firmware/BmoGameboy/src/assets/roms/aladdin.h", "lines": 65541, "category": "Support & Assets", "color": "#B0BEC5", "radius": 24}, {"id": "lego_racers.h", "path": "firmware/BmoGameboy/src/assets/roms/lego_racers.h", "lines": 65541, "category": "Support & Assets", "color": "#B0BEC5", "radius": 24}, {"id": "mario_deluxe.h", "path": "firmware/BmoGameboy/src/assets/roms/mario_deluxe.h", "lines": 65541, "category": "Support & Assets", "color": "#B0BEC5", "radius": 24}, {"id": "zelda_ages.h", "path": "firmware/BmoGameboy/src/assets/roms/zelda_ages.h", "lines": 65541, "category": "Support & Assets", "color": "#B0BEC5", "radius": 24}, {"id": "virtual_bmo.h", "path": "firmware/BmoGameboy/src/assets/roms/virtual_bmo.h", "lines": 32775, "category": "Support & Assets", "color": "#B0BEC5", "radius": 24}, {"id": "rom_data.h", "path": "firmware/BmoGameboy/src/assets/rom_data.h", "lines": 13119, "category": "Support & Assets", "color": "#B0BEC5", "radius": 24}, {"id": "walnut_cgb.h", "path": "firmware/BmoGameboy/src/engine/walnut_cgb/walnut_cgb.h", "lines": 9983, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "info.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/info.c", "lines": 4662, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "peanut_gb.h", "path": "firmware/BmoGameboy/src/vendor/peanut_gb/peanut_gb.h", "lines": 4101, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "agnes.c", "path": "firmware/BmoGameboy/src/vendor/agnes/agnes.c", "lines": 2640, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "g_game.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/g_game.c", "lines": 2303, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "tables.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/tables.c", "lines": 2227, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "m_config.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/m_config.c", "lines": 2129, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "m_menu.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/m_menu.c", "lines": 2125, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "display_emu.cpp", "path": "firmware/BmoGameboy/src/core/display_emu.cpp", "lines": 2116, "category": "Display & SPI Bus", "color": "#4DB6AC", "radius": 24}, {"id": "p_enemy.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c", "lines": 2006, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "simulator.js", "path": "tools/bmo_simulator/simulator.js", "lines": 1911, "category": "Web Simulator", "color": "#4DD0E1", "radius": 24}, {"id": "p_saveg.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_saveg.c", "lines": 1891, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "d_main.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/d_main.c", "lines": 1847, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "wi_stuff.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/wi_stuff.c", "lines": 1829, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "generate_code_visualizations.py", "path": "scripts/generate_code_visualizations.py", "lines": 1561, "category": "Guardian Safety Suite", "color": "#90A4AE", "radius": 24}, {"id": "p_spec.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_spec.c", "lines": 1492, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "i_scale.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/i_scale.c", "lines": 1452, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "p_map.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_map.c", "lines": 1448, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "st_stuff.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/st_stuff.c", "lines": 1416, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "am_map.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/am_map.c", "lines": 1358, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "BmoGameboy.ino", "path": "firmware/BmoGameboy/BmoGameboy.ino", "lines": 1349, "category": "Main Orchestration", "color": "#FFD54F", "radius": 24}, {"id": "info.h", "path": "firmware/BmoGameboy/src/vendor/doom/src/info.h", "lines": 1331, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "cli.py", "path": "tools/guardian/cli.py", "lines": 1276, "category": "Guardian Safety Suite", "color": "#90A4AE", "radius": 24}, {"id": "sd_card.cpp", "path": "firmware/BmoGameboy/src/core/sd_card.cpp", "lines": 1235, "category": "Storage & Save States", "color": "#64B5F6", "radius": 24}, {"id": "bmo_face.cpp", "path": "firmware/BmoGameboy/src/core/bmo_face.cpp", "lines": 1149, "category": "BMO Mascot & UI", "color": "#81C784", "radius": 24}, {"id": "p_mobj.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_mobj.c", "lines": 1060, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "OrbitControls.js", "path": "tools/bmo_simulator/OrbitControls.js", "lines": 1045, "category": "Web Simulator", "color": "#4DD0E1", "radius": 24}, {"id": "p_maputl.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_maputl.c", "lines": 1001, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "r_things.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/r_things.c", "lines": 982, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "bmo_3d_console.js", "path": "tools/bmo_simulator/bmo_3d_console.js", "lines": 978, "category": "Web Simulator", "color": "#4DD0E1", "radius": 24}, {"id": "r_draw.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/r_draw.c", "lines": 975, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "v_video.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/v_video.c", "lines": 932, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "p_inter.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_inter.c", "lines": 922, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "r_main.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/r_main.c", "lines": 914, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "r_data.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/r_data.c", "lines": 912, "category": "Console Engines", "color": "#E57373", "radius": 24}, {"id": "p_pspr.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_pspr.c", "lines": 888, "category": "Console Engines", "color": "#E57373", "radius": 23}, {"id": "p_setup.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_setup.c", "lines": 855, "category": "Console Engines", "color": "#E57373", "radius": 23}, {"id": "d_iwad.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/d_iwad.c", "lines": 851, "category": "Console Engines", "color": "#E57373", "radius": 23}, {"id": "d_loop.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/d_loop.c", "lines": 826, "category": "Console Engines", "color": "#E57373", "radius": 22}, {"id": "genesis.c", "path": "firmware/BmoGameboy/src/vendor/genesis/genesis.c", "lines": 786, "category": "Console Engines", "color": "#E57373", "radius": 22}, {"id": "p_doors.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_doors.c", "lines": 778, "category": "Console Engines", "color": "#E57373", "radius": 22}, {"id": "save_manager.cpp", "path": "firmware/BmoGameboy/src/core/save_manager.cpp", "lines": 767, "category": "Storage & Save States", "color": "#64B5F6", "radius": 22}, {"id": "r_segs.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/r_segs.c", "lines": 743, "category": "Console Engines", "color": "#E57373", "radius": 21}, {"id": "mus2mid.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/mus2mid.c", "lines": 737, "category": "Console Engines", "color": "#E57373", "radius": 21}, {"id": "f_finale.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/f_finale.c", "lines": 718, "category": "Console Engines", "color": "#E57373", "radius": 21}, {"id": "snes.c", "path": "firmware/BmoGameboy/src/vendor/snes/snes.c", "lines": 694, "category": "Console Engines", "color": "#E57373", "radius": 21}, {"id": "d_englsh.h", "path": "firmware/BmoGameboy/src/vendor/doom/src/d_englsh.h", "lines": 693, "category": "Console Engines", "color": "#E57373", "radius": 21}, {"id": "s_sound.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/s_sound.c", "lines": 670, "category": "Console Engines", "color": "#E57373", "radius": 20}, {"id": "pce.c", "path": "firmware/BmoGameboy/src/vendor/pce/pce.c", "lines": 658, "category": "Console Engines", "color": "#E57373", "radius": 20}, {"id": "w_wad.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/w_wad.c", "lines": 656, "category": "Console Engines", "color": "#E57373", "radius": 20}, {"id": "p_switch.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_switch.c", "lines": 648, "category": "Console Engines", "color": "#E57373", "radius": 20}, {"id": "hu_stuff.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/hu_stuff.c", "lines": 641, "category": "Console Engines", "color": "#E57373", "radius": 20}, {"id": "validate_repo.py", "path": "scripts/validate_repo.py", "lines": 640, "category": "Guardian Safety Suite", "color": "#90A4AE", "radius": 20}, {"id": "p_spec.h", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_spec.h", "lines": 637, "category": "Console Engines", "color": "#E57373", "radius": 20}, {"id": "i_system.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/i_system.c", "lines": 622, "category": "Console Engines", "color": "#E57373", "radius": 19}, {"id": "wswan.c", "path": "firmware/BmoGameboy/src/vendor/wswan/wswan.c", "lines": 592, "category": "Console Engines", "color": "#E57373", "radius": 19}, {"id": "generate_bmo_enclosure.py", "path": "tools/enclosure/generate_bmo_enclosure.py", "lines": 576, "category": "3D Enclosure CAD", "color": "#A1887F", "radius": 19}, {"id": "r_bsp.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/r_bsp.c", "lines": 573, "category": "Console Engines", "color": "#E57373", "radius": 19}, {"id": "atari.c", "path": "firmware/BmoGameboy/src/vendor/stella/atari.c", "lines": 557, "category": "Console Engines", "color": "#E57373", "radius": 18}], "links": [{"source": "sd_card.cpp", "target": "virtual_bmo.h"}, {"source": "sd_card.cpp", "target": "mario_deluxe.h"}, {"source": "sd_card.cpp", "target": "zelda_ages.h"}, {"source": "sd_card.cpp", "target": "aladdin.h"}, {"source": "sd_card.cpp", "target": "lego_racers.h"}, {"source": "info.c", "target": "info.h"}]};
+    const svg = d3.select("#canvas");
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    const g = svg.append("g");
+
+    svg.call(d3.zoom()
+      .scaleExtent([0.2, 5])
+      .on("zoom", (event) => g.attr("transform", event.transform))
+    );
+
+    const simulation = d3.forceSimulation(data.nodes)
+      .force("link", d3.forceLink(data.links).id(d => d.id).distance(55))
+      .force("charge", d3.forceManyBody().strength(-140))
+      .force("center", d3.forceCenter(width / 2, height / 2))
+      .force("collision", d3.forceCollide().radius(d => d.radius + 6));
+
+    const link = g.append("g")
+      .selectAll(".link")
+      .data(data.links)
+      .join("line")
+      .attr("class", "link");
+
+    const tooltip = document.getElementById("tooltip");
+
+    const node = g.append("g")
+      .selectAll(".node")
+      .data(data.nodes)
+      .join("circle")
+      .attr("class", "node")
+      .attr("r", d => d.radius)
+      .attr("fill", d => d.color)
+      .call(d3.drag()
+        .on("start", (event, d) => {
+          if (!event.active) simulation.alphaTarget(0.3).restart();
+          d.fx = d.x; d.fy = d.y;
+        })
+        .on("drag", (event, d) => {
+          d.fx = event.x; d.fy = event.y;
+        })
+        .on("end", (event, d) => {
+          if (!event.active) simulation.alphaTarget(0);
+          d.fx = null; d.fy = null;
+        })
+      )
+      .on("mouseover", (event, d) => {
+        tooltip.style.display = "block";
+        tooltip.innerHTML = `<strong>${d.id}</strong><br>Category: ${d.category}<br>Lines: ${d.lines}<br><span style="color:#5FB49C">${d.path}</span>`;
+      })
+      .on("mousemove", (event) => {
+        tooltip.style.left = (event.pageX + 12) + "px";
+        tooltip.style.top = (event.pageY - 12) + "px";
+      })
+      .on("mouseout", () => {
+        tooltip.style.display = "none";
+      });
+
+    const label = g.append("g")
+      .selectAll(".label")
+      .data(data.nodes.filter(d => d.radius > 9))
+      .join("text")
+      .attr("class", "label")
+      .text(d => d.id)
+      .attr("dx", d => d.radius + 3)
+      .attr("dy", 3);
+
+    simulation.on("tick", () => {
+      link
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
+
+      node
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y);
+
+      label
+        .attr("x", d => d.x)
+        .attr("y", d => d.y);
+    });
+  </script>
+</body>
+</html>

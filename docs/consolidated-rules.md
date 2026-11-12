@@ -10,7 +10,7 @@ This index links to bounded pages generated from `.agents/rules/`. Edit the sour
 - **Section 01 — 1. Physically Wired Hardware (Verified Ground Truth)**: [01_hardware.md](consolidated-rules/rule-01_hardware-01.md)
 - **Section 02 — 02. Architecture Overview**: [02_architecture.md](consolidated-rules/rule-02_architecture-01.md)
 - **Section 03 — 7. Repository & File Structure**: [03_conventions.md](consolidated-rules/rule-03_conventions-01.md)
-- **Section 04 — Known Issues and Audit Findings**: [04_known_issues.md](consolidated-rules/rule-04_known_issues-01.md)
+- **Section 04 — Known Issues and Audit Findings**: [part 1](consolidated-rules/rule-04_known_issues-01.md), [part 2](consolidated-rules/rule-04_known_issues-02.md)
 - **Section 05 — Git & Commit Discipline**: [05_git_workflow.md](consolidated-rules/rule-05_git_workflow-01.md)
 - **Section 06 — Verification & Evidence Standards**: [06_verification_standards.md](consolidated-rules/rule-06_verification_standards-01.md)
 - **Section 07 — Standard Task Protocol**: [07_task_protocol.md](consolidated-rules/rule-07_task_protocol-01.md)
