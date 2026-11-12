@@ -135,7 +135,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "Known Issues and Audit Findings",
-      "lines": 72
+      "lines": 77
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",

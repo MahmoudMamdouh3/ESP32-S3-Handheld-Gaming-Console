@@ -1,13 +1,35 @@
 # Changelog
 
+## [Clean-checkout CI fixes] - 2026-11-12
+
+### Fixed
+- Added the ROM file filter header to version control despite the generated-ROM-header ignore rule.
+- Made local-only ROM headers optional in firmware and test compilation so clean checkouts do not require ignored content.
+- Skip installed-game integrity checks when the gitignored `games/` directory is absent.
+- Pin Pillow in CI, normalize both path separators in the box-art test helper, and keep the sanitizer probe focused on AddressSanitizer rather than an earlier UBSan report.
+- Exclude downloaded toolchains from repository index inputs, regenerate bounded rules pages, and keep WASM test builds in temporary storage to avoid runner-dependent tracked binaries.
+- Discover the Xtensa toolchain under Arduino CLI's configured or default data directory for live budget reports, and omit build-dependent ELF snapshots from committed knowledge indexes.
+
+### Verification
+- Clean-checkout compile passed with `Sketch uses 5192960 bytes`; the installed-games test skipped because its gitignored data directory was absent.
+- `python -m unittest discover -s tests -v`: `Ran 159 tests in 39.895s`, `OK`.
+- `python -m tools.guardian verify`, `ui-audit`, and `diff-audit` passed; diff-audit reported 0 critical violations and 0 documentation/rule drift issues.
+- `python scripts/validate_repo.py` passed all nine phases in 184825 ms. Target compile used 5,774,632 / 16,777,216 bytes flash and 253,728 / 327,680 bytes SRAM.
+- `python -m tools.guardian diff-audit` passed with 0 critical violations and 0 documentation/rule drift issues.
+- Targeted host tests for the sanitizer probe, box-art paths, image pipeline, and native cores passed after the first remote run exposed Linux-only failures.
+- The sanitizer, box-art, image-pipeline, and native-core test selectors passed after the CI fixes.
+- The first remote run failed in host tests; later runs failed only at generated-artifact drift. Cross-platform ELF discovery fixed live budget analysis, and generated indexes now omit build-dependent snapshots while pointing to the live budget command. GitHub Actions run `43238623840` passed all workflow steps. Physical hardware verification is not claimed.
+- Revalidation after integrating the main-branch enclosure and visualization work passed 164 host tests, 188 Guardian tests, all nine repository-validation phases, Guardian diff-audit, Markdown/color checks, and UI audit.
+
 ## [Production-readiness assessment and workstream handoff] - 2026-11-12
 
 ### Added
 - Documented the 2026-11-12 production-readiness review, recorded design decisions (40 MHz in-spec display clock default with NVS 80 MHz opt-in and boot-button revert; isolated `fix/production-readiness` CI branch), and full specifications for workstreams `WS1`–`WS4` in [the production-readiness handoff](docs/handoffs/2026-11-12-production-readiness.md).
 - Added native C++17 AddressSanitizer/UBSan test runner `build_and_run_native_cxx()` (`find_vcvars64()`, `find_native_cxx()`) in `tests/host_test_support.py` and verified ASan detection in `tests/test_host_test_support.py`.
-- Added static codebase visualization generator (`scripts/generate_code_visualizations.py`) and exported HTML/JSON/Mermaid views under `visualizations/` (`gitdiagram`, `understand_anything`, `codegraphcontext`, `codecharta`).
+- Added `scripts/generate_code_visualizations.py` and HTML/JSON/Mermaid views under `visualizations/`.
 
 ### Verification
+- `python -m unittest tests.test_host_test_support -v` passed (1 test, ASan out-of-bounds detection confirmed). Full branch validation is recorded in the handoff and commit message.
 - `python -m unittest discover -s tests` passed (`Ran 163 tests in 69.689s`, `OK`), including 5 enclosure geometry checks (`tests.test_enclosure_generator`) and 1 ASan native runner check (`tests.test_host_test_support`).
 - `python -m tools.guardian verify` passed (`Ran 187 tests in 76.429s`, `OK`), `python scripts/check_markdown_links.py` passed (`0 issues`), and `python -m tools.guardian diff-audit` passed (`0` AST/drift issues).
 - Full `python scripts/validate_repo.py` validation and target compile results are recorded in the commit verification notes and [the production-readiness handoff](docs/handoffs/2026-11-12-production-readiness.md). Physical fit, printing, thermal, and hardware tests remain unverified.

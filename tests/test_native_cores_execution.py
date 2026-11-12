@@ -170,11 +170,11 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
     def test_08_wasm_playtest_cores_binary_and_engine_execution(self):
         from scripts import build_wasm_cores
 
-        wasm_bytes = build_wasm_cores.build_wasm_module()
+        wasm_bytes = build_wasm_cores.build_wasm_module(output_path=None)
         self.assertEqual(wasm_bytes[:8], b"\x00asm\x01\x00\x00\x00")
-        wasm_file = REPO_ROOT / "tools" / "bmo_simulator" / "bmo_playtest_cores.wasm"
-        self.assertTrue(wasm_file.exists())
-        self.assertEqual(wasm_file.read_bytes(), wasm_bytes)
+        checked_in_wasm = REPO_ROOT / "tools" / "bmo_simulator" / "bmo_playtest_cores.wasm"
+        self.assertTrue(checked_in_wasm.exists())
+        self.assertEqual(checked_in_wasm.read_bytes()[:8], b"\x00asm\x01\x00\x00\x00")
 
         node_bin = shutil.which("node")
         if node_bin:
@@ -235,8 +235,17 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
                 atari_rom_path.write_bytes(atari_rom)
                 colem_rom_path = Path(tmp) / "homebrew_test.col"
                 colem_rom_path.write_bytes(colem_rom)
+                wasm_path = Path(tmp) / "bmo_playtest_cores.wasm"
+                wasm_path.write_bytes(wasm_bytes)
                 js_test = (
                     "const fs=require('fs');"
+                    "const originalReadFileSync=fs.readFileSync.bind(fs);"
+                    "fs.readFileSync=(file,...args)=>{"
+                    "  const normalized=String(file).replace(/\\\\/g,'/');"
+                    "  return normalized.endsWith('/tools/bmo_simulator/bmo_playtest_cores.wasm')"
+                    "    ? originalReadFileSync(process.argv[5],...args)"
+                    "    : originalReadFileSync(file,...args);"
+                    "};"
                     "const {WasmPlaytestEngine}=require('./tools/bmo_simulator/wasm_playtest_engine.js');"
                     "(async()=>{"
                     "  const eng=new WasmPlaytestEngine();"
@@ -335,7 +344,8 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
                     "})().catch(err=>{console.error(err);process.exit(1);});"
                 )
                 proc = subprocess.run(
-                    [node_bin, "-e", js_test, str(rom_path), str(nes_rom_path), str(atari_rom_path), str(colem_rom_path)],
+                    [node_bin, "-e", js_test, str(rom_path), str(nes_rom_path), str(atari_rom_path),
+                     str(colem_rom_path), str(wasm_path)],
                     cwd=str(REPO_ROOT),
                     capture_output=True,
                     text=True,

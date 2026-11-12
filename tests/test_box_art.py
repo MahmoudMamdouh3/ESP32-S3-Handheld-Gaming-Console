@@ -14,7 +14,7 @@ BOX_ART_BUFFER_SIZE = BOX_ART_WIDTH * BOX_ART_HEIGHT * 2  # 8,192 bytes
 
 
 def get_base_name(filename: str) -> str:
-    base = os.path.basename(filename)
+    base = os.path.basename(filename.replace("\\", "/"))
     root, _ = os.path.splitext(base)
     return root
 

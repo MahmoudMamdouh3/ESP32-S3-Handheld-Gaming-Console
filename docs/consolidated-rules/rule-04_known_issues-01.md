@@ -33,7 +33,7 @@ The active registry contains current constraints and findings. Historical logs a
 | F4 | IN_PROGRESS | Save staging and post-write verification cover saves, states, screenshots, and box art. Favorites/history/index migration and fault-injection matrices remain. |
 | F5 | IN_PROGRESS | Pause quit now handles failed battery saves with retry, resume, or explicit quit-anyway; the pure policy test passes. SaveManager failure injection remains. |
 | F6 | IN_PROGRESS | ADRs 0011–0014 record path key, save-state schema, partition layout, and SPI-clock decisions. Remaining ADR backfill and provenance/license review are open. |
-| F7 | IN_PROGRESS | The local CI workflow pins actions and tool versions and uses strict compile mode. No CI run has been observed yet. |
+| F7 | VERIFIED_HOST | GitHub Actions run `43238623840` passed target compile, host tests, strict validation, Guardian, Markdown, color, UI, and generated-artifact checks. Live budget metrics remain available through Guardian; physical hardware is not covered. |
 | P1-08 | IN_PROGRESS | Firmware, simulator CSS, DESIGN, and SDD color values now agree and pass host/UI checks. Coral on deep teal still needs a human design decision; panel color remains unverified. |
 | P1-09 | IN_PROGRESS | `TFT_SPI_HZ=80 MHz`, `SD_SPI_HZ=25 MHz`, and a 40 MHz diagnostics comparison are in place; both firmware profiles compile. ST7789VW v1.0 lists a 16 ns serial write cycle (62.5 MHz), so the default 80 MHz setting remains a hardware timing risk. |
 | P1-10 | DEBUNKED | With monitoring disabled, `battery.cpp` returns 0 for voltage and percentage; the launcher shows USB/N/A and Diagnostics says the battery is not fitted. |
@@ -51,16 +51,7 @@ The active registry contains current constraints and findings. Historical logs a
 | P3-02 | OPEN | Per-core CPU conformance suite is pending. |
 | P3-03 | IN_PROGRESS | Guardian gained rule-size, banned-language, file-URI, unresolved Markdown-link, and large-local-array checks; duplicate symbol, flag, lock, and timeout analyzers remain. |
 | P3-04 | OPEN | On-device measurement kit is pending. |
-| P3-05 | IN_PROGRESS | Pinned GitHub Actions workflow and local strict validator exist. The knowledge index is deterministic and has a repeatability test; no remote CI result is claimed. |
+| P3-05 | VERIFIED_HOST | Pinned GitHub Actions run `43238623840` passed all workflow steps, including generated-artifact drift. Indexes omit live ELF snapshots; cross-platform toolchain discovery supports current budget reports. Physical hardware remains unverified. |
 | P3-06 | OPEN | Simulator server security review is pending. |
 | P4-01 | OPEN | Emulator registry refactor is pending until earlier phases are green. |
 | P4-02 | OPEN | Browser firmware-UI spike has not started. |
-
-## Changelog
-
-- 2026-11-07: Updated the active audit ledger and moved historical entries to bounded archive pages.
-- 2026-11-07: Added path-key, battery-save, PSRAM-budget, and index-layout remediation; see the dated handoff for exact evidence and remaining work.
-- 2026-11-07: Added explicit SPI clock constants and a Diagnostics clock comparison pattern. The 80 MHz display setting exceeds the ST7789VW datasheet's 62.5 MHz serial-write limit; a human perfboard check is still required.
-- 2026-11-07: Fresh 80 MHz and 40 MHz profile builds passed; strict repository validation, all 155 host tests, diff-audit, UI audit, color parity, and Markdown links passed. RAM usage is 253,728/327,680 B (77.4%) and requires on-device headroom measurements. See the remediation handoff for exact output and open items.
-- 2026-11-07: Added the 3D simulator/enclosure update, parametric STL/GLB generator, geometry tests, and survey/printing guide. `3D-01` is `FIXED_UNVERIFIED`; no physical fit, print, or thermal result is recorded.
-- 2026-11-12: Recorded production-readiness blockers (tracked commercial ROMs, MIT vs GPL/vendor license gaps, unverified hardware, 80 MHz display clock risk, open audit items), user decisions (40 MHz default + NVS 80 MHz opt-in; isolated `fix/production-readiness` branch), `WS0` ASan/UBSan native test helper (`tests/host_test_support.py`), `WS1`–`WS4` specifications blocked by subagent 429 quota exhaustion in `docs/handoffs/2026-11-12-production-readiness.md`, and static codebase visualizations (`scripts/generate_code_visualizations.py`, `visualizations/`).
