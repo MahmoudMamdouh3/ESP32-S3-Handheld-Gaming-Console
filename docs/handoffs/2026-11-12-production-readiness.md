@@ -36,7 +36,7 @@ Verdict: **working prototype / development build; not ready for public or commer
    - Seeded sanitizer mutation fuzzing across ROM/save/index/art parsers (`B3`, `D2`, `P3-01`).
    - Complete SPI lock-balance, unbounded-wait, RAII, and buffer-lifetime audit (`D1`, `P3-03`).
    - Per-core timing conformance tests, 64-bit absolute-deadline pacing, and CPU conformance (`E1`, `P3-02`, `P3-04`).
-   - Remote CI workflow execution never observed (`F7`, `P3-05`).
+   - Remote CI workflow has run but has not yet passed end-to-end (`F7`, `P3-05`).
 6. **Unfitted / unsoldered hardware features**:
    - `FEATURE_BATTERY_MONITOR=0` (no divider on `GPIO1`), `FEATURE_AUDIO=0` (no I2S DAC), and buttons `X` (`GPIO14`), `Y` (`GPIO42`), `L` (`GPIO47`), `R` (`GPIO48`) configured in `config.h` but unsoldered.
 
@@ -142,7 +142,8 @@ Planned scope and requirements (`E1`, `P3-02`, host side of `P3-04`):
 - Made the ignored, local-only `virtual_bmo.h` an optional include and omitted its catalog entry when unavailable; no ROM assets or policy were changed.
 - Made the ignored `rom_data.h` test fixture optional, skipping only the fixture-dependent ROM integrity test when it is absent.
 - Changed the installed-game integrity test to skip with an explicit reason when the gitignored `games/` directory is absent.
-- Clean-checkout unit checks passed (7 tests, 1 intentional skip) and compile passed (`Sketch uses 5192960 bytes`). The full suite passed (`Ran 158 tests in 22.189s`, `OK`), and `python scripts/validate_repo.py` passed all nine phases in 184897 ms (5,774,632 / 16,777,216 bytes flash; 253,728 / 327,680 bytes SRAM).
+- Clean-checkout unit checks passed (7 tests, 1 intentional skip) and compile passed (`Sketch uses 5192960 bytes`). The full suite passed (`Ran 159 tests in 22.772s`, `OK`), and `python scripts/validate_repo.py` passed all nine phases in 174320 ms (5,774,632 / 16,777,216 bytes flash; 253,728 / 327,680 bytes SRAM). `python -m tools.guardian diff-audit` passed with 0 critical violations and 0 documentation/rule drift issues.
 - The first pushed GitHub Actions run failed in host tests due to missing Pillow, POSIX-only path parsing in the box-art test helper, and UBSan firing before the sanitizer probe could confirm ASan. CI now installs pinned Pillow, the helper normalizes both separators, and the probe suppresses UBSan only at its deliberate out-of-bounds write. Targeted Windows tests pass; the remote rerun is pending.
 - The second pushed run passed target compilation, host tests, strict validation, Guardian verification, Markdown links, color tokens, and UI audit, but failed the final generated-artifact drift check. `.tools` was included in generated indexes, the bundled known-issues rule needed regeneration, and the WASM test rewrote the tracked binary. The index excludes downloaded tools, rule bundles are regenerated, and tests now execute temporary WASM output; another remote run is pending.
+- Run `43232550201` passed the same checks but still failed generated-artifact drift. Its ELF analyzer reported fallback values (`5,692,724` flash and `218,816` DRAM) because toolchain discovery searched only Windows Arduino directories; the committed indexes contain measured ELF values (`5,774,741` flash and `253,728` DRAM). `ElfAnalyzer` now checks Arduino CLI's configured and default Linux data directories, with a regression test for configured-directory discovery. Push and verify a new CI run before claiming success.
 - Physical hardware verification, WS1–WS4, and licensing/provenance findings remain unresolved.

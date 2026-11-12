@@ -29,7 +29,7 @@ The active registry contains current constraints and findings. Historical logs a
 | F4 | IN_PROGRESS | Save staging and post-write verification cover saves, states, screenshots, and box art. Favorites/history/index migration and fault-injection matrices remain. |
 | F5 | IN_PROGRESS | Pause quit now handles failed battery saves with retry, resume, or explicit quit-anyway; the pure policy test passes. SaveManager failure injection remains. |
 | F6 | IN_PROGRESS | ADRs 0011–0014 record path key, save-state schema, partition layout, and SPI-clock decisions. Remaining ADR backfill and provenance/license review are open. |
-| F7 | IN_PROGRESS | The local CI workflow pins actions and tool versions and uses strict compile mode. Clean-checkout compilation, host tests, validator, and UI checks pass remotely. The latest run failed only at generated-artifact drift: downloaded `.tools` files entered the index, bundled rules were stale, and the WASM test rewrote a checked-in binary. Follow-up fixes exclude toolchains, regenerate docs, and keep test builds temporary; remote rerun is pending. |
+| F7 | IN_PROGRESS | The local CI workflow pins actions and tool versions and uses strict compile mode. The latest run passed compile, host tests, validator, Guardian, Markdown, color, and UI checks, then failed generated-artifact drift because Linux could not discover the Arduino CLI Xtensa toolchain and emitted fallback ELF metrics. Analyzer discovery now checks the configured and default Linux data directories; remote rerun is pending. |
 | P1-08 | IN_PROGRESS | Firmware, simulator CSS, DESIGN, and SDD color values now agree and pass host/UI checks. Coral on deep teal still needs a human design decision; panel color remains unverified. |
 | P1-09 | IN_PROGRESS | `TFT_SPI_HZ=80 MHz`, `SD_SPI_HZ=25 MHz`, and a 40 MHz diagnostics comparison are in place; both firmware profiles compile. ST7789VW v1.0 lists a 16 ns serial write cycle (62.5 MHz), so the default 80 MHz setting remains a hardware timing risk. |
 | P1-10 | DEBUNKED | With monitoring disabled, `battery.cpp` returns 0 for voltage and percentage; the launcher shows USB/N/A and Diagnostics says the battery is not fitted. |
@@ -46,7 +46,7 @@ The active registry contains current constraints and findings. Historical logs a
 | P3-02 | OPEN | Per-core CPU conformance suite is pending. |
 | P3-03 | IN_PROGRESS | Guardian gained rule-size, banned-language, file-URI, unresolved Markdown-link, and large-local-array checks; duplicate symbol, flag, lock, and timeout analyzers remain. |
 | P3-04 | OPEN | On-device measurement kit is pending. |
-| P3-05 | IN_PROGRESS | Pinned GitHub Actions workflow and local strict validator exist. The latest remote run passed compile, host tests, strict validation, Guardian, Markdown, color, and UI steps, then failed generated-artifact drift. Stable index and temporary WASM output fixes are ready for rerun; no remote CI pass is claimed. |
+| P3-05 | IN_PROGRESS | Pinned GitHub Actions workflow and local strict validator exist. The latest remote run passed compile, host tests, strict validation, Guardian, Markdown, color, and UI steps, then failed generated-artifact drift because ELF analysis used Linux fallback metrics. Cross-platform Arduino CLI toolchain discovery is fixed locally and awaits remote verification; no remote CI pass is claimed. |
 | P3-06 | OPEN | Simulator server security review is pending. |
 | P4-01 | OPEN | Emulator registry refactor is pending until earlier phases are green. |
 | P4-02 | OPEN | Browser firmware-UI spike has not started. |
@@ -55,6 +55,7 @@ The active registry contains current constraints and findings. Historical logs a
 
 - 2026-11-12: Fixed clean-checkout blockers and addressed the first remote CI failures: track `rom_file_filter.h`, make ignored local ROM assets optional, skip absent gitignored `games/`, install pinned Pillow, normalize Windows path separators in the box-art test helper, and isolate the ASan probe from UBSan instrumentation. The clean-checkout compile, local test suite, and validator passed; remote rerun remains pending.
 - 2026-11-12: Addressed the next remote CI failure by excluding downloaded `.tools` SDK files from repository indexes, keeping compiled WASM test output in a temporary directory, and regenerating bounded rules artifacts. The latest remote run passed every step before generated-artifact drift; a rerun is pending.
+- 2026-11-12: Traced the remaining index drift to `ElfAnalyzer` not searching Arduino CLI's Linux data directory. It now checks `ARDUINO_DIRECTORIES_DATA` and `~/.arduino15`; a regression test covers configured-directory discovery. Remote verification is pending.
 - 2026-11-07: Updated the active audit ledger and moved historical entries to bounded archive pages.
 - 2026-11-07: Added path-key, battery-save, PSRAM-budget, and index-layout remediation; see the dated handoff for exact evidence and remaining work.
 - 2026-11-07: Added explicit SPI clock constants and a Diagnostics clock comparison pattern. The 80 MHz display setting exceeds the ST7789VW datasheet's 62.5 MHz serial-write limit; a human perfboard check is still required.

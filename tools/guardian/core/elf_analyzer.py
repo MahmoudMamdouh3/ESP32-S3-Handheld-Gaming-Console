@@ -54,9 +54,22 @@ class ElfAnalyzer:
         self.toolchain_bin = self._find_toolchain_dir()
 
     def _find_toolchain_dir(self) -> Optional[Path]:
+        data_dirs = []
+        configured_data_dir = os.environ.get("ARDUINO_DIRECTORIES_DATA")
+        if configured_data_dir:
+            data_dirs.append(Path(configured_data_dir))
+
+        local_appdata = os.environ.get("LOCALAPPDATA")
+        if local_appdata:
+            data_dirs.append(Path(local_appdata) / "Arduino15")
+        user_profile = os.environ.get("USERPROFILE")
+        if user_profile:
+            data_dirs.append(Path(user_profile) / ".arduino15")
+        data_dirs.append(Path.home() / ".arduino15")
+
         candidates = [
-            Path(os.environ.get("LOCALAPPDATA", "")) / "Arduino15" / "packages" / "esp32" / "tools" / "esp-x32" / "2601" / "bin",
-            Path(os.environ.get("USERPROFILE", "")) / ".arduino15" / "packages" / "esp32" / "tools" / "esp-x32" / "2601" / "bin",
+            data_dir / "packages" / "esp32" / "tools" / "esp-x32" / "2601" / "bin"
+            for data_dir in dict.fromkeys(data_dirs)
         ]
         for c in candidates:
             if c.exists() and (c / "xtensa-esp32s3-elf-size.exe").exists():

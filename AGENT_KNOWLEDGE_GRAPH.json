@@ -459,7 +459,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "Known Issues and Audit Findings",
-      "lines": 72
+      "lines": 73
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -10193,11 +10193,11 @@
     ".agents/rules/04_known_issues.md": {
       "path": ".agents/rules/04_known_issues.md",
       "category": "AGENT_RULES",
-      "total_lines": 72,
-      "sloc": 63,
+      "total_lines": 73,
+      "sloc": 64,
       "comments": 0,
       "blanks": 9,
-      "density_percent": 87.5,
+      "density_percent": 87.7,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
@@ -10760,11 +10760,11 @@
     "CHANGELOG.md": {
       "path": "CHANGELOG.md",
       "category": "OTHER",
-      "total_lines": 49,
-      "sloc": 40,
+      "total_lines": 51,
+      "sloc": 42,
       "comments": 0,
       "blanks": 9,
-      "density_percent": 81.6,
+      "density_percent": 82.4,
       "symbols": [],
       "pins_accessed": [
         "TFT_SPI_HZ",
@@ -11260,11 +11260,11 @@
     "docs/consolidated-rules/rule-04_known_issues-01.md": {
       "path": "docs/consolidated-rules/rule-04_known_issues-01.md",
       "category": "DOCUMENTATION",
-      "total_lines": 66,
-      "sloc": 57,
+      "total_lines": 67,
+      "sloc": 58,
       "comments": 0,
       "blanks": 9,
-      "density_percent": 86.4,
+      "density_percent": 86.6,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
@@ -12213,11 +12213,11 @@
     "docs/handoffs/2026-11-12-production-readiness.md": {
       "path": "docs/handoffs/2026-11-12-production-readiness.md",
       "category": "DOCUMENTATION",
-      "total_lines": 148,
-      "sloc": 118,
+      "total_lines": 149,
+      "sloc": 119,
       "comments": 0,
       "blanks": 30,
-      "density_percent": 79.7,
+      "density_percent": 79.9,
       "symbols": [],
       "pins_accessed": [
         "TFT_SPI_HZ",
@@ -20287,6 +20287,18 @@
       "pins_accessed": [],
       "includes": []
     },
+    "tests/test_elf_analyzer.py": {
+      "path": "tests/test_elf_analyzer.py",
+      "category": "TESTS",
+      "total_lines": 39,
+      "sloc": 32,
+      "comments": 0,
+      "blanks": 7,
+      "density_percent": 82.1,
+      "symbols": [],
+      "pins_accessed": [],
+      "includes": []
+    },
     "tests/test_frame_pacing.py": {
       "path": "tests/test_frame_pacing.py",
       "category": "TESTS",
@@ -21124,11 +21136,11 @@
     "tools/guardian/core/elf_analyzer.py": {
       "path": "tools/guardian/core/elf_analyzer.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 213,
-      "sloc": 184,
+      "total_lines": 226,
+      "sloc": 195,
       "comments": 3,
-      "blanks": 26,
-      "density_percent": 86.4,
+      "blanks": 28,
+      "density_percent": 86.3,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
