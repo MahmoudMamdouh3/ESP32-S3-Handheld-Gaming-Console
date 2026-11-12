@@ -41,12 +41,25 @@ class TestGuardianEngine(unittest.TestCase):
         # At 80MHz (10MB/s), 153,600 bytes is ~15.36 ms + 1.2us overhead
         self.assertAlmostEqual(metrics.spi_transfer_ms, 15.3612, places=2)
         self.assertGreater(metrics.spi_bus_utilization_percent, 90.0)
-        self.assertTrue(metrics.dma_required_for_60fps)
+        self.assertEqual(metrics.status, "LOW_SEQUENTIAL_HEADROOM")
+        self.assertAlmostEqual(metrics.ideal_overlap_cpu_budget_ms, metrics.frame_period_ms)
+        self.assertEqual(metrics.ideal_overlap_cpu_budget_percent, 100.0)
 
         # Test Game Boy 240x216 (103,680 bytes)
         gb_metrics = bus_model.calculate_metrics("GAMEBOY_DMG_SCALED")
         self.assertEqual(gb_metrics.resolution.frame_bytes, 103680)
         self.assertAlmostEqual(gb_metrics.spi_transfer_ms, 10.3692, places=2)
+
+    def test_bus_model_does_not_infer_dma_or_frame_drops(self):
+        """Bus-only estimates classify transfer limits without claiming implementation behavior."""
+        fast_bus = HardwareBusModel(spi_clock_hz=1_000_000)
+        saturated = fast_bus.calculate_metrics("MENU_FULLSCREEN")
+        self.assertEqual(saturated.status, "BUS_SATURATED")
+        self.assertGreater(saturated.spi_bus_utilization_percent, 100.0)
+
+        normal_bus = HardwareBusModel()
+        low_headroom = normal_bus.calculate_metrics("MENU_FULLSCREEN")
+        self.assertEqual(low_headroom.status, "LOW_SEQUENTIAL_HEADROOM")
 
     def test_02_all_supported_resolutions_registered(self):
         """Verify that all 15 console resolutions are present in the model."""
@@ -95,8 +108,7 @@ class TestGuardianEngine(unittest.TestCase):
         elf_res = elf_analyzer.analyze()
         suite = HostBenchmarkSuite()
         bench_metrics = suite.run_all()
-        cppcheck = CppcheckRunner(REPO_ROOT)
-        cppcheck_findings = []
+        cppcheck_findings = None
 
         # Markdown
         md = ReportGenerator.generate_markdown(
@@ -105,6 +117,18 @@ class TestGuardianEngine(unittest.TestCase):
         self.assertIn("BMO Handheld Console — Complete Line-by-Line Benchmark", md)
         self.assertIn("Hardware Bus & Frame Transmission Physics Model", md)
         self.assertIn("Comprehensive Line-by-Line Repository Codebase Audit", md)
+        self.assertIn("Cppcheck was not run for this report.", md)
+        expected_sram_health = (
+            f"TIGHT ({elf_res.dram_used_bytes / elf_res.dram_total_bytes * 100:.1f}%)"
+            if elf_res.dram_total_bytes and elf_res.dram_used_bytes / elf_res.dram_total_bytes * 100 > 70
+            else "✅ OK"
+        )
+        self.assertIn(expected_sram_health, md)
+        flash_pct = elf_res.flash_used_bytes / elf_res.flash_total_bytes * 100
+        self.assertIn(f"Chip headroom {100 - flash_pct:.1f}%", md)
+        self.assertIn("Dynamic PSRAM Runtime** | Not measured", md)
+        self.assertNotIn("TIGHT (74.6%)", md)
+        self.assertNotIn("Chip headroom 70.2%", md)
 
         # JSON
         json_str = ReportGenerator.generate_json(
@@ -116,6 +140,25 @@ class TestGuardianEngine(unittest.TestCase):
         self.assertIn("microbenchmarks", data)
         self.assertIn("file_stats", data)
         self.assertGreater(len(data["file_stats"]), 50)
+        self.assertEqual(data["cppcheck_status"], "not_run")
+        self.assertIsNone(data["cppcheck_findings"])
+
+        one_finding = CppcheckFinding(
+            str(REPO_ROOT / "firmware" / "example.c"), 7, "warning", "test-id", "test finding"
+        )
+        md_with_cppcheck = ReportGenerator.generate_markdown(
+            elf_res, bus_metrics, ast_findings, [one_finding], bench_metrics, file_stats
+        )
+        self.assertIn("1 findings; 0 errors.", md_with_cppcheck)
+        self.assertIn("`test-id`", md_with_cppcheck)
+        self.assertIn("`firmware/example.c:7`", md_with_cppcheck)
+        self.assertNotIn(str(REPO_ROOT), md_with_cppcheck)
+
+        findings_json = json.loads(ReportGenerator.generate_json(
+            elf_res, bus_metrics, ast_findings, [one_finding], bench_metrics, file_stats
+        ))
+        self.assertEqual(findings_json["cppcheck_status"], "findings")
+        self.assertEqual(findings_json["cppcheck_findings"][0]["file"], "firmware/example.c")
 
     def test_06_cppcheck_scans_all_firmware_sources(self):
         runner = CppcheckRunner(REPO_ROOT)

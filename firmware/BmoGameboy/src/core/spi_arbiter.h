@@ -1,7 +1,4 @@
 #pragma once
-#include <freertos/FreeRTOS.h>
-#include <freertos/semphr.h>
-#include <stdbool.h>
 
 // -----------------------------------------------------------------------------
 // SpiArbiter: Thread-Safe Bus Arbitration for Shared FSPI Bus
@@ -18,9 +15,9 @@ namespace SpiArbiter {
   // Initializes the FreeRTOS SPI bus mutex. Idempotent.
   void init();
 
-  // Acquires exclusive lock on the shared SPI bus.
-  // Blocks until the bus is available or timeout expires.
-  bool lock(TickType_t waitTicks = portMAX_DELAY);
+  // Acquires exclusive lock on the shared SPI bus, blocking until available.
+  // Fails fast if initialization or acquisition fails; never continues unlocked.
+  void lock();
 
   // Releases exclusive lock on the shared SPI bus.
   void unlock();

@@ -16,16 +16,28 @@ from .cppcheck_runner import CppcheckFinding
 from .elf_analyzer import ElfAnalysisResult
 from .host_bench import BenchmarkMetric
 
+REPO_ROOT = Path(__file__).resolve().parents[3]
+
 
 class ReportGenerator:
     """Generates structured Markdown and JSON reports from Guardian telemetry."""
+
+    @staticmethod
+    def _relative_cppcheck_path(file_path: str) -> str:
+        path = Path(file_path)
+        if not path.is_absolute():
+            return path.as_posix()
+        try:
+            return path.resolve().relative_to(REPO_ROOT).as_posix()
+        except ValueError:
+            return path.name
 
     @staticmethod
     def generate_markdown(
         elf_res: ElfAnalysisResult,
         bus_metrics: List[BusMetrics],
         ast_findings: List[LintFinding],
-        cppcheck_findings: List[CppcheckFinding],
+        cppcheck_findings: Optional[List[CppcheckFinding]],
         bench_metrics: List[BenchmarkMetric],
         file_stats: Optional[List[FileLineStats]] = None,
     ) -> str:
@@ -33,9 +45,20 @@ class ReportGenerator:
         
         critical_count = sum(1 for f in ast_findings if f.severity == "CRITICAL")
         warning_count = sum(1 for f in ast_findings if f.severity == "WARNING")
+        cppcheck_error_count = (
+            sum(1 for f in cppcheck_findings if f.severity == "error")
+            if cppcheck_findings is not None else None
+        )
         
         sram_pct = (elf_res.dram_used_bytes / elf_res.dram_total_bytes) * 100.0 if elf_res.dram_total_bytes else 0.0
         flash_pct = (elf_res.flash_used_bytes / elf_res.flash_total_bytes) * 100.0 if elf_res.flash_total_bytes else 0.0
+        psram_pct = (elf_res.psram_static_bytes / 8388608) * 100.0
+        sram_health = f"⚠️ TIGHT ({sram_pct:.1f}%)" if sram_pct > 70 else "✅ OK"
+        flash_health = (
+            f"✅ OK (Chip headroom {100.0 - flash_pct:.1f}%)"
+            if flash_pct < 60 else "⚠️ WARN"
+        )
+        psram_health = "✅ OK" if psram_pct < 70 else "⚠️ REVIEW"
 
         total_lines_repo = sum(f.total_lines for f in file_stats) if file_stats else 0
         total_sloc_repo = sum(f.sloc for f in file_stats) if file_stats else 0
@@ -55,13 +78,13 @@ class ReportGenerator:
             f"",
             f"| Metric | Measured Value | Hardware Budget | Utilization | Health Status |",
             f"| :--- | :--- | :--- | :--- | :--- |",
-            f"| **Internal SRAM (DRAM)** | {elf_res.dram_used_bytes:,} bytes | {elf_res.dram_total_bytes:,} bytes | {sram_pct:.1f}% | {'⚠️ TIGHT (74.6%)' if sram_pct > 70 else '✅ OK'} |",
-            f"| **Flash Storage (app0)** | {elf_res.flash_used_bytes:,} bytes | {elf_res.flash_total_bytes:,} bytes | {flash_pct:.1f}% | {'✅ OK (Headroom 70.2%)' if flash_pct < 60 else '⚠️ WARN'} |",
-            f"| **Static PSRAM** | {elf_res.psram_static_bytes:,} bytes | 8,388,608 bytes | {(elf_res.psram_static_bytes / 8388608)*100:.1f}% | ✅ OK |",
-            f"| **Dynamic PSRAM Allocation** | 16,384 ROM slots (1.05MB) | 8,388,608 bytes | 12.5% | ✅ OK (7.3MB Free) |",
+            f"| **Internal SRAM (DRAM)** | {elf_res.dram_used_bytes:,} bytes | {elf_res.dram_total_bytes:,} bytes | {sram_pct:.1f}% | {sram_health} |",
+            f"| **Program Flash Sections / Physical Chip** | {elf_res.flash_used_bytes:,} bytes | {elf_res.flash_total_bytes:,} bytes | {flash_pct:.1f}% | {flash_health} |",
+            f"| **Static PSRAM** | {elf_res.psram_static_bytes:,} bytes | 8,388,608 bytes | {psram_pct:.1f}% | {psram_health} |",
+            f"| **Dynamic PSRAM Runtime** | Not measured | 8,388,608 bytes | Not measured | ⚪ DEVICE TELEMETRY REQUIRED |",
             f"| **AST Critical Findings** | {critical_count} | 0 allowed | - | {'🔴 FAIL' if critical_count > 0 else '✅ PASS (0 Critical)'} |",
             f"| **AST Warnings** | {warning_count} | < 15 allowed | - | {'⚠️ REVIEW' if warning_count > 10 else '✅ OK'} |",
-            f"| **Cppcheck Violations** | {len(cppcheck_findings)} | 0 critical | - | {'⚠️ REVIEW' if cppcheck_findings else '✅ CLEAN'} |",
+            f"| **Cppcheck Findings** | {len(cppcheck_findings) if cppcheck_findings is not None else 'Not run'} | {cppcheck_error_count if cppcheck_error_count is not None else 'Not run'} errors | - | {'⚠️ REVIEW' if cppcheck_findings else '✅ CLEAN' if cppcheck_findings is not None else '⚪ NOT RUN'} |",
             f"",
             f"---",
             f"",
@@ -69,7 +92,7 @@ class ReportGenerator:
             f"",
             f"Mathematical limits of the 80 MHz FSPI display bus and CPU computation budget per resolution mode:",
             f"",
-            f"| Platform / Viewport | Native Res | Rendered Res | Frame Size | SPI Wire Time | Target FPS | Seq. CPU Budget | Parallel DMA Budget | Bus Saturation |",
+            f"| Platform / Viewport | Native Res | Rendered Res | Frame Size | SPI Wire Time | Target FPS | Seq. CPU Budget | Ideal Overlap CPU Budget | Bus Saturation |",
             f"| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
         ]
 
@@ -78,13 +101,13 @@ class ReportGenerator:
                 f"| **{b.resolution.name}** | {b.resolution.native_w}×{b.resolution.native_h} | {b.resolution.rendered_w}×{b.resolution.rendered_h} | "
                 f"{b.resolution.frame_bytes:,} B | {b.spi_transfer_ms:.2f} ms | {b.resolution.target_fps:.1f} | "
                 f"{b.sequential_cpu_budget_ms:.2f} ms ({b.sequential_cpu_budget_percent:.0f}%) | "
-                f"{b.parallel_dma_cpu_budget_ms:.2f} ms (100%) | {b.spi_bus_utilization_percent:.1f}% |"
+                f"{b.ideal_overlap_cpu_budget_ms:.2f} ms (100%) | {b.spi_bus_utilization_percent:.1f}% |"
             )
 
         md.extend([
             f"",
             f"> [!IMPORTANT]",
-            f"> **Hardware Bus Insight:** At 80 MHz SPI, transmitting a full 320×240 frame consumes **15.36 ms** (92.1% of a 16.67 ms frame budget). In sequential blocking mode, only **1.31 ms** of CPU time remains. **DMA double-buffering is mathematically required** to achieve full 60 FPS on 320×240 without frame drops.",
+            f"> **Model limitation:** At the assumed 80 MHz SPI rate, transmitting a full 320×240 frame takes **15.36 ms** (92.1% of a 16.67 ms frame period), leaving **1.31 ms** for CPU work only in a sequential transfer-and-compute schedule. The ideal overlap column is a theoretical upper bound; it does not establish that DMA is used or required, that the target frame rate is achieved, or that frames are dropped. The display path uses blocking SPI writes on a worker task, and on-device frame timing has not been measured.",
             f"",
             f"---",
             f"",
@@ -136,12 +159,34 @@ class ReportGenerator:
                     f"| `{'🔴 ' + f.severity if f.severity == 'CRITICAL' else '🟡 ' + f.severity}` | `{f.rule_id}` | `{rel}:{f.line_number}` | {f.message} | {f.suggested_fix} |"
                 )
 
+        md.extend([
+            f"",
+            f"---",
+            f"",
+            f"## 6. Cppcheck Findings",
+            f"",
+        ])
+        if cppcheck_findings is None:
+            md.append("Cppcheck was not run for this report.")
+        elif not cppcheck_findings:
+            md.append("No Cppcheck findings.")
+        else:
+            md.append(f"{len(cppcheck_findings)} findings; {cppcheck_error_count} errors.")
+            md.append("| Severity | Finding | File : Line | Description |")
+            md.append("| :--- | :--- | :--- | :--- |")
+            for finding in cppcheck_findings:
+                md.append(
+                    f"| `{finding.severity}` | `{finding.error_id}` | "
+                    f"`{ReportGenerator._relative_cppcheck_path(finding.file_path)}:{finding.line}` | "
+                    f"{finding.message} |"
+                )
+
         if elf_res.largest_functions:
             md.extend([
                 f"",
                 f"---",
                 f"",
-                f"## 6. Top Memory Consuming Symbols (Xtensa ESP32-S3 ELF)",
+                f"## 7. Top Memory Consuming Symbols (Xtensa ESP32-S3 ELF)",
                 f"",
                 f"### Largest Code Functions",
                 f"| Size (Bytes) | Function Symbol | Section |",
@@ -159,14 +204,14 @@ class ReportGenerator:
             for sym in elf_res.largest_data_objects[:10]:
                 md.append(f"| {sym.size:,} | `{sym.name}` | `{sym.section}` |")
 
-        return "\n".join(md)
+        return "\n".join(line.rstrip() for line in md)
 
     @staticmethod
     def generate_json(
         elf_res: ElfAnalysisResult,
         bus_metrics: List[BusMetrics],
         ast_findings: List[LintFinding],
-        cppcheck_findings: List[CppcheckFinding],
+        cppcheck_findings: Optional[List[CppcheckFinding]],
         bench_metrics: List[BenchmarkMetric],
         file_stats: Optional[List[FileLineStats]] = None,
     ) -> str:
@@ -203,7 +248,9 @@ class ReportGenerator:
                     "sequential_cpu_budget_ms": b.sequential_cpu_budget_ms,
                     "sequential_cpu_budget_pct": b.sequential_cpu_budget_percent,
                     "spi_bus_utilization_pct": b.spi_bus_utilization_percent,
-                    "dma_required": b.dma_required_for_60fps,
+                    "ideal_overlap_cpu_budget_ms": b.ideal_overlap_cpu_budget_ms,
+                    "ideal_overlap_cpu_budget_pct": b.ideal_overlap_cpu_budget_percent,
+                    "bus_saturated": b.status == "BUS_SATURATED",
                     "status": b.status,
                 }
                 for b in bus_metrics
@@ -219,16 +266,21 @@ class ReportGenerator:
                 }
                 for f in ast_findings
             ],
+            "cppcheck_status": (
+                "not_run" if cppcheck_findings is None
+                else "findings" if cppcheck_findings
+                else "clean"
+            ),
             "cppcheck_findings": [
                 {
-                    "file": c.file_path,
+                    "file": ReportGenerator._relative_cppcheck_path(c.file_path),
                     "line": c.line,
                     "severity": c.severity,
                     "id": c.error_id,
                     "message": c.message,
                 }
                 for c in cppcheck_findings
-            ],
+            ] if cppcheck_findings is not None else None,
             "microbenchmarks": [
                 {
                     "name": bm.name,
