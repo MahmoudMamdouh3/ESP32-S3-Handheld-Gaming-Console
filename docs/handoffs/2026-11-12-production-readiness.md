@@ -36,7 +36,7 @@ Verdict: **working prototype / development build; not ready for public or commer
    - Seeded sanitizer mutation fuzzing across ROM/save/index/art parsers (`B3`, `D2`, `P3-01`).
    - Complete SPI lock-balance, unbounded-wait, RAII, and buffer-lifetime audit (`D1`, `P3-03`).
    - Per-core timing conformance tests, 64-bit absolute-deadline pacing, and CPU conformance (`E1`, `P3-02`, `P3-04`).
-   - Remote CI workflow has run but has not yet passed end-to-end (`F7`, `P3-05`).
+   - Remote CI workflow passes its host/build/artifact checks; physical hardware remains unverified (`F7`, `P3-05`).
 6. **Unfitted / unsoldered hardware features**:
    - `FEATURE_BATTERY_MONITOR=0` (no divider on `GPIO1`), `FEATURE_AUDIO=0` (no I2S DAC), and buttons `X` (`GPIO14`), `Y` (`GPIO42`), `L` (`GPIO47`), `R` (`GPIO48`) configured in `config.h` but unsoldered.
 
@@ -147,4 +147,5 @@ Planned scope and requirements (`E1`, `P3-02`, host side of `P3-04`):
 - The second pushed run passed target compilation, host tests, strict validation, Guardian verification, Markdown links, color tokens, and UI audit, but failed the final generated-artifact drift check. `.tools` was included in generated indexes, the bundled known-issues rule needed regeneration, and the WASM test rewrote the tracked binary. The index excludes downloaded tools, rule bundles are regenerated, and tests now execute temporary WASM output; another remote run is pending.
 - Run `43232550201` passed the same checks but still failed generated-artifact drift. Its ELF analyzer reported fallback values because toolchain discovery searched only Windows Arduino directories. `ElfAnalyzer` now checks Arduino CLI's configured and default data directories, with a regression test. Run `43235317446` confirmed live ELF analysis now works on Linux (5,250,425 flash, 253,728 DRAM, 77,312 IRAM), but the generated index still differed because the local Windows build included ignored ROM content (local flash metric: 5,774,741). Knowledge indexes now omit build-dependent ELF snapshots and point to the live budget command.
 - GitHub Actions run `43238623840` passed all workflow steps, including the generated-artifact gate. Local verification also passed all 159 host tests, all nine repository-validation phases, Guardian diff-audit, and Markdown-link checks. Hardware verification and other open workstreams remain unresolved.
+- After integrating the main-branch enclosure and visualization work, the combined tree passed 164 host tests, 188 Guardian tests, all nine repository-validation phases, diff-audit, Markdown/color checks, and UI audit.
 - Physical hardware verification, WS1–WS4, and licensing/provenance findings remain unresolved.

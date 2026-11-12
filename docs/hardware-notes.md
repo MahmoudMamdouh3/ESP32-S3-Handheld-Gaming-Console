@@ -44,7 +44,7 @@ The physical module has Quad-SPI flash and Octal-SPI PSRAM. Never select OPI fla
 
 ## Enclosure and perfboard
 
-Coordinates and dimensions in the simulator are design references, not measurements of the soldered board. The current wiring is permanent. A pin reassignment, FRAM installation, battery holder, new power rail, or connector change requires a documented wiring proposal and a physical review before code or pin configuration changes.
+The [parametric enclosure guide](enclosure-3d-printing.md) describes the WebGL model, seven STL parts, GLB assembly, clearances, and the caliper survey. The 82 × 124 × 26 mm shell, 2.1 mm walls, board envelopes, battery bay, and display profiles are design inputs only. Both the board survey and physical-fit state are `WAITING`; do not slice a final shell or change the permanent wiring from these dimensions. The current wiring remains the source of truth. A pin reassignment, FRAM installation, battery holder, new power rail, or connector change requires a documented wiring proposal and a physical review before code or pin configuration changes.
 
 ## Human measurement record
 
