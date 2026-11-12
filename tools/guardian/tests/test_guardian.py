@@ -201,6 +201,19 @@ class TestGuardianEngine(unittest.TestCase):
         self.assertEqual(findings[0].severity, "error")
         self.assertEqual(findings[0].line, 17)
 
+    def test_cppcheck_accepts_branch_limit_information_without_findings(self):
+        runner = CppcheckRunner(REPO_ROOT)
+        runner.cppcheck_bin = "cppcheck"
+        information = (
+            "src/example.cpp::0::information::normalCheckLevelMaxBranches::"
+            "Limiting analysis of branches."
+        )
+        with patch(
+            "tools.guardian.core.cppcheck_runner.subprocess.run",
+            return_value=subprocess.CompletedProcess([], 1, "", information),
+        ):
+            self.assertEqual(runner.run(), [])
+
     def test_09_guardian_module_propagates_cppcheck_failure(self):
         finding = CppcheckFinding(
             "src/example.c", 17, "error", "exampleCheck", "detected issue"

@@ -113,6 +113,13 @@ class CppcheckRunner:
                     )
 
         if res.returncode != 0 and not findings:
+            output_lines = [line.strip() for line in combined_out.splitlines() if line.strip()]
+            if output_lines and all(
+                "::information::normalCheckLevelMaxBranches::" in line
+                for line in output_lines
+            ):
+                return findings
+
             detail = combined_out.strip() or "no diagnostic output"
             raise RuntimeError(
                 f"Cppcheck exited with code {res.returncode}: {detail}"

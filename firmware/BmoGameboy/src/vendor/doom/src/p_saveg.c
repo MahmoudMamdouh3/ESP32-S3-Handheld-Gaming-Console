@@ -50,7 +50,7 @@ char *P_TempSaveGameFile(void)
 
     if (filename == NULL)
     {
-        filename = M_StringJoin(savegamedir, "temp.dsg", NULL);
+        filename = M_StringJoin(savegamedir, "temp.dsg", (char *) NULL);
     }
 
     return filename;
@@ -1888,4 +1888,3 @@ void P_UnArchiveSpecials (void)
     }
 
 }
-
