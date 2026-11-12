@@ -84,8 +84,8 @@ jobs:
         run: |
           set -euo pipefail
           python -m tools.guardian symbols
-          python -m tools.guardian index
           python scripts/bundle_rules.py
+          python -m tools.guardian index
           if [[ -n "$(git status --porcelain)" ]]; then
             git status --short
             echo "Generated artifacts differ from committed files."

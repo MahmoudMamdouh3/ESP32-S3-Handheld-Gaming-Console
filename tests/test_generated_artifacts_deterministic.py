@@ -29,6 +29,12 @@ class GeneratedArtifactDeterminismTests(unittest.TestCase):
         self.assertNotIn("generated_at", graph)
         self.assertNotIn("microbenchmark_baselines", graph)
         self.assertIn("bench-host", graph["benchmark_policy"])
+        self.assertFalse(
+            any(path.startswith(".tools/") for path in graph["files_index"]),
+            "Downloaded toolchains must not affect generated repository indexes",
+        )
+        self.assertNotIn("firmware/BmoGameboy/src/assets/rom_data.h", graph["files_index"])
+        self.assertNotIn("firmware/BmoGameboy/src/assets/roms/virtual_bmo.h", graph["files_index"])
 
 
 if __name__ == "__main__":
