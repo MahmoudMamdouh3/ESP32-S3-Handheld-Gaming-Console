@@ -4,7 +4,7 @@ Source: [`04_known_issues.md`](../../.agents/rules/04_known_issues.md).
 
 # Known Issues and Audit Findings
 
-The active registry contains current constraints and findings. Historical logs are indexed in [the archive](../archive/known-issues-history.md). Evidence and handoff details for the 2026-11-07 audit are in [the remediation handoff](../handoffs/2026-11-07-remediation.md), and the 2026-11-12 assessment and deferred workstreams (`WS1`–`WS4`) are in [the production-readiness handoff](../handoffs/2026-11-12-production-readiness.md).
+Current constraints and findings are listed here. See the [archive](../archive/known-issues-history.md), [remediation handoff](../handoffs/2026-11-07-remediation.md), and [readiness handoff](../handoffs/2026-11-12-production-readiness.md).
 
 ## Active constraints
 
@@ -17,9 +17,9 @@ The active registry contains current constraints and findings. Historical logs a
 
 | ID | Status | Current state |
 | :--- | :--- | :--- |
-| A1 | VERIFIED_TARGET | Pinned ESP32-S3 profile clean-compiled at 80 MHz and in the 40 MHz comparison. The 80 MHz image is 5,774,784 B, with 2,613,824 B free in app0. Build and RAM warnings are recorded in the handoff. |
-| A2 | VERIFIED_HOST | Repository validator passed all nine phases; 155 host tests, Guardian diff-audit, UI audit, color-token check, and Markdown link check passed. CI has not run. |
-| B1 | IN_PROGRESS | Path-derived CRC32 keys and legacy migration are covered by host tests. The read-only `games/` audit found 31,326 supported files, no path at least 64 UTF-8 bytes, 1,966 case-folded 32-character prefix groups (5,181 files), and 834 exact case-folded box-art basename groups (1,888 files). Hardware migration and recovery remain unverified. |
+| A1 | VERIFIED_TARGET | ESP32-S3 builds passed at 80 MHz and 40 MHz; 80 MHz image 5,774,784 B, app0 free 2,613,824 B. Build/RAM caveats are in the handoff. |
+| A2 | VERIFIED_HOST | 164 host tests, 188 Guardian tests, all nine validator phases, audits, and post-merge CI passed. Physical hardware is unverified. |
+| B1 | IN_PROGRESS | Path-key/migration contracts pass on host. SD audit found 31,326 supported ROMs and case-folded collision groups; device migration/recovery remain unverified. |
 | B2 | IN_PROGRESS | Battery saves are header-gated for GB/NES/SNES, volatile-RAM wrappers are disabled, and host contracts pass. Device round-trip and power-loss tests remain. |
 | B3 | OPEN | Seeded sanitizer mutation campaign and per-console unsupported-format counts remain; P1-04(f) counts are not measured. |
 | C1 | IN_PROGRESS | Source timing, spring, speech, particles, dance, and palette claims were reconciled. The expression-level culled-pixel fraction and on-device render timings remain unmeasured. |
@@ -47,11 +47,26 @@ The active registry contains current constraints and findings. Historical logs a
 | P2-06 | OPEN | Hardware-document truthfulness review and physical measurements are pending. |
 | 3D-01 | FIXED_UNVERIFIED | The WebGL model and parametric shell have aligned outer and feature coordinates. Seven printable meshes pass closure, winding, positive-volume, Manifold3D, and assembled-part intersection checks; GLB lens-to-rebate overlap is checked. Physical board/module fit, fastener selection, print calibration, switch travel, and thermal performance remain `WAITING`. |
 | P2-07 | IN_PROGRESS | ADRs 0011–0014 were added; remaining ADR backfill is open. |
-| P3-01 | IN_PROGRESS | Host C++ checks cover sizing, save gating, ROM keys, index layout, springs, pacing, quit policy, and palette parity; `tests/host_test_support.py` now provides `build_and_run_native_cxx()` (ASan/UBSan), while seeded mutation fuzzing and `WS1`–`WS4` remain open. |
+| P3-01 | IN_PROGRESS | Host C++ checks cover sizing, saves, keys, index, springs, pacing, quit, and palette; mutation fuzzing and `WS1`–`WS4` remain. |
 | P3-02 | OPEN | Per-core CPU conformance suite is pending. |
 | P3-03 | IN_PROGRESS | Guardian gained rule-size, banned-language, file-URI, unresolved Markdown-link, and large-local-array checks; duplicate symbol, flag, lock, and timeout analyzers remain. |
 | P3-04 | OPEN | On-device measurement kit is pending. |
-| P3-05 | VERIFIED_HOST | Pinned GitHub Actions run `43238623840` passed all workflow steps, including generated-artifact drift. Indexes omit live ELF snapshots; cross-platform toolchain discovery supports current budget reports. Physical hardware remains unverified. |
+| P3-05 | VERIFIED_HOST | GitHub Actions run `43238623840` passed generated-artifact checks. Live ELF values remain excluded from indexes; hardware is unverified. |
+| P3-07 | IN_PROGRESS | Fixed null-mutex, scan sorting lock hold, DMA/memory-report claims, and invalid DOOM ammo indexing. Cppcheck: 0 errors, 43 vendor warnings remain; recursive SD traversal/index I/O still serialize with display. |
 | P3-06 | OPEN | Simulator server security review is pending. |
 | P4-01 | OPEN | Emulator registry refactor is pending until earlier phases are green. |
 | P4-02 | OPEN | Browser firmware-UI spike has not started. |
+
+## Changelog
+
+- 2026-11-12: Fixed clean-checkout issues in ROM filters/assets, Pillow, Windows paths, and sanitizer probing; local compile, tests, and validator passed.
+- 2026-11-12: Excluded `.tools` SDK files from indexes, isolated WASM test output, and regenerated bounded rules; fixed later generated-artifact drift.
+- 2026-11-12: `ElfAnalyzer` now discovers Arduino CLI data; indexes omit live ELF values. GitHub Actions run `43238623840` passed all steps; hardware remains unverified.
+- 2026-11-12: Audited and fixed bus-lock fail-open behavior, scan lock duration, DMA reporting, and invalid DOOM ammo indexing. Validator/target compile, 190 Guardian tests, diff-audit, and Cppcheck (0 errors) passed; 43 vendor warnings remain. See the [audit handoff](../handoffs/2026-11-12-logical-performance-audit.md); hardware remains untested.
+- 2026-11-07: Updated the active audit ledger and moved historical entries to bounded archive pages.
+- 2026-11-07: Added path-key, battery-save, PSRAM-budget, and index-layout remediation; see the dated handoff for exact evidence and remaining work.
+- 2026-11-07: Added explicit SPI clock constants and a Diagnostics clock comparison pattern. The 80 MHz display setting exceeds the ST7789VW datasheet's 62.5 MHz serial-write limit; a human perfboard check is still required.
+- 2026-11-07: Fresh 80 MHz and 40 MHz profile builds passed; strict repository validation, all 155 host tests, diff-audit, UI audit, color parity, and Markdown links passed. RAM usage is 253,728/327,680 B (77.4%) and requires on-device headroom measurements. See the remediation handoff for exact output and open items.
+- 2026-11-07: Added the 3D simulator/enclosure update, STL/GLB generator, tests, and survey guide. `3D-01` is `FIXED_UNVERIFIED`; physical validation remains open.
+- 2026-11-12: Recorded readiness blockers, display-clock decision, `WS0` sanitizer support, and open `WS1`–`WS4` in the handoff.
+- 2026-11-12: Added static codebase visualizations (`scripts/generate_code_visualizations.py`, `visualizations/`).
