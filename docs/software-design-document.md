@@ -17,10 +17,11 @@ This is the repository's architecture guide and chapter index. It describes the 
 | ESP32-S3 firmware | Launcher, input, display, storage, emulator lifecycles, diagnostics | `firmware/BmoGameboy/BmoGameboy.ino`, `src/core/`, `src/emulators/` |
 | Emulator engines | CPU/system emulation and per-core memory/state | `firmware/BmoGameboy/src/vendor/`, `src/engine/`, wrapper headers and source |
 | Game data | External SD library under `games/`; baked assets in firmware source | `sd_card.cpp`, tracked ROM headers, user-owned card contents |
-| Browser simulator | Local web server, WebGL console, browser input/storage, selected WASM cores | `tools/bmo_simulator/`, `scripts/build_wasm_cores.py` |
+| Browser simulator | Local web server, WebGL console, browser input/storage, selected WASM cores | `tools/bmo_simulator/`, `scripts/build_wasm_cores.py`, [printable enclosure guide](enclosure-3d-printing.md) |
 | Wokwi model | Circuit representation for the parts listed in `diagram.json` | `diagram.json`, `wokwi.toml` |
 | Host verification | Python checks and selected native C/C++ runners | `tests/`, `tests/host/`, `tools/host_cores_runner.c` |
 | Repository checks | Rule, source, UI, symbol, PSRAM, link, and build validation | `tools/guardian/`, `scripts/validate_repo.py` |
+| Codebase visualizations | Static architecture diagrams, guided walkthroughs, force graph, and 3D code map | `scripts/generate_code_visualizations.py`, [visualizations guide](../visualizations/README.md) |
 
 The console carousel has 16 entries: Favorites plus 15 console types. Firmware routes those console types through 14 wrappers because SMS and Game Gear share one wrapper. Browser WASM and native host coverage are subsets of firmware; they do not execute the full ESP32 image.
 

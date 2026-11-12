@@ -53,6 +53,9 @@ jobs:
       - name: Compile ESP32-S3 firmware
         run: arduino-cli compile --profile esp32s3 --build-path build/target-compile firmware/BmoGameboy
 
+      - name: Install pinned enclosure geometry dependencies
+        run: python -m pip install -r tools/enclosure/requirements.txt
+
       - name: Analyze fresh target ELF
         run: |
           python -m tools.guardian budget --elf build/target-compile/BmoGameboy.ino.elf
