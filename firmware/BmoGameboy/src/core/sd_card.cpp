@@ -14,7 +14,15 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#if defined(__has_include)
+#if __has_include("../assets/roms/virtual_bmo.h")
 #include "../assets/roms/virtual_bmo.h"
+#define BMO_HAS_VIRTUAL_BMO_ROM 1
+#endif
+#endif
+#ifndef BMO_HAS_VIRTUAL_BMO_ROM
+#define BMO_HAS_VIRTUAL_BMO_ROM 0
+#endif
 #include "../assets/roms/mario_deluxe.h"
 #include "../assets/roms/zelda_ages.h"
 // Baked GBC ROMs (1MB each; tracked in repository under src/assets/roms/)
@@ -28,7 +36,7 @@ namespace {
   bool mounted = false;
   uint32_t mountedClockHz = 0;
   static const int MAX_ROMS = SDCard::MAX_ROM_POOL;
-  static const int BAKED_ROM_COUNT = 5;
+  static const int BAKED_ROM_COUNT = 4 + BMO_HAS_VIRTUAL_BMO_ROM;
   static RomFile fallbackRomList[32];
   static RomFile* romList = fallbackRomList;
   static int maxCapacity = 32;
@@ -295,7 +303,8 @@ bool SDCard::begin() {
 
   ensurePoolCapacity(MIN_ROM_POOL);
 
-  // Always add premier Virtual BMO (Official Game) first - pre-favorited!
+  // Keep the optional local Virtual BMO ROM first when it is available.
+#if BMO_HAS_VIRTUAL_BMO_ROM
   strncpy(romList[numRoms].filename, "Virtual BMO (Official Game).gb", 63);
   romList[numRoms].filename[63] = '\0';
   romList[numRoms].type = ROM_GB;
@@ -306,6 +315,7 @@ bool SDCard::begin() {
   s_favoritesCount++;                  // PERF-C1
   romCountsByType[ROM_GB]++;
   numRoms++;
+#endif
 
   // Baked classics
   strncpy(romList[numRoms].filename, "Super Mario Bros Deluxe (Baked).gbc", 63);
@@ -1146,10 +1156,12 @@ uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
   *outSize = 0;
 
   // Check for baked ROMs first
+#if BMO_HAS_VIRTUAL_BMO_ROM
   if (strcmp(filename, "Virtual BMO (Official Game).gb") == 0) {
     *outSize = virtual_bmo_rom_size;
     return (uint8_t*)virtual_bmo_rom;
   }
+#endif
   if (strcmp(filename, "Super Mario Bros Deluxe (Baked).gbc") == 0) {
     *outSize = mario_deluxe_rom_size;
     return (uint8_t*)mario_deluxe_rom;
@@ -1221,15 +1233,17 @@ uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
 void SDCard::freeRom(uint8_t* buffer) {
   if (buffer) {
     // DO NOT free baked ROM pointers residing in Flash .rodata
-    if (buffer == virtual_bmo_rom || buffer == mario_deluxe_rom ||
-        buffer == zelda_ages_rom || buffer == aladdin_rom ||
+    if (
+#if BMO_HAS_VIRTUAL_BMO_ROM
+        buffer == virtual_bmo_rom ||
+#endif
+        buffer == mario_deluxe_rom || buffer == zelda_ages_rom || buffer == aladdin_rom ||
         buffer == lego_racers_rom) {
       return;
     }
     heap_caps_free(buffer);
   }
 }
-
 
 
 

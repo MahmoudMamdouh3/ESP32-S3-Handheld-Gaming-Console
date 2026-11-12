@@ -1,5 +1,19 @@
 # Changelog
 
+## [Clean-checkout CI fixes] - 2026-11-12
+
+### Fixed
+- Added the ROM file filter header to version control despite the generated-ROM-header ignore rule.
+- Made local-only ROM headers optional in firmware and test compilation so clean checkouts do not require ignored content.
+- Skip installed-game integrity checks when the gitignored `games/` directory is absent.
+
+### Verification
+- Clean-checkout compile passed with `Sketch uses 5192960 bytes`; the installed-games test skipped because its gitignored data directory was absent.
+- `python -m unittest discover -s tests -v`: `Ran 182 tests in 63.405s`, `OK`.
+- `python -m tools.guardian verify`, `ui-audit`, and `diff-audit` passed; diff-audit reported 0 critical violations and 0 documentation/rule drift issues.
+- `python scripts/validate_repo.py` passed all nine phases in 184897 ms. Target compile used 5,774,632 / 16,777,216 bytes flash and 253,728 / 327,680 bytes SRAM.
+- Remote GitHub Actions and physical hardware verification are not claimed.
+
 ## [Production-readiness assessment and workstream handoff] - 2026-11-12
 
 ### Added
