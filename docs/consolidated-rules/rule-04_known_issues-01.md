@@ -45,6 +45,7 @@ The active registry contains current constraints and findings. Historical logs a
 | P2-04 | IN_PROGRESS | SDD claims were corrected against firmware and pinned core sources; a broader contradiction sweep across every hardware document remains. |
 | P2-05 | IN_PROGRESS | `python -m tools.guardian symbols` generated 11 header-derived pages and `docs/generated/symbols.md`; API and declaration coverage review remains. |
 | P2-06 | OPEN | Hardware-document truthfulness review and physical measurements are pending. |
+| 3D-01 | FIXED_UNVERIFIED | The WebGL model and parametric shell have aligned outer and feature coordinates. Seven printable meshes pass closure, winding, positive-volume, Manifold3D, and assembled-part intersection checks; GLB lens-to-rebate overlap is checked. Physical board/module fit, fastener selection, print calibration, switch travel, and thermal performance remain `WAITING`. |
 | P2-07 | IN_PROGRESS | ADRs 0011–0014 were added; remaining ADR backfill is open. |
 | P3-01 | IN_PROGRESS | Host C++ checks cover sizing, save gating, ROM keys, index layout, springs, pacing, quit policy, and palette parity; `tests/host_test_support.py` now provides `build_and_run_native_cxx()` (ASan/UBSan), while seeded mutation fuzzing and `WS1`–`WS4` remain open. |
 | P3-02 | OPEN | Per-core CPU conformance suite is pending. |
@@ -54,15 +55,3 @@ The active registry contains current constraints and findings. Historical logs a
 | P3-06 | OPEN | Simulator server security review is pending. |
 | P4-01 | OPEN | Emulator registry refactor is pending until earlier phases are green. |
 | P4-02 | OPEN | Browser firmware-UI spike has not started. |
-
-## Changelog
-
-- 2026-11-12: Fixed clean-checkout blockers and addressed the first remote CI failures: track `rom_file_filter.h`, make ignored local ROM assets optional, skip absent gitignored `games/`, install pinned Pillow, normalize Windows path separators in the box-art test helper, and isolate the ASan probe from UBSan instrumentation. The clean-checkout compile, local test suite, and validator passed; remote rerun remains pending.
-- 2026-11-12: Addressed the next remote CI failure by excluding downloaded `.tools` SDK files from repository indexes, keeping compiled WASM test output in a temporary directory, and regenerating bounded rules artifacts. The latest remote run passed every step before generated-artifact drift; a rerun is pending.
-- 2026-11-12: Added Arduino CLI data-directory discovery to `ElfAnalyzer`. Ignored ROMs still change ELF metrics, so indexes now omit live values; Guardian retains live budget reporting. Rerun pending.
-- 2026-11-12: GitHub Actions run `43238623840` passed all steps, including generated-artifact verification. `F7` and `P3-05` are verified on host; physical hardware and other open workstreams remain.
-- 2026-11-07: Updated the active audit ledger and moved historical entries to bounded archive pages.
-- 2026-11-07: Added path-key, battery-save, PSRAM-budget, and index-layout remediation; see the dated handoff for exact evidence and remaining work.
-- 2026-11-07: Added explicit SPI clock constants and a Diagnostics clock comparison pattern. The 80 MHz display setting exceeds the ST7789VW datasheet's 62.5 MHz serial-write limit; a human perfboard check is still required.
-- 2026-11-07: Fresh 80 MHz and 40 MHz profile builds passed; strict repository validation, all 155 host tests, diff-audit, UI audit, color parity, and Markdown links passed. RAM usage is 253,728/327,680 B (77.4%) and requires on-device headroom measurements. See the remediation handoff for exact output and open items.
-- 2026-11-12: Recorded production-readiness blockers (tracked commercial ROMs, MIT vs GPL/vendor license gaps, unverified hardware, 80 MHz display clock risk, open audit items), user decisions (40 MHz default + NVS 80 MHz opt-in; isolated `fix/production-readiness` branch), `WS0` ASan/UBSan native test helper (`tests/host_test_support.py`), and `WS1`–`WS4` specifications blocked by subagent 429 quota exhaustion in `docs/handoffs/2026-11-12-production-readiness.md`.

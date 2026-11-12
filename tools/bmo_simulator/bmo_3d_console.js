@@ -1,29 +1,7 @@
 /**
- * bmo_3d_console.js
- * 
- * 3D Physical Hardware Model & Interactive WebGL Simulator for BMO Handheld Console.
- * Built with Three.js (r128) strictly adhering to:
- *  1. Physical Hardware Reference Specification (Exact centimeter dimensions & 2.54 mm perfboard grid):
- *     - Body: 8.8 W × 12.4 H × 3.2 D cm, corner radius 0.6 cm (1.5 cm asymmetric bottom-right curve)
- *     - Display Window: 5.0 W × 3.8 H cm centered at (4.4, 3.3) cm (~56.8% body width, real 2.4" ST7789)
- *     - Bezel Housing: Deep Forest Teal (#1A4B42) with "BMO COLOR", "USB-C POWER" header & "BMO GAMEBOY" footer
- *     - D-Pad: 2.8 × 2.8 cm (arm width 0.95 cm) centered at (2.2, 8.4) cm in Warm Sunshine Golden Yellow (#FFE033)
- *     - Action Diamond (aligned to 2.54 mm perfboard grid):
- *         * X (Top):    cap dia 0.9 cm at (6.6, 7.4) cm -> Leaf Green (#4CAF50)
- *         * Y (Left):   cap dia 0.9 cm at (5.6, 8.4) cm -> Rosy Pink (#F48FB1)
- *         * A (Right):  cap dia 0.9 cm at (7.6, 8.4) cm -> Sky Aqua (#52A6BA)
- *         * B (Bottom): cap dia 0.9 cm at (6.6, 9.4) cm -> Coral (#FF91A5)
- *     - Select / Start: 1.4 × 0.5 cm rubber pills at (3.4, 11.0) and (5.4, 11.0) cm in Deep Teal (#264B42)
- *     - L / R Triggers: 2.2 × 0.6 cm top edge side-mounted tact switches at (1.7, 0.3) and (7.1, 0.3) cm (#264B42)
- *     - Top USB-C Cutout: 1.0 × 0.45 cm at (4.4, 0.0) cm between L and R
- *     - Left SD Slot: 1.3 × 0.25 cm at y ≈ 4.0 cm
- *     - Right Power Slide Switch: 1.0 × 0.4 cm at y ≈ 3.0 cm
- *     - Rear 4×AA Battery Door: 6.2 W × 3.4 H cm centered at (4.4, 9.0) cm with textured grip ridges
- * 
- *  2. 100% Color-Picker Parity with 2D Reference Model:
- *     - LinearEncoding + NoToneMapping guarantees that diffuse hex tokens match CSS output directly.
- *     - Studio lighting normalized to exact 1.00 front-face irradiance (0.74 ambient + 0.32 key * 0.80 cos).
- *     - Zero gamma bleaching, zero color blowout, velvety satin matte plastic finish.
+ * Interactive Three.js console view. Dimensions are a design model in centimetres;
+ * the matching printable parts are generated in millimetres by tools/enclosure/.
+ * The soldered board, display module, port positions, and battery bay remain unmeasured.
  */
 
 class Bmo3DConsole {
@@ -84,7 +62,7 @@ class Bmo3DConsole {
     this.camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
     this.setCameraPreset("front");
 
-    // 3. Renderer with LinearEncoding (100% COLOR PARITY - ZERO GAMMA EXPANSION)
+    // Use an sRGB output transform for display and canvas textures.
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
@@ -93,9 +71,7 @@ class Bmo3DConsole {
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    if ("outputEncoding" in this.renderer) {
-      this.renderer.outputEncoding = THREE.LinearEncoding;
-    }
+    if ("outputEncoding" in this.renderer) this.renderer.outputEncoding = THREE.sRGBEncoding;
     this.renderer.toneMapping = THREE.NoToneMapping;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -130,15 +106,11 @@ class Bmo3DConsole {
   }
 
   setupLighting() {
-    // 1. Pure white ambient baseline (0.74)
-    // Ensures diffuse baseline color matches CSS hex values directly without color shifts
+    // Broad fill keeps the physical materials readable in the simulator.
     this.ambientLight = new THREE.AmbientLight(0xffffff, 0.74);
     this.scene.add(this.ambientLight);
 
-    // 2. Directional Key Light (0.32) from front-top-right (3, 7, 10)
-    // Vector (3, 7, 10) normalized has Z = 0.80.
-    // Total front-face irradiance: 0.74 + 0.32 * 0.80 = 0.996 (exact 1.00 intensity!)
-    // Generates subtle specular bevel highlights along the top edge without washing out diffuse colors
+    // Directional key light from the front-right adds shape to the molded edges.
     this.keyLight = new THREE.DirectionalLight(0xffffff, 0.32);
     this.keyLight.position.set(3, 7, 10);
     this.keyLight.castShadow = true;
@@ -154,8 +126,7 @@ class Bmo3DConsole {
     this.keyLight.shadow.radius = 2.0;
     this.scene.add(this.keyLight);
 
-    // 3. Pure Rim Light from behind (0, 8, -12)
-    // Highlights the top edge, shoulders, and battery door in 3D orbit, casting ZERO light onto the front face
+    // Rim light lifts the rear edge during orbit views.
     this.rimLight = new THREE.DirectionalLight(0xffffff, 0.50);
     this.rimLight.position.set(0, 8, -12);
     this.scene.add(this.rimLight);
@@ -224,6 +195,7 @@ class Bmo3DConsole {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 128, 128);
     const tex = new THREE.CanvasTexture(canvas);
+    tex.encoding = THREE.sRGBEncoding;
     tex.minFilter = THREE.LinearFilter;
     tex.magFilter = THREE.LinearFilter;
     return tex;
@@ -235,7 +207,7 @@ class Bmo3DConsole {
     canvas.height = 256;
     const ctx = canvas.getContext("2d");
 
-    // 1. SOLID, PURE, 100% SATURATED BASE (Exact 2D Color Match, NO BLACK BORDER)
+    // Fill the cap texture with its base color before drawing the legend.
     ctx.fillStyle = bgColorStr;
     ctx.fillRect(0, 0, 256, 256);
 
@@ -269,63 +241,7 @@ class Bmo3DConsole {
     ctx.fillText(label, 128, 134);
 
     const texture = new THREE.CanvasTexture(canvas);
-    texture.minFilter = THREE.LinearFilter;
-    texture.magFilter = THREE.LinearFilter;
-    return texture;
-  }
-
-  createBezelFrameTexture() {
-    const canvas = document.createElement("canvas");
-    canvas.width = 560;
-    canvas.height = 440;
-    const ctx = canvas.getContext("2d");
-
-    // Base deep teal bezel background (#1a4b42)
-    ctx.fillStyle = "#1a4b42";
-    ctx.fillRect(0, 0, 560, 440);
-
-    // Inner window recess line
-    ctx.strokeStyle = "#0f2620";
-    ctx.lineWidth = 4;
-    ctx.strokeRect(30, 48, 500, 344);
-
-    // TOP BAR:
-    // Left: "BMO COLOR"
-    ctx.font = "14px 'Press Start 2P', monospace";
-    ctx.fillStyle = "#747d8c";
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle";
-    ctx.fillText("BMO COLOR", 36, 28);
-
-    // Right: "USB-C POWER" with glowing mint power LED dot
-    ctx.textAlign = "right";
-    ctx.fillStyle = "#8cd7c2";
-    ctx.fillText("USB-C POWER", 500, 28);
-
-    // Glowing LED dot
-    ctx.fillStyle = "#55efc4";
-    ctx.beginPath();
-    ctx.arc(516, 28, 4, 0, Math.PI * 2);
-    ctx.fill();
-
-    // BOTTOM FOOTER:
-    // "BMO GAMEBOY" centered
-    ctx.font = "900 18px 'Press Start 2P', monospace";
-    const bmoTxt = "BMO ";
-    const gbTxt = "GAMEBOY";
-    const totalW = ctx.measureText(bmoTxt + gbTxt).width;
-    const startX = 280 - totalW / 2;
-
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = "#a4b0be";
-    ctx.fillText(bmoTxt, startX, 412);
-
-    const bmoW = ctx.measureText(bmoTxt).width;
-    ctx.fillStyle = "#00d2d3"; // Electric Cyan #00D2D3
-    ctx.fillText(gbTxt, startX + bmoW, 412);
-
-    const texture = new THREE.CanvasTexture(canvas);
+    texture.encoding = THREE.sRGBEncoding;
     texture.minFilter = THREE.LinearFilter;
     texture.magFilter = THREE.LinearFilter;
     return texture;
@@ -370,6 +286,7 @@ class Bmo3DConsole {
     ctx.stroke();
 
     const texture = new THREE.CanvasTexture(canvas);
+    texture.encoding = THREE.sRGBEncoding;
     texture.minFilter = THREE.LinearFilter;
     texture.magFilter = THREE.LinearFilter;
     return texture;
@@ -377,66 +294,26 @@ class Bmo3DConsole {
 
   createSideTexture() {
     const canvas = document.createElement("canvas");
-    canvas.width = 512;
-    canvas.height = 1024;
+    canvas.width = 256;
+    canvas.height = 512;
     const ctx = canvas.getContext("2d");
-
-    ctx.clearRect(0, 0, 512, 1024);
-
-    // 1. Canonical 7-Hole Acoustic Speaker Array (Upper side, matching Adventure Time BMO)
-    const cx = 256;
-    const cy = 185;
-    const holeRadius = 14;
-    const arrayRadius = 58;
-
-    const drawHole = (hx, hy) => {
-      const grad = ctx.createRadialGradient(hx, hy, holeRadius * 0.2, hx, hy, holeRadius);
-      grad.addColorStop(0, "#081411");
-      grad.addColorStop(0.85, "#0f2620");
-      grad.addColorStop(1, "#1a4b42");
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(hx, hy, holeRadius, 0, Math.PI * 2);
-      ctx.fill();
-    };
-
-    // Center hole
-    drawHole(cx, cy);
-
-    // 6 Hexagonal outer acoustic holes
-    for (let i = 0; i < 6; i++) {
-      const angle = (i * Math.PI) / 3;
-      drawHole(cx + Math.cos(angle) * arrayRadius, cy + Math.sin(angle) * arrayRadius);
-    }
-
-    // 2. Bold Retro "B M O" Vertical Lettering (Faithful Adventure Time typography)
-    ctx.fillStyle = "#0c1f1a";
-    ctx.font = "900 135px 'Outfit', 'Press Start 2P', sans-serif";
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#101e26";
+    ctx.font = "900 100px 'Arial Black', 'Outfit', sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-
-    // B
-    ctx.fillText("B", 256, 420);
-    // M
-    ctx.fillText("M", 256, 580);
-
-    // O with Arm Socket Port in the center!
-    ctx.fillText("O", 256, 750);
-
-    // Arm Socket Port Ring inside the O
-    ctx.lineWidth = 10;
-    ctx.strokeStyle = "#081411";
+    ctx.fillText("B", 128, 88);
+    ctx.fillText("M", 128, 256);
+    ctx.fillText("O", 128, 424);
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = "#0b171d";
     ctx.beginPath();
-    ctx.arc(256, 750, 36, 0, Math.PI * 2);
+    ctx.arc(128, 424, 22, 0, Math.PI * 2);
     ctx.stroke();
 
-    ctx.fillStyle = "#122d26";
-    ctx.beginPath();
-    ctx.arc(256, 750, 31, 0, Math.PI * 2);
-    ctx.fill();
-
     const texture = new THREE.CanvasTexture(canvas);
-    texture.minFilter = THREE.LinearFilter;
+    texture.encoding = THREE.sRGBEncoding;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
     texture.magFilter = THREE.LinearFilter;
     return texture;
   }
@@ -445,742 +322,428 @@ class Bmo3DConsole {
     this.rootGroup = new THREE.Group();
     this.scene.add(this.rootGroup);
 
-    // -------------------------------------------------------------------------
-    // EXACT 2D COLOR TOKENS (100% Color-Picker Parity)
-    // -------------------------------------------------------------------------
-    const bmoTealHex      = 0x5fb49c; // --chassis-color: #5fb49c
-    const deepTealHex     = 0x1a4b42; // --bezel-color: #1a4b42
-    const rubberTealHex   = 0x264b42; // --btn-shoulder-color & --btn-pill-color: #264b42
-    const dpadYellowHex   = 0xffe033; // --dpad-color: #ffe033
-
-    // Standard PBR Materials (metalness: 0.0 prevents metallic color desaturation)
-    this.materials.chassis = new THREE.MeshStandardMaterial({
-      color: bmoTealHex,
-      roughness: 0.42,
-      metalness: 0.0,
-    });
-
-    this.materials.bezel = new THREE.MeshStandardMaterial({
-      color: deepTealHex,
-      roughness: 0.35,
-      metalness: 0.0,
-    });
-
-    this.materials.dpad = new THREE.MeshStandardMaterial({
-      color: dpadYellowHex,
-      roughness: 0.30,
-      metalness: 0.0,
-    });
-
-    this.materials.btnPill = new THREE.MeshStandardMaterial({
-      color: rubberTealHex,
-      roughness: 0.45,
-      metalness: 0.0,
-    });
-
-    this.materials.shoulder = new THREE.MeshStandardMaterial({
-      color: rubberTealHex,
-      roughness: 0.35,
-      metalness: 0.0,
-    });
-
-    this.materials.metal = new THREE.MeshStandardMaterial({
-      color: 0x95a5a6,
-      roughness: 0.20,
-      metalness: 0.90,
-    });
-
-    // -------------------------------------------------------------------------
-    // 1. MAIN CHASSIS BODY: 8.8 W × 12.4 H × 3.2 D cm
-    //    Corner radius: 0.6 cm (1.5 cm asymmetric bottom-right curve)
-    // -------------------------------------------------------------------------
-    const W = 8.8;
+    // Model coordinates are centimetres; the enclosure generator uses millimetres.
+    const W = 8.2;
     const H = 12.4;
-    const D = 3.2;
-    const hw = W / 2; // 4.4
-    const hh = H / 2; // 6.2
-    const r = 0.6;    // standard corner radius
-    const r_br = 1.5; // classic asymmetric bottom-right curve
+    const D = 2.6;
+    const hw = W / 2;
+    const hh = H / 2;
+    const frontZ = D / 2;
+    const backZ = -frontZ;
+    const displayX = 0;
+    const displayY = 2.9;
+    const displayW = 5.0;
+    const displayH = 3.75;
+    const capRadius = 0.45;
+    const capHeight = 0.22;
+    const px = (hex) => new THREE.Color(hex).convertSRGBToLinear();
 
-    const shape = new THREE.Shape();
-    shape.moveTo(-hw + r, -hh);
-    shape.lineTo(hw - r_br, -hh);
-    shape.quadraticCurveTo(hw, -hh, hw, -hh + r_br);
-    shape.lineTo(hw, hh - r);
-    shape.quadraticCurveTo(hw, hh, hw - r, hh);
-    shape.lineTo(-hw + r, hh);
-    shape.quadraticCurveTo(-hw, hh, -hw, hh - r);
-    shape.lineTo(-hw, -hh + r);
-    shape.quadraticCurveTo(-hw, -hh, -hw + r, -hh);
+    this.modelDimensions = { width: W, height: H, depth: D, units: "cm" };
+    this.materials.chassis = new THREE.MeshPhysicalMaterial({
+      color: px(0x63c5b8),
+      roughness: 0.62,
+      metalness: 0,
+      clearcoat: 0.08,
+      clearcoatRoughness: 0.55,
+    });
+    this.materials.backShell = new THREE.MeshStandardMaterial({ color: px(0x5ab5a9), roughness: 0.66 });
+    this.materials.bezel = new THREE.MeshStandardMaterial({ color: px(0x17353a), roughness: 0.52 });
+    this.materials.dpad = new THREE.MeshPhysicalMaterial({ color: px(0xf4d03f), roughness: 0.48, clearcoat: 0.08 });
+    this.materials.btnPill = new THREE.MeshPhysicalMaterial({ color: px(0x264b42), roughness: 0.5, clearcoat: 0.05 });
+    this.materials.shoulder = new THREE.MeshPhysicalMaterial({ color: px(0x264b42), roughness: 0.48, clearcoat: 0.08 });
+    this.materials.slot = new THREE.MeshStandardMaterial({ color: px(0x0f171a), roughness: 0.72 });
 
-    // Deep smooth multi-segment bevel creating the top edge highlight
-    const extrudeSettings = {
-      depth: D - 0.44,
-      bevelEnabled: true,
-      bevelSegments: 8,
-      steps: 1,
-      bevelSize: 0.22,
-      bevelThickness: 0.22,
+    const traceRoundedRect = (shape, width, height, radius, clockwise = false, centerX = 0, centerY = 0) => {
+      const x = width / 2;
+      const y = height / 2;
+      const r = Math.min(radius, x, y);
+      if (clockwise) {
+        shape.moveTo(centerX - x + r, centerY + y);
+        shape.lineTo(centerX + x - r, centerY + y);
+        shape.quadraticCurveTo(centerX + x, centerY + y, centerX + x, centerY + y - r);
+        shape.lineTo(centerX + x, centerY - y + r);
+        shape.quadraticCurveTo(centerX + x, centerY - y, centerX + x - r, centerY - y);
+        shape.lineTo(centerX - x + r, centerY - y);
+        shape.quadraticCurveTo(centerX - x, centerY - y, centerX - x, centerY - y + r);
+        shape.lineTo(centerX - x, centerY + y - r);
+        shape.quadraticCurveTo(centerX - x, centerY + y, centerX - x + r, centerY + y);
+        shape.closePath();
+        return shape;
+      }
+      shape.moveTo(centerX - x + r, centerY - y);
+      shape.lineTo(centerX + x - r, centerY - y);
+      shape.quadraticCurveTo(centerX + x, centerY - y, centerX + x, centerY - y + r);
+      shape.lineTo(centerX + x, centerY + y - r);
+      shape.quadraticCurveTo(centerX + x, centerY + y, centerX + x - r, centerY + y);
+      shape.lineTo(centerX - x + r, centerY + y);
+      shape.quadraticCurveTo(centerX - x, centerY + y, centerX - x, centerY + y - r);
+      shape.lineTo(centerX - x, centerY - y + r);
+      shape.quadraticCurveTo(centerX - x, centerY - y, centerX - x + r, centerY - y);
+      shape.closePath();
+      return shape;
+    };
+    const roundedRect = (width, height, radius) => traceRoundedRect(new THREE.Shape(), width, height, radius);
+    const extrudedRounded = (width, height, radius, depth, bevel = 0) => {
+      const geometry = new THREE.ExtrudeGeometry(roundedRect(width, height, radius), {
+        depth,
+        bevelEnabled: bevel > 0,
+        bevelSegments: bevel > 0 ? 4 : 1,
+        bevelSize: bevel,
+        bevelThickness: bevel,
+        curveSegments: 12,
+      });
+      geometry.center();
+      return geometry;
+    };
+    const ringGeometry = (outerW, outerH, innerW, innerH, radius) => {
+      const shape = roundedRect(outerW, outerH, radius);
+      const path = new THREE.Path();
+      const x = innerW / 2;
+      const y = innerH / 2;
+      const r = Math.min(radius * 0.6, x, y);
+      path.moveTo(-x + r, -y);
+      path.lineTo(-x, -y + r);
+      path.quadraticCurveTo(-x, -y, -x + r, -y);
+      path.lineTo(x - r, -y);
+      path.quadraticCurveTo(x, -y, x, -y + r);
+      path.lineTo(x, y - r);
+      path.quadraticCurveTo(x, y, x - r, y);
+      path.lineTo(-x + r, y);
+      path.quadraticCurveTo(-x, y, -x, y - r);
+      path.lineTo(-x, -y + r);
+      path.quadraticCurveTo(-x, -y, -x + r, -y);
+      path.closePath();
+      shape.holes.push(path);
+      const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.02, bevelEnabled: false, curveSegments: 12 });
+      geometry.center();
+      return geometry;
+    };
+    const addFrontText = (text, width, height, fontSize, color) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 256;
+      canvas.height = 96;
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = color;
+      ctx.font = `bold ${fontSize}px 'Press Start 2P', monospace`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.encoding = THREE.sRGBEncoding;
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, side: THREE.DoubleSide });
+      return new THREE.Mesh(new THREE.PlaneGeometry(width, height), material);
     };
 
-    const chassisGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-    chassisGeo.center();
-    this.chassisMesh = new THREE.Mesh(chassisGeo, this.materials.chassis);
-    this.chassisMesh.castShadow = true;
-    this.chassisMesh.receiveShadow = true;
-    this.rootGroup.add(this.chassisMesh);
+    // Uniform radii replace the old asymmetric lower corner and inconsistent shoulder curves.
+    const shellShape = roundedRect(W - 0.2, H - 0.2, 0.82);
+    const frontShape = roundedRect(W - 0.2, H - 0.2, 0.82);
+    frontShape.holes.push(traceRoundedRect(new THREE.Path(), displayW, displayH, 0.12, true, displayX, displayY));
+    const makeHalf = (z, material, shape = shellShape) => {
+      const geometry = new THREE.ExtrudeGeometry(shape, {
+        depth: D / 2 - 0.2,
+        bevelEnabled: true,
+        bevelSegments: 6,
+        steps: 1,
+        bevelSize: 0.1,
+        bevelThickness: 0.1,
+        curveSegments: 16,
+      });
+      geometry.center();
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.z = z;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      this.rootGroup.add(mesh);
+      return mesh;
+    };
+    this.chassisMesh = makeHalf(frontZ / 2, this.materials.chassis, frontShape);
+    this.backShellMesh = makeHalf(backZ / 2, this.materials.backShell);
 
-    const Z_FRONT = D / 2; // +1.6 cm
+    // Glass is a black PBR panel with active LCD pixels sampled at nearest-neighbour scale.
+    const glassBase = new THREE.Mesh(
+      new THREE.PlaneGeometry(displayW + 0.20, displayH + 0.20),
+      new THREE.MeshPhysicalMaterial({
+        color: px(0x07080a),
+        roughness: 0.12,
+        metalness: 0,
+        clearcoat: 0.9,
+        clearcoatRoughness: 0.08,
+      })
+    );
+    glassBase.position.set(displayX, displayY, frontZ + 0.002);
+    this.rootGroup.add(glassBase);
 
-    // Soft Ambient Contact Drop Shadow under the entire console
-    const shadowGeo = new THREE.PlaneGeometry(13.5, 17.5);
-    const shadowTex = this.createDropShadowTexture(62);
-    const shadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, opacity: 0.72 });
-    const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
-    shadowMesh.position.set(0, -0.2, -D / 2 - 0.35);
-    this.rootGroup.add(shadowMesh);
-
-    // -------------------------------------------------------------------------
-    // 2. DISPLAY WINDOW: 5.0 W × 3.8 H cm centered at (4.4, 3.3) cm
-    //    Three.js: X = 0.0 cm, Y = 6.2 - 3.3 = +2.9 cm
-    //    (Spans x 1.9-6.9, y 1.4-5.2 -> 56.8% body width, real 2.4" ST7789)
-    // -------------------------------------------------------------------------
-    const DISP_W = 5.0;
-    const DISP_H = 3.8;
-    const DISP_Y = hh - 3.3; // +2.9 cm
-
-    // Display Bezel Housing: Outer frame framing the 2.4" window (Color: #1A4B42)
-    const BEZEL_W = 5.6;
-    const BEZEL_H = 4.4;
-    const bShape = new THREE.Shape();
-    const b_hw = BEZEL_W / 2;
-    const b_hh = BEZEL_H / 2;
-    const b_r = 0.25;
-    bShape.moveTo(-b_hw + b_r, -b_hh);
-    bShape.lineTo(b_hw - b_r, -b_hh);
-    bShape.quadraticCurveTo(b_hw, -b_hh, b_hw, -b_hh + b_r);
-    bShape.lineTo(b_hw, b_hh - b_r);
-    bShape.quadraticCurveTo(b_hw, b_hh, b_hw - b_r, b_hh);
-    bShape.lineTo(-b_hw + b_r, b_hh);
-    bShape.quadraticCurveTo(-b_hw, b_hh, -b_hw, b_hh - b_r);
-    bShape.lineTo(-b_hw, -b_hh + b_r);
-    bShape.quadraticCurveTo(-b_hw, -b_hh, -b_hw + b_r, -b_hh);
-
-    const bezelGeo = new THREE.ExtrudeGeometry(bShape, {
-      depth: 0.08,
-      bevelEnabled: true,
-      bevelSegments: 4,
-      bevelSize: 0.03,
-      bevelThickness: 0.03,
-    });
-    bezelGeo.center();
-    const bezelMesh = new THREE.Mesh(bezelGeo, this.materials.bezel);
-    bezelMesh.position.set(0, DISP_Y, Z_FRONT + 0.04);
-    bezelMesh.castShadow = true;
-    this.rootGroup.add(bezelMesh);
-
-    // Bezel Face Texture with "BMO COLOR", "USB-C POWER", and "BMO GAMEBOY"
-    const bezelFaceGeo = new THREE.PlaneGeometry(BEZEL_W, BEZEL_H);
-    const bezelFaceTex = this.createBezelFrameTexture();
-    const bezelFaceMat = new THREE.MeshBasicMaterial({ map: bezelFaceTex });
-    const bezelFaceMesh = new THREE.Mesh(bezelFaceGeo, bezelFaceMat);
-    bezelFaceMesh.position.set(0, DISP_Y, Z_FRONT + 0.082);
-    this.rootGroup.add(bezelFaceMesh);
-
-    // Active ST7789 LCD Panel (5.0 × 3.8 cm active display window)
-    const screenGeo = new THREE.PlaneGeometry(DISP_W, DISP_H);
+    const bezelRing = new THREE.Mesh(
+      ringGeometry(5.48, 4.22, 5.20, 3.95, 0.24),
+      this.materials.bezel
+    );
+    bezelRing.position.set(displayX, displayY, frontZ + 0.002);
+    this.rootGroup.add(bezelRing);
 
     if (this.tftCanvas) {
       this.screenTexture = new THREE.CanvasTexture(this.tftCanvas);
-      this.screenTexture.minFilter = THREE.LinearFilter;
+      this.screenTexture.encoding = THREE.sRGBEncoding;
+      this.screenTexture.minFilter = THREE.NearestFilter;
       this.screenTexture.magFilter = THREE.NearestFilter;
+      this.screenTexture.generateMipmaps = false;
     }
-
-    // MeshBasicMaterial ensures TRUE 100% RETRO MINT COLORS without white blowout!
-    const screenMat = new THREE.MeshBasicMaterial({
+    const screenMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
       map: this.screenTexture,
+      roughness: 0.12,
+      metalness: 0,
+      clearcoat: 0.85,
+      clearcoatRoughness: 0.08,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
     });
-
-    this.screenMesh = new THREE.Mesh(screenGeo, screenMat);
-    this.screenMesh.position.set(0, DISP_Y, Z_FRONT + 0.085);
+    this.screenMesh = new THREE.Mesh(new THREE.PlaneGeometry(displayW, displayH), screenMaterial);
+    this.screenMesh.position.set(displayX, displayY, frontZ + 0.015); // 0.15 mm proud of the shell datum.
     this.rootGroup.add(this.screenMesh);
 
-    // Protective Glass Lens overlay with subtle diagonal reflection
-    const lensGeo = new THREE.PlaneGeometry(DISP_W, DISP_H);
-    const lensCanvas = document.createElement("canvas");
-    lensCanvas.width = 256;
-    lensCanvas.height = 192;
-    const lctx = lensCanvas.getContext("2d");
-    const lGrad = lctx.createLinearGradient(0, 0, 256, 192);
-    lGrad.addColorStop(0, "rgba(255, 255, 255, 0.12)");
-    lGrad.addColorStop(0.45, "rgba(255, 255, 255, 0.03)");
-    lGrad.addColorStop(0.70, "rgba(255, 255, 255, 0)");
-    lctx.fillStyle = lGrad;
-    lctx.fillRect(0, 0, 256, 192);
-    const lensTex = new THREE.CanvasTexture(lensCanvas);
-    const lensMat = new THREE.MeshBasicMaterial({ map: lensTex, transparent: true, opacity: 0.85 });
-    const lensMesh = new THREE.Mesh(lensGeo, lensMat);
-    lensMesh.position.set(0, DISP_Y, Z_FRONT + 0.088);
-    this.rootGroup.add(lensMesh);
+    // Drive slot and the low-profile blue accent are below the screen.
+    const slot = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.2, 0.04), this.materials.slot);
+    slot.position.set(-0.02, 0.42, frontZ + 0.025);
+    this.rootGroup.add(slot);
+    const eject = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.15, 0.15, 0.12, 40),
+      new THREE.MeshPhysicalMaterial({ color: px(0x2874a6), roughness: 0.38, clearcoat: 0.25 })
+    );
+    eject.rotation.x = Math.PI / 2;
+    eject.position.set(2.45, 0.42, frontZ + 0.07);
+    this.rootGroup.add(eject);
 
-    // -------------------------------------------------------------------------
-    // CANONICAL CASSETTE / FLOPPY DRIVE SLOT & EJECT BUTTON (Adventure Time BMO)
-    // -------------------------------------------------------------------------
-    const slotY = DISP_Y - BEZEL_H / 2 - 0.28; // +0.42 cm (centered between screen bezel and D-pad)
-    const slotGeo = new THREE.BoxGeometry(4.2, 0.24, 0.04);
-    const slotMat = new THREE.MeshBasicMaterial({ color: 0x091814 });
-    const slotMesh = new THREE.Mesh(slotGeo, slotMat);
-    slotMesh.position.set(0, slotY, Z_FRONT + 0.015);
-    this.rootGroup.add(slotMesh);
-
-    // Subtle slot inner recess depth
-    const slotInnerGeo = new THREE.BoxGeometry(4.0, 0.14, 0.06);
-    const slotInnerMat = new THREE.MeshBasicMaterial({ color: 0x040a08 });
-    const slotInnerMesh = new THREE.Mesh(slotInnerGeo, slotInnerMat);
-    slotInnerMesh.position.set(0, slotY, Z_FRONT + 0.02);
-    this.rootGroup.add(slotInnerMesh);
-
-    // Iconic circular blue eject button to the right of the slot
-    const ejectGeo = new THREE.CircleGeometry(0.15, 24);
-    const ejectMat = new THREE.MeshBasicMaterial({ color: 0x227093 });
-    const ejectMesh = new THREE.Mesh(ejectGeo, ejectMat);
-    ejectMesh.position.set(2.45, slotY, Z_FRONT + 0.022);
-    this.rootGroup.add(ejectMesh);
-
-    // -------------------------------------------------------------------------
-    // 4. D-PAD: 2.8 × 2.8 cm, arm width 0.95 cm centered at (2.2, 8.4) cm
-    //    Three.js: X = 2.2 - 4.4 = -2.2 cm, Y = 6.2 - 8.4 = -2.2 cm
-    //    Color: #FFE033 (Warm Sunshine Golden Yellow)
-    // -------------------------------------------------------------------------
-    const DPAD_X = 2.2 - hw; // -2.2 cm
-    const DPAD_Y = hh - 8.4; // -2.2 cm
-    const ARM_W = 0.95;
-    const L = 1.4;            // Half of 2.8
-    const W_HALF = ARM_W / 2; // 0.475
-    const CR = 0.08;          // Arm corner roundness
-
-    // Soft Drop Shadow Mesh under D-Pad
-    const dpadDropGeo = new THREE.PlaneGeometry(3.6, 3.6);
-    const dpadDropTex = this.createDropShadowTexture(60);
-    const dpadDropMat = new THREE.MeshBasicMaterial({ map: dpadDropTex, transparent: true, opacity: 0.60 });
-    const dpadDropMesh = new THREE.Mesh(dpadDropGeo, dpadDropMat);
-    dpadDropMesh.position.set(DPAD_X, DPAD_Y - 0.08, Z_FRONT + 0.01);
-    this.rootGroup.add(dpadDropMesh);
-
-    // Extruded cross shape
+    // Four separate raycast regions share one rounded cross with a central pivot dish.
+    const dpadX = -1.9;
+    const dpadY = -2.2;
+    const armWidth = 0.95;
+    const halfSpan = 1.4;
+    const cr = 0.08;
     const dpadShape = new THREE.Shape();
-    dpadShape.moveTo(-W_HALF + CR, L);
-    dpadShape.lineTo(W_HALF - CR, L);
-    dpadShape.quadraticCurveTo(W_HALF, L, W_HALF, L - CR);
-    dpadShape.lineTo(W_HALF, W_HALF + CR);
-    dpadShape.quadraticCurveTo(W_HALF, W_HALF, W_HALF + CR, W_HALF);
-    dpadShape.lineTo(L - CR, W_HALF);
-    dpadShape.quadraticCurveTo(L, W_HALF, L, W_HALF - CR);
-    dpadShape.lineTo(L, -W_HALF + CR);
-    dpadShape.quadraticCurveTo(L, -W_HALF, L - CR, -W_HALF);
-    dpadShape.lineTo(W_HALF + CR, -W_HALF);
-    dpadShape.quadraticCurveTo(W_HALF, -W_HALF, W_HALF, -W_HALF - CR);
-    dpadShape.lineTo(W_HALF, -L + CR);
-    dpadShape.quadraticCurveTo(W_HALF, -L, W_HALF - CR, -L);
-    dpadShape.lineTo(-W_HALF + CR, -L);
-    dpadShape.quadraticCurveTo(-W_HALF, -L, -W_HALF, -L + CR);
-    dpadShape.lineTo(-W_HALF, -W_HALF - CR);
-    dpadShape.quadraticCurveTo(-W_HALF, -W_HALF, -W_HALF - CR, -W_HALF);
-    dpadShape.lineTo(-L + CR, -W_HALF);
-    dpadShape.quadraticCurveTo(-L, -W_HALF, -L, -W_HALF + CR);
-    dpadShape.lineTo(-L, W_HALF - CR);
-    dpadShape.quadraticCurveTo(-L, W_HALF, -L + CR, W_HALF);
-    dpadShape.lineTo(-W_HALF - CR, W_HALF);
-    dpadShape.quadraticCurveTo(-W_HALF, W_HALF, -W_HALF, W_HALF + CR);
+    dpadShape.moveTo(-armWidth / 2 + cr, halfSpan);
+    dpadShape.lineTo(armWidth / 2 - cr, halfSpan);
+    dpadShape.quadraticCurveTo(armWidth / 2, halfSpan, armWidth / 2, halfSpan - cr);
+    dpadShape.lineTo(armWidth / 2, armWidth / 2 + cr);
+    dpadShape.quadraticCurveTo(armWidth / 2, armWidth / 2, armWidth / 2 + cr, armWidth / 2);
+    dpadShape.lineTo(halfSpan - cr, armWidth / 2);
+    dpadShape.quadraticCurveTo(halfSpan, armWidth / 2, halfSpan, armWidth / 2 - cr);
+    dpadShape.lineTo(halfSpan, -armWidth / 2 + cr);
+    dpadShape.quadraticCurveTo(halfSpan, -armWidth / 2, halfSpan - cr, -armWidth / 2);
+    dpadShape.lineTo(armWidth / 2 + cr, -armWidth / 2);
+    dpadShape.quadraticCurveTo(armWidth / 2, -armWidth / 2, armWidth / 2, -armWidth / 2 - cr);
+    dpadShape.lineTo(armWidth / 2, -halfSpan + cr);
+    dpadShape.quadraticCurveTo(armWidth / 2, -halfSpan, armWidth / 2 - cr, -halfSpan);
+    dpadShape.lineTo(-armWidth / 2 + cr, -halfSpan);
+    dpadShape.quadraticCurveTo(-armWidth / 2, -halfSpan, -armWidth / 2, -halfSpan + cr);
+    dpadShape.lineTo(-armWidth / 2, -armWidth / 2 - cr);
+    dpadShape.quadraticCurveTo(-armWidth / 2, -armWidth / 2, -armWidth / 2 - cr, -armWidth / 2);
+    dpadShape.lineTo(-halfSpan + cr, -armWidth / 2);
+    dpadShape.quadraticCurveTo(-halfSpan, -armWidth / 2, -halfSpan, -armWidth / 2 + cr);
+    dpadShape.lineTo(-halfSpan, armWidth / 2 - cr);
+    dpadShape.quadraticCurveTo(-halfSpan, armWidth / 2, -halfSpan + cr, armWidth / 2);
+    dpadShape.lineTo(-armWidth / 2 - cr, armWidth / 2);
+    dpadShape.quadraticCurveTo(-armWidth / 2, armWidth / 2, -armWidth / 2, armWidth / 2 + cr);
+    dpadShape.lineTo(-armWidth / 2, halfSpan - cr);
+    dpadShape.quadraticCurveTo(-armWidth / 2, halfSpan, -armWidth / 2 + cr, halfSpan);
     dpadShape.closePath();
 
     const dpadGeo = new THREE.ExtrudeGeometry(dpadShape, {
-      depth: 0.22,
+      depth: 0.2,
       bevelEnabled: true,
       bevelSegments: 4,
       bevelSize: 0.04,
-      bevelThickness: 0.04,
+      bevelThickness: 0.035,
+      curveSegments: 12,
     });
     dpadGeo.center();
-
-    // D-Pad Pivot Root Group (allows dynamic mechanical tilt!)
     this.dpadPivotGroup = new THREE.Group();
-    this.dpadPivotGroup.position.set(DPAD_X, DPAD_Y, Z_FRONT + 0.14);
+    this.dpadPivotGroup.position.set(dpadX, dpadY, frontZ + 0.12);
+    this.dpadRestZ = frontZ + 0.12;
     this.rootGroup.add(this.dpadPivotGroup);
-
     this.dpadBodyMesh = new THREE.Mesh(dpadGeo, this.materials.dpad);
     this.dpadBodyMesh.castShadow = true;
     this.dpadBodyMesh.receiveShadow = true;
     this.dpadPivotGroup.add(this.dpadBodyMesh);
-
-    // Directional arrows & center circular concave dish overlay
     const dpadTex = this.createDpadTexture();
-    const dpadTexGeo = new THREE.PlaneGeometry(2.8, 2.8);
-    const dpadTexMat = new THREE.MeshBasicMaterial({
-      map: dpadTex,
-      transparent: true,
-      depthWrite: false,
-    });
-    const dpadTexMesh = new THREE.Mesh(dpadTexGeo, dpadTexMat);
-    dpadTexMesh.position.set(0, 0, 0.155);
-    this.dpadPivotGroup.add(dpadTexMesh);
+    const dpadFace = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 2.8), new THREE.MeshBasicMaterial({ map: dpadTex, transparent: true, depthWrite: false }));
+    dpadFace.position.z = 0.145;
+    this.dpadPivotGroup.add(dpadFace);
 
-    // 4 Raycasting Hit Zones
-    const createDpadZone = (key, x, y, w, h) => {
-      const geo = new THREE.PlaneGeometry(w, h);
-      const mat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.0001, depthWrite: false });
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(x, y, 0.18);
-      mesh.userData = { isButton: true, key: key, isDpad: true };
-      this.dpadPivotGroup.add(mesh);
-      this.buttonMeshes[key] = mesh;
-      this.interactiveObjects.push(mesh);
+    const dpadZone = (key, x, y, width, height) => {
+      const zone = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.0001, depthWrite: false }));
+      zone.position.set(x, y, 0.16);
+      zone.userData = { isButton: true, key, isDpad: true };
+      this.dpadPivotGroup.add(zone);
+      this.buttonMeshes[key] = zone;
+      this.interactiveObjects.push(zone);
     };
+    dpadZone("UP", 0, 0.85, armWidth, 1.1);
+    dpadZone("DOWN", 0, -0.85, armWidth, 1.1);
+    dpadZone("LEFT", -0.85, 0, 1.1, armWidth);
+    dpadZone("RIGHT", 0.85, 0, 1.1, armWidth);
 
-    createDpadZone("UP", 0, 0.85, ARM_W, 1.1);
-    createDpadZone("DOWN", 0, -0.85, ARM_W, 1.1);
-    createDpadZone("LEFT", -0.85, 0, 1.1, ARM_W);
-    createDpadZone("RIGHT", 0.85, 0, 1.1, ARM_W);
+    // Small dark annuli represent the 0.25 mm running clearance around face caps.
+    const actionButtons = [
+      ["X", 1.8, -1.2, "#4caf50", "#10251f"],
+      ["Y", 0.9, -2.2, "#f48fb1", "#10251f"],
+      ["A", 2.7, -2.2, "#52a6ba", "#10251f"],
+      ["B", 1.8, -3.2, "#ff91a5", "#10251f"],
+    ];
+    const wellGeometry = new THREE.RingGeometry(capRadius, capRadius + 0.025, 48);
+    for (const [key, x, y, color, labelColor] of actionButtons) {
+      const well = new THREE.Mesh(wellGeometry, new THREE.MeshStandardMaterial({ color: px(0x346e68), roughness: 0.8, side: THREE.DoubleSide }));
+      well.position.set(x, y, frontZ + 0.002);
+      this.rootGroup.add(well);
 
-    // -------------------------------------------------------------------------
-    // 5. ABXY SQUARE GRID DIAMOND (Aligned to 2.54 mm perfboard grid):
-    //    Cap dia 0.9 cm (radius 0.45 cm)
-    //    * X (Top):    (6.6, 7.4) -> Three.js: X = +2.2 cm, Y = -1.2 cm | #4CAF50
-    //    * Y (Left):   (5.6, 8.4) -> Three.js: X = +1.2 cm, Y = -2.2 cm | #F48FB1
-    //    * A (Right):  (7.6, 8.4) -> Three.js: X = +3.2 cm, Y = -2.2 cm | #52A6BA
-    //    * B (Bottom): (6.6, 9.4) -> Three.js: X = +2.2 cm, Y = -3.2 cm | #FF91A5
-    // -------------------------------------------------------------------------
-    const CAP_RADIUS = 0.45;
-    const CAP_HEIGHT = 0.24;
+      const group = new THREE.Group();
+      group.position.set(x, y, frontZ + capHeight / 2);
+      this.rootGroup.add(group);
+      const capShape = new THREE.LatheGeometry([
+        new THREE.Vector2(0, -capHeight / 2),
+        new THREE.Vector2(capRadius * 0.88, -capHeight / 2),
+        new THREE.Vector2(capRadius * 0.98, -capHeight / 2 + 0.035),
+        new THREE.Vector2(capRadius, -capHeight / 2 + 0.08),
+        new THREE.Vector2(capRadius, capHeight / 2 - 0.055),
+        new THREE.Vector2(capRadius * 0.91, capHeight / 2),
+        new THREE.Vector2(0, capHeight / 2),
+      ], 48);
+      capShape.rotateX(Math.PI / 2);
+      const cap = new THREE.Mesh(capShape, new THREE.MeshPhysicalMaterial({ color: px(color), roughness: 0.48, metalness: 0, clearcoat: 0.12, clearcoatRoughness: 0.38 }));
+      cap.castShadow = true;
+      group.add(cap);
+      const face = new THREE.Mesh(new THREE.CircleGeometry(capRadius - 0.015, 48), new THREE.MeshStandardMaterial({ map: this.createButtonTexture(key, color, labelColor), roughness: 0.55, metalness: 0 }));
+      face.position.z = capHeight / 2 + 0.002;
+      group.add(face);
+      const hit = new THREE.Mesh(new THREE.CylinderGeometry(capRadius + 0.03, capRadius + 0.03, 0.32, 32), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.0001, depthWrite: false }));
+      hit.rotation.x = Math.PI / 2;
+      group.add(hit);
+      const data = { isButton: true, key, name: `${key} Button`, isAction: true };
+      cap.userData = data;
+      face.userData = data;
+      hit.userData = data;
+      this.buttonMeshes[key] = group;
+      this.interactiveObjects.push(cap, face, hit);
+      this.buttonOriginalPositions.set(group, { x: group.position.x, y: group.position.y, z: group.position.z, rotX: 0, rotY: 0, rotZ: 0 });
+    }
 
-    const createActionButton = (name, key, label, refX, refY, bgColorStr, textColorStr) => {
-      const x = refX - hw;
-      const y = hh - refY;
-
-      // 1. Soft Ambient Contact Drop Shadow (subtle, NO dark black halo ring!)
-      const shadowDiscGeo = new THREE.PlaneGeometry(CAP_RADIUS * 2.1, CAP_RADIUS * 2.1);
-      const shadowDiscTex = this.createDropShadowTexture(48);
-      const shadowDiscMat = new THREE.MeshBasicMaterial({ map: shadowDiscTex, transparent: true, opacity: 0.18 });
-      const shadowDisc = new THREE.Mesh(shadowDiscGeo, shadowDiscMat);
-      shadowDisc.position.set(x, y - 0.04, Z_FRONT + 0.005);
-      this.rootGroup.add(shadowDisc);
-
-      // 2. Engraved Letter Label on the chassis below the button (matching reference 2D)
-      const lblCanvas = document.createElement("canvas");
-      lblCanvas.width = 128;
-      lblCanvas.height = 64;
-      const lctx = lblCanvas.getContext("2d");
-      lctx.fillStyle = "#3a786a"; // Chassis shadow teal
-      lctx.font = "bold 30px 'Press Start 2P', monospace";
-      lctx.textAlign = "center";
-      lctx.textBaseline = "middle";
-      lctx.fillText(label, 64, 32);
-      const lblTex = new THREE.CanvasTexture(lblCanvas);
-      const lblGeo = new THREE.PlaneGeometry(0.5, 0.25);
-      const lblMat = new THREE.MeshBasicMaterial({ map: lblTex, transparent: true });
-      const lblMesh = new THREE.Mesh(lblGeo, lblMat);
-      lblMesh.position.set(x + (key === "A" ? 0.08 : (key === "Y" ? -0.08 : 0)), y - 0.65, Z_FRONT + 0.012);
-      this.rootGroup.add(lblMesh);
-
-      // 3. Action Button Root Group
-      const btnGroup = new THREE.Group();
-      btnGroup.position.set(x, y, Z_FRONT + CAP_HEIGHT / 2);
-      this.rootGroup.add(btnGroup);
-
-      // Button Stem (Cylinder) with matching pure color
-      const cylGeo = new THREE.CylinderGeometry(CAP_RADIUS, CAP_RADIUS, CAP_HEIGHT, 32);
-      cylGeo.rotateX(Math.PI / 2);
-      const cylMat = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(bgColorStr),
-        roughness: 0.30,
-        metalness: 0.0,
-      });
-      const stemMesh = new THREE.Mesh(cylGeo, cylMat);
-      stemMesh.castShadow = true;
-      btnGroup.add(stemMesh);
-
-      // Button Cap Face with Specular Rim & Bold Retro Letter (flush with cylinder)
-      const topTex = this.createButtonTexture(label, bgColorStr, textColorStr);
-      const topGeo = new THREE.CircleGeometry(CAP_RADIUS, 32);
-      const topMat = new THREE.MeshBasicMaterial({
-        map: topTex,
-      });
-      const capMesh = new THREE.Mesh(topGeo, topMat);
-      capMesh.position.set(0, 0, CAP_HEIGHT / 2 + 0.002);
-      btnGroup.add(capMesh);
-
-      // Interactive Click Targets
-      btnGroup.userData = { isButton: true, key: key, name: name, isAction: true };
-      this.buttonMeshes[key] = btnGroup;
-      this.interactiveObjects.push(stemMesh);
-      this.interactiveObjects.push(capMesh);
-      stemMesh.userData = btnGroup.userData;
-      capMesh.userData = btnGroup.userData;
-
-      this.buttonOriginalPositions.set(btnGroup, {
-        x: btnGroup.position.x,
-        y: btnGroup.position.y,
-        z: btnGroup.position.z,
-        rotX: btnGroup.rotation.x,
-        rotY: btnGroup.rotation.y,
-        rotZ: btnGroup.rotation.z,
-      });
-
-      return btnGroup;
+    const makePill = (key, label, x) => {
+      const y = -4.35;
+      const group = new THREE.Group();
+      group.position.set(x, y, frontZ + 0.1);
+      this.rootGroup.add(group);
+      const pill = new THREE.Mesh(extrudedRounded(1.15, 0.40, 0.20, 0.16, 0.035), this.materials.btnPill);
+      pill.castShadow = true;
+      pill.userData = { isButton: true, key, name: label, isPill: true };
+      group.add(pill);
+      this.buttonMeshes[key] = group;
+      this.interactiveObjects.push(pill);
+      this.buttonOriginalPositions.set(group, { x: group.position.x, y: group.position.y, z: group.position.z, rotX: 0, rotY: 0, rotZ: 0 });
+      const legend = addFrontText(label, 1.3, 0.28, 27, "#173b35");
+      legend.position.set(x, y - 0.48, frontZ + 0.018);
+      this.rootGroup.add(legend);
     };
+    makePill("SELECT", "SELECT", -2.55);
+    makePill("START", "START", -1.15);
 
-    createActionButton("X Button", "X", "X", 6.6, 7.4, "#4caf50", "#0f2620"); // Top: Leaf Green
-    createActionButton("Y Button", "Y", "Y", 5.6, 8.4, "#f48fb1", "#0f2620"); // Left: Rosy Pink
-    createActionButton("A Button", "A", "A", 7.6, 8.4, "#52a6ba", "#0f2620"); // Right: Sky Blue
-    createActionButton("B Button", "B", "B", 6.6, 9.4, "#ff91a5", "#0f2620"); // Bottom: Coral
-
-    // -------------------------------------------------------------------------
-    // 6. SELECT / START PILL BUTTONS: Canonical Adventure Time BMO Placement
-    //    Placed near left side down, directly under the yellow cross D-pad!
-    //    D-Pad centerline: X = -2.2 cm.
-    //    * Select: X = -2.90 cm, Y = -4.35 cm | #264B42
-    //    * Start:  X = -1.50 cm, Y = -4.35 cm | #264B42
-    //    Orientation: Perfectly horizontal ([ - ] [ - ]) matching Adventure Time BMO!
-    // -------------------------------------------------------------------------
-    const createPill = (name, key, label, x, y) => {
-      // Soft Drop Shadow under Pill
-      const pDropGeo = new THREE.PlaneGeometry(1.45, 0.60);
-      const pDropTex = this.createDropShadowTexture(44);
-      const pDropMat = new THREE.MeshBasicMaterial({ map: pDropTex, transparent: true, opacity: 0.28 });
-      const pDropMesh = new THREE.Mesh(pDropGeo, pDropMat);
-      pDropMesh.position.set(x, y - 0.04, Z_FRONT + 0.005);
-      this.rootGroup.add(pDropMesh);
-
-      // Ergonomic rounded capsule pill button (horizontal)
-      const pShape = new THREE.Shape();
-      const pw = 1.15 - 0.38; // 0.77 cm straight body
-      const pr = 0.19;        // 0.19 cm semicircular cap radius
-      pShape.moveTo(-pw / 2, -pr);
-      pShape.lineTo(pw / 2, -pr);
-      pShape.absarc(pw / 2, 0, pr, -Math.PI / 2, Math.PI / 2, false);
-      pShape.lineTo(-pw / 2, pr);
-      pShape.absarc(-pw / 2, 0, pr, Math.PI / 2, -Math.PI / 2, false);
-
-      const pillGeo = new THREE.ExtrudeGeometry(pShape, {
-        depth: 0.16,
-        bevelEnabled: true,
-        bevelSegments: 4,
-        bevelSize: 0.03,
-        bevelThickness: 0.03,
-      });
-      pillGeo.center();
-
-      const pillMesh = new THREE.Mesh(pillGeo, this.materials.btnPill);
-      pillMesh.position.set(x, y, Z_FRONT + 0.12);
-      pillMesh.castShadow = true;
-      pillMesh.userData = { isButton: true, key: key, name: name, isPill: true };
-      this.rootGroup.add(pillMesh);
-
-      this.buttonMeshes[key] = pillMesh;
-      this.interactiveObjects.push(pillMesh);
-      this.buttonOriginalPositions.set(pillMesh, {
-        x: pillMesh.position.x,
-        y: pillMesh.position.y,
-        z: pillMesh.position.z,
-        rotX: pillMesh.rotation.x,
-        rotY: pillMesh.rotation.y,
-        rotZ: pillMesh.rotation.z,
-      });
-
-      // Engraved Pill Label directly below
-      const lblCanvas = document.createElement("canvas");
-      lblCanvas.width = 256;
-      lblCanvas.height = 64;
-      const lCtx = lblCanvas.getContext("2d");
-      lCtx.fillStyle = "#1a4b42"; // Deep Teal
-      lCtx.font = "bold 26px 'Press Start 2P', monospace";
-      lCtx.textAlign = "center";
-      lCtx.textBaseline = "middle";
-      lCtx.fillText(label, 128, 32);
-
-      const lTex = new THREE.CanvasTexture(lblCanvas);
-      const lGeo = new THREE.PlaneGeometry(1.25, 0.30);
-      const lMat = new THREE.MeshBasicMaterial({ map: lTex, transparent: true });
-      const lMesh = new THREE.Mesh(lGeo, lMat);
-      lMesh.position.set(x, y - 0.48, Z_FRONT + 0.015);
-      this.rootGroup.add(lMesh);
-    };
-
-    // Both pills positioned side-by-side directly under the D-pad
-    createPill("Select", "SELECT", "SELECT", -2.90, -4.35);
-    createPill("Start", "START", "START", -1.50, -4.35);
-
-    // -------------------------------------------------------------------------
-    // 7. L / R SHOULDER BUTTONS: Side-Mounted Tact Switches on the Top Edge!
-    //    * L: X = -2.7 cm, Y = +6.475 cm, Z = 0.0 cm
-    //    * R: X = +2.7 cm, Y = +6.475 cm, Z = 0.0 cm
-    //    Mounted completely on the top rim (Y >= 6.20 cm, Z in [-0.8, +0.8 cm]).
-    //    ZERO overlap with front face or front bevel -> ZERO Z-FIGHTING / FLICKERING!
-    // -------------------------------------------------------------------------
-    const createShoulder = (name, key, label, refX) => {
-      const x = refX - hw;
-      const y = hh + 0.275; // +6.475 cm (rests directly on top chassis edge at +6.20 cm)
-      const z = 0.0;        // Centered along console thickness (spans Z from -0.8 to +0.8 cm)
-
-      // Ergonomic Bumper Mesh protruding above the top edge
-      const sw = 2.1;
-      const sh = 0.55;
-      const sd = 1.6;
-      const sr = 0.14; // Top corner rounding
-
-      const sShape = new THREE.Shape();
-      sShape.moveTo(-sw / 2, -sh / 2);
-      sShape.lineTo(sw / 2, -sh / 2);
-      sShape.lineTo(sw / 2, sh / 2 - sr);
-      sShape.quadraticCurveTo(sw / 2, sh / 2, sw / 2 - sr, sh / 2);
-      sShape.lineTo(-sw / 2 + sr, sh / 2);
-      sShape.quadraticCurveTo(-sw / 2, sh / 2, -sw / 2, sh / 2 - sr);
-      sShape.closePath();
-
-      const sGeo = new THREE.ExtrudeGeometry(sShape, {
-        depth: sd,
+    // Raised shoulders clear the uniform top fillet; the smaller legends sit on the visible face.
+    const shoulderShape = roundedRect(1.8, 0.52, 0.14);
+    const shoulderDepth = 0.68;
+    for (const [key, x] of [["L", -2.7], ["R", 2.7]]) {
+      const geometry = new THREE.ExtrudeGeometry(shoulderShape, {
+        depth: shoulderDepth,
         bevelEnabled: true,
         bevelSegments: 4,
         bevelSize: 0.04,
-        bevelThickness: 0.04,
+        bevelThickness: 0.035,
+        curveSegments: 12,
       });
-      sGeo.center();
+      geometry.center();
+      const shoulder = new THREE.Mesh(geometry, this.materials.shoulder);
+      shoulder.position.set(x, hh + 0.20, 0.76);
+      shoulder.castShadow = true;
+      shoulder.userData = { isButton: true, key, name: `${key} Shoulder`, isShoulder: true };
+      this.rootGroup.add(shoulder);
+      const legend = addFrontText(key, 0.9, 0.34, 36, "#d7f2e9");
+      legend.position.set(0, 0.05, shoulderDepth / 2 + 0.05);
+      shoulder.add(legend);
+      const hit = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.78, 0.9), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.0001, depthWrite: false }));
+      hit.userData = shoulder.userData;
+      shoulder.add(hit);
+      this.buttonMeshes[key] = shoulder;
+      this.interactiveObjects.push(shoulder, hit);
+      this.buttonOriginalPositions.set(shoulder, { x: shoulder.position.x, y: shoulder.position.y, z: shoulder.position.z, rotX: 0, rotY: 0, rotZ: 0 });
+    }
 
-      const sMesh = new THREE.Mesh(sGeo, this.materials.shoulder);
-      sMesh.position.set(x, y, z);
-      sMesh.castShadow = true;
-      sMesh.userData = { isButton: true, key: key, name: name, isShoulder: true };
-      this.rootGroup.add(sMesh);
+    // Side grilles are circular, recessed-looking geometry; BMO is a separate flat ink layer.
+    const holeRadius = 0.11;
+    for (const side of [-1, 1]) {
+      const sideX = side * (hw - 0.035);
+      for (let i = 0; i < 7; i++) {
+        const angle = i === 6 ? 0 : (i * Math.PI) / 3;
+        const y = i === 6 ? 4.3 : 4.3 + Math.sin(angle) * 0.42;
+        const z = i === 6 ? 0 : Math.cos(angle) * 0.42;
+        const hole = new THREE.Mesh(new THREE.CylinderGeometry(holeRadius, holeRadius, 0.07, 32), new THREE.MeshStandardMaterial({ color: px(0x101e26), roughness: 0.86 }));
+        hole.rotation.z = Math.PI / 2;
+        hole.position.set(sideX, y, z);
+        this.rootGroup.add(hole);
+        const rim = new THREE.Mesh(new THREE.TorusGeometry(holeRadius, 0.018, 8, 24), new THREE.MeshStandardMaterial({ color: px(0x367f77), roughness: 0.7 }));
+        rim.rotation.y = Math.PI / 2;
+        rim.position.set(side * hw, y, z);
+        this.rootGroup.add(rim);
+      }
+      const sideMesh = new THREE.Mesh(new THREE.PlaneGeometry(2.35, 4.8), new THREE.MeshBasicMaterial({ map: this.createSideTexture(), transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+      sideMesh.position.set(side * (hw + 0.004), 0.6, 0);
+      sideMesh.rotation.y = side < 0 ? -Math.PI / 2 : Math.PI / 2;
+      this.rootGroup.add(sideMesh);
+      // A dark parting line marks the two real shell halves at the side seam.
+      const seam = new THREE.Mesh(new THREE.BoxGeometry(0.03, H - 2 * 0.92, 0.04), new THREE.MeshBasicMaterial({ color: px(0x437f79) }));
+      seam.position.set(side * (hw + 0.003), 0, 0);
+      this.rootGroup.add(seam);
+    }
 
-      // Embossed "L" / "R" Label on the front facet of the trigger (at local z = +sd/2 + 0.045)
-      const fCanvas = document.createElement("canvas");
-      fCanvas.width = 128;
-      fCanvas.height = 64;
-      const fCtx = fCanvas.getContext("2d");
-      fCtx.clearRect(0, 0, 128, 64);
-      fCtx.fillStyle = "#cef5e4";
-      fCtx.font = "bold 34px 'Press Start 2P', monospace";
-      fCtx.textAlign = "center";
-      fCtx.textBaseline = "middle";
-      fCtx.shadowColor = "rgba(0, 0, 0, 0.45)";
-      fCtx.shadowBlur = 4;
-      fCtx.shadowOffsetY = 2;
-      fCtx.fillText(label, 64, 32);
+    // Top USB-C and left MicroSD access remain visual indicators until final module measurement.
+    const usb = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.04, 0.34), this.materials.slot);
+    usb.position.set(0, hh - 0.012, 0);
+    this.rootGroup.add(usb);
+    const sd = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.4, 0.22), this.materials.slot);
+    sd.position.set(-hw - 0.008, 2.0, 0);
+    this.rootGroup.add(sd);
 
-      const fTex = new THREE.CanvasTexture(fCanvas);
-      const fGeo = new THREE.PlaneGeometry(1.5, 0.42);
-      const fMat = new THREE.MeshBasicMaterial({ map: fTex, transparent: true, depthWrite: false });
-      const fMesh = new THREE.Mesh(fGeo, fMat);
-      fMesh.position.set(0, 0, sd / 2 + 0.045);
-      sMesh.add(fMesh);
-
-      // Generous Raycasting Click Hit Zone
-      const hitGeo = new THREE.BoxGeometry(2.5, 0.9, 2.0);
-      const hitMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.0001, depthWrite: false });
-      const hitMesh = new THREE.Mesh(hitGeo, hitMat);
-      hitMesh.position.set(0, 0, 0);
-      hitMesh.userData = sMesh.userData;
-      sMesh.add(hitMesh);
-
-      this.buttonMeshes[key] = sMesh;
-      this.interactiveObjects.push(sMesh);
-      this.interactiveObjects.push(fMesh);
-      this.interactiveObjects.push(hitMesh);
-      fMesh.userData = sMesh.userData;
-
-      this.buttonOriginalPositions.set(sMesh, {
-        x: sMesh.position.x,
-        y: sMesh.position.y,
-        z: sMesh.position.z,
-        rotX: 0,
-        rotY: 0,
-        rotZ: 0,
-      });
-    };
-
-    createShoulder("L Trigger", "L", "L", 1.7);
-    createShoulder("R Trigger", "R", "R", 7.1);
-
-    // -------------------------------------------------------------------------
-    // 8. TOP EDGE USB-C CUTOUT: 1.0 × 0.45 cm at (4.4, 0.0) between L and R
-    //    Three.js: X = 0.0 cm, Y = +6.2 cm
-    // -------------------------------------------------------------------------
-    const usbcGeo = new THREE.BoxGeometry(1.0, 0.45, 0.6);
-    const usbcMat = new THREE.MeshBasicMaterial({ color: 0x0f2620 });
-    const usbcHole = new THREE.Mesh(usbcGeo, usbcMat);
-    usbcHole.position.set(0, hh, 0.4);
-    this.rootGroup.add(usbcHole);
-
-    const usbcTongueGeo = new THREE.BoxGeometry(0.7, 0.12, 0.35);
-    const usbcTongue = new THREE.Mesh(usbcTongueGeo, this.materials.metal);
-    usbcTongue.position.set(0, hh + 0.05, 0.4);
-    this.rootGroup.add(usbcTongue);
-
-    // -------------------------------------------------------------------------
-    // 9. LEFT EDGE MICROSD SLOT: 1.3 × 0.25 cm at y ≈ 4.0 cm
-    //    Three.js: X = -4.4 cm, Y = 6.2 - 4.0 = +2.2 cm
-    // -------------------------------------------------------------------------
-    const sdHoleGeo = new THREE.BoxGeometry(0.5, 0.25, 1.35);
-    const sdHole = new THREE.Mesh(sdHoleGeo, usbcMat);
-    sdHole.position.set(-hw, hh - 4.0, 0.4);
-    this.rootGroup.add(sdHole);
-
-    // -------------------------------------------------------------------------
-    // 10. RIGHT EDGE POWER SLIDE SWITCH: ~1.0 × 0.4 cm at y ≈ 3.0 cm
-    //     Three.js: X = +4.4 cm, Y = 6.2 - 3.0 = +3.2 cm
-    // -------------------------------------------------------------------------
-    const pwrHoleGeo = new THREE.BoxGeometry(0.4, 1.0, 0.45);
-    const pwrHole = new THREE.Mesh(pwrHoleGeo, usbcMat);
-    pwrHole.position.set(hw, hh - 3.0, 0.4);
-    this.rootGroup.add(pwrHole);
-
-    const pwrNubGeo = new THREE.BoxGeometry(0.25, 0.45, 0.35);
-    const pwrNub = new THREE.Mesh(pwrNubGeo, this.materials.btnPill);
-    pwrNub.position.set(hw + 0.08, hh - 2.8, 0.4);
-    this.rootGroup.add(pwrNub);
-
-    // -------------------------------------------------------------------------
-    // 11. CANONICAL REAR CHASSIS (Faithful to Adventure Time BMO):
-    //     Zone 1 (Top): 5 Vertical Vent Slits (| | | | |)
-    //     Zone 2 (Middle): Battery/Access Plate with Raised Frame & 4 Corner Screws
-    //     Zone 3 (Bottom): Horizontal Finger Latch / Handle Recess
-    // -------------------------------------------------------------------------
-    const Z_BACK = -D / 2; // -1.60 cm
-
-    // Zone 1: 5 Vertical Vent Slits (| | | | |)
-    const ventY = +3.6; // Upper back
-    const ventHeight = 2.4;
-    const ventWidth = 0.18;
-    const ventDepth = 0.06;
-    const ventMat = new THREE.MeshBasicMaterial({ color: 0x091814 }); // Deep dark recessed vent
-
+    // Rear panel seam, removable three-cell design-bay cover, five vents, and fasteners.
+    const rearPanel = new THREE.Mesh(ringGeometry(5.9, 5.0, 5.72, 4.82, 0.18), new THREE.MeshStandardMaterial({ color: px(0x214841), roughness: 0.72, side: THREE.DoubleSide }));
+    rearPanel.rotation.y = Math.PI;
+    rearPanel.position.set(0, -3.0, backZ - 0.004);
+    this.rootGroup.add(rearPanel);
+    const door = new THREE.Mesh(extrudedRounded(5.76, 4.86, 0.20, 0.025), this.materials.backShell);
+    door.rotation.y = Math.PI;
+    door.position.set(0, -3.0, backZ - 0.012);
+    this.rootGroup.add(door);
+    for (const x of [-2.2, 2.2]) {
+      for (const y of [-5.75, -0.25]) {
+        const screw = new THREE.Mesh(new THREE.CircleGeometry(0.095, 24), new THREE.MeshStandardMaterial({ color: px(0x223d3b), side: THREE.DoubleSide }));
+        screw.position.set(x, y, backZ - 0.03);
+        this.rootGroup.add(screw);
+      }
+    }
+    for (const x of [-3.3, 3.3]) {
+      for (const y of [-5.4, 5.4]) {
+        const screw = new THREE.Mesh(new THREE.CircleGeometry(0.12, 24), new THREE.MeshStandardMaterial({ color: px(0x223d3b), side: THREE.DoubleSide }));
+        screw.position.set(x, y, backZ - 0.03);
+        this.rootGroup.add(screw);
+      }
+    }
+    const ventMaterial = new THREE.MeshStandardMaterial({ color: px(0x101e26), roughness: 0.85, side: THREE.DoubleSide });
     for (let i = 0; i < 5; i++) {
-      const vx = (i - 2) * 0.82; // -1.64, -0.82, 0.0, +0.82, +1.64 cm
-      // Rounded capsule slit shape
-      const vShape = new THREE.Shape();
-      const vr = ventWidth / 2;
-      const vh = ventHeight - ventWidth;
-      vShape.moveTo(-vr, -vh / 2);
-      vShape.lineTo(vr, -vh / 2);
-      vShape.absarc(0, vh / 2, vr, 0, Math.PI, false);
-      vShape.lineTo(-vr, -vh / 2);
-      vShape.absarc(0, -vh / 2, vr, Math.PI, Math.PI * 2, false);
-
-      const vGeo = new THREE.ExtrudeGeometry(vShape, { depth: ventDepth, bevelEnabled: false });
-      vGeo.center();
-      const ventMesh = new THREE.Mesh(vGeo, ventMat);
-      ventMesh.position.set(vx, ventY, Z_BACK - ventDepth / 2);
-      this.rootGroup.add(ventMesh);
+      const vent = new THREE.Mesh(extrudedRounded(0.20, 1.45, 0.10, 0.02), ventMaterial);
+      vent.rotation.y = Math.PI;
+      vent.position.set((i - 2) * 0.75, 4.75, backZ - 0.008);
+      this.rootGroup.add(vent);
     }
-
-    // Zone 2: Rectangular Access / Battery Plate with Raised Beveled Frame
-    const plateY = +0.2; // Centered middle-back
-    const plateW = 5.5;
-    const plateH = 3.3;
-    const plateDepth = 0.12;
-
-    // Molded perimeter seam groove
-    const seamGeo = new THREE.BoxGeometry(plateW + 0.35, plateH + 0.35, 0.04);
-    const seamMat = new THREE.MeshBasicMaterial({ color: 0x14332c });
-    const seamMesh = new THREE.Mesh(seamGeo, seamMat);
-    seamMesh.position.set(0, plateY, Z_BACK - 0.02);
-    this.rootGroup.add(seamMesh);
-
-    // Raised beveled plate
-    const pShape = new THREE.Shape();
-    const pr = 0.12;
-    pShape.moveTo(-plateW / 2 + pr, -plateH / 2);
-    pShape.lineTo(plateW / 2 - pr, -plateH / 2);
-    pShape.quadraticCurveTo(plateW / 2, -plateH / 2, plateW / 2, -plateH / 2 + pr);
-    pShape.lineTo(plateW / 2, plateH / 2 - pr);
-    pShape.quadraticCurveTo(plateW / 2, plateH / 2, plateW / 2 - pr, plateH / 2);
-    pShape.lineTo(-plateW / 2 + pr, plateH / 2);
-    pShape.quadraticCurveTo(-plateW / 2, plateH / 2, -plateW / 2, plateH / 2 - pr);
-    pShape.lineTo(-plateW / 2, -plateH / 2 + pr);
-    pShape.quadraticCurveTo(-plateW / 2, -plateH / 2, -plateW / 2 + pr, -plateH / 2);
-
-    const pGeo = new THREE.ExtrudeGeometry(pShape, {
-      depth: plateDepth,
-      bevelEnabled: true,
-      bevelSegments: 4,
-      bevelSize: 0.03,
-      bevelThickness: 0.03,
-    });
-    pGeo.center();
-
-    const plateMesh = new THREE.Mesh(pGeo, this.materials.chassis);
-    plateMesh.position.set(0, plateY, Z_BACK - plateDepth / 2 - 0.02);
-    plateMesh.castShadow = true;
-    this.rootGroup.add(plateMesh);
-
-    // 4 Corner Metal Screws / Rivets
-    const screwInsetX = plateW / 2 - 0.36; // 2.39 cm
-    const screwInsetY = plateH / 2 - 0.36; // 1.29 cm
-    const screwPositions = [
-      [-screwInsetX, plateY + screwInsetY],
-      [+screwInsetX, plateY + screwInsetY],
-      [-screwInsetX, plateY - screwInsetY],
-      [+screwInsetX, plateY - screwInsetY],
-    ];
-
-    const screwGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.06, 24);
-    screwGeo.rotateX(Math.PI / 2);
-    const screwCrossGeo = new THREE.BoxGeometry(0.18, 0.03, 0.07);
-    const screwCrossMat = new THREE.MeshBasicMaterial({ color: 0x2c3e50 });
-
-    for (const [sx, sy] of screwPositions) {
-      const screwMesh = new THREE.Mesh(screwGeo, this.materials.metal);
-      screwMesh.position.set(sx, sy, Z_BACK - plateDepth - 0.025);
-      this.rootGroup.add(screwMesh);
-
-      // Slotted screw drive groove
-      const crossMesh = new THREE.Mesh(screwCrossGeo, screwCrossMat);
-      crossMesh.position.set(sx, sy, Z_BACK - plateDepth - 0.045);
-      this.rootGroup.add(crossMesh);
-    }
-
-    // Zone 3: Horizontal Finger Latch / Compartment Recess
-    const latchY = -2.4;
-    const latchW = 2.8;
-    const latchH = 0.45;
-    const latchGeo = new THREE.BoxGeometry(latchW, latchH, 0.06);
-    const latchMat = new THREE.MeshBasicMaterial({ color: 0x091814 });
-    const latchMesh = new THREE.Mesh(latchGeo, latchMat);
-    latchMesh.position.set(0, latchY, Z_BACK - 0.02);
-    this.rootGroup.add(latchMesh);
-
-    // Subtle inner shadow ridge inside the latch
-    const latchLipGeo = new THREE.BoxGeometry(latchW - 0.2, 0.12, 0.08);
-    const latchLipMat = new THREE.MeshBasicMaterial({ color: 0x14332c });
-    const latchLipMesh = new THREE.Mesh(latchLipGeo, latchLipMat);
-    latchLipMesh.position.set(0, latchY + 0.10, Z_BACK - 0.03);
-    this.rootGroup.add(latchLipMesh);
-
-    // -------------------------------------------------------------------------
-    // 12. CANONICAL SIDES: 7-Hole Acoustic Speaker Array & Vertical "B M O"
-    //     Faithful to Adventure Time BMO (Both Left and Right Sides!)
-    // -------------------------------------------------------------------------
-    const sideTex = this.createSideTexture();
-    const sideGeo = new THREE.PlaneGeometry(3.0, 10.5);
-    const sideMat = new THREE.MeshBasicMaterial({
-      map: sideTex,
-      transparent: true,
-      depthWrite: false,
-    });
-
-    // Left side: canonical speaker array + "B M O" with arm socket
-    const leftSideMesh = new THREE.Mesh(sideGeo, sideMat);
-    leftSideMesh.position.set(-hw - 0.005, 0.4, 0);
-    leftSideMesh.rotation.y = -Math.PI / 2;
-    this.rootGroup.add(leftSideMesh);
-
-    // Right side: canonical speaker array + "B M O" with arm socket
-    const rightSideMesh = new THREE.Mesh(sideGeo, sideMat);
-    rightSideMesh.position.set(hw + 0.005, 0.4, 0);
-    rightSideMesh.rotation.y = Math.PI / 2;
-    this.rootGroup.add(rightSideMesh);
   }
-
   setupRaycasting() {
     const dom = this.renderer.domElement;
 
@@ -1306,9 +869,9 @@ class Bmo3DConsole {
     this.activeTheme = themeName;
     if (!this.materials.chassis) return;
 
-    let chassisHex = 0x5fb49c;
-    let bezelHex = 0x1a4b42;
-    let roughness = 0.42;
+    let chassisHex = 0x63c5b8;
+    let bezelHex = 0x17353a;
+    let roughness = 0.62;
     let transmission = 0.0;
     let transparent = false;
     let opacity = 1.0;
@@ -1334,33 +897,36 @@ class Bmo3DConsole {
         break;
       case "bmo-teal":
       default:
-        chassisHex = 0x5fb49c;
-        bezelHex = 0x1a4b42;
+        chassisHex = 0x63c5b8;
+        bezelHex = 0x17353a;
         break;
     }
 
-    this.materials.chassis.color.setHex(chassisHex);
+    this.materials.chassis.color.copy(new THREE.Color(chassisHex).convertSRGBToLinear());
     this.materials.chassis.roughness = roughness;
     this.materials.chassis.transmission = transmission;
     this.materials.chassis.transparent = transparent;
     this.materials.chassis.opacity = opacity;
+    if (this.materials.backShell) this.materials.backShell.color.copy(new THREE.Color(chassisHex).convertSRGBToLinear());
 
-    this.materials.bezel.color.setHex(bezelHex);
+    this.materials.bezel.color.copy(new THREE.Color(bezelHex).convertSRGBToLinear());
   }
 
   setCameraPreset(presetName) {
     if (!this.camera) return;
 
     const targets = {
-      front: { pos: [0, 0, 19.5], look: [0, 0, 0] },
-      iso: { pos: [9.5, 7.5, 16.5], look: [0, 0, 0] },
-      top: { pos: [0, 16.5, 4.5], look: [0, 5.0, 0.5] },
+      front: { pos: [0, 0, 22.5], look: [0, 0, 0] },
+      iso: { pos: [11.5, 8.5, 20], look: [0, 0, 0] },
+      top: { pos: [0, 27, 0], look: [0, 0, 0] },
       left: { pos: [-16.0, 1.5, 3.5], look: [-3.5, 1.5, 0] },
       right: { pos: [16.0, 2.0, 3.5], look: [3.5, 2.0, 0] },
       back: { pos: [0, -1.0, -19.5], look: [0, -1.5, 0] },
     };
 
     const t = targets[presetName] || targets.front;
+    this.camera.up.set(0, 1, 0);
+    if (presetName === "top") this.camera.up.set(0, 0, 1);
     this.camera.position.set(...t.pos);
     if (this.controls) {
       this.controls.target.set(...t.look);
@@ -1394,7 +960,7 @@ class Bmo3DConsole {
     if (this.dpadPivotGroup) {
       this.dpadPivotGroup.rotation.x += (this.dpadTargetRotation.x - this.dpadPivotGroup.rotation.x) * 0.35;
       this.dpadPivotGroup.rotation.y += (this.dpadTargetRotation.y - this.dpadPivotGroup.rotation.y) * 0.35;
-      const targetZ = (3.2 / 2) + 0.14 + this.dpadTargetZ;
+      const targetZ = (this.dpadRestZ || 1.42) + this.dpadTargetZ;
       this.dpadPivotGroup.position.z += (targetZ - this.dpadPivotGroup.position.z) * 0.35;
     }
 

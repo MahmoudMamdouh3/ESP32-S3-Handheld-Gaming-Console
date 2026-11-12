@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Understand-Anything — Visual Knowledge Graph & Guided Tours</title>
+  <style>
+    :root {
+      --bg: #0C1518;
+      --panel: #132226;
+      --card: #182C31;
+      --card-hover: #1F383E;
+      --border: #264B42;
+      --accent: #5FB49C;
+      --gold: #FFE033;
+      --text: #E0F2F1;
+      --text-muted: #80CBC4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand h1 {
+      font-size: 20px;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .nav-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .nav-btn:hover {
+      background: var(--card);
+      color: var(--text);
+    }
+    .container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    .sidebar {
+      width: 360px;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .sidebar-section {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-section h2 {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .tour-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 14px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tour-card:hover, .tour-card.active {
+      border-color: var(--gold);
+      background: var(--card-hover);
+    }
+    .tour-card h3 {
+      font-size: 14px;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .tour-card p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .main-canvas {
+      flex: 1;
+      padding: 28px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .tour-player {
+      background: var(--panel);
+      border: 1px solid var(--gold);
+      border-radius: 12px;
+      padding: 20px 24px;
+      display: none;
+    }
+    .tour-player.visible {
+      display: block;
+    }
+    .tour-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .tour-header h2 {
+      color: var(--gold);
+      font-size: 18px;
+    }
+    .step-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .step-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #051B17;
+      font-weight: 700;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+    .step-title {
+      font-size: 16px;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .step-summary {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .step-controls {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .btn {
+      background: var(--accent);
+      color: #051B17;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .concepts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 18px;
+    }
+    .concept-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .concept-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+    }
+    .concept-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .concept-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .concept-title {
+      font-size: 16px;
+      color: var(--text);
+      font-weight: 600;
+    }
+    .concept-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+    .key-files-tag {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .file-tag {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-family: monospace;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <h1>Understand-Anything — BMO Visual Knowledge Graph</h1>
+      <p>High-level domain concepts, guided code tours & mental models for vibe coders</p>
+    </div>
+    <div>
+      <a href="../index.html" class="nav-btn">Back to Hub</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <h2>Guided Walkthrough Tours</h2>
+        <div id="tours-list"></div>
+      </div>
+      <div class="sidebar-section">
+        <h2>Repository Overview</h2>
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
+          This visual knowledge graph abstracts over 15,000 files into 6 human-understandable concept clusters. Click any guided tour above to walk step-by-step through execution pathways.
+        </p>
+      </div>
+    </div>
+
+    <div class="main-canvas">
+      <div id="tour-player" class="tour-player">
+        <div class="tour-header">
+          <h2 id="tour-player-title">Tour Active</h2>
+          <button class="nav-btn" onclick="closeTour()">Close Tour</button>
+        </div>
+        <div class="step-box">
+          <span class="step-badge" id="step-badge">STEP 1</span>
+          <div class="step-title" id="step-title">Title</div>
+          <div class="step-summary" id="step-summary">Summary</div>
+          <div style="margin-top: 10px; font-size: 12px; color: var(--accent); font-family: monospace;" id="step-target">Target</div>
+        </div>
+        <div class="step-controls">
+          <button class="btn btn-secondary" onclick="prevStep()">Previous</button>
+          <button class="btn" onclick="nextStep()">Next Step</button>
+        </div>
+      </div>
+
+      <div>
+        <h2 style="font-size: 16px; color: var(--gold); margin-bottom: 14px;">Domain Architecture Clusters</h2>
+        <div class="concepts-grid" id="concepts-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const data = {"concepts": [{"id": "c1", "title": "Hardware Drivers (`src/core/`)", "desc": "Direct physical hardware drivers. Controls screen pixels, reads tactile buttons, accesses the MicroSD card, and animates BMO.", "color": "#4DB6AC", "file_count": 23, "key_files": ["display_emu.cpp", "buttons.cpp", "sd_card.cpp", "spi_arbiter.cpp", "bmo_face.cpp"]}, {"id": "c2", "title": "14 Emulator Engines (`src/emulators/`)", "desc": "14 standalone retro console engines (GB, GBC, NES, SMS, PCE, Atari, Pico-8, Genesis, SNES, WonderSwan, NGP, Lynx, Coleco, DOOM).", "color": "#E57373", "file_count": 234, "key_files": ["emu_walnut.cpp", "emu_peanut.cpp", "emu_nes.cpp", "emu_doom.cpp", "emu_genesis.cpp", "emu_snes.cpp"]}, {"id": "c3", "title": "Main Dispatch & State Machine (`BmoGameboy.ino`)", "desc": "The central coordinator: handles boot splash, console carousel, game selection, in-game frame loop, pause overlay, and sleep screensaver.", "color": "#FFD54F", "file_count": 1, "key_files": ["BmoGameboy.ino"]}, {"id": "c4", "title": "Guardian Safety Suite (`tools/guardian/`)", "desc": "Automated guardrail suite checking memory limits, SPI timing, code density, and verifying pin mappings against soldered hardware.", "color": "#90A4AE", "file_count": 92, "key_files": ["ast_linter.py", "bus_model.py", "doc_verifier.py", "elf_analyzer.py", "psram_budget.py"]}, {"id": "c5", "title": "Browser Simulator & 3D BMO (`tools/bmo_simulator/`)", "desc": "Zero-install web playtester running compiled WASM emulator cores and an accurate 3D Three.js model of the physical console.", "color": "#4DD0E1", "file_count": 28, "key_files": ["index.html", "simulator.js", "bmo_3d_console.js", "simulator.css"]}, {"id": "c6", "title": "3D Enclosure CAD (`tools/enclosure/`)", "desc": "Parametric Python script that outputs 3D-printable split-shell STL pieces and GLB assemblies tailored for the soldered perfboard.", "color": "#A1887F", "file_count": 1, "key_files": ["generate_bmo_enclosure.py", "enclosure-3d-printing.md"]}], "tours": [{"id": "tour-boot", "title": "Tour 1: Power-On to Playing a Game", "steps": [{"step": 1, "target": "BmoGameboy.ino", "title": "MCU Setup & SPI Bus Init", "summary": "ESP32-S3 boots up, initializes Serial, sets up the shared SPI bus arbiter (SpiArbiter::init), and mounts the ST7789 display."}, {"step": 2, "target": "bmo_face.cpp", "title": "BMO Boot Splash", "summary": "Plays the boot splash animation with BMO's face on screen while reading internal hardware diagnostics."}, {"step": 3, "target": "sd_card.cpp", "title": "MicroSD Fast-Mount & ROM Scan", "summary": "Checks for the binary `.bmo_index` cache to load up to 36,000 games in under 15ms. If missing, it scans the SD directory hierarchy."}, {"step": 4, "target": "display_emu.cpp", "title": "Carousel Console Selection", "summary": "Renders the interactive console carousel with spring physics. The user selects a console (e.g. Game Boy, SNES, DOOM)."}, {"step": 5, "target": "src/emulators/emu_*.cpp", "title": "Game Boot & Frame Stream", "summary": "Loads the chosen ROM from SD into PSRAM, initializes the matching emulator core, and begins 60 FPS scanline streaming."}]}, {"id": "tour-input", "title": "Tour 2: Button Press to Screen Pixel", "steps": [{"step": 1, "target": "buttons.cpp", "title": "Atomic GPIO Polling", "summary": "Reads ESP32-S3 hardware registers (`GPIO_IN_REG` and `GPIO_IN1_REG`) in a single cycle without calling slow digitalRead()."}, {"step": 2, "target": "buttons.h", "title": "Debounce & Edge Detection", "summary": "Maintains pressed, released, and changed flags so games can tell between a rapid tap vs a continuous button hold."}, {"step": 3, "target": "src/emulators/", "title": "Emulator Joypad State Update", "summary": "Each emulator core maps the 12 BMO buttons to its native gamepad (e.g. A/B for Game Boy, A/B/X/Y/L/R for SNES, Arrows/Ctrl for DOOM)."}, {"step": 4, "target": "display_emu.cpp", "title": "Pixel Push via 80MHz SPI", "summary": "Outputs pre-swapped BGR565 video buffers directly to the ST7789 display window with custom console bezel borders."}]}, {"id": "tour-safety", "title": "Tour 3: Why Guardian Tests Protect Hardware", "steps": [{"step": 1, "target": "ast_linter.py", "title": "No Plain malloc() Allowed", "summary": "ESP32-S3 internal DRAM is capped at 327 KB. The AST linter flags any large array or malloc that forgot to use PSRAM (8 MB)."}, {"step": 2, "target": "config.h", "title": "Hard Stops for Soldered Board", "summary": "FEATURE_BATTERY_MONITOR=0 and FEATURE_AUDIO=0 prevent floating GPIO reads and DMA conflicts on pins that are not yet wired."}, {"step": 3, "target": "psram_budget.py", "title": "Dynamic PSRAM Sizing", "summary": "Slices PSRAM dynamically so catalog lists, UI buffers, and the DOOM 3D zone never collide or exceed the 8 MB Octal RAM ceiling."}]}], "total_files": 398};
+    let currentTour = null;
+    let currentStepIdx = 0;
+
+    function renderTours() {
+      const list = document.getElementById('tours-list');
+      data.tours.forEach((tour, idx) => {
+        const card = document.createElement('div');
+        card.className = 'tour-card';
+        card.innerHTML = `<h3>${tour.title}</h3><p>${tour.steps.length} steps walkthrough</p>`;
+        card.onclick = () => startTour(idx);
+        list.appendChild(card);
+      });
+    }
+
+    function renderConcepts() {
+      const grid = document.getElementById('concepts-grid');
+      data.concepts.forEach(c => {
+        const card = document.createElement('div');
+        card.className = 'concept-card';
+        card.innerHTML = `
+          <div class="concept-header">
+            <div class="concept-dot" style="background: ${c.color}"></div>
+            <div class="concept-title">${c.title}</div>
+          </div>
+          <div class="concept-desc">${c.desc}</div>
+          <div class="key-files-tag">
+            ${c.key_files.map(f => `<span class="file-tag">${f}</span>`).join('')}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function startTour(idx) {
+      currentTour = data.tours[idx];
+      currentStepIdx = 0;
+      document.querySelectorAll('.tour-card').forEach((c, i) => {
+        c.classList.toggle('active', i === idx);
+      });
+      document.getElementById('tour-player').classList.add('visible');
+      updateStep();
+    }
+
+    function updateStep() {
+      if (!currentTour) return;
+      const step = currentTour.steps[currentStepIdx];
+      document.getElementById('tour-player-title').innerText = currentTour.title;
+      document.getElementById('step-badge').innerText = `STEP ${step.step} OF ${currentTour.steps.length}`;
+      document.getElementById('step-title').innerText = step.title;
+      document.getElementById('step-summary').innerText = step.summary;
+      document.getElementById('step-target').innerText = `File: ${step.target}`;
+    }
+
+    function nextStep() {
+      if (!currentTour) return;
+      if (currentStepIdx < currentTour.steps.length - 1) {
+        currentStepIdx++;
+        updateStep();
+      } else {
+        closeTour();
+      }
+    }
+
+    function prevStep() {
+      if (!currentTour) return;
+      if (currentStepIdx > 0) {
+        currentStepIdx--;
+        updateStep();
+      }
+    }
+
+    function closeTour() {
+      currentTour = null;
+      document.querySelectorAll('.tour-card').forEach(c => c.classList.remove('active'));
+      document.getElementById('tour-player').classList.remove('visible');
+    }
+
+    renderTours();
+    renderConcepts();
+  </script>
+</body>
+</html>

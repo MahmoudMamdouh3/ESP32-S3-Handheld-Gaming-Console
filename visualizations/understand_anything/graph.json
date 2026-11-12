@@ -1,0 +1,174 @@
+{
+  "concepts": [
+    {
+      "id": "c1",
+      "title": "Hardware Drivers (`src/core/`)",
+      "desc": "Direct physical hardware drivers. Controls screen pixels, reads tactile buttons, accesses the MicroSD card, and animates BMO.",
+      "color": "#4DB6AC",
+      "file_count": 23,
+      "key_files": [
+        "display_emu.cpp",
+        "buttons.cpp",
+        "sd_card.cpp",
+        "spi_arbiter.cpp",
+        "bmo_face.cpp"
+      ]
+    },
+    {
+      "id": "c2",
+      "title": "14 Emulator Engines (`src/emulators/`)",
+      "desc": "14 standalone retro console engines (GB, GBC, NES, SMS, PCE, Atari, Pico-8, Genesis, SNES, WonderSwan, NGP, Lynx, Coleco, DOOM).",
+      "color": "#E57373",
+      "file_count": 234,
+      "key_files": [
+        "emu_walnut.cpp",
+        "emu_peanut.cpp",
+        "emu_nes.cpp",
+        "emu_doom.cpp",
+        "emu_genesis.cpp",
+        "emu_snes.cpp"
+      ]
+    },
+    {
+      "id": "c3",
+      "title": "Main Dispatch & State Machine (`BmoGameboy.ino`)",
+      "desc": "The central coordinator: handles boot splash, console carousel, game selection, in-game frame loop, pause overlay, and sleep screensaver.",
+      "color": "#FFD54F",
+      "file_count": 1,
+      "key_files": [
+        "BmoGameboy.ino"
+      ]
+    },
+    {
+      "id": "c4",
+      "title": "Guardian Safety Suite (`tools/guardian/`)",
+      "desc": "Automated guardrail suite checking memory limits, SPI timing, code density, and verifying pin mappings against soldered hardware.",
+      "color": "#90A4AE",
+      "file_count": 92,
+      "key_files": [
+        "ast_linter.py",
+        "bus_model.py",
+        "doc_verifier.py",
+        "elf_analyzer.py",
+        "psram_budget.py"
+      ]
+    },
+    {
+      "id": "c5",
+      "title": "Browser Simulator & 3D BMO (`tools/bmo_simulator/`)",
+      "desc": "Zero-install web playtester running compiled WASM emulator cores and an accurate 3D Three.js model of the physical console.",
+      "color": "#4DD0E1",
+      "file_count": 28,
+      "key_files": [
+        "index.html",
+        "simulator.js",
+        "bmo_3d_console.js",
+        "simulator.css"
+      ]
+    },
+    {
+      "id": "c6",
+      "title": "3D Enclosure CAD (`tools/enclosure/`)",
+      "desc": "Parametric Python script that outputs 3D-printable split-shell STL pieces and GLB assemblies tailored for the soldered perfboard.",
+      "color": "#A1887F",
+      "file_count": 1,
+      "key_files": [
+        "generate_bmo_enclosure.py",
+        "enclosure-3d-printing.md"
+      ]
+    }
+  ],
+  "tours": [
+    {
+      "id": "tour-boot",
+      "title": "Tour 1: Power-On to Playing a Game",
+      "steps": [
+        {
+          "step": 1,
+          "target": "BmoGameboy.ino",
+          "title": "MCU Setup & SPI Bus Init",
+          "summary": "ESP32-S3 boots up, initializes Serial, sets up the shared SPI bus arbiter (SpiArbiter::init), and mounts the ST7789 display."
+        },
+        {
+          "step": 2,
+          "target": "bmo_face.cpp",
+          "title": "BMO Boot Splash",
+          "summary": "Plays the boot splash animation with BMO's face on screen while reading internal hardware diagnostics."
+        },
+        {
+          "step": 3,
+          "target": "sd_card.cpp",
+          "title": "MicroSD Fast-Mount & ROM Scan",
+          "summary": "Checks for the binary `.bmo_index` cache to load up to 36,000 games in under 15ms. If missing, it scans the SD directory hierarchy."
+        },
+        {
+          "step": 4,
+          "target": "display_emu.cpp",
+          "title": "Carousel Console Selection",
+          "summary": "Renders the interactive console carousel with spring physics. The user selects a console (e.g. Game Boy, SNES, DOOM)."
+        },
+        {
+          "step": 5,
+          "target": "src/emulators/emu_*.cpp",
+          "title": "Game Boot & Frame Stream",
+          "summary": "Loads the chosen ROM from SD into PSRAM, initializes the matching emulator core, and begins 60 FPS scanline streaming."
+        }
+      ]
+    },
+    {
+      "id": "tour-input",
+      "title": "Tour 2: Button Press to Screen Pixel",
+      "steps": [
+        {
+          "step": 1,
+          "target": "buttons.cpp",
+          "title": "Atomic GPIO Polling",
+          "summary": "Reads ESP32-S3 hardware registers (`GPIO_IN_REG` and `GPIO_IN1_REG`) in a single cycle without calling slow digitalRead()."
+        },
+        {
+          "step": 2,
+          "target": "buttons.h",
+          "title": "Debounce & Edge Detection",
+          "summary": "Maintains pressed, released, and changed flags so games can tell between a rapid tap vs a continuous button hold."
+        },
+        {
+          "step": 3,
+          "target": "src/emulators/",
+          "title": "Emulator Joypad State Update",
+          "summary": "Each emulator core maps the 12 BMO buttons to its native gamepad (e.g. A/B for Game Boy, A/B/X/Y/L/R for SNES, Arrows/Ctrl for DOOM)."
+        },
+        {
+          "step": 4,
+          "target": "display_emu.cpp",
+          "title": "Pixel Push via 80MHz SPI",
+          "summary": "Outputs pre-swapped BGR565 video buffers directly to the ST7789 display window with custom console bezel borders."
+        }
+      ]
+    },
+    {
+      "id": "tour-safety",
+      "title": "Tour 3: Why Guardian Tests Protect Hardware",
+      "steps": [
+        {
+          "step": 1,
+          "target": "ast_linter.py",
+          "title": "No Plain malloc() Allowed",
+          "summary": "ESP32-S3 internal DRAM is capped at 327 KB. The AST linter flags any large array or malloc that forgot to use PSRAM (8 MB)."
+        },
+        {
+          "step": 2,
+          "target": "config.h",
+          "title": "Hard Stops for Soldered Board",
+          "summary": "FEATURE_BATTERY_MONITOR=0 and FEATURE_AUDIO=0 prevent floating GPIO reads and DMA conflicts on pins that are not yet wired."
+        },
+        {
+          "step": 3,
+          "target": "psram_budget.py",
+          "title": "Dynamic PSRAM Sizing",
+          "summary": "Slices PSRAM dynamically so catalog lists, UI buffers, and the DOOM 3D zone never collide or exceed the 8 MB Octal RAM ceiling."
+        }
+      ]
+    }
+  ],
+  "total_files": 398
+}

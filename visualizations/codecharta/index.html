@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CodeCharta — 3D Code City Visualization</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <style>
+    :root {
+      --bg: #091012;
+      --card: #122125;
+      --border: #264B42;
+      --accent: #5FB49C;
+      --gold: #FFE033;
+      --text: #E0F2F1;
+      --text-muted: #80CBC4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    #header {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: rgba(18, 33, 37, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      backdrop-filter: blur(8px);
+      z-index: 10;
+      max-width: 400px;
+    }
+    #header h1 {
+      font-size: 18px;
+      color: var(--gold);
+      margin-bottom: 4px;
+    }
+    #header p {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-bottom: 12px;
+    }
+    .back-btn {
+      display: inline-block;
+      background: var(--accent);
+      color: #051B17;
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    #info-box {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(18, 33, 37, 0.92);
+      border: 1px solid var(--gold);
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-size: 13px;
+      display: none;
+      max-width: 340px;
+      z-index: 10;
+    }
+    #canvas-container { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="header">
+    <h1>CodeCharta 3D Code City</h1>
+    <p>Software architecture visualized as an interactive 3D metropolis. Each building is a source file: building height corresponds to Lines of Code, and color represents subsystem district. Drag to rotate, scroll to zoom!</p>
+    <a href="../index.html" class="back-btn">Back to Hub</a>
+  </div>
+
+  <div id="info-box"></div>
+  <div id="canvas-container"></div>
+
+  <script>
+    const buildings = [{"name": "aladdin.h", "path": "firmware/BmoGameboy/src/assets/roms/aladdin.h", "lines": 65541, "category": "Support & Assets", "color": "#B0BEC5", "x": -70.0, "z": -70.0, "height": 120}, {"name": "lego_racers.h", "path": "firmware/BmoGameboy/src/assets/roms/lego_racers.h", "lines": 65541, "category": "Support & Assets", "color": "#B0BEC5", "x": -56.0, "z": -70.0, "height": 120}, {"name": "mario_deluxe.h", "path": "firmware/BmoGameboy/src/assets/roms/mario_deluxe.h", "lines": 65541, "category": "Support & Assets", "color": "#B0BEC5", "x": -42.0, "z": -70.0, "height": 120}, {"name": "zelda_ages.h", "path": "firmware/BmoGameboy/src/assets/roms/zelda_ages.h", "lines": 65541, "category": "Support & Assets", "color": "#B0BEC5", "x": -28.0, "z": -70.0, "height": 120}, {"name": "virtual_bmo.h", "path": "firmware/BmoGameboy/src/assets/roms/virtual_bmo.h", "lines": 32775, "category": "Support & Assets", "color": "#B0BEC5", "x": -14.0, "z": -70.0, "height": 120}, {"name": "rom_data.h", "path": "firmware/BmoGameboy/src/assets/rom_data.h", "lines": 13119, "category": "Support & Assets", "color": "#B0BEC5", "x": 0.0, "z": -70.0, "height": 120}, {"name": "walnut_cgb.h", "path": "firmware/BmoGameboy/src/engine/walnut_cgb/walnut_cgb.h", "lines": 9983, "category": "Console Engines", "color": "#E57373", "x": 14.0, "z": -70.0, "height": 120}, {"name": "info.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/info.c", "lines": 4662, "category": "Console Engines", "color": "#E57373", "x": 28.0, "z": -70.0, "height": 120}, {"name": "peanut_gb.h", "path": "firmware/BmoGameboy/src/vendor/peanut_gb/peanut_gb.h", "lines": 4101, "category": "Console Engines", "color": "#E57373", "x": 42.0, "z": -70.0, "height": 120}, {"name": "agnes.c", "path": "firmware/BmoGameboy/src/vendor/agnes/agnes.c", "lines": 2640, "category": "Console Engines", "color": "#E57373", "x": 56.0, "z": -70.0, "height": 105.6}, {"name": "g_game.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/g_game.c", "lines": 2303, "category": "Console Engines", "color": "#E57373", "x": -70.0, "z": -56.0, "height": 92.12}, {"name": "tables.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/tables.c", "lines": 2227, "category": "Console Engines", "color": "#E57373", "x": -56.0, "z": -56.0, "height": 89.08}, {"name": "m_config.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/m_config.c", "lines": 2129, "category": "Console Engines", "color": "#E57373", "x": -42.0, "z": -56.0, "height": 85.16}, {"name": "m_menu.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/m_menu.c", "lines": 2125, "category": "Console Engines", "color": "#E57373", "x": -28.0, "z": -56.0, "height": 85.0}, {"name": "display_emu.cpp", "path": "firmware/BmoGameboy/src/core/display_emu.cpp", "lines": 2116, "category": "Display & SPI Bus", "color": "#4DB6AC", "x": -14.0, "z": -56.0, "height": 84.64}, {"name": "p_enemy.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c", "lines": 2006, "category": "Console Engines", "color": "#E57373", "x": 0.0, "z": -56.0, "height": 80.24}, {"name": "simulator.js", "path": "tools/bmo_simulator/simulator.js", "lines": 1911, "category": "Web Simulator", "color": "#4DD0E1", "x": 14.0, "z": -56.0, "height": 76.44}, {"name": "p_saveg.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_saveg.c", "lines": 1891, "category": "Console Engines", "color": "#E57373", "x": 28.0, "z": -56.0, "height": 75.64}, {"name": "d_main.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/d_main.c", "lines": 1847, "category": "Console Engines", "color": "#E57373", "x": 42.0, "z": -56.0, "height": 73.88}, {"name": "wi_stuff.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/wi_stuff.c", "lines": 1829, "category": "Console Engines", "color": "#E57373", "x": 56.0, "z": -56.0, "height": 73.16}, {"name": "generate_code_visualizations.py", "path": "scripts/generate_code_visualizations.py", "lines": 1561, "category": "Guardian Safety Suite", "color": "#90A4AE", "x": -70.0, "z": -42.0, "height": 62.44}, {"name": "p_spec.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_spec.c", "lines": 1492, "category": "Console Engines", "color": "#E57373", "x": -56.0, "z": -42.0, "height": 59.68}, {"name": "i_scale.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/i_scale.c", "lines": 1452, "category": "Console Engines", "color": "#E57373", "x": -42.0, "z": -42.0, "height": 58.08}, {"name": "p_map.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_map.c", "lines": 1448, "category": "Console Engines", "color": "#E57373", "x": -28.0, "z": -42.0, "height": 57.92}, {"name": "st_stuff.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/st_stuff.c", "lines": 1416, "category": "Console Engines", "color": "#E57373", "x": -14.0, "z": -42.0, "height": 56.64}, {"name": "am_map.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/am_map.c", "lines": 1358, "category": "Console Engines", "color": "#E57373", "x": 0.0, "z": -42.0, "height": 54.32}, {"name": "BmoGameboy.ino", "path": "firmware/BmoGameboy/BmoGameboy.ino", "lines": 1349, "category": "Main Orchestration", "color": "#FFD54F", "x": 14.0, "z": -42.0, "height": 53.96}, {"name": "info.h", "path": "firmware/BmoGameboy/src/vendor/doom/src/info.h", "lines": 1331, "category": "Console Engines", "color": "#E57373", "x": 28.0, "z": -42.0, "height": 53.24}, {"name": "cli.py", "path": "tools/guardian/cli.py", "lines": 1276, "category": "Guardian Safety Suite", "color": "#90A4AE", "x": 42.0, "z": -42.0, "height": 51.04}, {"name": "sd_card.cpp", "path": "firmware/BmoGameboy/src/core/sd_card.cpp", "lines": 1235, "category": "Storage & Save States", "color": "#64B5F6", "x": 56.0, "z": -42.0, "height": 49.4}, {"name": "bmo_face.cpp", "path": "firmware/BmoGameboy/src/core/bmo_face.cpp", "lines": 1149, "category": "BMO Mascot & UI", "color": "#81C784", "x": -70.0, "z": -28.0, "height": 45.96}, {"name": "p_mobj.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_mobj.c", "lines": 1060, "category": "Console Engines", "color": "#E57373", "x": -56.0, "z": -28.0, "height": 42.4}, {"name": "OrbitControls.js", "path": "tools/bmo_simulator/OrbitControls.js", "lines": 1045, "category": "Web Simulator", "color": "#4DD0E1", "x": -42.0, "z": -28.0, "height": 41.8}, {"name": "p_maputl.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_maputl.c", "lines": 1001, "category": "Console Engines", "color": "#E57373", "x": -28.0, "z": -28.0, "height": 40.04}, {"name": "r_things.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/r_things.c", "lines": 982, "category": "Console Engines", "color": "#E57373", "x": -14.0, "z": -28.0, "height": 39.28}, {"name": "bmo_3d_console.js", "path": "tools/bmo_simulator/bmo_3d_console.js", "lines": 978, "category": "Web Simulator", "color": "#4DD0E1", "x": 0.0, "z": -28.0, "height": 39.12}, {"name": "r_draw.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/r_draw.c", "lines": 975, "category": "Console Engines", "color": "#E57373", "x": 14.0, "z": -28.0, "height": 39.0}, {"name": "v_video.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/v_video.c", "lines": 932, "category": "Console Engines", "color": "#E57373", "x": 28.0, "z": -28.0, "height": 37.28}, {"name": "p_inter.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_inter.c", "lines": 922, "category": "Console Engines", "color": "#E57373", "x": 42.0, "z": -28.0, "height": 36.88}, {"name": "r_main.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/r_main.c", "lines": 914, "category": "Console Engines", "color": "#E57373", "x": 56.0, "z": -28.0, "height": 36.56}, {"name": "r_data.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/r_data.c", "lines": 912, "category": "Console Engines", "color": "#E57373", "x": -70.0, "z": -14.0, "height": 36.48}, {"name": "p_pspr.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_pspr.c", "lines": 888, "category": "Console Engines", "color": "#E57373", "x": -56.0, "z": -14.0, "height": 35.52}, {"name": "p_setup.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_setup.c", "lines": 855, "category": "Console Engines", "color": "#E57373", "x": -42.0, "z": -14.0, "height": 34.2}, {"name": "d_iwad.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/d_iwad.c", "lines": 851, "category": "Console Engines", "color": "#E57373", "x": -28.0, "z": -14.0, "height": 34.04}, {"name": "d_loop.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/d_loop.c", "lines": 826, "category": "Console Engines", "color": "#E57373", "x": -14.0, "z": -14.0, "height": 33.04}, {"name": "genesis.c", "path": "firmware/BmoGameboy/src/vendor/genesis/genesis.c", "lines": 786, "category": "Console Engines", "color": "#E57373", "x": 0.0, "z": -14.0, "height": 31.44}, {"name": "p_doors.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_doors.c", "lines": 778, "category": "Console Engines", "color": "#E57373", "x": 14.0, "z": -14.0, "height": 31.12}, {"name": "save_manager.cpp", "path": "firmware/BmoGameboy/src/core/save_manager.cpp", "lines": 767, "category": "Storage & Save States", "color": "#64B5F6", "x": 28.0, "z": -14.0, "height": 30.68}, {"name": "r_segs.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/r_segs.c", "lines": 743, "category": "Console Engines", "color": "#E57373", "x": 42.0, "z": -14.0, "height": 29.72}, {"name": "mus2mid.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/mus2mid.c", "lines": 737, "category": "Console Engines", "color": "#E57373", "x": 56.0, "z": -14.0, "height": 29.48}, {"name": "f_finale.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/f_finale.c", "lines": 718, "category": "Console Engines", "color": "#E57373", "x": -70.0, "z": 0.0, "height": 28.72}, {"name": "snes.c", "path": "firmware/BmoGameboy/src/vendor/snes/snes.c", "lines": 694, "category": "Console Engines", "color": "#E57373", "x": -56.0, "z": 0.0, "height": 27.76}, {"name": "d_englsh.h", "path": "firmware/BmoGameboy/src/vendor/doom/src/d_englsh.h", "lines": 693, "category": "Console Engines", "color": "#E57373", "x": -42.0, "z": 0.0, "height": 27.72}, {"name": "s_sound.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/s_sound.c", "lines": 670, "category": "Console Engines", "color": "#E57373", "x": -28.0, "z": 0.0, "height": 26.8}, {"name": "pce.c", "path": "firmware/BmoGameboy/src/vendor/pce/pce.c", "lines": 658, "category": "Console Engines", "color": "#E57373", "x": -14.0, "z": 0.0, "height": 26.32}, {"name": "w_wad.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/w_wad.c", "lines": 656, "category": "Console Engines", "color": "#E57373", "x": 0.0, "z": 0.0, "height": 26.24}, {"name": "p_switch.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_switch.c", "lines": 648, "category": "Console Engines", "color": "#E57373", "x": 14.0, "z": 0.0, "height": 25.92}, {"name": "hu_stuff.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/hu_stuff.c", "lines": 641, "category": "Console Engines", "color": "#E57373", "x": 28.0, "z": 0.0, "height": 25.64}, {"name": "validate_repo.py", "path": "scripts/validate_repo.py", "lines": 640, "category": "Guardian Safety Suite", "color": "#90A4AE", "x": 42.0, "z": 0.0, "height": 25.6}, {"name": "p_spec.h", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_spec.h", "lines": 637, "category": "Console Engines", "color": "#E57373", "x": 56.0, "z": 0.0, "height": 25.48}, {"name": "i_system.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/i_system.c", "lines": 622, "category": "Console Engines", "color": "#E57373", "x": -70.0, "z": 14.0, "height": 24.88}, {"name": "wswan.c", "path": "firmware/BmoGameboy/src/vendor/wswan/wswan.c", "lines": 592, "category": "Console Engines", "color": "#E57373", "x": -56.0, "z": 14.0, "height": 23.68}, {"name": "generate_bmo_enclosure.py", "path": "tools/enclosure/generate_bmo_enclosure.py", "lines": 576, "category": "3D Enclosure CAD", "color": "#A1887F", "x": -42.0, "z": 14.0, "height": 23.04}, {"name": "r_bsp.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/r_bsp.c", "lines": 573, "category": "Console Engines", "color": "#E57373", "x": -28.0, "z": 14.0, "height": 22.92}, {"name": "atari.c", "path": "firmware/BmoGameboy/src/vendor/stella/atari.c", "lines": 557, "category": "Console Engines", "color": "#E57373", "x": -14.0, "z": 14.0, "height": 22.28}, {"name": "m_misc.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/m_misc.c", "lines": 551, "category": "Console Engines", "color": "#E57373", "x": 0.0, "z": 14.0, "height": 22.04}, {"name": "p_floor.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_floor.c", "lines": 546, "category": "Console Engines", "color": "#E57373", "x": 14.0, "z": 14.0, "height": 21.84}, {"name": "console_history_data.js", "path": "tools/bmo_simulator/console_history_data.js", "lines": 530, "category": "Web Simulator", "color": "#4DD0E1", "x": 28.0, "z": 14.0, "height": 21.2}, {"name": "ast_linter.py", "path": "tools/guardian/core/ast_linter.py", "lines": 529, "category": "Guardian Safety Suite", "color": "#90A4AE", "x": 42.0, "z": 14.0, "height": 21.16}, {"name": "z_zone.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/z_zone.c", "lines": 500, "category": "Console Engines", "color": "#E57373", "x": 56.0, "z": 14.0, "height": 20.0}, {"name": "i_video.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/i_video.c", "lines": 495, "category": "Console Engines", "color": "#E57373", "x": -70.0, "z": 28.0, "height": 19.8}, {"name": "host_cores_runner.c", "path": "tools/host_cores_runner.c", "lines": 488, "category": "Support & Assets", "color": "#B0BEC5", "x": -56.0, "z": 28.0, "height": 19.52}, {"name": "r_defs.h", "path": "firmware/BmoGameboy/src/vendor/doom/src/r_defs.h", "lines": 448, "category": "Console Engines", "color": "#E57373", "x": -42.0, "z": 28.0, "height": 17.92}, {"name": "r_plane.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/r_plane.c", "lines": 446, "category": "Console Engines", "color": "#E57373", "x": -28.0, "z": 28.0, "height": 17.84}, {"name": "fetch_covers.py", "path": "scripts/fetch_covers.py", "lines": 434, "category": "Guardian Safety Suite", "color": "#90A4AE", "x": -14.0, "z": 28.0, "height": 17.36}, {"name": "ngp.c", "path": "firmware/BmoGameboy/src/vendor/ngp/ngp.c", "lines": 430, "category": "Console Engines", "color": "#E57373", "x": 0.0, "z": 28.0, "height": 17.2}, {"name": "test_guardian.py", "path": "tools/guardian/tests/test_guardian.py", "lines": 426, "category": "Guardian Safety Suite", "color": "#90A4AE", "x": 14.0, "z": 28.0, "height": 17.04}, {"name": "generate_ai_knowledge_base.py", "path": "scripts/generate_ai_knowledge_base.py", "lines": 423, "category": "Guardian Safety Suite", "color": "#90A4AE", "x": 28.0, "z": 28.0, "height": 16.92}, {"name": "i_sound.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/i_sound.c", "lines": 420, "category": "Console Engines", "color": "#E57373", "x": 42.0, "z": 28.0, "height": 16.8}, {"name": "test_native_cores_execution.py", "path": "tests/test_native_cores_execution.py", "lines": 419, "category": "Guardian Safety Suite", "color": "#90A4AE", "x": 56.0, "z": 28.0, "height": 16.76}, {"name": "colem.c", "path": "firmware/BmoGameboy/src/vendor/colem/colem.c", "lines": 400, "category": "Console Engines", "color": "#E57373", "x": -70.0, "z": 42.0, "height": 16.0}, {"name": "m_controls.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/m_controls.c", "lines": 398, "category": "Console Engines", "color": "#E57373", "x": -56.0, "z": 42.0, "height": 15.92}, {"name": "statdump.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/statdump.c", "lines": 392, "category": "Console Engines", "color": "#E57373", "x": -42.0, "z": 42.0, "height": 15.68}, {"name": "p_user.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_user.c", "lines": 379, "category": "Console Engines", "color": "#E57373", "x": -28.0, "z": 42.0, "height": 15.16}, {"name": "wasm_playtest_engine.js", "path": "tools/bmo_simulator/wasm_playtest_engine.js", "lines": 379, "category": "Web Simulator", "color": "#4DD0E1", "x": -14.0, "z": 42.0, "height": 15.16}, {"name": "sms.c", "path": "firmware/BmoGameboy/src/vendor/smsplus/sms.c", "lines": 375, "category": "Console Engines", "color": "#E57373", "x": 0.0, "z": 42.0, "height": 15.0}, {"name": "box_art.cpp", "path": "firmware/BmoGameboy/src/core/box_art.cpp", "lines": 368, "category": "Storage & Save States", "color": "#64B5F6", "x": 14.0, "z": 42.0, "height": 14.72}, {"name": "lynx.c", "path": "firmware/BmoGameboy/src/vendor/lynx/lynx.c", "lines": 368, "category": "Console Engines", "color": "#E57373", "x": 28.0, "z": 42.0, "height": 14.72}, {"name": "ui_auditor.py", "path": "tools/guardian/core/ui_auditor.py", "lines": 365, "category": "Guardian Safety Suite", "color": "#90A4AE", "x": 42.0, "z": 42.0, "height": 14.6}, {"name": "i_joystick.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/i_joystick.c", "lines": 359, "category": "Console Engines", "color": "#E57373", "x": 56.0, "z": 42.0, "height": 14.36}, {"name": "doc_verifier.py", "path": "tools/guardian/core/doc_verifier.py", "lines": 359, "category": "Guardian Safety Suite", "color": "#90A4AE", "x": -70.0, "z": 56.0, "height": 14.36}, {"name": "p_lights.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_lights.c", "lines": 350, "category": "Console Engines", "color": "#E57373", "x": -56.0, "z": 56.0, "height": 14.0}, {"name": "p_sight.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_sight.c", "lines": 350, "category": "Console Engines", "color": "#E57373", "x": -42.0, "z": 56.0, "height": 14.0}, {"name": "bulk_cover_manager.py", "path": "scripts/bulk_cover_manager.py", "lines": 349, "category": "Guardian Safety Suite", "color": "#90A4AE", "x": -28.0, "z": 56.0, "height": 13.96}, {"name": "hu_lib.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/hu_lib.c", "lines": 347, "category": "Console Engines", "color": "#E57373", "x": -14.0, "z": 56.0, "height": 13.88}, {"name": "i_input.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/i_input.c", "lines": 341, "category": "Console Engines", "color": "#E57373", "x": 0.0, "z": 56.0, "height": 13.64}, {"name": "psram_budget.py", "path": "tools/guardian/core/psram_budget.py", "lines": 336, "category": "Guardian Safety Suite", "color": "#90A4AE", "x": 14.0, "z": 56.0, "height": 13.44}, {"name": "bulk_download_manager.py", "path": "scripts/bulk_download_manager.py", "lines": 336, "category": "Guardian Safety Suite", "color": "#90A4AE", "x": 28.0, "z": 56.0, "height": 13.44}, {"name": "test_all_tiers_validation.py", "path": "tests/test_all_tiers_validation.py", "lines": 334, "category": "Guardian Safety Suite", "color": "#90A4AE", "x": 42.0, "z": 56.0, "height": 13.36}, {"name": "p_ceilng.c", "path": "firmware/BmoGameboy/src/vendor/doom/src/p_ceilng.c", "lines": 324, "category": "Console Engines", "color": "#E57373", "x": 56.0, "z": 56.0, "height": 12.96}];
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x091012);
+    scene.fog = new THREE.FogExp2(0x091012, 0.0035);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+    camera.position.set(120, 140, 160);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2 - 0.05;
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+    dirLight.position.set(80, 150, 90);
+    scene.add(dirLight);
+
+    // City Ground Grid
+    const gridHelper = new THREE.GridHelper(260, 26, 0x264B42, 0x142B30);
+    gridHelper.position.y = 0;
+    scene.add(gridHelper);
+
+    // Build City Skyscrapers
+    const meshes = [];
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    buildings.forEach(b => {
+      const geom = new THREE.BoxGeometry(9, b.height, 9);
+      const mat = new THREE.MeshLambertMaterial({ color: b.color });
+      const mesh = new THREE.Mesh(geom, mat);
+      mesh.position.set(b.x, b.height / 2, b.z);
+      mesh.userData = b;
+      scene.add(mesh);
+      meshes.push(mesh);
+    });
+
+    const infoBox = document.getElementById('info-box');
+
+    window.addEventListener('mousemove', (event) => {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(meshes);
+
+      if (intersects.length > 0) {
+        const b = intersects[0].object.userData;
+        infoBox.style.display = 'block';
+        infoBox.innerHTML = `
+          <strong style="color:var(--gold); font-size:14px;">${b.name}</strong><br>
+          <span style="color:var(--accent);">${b.category}</span><br>
+          Lines of Code: <strong>${b.lines}</strong><br>
+          <span style="font-family:monospace; font-size:11px; color:#80CBC4;">${b.path}</span>
+        `;
+      } else {
+        infoBox.style.display = 'none';
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>

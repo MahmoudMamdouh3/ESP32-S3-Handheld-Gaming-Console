@@ -44,7 +44,7 @@ Eight buttons are recorded as physically wired. X, Y, L, and R are supported in 
 
 ## Physical layout reference
 
-Coordinates, perfboard pitch, shell dimensions, switch sizes, display opening, and tactile-switch examples previously shown here were design assumptions, not an as-built survey. No drilling or soldering dimensions are provided by this page. Measure the physical board before making a layout change.
+Coordinates, perfboard pitch, shell dimensions, switch sizes, display opening, and tactile-switch examples previously shown here were design assumptions, not an as-built survey. No drilling or soldering dimensions are provided by this page. The mechanical actuator profiles, button clearances, display rebate, and parametric measurement checklist are in the [enclosure guide](../enclosure-3d-printing.md). All module and switch dimensions remain `WAITING` until measured on the soldered build. Measure the physical board before making a layout change.
 
 ## Shared SD bus
 

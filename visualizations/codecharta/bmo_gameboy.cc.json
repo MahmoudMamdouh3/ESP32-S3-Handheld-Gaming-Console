@@ -1,0 +1,4269 @@
+{
+  "checksum": "bmo_gameboy_ground_truth",
+  "data": {
+    "projectName": "BMO Gameboy Console",
+    "apiVersion": "1.3",
+    "nodes": [
+      {
+        "name": "root",
+        "type": "Folder",
+        "attributes": {},
+        "children": [
+          {
+            "name": "firmware",
+            "type": "Folder",
+            "attributes": {},
+            "children": [
+              {
+                "name": "BmoGameboy",
+                "type": "Folder",
+                "attributes": {},
+                "children": [
+                  {
+                    "name": "BmoGameboy.ino",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 1349,
+                      "functions": 53,
+                      "mcc": 33
+                    },
+                    "link": "firmware/BmoGameboy/BmoGameboy.ino"
+                  },
+                  {
+                    "name": "src",
+                    "type": "Folder",
+                    "attributes": {},
+                    "children": [
+                      {
+                        "name": "assets",
+                        "type": "Folder",
+                        "attributes": {},
+                        "children": [
+                          {
+                            "name": "bmo_assets.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 17,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/assets/bmo_assets.h"
+                          },
+                          {
+                            "name": "rom_data.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 13119,
+                              "functions": 524,
+                              "mcc": 327
+                            },
+                            "link": "firmware/BmoGameboy/src/assets/rom_data.h"
+                          },
+                          {
+                            "name": "roms",
+                            "type": "Folder",
+                            "attributes": {},
+                            "children": [
+                              {
+                                "name": "aladdin.h",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 65541,
+                                  "functions": 2621,
+                                  "mcc": 1638
+                                },
+                                "link": "firmware/BmoGameboy/src/assets/roms/aladdin.h"
+                              },
+                              {
+                                "name": "lego_racers.h",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 65541,
+                                  "functions": 2621,
+                                  "mcc": 1638
+                                },
+                                "link": "firmware/BmoGameboy/src/assets/roms/lego_racers.h"
+                              },
+                              {
+                                "name": "mario_deluxe.h",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 65541,
+                                  "functions": 2621,
+                                  "mcc": 1638
+                                },
+                                "link": "firmware/BmoGameboy/src/assets/roms/mario_deluxe.h"
+                              },
+                              {
+                                "name": "virtual_bmo.h",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 32775,
+                                  "functions": 1311,
+                                  "mcc": 819
+                                },
+                                "link": "firmware/BmoGameboy/src/assets/roms/virtual_bmo.h"
+                              },
+                              {
+                                "name": "zelda_ages.h",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 65541,
+                                  "functions": 2621,
+                                  "mcc": 1638
+                                },
+                                "link": "firmware/BmoGameboy/src/assets/roms/zelda_ages.h"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "name": "core",
+                        "type": "Folder",
+                        "attributes": {},
+                        "children": [
+                          {
+                            "name": "audio_i2s.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 63,
+                              "functions": 2,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/core/audio_i2s.cpp"
+                          },
+                          {
+                            "name": "audio_i2s.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 9,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/core/audio_i2s.h"
+                          },
+                          {
+                            "name": "battery.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 84,
+                              "functions": 3,
+                              "mcc": 2
+                            },
+                            "link": "firmware/BmoGameboy/src/core/battery.cpp"
+                          },
+                          {
+                            "name": "battery.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 21,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/core/battery.h"
+                          },
+                          {
+                            "name": "battery_save.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 48,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/core/battery_save.h"
+                          },
+                          {
+                            "name": "bmo_face.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 1149,
+                              "functions": 45,
+                              "mcc": 28
+                            },
+                            "link": "firmware/BmoGameboy/src/core/bmo_face.cpp"
+                          },
+                          {
+                            "name": "bmo_face.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 124,
+                              "functions": 4,
+                              "mcc": 3
+                            },
+                            "link": "firmware/BmoGameboy/src/core/bmo_face.h"
+                          },
+                          {
+                            "name": "box_art.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 368,
+                              "functions": 14,
+                              "mcc": 9
+                            },
+                            "link": "firmware/BmoGameboy/src/core/box_art.cpp"
+                          },
+                          {
+                            "name": "box_art.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 37,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/core/box_art.h"
+                          },
+                          {
+                            "name": "buttons.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 134,
+                              "functions": 5,
+                              "mcc": 3
+                            },
+                            "link": "firmware/BmoGameboy/src/core/buttons.cpp"
+                          },
+                          {
+                            "name": "buttons.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 48,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/core/buttons.h"
+                          },
+                          {
+                            "name": "config.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 129,
+                              "functions": 5,
+                              "mcc": 3
+                            },
+                            "link": "firmware/BmoGameboy/src/core/config.h"
+                          },
+                          {
+                            "name": "display_emu.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 2116,
+                              "functions": 84,
+                              "mcc": 52
+                            },
+                            "link": "firmware/BmoGameboy/src/core/display_emu.cpp"
+                          },
+                          {
+                            "name": "display_emu.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 190,
+                              "functions": 7,
+                              "mcc": 4
+                            },
+                            "link": "firmware/BmoGameboy/src/core/display_emu.h"
+                          },
+                          {
+                            "name": "frame_pacing.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 26,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/core/frame_pacing.h"
+                          },
+                          {
+                            "name": "frame_percentiles.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 34,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/core/frame_percentiles.h"
+                          },
+                          {
+                            "name": "fram_save.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 74,
+                              "functions": 2,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/core/fram_save.cpp"
+                          },
+                          {
+                            "name": "fram_save.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 13,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/core/fram_save.h"
+                          },
+                          {
+                            "name": "harmonic_spring.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 59,
+                              "functions": 2,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/core/harmonic_spring.h"
+                          },
+                          {
+                            "name": "path_key.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 79,
+                              "functions": 3,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/core/path_key.h"
+                          },
+                          {
+                            "name": "pause_quit_policy.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 73,
+                              "functions": 2,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/core/pause_quit_policy.h"
+                          },
+                          {
+                            "name": "profiler.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 102,
+                              "functions": 4,
+                              "mcc": 2
+                            },
+                            "link": "firmware/BmoGameboy/src/core/profiler.cpp"
+                          },
+                          {
+                            "name": "profiler.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 64,
+                              "functions": 2,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/core/profiler.h"
+                          },
+                          {
+                            "name": "rom_file_filter.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 72,
+                              "functions": 2,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/core/rom_file_filter.h"
+                          },
+                          {
+                            "name": "rom_index.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 64,
+                              "functions": 2,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/core/rom_index.h"
+                          },
+                          {
+                            "name": "save_manager.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 767,
+                              "functions": 30,
+                              "mcc": 19
+                            },
+                            "link": "firmware/BmoGameboy/src/core/save_manager.cpp"
+                          },
+                          {
+                            "name": "save_manager.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 73,
+                              "functions": 2,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/core/save_manager.h"
+                          },
+                          {
+                            "name": "sd_card.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 1235,
+                              "functions": 49,
+                              "mcc": 30
+                            },
+                            "link": "firmware/BmoGameboy/src/core/sd_card.cpp"
+                          },
+                          {
+                            "name": "sd_card.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 94,
+                              "functions": 3,
+                              "mcc": 2
+                            },
+                            "link": "firmware/BmoGameboy/src/core/sd_card.h"
+                          },
+                          {
+                            "name": "spi_arbiter.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 22,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/core/spi_arbiter.cpp"
+                          },
+                          {
+                            "name": "spi_arbiter.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 27,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/core/spi_arbiter.h"
+                          },
+                          {
+                            "name": "theme.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 132,
+                              "functions": 5,
+                              "mcc": 3
+                            },
+                            "link": "firmware/BmoGameboy/src/core/theme.h"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "emulators",
+                        "type": "Folder",
+                        "attributes": {},
+                        "children": [
+                          {
+                            "name": "emu_atari.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 96,
+                              "functions": 3,
+                              "mcc": 2
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_atari.cpp"
+                          },
+                          {
+                            "name": "emu_atari.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 17,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_atari.h"
+                          },
+                          {
+                            "name": "emu_colem.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 126,
+                              "functions": 5,
+                              "mcc": 3
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_colem.cpp"
+                          },
+                          {
+                            "name": "emu_colem.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 16,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_colem.h"
+                          },
+                          {
+                            "name": "emu_doom.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 313,
+                              "functions": 12,
+                              "mcc": 7
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_doom.cpp"
+                          },
+                          {
+                            "name": "emu_doom.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 19,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_doom.h"
+                          },
+                          {
+                            "name": "emu_genesis.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 138,
+                              "functions": 5,
+                              "mcc": 3
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_genesis.cpp"
+                          },
+                          {
+                            "name": "emu_genesis.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 16,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_genesis.h"
+                          },
+                          {
+                            "name": "emu_lynx.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 104,
+                              "functions": 4,
+                              "mcc": 2
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_lynx.cpp"
+                          },
+                          {
+                            "name": "emu_lynx.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 16,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_lynx.h"
+                          },
+                          {
+                            "name": "emu_nes.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 126,
+                              "functions": 5,
+                              "mcc": 3
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_nes.cpp"
+                          },
+                          {
+                            "name": "emu_nes.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 18,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_nes.h"
+                          },
+                          {
+                            "name": "emu_ngp.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 104,
+                              "functions": 4,
+                              "mcc": 2
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_ngp.cpp"
+                          },
+                          {
+                            "name": "emu_ngp.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 16,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_ngp.h"
+                          },
+                          {
+                            "name": "emu_pce.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 103,
+                              "functions": 4,
+                              "mcc": 2
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_pce.cpp"
+                          },
+                          {
+                            "name": "emu_pce.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 19,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_pce.h"
+                          },
+                          {
+                            "name": "emu_peanut.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 237,
+                              "functions": 9,
+                              "mcc": 5
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_peanut.cpp"
+                          },
+                          {
+                            "name": "emu_peanut.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 22,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_peanut.h"
+                          },
+                          {
+                            "name": "emu_pico.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 101,
+                              "functions": 4,
+                              "mcc": 2
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_pico.cpp"
+                          },
+                          {
+                            "name": "emu_pico.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 17,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_pico.h"
+                          },
+                          {
+                            "name": "emu_sms.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 108,
+                              "functions": 4,
+                              "mcc": 2
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_sms.cpp"
+                          },
+                          {
+                            "name": "emu_sms.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 18,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_sms.h"
+                          },
+                          {
+                            "name": "emu_snes.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 138,
+                              "functions": 5,
+                              "mcc": 3
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_snes.cpp"
+                          },
+                          {
+                            "name": "emu_snes.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 16,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_snes.h"
+                          },
+                          {
+                            "name": "emu_walnut.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 297,
+                              "functions": 11,
+                              "mcc": 7
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_walnut.cpp"
+                          },
+                          {
+                            "name": "emu_walnut.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 22,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_walnut.h"
+                          },
+                          {
+                            "name": "emu_wswan.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 121,
+                              "functions": 4,
+                              "mcc": 3
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_wswan.cpp"
+                          },
+                          {
+                            "name": "emu_wswan.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 16,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/emu_wswan.h"
+                          },
+                          {
+                            "name": "psram_zone_budget.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 20,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/emulators/psram_zone_budget.h"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "engine",
+                        "type": "Folder",
+                        "attributes": {},
+                        "children": [
+                          {
+                            "name": "walnut_cgb",
+                            "type": "Folder",
+                            "attributes": {},
+                            "children": [
+                              {
+                                "name": "walnut_cgb.h",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 9983,
+                                  "functions": 399,
+                                  "mcc": 249
+                                },
+                                "link": "firmware/BmoGameboy/src/engine/walnut_cgb/walnut_cgb.h"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "name": "tests",
+                        "type": "Folder",
+                        "attributes": {},
+                        "children": [
+                          {
+                            "name": "unit_tests.cpp",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 157,
+                              "functions": 6,
+                              "mcc": 3
+                            },
+                            "link": "firmware/BmoGameboy/src/tests/unit_tests.cpp"
+                          },
+                          {
+                            "name": "unit_tests.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 5,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "firmware/BmoGameboy/src/tests/unit_tests.h"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "vendor",
+                        "type": "Folder",
+                        "attributes": {},
+                        "children": [
+                          {
+                            "name": "agnes",
+                            "type": "Folder",
+                            "attributes": {},
+                            "children": [
+                              {
+                                "name": "agnes.c",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 2640,
+                                  "functions": 105,
+                                  "mcc": 66
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/agnes/agnes.c"
+                              },
+                              {
+                                "name": "agnes.h",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 88,
+                                  "functions": 3,
+                                  "mcc": 2
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/agnes/agnes.h"
+                              }
+                            ]
+                          },
+                          {
+                            "name": "colem",
+                            "type": "Folder",
+                            "attributes": {},
+                            "children": [
+                              {
+                                "name": "colem.c",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 400,
+                                  "functions": 16,
+                                  "mcc": 10
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/colem/colem.c"
+                              },
+                              {
+                                "name": "colem.h",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 44,
+                                  "functions": 1,
+                                  "mcc": 1
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/colem/colem.h"
+                              }
+                            ]
+                          },
+                          {
+                            "name": "doom",
+                            "type": "Folder",
+                            "attributes": {},
+                            "children": [
+                              {
+                                "name": "src",
+                                "type": "Folder",
+                                "attributes": {},
+                                "children": [
+                                  {
+                                    "name": "am_map.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 1358,
+                                      "functions": 54,
+                                      "mcc": 33
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/am_map.c"
+                                  },
+                                  {
+                                    "name": "am_map.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 49,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/am_map.h"
+                                  },
+                                  {
+                                    "name": "config.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 100,
+                                      "functions": 4,
+                                      "mcc": 2
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/config.h"
+                                  },
+                                  {
+                                    "name": "deh_main.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 48,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/deh_main.h"
+                                  },
+                                  {
+                                    "name": "deh_misc.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 83,
+                                      "functions": 3,
+                                      "mcc": 2
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/deh_misc.h"
+                                  },
+                                  {
+                                    "name": "deh_str.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 47,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/deh_str.h"
+                                  },
+                                  {
+                                    "name": "doom.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 42,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/doom.h"
+                                  },
+                                  {
+                                    "name": "doomdata.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 213,
+                                      "functions": 8,
+                                      "mcc": 5
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/doomdata.h"
+                                  },
+                                  {
+                                    "name": "doomdef.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 28,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/doomdef.c"
+                                  },
+                                  {
+                                    "name": "doomdef.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 168,
+                                      "functions": 6,
+                                      "mcc": 4
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/doomdef.h"
+                                  },
+                                  {
+                                    "name": "doomfeatures.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 40,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/doomfeatures.h"
+                                  },
+                                  {
+                                    "name": "doomgeneric.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 53,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/doomgeneric.c"
+                                  },
+                                  {
+                                    "name": "doomgeneric.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 50,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/doomgeneric.h"
+                                  },
+                                  {
+                                    "name": "doomkeys.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 97,
+                                      "functions": 3,
+                                      "mcc": 2
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/doomkeys.h"
+                                  },
+                                  {
+                                    "name": "doomstat.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 35,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/doomstat.c"
+                                  },
+                                  {
+                                    "name": "doomstat.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 281,
+                                      "functions": 11,
+                                      "mcc": 7
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/doomstat.h"
+                                  },
+                                  {
+                                    "name": "doomtype.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 106,
+                                      "functions": 4,
+                                      "mcc": 2
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/doomtype.h"
+                                  },
+                                  {
+                                    "name": "dstrings.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 73,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/dstrings.c"
+                                  },
+                                  {
+                                    "name": "dstrings.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 41,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/dstrings.h"
+                                  },
+                                  {
+                                    "name": "dummy.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 53,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/dummy.c"
+                                  },
+                                  {
+                                    "name": "d_englsh.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 693,
+                                      "functions": 27,
+                                      "mcc": 17
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/d_englsh.h"
+                                  },
+                                  {
+                                    "name": "d_event.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 63,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/d_event.c"
+                                  },
+                                  {
+                                    "name": "d_event.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 137,
+                                      "functions": 5,
+                                      "mcc": 3
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/d_event.h"
+                                  },
+                                  {
+                                    "name": "d_items.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 128,
+                                      "functions": 5,
+                                      "mcc": 3
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/d_items.c"
+                                  },
+                                  {
+                                    "name": "d_items.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 41,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/d_items.h"
+                                  },
+                                  {
+                                    "name": "d_iwad.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 851,
+                                      "functions": 34,
+                                      "mcc": 21
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/d_iwad.c"
+                                  },
+                                  {
+                                    "name": "d_iwad.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 52,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/d_iwad.h"
+                                  },
+                                  {
+                                    "name": "d_loop.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 826,
+                                      "functions": 33,
+                                      "mcc": 20
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/d_loop.c"
+                                  },
+                                  {
+                                    "name": "d_loop.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 81,
+                                      "functions": 3,
+                                      "mcc": 2
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/d_loop.h"
+                                  },
+                                  {
+                                    "name": "d_main.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 1847,
+                                      "functions": 73,
+                                      "mcc": 46
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/d_main.c"
+                                  },
+                                  {
+                                    "name": "d_main.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 50,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/d_main.h"
+                                  },
+                                  {
+                                    "name": "d_mode.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 209,
+                                      "functions": 8,
+                                      "mcc": 5
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/d_mode.c"
+                                  },
+                                  {
+                                    "name": "d_mode.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 98,
+                                      "functions": 3,
+                                      "mcc": 2
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/d_mode.h"
+                                  },
+                                  {
+                                    "name": "d_net.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 281,
+                                      "functions": 11,
+                                      "mcc": 7
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/d_net.c"
+                                  },
+                                  {
+                                    "name": "d_player.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 209,
+                                      "functions": 8,
+                                      "mcc": 5
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/d_player.h"
+                                  },
+                                  {
+                                    "name": "d_textur.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 43,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/d_textur.h"
+                                  },
+                                  {
+                                    "name": "d_think.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 68,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/d_think.h"
+                                  },
+                                  {
+                                    "name": "d_ticcmd.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 56,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/d_ticcmd.h"
+                                  },
+                                  {
+                                    "name": "f_finale.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 718,
+                                      "functions": 28,
+                                      "mcc": 17
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/f_finale.c"
+                                  },
+                                  {
+                                    "name": "f_finale.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 45,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/f_finale.h"
+                                  },
+                                  {
+                                    "name": "f_wipe.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 294,
+                                      "functions": 11,
+                                      "mcc": 7
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/f_wipe.c"
+                                  },
+                                  {
+                                    "name": "f_wipe.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 63,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/f_wipe.h"
+                                  },
+                                  {
+                                    "name": "gusconf.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 271,
+                                      "functions": 10,
+                                      "mcc": 6
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/gusconf.c"
+                                  },
+                                  {
+                                    "name": "gusconf.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 29,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/gusconf.h"
+                                  },
+                                  {
+                                    "name": "g_game.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 2303,
+                                      "functions": 92,
+                                      "mcc": 57
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/g_game.c"
+                                  },
+                                  {
+                                    "name": "g_game.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 80,
+                                      "functions": 3,
+                                      "mcc": 2
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/g_game.h"
+                                  },
+                                  {
+                                    "name": "hu_lib.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 347,
+                                      "functions": 13,
+                                      "mcc": 8
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/hu_lib.c"
+                                  },
+                                  {
+                                    "name": "hu_lib.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 182,
+                                      "functions": 7,
+                                      "mcc": 4
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/hu_lib.h"
+                                  },
+                                  {
+                                    "name": "hu_stuff.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 641,
+                                      "functions": 25,
+                                      "mcc": 16
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/hu_stuff.c"
+                                  },
+                                  {
+                                    "name": "hu_stuff.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 59,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/hu_stuff.h"
+                                  },
+                                  {
+                                    "name": "icon.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 262,
+                                      "functions": 10,
+                                      "mcc": 6
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/icon.c"
+                                  },
+                                  {
+                                    "name": "info.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 4662,
+                                      "functions": 186,
+                                      "mcc": 116
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/info.c"
+                                  },
+                                  {
+                                    "name": "info.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 1331,
+                                      "functions": 53,
+                                      "mcc": 33
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/info.h"
+                                  },
+                                  {
+                                    "name": "i_cdmus.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 243,
+                                      "functions": 9,
+                                      "mcc": 6
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/i_cdmus.c"
+                                  },
+                                  {
+                                    "name": "i_cdmus.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 41,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/i_cdmus.h"
+                                  },
+                                  {
+                                    "name": "i_endoom.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 101,
+                                      "functions": 4,
+                                      "mcc": 2
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/i_endoom.c"
+                                  },
+                                  {
+                                    "name": "i_endoom.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 29,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/i_endoom.h"
+                                  },
+                                  {
+                                    "name": "i_input.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 341,
+                                      "functions": 13,
+                                      "mcc": 8
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/i_input.c"
+                                  },
+                                  {
+                                    "name": "i_joystick.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 359,
+                                      "functions": 14,
+                                      "mcc": 8
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/i_joystick.c"
+                                  },
+                                  {
+                                    "name": "i_joystick.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 70,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/i_joystick.h"
+                                  },
+                                  {
+                                    "name": "i_scale.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 1452,
+                                      "functions": 58,
+                                      "mcc": 36
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/i_scale.c"
+                                  },
+                                  {
+                                    "name": "i_scale.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 53,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/i_scale.h"
+                                  },
+                                  {
+                                    "name": "i_sound.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 420,
+                                      "functions": 16,
+                                      "mcc": 10
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/i_sound.c"
+                                  },
+                                  {
+                                    "name": "i_sound.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 256,
+                                      "functions": 10,
+                                      "mcc": 6
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/i_sound.h"
+                                  },
+                                  {
+                                    "name": "i_swap.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 73,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/i_swap.h"
+                                  },
+                                  {
+                                    "name": "i_system.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 622,
+                                      "functions": 24,
+                                      "mcc": 15
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/i_system.c"
+                                  },
+                                  {
+                                    "name": "i_system.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 84,
+                                      "functions": 3,
+                                      "mcc": 2
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/i_system.h"
+                                  },
+                                  {
+                                    "name": "i_timer.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 96,
+                                      "functions": 3,
+                                      "mcc": 2
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/i_timer.c"
+                                  },
+                                  {
+                                    "name": "i_timer.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 42,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/i_timer.h"
+                                  },
+                                  {
+                                    "name": "i_video.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 495,
+                                      "functions": 19,
+                                      "mcc": 12
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/i_video.c"
+                                  },
+                                  {
+                                    "name": "i_video.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 175,
+                                      "functions": 7,
+                                      "mcc": 4
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/i_video.h"
+                                  },
+                                  {
+                                    "name": "memio.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 197,
+                                      "functions": 7,
+                                      "mcc": 4
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/memio.c"
+                                  },
+                                  {
+                                    "name": "memio.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 38,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/memio.h"
+                                  },
+                                  {
+                                    "name": "mus2mid.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 737,
+                                      "functions": 29,
+                                      "mcc": 18
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/mus2mid.c"
+                                  },
+                                  {
+                                    "name": "mus2mid.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 9,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/mus2mid.h"
+                                  },
+                                  {
+                                    "name": "m_argv.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 263,
+                                      "functions": 10,
+                                      "mcc": 6
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/m_argv.c"
+                                  },
+                                  {
+                                    "name": "m_argv.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 49,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/m_argv.h"
+                                  },
+                                  {
+                                    "name": "m_bbox.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 54,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/m_bbox.c"
+                                  },
+                                  {
+                                    "name": "m_bbox.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 47,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/m_bbox.h"
+                                  },
+                                  {
+                                    "name": "m_cheat.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 89,
+                                      "functions": 3,
+                                      "mcc": 2
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/m_cheat.c"
+                                  },
+                                  {
+                                    "name": "m_cheat.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 62,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/m_cheat.h"
+                                  },
+                                  {
+                                    "name": "m_config.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 2129,
+                                      "functions": 85,
+                                      "mcc": 53
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/m_config.c"
+                                  },
+                                  {
+                                    "name": "m_config.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 39,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/m_config.h"
+                                  },
+                                  {
+                                    "name": "m_controls.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 398,
+                                      "functions": 15,
+                                      "mcc": 9
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/m_controls.c"
+                                  },
+                                  {
+                                    "name": "m_controls.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 168,
+                                      "functions": 6,
+                                      "mcc": 4
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/m_controls.h"
+                                  },
+                                  {
+                                    "name": "m_fixed.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 62,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/m_fixed.c"
+                                  },
+                                  {
+                                    "name": "m_fixed.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 39,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/m_fixed.h"
+                                  },
+                                  {
+                                    "name": "m_menu.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 2125,
+                                      "functions": 85,
+                                      "mcc": 53
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/m_menu.c"
+                                  },
+                                  {
+                                    "name": "m_menu.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 61,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/m_menu.h"
+                                  },
+                                  {
+                                    "name": "m_misc.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 551,
+                                      "functions": 22,
+                                      "mcc": 13
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/m_misc.c"
+                                  },
+                                  {
+                                    "name": "m_misc.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 51,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/m_misc.h"
+                                  },
+                                  {
+                                    "name": "m_random.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 65,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/m_random.c"
+                                  },
+                                  {
+                                    "name": "m_random.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 39,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/m_random.h"
+                                  },
+                                  {
+                                    "name": "net_client.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 52,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/net_client.h"
+                                  },
+                                  {
+                                    "name": "net_dedicated.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 25,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/net_dedicated.h"
+                                  },
+                                  {
+                                    "name": "net_defs.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 248,
+                                      "functions": 9,
+                                      "mcc": 6
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/net_defs.h"
+                                  },
+                                  {
+                                    "name": "net_gui.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 29,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/net_gui.h"
+                                  },
+                                  {
+                                    "name": "net_io.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 36,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/net_io.h"
+                                  },
+                                  {
+                                    "name": "net_loop.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 27,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/net_loop.h"
+                                  },
+                                  {
+                                    "name": "net_packet.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 44,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/net_packet.h"
+                                  },
+                                  {
+                                    "name": "net_query.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 44,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/net_query.h"
+                                  },
+                                  {
+                                    "name": "net_sdl.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 26,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/net_sdl.h"
+                                  },
+                                  {
+                                    "name": "net_server.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 42,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/net_server.h"
+                                  },
+                                  {
+                                    "name": "p_ceilng.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 324,
+                                      "functions": 12,
+                                      "mcc": 8
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_ceilng.c"
+                                  },
+                                  {
+                                    "name": "p_doors.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 778,
+                                      "functions": 31,
+                                      "mcc": 19
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_doors.c"
+                                  },
+                                  {
+                                    "name": "p_enemy.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 2006,
+                                      "functions": 80,
+                                      "mcc": 50
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c"
+                                  },
+                                  {
+                                    "name": "p_floor.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 546,
+                                      "functions": 21,
+                                      "mcc": 13
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_floor.c"
+                                  },
+                                  {
+                                    "name": "p_inter.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 922,
+                                      "functions": 36,
+                                      "mcc": 23
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_inter.c"
+                                  },
+                                  {
+                                    "name": "p_inter.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 30,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_inter.h"
+                                  },
+                                  {
+                                    "name": "p_lights.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 350,
+                                      "functions": 14,
+                                      "mcc": 8
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_lights.c"
+                                  },
+                                  {
+                                    "name": "p_local.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 297,
+                                      "functions": 11,
+                                      "mcc": 7
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_local.h"
+                                  },
+                                  {
+                                    "name": "p_map.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 1448,
+                                      "functions": 57,
+                                      "mcc": 36
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_map.c"
+                                  },
+                                  {
+                                    "name": "p_maputl.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 1001,
+                                      "functions": 40,
+                                      "mcc": 25
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_maputl.c"
+                                  },
+                                  {
+                                    "name": "p_mobj.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 1060,
+                                      "functions": 42,
+                                      "mcc": 26
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_mobj.c"
+                                  },
+                                  {
+                                    "name": "p_mobj.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 284,
+                                      "functions": 11,
+                                      "mcc": 7
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_mobj.h"
+                                  },
+                                  {
+                                    "name": "p_plats.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 304,
+                                      "functions": 12,
+                                      "mcc": 7
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_plats.c"
+                                  },
+                                  {
+                                    "name": "p_pspr.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 888,
+                                      "functions": 35,
+                                      "mcc": 22
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_pspr.c"
+                                  },
+                                  {
+                                    "name": "p_pspr.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 71,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_pspr.h"
+                                  },
+                                  {
+                                    "name": "p_saveg.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 1891,
+                                      "functions": 75,
+                                      "mcc": 47
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_saveg.c"
+                                  },
+                                  {
+                                    "name": "p_saveg.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 62,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_saveg.h"
+                                  },
+                                  {
+                                    "name": "p_setup.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 855,
+                                      "functions": 34,
+                                      "mcc": 21
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_setup.c"
+                                  },
+                                  {
+                                    "name": "p_setup.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 37,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_setup.h"
+                                  },
+                                  {
+                                    "name": "p_sight.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 350,
+                                      "functions": 14,
+                                      "mcc": 8
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_sight.c"
+                                  },
+                                  {
+                                    "name": "p_spec.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 1492,
+                                      "functions": 59,
+                                      "mcc": 37
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_spec.c"
+                                  },
+                                  {
+                                    "name": "p_spec.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 637,
+                                      "functions": 25,
+                                      "mcc": 15
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_spec.h"
+                                  },
+                                  {
+                                    "name": "p_switch.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 648,
+                                      "functions": 25,
+                                      "mcc": 16
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_switch.c"
+                                  },
+                                  {
+                                    "name": "p_telept.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 133,
+                                      "functions": 5,
+                                      "mcc": 3
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_telept.c"
+                                  },
+                                  {
+                                    "name": "p_tick.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 151,
+                                      "functions": 6,
+                                      "mcc": 3
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_tick.c"
+                                  },
+                                  {
+                                    "name": "p_tick.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 33,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_tick.h"
+                                  },
+                                  {
+                                    "name": "p_user.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 379,
+                                      "functions": 15,
+                                      "mcc": 9
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/p_user.c"
+                                  },
+                                  {
+                                    "name": "r_bsp.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 573,
+                                      "functions": 22,
+                                      "mcc": 14
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/r_bsp.c"
+                                  },
+                                  {
+                                    "name": "r_bsp.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 61,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/r_bsp.h"
+                                  },
+                                  {
+                                    "name": "r_data.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 912,
+                                      "functions": 36,
+                                      "mcc": 22
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/r_data.c"
+                                  },
+                                  {
+                                    "name": "r_data.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 51,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/r_data.h"
+                                  },
+                                  {
+                                    "name": "r_defs.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 448,
+                                      "functions": 17,
+                                      "mcc": 11
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/r_defs.h"
+                                  },
+                                  {
+                                    "name": "r_draw.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 975,
+                                      "functions": 39,
+                                      "mcc": 24
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/r_draw.c"
+                                  },
+                                  {
+                                    "name": "r_draw.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 104,
+                                      "functions": 4,
+                                      "mcc": 2
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/r_draw.h"
+                                  },
+                                  {
+                                    "name": "r_local.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 45,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/r_local.h"
+                                  },
+                                  {
+                                    "name": "r_main.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 914,
+                                      "functions": 36,
+                                      "mcc": 22
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/r_main.c"
+                                  },
+                                  {
+                                    "name": "r_main.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 160,
+                                      "functions": 6,
+                                      "mcc": 4
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/r_main.h"
+                                  },
+                                  {
+                                    "name": "r_plane.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 446,
+                                      "functions": 17,
+                                      "mcc": 11
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/r_plane.c"
+                                  },
+                                  {
+                                    "name": "r_plane.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 76,
+                                      "functions": 3,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/r_plane.h"
+                                  },
+                                  {
+                                    "name": "r_segs.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 743,
+                                      "functions": 29,
+                                      "mcc": 18
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/r_segs.c"
+                                  },
+                                  {
+                                    "name": "r_segs.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 33,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/r_segs.h"
+                                  },
+                                  {
+                                    "name": "r_sky.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 52,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/r_sky.c"
+                                  },
+                                  {
+                                    "name": "r_sky.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 37,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/r_sky.h"
+                                  },
+                                  {
+                                    "name": "r_state.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 127,
+                                      "functions": 5,
+                                      "mcc": 3
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/r_state.h"
+                                  },
+                                  {
+                                    "name": "r_things.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 982,
+                                      "functions": 39,
+                                      "mcc": 24
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/r_things.c"
+                                  },
+                                  {
+                                    "name": "r_things.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 65,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/r_things.h"
+                                  },
+                                  {
+                                    "name": "sha1.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 319,
+                                      "functions": 12,
+                                      "mcc": 7
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/sha1.c"
+                                  },
+                                  {
+                                    "name": "sha1.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 40,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/sha1.h"
+                                  },
+                                  {
+                                    "name": "sounds.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 229,
+                                      "functions": 9,
+                                      "mcc": 5
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/sounds.c"
+                                  },
+                                  {
+                                    "name": "sounds.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 227,
+                                      "functions": 9,
+                                      "mcc": 5
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/sounds.h"
+                                  },
+                                  {
+                                    "name": "statdump.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 392,
+                                      "functions": 15,
+                                      "mcc": 9
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/statdump.c"
+                                  },
+                                  {
+                                    "name": "statdump.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 23,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/statdump.h"
+                                  },
+                                  {
+                                    "name": "st_lib.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 284,
+                                      "functions": 11,
+                                      "mcc": 7
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/st_lib.c"
+                                  },
+                                  {
+                                    "name": "st_lib.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 209,
+                                      "functions": 8,
+                                      "mcc": 5
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/st_lib.h"
+                                  },
+                                  {
+                                    "name": "st_stuff.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 1416,
+                                      "functions": 56,
+                                      "mcc": 35
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/st_stuff.c"
+                                  },
+                                  {
+                                    "name": "st_stuff.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 89,
+                                      "functions": 3,
+                                      "mcc": 2
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/st_stuff.h"
+                                  },
+                                  {
+                                    "name": "s_sound.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 670,
+                                      "functions": 26,
+                                      "mcc": 16
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/s_sound.c"
+                                  },
+                                  {
+                                    "name": "s_sound.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 89,
+                                      "functions": 3,
+                                      "mcc": 2
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/s_sound.h"
+                                  },
+                                  {
+                                    "name": "tables.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 2227,
+                                      "functions": 89,
+                                      "mcc": 55
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/tables.c"
+                                  },
+                                  {
+                                    "name": "tables.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 96,
+                                      "functions": 3,
+                                      "mcc": 2
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/tables.h"
+                                  },
+                                  {
+                                    "name": "v_patch.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 50,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/v_patch.h"
+                                  },
+                                  {
+                                    "name": "v_video.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 932,
+                                      "functions": 37,
+                                      "mcc": 23
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/v_video.c"
+                                  },
+                                  {
+                                    "name": "v_video.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 108,
+                                      "functions": 4,
+                                      "mcc": 2
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/v_video.h"
+                                  },
+                                  {
+                                    "name": "wi_stuff.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 1829,
+                                      "functions": 73,
+                                      "mcc": 45
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/wi_stuff.c"
+                                  },
+                                  {
+                                    "name": "wi_stuff.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 48,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/wi_stuff.h"
+                                  },
+                                  {
+                                    "name": "w_checksum.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 94,
+                                      "functions": 3,
+                                      "mcc": 2
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/w_checksum.c"
+                                  },
+                                  {
+                                    "name": "w_checksum.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 27,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/w_checksum.h"
+                                  },
+                                  {
+                                    "name": "w_file.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 95,
+                                      "functions": 3,
+                                      "mcc": 2
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/w_file.c"
+                                  },
+                                  {
+                                    "name": "w_file.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 78,
+                                      "functions": 3,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/w_file.h"
+                                  },
+                                  {
+                                    "name": "w_file_stdc.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 113,
+                                      "functions": 4,
+                                      "mcc": 2
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/w_file_stdc.c"
+                                  },
+                                  {
+                                    "name": "w_main.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 198,
+                                      "functions": 7,
+                                      "mcc": 4
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/w_main.c"
+                                  },
+                                  {
+                                    "name": "w_main.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 24,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/w_main.h"
+                                  },
+                                  {
+                                    "name": "w_merge.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 44,
+                                      "functions": 1,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/w_merge.h"
+                                  },
+                                  {
+                                    "name": "w_wad.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 656,
+                                      "functions": 26,
+                                      "mcc": 16
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/w_wad.c"
+                                  },
+                                  {
+                                    "name": "w_wad.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 78,
+                                      "functions": 3,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/w_wad.h"
+                                  },
+                                  {
+                                    "name": "z_zone.c",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 500,
+                                      "functions": 20,
+                                      "mcc": 12
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/z_zone.c"
+                                  },
+                                  {
+                                    "name": "z_zone.h",
+                                    "type": "File",
+                                    "attributes": {
+                                      "rloc": 73,
+                                      "functions": 2,
+                                      "mcc": 1
+                                    },
+                                    "link": "firmware/BmoGameboy/src/vendor/doom/src/z_zone.h"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "name": "genesis",
+                            "type": "Folder",
+                            "attributes": {},
+                            "children": [
+                              {
+                                "name": "genesis.c",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 786,
+                                  "functions": 31,
+                                  "mcc": 19
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/genesis/genesis.c"
+                              },
+                              {
+                                "name": "genesis.h",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 65,
+                                  "functions": 2,
+                                  "mcc": 1
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/genesis/genesis.h"
+                              }
+                            ]
+                          },
+                          {
+                            "name": "lynx",
+                            "type": "Folder",
+                            "attributes": {},
+                            "children": [
+                              {
+                                "name": "lynx.c",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 368,
+                                  "functions": 14,
+                                  "mcc": 9
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/lynx/lynx.c"
+                              },
+                              {
+                                "name": "lynx.h",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 40,
+                                  "functions": 1,
+                                  "mcc": 1
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/lynx/lynx.h"
+                              }
+                            ]
+                          },
+                          {
+                            "name": "ngp",
+                            "type": "Folder",
+                            "attributes": {},
+                            "children": [
+                              {
+                                "name": "ngp.c",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 430,
+                                  "functions": 17,
+                                  "mcc": 10
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/ngp/ngp.c"
+                              },
+                              {
+                                "name": "ngp.h",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 36,
+                                  "functions": 1,
+                                  "mcc": 1
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/ngp/ngp.h"
+                              }
+                            ]
+                          },
+                          {
+                            "name": "pce",
+                            "type": "Folder",
+                            "attributes": {},
+                            "children": [
+                              {
+                                "name": "pce.c",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 658,
+                                  "functions": 26,
+                                  "mcc": 16
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/pce/pce.c"
+                              },
+                              {
+                                "name": "pce.h",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 67,
+                                  "functions": 2,
+                                  "mcc": 1
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/pce/pce.h"
+                              }
+                            ]
+                          },
+                          {
+                            "name": "peanut_gb",
+                            "type": "Folder",
+                            "attributes": {},
+                            "children": [
+                              {
+                                "name": "peanut_gb.h",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 4101,
+                                  "functions": 164,
+                                  "mcc": 102
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/peanut_gb/peanut_gb.h"
+                              },
+                              {
+                                "name": "peanut_gb_config.h",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 8,
+                                  "functions": 1,
+                                  "mcc": 1
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/peanut_gb/peanut_gb_config.h"
+                              }
+                            ]
+                          },
+                          {
+                            "name": "pico",
+                            "type": "Folder",
+                            "attributes": {},
+                            "children": [
+                              {
+                                "name": "pico.c",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 296,
+                                  "functions": 11,
+                                  "mcc": 7
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/pico/pico.c"
+                              },
+                              {
+                                "name": "pico.h",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 39,
+                                  "functions": 1,
+                                  "mcc": 1
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/pico/pico.h"
+                              }
+                            ]
+                          },
+                          {
+                            "name": "smsplus",
+                            "type": "Folder",
+                            "attributes": {},
+                            "children": [
+                              {
+                                "name": "sms.c",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 375,
+                                  "functions": 15,
+                                  "mcc": 9
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/smsplus/sms.c"
+                              },
+                              {
+                                "name": "sms.h",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 56,
+                                  "functions": 2,
+                                  "mcc": 1
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/smsplus/sms.h"
+                              }
+                            ]
+                          },
+                          {
+                            "name": "snes",
+                            "type": "Folder",
+                            "attributes": {},
+                            "children": [
+                              {
+                                "name": "snes.c",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 694,
+                                  "functions": 27,
+                                  "mcc": 17
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/snes/snes.c"
+                              },
+                              {
+                                "name": "snes.h",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 57,
+                                  "functions": 2,
+                                  "mcc": 1
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/snes/snes.h"
+                              }
+                            ]
+                          },
+                          {
+                            "name": "stella",
+                            "type": "Folder",
+                            "attributes": {},
+                            "children": [
+                              {
+                                "name": "atari.c",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 557,
+                                  "functions": 22,
+                                  "mcc": 13
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/stella/atari.c"
+                              },
+                              {
+                                "name": "atari.h",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 48,
+                                  "functions": 1,
+                                  "mcc": 1
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/stella/atari.h"
+                              }
+                            ]
+                          },
+                          {
+                            "name": "wswan",
+                            "type": "Folder",
+                            "attributes": {},
+                            "children": [
+                              {
+                                "name": "wswan.c",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 592,
+                                  "functions": 23,
+                                  "mcc": 14
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/wswan/wswan.c"
+                              },
+                              {
+                                "name": "wswan.h",
+                                "type": "File",
+                                "attributes": {
+                                  "rloc": 53,
+                                  "functions": 2,
+                                  "mcc": 1
+                                },
+                                "link": "firmware/BmoGameboy/src/vendor/wswan/wswan.h"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "tools",
+            "type": "Folder",
+            "attributes": {},
+            "children": [
+              {
+                "name": "host_cores_runner.c",
+                "type": "File",
+                "attributes": {
+                  "rloc": 488,
+                  "functions": 19,
+                  "mcc": 12
+                },
+                "link": "tools/host_cores_runner.c"
+              },
+              {
+                "name": "host_test.cpp",
+                "type": "File",
+                "attributes": {
+                  "rloc": 123,
+                  "functions": 4,
+                  "mcc": 3
+                },
+                "link": "tools/host_test.cpp"
+              },
+              {
+                "name": "telemetry_plotter.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 241,
+                  "functions": 9,
+                  "mcc": 6
+                },
+                "link": "tools/telemetry_plotter.py"
+              },
+              {
+                "name": "bmo_simulator",
+                "type": "Folder",
+                "attributes": {},
+                "children": [
+                  {
+                    "name": "atari_wasm.cpp",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 207,
+                      "functions": 8,
+                      "mcc": 5
+                    },
+                    "link": "tools/bmo_simulator/atari_wasm.cpp"
+                  },
+                  {
+                    "name": "bmo_3d_console.js",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 978,
+                      "functions": 39,
+                      "mcc": 24
+                    },
+                    "link": "tools/bmo_simulator/bmo_3d_console.js"
+                  },
+                  {
+                    "name": "bmo_face_arduino_compat.h",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 19,
+                      "functions": 1,
+                      "mcc": 1
+                    },
+                    "link": "tools/bmo_simulator/bmo_face_arduino_compat.h"
+                  },
+                  {
+                    "name": "bmo_face_firmware.cpp",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 2,
+                      "functions": 1,
+                      "mcc": 1
+                    },
+                    "link": "tools/bmo_simulator/bmo_face_firmware.cpp"
+                  },
+                  {
+                    "name": "bmo_face_wasm.cpp",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 207,
+                      "functions": 8,
+                      "mcc": 5
+                    },
+                    "link": "tools/bmo_simulator/bmo_face_wasm.cpp"
+                  },
+                  {
+                    "name": "colem_wasm.cpp",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 239,
+                      "functions": 9,
+                      "mcc": 5
+                    },
+                    "link": "tools/bmo_simulator/colem_wasm.cpp"
+                  },
+                  {
+                    "name": "console_history_data.js",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 530,
+                      "functions": 21,
+                      "mcc": 13
+                    },
+                    "link": "tools/bmo_simulator/console_history_data.js"
+                  },
+                  {
+                    "name": "gameboy_wasm.cpp",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 242,
+                      "functions": 9,
+                      "mcc": 6
+                    },
+                    "link": "tools/bmo_simulator/gameboy_wasm.cpp"
+                  },
+                  {
+                    "name": "nes_wasm.cpp",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 252,
+                      "functions": 10,
+                      "mcc": 6
+                    },
+                    "link": "tools/bmo_simulator/nes_wasm.cpp"
+                  },
+                  {
+                    "name": "OrbitControls.js",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 1045,
+                      "functions": 41,
+                      "mcc": 26
+                    },
+                    "link": "tools/bmo_simulator/OrbitControls.js"
+                  },
+                  {
+                    "name": "run_simulator.py",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 205,
+                      "functions": 8,
+                      "mcc": 5
+                    },
+                    "link": "tools/bmo_simulator/run_simulator.py"
+                  },
+                  {
+                    "name": "simulator.js",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 1911,
+                      "functions": 76,
+                      "mcc": 47
+                    },
+                    "link": "tools/bmo_simulator/simulator.js"
+                  },
+                  {
+                    "name": "three.min.js",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 6,
+                      "functions": 1,
+                      "mcc": 1
+                    },
+                    "link": "tools/bmo_simulator/three.min.js"
+                  },
+                  {
+                    "name": "wasm_playtest_engine.js",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 379,
+                      "functions": 15,
+                      "mcc": 9
+                    },
+                    "link": "tools/bmo_simulator/wasm_playtest_engine.js"
+                  },
+                  {
+                    "name": "bmo_face_compat",
+                    "type": "Folder",
+                    "attributes": {},
+                    "children": [
+                      {
+                        "name": "Arduino.h",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 1,
+                          "functions": 1,
+                          "mcc": 1
+                        },
+                        "link": "tools/bmo_simulator/bmo_face_compat/Arduino.h"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "hal",
+                    "type": "Folder",
+                    "attributes": {},
+                    "children": [
+                      {
+                        "name": "Arduino.h",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 119,
+                          "functions": 4,
+                          "mcc": 2
+                        },
+                        "link": "tools/bmo_simulator/hal/Arduino.h"
+                      },
+                      {
+                        "name": "esp32-hal-log.h",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 7,
+                          "functions": 1,
+                          "mcc": 1
+                        },
+                        "link": "tools/bmo_simulator/hal/esp32-hal-log.h"
+                      },
+                      {
+                        "name": "esp_attr.h",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 9,
+                          "functions": 1,
+                          "mcc": 1
+                        },
+                        "link": "tools/bmo_simulator/hal/esp_attr.h"
+                      },
+                      {
+                        "name": "esp_heap_caps.h",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 31,
+                          "functions": 1,
+                          "mcc": 1
+                        },
+                        "link": "tools/bmo_simulator/hal/esp_heap_caps.h"
+                      },
+                      {
+                        "name": "HardwareSerial.h",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 21,
+                          "functions": 1,
+                          "mcc": 1
+                        },
+                        "link": "tools/bmo_simulator/hal/HardwareSerial.h"
+                      },
+                      {
+                        "name": "pgmspace.h",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 45,
+                          "functions": 1,
+                          "mcc": 1
+                        },
+                        "link": "tools/bmo_simulator/hal/pgmspace.h"
+                      },
+                      {
+                        "name": "stdlib_noniso.h",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 21,
+                          "functions": 1,
+                          "mcc": 1
+                        },
+                        "link": "tools/bmo_simulator/hal/stdlib_noniso.h"
+                      },
+                      {
+                        "name": "freertos",
+                        "type": "Folder",
+                        "attributes": {},
+                        "children": [
+                          {
+                            "name": "FreeRTOS.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 24,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "tools/bmo_simulator/hal/freertos/FreeRTOS.h"
+                          },
+                          {
+                            "name": "queue.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 12,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "tools/bmo_simulator/hal/freertos/queue.h"
+                          },
+                          {
+                            "name": "semphr.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 17,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "tools/bmo_simulator/hal/freertos/semphr.h"
+                          },
+                          {
+                            "name": "task.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 22,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "tools/bmo_simulator/hal/freertos/task.h"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "rom",
+                        "type": "Folder",
+                        "attributes": {},
+                        "children": [
+                          {
+                            "name": "ets_sys.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 9,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "tools/bmo_simulator/hal/rom/ets_sys.h"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "soc",
+                        "type": "Folder",
+                        "attributes": {},
+                        "children": [
+                          {
+                            "name": "gpio_reg.h",
+                            "type": "File",
+                            "attributes": {
+                              "rloc": 18,
+                              "functions": 1,
+                              "mcc": 1
+                            },
+                            "link": "tools/bmo_simulator/hal/soc/gpio_reg.h"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "enclosure",
+                "type": "Folder",
+                "attributes": {},
+                "children": [
+                  {
+                    "name": "generate_bmo_enclosure.py",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 576,
+                      "functions": 23,
+                      "mcc": 14
+                    },
+                    "link": "tools/enclosure/generate_bmo_enclosure.py"
+                  }
+                ]
+              },
+              {
+                "name": "guardian",
+                "type": "Folder",
+                "attributes": {},
+                "children": [
+                  {
+                    "name": "cli.py",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 1276,
+                      "functions": 51,
+                      "mcc": 31
+                    },
+                    "link": "tools/guardian/cli.py"
+                  },
+                  {
+                    "name": "mcp_server.py",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 264,
+                      "functions": 10,
+                      "mcc": 6
+                    },
+                    "link": "tools/guardian/mcp_server.py"
+                  },
+                  {
+                    "name": "__init__.py",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 5,
+                      "functions": 1,
+                      "mcc": 1
+                    },
+                    "link": "tools/guardian/__init__.py"
+                  },
+                  {
+                    "name": "__main__.py",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 8,
+                      "functions": 1,
+                      "mcc": 1
+                    },
+                    "link": "tools/guardian/__main__.py"
+                  },
+                  {
+                    "name": "core",
+                    "type": "Folder",
+                    "attributes": {},
+                    "children": [
+                      {
+                        "name": "ast_linter.py",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 529,
+                          "functions": 21,
+                          "mcc": 13
+                        },
+                        "link": "tools/guardian/core/ast_linter.py"
+                      },
+                      {
+                        "name": "bus_model.py",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 278,
+                          "functions": 11,
+                          "mcc": 6
+                        },
+                        "link": "tools/guardian/core/bus_model.py"
+                      },
+                      {
+                        "name": "clang_tidy_runner.py",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 146,
+                          "functions": 5,
+                          "mcc": 3
+                        },
+                        "link": "tools/guardian/core/clang_tidy_runner.py"
+                      },
+                      {
+                        "name": "cppcheck_runner.py",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 121,
+                          "functions": 4,
+                          "mcc": 3
+                        },
+                        "link": "tools/guardian/core/cppcheck_runner.py"
+                      },
+                      {
+                        "name": "doc_verifier.py",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 359,
+                          "functions": 14,
+                          "mcc": 8
+                        },
+                        "link": "tools/guardian/core/doc_verifier.py"
+                      },
+                      {
+                        "name": "elf_analyzer.py",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 213,
+                          "functions": 8,
+                          "mcc": 5
+                        },
+                        "link": "tools/guardian/core/elf_analyzer.py"
+                      },
+                      {
+                        "name": "host_bench.py",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 297,
+                          "functions": 11,
+                          "mcc": 7
+                        },
+                        "link": "tools/guardian/core/host_bench.py"
+                      },
+                      {
+                        "name": "psram_budget.py",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 336,
+                          "functions": 13,
+                          "mcc": 8
+                        },
+                        "link": "tools/guardian/core/psram_budget.py"
+                      },
+                      {
+                        "name": "report_gen.py",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 243,
+                          "functions": 9,
+                          "mcc": 6
+                        },
+                        "link": "tools/guardian/core/report_gen.py"
+                      },
+                      {
+                        "name": "symbols.py",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 116,
+                          "functions": 4,
+                          "mcc": 2
+                        },
+                        "link": "tools/guardian/core/symbols.py"
+                      },
+                      {
+                        "name": "ui_auditor.py",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 365,
+                          "functions": 14,
+                          "mcc": 9
+                        },
+                        "link": "tools/guardian/core/ui_auditor.py"
+                      },
+                      {
+                        "name": "__init__.py",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 26,
+                          "functions": 1,
+                          "mcc": 1
+                        },
+                        "link": "tools/guardian/core/__init__.py"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "tests",
+                    "type": "Folder",
+                    "attributes": {},
+                    "children": [
+                      {
+                        "name": "test_guardian.py",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 426,
+                          "functions": 17,
+                          "mcc": 10
+                        },
+                        "link": "tools/guardian/tests/test_guardian.py"
+                      },
+                      {
+                        "name": "__init__.py",
+                        "type": "File",
+                        "attributes": {
+                          "rloc": 3,
+                          "functions": 1,
+                          "mcc": 1
+                        },
+                        "link": "tools/guardian/tests/__init__.py"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "scripts",
+            "type": "Folder",
+            "attributes": {},
+            "children": [
+              {
+                "name": "audit_all_games.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 184,
+                  "functions": 7,
+                  "mcc": 4
+                },
+                "link": "scripts/audit_all_games.py"
+              },
+              {
+                "name": "auto_install_romsets.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 293,
+                  "functions": 11,
+                  "mcc": 7
+                },
+                "link": "scripts/auto_install_romsets.py"
+              },
+              {
+                "name": "benchmark_repo.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 30,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "scripts/benchmark_repo.py"
+              },
+              {
+                "name": "build_wasm_cores.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 212,
+                  "functions": 8,
+                  "mcc": 5
+                },
+                "link": "scripts/build_wasm_cores.py"
+              },
+              {
+                "name": "bulk_cover_manager.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 349,
+                  "functions": 13,
+                  "mcc": 8
+                },
+                "link": "scripts/bulk_cover_manager.py"
+              },
+              {
+                "name": "bulk_download_manager.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 336,
+                  "functions": 13,
+                  "mcc": 8
+                },
+                "link": "scripts/bulk_download_manager.py"
+              },
+              {
+                "name": "bundle_rules.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 139,
+                  "functions": 5,
+                  "mcc": 3
+                },
+                "link": "scripts/bundle_rules.py"
+              },
+              {
+                "name": "check_collection_files.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 31,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "scripts/check_collection_files.py"
+              },
+              {
+                "name": "check_markdown_links.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 25,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "scripts/check_markdown_links.py"
+              },
+              {
+                "name": "color_calc.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 52,
+                  "functions": 2,
+                  "mcc": 1
+                },
+                "link": "scripts/color_calc.py"
+              },
+              {
+                "name": "convert_roms.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 66,
+                  "functions": 2,
+                  "mcc": 1
+                },
+                "link": "scripts/convert_roms.py"
+              },
+              {
+                "name": "deploy_sd_complete.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 227,
+                  "functions": 9,
+                  "mcc": 5
+                },
+                "link": "scripts/deploy_sd_complete.py"
+              },
+              {
+                "name": "deploy_to_sd.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 285,
+                  "functions": 11,
+                  "mcc": 7
+                },
+                "link": "scripts/deploy_to_sd.py"
+              },
+              {
+                "name": "extract_atari.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 61,
+                  "functions": 2,
+                  "mcc": 1
+                },
+                "link": "scripts/extract_atari.py"
+              },
+              {
+                "name": "fetch_atari2600_boxarts.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 159,
+                  "functions": 6,
+                  "mcc": 3
+                },
+                "link": "scripts/fetch_atari2600_boxarts.py"
+              },
+              {
+                "name": "fetch_covers.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 434,
+                  "functions": 17,
+                  "mcc": 10
+                },
+                "link": "scripts/fetch_covers.py"
+              },
+              {
+                "name": "find_all_collections.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 35,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "scripts/find_all_collections.py"
+              },
+              {
+                "name": "fix_genesis_smd.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 45,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "scripts/fix_genesis_smd.py"
+              },
+              {
+                "name": "generate_ai_knowledge_base.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 423,
+                  "functions": 16,
+                  "mcc": 10
+                },
+                "link": "scripts/generate_ai_knowledge_base.py"
+              },
+              {
+                "name": "generate_code_visualizations.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 1561,
+                  "functions": 62,
+                  "mcc": 39
+                },
+                "link": "scripts/generate_code_visualizations.py"
+              },
+              {
+                "name": "install_git_hooks.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 66,
+                  "functions": 2,
+                  "mcc": 1
+                },
+                "link": "scripts/install_git_hooks.py"
+              },
+              {
+                "name": "process_games.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 139,
+                  "functions": 5,
+                  "mcc": 3
+                },
+                "link": "scripts/process_games.py"
+              },
+              {
+                "name": "repo_tools.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 31,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "scripts/repo_tools.py"
+              },
+              {
+                "name": "rom_key.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 38,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "scripts/rom_key.py"
+              },
+              {
+                "name": "test_candidate_sets.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 35,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "scripts/test_candidate_sets.py"
+              },
+              {
+                "name": "test_runner.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 59,
+                  "functions": 2,
+                  "mcc": 1
+                },
+                "link": "scripts/test_runner.py"
+              },
+              {
+                "name": "validate_repo.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 640,
+                  "functions": 25,
+                  "mcc": 16
+                },
+                "link": "scripts/validate_repo.py"
+              },
+              {
+                "name": "verify_collection_urls.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 30,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "scripts/verify_collection_urls.py"
+              },
+              {
+                "name": "verify_color_tokens.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 102,
+                  "functions": 4,
+                  "mcc": 2
+                },
+                "link": "scripts/verify_color_tokens.py"
+              }
+            ]
+          },
+          {
+            "name": "tests",
+            "type": "Folder",
+            "attributes": {},
+            "children": [
+              {
+                "name": "host_test_support.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 43,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "tests/host_test_support.py"
+              },
+              {
+                "name": "test_all_tiers_validation.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 334,
+                  "functions": 13,
+                  "mcc": 8
+                },
+                "link": "tests/test_all_tiers_validation.py"
+              },
+              {
+                "name": "test_apple_nintendo_ui.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 84,
+                  "functions": 3,
+                  "mcc": 2
+                },
+                "link": "tests/test_apple_nintendo_ui.py"
+              },
+              {
+                "name": "test_battery_save.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 27,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "tests/test_battery_save.py"
+              },
+              {
+                "name": "test_bmo_face_spring.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 60,
+                  "functions": 2,
+                  "mcc": 1
+                },
+                "link": "tests/test_bmo_face_spring.py"
+              },
+              {
+                "name": "test_bmo_mascot_engine.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 49,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "tests/test_bmo_mascot_engine.py"
+              },
+              {
+                "name": "test_box_art.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 113,
+                  "functions": 4,
+                  "mcc": 2
+                },
+                "link": "tests/test_box_art.py"
+              },
+              {
+                "name": "test_enclosure_generator.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 103,
+                  "functions": 4,
+                  "mcc": 2
+                },
+                "link": "tests/test_enclosure_generator.py"
+              },
+              {
+                "name": "test_frame_pacing.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 44,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "tests/test_frame_pacing.py"
+              },
+              {
+                "name": "test_frame_percentiles.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 39,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "tests/test_frame_percentiles.py"
+              },
+              {
+                "name": "test_generated_artifacts_deterministic.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 35,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "tests/test_generated_artifacts_deterministic.py"
+              },
+              {
+                "name": "test_genesis_emu.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 167,
+                  "functions": 6,
+                  "mcc": 4
+                },
+                "link": "tests/test_genesis_emu.py"
+              },
+              {
+                "name": "test_native_cores_execution.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 419,
+                  "functions": 16,
+                  "mcc": 10
+                },
+                "link": "tests/test_native_cores_execution.py"
+              },
+              {
+                "name": "test_new_cores_and_qol.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 199,
+                  "functions": 7,
+                  "mcc": 4
+                },
+                "link": "tests/test_new_cores_and_qol.py"
+              },
+              {
+                "name": "test_pause_quit_policy.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 39,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "tests/test_pause_quit_policy.py"
+              },
+              {
+                "name": "test_pce_emu.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 110,
+                  "functions": 4,
+                  "mcc": 2
+                },
+                "link": "tests/test_pce_emu.py"
+              },
+              {
+                "name": "test_platform_mapping.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 115,
+                  "functions": 4,
+                  "mcc": 2
+                },
+                "link": "tests/test_platform_mapping.py"
+              },
+              {
+                "name": "test_psram_budget.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 39,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "tests/test_psram_budget.py"
+              },
+              {
+                "name": "test_repo_tools.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 71,
+                  "functions": 2,
+                  "mcc": 1
+                },
+                "link": "tests/test_repo_tools.py"
+              },
+              {
+                "name": "test_rom_file_filter.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 49,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "tests/test_rom_file_filter.py"
+              },
+              {
+                "name": "test_rom_index.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 183,
+                  "functions": 7,
+                  "mcc": 4
+                },
+                "link": "tests/test_rom_index.py"
+              },
+              {
+                "name": "test_rom_index_layout.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 27,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "tests/test_rom_index_layout.py"
+              },
+              {
+                "name": "test_rom_key.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 86,
+                  "functions": 3,
+                  "mcc": 2
+                },
+                "link": "tests/test_rom_key.py"
+              },
+              {
+                "name": "test_save_manager.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 126,
+                  "functions": 5,
+                  "mcc": 3
+                },
+                "link": "tests/test_save_manager.py"
+              },
+              {
+                "name": "test_sd_deploy.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 123,
+                  "functions": 4,
+                  "mcc": 3
+                },
+                "link": "tests/test_sd_deploy.py"
+              },
+              {
+                "name": "test_simulator_security.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 35,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "tests/test_simulator_security.py"
+              },
+              {
+                "name": "test_telemetry_plotter.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 55,
+                  "functions": 2,
+                  "mcc": 1
+                },
+                "link": "tests/test_telemetry_plotter.py"
+              },
+              {
+                "name": "test_theme_color.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 27,
+                  "functions": 1,
+                  "mcc": 1
+                },
+                "link": "tests/test_theme_color.py"
+              },
+              {
+                "name": "test_tier1_validation.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 126,
+                  "functions": 5,
+                  "mcc": 3
+                },
+                "link": "tests/test_tier1_validation.py"
+              },
+              {
+                "name": "test_tier2_validation.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 98,
+                  "functions": 3,
+                  "mcc": 2
+                },
+                "link": "tests/test_tier2_validation.py"
+              },
+              {
+                "name": "test_validate_repo_strict_mode.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 55,
+                  "functions": 2,
+                  "mcc": 1
+                },
+                "link": "tests/test_validate_repo_strict_mode.py"
+              },
+              {
+                "name": "test_wokwi_hardware_parity.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 79,
+                  "functions": 3,
+                  "mcc": 1
+                },
+                "link": "tests/test_wokwi_hardware_parity.py"
+              },
+              {
+                "name": "test_wswan_emu.py",
+                "type": "File",
+                "attributes": {
+                  "rloc": 126,
+                  "functions": 5,
+                  "mcc": 3
+                },
+                "link": "tests/test_wswan_emu.py"
+              },
+              {
+                "name": "host",
+                "type": "Folder",
+                "attributes": {},
+                "children": [
+                  {
+                    "name": "battery_save_test.cpp",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 10,
+                      "functions": 1,
+                      "mcc": 1
+                    },
+                    "link": "tests/host/battery_save_test.cpp"
+                  },
+                  {
+                    "name": "frame_pacing_test.cpp",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 14,
+                      "functions": 1,
+                      "mcc": 1
+                    },
+                    "link": "tests/host/frame_pacing_test.cpp"
+                  },
+                  {
+                    "name": "frame_percentiles_test.cpp",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 32,
+                      "functions": 1,
+                      "mcc": 1
+                    },
+                    "link": "tests/host/frame_percentiles_test.cpp"
+                  },
+                  {
+                    "name": "harmonic_spring_test.cpp",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 44,
+                      "functions": 1,
+                      "mcc": 1
+                    },
+                    "link": "tests/host/harmonic_spring_test.cpp"
+                  },
+                  {
+                    "name": "pause_quit_policy_test.cpp",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 33,
+                      "functions": 1,
+                      "mcc": 1
+                    },
+                    "link": "tests/host/pause_quit_policy_test.cpp"
+                  },
+                  {
+                    "name": "psram_zone_budget_test.cpp",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 26,
+                      "functions": 1,
+                      "mcc": 1
+                    },
+                    "link": "tests/host/psram_zone_budget_test.cpp"
+                  },
+                  {
+                    "name": "rom_file_filter_test.cpp",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 27,
+                      "functions": 1,
+                      "mcc": 1
+                    },
+                    "link": "tests/host/rom_file_filter_test.cpp"
+                  },
+                  {
+                    "name": "rom_index_layout_test.cpp",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 10,
+                      "functions": 1,
+                      "mcc": 1
+                    },
+                    "link": "tests/host/rom_index_layout_test.cpp"
+                  },
+                  {
+                    "name": "rom_key_parity.cpp",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 15,
+                      "functions": 1,
+                      "mcc": 1
+                    },
+                    "link": "tests/host/rom_key_parity.cpp"
+                  },
+                  {
+                    "name": "theme_color_test.cpp",
+                    "type": "File",
+                    "attributes": {
+                      "rloc": 22,
+                      "functions": 1,
+                      "mcc": 1
+                    },
+                    "link": "tests/host/theme_color_test.cpp"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
