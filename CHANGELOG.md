@@ -8,17 +8,17 @@
 - Skip installed-game integrity checks when the gitignored `games/` directory is absent.
 - Pin Pillow in CI, normalize both path separators in the box-art test helper, and keep the sanitizer probe focused on AddressSanitizer rather than an earlier UBSan report.
 - Exclude downloaded toolchains from repository index inputs, regenerate bounded rules pages, and keep WASM test builds in temporary storage to avoid runner-dependent tracked binaries.
-- Discover the Xtensa toolchain under Arduino CLI's configured or default Linux data directory so generated indexes use measured ELF memory values rather than fallback metrics.
+- Discover the Xtensa toolchain under Arduino CLI's configured or default data directory for live budget reports, and omit build-dependent ELF snapshots from committed knowledge indexes.
 
 ### Verification
 - Clean-checkout compile passed with `Sketch uses 5192960 bytes`; the installed-games test skipped because its gitignored data directory was absent.
-- `python -m unittest discover -s tests -v`: `Ran 159 tests in 22.772s`, `OK`.
+- `python -m unittest discover -s tests -v`: `Ran 159 tests in 39.895s`, `OK`.
 - `python -m tools.guardian verify`, `ui-audit`, and `diff-audit` passed; diff-audit reported 0 critical violations and 0 documentation/rule drift issues.
-- `python scripts/validate_repo.py` passed all nine phases in 174320 ms. Target compile used 5,774,632 / 16,777,216 bytes flash and 253,728 / 327,680 bytes SRAM.
+- `python scripts/validate_repo.py` passed all nine phases in 184825 ms. Target compile used 5,774,632 / 16,777,216 bytes flash and 253,728 / 327,680 bytes SRAM.
 - `python -m tools.guardian diff-audit` passed with 0 critical violations and 0 documentation/rule drift issues.
 - Targeted host tests for the sanitizer probe, box-art paths, image pipeline, and native cores passed after the first remote run exposed Linux-only failures.
 - The sanitizer, box-art, image-pipeline, and native-core test selectors passed after the CI fixes.
-- The first remote run failed in host tests; later runs failed only at generated-artifact drift. The final drift was caused by Linux falling back to synthetic ELF metrics because its Arduino CLI toolchain directory was not discovered. The analyzer fix is awaiting a remote rerun. Physical hardware verification is not claimed.
+- The first remote run failed in host tests; later runs failed only at generated-artifact drift. Cross-platform ELF discovery fixed live budget analysis, but local ignored ROM content still made generated metrics differ from clean CI; indexes now omit those build-dependent snapshots and point to the live budget command. Remote verification is pending. Physical hardware verification is not claimed.
 
 ## [Production-readiness assessment and workstream handoff] - 2026-11-12
 

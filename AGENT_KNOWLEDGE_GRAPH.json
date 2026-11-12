@@ -1,14 +1,15 @@
 {
-  "schema_version": "2.3.0",
+  "schema_version": "2.4.0",
   "target_mcu": {
     "chip": "ESP32-S3-N16R8",
     "cpu_arch": "Xtensa dual-core 32-bit LX7 @ 240MHz",
     "flash": "16MB Quad SPI (QIO 80MHz)",
     "psram": "8MB Octal SPI (OPI 80MHz)",
     "internal_sram_dram_bytes": 327680,
-    "iram_used_bytes": 77312,
-    "dram_used_bytes": 253728,
-    "flash_used_bytes": 5774741
+    "iram_used_bytes": null,
+    "dram_used_bytes": null,
+    "flash_used_bytes": null,
+    "memory_budget_report_command": "python -m tools.guardian budget --elf <target-elf>"
   },
   "hard_stops": [
     {
@@ -12213,11 +12214,11 @@
     "docs/handoffs/2026-11-12-production-readiness.md": {
       "path": "docs/handoffs/2026-11-12-production-readiness.md",
       "category": "DOCUMENTATION",
-      "total_lines": 149,
-      "sloc": 119,
+      "total_lines": 150,
+      "sloc": 120,
       "comments": 0,
       "blanks": 30,
-      "density_percent": 79.9,
+      "density_percent": 80.0,
       "symbols": [],
       "pins_accessed": [
         "TFT_SPI_HZ",
@@ -19902,11 +19903,11 @@
     "scripts/generate_ai_knowledge_base.py": {
       "path": "scripts/generate_ai_knowledge_base.py",
       "category": "SCRIPTS",
-      "total_lines": 423,
-      "sloc": 379,
+      "total_lines": 421,
+      "sloc": 378,
       "comments": 12,
-      "blanks": 32,
-      "density_percent": 89.6,
+      "blanks": 31,
+      "density_percent": 89.8,
       "symbols": [],
       "pins_accessed": [
         "GPIO1",
@@ -20326,11 +20327,11 @@
     "tests/test_generated_artifacts_deterministic.py": {
       "path": "tests/test_generated_artifacts_deterministic.py",
       "category": "TESTS",
-      "total_lines": 41,
-      "sloc": 33,
+      "total_lines": 55,
+      "sloc": 47,
       "comments": 0,
       "blanks": 8,
-      "density_percent": 80.5,
+      "density_percent": 85.5,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
