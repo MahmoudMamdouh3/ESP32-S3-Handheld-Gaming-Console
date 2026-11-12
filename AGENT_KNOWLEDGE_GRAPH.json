@@ -11293,11 +11293,11 @@
     "docs/consolidated-rules/rule-04_known_issues-01.md": {
       "path": "docs/consolidated-rules/rule-04_known_issues-01.md",
       "category": "DOCUMENTATION",
-      "total_lines": 57,
-      "sloc": 50,
+      "total_lines": 72,
+      "sloc": 63,
       "comments": 0,
-      "blanks": 7,
-      "density_percent": 87.7,
+      "blanks": 9,
+      "density_percent": 87.5,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
@@ -11311,11 +11311,11 @@
     "docs/consolidated-rules/rule-04_known_issues-02.md": {
       "path": "docs/consolidated-rules/rule-04_known_issues-02.md",
       "category": "DOCUMENTATION",
-      "total_lines": 27,
-      "sloc": 22,
+      "total_lines": 13,
+      "sloc": 10,
       "comments": 0,
-      "blanks": 5,
-      "density_percent": 81.5,
+      "blanks": 3,
+      "density_percent": 76.9,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
