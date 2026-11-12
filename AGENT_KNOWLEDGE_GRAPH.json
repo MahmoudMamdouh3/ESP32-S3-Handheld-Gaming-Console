@@ -460,7 +460,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "Known Issues and Audit Findings",
-      "lines": 73
+      "lines": 74
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -10194,11 +10194,11 @@
     ".agents/rules/04_known_issues.md": {
       "path": ".agents/rules/04_known_issues.md",
       "category": "AGENT_RULES",
-      "total_lines": 73,
-      "sloc": 64,
+      "total_lines": 74,
+      "sloc": 65,
       "comments": 0,
       "blanks": 9,
-      "density_percent": 87.7,
+      "density_percent": 87.8,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
@@ -11261,11 +11261,11 @@
     "docs/consolidated-rules/rule-04_known_issues-01.md": {
       "path": "docs/consolidated-rules/rule-04_known_issues-01.md",
       "category": "DOCUMENTATION",
-      "total_lines": 67,
-      "sloc": 58,
+      "total_lines": 68,
+      "sloc": 59,
       "comments": 0,
       "blanks": 9,
-      "density_percent": 86.6,
+      "density_percent": 86.8,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",

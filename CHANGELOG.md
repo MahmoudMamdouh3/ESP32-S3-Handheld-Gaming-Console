@@ -18,7 +18,7 @@
 - `python -m tools.guardian diff-audit` passed with 0 critical violations and 0 documentation/rule drift issues.
 - Targeted host tests for the sanitizer probe, box-art paths, image pipeline, and native cores passed after the first remote run exposed Linux-only failures.
 - The sanitizer, box-art, image-pipeline, and native-core test selectors passed after the CI fixes.
-- The first remote run failed in host tests; later runs failed only at generated-artifact drift. Cross-platform ELF discovery fixed live budget analysis, but local ignored ROM content still made generated metrics differ from clean CI; indexes now omit those build-dependent snapshots and point to the live budget command. Remote verification is pending. Physical hardware verification is not claimed.
+- The first remote run failed in host tests; later runs failed only at generated-artifact drift. Cross-platform ELF discovery fixed live budget analysis, and generated indexes now omit build-dependent snapshots while pointing to the live budget command. GitHub Actions run `43238623840` passed all workflow steps. Physical hardware verification is not claimed.
 
 ## [Production-readiness assessment and workstream handoff] - 2026-11-12
 

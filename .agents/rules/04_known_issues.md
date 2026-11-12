@@ -29,7 +29,7 @@ The active registry contains current constraints and findings. Historical logs a
 | F4 | IN_PROGRESS | Save staging and post-write verification cover saves, states, screenshots, and box art. Favorites/history/index migration and fault-injection matrices remain. |
 | F5 | IN_PROGRESS | Pause quit now handles failed battery saves with retry, resume, or explicit quit-anyway; the pure policy test passes. SaveManager failure injection remains. |
 | F6 | IN_PROGRESS | ADRs 0011–0014 record path key, save-state schema, partition layout, and SPI-clock decisions. Remaining ADR backfill and provenance/license review are open. |
-| F7 | IN_PROGRESS | Pinned CI passed through UI checks, then failed artifact drift because local ignored ROM content changed live ELF metrics. Knowledge indexes now omit live metrics; remote rerun is pending. |
+| F7 | VERIFIED_HOST | GitHub Actions run `43238623840` passed target compile, host tests, strict validation, Guardian, Markdown, color, UI, and generated-artifact checks. Live budget metrics remain available through Guardian; physical hardware is not covered. |
 | P1-08 | IN_PROGRESS | Firmware, simulator CSS, DESIGN, and SDD color values now agree and pass host/UI checks. Coral on deep teal still needs a human design decision; panel color remains unverified. |
 | P1-09 | IN_PROGRESS | `TFT_SPI_HZ=80 MHz`, `SD_SPI_HZ=25 MHz`, and a 40 MHz diagnostics comparison are in place; both firmware profiles compile. ST7789VW v1.0 lists a 16 ns serial write cycle (62.5 MHz), so the default 80 MHz setting remains a hardware timing risk. |
 | P1-10 | DEBUNKED | With monitoring disabled, `battery.cpp` returns 0 for voltage and percentage; the launcher shows USB/N/A and Diagnostics says the battery is not fitted. |
@@ -46,7 +46,7 @@ The active registry contains current constraints and findings. Historical logs a
 | P3-02 | OPEN | Per-core CPU conformance suite is pending. |
 | P3-03 | IN_PROGRESS | Guardian gained rule-size, banned-language, file-URI, unresolved Markdown-link, and large-local-array checks; duplicate symbol, flag, lock, and timeout analyzers remain. |
 | P3-04 | OPEN | On-device measurement kit is pending. |
-| P3-05 | IN_PROGRESS | Pinned CI and local strict validator exist. Latest run passed through UI, then failed artifact drift from ignored-ROM ELF differences. Indexes omit live metrics; cross-platform toolchain discovery supports live reports. Rerun pending. |
+| P3-05 | VERIFIED_HOST | Pinned GitHub Actions run `43238623840` passed all workflow steps, including generated-artifact drift. Indexes omit live ELF snapshots; cross-platform toolchain discovery supports current budget reports. Physical hardware remains unverified. |
 | P3-06 | OPEN | Simulator server security review is pending. |
 | P4-01 | OPEN | Emulator registry refactor is pending until earlier phases are green. |
 | P4-02 | OPEN | Browser firmware-UI spike has not started. |
@@ -56,6 +56,7 @@ The active registry contains current constraints and findings. Historical logs a
 - 2026-11-12: Fixed clean-checkout blockers and addressed the first remote CI failures: track `rom_file_filter.h`, make ignored local ROM assets optional, skip absent gitignored `games/`, install pinned Pillow, normalize Windows path separators in the box-art test helper, and isolate the ASan probe from UBSan instrumentation. The clean-checkout compile, local test suite, and validator passed; remote rerun remains pending.
 - 2026-11-12: Addressed the next remote CI failure by excluding downloaded `.tools` SDK files from repository indexes, keeping compiled WASM test output in a temporary directory, and regenerating bounded rules artifacts. The latest remote run passed every step before generated-artifact drift; a rerun is pending.
 - 2026-11-12: Added Arduino CLI data-directory discovery to `ElfAnalyzer`. Ignored ROMs still change ELF metrics, so indexes now omit live values; Guardian retains live budget reporting. Rerun pending.
+- 2026-11-12: GitHub Actions run `43238623840` passed all steps, including generated-artifact verification. `F7` and `P3-05` are verified on host; physical hardware and other open workstreams remain.
 - 2026-11-07: Updated the active audit ledger and moved historical entries to bounded archive pages.
 - 2026-11-07: Added path-key, battery-save, PSRAM-budget, and index-layout remediation; see the dated handoff for exact evidence and remaining work.
 - 2026-11-07: Added explicit SPI clock constants and a Diagnostics clock comparison pattern. The 80 MHz display setting exceeds the ST7789VW datasheet's 62.5 MHz serial-write limit; a human perfboard check is still required.
