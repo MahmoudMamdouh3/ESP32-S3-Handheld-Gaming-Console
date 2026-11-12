@@ -4,7 +4,9 @@ Analyzes C, C++, and INO firmware files to detect memory leaks, unaligned access
 missing compiler optimizations, IRAM/DRAM misplacements, line density metrics, and hot-path anti-patterns.
 """
 
+import os
 import re
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List
@@ -41,7 +43,7 @@ class FirmwareAstLinter:
         self.repo_root = firmware_dir.parents[1] if firmware_dir.name == "BmoGameboy" else firmware_dir
 
     EXCLUDED_TOP_DIRS = {
-        ".git", ".venv", "venv", "zig", "arduino-cli-bin", ".rom_cache",
+        ".git", ".tools", ".venv", "venv", "zig", "arduino-cli-bin", ".rom_cache",
         "games", "roms", "resources", "scratch", "build", "BMO asperite files", "test_compile"
     }
     EXCLUDED_ANY_DIRS = {"__pycache__", "legacy_headers", ".git"}
@@ -64,7 +66,15 @@ class FirmwareAstLinter:
         stats: List[FileLineStats] = []
         target_suffixes = {".c", ".cpp", ".h", ".hpp", ".ino", ".py", ".md", ".json", ".csv"}
 
-        for path in sorted(self.repo_root.rglob("*")):
+        tracked = subprocess.run(
+            ["git", "ls-files", "-z"],
+            cwd=self.repo_root,
+            check=True,
+            capture_output=True,
+        ).stdout
+        paths = (self.repo_root / os.fsdecode(item) for item in tracked.split(b"\0") if item)
+
+        for path in paths:
             if self._is_excluded(path) or not path.is_file():
                 continue
             suffix = path.suffix.lower()

@@ -130,10 +130,11 @@ def _find_c_compiler() -> Path:
     )
 
 
-def build_wasm_module() -> bytes:
-    """Compile and write the firmware-derived WebAssembly gameplay cores."""
+def build_wasm_module(output_path: Path | None = WASM_OUT_PATH) -> bytes:
+    """Compile the firmware-derived WebAssembly cores and optionally write the output."""
     compiler = _find_compiler()
-    WASM_OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if output_path is not None:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
     temp_root = REPO_ROOT / "build" / "wasm-tmp"
     temp_root.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="bmo-wasm-", dir=str(temp_root)) as temp_dir:
@@ -198,7 +199,8 @@ def build_wasm_module() -> bytes:
         wasm_bytes = temp_output.read_bytes()
         if not wasm_bytes.startswith(b"\0asm\x01\0\0\0"):
             raise RuntimeError("WASI compiler produced an invalid WebAssembly module")
-        WASM_OUT_PATH.write_bytes(wasm_bytes)
+        if output_path is not None:
+            output_path.write_bytes(wasm_bytes)
     return wasm_bytes
 
 

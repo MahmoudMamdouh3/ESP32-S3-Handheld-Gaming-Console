@@ -1,4 +1,4 @@
-# Section 04 — Known Issues and Audit Findings
+# Section 04 — Known Issues and Audit Findings (1/2)
 
 Source: [`04_known_issues.md`](../../.agents/rules/04_known_issues.md).
 
@@ -33,7 +33,7 @@ The active registry contains current constraints and findings. Historical logs a
 | F4 | IN_PROGRESS | Save staging and post-write verification cover saves, states, screenshots, and box art. Favorites/history/index migration and fault-injection matrices remain. |
 | F5 | IN_PROGRESS | Pause quit now handles failed battery saves with retry, resume, or explicit quit-anyway; the pure policy test passes. SaveManager failure injection remains. |
 | F6 | IN_PROGRESS | ADRs 0011–0014 record path key, save-state schema, partition layout, and SPI-clock decisions. Remaining ADR backfill and provenance/license review are open. |
-| F7 | IN_PROGRESS | The local CI workflow pins actions and tool versions and uses strict compile mode. No CI run has been observed yet. |
+| F7 | IN_PROGRESS | The local CI workflow pins actions and tool versions and uses strict compile mode. Clean-checkout compilation, host tests, validator, and UI checks pass remotely. The latest run failed only at generated-artifact drift: downloaded `.tools` files entered the index, bundled rules were stale, and the WASM test rewrote a checked-in binary. Follow-up fixes exclude toolchains, regenerate docs, and keep test builds temporary; remote rerun is pending. |
 | P1-08 | IN_PROGRESS | Firmware, simulator CSS, DESIGN, and SDD color values now agree and pass host/UI checks. Coral on deep teal still needs a human design decision; panel color remains unverified. |
 | P1-09 | IN_PROGRESS | `TFT_SPI_HZ=80 MHz`, `SD_SPI_HZ=25 MHz`, and a 40 MHz diagnostics comparison are in place; both firmware profiles compile. ST7789VW v1.0 lists a 16 ns serial write cycle (62.5 MHz), so the default 80 MHz setting remains a hardware timing risk. |
 | P1-10 | DEBUNKED | With monitoring disabled, `battery.cpp` returns 0 for voltage and percentage; the launcher shows USB/N/A and Diagnostics says the battery is not fitted. |
@@ -50,25 +50,17 @@ The active registry contains current constraints and findings. Historical logs a
 | P3-02 | OPEN | Per-core CPU conformance suite is pending. |
 | P3-03 | IN_PROGRESS | Guardian gained rule-size, banned-language, file-URI, unresolved Markdown-link, and large-local-array checks; duplicate symbol, flag, lock, and timeout analyzers remain. |
 | P3-04 | OPEN | On-device measurement kit is pending. |
-| P3-05 | IN_PROGRESS | Pinned GitHub Actions workflow and local strict validator exist. The knowledge index is deterministic and has a repeatability test; no remote CI result is claimed. |
+| P3-05 | IN_PROGRESS | Pinned GitHub Actions workflow and local strict validator exist. The latest remote run passed compile, host tests, strict validation, Guardian, Markdown, color, and UI steps, then failed generated-artifact drift. Stable index and temporary WASM output fixes are ready for rerun; no remote CI pass is claimed. |
 | P3-06 | OPEN | Simulator server security review is pending. |
 | P4-01 | OPEN | Emulator registry refactor is pending until earlier phases are green. |
 | P4-02 | OPEN | Browser firmware-UI spike has not started. |
 
 ## Changelog
 
+- 2026-11-12: Fixed clean-checkout blockers and addressed the first remote CI failures: track `rom_file_filter.h`, make ignored local ROM assets optional, skip absent gitignored `games/`, install pinned Pillow, normalize Windows path separators in the box-art test helper, and isolate the ASan probe from UBSan instrumentation. The clean-checkout compile, local test suite, and validator passed; remote rerun remains pending.
+- 2026-11-12: Addressed the next remote CI failure by excluding downloaded `.tools` SDK files from repository indexes, keeping compiled WASM test output in a temporary directory, and regenerating bounded rules artifacts. The latest remote run passed every step before generated-artifact drift; a rerun is pending.
 - 2026-11-07: Updated the active audit ledger and moved historical entries to bounded archive pages.
 - 2026-11-07: Added path-key, battery-save, PSRAM-budget, and index-layout remediation; see the dated handoff for exact evidence and remaining work.
 - 2026-11-07: Added explicit SPI clock constants and a Diagnostics clock comparison pattern. The 80 MHz display setting exceeds the ST7789VW datasheet's 62.5 MHz serial-write limit; a human perfboard check is still required.
 - 2026-11-07: Fresh 80 MHz and 40 MHz profile builds passed; strict repository validation, all 155 host tests, diff-audit, UI audit, color parity, and Markdown links passed. RAM usage is 253,728/327,680 B (77.4%) and requires on-device headroom measurements. See the remediation handoff for exact output and open items.
 - 2026-11-12: Recorded production-readiness blockers (tracked commercial ROMs, MIT vs GPL/vendor license gaps, unverified hardware, 80 MHz display clock risk, open audit items), user decisions (40 MHz default + NVS 80 MHz opt-in; isolated `fix/production-readiness` branch), `WS0` ASan/UBSan native test helper (`tests/host_test_support.py`), and `WS1`–`WS4` specifications blocked by subagent 429 quota exhaustion in `docs/handoffs/2026-11-12-production-readiness.md`.
-
-## Remaining work from the A1–F16 audit
-
-- Hardware-only: panel timing and color, PSRAM largest-block/headroom, save power-loss recovery, SD-card interoperability, stack high-water values, and all physical controls remain unverified. Do not flash during CI or claim `VERIFIED_HARDWARE`.
-- Display/mascot: expression-level culling pixel fractions, on-device frame costs, and a full native/WASM golden-image parity suite are not available.
-- Teardown/concurrency: audit every SPI lock/unlock path, finite wait, display queue timeout, and buffer lifetime; add fake backends and timeout/failure injection.
-- Runtime pacing: integrate region-aware frame targets and absolute 64-bit deadlines; capture real 600-frame p50/p95/p99 windows and add measured profiler zones.
-- ROM/index/save: implement FAT hidden-attribute handling, unsupported-name reporting, rescan progress/cancel, card identity/freshness checks, launch-time file validation, broader parser fuzzing, and atomic-write failure injection.
-- Save UX/schema: test `SaveManager` failure cases end-to-end, validate state schema compatibility and timestamps, and cover SNES HiROM/ExHiROM plus PCE BRAM provenance.
-- CI/release: observe a successful remote workflow before calling CI verified; complete ROM/vendor license provenance and clean-clone/tree hygiene review.
