@@ -208,8 +208,6 @@ EV_DoLockedDoor
     {
       case 99:	// Blue Lock
       case 133:
-	if ( !p )
-	    return 0;
 	if (!p->cards[it_bluecard] && !p->cards[it_blueskull])
 	{
 	    p->message = DEH_String(PD_BLUEO);

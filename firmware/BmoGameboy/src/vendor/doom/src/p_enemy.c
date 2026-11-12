@@ -361,7 +361,10 @@ void P_NewChaseDir (mobj_t*	actor)
     dirtype_t	turnaround;
 
     if (!actor->target)
+    {
 	I_Error ("P_NewChaseDir: called with no target");
+	return;
+    }
 		
     olddir = actor->movedir;
     turnaround=opposite[olddir];

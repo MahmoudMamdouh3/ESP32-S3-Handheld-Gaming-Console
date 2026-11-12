@@ -264,10 +264,10 @@ void I_InitGraphics (void)
 
 #endif  // CMAP256
 
-    printf("I_InitGraphics: framebuffer: x_res: %d, y_res: %d, x_virtual: %d, y_virtual: %d, bpp: %d\n",
+    printf("I_InitGraphics: framebuffer: x_res: %u, y_res: %u, x_virtual: %u, y_virtual: %u, bpp: %u\n",
             s_Fb.xres, s_Fb.yres, s_Fb.xres_virtual, s_Fb.yres_virtual, s_Fb.bits_per_pixel);
 
-    printf("I_InitGraphics: framebuffer: RGBA: %d%d%d%d, red_off: %d, green_off: %d, blue_off: %d, transp_off: %d\n",
+    printf("I_InitGraphics: framebuffer: RGBA: %u%u%u%u, red_off: %u, green_off: %u, blue_off: %u, transp_off: %u\n",
             s_Fb.red.length, s_Fb.green.length, s_Fb.blue.length, s_Fb.transp.length, s_Fb.red.offset, s_Fb.green.offset, s_Fb.blue.offset, s_Fb.transp.offset);
 
     printf("I_InitGraphics: DOOM screen size: w x h: %d x %d\n", SCREENWIDTH, SCREENHEIGHT);

@@ -492,7 +492,7 @@
     "04_known_issues.md": {
       "file": ".agents/rules/04_known_issues.md",
       "title": "Known Issues and Audit Findings",
-      "lines": 78
+      "lines": 79
     },
     "05_git_workflow.md": {
       "file": ".agents/rules/05_git_workflow.md",
@@ -4670,19 +4670,19 @@
     },
     "IdentifyIWADByName": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/d_iwad.c",
-      "line": 475,
+      "line": 481,
       "signature": "static GameMission_t IdentifyIWADByName(char *name, int mask)",
       "is_iram": false
     },
     "AddDoomWadPath": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/d_iwad.c",
-      "line": 516,
+      "line": 522,
       "signature": "static void AddDoomWadPath(void)",
       "is_iram": false
     },
     "BuildIWADDirList": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/d_iwad.c",
-      "line": 567,
+      "line": 573,
       "signature": "static void BuildIWADDirList(void)",
       "is_iram": false
     },
@@ -5012,19 +5012,19 @@
     },
     "F_StartCast": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/f_finale.c",
-      "line": 340,
+      "line": 342,
       "signature": "void F_StartCast (void)",
       "is_iram": false
     },
     "F_CastTicker": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/f_finale.c",
-      "line": 358,
+      "line": 360,
       "signature": "void F_CastTicker (void)",
       "is_iram": false
     },
     "F_CastDrawer": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/f_finale.c",
-      "line": 541,
+      "line": 543,
       "signature": "void F_CastDrawer (void)",
       "is_iram": false
     },
@@ -5042,25 +5042,25 @@
     },
     "F_TextWrite": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/f_finale.c",
-      "line": 227,
+      "line": 229,
       "signature": "void F_TextWrite (void)",
       "is_iram": false
     },
     "F_CastPrint": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/f_finale.c",
-      "line": 486,
+      "line": 488,
       "signature": "void F_CastPrint (char* text)",
       "is_iram": false
     },
     "F_BunnyScroll": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/f_finale.c",
-      "line": 606,
+      "line": 619,
       "signature": "void F_BunnyScroll (void)",
       "is_iram": false
     },
     "F_ArtScreenDrawer": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/f_finale.c",
-      "line": 661,
+      "line": 674,
       "signature": "static void F_ArtScreenDrawer(void)",
       "is_iram": false
     },
@@ -5186,7 +5186,7 @@
     },
     "P_SpawnPlayer": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_mobj.c",
-      "line": 676,
+      "line": 677,
       "signature": "void P_SpawnPlayer (mapthing_t* mthing)",
       "is_iram": false
     },
@@ -6152,307 +6152,307 @@
     },
     "A_Explode": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1594,
+      "line": 1597,
       "signature": "void A_Explode (mobj_t* thingy)",
       "is_iram": false
     },
     "A_Pain": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1573,
+      "line": 1576,
       "signature": "void A_Pain (mobj_t* actor)",
       "is_iram": false
     },
     "A_PlayerScream": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1992,
+      "line": 1995,
       "signature": "void A_PlayerScream (mobj_t* mo)",
       "is_iram": false
     },
     "A_Fall": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1581,
+      "line": 1584,
       "signature": "void A_Fall (mobj_t *actor)",
       "is_iram": false
     },
     "A_XScream": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1568,
+      "line": 1571,
       "signature": "void A_XScream (mobj_t* actor)",
       "is_iram": false
     },
     "A_Look": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 589,
+      "line": 592,
       "signature": "void A_Look (mobj_t* actor)",
       "is_iram": false
     },
     "A_Chase": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 657,
+      "line": 660,
       "signature": "void A_Chase (mobj_t*\tactor)",
       "is_iram": false
     },
     "A_FaceTarget": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 767,
+      "line": 770,
       "signature": "void A_FaceTarget (mobj_t* actor)",
       "is_iram": false
     },
     "A_PosAttack": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 787,
+      "line": 790,
       "signature": "void A_PosAttack (mobj_t* actor)",
       "is_iram": false
     },
     "A_Scream": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1531,
+      "line": 1534,
       "signature": "void A_Scream (mobj_t* actor)",
       "is_iram": false
     },
     "A_SPosAttack": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 806,
+      "line": 809,
       "signature": "void A_SPosAttack (mobj_t* actor)",
       "is_iram": false
     },
     "A_VileChase": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1152,
+      "line": 1155,
       "signature": "void A_VileChase (mobj_t* actor)",
       "is_iram": false
     },
     "A_VileStart": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1218,
+      "line": 1221,
       "signature": "void A_VileStart (mobj_t* actor)",
       "is_iram": false
     },
     "A_VileTarget": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1273,
+      "line": 1276,
       "signature": "void A_VileTarget (mobj_t*\tactor)",
       "is_iram": false
     },
     "A_VileAttack": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1298,
+      "line": 1301,
       "signature": "void A_VileAttack (mobj_t* actor)",
       "is_iram": false
     },
     "A_StartFire": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1230,
+      "line": 1233,
       "signature": "void A_StartFire (mobj_t* actor)",
       "is_iram": false
     },
     "A_Fire": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1242,
+      "line": 1245,
       "signature": "void A_Fire (mobj_t* actor)",
       "is_iram": false
     },
     "A_FireCrackle": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1236,
+      "line": 1239,
       "signature": "void A_FireCrackle (mobj_t* actor)",
       "is_iram": false
     },
     "A_Tracer": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1006,
+      "line": 1009,
       "signature": "void A_Tracer (mobj_t* actor)",
       "is_iram": false
     },
     "A_SkelWhoosh": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1078,
+      "line": 1081,
       "signature": "void A_SkelWhoosh (mobj_t*\tactor)",
       "is_iram": false
     },
     "A_SkelFist": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1086,
+      "line": 1089,
       "signature": "void A_SkelFist (mobj_t*\tactor)",
       "is_iram": false
     },
     "A_SkelMissile": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 987,
+      "line": 990,
       "signature": "void A_SkelMissile (mobj_t* actor)",
       "is_iram": false
     },
     "A_FatRaise": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1339,
+      "line": 1342,
       "signature": "void A_FatRaise (mobj_t *actor)",
       "is_iram": false
     },
     "A_FatAttack1": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1346,
+      "line": 1349,
       "signature": "void A_FatAttack1 (mobj_t* actor)",
       "is_iram": false
     },
     "A_FatAttack2": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1366,
+      "line": 1369,
       "signature": "void A_FatAttack2 (mobj_t* actor)",
       "is_iram": false
     },
     "A_FatAttack3": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1385,
+      "line": 1388,
       "signature": "void A_FatAttack3 (mobj_t*\tactor)",
       "is_iram": false
     },
     "A_BossDeath": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1656,
+      "line": 1659,
       "signature": "void A_BossDeath (mobj_t* mo)",
       "is_iram": false
     },
     "A_CPosAttack": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 830,
+      "line": 833,
       "signature": "void A_CPosAttack (mobj_t* actor)",
       "is_iram": false
     },
     "A_CPosRefire": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 850,
+      "line": 853,
       "signature": "void A_CPosRefire (mobj_t* actor)",
       "is_iram": false
     },
     "A_TroopAttack": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 898,
+      "line": 901,
       "signature": "void A_TroopAttack (mobj_t* actor)",
       "is_iram": false
     },
     "A_SargAttack": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 920,
+      "line": 923,
       "signature": "void A_SargAttack (mobj_t* actor)",
       "is_iram": false
     },
     "A_HeadAttack": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 935,
+      "line": 938,
       "signature": "void A_HeadAttack (mobj_t* actor)",
       "is_iram": false
     },
     "A_BruisAttack": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 964,
+      "line": 967,
       "signature": "void A_BruisAttack (mobj_t* actor)",
       "is_iram": false
     },
     "A_SkullAttack": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1415,
+      "line": 1418,
       "signature": "void A_SkullAttack (mobj_t* actor)",
       "is_iram": false
     },
     "A_Metal": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1763,
+      "line": 1766,
       "signature": "void A_Metal (mobj_t* mo)",
       "is_iram": false
     },
     "A_SpidRefire": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 867,
+      "line": 870,
       "signature": "void A_SpidRefire (mobj_t* actor)",
       "is_iram": false
     },
     "A_BabyMetal": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1769,
+      "line": 1772,
       "signature": "void A_BabyMetal (mobj_t* mo)",
       "is_iram": false
     },
     "A_BspiAttack": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 883,
+      "line": 886,
       "signature": "void A_BspiAttack (mobj_t *actor)",
       "is_iram": false
     },
     "A_Hoof": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1757,
+      "line": 1760,
       "signature": "void A_Hoof (mobj_t* mo)",
       "is_iram": false
     },
     "A_CyberAttack": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 954,
+      "line": 957,
       "signature": "void A_CyberAttack (mobj_t* actor)",
       "is_iram": false
     },
     "A_PainAttack": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1508,
+      "line": 1511,
       "signature": "void A_PainAttack (mobj_t* actor)",
       "is_iram": false
     },
     "A_PainDie": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1518,
+      "line": 1521,
       "signature": "void A_PainDie (mobj_t* actor)",
       "is_iram": false
     },
     "A_KeenDie": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 551,
+      "line": 554,
       "signature": "void A_KeenDie (mobj_t* mo)",
       "is_iram": false
     },
     "A_BrainPain": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1841,
+      "line": 1844,
       "signature": "void A_BrainPain (mobj_t*\tmo)",
       "is_iram": false
     },
     "A_BrainScream": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1847,
+      "line": 1850,
       "signature": "void A_BrainScream (mobj_t*\tmo)",
       "is_iram": false
     },
     "A_BrainDie": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1894,
+      "line": 1897,
       "signature": "void A_BrainDie (mobj_t*\tmo)",
       "is_iram": false
     },
     "A_BrainAwake": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1811,
+      "line": 1814,
       "signature": "void A_BrainAwake (mobj_t* mo)",
       "is_iram": false
     },
     "A_BrainSpit": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1899,
+      "line": 1902,
       "signature": "void A_BrainSpit (mobj_t*\tmo)",
       "is_iram": false
     },
     "A_SpawnSound": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1928,
+      "line": 1931,
       "signature": "void A_SpawnSound (mobj_t* mo)",
       "is_iram": false
     },
     "A_SpawnFly": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1934,
+      "line": 1937,
       "signature": "void A_SpawnFly (mobj_t* mo)",
       "is_iram": false
     },
     "A_BrainExplode": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
-      "line": 1873,
+      "line": 1876,
       "signature": "void A_BrainExplode (mobj_t* mo)",
       "is_iram": false
     },
@@ -6494,13 +6494,13 @@
     },
     "SetVariable": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/m_config.c",
-      "line": 1728,
+      "line": 1736,
       "signature": "static void SetVariable(default_t *def, char *value)",
       "is_iram": false
     },
     "LoadDefaultCollection": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/m_config.c",
-      "line": 1771,
+      "line": 1779,
       "signature": "static void LoadDefaultCollection(default_collection_t *collection)",
       "is_iram": false
     },
@@ -7232,13 +7232,13 @@
     },
     "P_FindSlidingDoorType": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_doors.c",
-      "line": 624,
+      "line": 622,
       "signature": "int P_FindSlidingDoorType(line_t*\tline)",
       "is_iram": false
     },
     "T_SlidingDoor": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_doors.c",
-      "line": 639,
+      "line": 637,
       "signature": "void T_SlidingDoor (slidedoor_t*\tdoor)",
       "is_iram": false
     },
@@ -7352,13 +7352,13 @@
     },
     "P_RespawnSpecials": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_mobj.c",
-      "line": 604,
+      "line": 605,
       "signature": "void P_RespawnSpecials (void)",
       "is_iram": false
     },
     "P_RemoveMobj": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_mobj.c",
-      "line": 572,
+      "line": 573,
       "signature": "void P_RemoveMobj (mobj_t* mobj)",
       "is_iram": false
     },
@@ -7370,7 +7370,7 @@
     },
     "P_MobjThinker": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_mobj.c",
-      "line": 441,
+      "line": 442,
       "signature": "void P_MobjThinker (mobj_t* mobj)",
       "is_iram": false
     },
@@ -7520,7 +7520,7 @@
     },
     "P_CheckMissileSpawn": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/p_mobj.c",
-      "line": 919,
+      "line": 920,
       "signature": "void P_CheckMissileSpawn (mobj_t* th)",
       "is_iram": false
     },
@@ -8324,7 +8324,7 @@
     },
     "R_ProjectSprite": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/r_things.c",
-      "line": 444,
+      "line": 447,
       "signature": "void R_ProjectSprite (mobj_t* thing)",
       "is_iram": false
     },
@@ -8336,13 +8336,13 @@
     },
     "R_DrawPSprite": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/r_things.c",
-      "line": 638,
+      "line": 641,
       "signature": "void R_DrawPSprite (pspdef_t* psp)",
       "is_iram": false
     },
     "R_DrawPlayerSprites": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/r_things.c",
-      "line": 738,
+      "line": 741,
       "signature": "void R_DrawPlayerSprites (void)",
       "is_iram": false
     },
@@ -8354,7 +8354,7 @@
     },
     "R_DrawSprite": {
       "file": "firmware/BmoGameboy/src/vendor/doom/src/r_things.c",
-      "line": 837,
+      "line": 840,
       "signature": "void R_DrawSprite (vissprite_t* spr)",
       "is_iram": false
     },
@@ -10226,11 +10226,11 @@
     ".agents/rules/04_known_issues.md": {
       "path": ".agents/rules/04_known_issues.md",
       "category": "AGENT_RULES",
-      "total_lines": 78,
-      "sloc": 69,
+      "total_lines": 79,
+      "sloc": 70,
       "comments": 0,
       "blanks": 9,
-      "density_percent": 88.5,
+      "density_percent": 88.6,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
@@ -10793,11 +10793,11 @@
     "CHANGELOG.md": {
       "path": "CHANGELOG.md",
       "category": "OTHER",
-      "total_lines": 81,
-      "sloc": 65,
+      "total_lines": 82,
+      "sloc": 66,
       "comments": 0,
       "blanks": 16,
-      "density_percent": 80.2,
+      "density_percent": 80.5,
       "symbols": [],
       "pins_accessed": [
         "TFT_SPI_HZ",
@@ -11293,11 +11293,11 @@
     "docs/consolidated-rules/rule-04_known_issues-01.md": {
       "path": "docs/consolidated-rules/rule-04_known_issues-01.md",
       "category": "DOCUMENTATION",
-      "total_lines": 72,
-      "sloc": 63,
+      "total_lines": 73,
+      "sloc": 64,
       "comments": 0,
       "blanks": 9,
-      "density_percent": 87.5,
+      "density_percent": 87.7,
       "symbols": [],
       "pins_accessed": [
         "FEATURE_BATTERY_MONITOR",
@@ -12261,11 +12261,11 @@
     "docs/handoffs/2026-11-12-logical-performance-audit.md": {
       "path": "docs/handoffs/2026-11-12-logical-performance-audit.md",
       "category": "DOCUMENTATION",
-      "total_lines": 37,
-      "sloc": 27,
+      "total_lines": 41,
+      "sloc": 31,
       "comments": 0,
       "blanks": 10,
-      "density_percent": 73.0,
+      "density_percent": 75.6,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -12367,11 +12367,11 @@
     "docs/performance_report.md": {
       "path": "docs/performance_report.md",
       "category": "DOCUMENTATION",
-      "total_lines": 760,
-      "sloc": 735,
+      "total_lines": 720,
+      "sloc": 695,
       "comments": 0,
       "blanks": 25,
-      "density_percent": 96.7,
+      "density_percent": 96.5,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -15069,11 +15069,11 @@
     "firmware/BmoGameboy/src/vendor/doom/src/d_iwad.c": {
       "path": "firmware/BmoGameboy/src/vendor/doom/src/d_iwad.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 851,
-      "sloc": 512,
+      "total_lines": 858,
+      "sloc": 519,
       "comments": 133,
       "blanks": 206,
-      "density_percent": 60.2,
+      "density_percent": 60.5,
       "symbols": [
         "AddIWADDir",
         "CheckUninstallStrings",
@@ -15680,11 +15680,11 @@
     "firmware/BmoGameboy/src/vendor/doom/src/f_finale.c": {
       "path": "firmware/BmoGameboy/src/vendor/doom/src/f_finale.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 718,
-      "sloc": 528,
+      "total_lines": 730,
+      "sloc": 540,
       "comments": 77,
       "blanks": 113,
-      "density_percent": 73.5,
+      "density_percent": 74.0,
       "symbols": [
         "F_StartCast",
         "F_CastTicker",
@@ -15704,6 +15704,8 @@
       "includes": [
         "stdio.h",
         "ctype.h",
+        "stddef.h",
+        "string.h",
         "deh_main.h",
         "i_system.h",
         "i_swap.h",
@@ -15714,9 +15716,7 @@
         "d_main.h",
         "dstrings.h",
         "sounds.h",
-        "doomstat.h",
-        "r_state.h",
-        "hu_stuff.h"
+        "doomstat.h"
       ]
     },
     "firmware/BmoGameboy/src/vendor/doom/src/f_finale.h": {
@@ -15858,11 +15858,11 @@
     "firmware/BmoGameboy/src/vendor/doom/src/gusconf.c": {
       "path": "firmware/BmoGameboy/src/vendor/doom/src/gusconf.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 271,
+      "total_lines": 270,
       "sloc": 190,
       "comments": 24,
-      "blanks": 57,
-      "density_percent": 70.1,
+      "blanks": 56,
+      "density_percent": 70.4,
       "symbols": [
         "SplitLine",
         "ParseLine",
@@ -16697,11 +16697,11 @@
     "firmware/BmoGameboy/src/vendor/doom/src/m_config.c": {
       "path": "firmware/BmoGameboy/src/vendor/doom/src/m_config.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 2129,
-      "sloc": 616,
+      "total_lines": 2137,
+      "sloc": 625,
       "comments": 948,
-      "blanks": 565,
-      "density_percent": 28.9,
+      "blanks": 564,
+      "density_percent": 29.2,
       "symbols": [
         "SaveDefaultCollection",
         "ParseIntParameter",
@@ -16912,11 +16912,11 @@
     "firmware/BmoGameboy/src/vendor/doom/src/m_misc.c": {
       "path": "firmware/BmoGameboy/src/vendor/doom/src/m_misc.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 551,
-      "sloc": 349,
-      "comments": 87,
+      "total_lines": 599,
+      "sloc": 399,
+      "comments": 85,
       "blanks": 115,
-      "density_percent": 63.3,
+      "density_percent": 66.6,
       "symbols": [
         "M_MakeDirectory",
         "M_ReadFile",
@@ -16932,6 +16932,7 @@
         "string.h",
         "ctype.h",
         "errno.h",
+        "limits.h",
         "windows.h",
         "io.h",
         "direct.h",
@@ -16940,8 +16941,7 @@
         "doomtype.h",
         "deh_str.h",
         "i_swap.h",
-        "i_system.h",
-        "i_video.h"
+        "i_system.h"
       ]
     },
     "firmware/BmoGameboy/src/vendor/doom/src/m_misc.h": {
@@ -17004,11 +17004,11 @@
     "firmware/BmoGameboy/src/vendor/doom/src/memio.c": {
       "path": "firmware/BmoGameboy/src/vendor/doom/src/memio.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 197,
-      "sloc": 122,
+      "total_lines": 210,
+      "sloc": 136,
       "comments": 27,
-      "blanks": 48,
-      "density_percent": 61.9,
+      "blanks": 47,
+      "density_percent": 64.8,
       "symbols": [
         "mem_fread",
         "mem_fwrite",
@@ -17020,6 +17020,8 @@
       "includes": [
         "stdio.h",
         "stdlib.h",
+        "stdint.h",
+        "limits.h",
         "string.h",
         "memio.h",
         "z_zone.h"
@@ -17281,11 +17283,11 @@
     "firmware/BmoGameboy/src/vendor/doom/src/p_doors.c": {
       "path": "firmware/BmoGameboy/src/vendor/doom/src/p_doors.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 778,
-      "sloc": 571,
+      "total_lines": 776,
+      "sloc": 569,
       "comments": 83,
       "blanks": 124,
-      "density_percent": 73.4,
+      "density_percent": 73.3,
       "symbols": [
         "T_VerticalDoor",
         "P_SpawnDoorCloseIn30",
@@ -17309,11 +17311,11 @@
     "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c": {
       "path": "firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 2006,
-      "sloc": 1341,
+      "total_lines": 2009,
+      "sloc": 1344,
       "comments": 238,
       "blanks": 427,
-      "density_percent": 66.8,
+      "density_percent": 66.9,
       "symbols": [
         "A_Fall",
         "P_NewChaseDir",
@@ -17535,11 +17537,11 @@
     "firmware/BmoGameboy/src/vendor/doom/src/p_mobj.c": {
       "path": "firmware/BmoGameboy/src/vendor/doom/src/p_mobj.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 1060,
-      "sloc": 663,
+      "total_lines": 1061,
+      "sloc": 664,
       "comments": 186,
       "blanks": 211,
-      "density_percent": 62.5,
+      "density_percent": 62.6,
       "symbols": [
         "G_PlayerReborn",
         "P_SpawnMapThing",
@@ -17669,10 +17671,10 @@
     "firmware/BmoGameboy/src/vendor/doom/src/p_saveg.c": {
       "path": "firmware/BmoGameboy/src/vendor/doom/src/p_saveg.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 1891,
+      "total_lines": 1890,
       "sloc": 975,
       "comments": 435,
-      "blanks": 481,
+      "blanks": 480,
       "density_percent": 51.6,
       "symbols": [
         "saveg_write8",
@@ -17740,11 +17742,11 @@
     "firmware/BmoGameboy/src/vendor/doom/src/p_setup.c": {
       "path": "firmware/BmoGameboy/src/vendor/doom/src/p_setup.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 855,
+      "total_lines": 854,
       "sloc": 547,
       "comments": 134,
-      "blanks": 174,
-      "density_percent": 64.0,
+      "blanks": 173,
+      "density_percent": 64.1,
       "symbols": [
         "P_SpawnMapThing",
         "P_LoadVertexes",
@@ -18367,11 +18369,11 @@
     "firmware/BmoGameboy/src/vendor/doom/src/r_things.c": {
       "path": "firmware/BmoGameboy/src/vendor/doom/src/r_things.c",
       "category": "VENDOR_ENGINES",
-      "total_lines": 982,
-      "sloc": 605,
+      "total_lines": 984,
+      "sloc": 608,
       "comments": 171,
-      "blanks": 206,
-      "density_percent": 61.6,
+      "blanks": 205,
+      "density_percent": 61.8,
       "symbols": [
         "R_InitSpriteDefs",
         "R_InitSprites",
@@ -21234,11 +21236,11 @@
     "tools/guardian/core/cppcheck_runner.py": {
       "path": "tools/guardian/core/cppcheck_runner.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 121,
-      "sloc": 99,
+      "total_lines": 128,
+      "sloc": 105,
       "comments": 6,
-      "blanks": 16,
-      "density_percent": 81.8,
+      "blanks": 17,
+      "density_percent": 82.0,
       "symbols": [],
       "pins_accessed": [],
       "includes": []
@@ -21387,11 +21389,11 @@
     "tools/guardian/tests/test_guardian.py": {
       "path": "tools/guardian/tests/test_guardian.py",
       "category": "GUARDIAN_TOOLCHAIN",
-      "total_lines": 469,
-      "sloc": 383,
+      "total_lines": 482,
+      "sloc": 395,
       "comments": 27,
-      "blanks": 59,
-      "density_percent": 81.7,
+      "blanks": 60,
+      "density_percent": 82.0,
       "symbols": [],
       "pins_accessed": [
         "TFT_CS"

@@ -48,7 +48,7 @@ Current constraints and findings are listed here. See the [archive](../../docs/a
 | P3-03 | IN_PROGRESS | Guardian gained rule-size, banned-language, file-URI, unresolved Markdown-link, and large-local-array checks; duplicate symbol, flag, lock, and timeout analyzers remain. |
 | P3-04 | OPEN | On-device measurement kit is pending. |
 | P3-05 | VERIFIED_HOST | GitHub Actions run `43238623840` passed generated-artifact checks. Live ELF values remain excluded from indexes; hardware is unverified. |
-| P3-07 | IN_PROGRESS | Fixed null-mutex, scan sorting lock hold, DMA/memory-report claims, and invalid DOOM ammo indexing. Cppcheck: 0 errors, 43 vendor warnings remain; recursive SD traversal/index I/O still serialize with display. |
+| P3-07 | IN_PROGRESS | Fixed null-mutex, scan sorting lock hold, DMA/memory-report claims, invalid DOOM ammo indexing, and the remaining vendor Cppcheck findings. Cppcheck now reports 0 findings; recursive SD traversal/index I/O still serialize with display and need device timing before further lock changes. |
 | P3-06 | OPEN | Simulator server security review is pending. |
 | P4-01 | OPEN | Emulator registry refactor is pending until earlier phases are green. |
 | P4-02 | OPEN | Browser firmware-UI spike has not started. |
@@ -58,7 +58,8 @@ Current constraints and findings are listed here. See the [archive](../../docs/a
 - 2026-11-12: Fixed clean-checkout issues in ROM filters/assets, Pillow, Windows paths, and sanitizer probing; local compile, tests, and validator passed.
 - 2026-11-12: Excluded `.tools` SDK files from indexes, isolated WASM test output, and regenerated bounded rules; fixed later generated-artifact drift.
 - 2026-11-12: `ElfAnalyzer` now discovers Arduino CLI data; indexes omit live ELF values. GitHub Actions run `43238623840` passed all steps; hardware remains unverified.
-- 2026-11-12: Audited and fixed bus-lock fail-open behavior, scan lock duration, DMA reporting, and invalid DOOM ammo indexing. Validator/target compile, 190 Guardian tests, diff-audit, and Cppcheck (0 errors) passed; 43 vendor warnings remain. See the [audit handoff](../../docs/handoffs/2026-11-12-logical-performance-audit.md); hardware remains untested.
+- 2026-11-12: The initial audit fixed bus-lock fail-open behavior, scan lock duration, DMA reporting, and invalid DOOM ammo indexing; its Cppcheck pass had 43 vendor findings remaining. See the [audit handoff](../../docs/handoffs/2026-11-12-logical-performance-audit.md) for the subsequent remediation; hardware remains untested.
+- 2026-11-12: Fixed all 43 remaining vendor Cppcheck findings, including fatal-error fallthroughs, allocation handling, format/varargs mismatches, patch-column bounds, signed shifts, and memory-file seeks. Cppcheck reports 0 findings; hardware-only SD/display timing remains open.
 - 2026-11-07: Updated the active audit ledger and moved historical entries to bounded archive pages.
 - 2026-11-07: Added path-key, battery-save, PSRAM-budget, and index-layout remediation; see the dated handoff for exact evidence and remaining work.
 - 2026-11-07: Added explicit SPI clock constants and a Diagnostics clock comparison pattern. The 80 MHz display setting exceeds the ST7789VW datasheet's 62.5 MHz serial-write limit; a human perfboard check is still required.
