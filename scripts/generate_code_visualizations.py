@@ -64,7 +64,7 @@ def get_category_color(category: str) -> str:
 def scan_codebase():
     files = []
     includes = []
-    
+
     fw_dir = REPO_ROOT / "firmware" / "BmoGameboy"
     tools_dir = REPO_ROOT / "tools"
     scripts_dir = REPO_ROOT / "scripts"
@@ -82,7 +82,7 @@ def scan_codebase():
                 continue
             if any(part in {".git", ".venv", "venv", "build", "__pycache__"} for part in p.parts):
                 continue
-            
+
             rel = str(p.relative_to(REPO_ROOT)).replace("\\", "/")
             try:
                 content = p.read_text(encoding="utf-8", errors="ignore")
@@ -1107,7 +1107,7 @@ def generate_codecharta_artifacts(files):
                     existing = {"name": part, "type": "Folder", "attributes": {}, "children": []}
                     curr["children"].append(existing)
                 curr = existing
-            
+
             curr["children"].append({
                 "name": parts[-1],
                 "type": "File",
@@ -1559,4 +1559,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

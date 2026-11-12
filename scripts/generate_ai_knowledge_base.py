@@ -16,10 +16,9 @@ if str(REPO_ROOT) not in sys.path:
 FIRMWARE_DIR = REPO_ROOT / "firmware" / "BmoGameboy"
 RULES_DIR = REPO_ROOT / ".agents" / "rules"
 
-# Import Guardian Core for ground-truth telemetry
+# Import Guardian Core for stable source and bus metadata
 from tools.guardian.core.ast_linter import FirmwareAstLinter
 from tools.guardian.core.bus_model import HardwareBusModel
-from tools.guardian.core.elf_analyzer import ElfAnalyzer
 
 
 def parse_config_h(config_path: Path) -> Dict[str, int]:
@@ -51,7 +50,7 @@ def build_knowledge_base():
     print("=" * 70)
 
     # 1. Gather Ground-Truth Telemetry from Guardian
-    print("\n[1/5] Gathering stable bus, ELF, and source metrics...")
+    print("\n[1/5] Gathering stable bus and source metrics...")
     bus_model = HardwareBusModel()
     bus_metrics = bus_model.calculate_all()
 
@@ -65,9 +64,6 @@ def build_knowledge_base():
         ".agents/rules/CONTEXT_INDEX.json",
     }
     file_stats = [fs for fs in file_stats if fs.rel_path not in generated_index_paths]
-
-    elf_analyzer = ElfAnalyzer(REPO_ROOT)
-    elf_res = elf_analyzer.analyze()
 
     # 2. Extract AST Symbols & Hardware Pin Accesses from Files
     print(f"\n[2/5] Parsing Symbols & AST Signatures across {len(file_stats)} files...")
@@ -202,16 +198,17 @@ def build_knowledge_base():
 
     # 5. Build Knowledge Graph Data Structure (Hardware Pins Sourced Directly From config.h)
     knowledge_graph = {
-        "schema_version": "2.3.0",
+        "schema_version": "2.4.0",
         "target_mcu": {
             "chip": "ESP32-S3-N16R8",
             "cpu_arch": "Xtensa dual-core 32-bit LX7 @ 240MHz",
             "flash": "16MB Quad SPI (QIO 80MHz)",
             "psram": "8MB Octal SPI (OPI 80MHz)",
             "internal_sram_dram_bytes": 327680,
-            "iram_used_bytes": elf_res.iram_used_bytes,
-            "dram_used_bytes": elf_res.dram_used_bytes,
-            "flash_used_bytes": elf_res.flash_used_bytes,
+            "iram_used_bytes": None,
+            "dram_used_bytes": None,
+            "flash_used_bytes": None,
+            "memory_budget_report_command": "python -m tools.guardian budget --elf <target-elf>",
         },
         "hard_stops": [
             {"id": "HARD_STOP_1", "rule": "Never read GPIO1 or set FEATURE_BATTERY_MONITOR != 0 (no divider soldered, prevents bootloop)."},
@@ -390,16 +387,17 @@ def build_knowledge_base():
         {"name": "ColecoVision", "wrapper": "src/emulators/emu_colem.cpp", "engine_status": detect_engine_status("src/vendor/colem/colem.c"), "extensions": [".col", ".sg"]},
     ]
     manifest_data = {
-        "manifest_version": "2.2.0",
+        "manifest_version": "2.3.0",
         "total_files": len(file_stats),
         "total_lines": sum(f.total_lines for f in file_stats),
         "total_sloc": sum(f.sloc for f in file_stats),
         "target_mcu": "ESP32-S3-N16R8 (16MB Flash, 8MB PSRAM)",
         "active_consoles": 15,
         "rules_count": len(rules_index),
-        "iram_budget_used_bytes": elf_res.iram_used_bytes,
-        "flash_budget_used_bytes": elf_res.flash_used_bytes,
-        "dram_budget_used_bytes": elf_res.dram_used_bytes,
+        "iram_budget_used_bytes": None,
+        "flash_budget_used_bytes": None,
+        "dram_budget_used_bytes": None,
+        "memory_budget_report_command": "python -m tools.guardian budget --elf <target-elf>",
         "emulators": emulators_list,
         "platforms": platform_matrix,
     }
