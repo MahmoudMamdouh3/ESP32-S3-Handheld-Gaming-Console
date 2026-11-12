@@ -282040,11 +282040,11 @@
     "CHANGELOG.md": {
       "path": "CHANGELOG.md",
       "category": "OTHER",
-      "total_lines": 45,
-      "sloc": 36,
+      "total_lines": 48,
+      "sloc": 39,
       "comments": 0,
       "blanks": 9,
-      "density_percent": 80.0,
+      "density_percent": 81.2,
       "symbols": [],
       "pins_accessed": [
         "TFT_SPI_HZ",
@@ -283469,11 +283469,11 @@
     "docs/handoffs/2026-11-12-production-readiness.md": {
       "path": "docs/handoffs/2026-11-12-production-readiness.md",
       "category": "DOCUMENTATION",
-      "total_lines": 146,
-      "sloc": 116,
+      "total_lines": 147,
+      "sloc": 117,
       "comments": 0,
       "blanks": 30,
-      "density_percent": 79.5,
+      "density_percent": 79.6,
       "symbols": [],
       "pins_accessed": [
         "TFT_SPI_HZ",
@@ -291699,11 +291699,11 @@
     "tests/test_host_test_support.py": {
       "path": "tests/test_host_test_support.py",
       "category": "TESTS",
-      "total_lines": 40,
-      "sloc": 34,
+      "total_lines": 45,
+      "sloc": 39,
       "comments": 0,
       "blanks": 6,
-      "density_percent": 85.0,
+      "density_percent": 86.7,
       "symbols": [],
       "pins_accessed": [],
       "includes": []

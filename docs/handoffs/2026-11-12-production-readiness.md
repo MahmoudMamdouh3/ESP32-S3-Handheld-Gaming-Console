@@ -142,5 +142,6 @@ Planned scope and requirements (`E1`, `P3-02`, host side of `P3-04`):
 - Made the ignored, local-only `virtual_bmo.h` an optional include and omitted its catalog entry when unavailable; no ROM assets or policy were changed.
 - Made the ignored `rom_data.h` test fixture optional, skipping only the fixture-dependent ROM integrity test when it is absent.
 - Changed the installed-game integrity test to skip with an explicit reason when the gitignored `games/` directory is absent.
-- Clean-checkout unit checks passed (7 tests, 1 intentional skip) and compile passed (`Sketch uses 5192960 bytes`). The full suite passed (`Ran 182 tests in 63.405s`, `OK`), and `python scripts/validate_repo.py` passed all nine phases in 184897 ms (5,774,632 / 16,777,216 bytes flash; 253,728 / 327,680 bytes SRAM).
-- Remote GitHub Actions and physical hardware verification are not claimed; WS1–WS4 and licensing/provenance findings remain unresolved.
+- Clean-checkout unit checks passed (7 tests, 1 intentional skip) and compile passed (`Sketch uses 5192960 bytes`). The full suite passed (`Ran 158 tests in 50.313s`, `OK`), and `python scripts/validate_repo.py` passed all nine phases in 184897 ms (5,774,632 / 16,777,216 bytes flash; 253,728 / 327,680 bytes SRAM).
+- The first pushed GitHub Actions run failed in host tests due to missing Pillow, POSIX-only path parsing in the box-art test helper, and UBSan firing before the sanitizer probe could confirm ASan. CI now installs pinned Pillow, the helper normalizes both separators, and the probe suppresses UBSan only at its deliberate out-of-bounds write. Targeted Windows tests pass; the remote rerun is pending.
+- Physical hardware verification, WS1–WS4, and licensing/provenance findings remain unresolved.
