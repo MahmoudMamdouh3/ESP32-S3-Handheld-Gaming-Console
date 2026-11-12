@@ -49,6 +49,7 @@ rom_data*.h
 
 rom_*.h
 !firmware/BmoGameboy/src/core/rom_index.h
+!firmware/BmoGameboy/src/core/rom_file_filter.h
 cover_*.h
 
 tools/zig/
@@ -62,4 +63,3 @@ tools/bmo_simulator/covers/
 # Virtual SD card content & large external audio files
 sdcard/
 resources/audio/
-
