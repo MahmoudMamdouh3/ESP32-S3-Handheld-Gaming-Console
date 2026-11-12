@@ -18,6 +18,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <limits.h>
 #include <string.h>
 
 #include "memio.h"
@@ -163,35 +165,46 @@ long mem_ftell(MEMFILE *stream)
 
 int mem_fseek(MEMFILE *stream, signed long position, mem_rel_t whence)
 {
-	unsigned int newpos;
+	int64_t base;
+	int64_t newpos;
 
 	switch (whence)
 	{
 		case MEM_SEEK_SET:
-			newpos = (int) position;
+			base = 0;
 			break;
 
 		case MEM_SEEK_CUR:
-			newpos = (int) (stream->position + position);
+			base = stream->position;
 			break;
 			
 		case MEM_SEEK_END:
-			newpos = (int) (stream->buflen + position);
+			if (stream->buflen > INT64_MAX)
+			{
+				return -1;
+			}
+			base = (int64_t) stream->buflen;
 			break;
 		default:
 			return -1;
 	}
 
-	if (newpos < stream->buflen)
+	if (position > INT64_MAX - base || position < -base)
 	{
-		stream->position = newpos;
+		return -1;
+	}
+
+	newpos = base + (int64_t) position;
+	if (newpos >= 0
+	 && (uint64_t) newpos < stream->buflen
+	 && (uint64_t) newpos <= UINT_MAX)
+	{
+		stream->position = (unsigned int) newpos;
 		return 0;
 	}
 	else
 	{
-		printf("Error seeking to %i\n", newpos);
+		printf("Error seeking to %lld\n", (long long) newpos);
 		return -1;
 	}
 }
-
-

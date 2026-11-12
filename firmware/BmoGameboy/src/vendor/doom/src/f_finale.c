@@ -19,6 +19,8 @@
 
 #include <stdio.h>
 #include <ctype.h>
+#include <stddef.h>
+#include <string.h>
 
 // Functions.
 #include "deh_main.h"
@@ -579,8 +581,19 @@ F_DrawPatchCol
     byte*	dest;
     byte*	desttop;
     int		count;
+    int		column_offset;
+
+    if (col < 0 || col >= SHORT(patch->width))
+    {
+        I_Error("F_DrawPatchCol: bad column");
+        return;
+    }
 	
-    column = (column_t *)((byte *)patch + LONG(patch->columnofs[col]));
+    memcpy(&column_offset,
+           (byte *) patch + offsetof(patch_t, columnofs)
+           + (size_t) col * sizeof(column_offset),
+           sizeof(column_offset));
+    column = (column_t *)((byte *)patch + LONG(column_offset));
     desttop = I_VideoBuffer + x;
 
     // step through the posts in a column
@@ -714,5 +727,4 @@ void F_Drawer (void)
             break;
     }
 }
-
 

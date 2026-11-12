@@ -1,8 +1,8 @@
 # BMO Handheld Console — Complete Line-by-Line Benchmark & Architecture Audit
-**Generated:** 2026-11-12 18:17:10
+**Generated:** 2026-11-12 19:44:56
 **Target MCU:** ESP32-S3-N16R8 (240MHz Xtensa LX7, 16MB QIO Flash, 8MB Octal PSRAM)
 **Display:** ST7789VW 2.4" TFT on Shared 80MHz FSPI
-**Total Repository Files Audited:** 589 files (421,139 total lines, 384,432 SLOC)
+**Total Repository Files Audited:** 594 files (421,480 total lines, 384,746 SLOC)
 **Ground-Truth Quality Gate:** PASS (Zero Critical Violations)
 
 ---
@@ -17,7 +17,7 @@
 | **Dynamic PSRAM Runtime** | Not measured | 8,388,608 bytes | Not measured | ⚪ DEVICE TELEMETRY REQUIRED |
 | **AST Critical Findings** | 0 | 0 allowed | - | ✅ PASS (0 Critical) |
 | **AST Warnings** | 9 | < 15 allowed | - | ✅ OK |
-| **Cppcheck Findings** | 43 | 0 errors | - | ⚠️ REVIEW |
+| **Cppcheck Findings** | 0 | 0 errors | - | ✅ CLEAN |
 
 ---
 
@@ -105,7 +105,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `.mcp.json` | `OTHER` | 9 | 9 | 0 | 0 | 100.0% |
 | `AGENTS.md` | `OTHER` | 19 | 16 | 0 | 3 | 84.2% |
 | `AGENT_DECISION_TREE.json` | `OTHER` | 287 | 287 | 0 | 0 | 100.0% |
-| `AGENT_KNOWLEDGE_GRAPH.json` | `OTHER` | 21,444 | 21,444 | 0 | 0 | 100.0% |
+| `AGENT_KNOWLEDGE_GRAPH.json` | `OTHER` | 21,511 | 21,511 | 0 | 0 | 100.0% |
 | `AGENT_MANIFEST.json` | `OTHER` | 307 | 307 | 0 | 0 | 100.0% |
 | `CHANGELOG.md` | `OTHER` | 81 | 65 | 0 | 16 | 80.2% |
 | `DESIGN.md` | `OTHER` | 195 | 151 | 0 | 44 | 77.4% |
@@ -140,8 +140,8 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `docs/consolidated-rules/rule-01_hardware-01.md` | `DOCUMENTATION` | 67 | 57 | 0 | 10 | 85.1% |
 | `docs/consolidated-rules/rule-02_architecture-01.md` | `DOCUMENTATION` | 24 | 17 | 0 | 7 | 70.8% |
 | `docs/consolidated-rules/rule-03_conventions-01.md` | `DOCUMENTATION` | 67 | 55 | 0 | 12 | 82.1% |
-| `docs/consolidated-rules/rule-04_known_issues-01.md` | `DOCUMENTATION` | 57 | 50 | 0 | 7 | 87.7% |
-| `docs/consolidated-rules/rule-04_known_issues-02.md` | `DOCUMENTATION` | 27 | 22 | 0 | 5 | 81.5% |
+| `docs/consolidated-rules/rule-04_known_issues-01.md` | `DOCUMENTATION` | 72 | 63 | 0 | 9 | 87.5% |
+| `docs/consolidated-rules/rule-04_known_issues-02.md` | `DOCUMENTATION` | 13 | 10 | 0 | 3 | 76.9% |
 | `docs/consolidated-rules/rule-05_git_workflow-01.md` | `DOCUMENTATION` | 39 | 31 | 0 | 8 | 79.5% |
 | `docs/consolidated-rules/rule-06_verification_standards-01.md` | `DOCUMENTATION` | 121 | 102 | 0 | 19 | 84.3% |
 | `docs/consolidated-rules/rule-07_task_protocol-01.md` | `DOCUMENTATION` | 65 | 58 | 0 | 7 | 89.2% |
@@ -213,6 +213,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `docs/generated/symbols/engine-07.md` | `DOCUMENTATION` | 196 | 193 | 0 | 3 | 98.5% |
 | `docs/generated/symbols/engine-08.md` | `DOCUMENTATION` | 117 | 114 | 0 | 3 | 97.4% |
 | `docs/handoffs/2026-11-07-remediation.md` | `DOCUMENTATION` | 112 | 92 | 0 | 20 | 82.1% |
+| `docs/handoffs/2026-11-12-logical-performance-audit.md` | `DOCUMENTATION` | 37 | 27 | 0 | 10 | 73.0% |
 | `docs/handoffs/2026-11-12-production-readiness.md` | `DOCUMENTATION` | 151 | 121 | 0 | 30 | 80.1% |
 | `docs/hardware-measurement-template.json` | `DOCUMENTATION` | 18 | 18 | 0 | 0 | 100.0% |
 | `docs/hardware-measurement-template.md` | `DOCUMENTATION` | 14 | 13 | 0 | 1 | 92.9% |
@@ -330,7 +331,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `firmware/BmoGameboy/src/vendor/doom/src/d_event.h` | `VENDOR_ENGINES` | 137 | 43 | 66 | 28 | 31.4% |
 | `firmware/BmoGameboy/src/vendor/doom/src/d_items.c` | `VENDOR_ENGINES` | 128 | 77 | 38 | 13 | 60.2% |
 | `firmware/BmoGameboy/src/vendor/doom/src/d_items.h` | `VENDOR_ENGINES` | 41 | 14 | 18 | 9 | 34.1% |
-| `firmware/BmoGameboy/src/vendor/doom/src/d_iwad.c` | `VENDOR_ENGINES` | 851 | 512 | 133 | 206 | 60.2% |
+| `firmware/BmoGameboy/src/vendor/doom/src/d_iwad.c` | `VENDOR_ENGINES` | 858 | 519 | 133 | 206 | 60.5% |
 | `firmware/BmoGameboy/src/vendor/doom/src/d_iwad.h` | `VENDOR_ENGINES` | 52 | 28 | 16 | 8 | 53.8% |
 | `firmware/BmoGameboy/src/vendor/doom/src/d_loop.c` | `VENDOR_ENGINES` | 826 | 464 | 169 | 193 | 56.2% |
 | `firmware/BmoGameboy/src/vendor/doom/src/d_loop.h` | `VENDOR_ENGINES` | 81 | 23 | 34 | 24 | 28.4% |
@@ -360,13 +361,13 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `firmware/BmoGameboy/src/vendor/doom/src/dstrings.c` | `VENDOR_ENGINES` | 73 | 37 | 22 | 14 | 50.7% |
 | `firmware/BmoGameboy/src/vendor/doom/src/dstrings.h` | `VENDOR_ENGINES` | 41 | 8 | 22 | 11 | 19.5% |
 | `firmware/BmoGameboy/src/vendor/doom/src/dummy.c` | `VENDOR_ENGINES` | 53 | 8 | 30 | 15 | 15.1% |
-| `firmware/BmoGameboy/src/vendor/doom/src/f_finale.c` | `VENDOR_ENGINES` | 718 | 528 | 77 | 113 | 73.5% |
+| `firmware/BmoGameboy/src/vendor/doom/src/f_finale.c` | `VENDOR_ENGINES` | 730 | 540 | 77 | 113 | 74.0% |
 | `firmware/BmoGameboy/src/vendor/doom/src/f_finale.h` | `VENDOR_ENGINES` | 45 | 9 | 23 | 13 | 20.0% |
 | `firmware/BmoGameboy/src/vendor/doom/src/f_wipe.c` | `VENDOR_ENGINES` | 294 | 220 | 31 | 43 | 74.8% |
 | `firmware/BmoGameboy/src/vendor/doom/src/f_wipe.h` | `VENDOR_ENGINES` | 63 | 29 | 22 | 12 | 46.0% |
 | `firmware/BmoGameboy/src/vendor/doom/src/g_game.c` | `VENDOR_ENGINES` | 2,303 | 1,572 | 317 | 414 | 68.3% |
 | `firmware/BmoGameboy/src/vendor/doom/src/g_game.h` | `VENDOR_ENGINES` | 80 | 29 | 28 | 23 | 36.2% |
-| `firmware/BmoGameboy/src/vendor/doom/src/gusconf.c` | `VENDOR_ENGINES` | 271 | 190 | 24 | 57 | 70.1% |
+| `firmware/BmoGameboy/src/vendor/doom/src/gusconf.c` | `VENDOR_ENGINES` | 270 | 190 | 24 | 56 | 70.4% |
 | `firmware/BmoGameboy/src/vendor/doom/src/gusconf.h` | `VENDOR_ENGINES` | 29 | 7 | 16 | 6 | 24.1% |
 | `firmware/BmoGameboy/src/vendor/doom/src/hu_lib.c` | `VENDOR_ENGINES` | 347 | 252 | 32 | 63 | 72.6% |
 | `firmware/BmoGameboy/src/vendor/doom/src/hu_lib.h` | `VENDOR_ENGINES` | 182 | 77 | 59 | 46 | 42.3% |
@@ -399,7 +400,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `firmware/BmoGameboy/src/vendor/doom/src/m_bbox.h` | `VENDOR_ENGINES` | 47 | 18 | 19 | 10 | 38.3% |
 | `firmware/BmoGameboy/src/vendor/doom/src/m_cheat.c` | `VENDOR_ENGINES` | 89 | 38 | 32 | 19 | 42.7% |
 | `firmware/BmoGameboy/src/vendor/doom/src/m_cheat.h` | `VENDOR_ENGINES` | 62 | 24 | 23 | 15 | 38.7% |
-| `firmware/BmoGameboy/src/vendor/doom/src/m_config.c` | `VENDOR_ENGINES` | 2,129 | 616 | 948 | 565 | 28.9% |
+| `firmware/BmoGameboy/src/vendor/doom/src/m_config.c` | `VENDOR_ENGINES` | 2,137 | 625 | 948 | 564 | 29.2% |
 | `firmware/BmoGameboy/src/vendor/doom/src/m_config.h` | `VENDOR_ENGINES` | 39 | 16 | 17 | 6 | 41.0% |
 | `firmware/BmoGameboy/src/vendor/doom/src/m_controls.c` | `VENDOR_ENGINES` | 398 | 269 | 57 | 72 | 67.6% |
 | `firmware/BmoGameboy/src/vendor/doom/src/m_controls.h` | `VENDOR_ENGINES` | 168 | 121 | 17 | 30 | 72.0% |
@@ -407,11 +408,11 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `firmware/BmoGameboy/src/vendor/doom/src/m_fixed.h` | `VENDOR_ENGINES` | 39 | 8 | 20 | 11 | 20.5% |
 | `firmware/BmoGameboy/src/vendor/doom/src/m_menu.c` | `VENDOR_ENGINES` | 2,125 | 1,502 | 250 | 373 | 70.7% |
 | `firmware/BmoGameboy/src/vendor/doom/src/m_menu.h` | `VENDOR_ENGINES` | 61 | 11 | 33 | 17 | 18.0% |
-| `firmware/BmoGameboy/src/vendor/doom/src/m_misc.c` | `VENDOR_ENGINES` | 551 | 349 | 87 | 115 | 63.3% |
+| `firmware/BmoGameboy/src/vendor/doom/src/m_misc.c` | `VENDOR_ENGINES` | 599 | 399 | 85 | 115 | 66.6% |
 | `firmware/BmoGameboy/src/vendor/doom/src/m_misc.h` | `VENDOR_ENGINES` | 51 | 27 | 17 | 7 | 52.9% |
 | `firmware/BmoGameboy/src/vendor/doom/src/m_random.c` | `VENDOR_ENGINES` | 65 | 37 | 22 | 6 | 56.9% |
 | `firmware/BmoGameboy/src/vendor/doom/src/m_random.h` | `VENDOR_ENGINES` | 39 | 7 | 21 | 11 | 17.9% |
-| `firmware/BmoGameboy/src/vendor/doom/src/memio.c` | `VENDOR_ENGINES` | 197 | 122 | 27 | 48 | 61.9% |
+| `firmware/BmoGameboy/src/vendor/doom/src/memio.c` | `VENDOR_ENGINES` | 210 | 136 | 27 | 47 | 64.8% |
 | `firmware/BmoGameboy/src/vendor/doom/src/memio.h` | `VENDOR_ENGINES` | 38 | 18 | 14 | 6 | 47.4% |
 | `firmware/BmoGameboy/src/vendor/doom/src/mus2mid.c` | `VENDOR_ENGINES` | 737 | 504 | 76 | 157 | 68.4% |
 | `firmware/BmoGameboy/src/vendor/doom/src/mus2mid.h` | `VENDOR_ENGINES` | 9 | 6 | 0 | 3 | 66.7% |
@@ -426,8 +427,8 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `firmware/BmoGameboy/src/vendor/doom/src/net_sdl.h` | `VENDOR_ENGINES` | 26 | 5 | 16 | 5 | 19.2% |
 | `firmware/BmoGameboy/src/vendor/doom/src/net_server.h` | `VENDOR_ENGINES` | 42 | 8 | 21 | 13 | 19.0% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_ceilng.c` | `VENDOR_ENGINES` | 324 | 226 | 47 | 51 | 69.8% |
-| `firmware/BmoGameboy/src/vendor/doom/src/p_doors.c` | `VENDOR_ENGINES` | 778 | 571 | 83 | 124 | 73.4% |
-| `firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c` | `VENDOR_ENGINES` | 2,006 | 1,341 | 238 | 427 | 66.8% |
+| `firmware/BmoGameboy/src/vendor/doom/src/p_doors.c` | `VENDOR_ENGINES` | 776 | 569 | 83 | 124 | 73.3% |
+| `firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c` | `VENDOR_ENGINES` | 2,009 | 1,344 | 238 | 427 | 66.9% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_floor.c` | `VENDOR_ENGINES` | 546 | 429 | 54 | 63 | 78.6% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_inter.c` | `VENDOR_ENGINES` | 924 | 646 | 115 | 163 | 69.9% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_inter.h` | `VENDOR_ENGINES` | 30 | 4 | 17 | 9 | 13.3% |
@@ -435,14 +436,14 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `firmware/BmoGameboy/src/vendor/doom/src/p_local.h` | `VENDOR_ENGINES` | 297 | 155 | 66 | 76 | 52.2% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_map.c` | `VENDOR_ENGINES` | 1,448 | 828 | 304 | 316 | 57.2% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_maputl.c` | `VENDOR_ENGINES` | 1,001 | 651 | 161 | 189 | 65.0% |
-| `firmware/BmoGameboy/src/vendor/doom/src/p_mobj.c` | `VENDOR_ENGINES` | 1,060 | 663 | 186 | 211 | 62.5% |
+| `firmware/BmoGameboy/src/vendor/doom/src/p_mobj.c` | `VENDOR_ENGINES` | 1,061 | 664 | 186 | 211 | 62.6% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_mobj.h` | `VENDOR_ENGINES` | 284 | 77 | 161 | 46 | 27.1% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_plats.c` | `VENDOR_ENGINES` | 304 | 218 | 29 | 57 | 71.7% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_pspr.c` | `VENDOR_ENGINES` | 888 | 537 | 173 | 178 | 60.5% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_pspr.h` | `VENDOR_ENGINES` | 71 | 21 | 35 | 15 | 29.6% |
-| `firmware/BmoGameboy/src/vendor/doom/src/p_saveg.c` | `VENDOR_ENGINES` | 1,891 | 975 | 435 | 481 | 51.6% |
+| `firmware/BmoGameboy/src/vendor/doom/src/p_saveg.c` | `VENDOR_ENGINES` | 1,890 | 975 | 435 | 480 | 51.6% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_saveg.h` | `VENDOR_ENGINES` | 62 | 21 | 24 | 17 | 33.9% |
-| `firmware/BmoGameboy/src/vendor/doom/src/p_setup.c` | `VENDOR_ENGINES` | 855 | 547 | 134 | 174 | 64.0% |
+| `firmware/BmoGameboy/src/vendor/doom/src/p_setup.c` | `VENDOR_ENGINES` | 854 | 547 | 134 | 173 | 64.1% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_setup.h` | `VENDOR_ENGINES` | 37 | 10 | 19 | 8 | 27.0% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_sight.c` | `VENDOR_ENGINES` | 350 | 204 | 75 | 71 | 58.3% |
 | `firmware/BmoGameboy/src/vendor/doom/src/p_spec.c` | `VENDOR_ENGINES` | 1,492 | 911 | 307 | 274 | 61.1% |
@@ -469,7 +470,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `firmware/BmoGameboy/src/vendor/doom/src/r_sky.c` | `VENDOR_ENGINES` | 52 | 10 | 31 | 11 | 19.2% |
 | `firmware/BmoGameboy/src/vendor/doom/src/r_sky.h` | `VENDOR_ENGINES` | 37 | 8 | 20 | 9 | 21.6% |
 | `firmware/BmoGameboy/src/vendor/doom/src/r_state.h` | `VENDOR_ENGINES` | 127 | 49 | 36 | 42 | 38.6% |
-| `firmware/BmoGameboy/src/vendor/doom/src/r_things.c` | `VENDOR_ENGINES` | 982 | 605 | 171 | 206 | 61.6% |
+| `firmware/BmoGameboy/src/vendor/doom/src/r_things.c` | `VENDOR_ENGINES` | 984 | 608 | 171 | 205 | 61.8% |
 | `firmware/BmoGameboy/src/vendor/doom/src/r_things.h` | `VENDOR_ENGINES` | 65 | 28 | 20 | 17 | 43.1% |
 | `firmware/BmoGameboy/src/vendor/doom/src/s_sound.c` | `VENDOR_ENGINES` | 670 | 431 | 108 | 131 | 64.3% |
 | `firmware/BmoGameboy/src/vendor/doom/src/s_sound.h` | `VENDOR_ENGINES` | 89 | 20 | 42 | 27 | 22.5% |
@@ -552,6 +553,8 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `scripts/verify_collection_urls.py` | `SCRIPTS` | 30 | 27 | 0 | 3 | 90.0% |
 | `scripts/verify_color_tokens.py` | `SCRIPTS` | 102 | 82 | 1 | 19 | 80.4% |
 | `tests/host/battery_save_test.cpp` | `TESTS` | 10 | 9 | 0 | 1 | 90.0% |
+| `tests/host/fakes/freertos/FreeRTOS.h` | `TESTS` | 10 | 7 | 0 | 3 | 70.0% |
+| `tests/host/fakes/freertos/semphr.h` | `TESTS` | 10 | 7 | 0 | 3 | 70.0% |
 | `tests/host/frame_pacing_test.cpp` | `TESTS` | 14 | 12 | 0 | 2 | 85.7% |
 | `tests/host/frame_percentiles_test.cpp` | `TESTS` | 32 | 25 | 0 | 7 | 78.1% |
 | `tests/host/harmonic_spring_test.cpp` | `TESTS` | 44 | 39 | 0 | 5 | 88.6% |
@@ -560,6 +563,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `tests/host/rom_file_filter_test.cpp` | `TESTS` | 27 | 22 | 0 | 5 | 81.5% |
 | `tests/host/rom_index_layout_test.cpp` | `TESTS` | 10 | 9 | 0 | 1 | 90.0% |
 | `tests/host/rom_key_parity.cpp` | `TESTS` | 15 | 13 | 0 | 2 | 86.7% |
+| `tests/host/spi_arbiter_test.cpp` | `TESTS` | 59 | 51 | 0 | 8 | 86.4% |
 | `tests/host/theme_color_test.cpp` | `TESTS` | 22 | 20 | 0 | 2 | 90.9% |
 | `tests/host_test_support.py` | `TESTS` | 135 | 112 | 4 | 19 | 83.0% |
 | `tests/test_all_tiers_validation.py` | `TESTS` | 334 | 235 | 63 | 36 | 70.4% |
@@ -589,6 +593,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `tests/test_save_manager.py` | `TESTS` | 126 | 106 | 2 | 18 | 84.1% |
 | `tests/test_sd_deploy.py` | `TESTS` | 123 | 103 | 0 | 20 | 83.7% |
 | `tests/test_simulator_security.py` | `TESTS` | 35 | 27 | 0 | 8 | 77.1% |
+| `tests/test_spi_arbiter.py` | `TESTS` | 48 | 39 | 0 | 9 | 81.2% |
 | `tests/test_telemetry_plotter.py` | `TESTS` | 55 | 48 | 0 | 7 | 87.3% |
 | `tests/test_theme_color.py` | `TESTS` | 27 | 21 | 0 | 6 | 77.8% |
 | `tests/test_tier1_validation.py` | `TESTS` | 127 | 99 | 13 | 15 | 78.0% |
@@ -626,7 +631,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `tools/guardian/core/ast_linter.py` | `GUARDIAN_TOOLCHAIN` | 539 | 476 | 20 | 43 | 88.3% |
 | `tools/guardian/core/bus_model.py` | `GUARDIAN_TOOLCHAIN` | 270 | 242 | 7 | 21 | 89.6% |
 | `tools/guardian/core/clang_tidy_runner.py` | `GUARDIAN_TOOLCHAIN` | 146 | 126 | 3 | 17 | 86.3% |
-| `tools/guardian/core/cppcheck_runner.py` | `GUARDIAN_TOOLCHAIN` | 121 | 99 | 6 | 16 | 81.8% |
+| `tools/guardian/core/cppcheck_runner.py` | `GUARDIAN_TOOLCHAIN` | 128 | 105 | 6 | 17 | 82.0% |
 | `tools/guardian/core/doc_verifier.py` | `GUARDIAN_TOOLCHAIN` | 359 | 317 | 14 | 28 | 88.3% |
 | `tools/guardian/core/elf_analyzer.py` | `GUARDIAN_TOOLCHAIN` | 226 | 195 | 3 | 28 | 86.3% |
 | `tools/guardian/core/host_bench.py` | `GUARDIAN_TOOLCHAIN` | 297 | 251 | 11 | 35 | 84.5% |
@@ -636,7 +641,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `tools/guardian/core/ui_auditor.py` | `GUARDIAN_TOOLCHAIN` | 365 | 304 | 17 | 44 | 83.3% |
 | `tools/guardian/mcp_server.py` | `GUARDIAN_TOOLCHAIN` | 264 | 234 | 6 | 24 | 88.6% |
 | `tools/guardian/tests/__init__.py` | `GUARDIAN_TOOLCHAIN` | 3 | 1 | 2 | 0 | 33.3% |
-| `tools/guardian/tests/test_guardian.py` | `GUARDIAN_TOOLCHAIN` | 469 | 383 | 27 | 59 | 81.7% |
+| `tools/guardian/tests/test_guardian.py` | `GUARDIAN_TOOLCHAIN` | 482 | 395 | 27 | 60 | 82.0% |
 | `tools/host_cores_runner.c` | `TOOLS` | 488 | 415 | 17 | 56 | 85.0% |
 | `tools/host_test.cpp` | `TOOLS` | 123 | 99 | 2 | 22 | 80.5% |
 | `tools/telemetry_plotter.py` | `TOOLS` | 241 | 202 | 7 | 32 | 83.8% |
@@ -651,14 +656,14 @@ Exhaustive line-by-line statistics across every single file in the repository:
 
 | Benchmark Kernel | Iterations | Total Time | Avg Latency | Throughput | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **BMO_SDF_Procedural_Face_Render_Unculled** | 100 | 111.91 ms | 1119.080 µs | 3.66 MOps/s | Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling. |
-| **BMO_SDF_Procedural_Face_Render_Culled** | 200 | 86.66 ms | 433.301 µs | 9.45 MOps/s | Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction). |
-| **4Pixel_Coalesced_Aligned_Store_Kernel** | 50,000 | 106.03 ms | 2.121 µs | 14.15 MOps/s | Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling. |
-| **O1_Palette_Scanline_Transformation** | 10,000 | 37.85 ms | 3.785 µs | 63.40 MOps/s | Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput. |
-| **CPU_Emulation_Opcode_Dispatch** | 500,000 | 31.62 ms | 0.063 µs | 15.81 MOps/s | Simulates CPU opcode fetch-decode-execute cycle dispatch throughput. |
-| **Direct_GPIO_Atomic_Bitmask_Sampling** | 100,000 | 46.48 ms | 0.465 µs | 17.21 MOps/s | Measures atomic 8-pin bitmask unpacking (GPIO 4,5,6,7,16,17,18,21) replacing 8 digitalRead calls. |
-| **SD_Catalog_O1_Query_And_Page_Jump** | 10,000 | 1.60 ms | 0.160 µs | 6.25 MOps/s | Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations. |
-| **Native_C_11_Cores_575_Frames** | 575 | 170.54 ms | 296.594 µs | 3.37 MOps/s | Executes 50 frames across all 11 native C emulator engines + save-state replay (575 frames total, kFPS). |
+| **BMO_SDF_Procedural_Face_Render_Unculled** | 100 | 123.84 ms | 1238.420 µs | 3.31 MOps/s | Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling. |
+| **BMO_SDF_Procedural_Face_Render_Culled** | 200 | 87.51 ms | 437.555 µs | 9.36 MOps/s | Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction). |
+| **4Pixel_Coalesced_Aligned_Store_Kernel** | 50,000 | 112.04 ms | 2.241 µs | 13.39 MOps/s | Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling. |
+| **O1_Palette_Scanline_Transformation** | 10,000 | 43.69 ms | 4.369 µs | 54.93 MOps/s | Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput. |
+| **CPU_Emulation_Opcode_Dispatch** | 500,000 | 32.06 ms | 0.064 µs | 15.60 MOps/s | Simulates CPU opcode fetch-decode-execute cycle dispatch throughput. |
+| **Direct_GPIO_Atomic_Bitmask_Sampling** | 100,000 | 53.38 ms | 0.534 µs | 14.99 MOps/s | Measures atomic 8-pin bitmask unpacking (GPIO 4,5,6,7,16,17,18,21) replacing 8 digitalRead calls. |
+| **SD_Catalog_O1_Query_And_Page_Jump** | 10,000 | 1.64 ms | 0.164 µs | 6.11 MOps/s | Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations. |
+| **Native_C_11_Cores_575_Frames** | 575 | 178.04 ms | 309.640 µs | 3.23 MOps/s | Executes 50 frames across all 11 native C emulator engines + save-state replay (575 frames total, kFPS). |
 
 ---
 
@@ -668,8 +673,8 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | :--- | :--- | :--- | :--- | :--- |
 | `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `d_iwad.c:217` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
 | `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `d_iwad.c:346` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
-| `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `d_iwad.c:765` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
-| `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `m_config.c:2045` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
+| `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `d_iwad.c:773` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
+| `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `m_config.c:2053` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
 | `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `p_saveg.c:70` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
 | `🟡 WARNING` | `NAKED_MALLOC_WITHOUT_SPIRAM` | `v_video.c:757` | Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM. | Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`. |
 | `🟡 WARNING` | `STACK_ALLOCATED_SCANLINE_BUFFER` | `ngp.h:22` | Large scanline buffer allocated on stack in hot path. | Make static module-level or 4-byte aligned DRAM/PSRAM buffer. |
@@ -680,52 +685,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 
 ## 6. Cppcheck Findings
 
-43 findings; 0 errors.
-| Severity | Finding | File : Line | Description |
-| :--- | :--- | :--- | :--- |
-| `warning` | `nullPointerOutOfMemory` | `firmware/BmoGameboy/src/vendor/doom/src/d_iwad.c:432` | If memory allocation fails, then there is a possible null pointer dereference: filename |
-| `warning` | `nullPointerRedundantCheck` | `firmware/BmoGameboy/src/vendor/doom/src/d_iwad.c:481` | Either the condition 'result==NULL' is redundant or there is possible null pointer dereference: name. |
-| `portability` | `varFuncNullUB` | `firmware/BmoGameboy/src/vendor/doom/src/d_iwad.c:429` | Passing NULL after the last typed argument to a variadic function leads to undefined behaviour. |
-| `portability` | `varFuncNullUB` | `firmware/BmoGameboy/src/vendor/doom/src/d_iwad.c:660` | Passing NULL after the last typed argument to a variadic function leads to undefined behaviour. |
-| `warning` | `invalidPrintfArgType_sint` | `firmware/BmoGameboy/src/vendor/doom/src/gusconf.c:220` | %i in format string (no. 1) requires 'int' but the argument type is 'unsigned int'. |
-| `warning` | `invalidPrintfArgType_sint` | `firmware/BmoGameboy/src/vendor/doom/src/gusconf.c:232` | %i in format string (no. 1) requires 'int' but the argument type is 'unsigned int'. |
-| `warning` | `arrayIndexOutOfBoundsCond` | `firmware/BmoGameboy/src/vendor/doom/src/f_finale.c:583` | Either the condition 'x+scrolled<320' is redundant or the array 'patch->columnofs[8]' is accessed at index 319, which is out of bounds. |
-| `warning` | `invalidPrintfArgType_sint` | `firmware/BmoGameboy/src/vendor/doom/src/i_video.c:267` | %d in format string (no. 1) requires 'int' but the argument type is 'unsigned int'. |
-| `warning` | `invalidPrintfArgType_sint` | `firmware/BmoGameboy/src/vendor/doom/src/i_video.c:267` | %d in format string (no. 2) requires 'int' but the argument type is 'unsigned int'. |
-| `warning` | `invalidPrintfArgType_sint` | `firmware/BmoGameboy/src/vendor/doom/src/i_video.c:267` | %d in format string (no. 3) requires 'int' but the argument type is 'unsigned int'. |
-| `warning` | `invalidPrintfArgType_sint` | `firmware/BmoGameboy/src/vendor/doom/src/i_video.c:267` | %d in format string (no. 4) requires 'int' but the argument type is 'unsigned int'. |
-| `warning` | `invalidPrintfArgType_sint` | `firmware/BmoGameboy/src/vendor/doom/src/i_video.c:267` | %d in format string (no. 5) requires 'int' but the argument type is 'unsigned int'. |
-| `warning` | `invalidPrintfArgType_sint` | `firmware/BmoGameboy/src/vendor/doom/src/i_video.c:270` | %d in format string (no. 1) requires 'int' but the argument type is 'unsigned int'. |
-| `warning` | `invalidPrintfArgType_sint` | `firmware/BmoGameboy/src/vendor/doom/src/i_video.c:270` | %d in format string (no. 2) requires 'int' but the argument type is 'unsigned int'. |
-| `warning` | `invalidPrintfArgType_sint` | `firmware/BmoGameboy/src/vendor/doom/src/i_video.c:270` | %d in format string (no. 3) requires 'int' but the argument type is 'unsigned int'. |
-| `warning` | `invalidPrintfArgType_sint` | `firmware/BmoGameboy/src/vendor/doom/src/i_video.c:270` | %d in format string (no. 4) requires 'int' but the argument type is 'unsigned int'. |
-| `warning` | `invalidPrintfArgType_sint` | `firmware/BmoGameboy/src/vendor/doom/src/i_video.c:270` | %d in format string (no. 5) requires 'int' but the argument type is 'unsigned int'. |
-| `warning` | `invalidPrintfArgType_sint` | `firmware/BmoGameboy/src/vendor/doom/src/i_video.c:270` | %d in format string (no. 6) requires 'int' but the argument type is 'unsigned int'. |
-| `warning` | `invalidPrintfArgType_sint` | `firmware/BmoGameboy/src/vendor/doom/src/i_video.c:270` | %d in format string (no. 7) requires 'int' but the argument type is 'unsigned int'. |
-| `warning` | `invalidPrintfArgType_sint` | `firmware/BmoGameboy/src/vendor/doom/src/i_video.c:270` | %d in format string (no. 8) requires 'int' but the argument type is 'unsigned int'. |
-| `warning` | `invalidScanfArgType_int` | `firmware/BmoGameboy/src/vendor/doom/src/m_config.c:1721` | %x in format string (no. 1) requires 'unsigned int *' but the argument type is 'signed int *'. |
-| `portability` | `varFuncNullUB` | `firmware/BmoGameboy/src/vendor/doom/src/m_config.c:1905` | Passing NULL after the last typed argument to a variadic function leads to undefined behaviour. |
-| `portability` | `varFuncNullUB` | `firmware/BmoGameboy/src/vendor/doom/src/m_config.c:1928` | Passing NULL after the last typed argument to a variadic function leads to undefined behaviour. |
-| `portability` | `varFuncNullUB` | `firmware/BmoGameboy/src/vendor/doom/src/m_config.c:2119` | Passing NULL after the last typed argument to a variadic function leads to undefined behaviour. |
-| `warning` | `invalidScanfArgType_int` | `firmware/BmoGameboy/src/vendor/doom/src/m_misc.c:201` | %x in format string (no. 1) requires 'unsigned int *' but the argument type is 'signed int *'. |
-| `warning` | `invalidScanfArgType_int` | `firmware/BmoGameboy/src/vendor/doom/src/m_misc.c:202` | %x in format string (no. 1) requires 'unsigned int *' but the argument type is 'signed int *'. |
-| `warning` | `invalidScanfArgType_int` | `firmware/BmoGameboy/src/vendor/doom/src/m_misc.c:203` | %o in format string (no. 1) requires 'unsigned int *' but the argument type is 'signed int *'. |
-| `warning` | `nullPointerOutOfResources` | `firmware/BmoGameboy/src/vendor/doom/src/m_misc.c:105` | If resource allocation fails, then there is a possible null pointer dereference: handle |
-| `warning` | `nullPointerOutOfResources` | `firmware/BmoGameboy/src/vendor/doom/src/m_misc.c:108` | If resource allocation fails, then there is a possible null pointer dereference: handle |
-| `warning` | `nullPointerOutOfResources` | `firmware/BmoGameboy/src/vendor/doom/src/m_misc.c:109` | If resource allocation fails, then there is a possible null pointer dereference: handle |
-| `warning` | `nullPointerOutOfResources` | `firmware/BmoGameboy/src/vendor/doom/src/m_misc.c:112` | If resource allocation fails, then there is a possible null pointer dereference: handle |
-| `warning` | `nullPointerOutOfResources` | `firmware/BmoGameboy/src/vendor/doom/src/m_misc.c:151` | If resource allocation fails, then there is a possible null pointer dereference: handle |
-| `warning` | `nullPointerRedundantCheck` | `firmware/BmoGameboy/src/vendor/doom/src/m_misc.c:161` | Either the condition 'handle==NULL' is redundant or there is possible null pointer dereference: handle. |
-| `warning` | `nullPointerRedundantCheck` | `firmware/BmoGameboy/src/vendor/doom/src/m_misc.c:162` | Either the condition 'handle==NULL' is redundant or there is possible null pointer dereference: handle. |
-| `portability` | `varFuncNullUB` | `firmware/BmoGameboy/src/vendor/doom/src/m_misc.c:196` | Passing NULL after the last typed argument to a variadic function leads to undefined behaviour. |
-| `warning` | `invalidPrintfArgType_sint` | `firmware/BmoGameboy/src/vendor/doom/src/memio.c:192` | %i in format string (no. 1) requires 'int' but the argument type is 'unsigned int'. |
-| `warning` | `identicalConditionAfterEarlyExit` | `firmware/BmoGameboy/src/vendor/doom/src/p_doors.c:211` | Identical condition '!p', second condition is always false |
-| `warning` | `nullPointerRedundantCheck` | `firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c:369` | Either the condition '!actor->target' is redundant or there is possible null pointer dereference: actor->target. |
-| `warning` | `nullPointerRedundantCheck` | `firmware/BmoGameboy/src/vendor/doom/src/p_enemy.c:370` | Either the condition '!actor->target' is redundant or there is possible null pointer dereference: actor->target. |
-| `portability` | `varFuncNullUB` | `firmware/BmoGameboy/src/vendor/doom/src/p_saveg.c:53` | Passing NULL after the last typed argument to a variadic function leads to undefined behaviour. |
-| `portability` | `shiftNegativeLHS` | `firmware/BmoGameboy/src/vendor/doom/src/p_mobj.c:322` | Shifting a negative value is technically undefined behaviour |
-| `warning` | `invalidPrintfArgType_sint` | `firmware/BmoGameboy/src/vendor/doom/src/p_setup.c:694` | %i in format string (no. 1) requires 'int' but the argument type is 'unsigned int'. |
-| `warning` | `negativeIndex` | `firmware/BmoGameboy/src/vendor/doom/src/r_things.c:430` | Either the condition 'texturecolumn<0' is redundant or the array 'patch->columnofs[8]' is accessed at index -1, which is out of bounds. |
+No Cppcheck findings.
 
 ---
 

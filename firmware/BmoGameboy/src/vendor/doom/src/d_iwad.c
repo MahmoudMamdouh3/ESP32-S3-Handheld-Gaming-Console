@@ -283,7 +283,7 @@ static void CheckCollectorsEdition(void)
     for (i=0; i<arrlen(collectors_edition_subdirs); ++i)
     {
         subpath = M_StringJoin(install_path, DIR_SEPARATOR_S,
-                               collectors_edition_subdirs[i], NULL);
+                               collectors_edition_subdirs[i], (char *) NULL);
 
         AddIWADDir(subpath);
     }
@@ -310,7 +310,7 @@ static void CheckSteamEdition(void)
     for (i=0; i<arrlen(steam_install_subdirs); ++i)
     {
         subpath = M_StringJoin(install_path, DIR_SEPARATOR_S,
-                               steam_install_subdirs[i], NULL);
+                               steam_install_subdirs[i], (char *) NULL);
 
         AddIWADDir(subpath);
     }
@@ -426,7 +426,13 @@ static char *CheckDirectoryHasIWAD(char *dir, char *iwadname)
     }
     else
     {
-        filename = M_StringJoin(dir, DIR_SEPARATOR_S, iwadname, NULL);
+        filename = M_StringJoin(dir, DIR_SEPARATOR_S, iwadname,
+                                (char *) NULL);
+    }
+
+    if (filename == NULL)
+    {
+        return NULL;
     }
 
     printf("Trying IWAD file:%s\n", filename);
@@ -657,7 +663,8 @@ char *D_FindWADByName(char *name)
 
         // Construct a string for the full path
 
-        path = M_StringJoin(iwad_dirs[i], DIR_SEPARATOR_S, name, NULL);
+        path = M_StringJoin(iwad_dirs[i], DIR_SEPARATOR_S, name,
+                            (char *) NULL);
 
         if (M_FileExists(path))
         {
@@ -730,6 +737,7 @@ char *D_FindIWAD(int mask, GameMission_t *mission)
         if (result == NULL)
         {
             I_Error("IWAD file '%s' not found!", iwadfile);
+            return NULL;
         }
         
         *mission = IdentifyIWADByName(result, mask);
@@ -848,4 +856,3 @@ char *D_SuggestGameName(GameMission_t mission, GameMode_t mode)
 
     return "Unknown game?";
 }
-

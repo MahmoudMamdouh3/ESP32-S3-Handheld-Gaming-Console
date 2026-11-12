@@ -319,7 +319,8 @@ void P_ZMovement (mobj_t* mo)
 		// Decrease viewheight for a moment
 		// after hitting the ground (hard),
 		// and utter appropriate sound.
-		mo->player->deltaviewheight = mo->momz>>3;
+		mo->player->deltaviewheight =
+		    (fixed_t) (-((-(long long) mo->momz + 7) / 8));
 		S_StartSound (mo, sfx_oof);
 	    }
 	    mo->momz = 0;

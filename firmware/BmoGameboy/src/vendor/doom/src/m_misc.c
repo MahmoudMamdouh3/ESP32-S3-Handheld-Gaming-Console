@@ -23,6 +23,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -121,20 +122,25 @@ long M_FileLength(FILE *handle)
 boolean M_WriteFile(char *name, void *source, int length)
 {
     FILE *handle;
-    int	count;
-	
-    DOOM_SPI_LOCK(); handle = fopen(name, "wb"); if (handle == NULL) { DOOM_SPI_UNLOCK(); return false; } count = fwrite(source, 1, length, handle); fclose(handle); DOOM_SPI_UNLOCK(); return count >= length;
+    size_t count;
 
+    if (length < 0)
+    {
+        return false;
+    }
+
+    DOOM_SPI_LOCK();
+    handle = fopen(name, "wb");
     if (handle == NULL)
-	return false;
+    {
+        DOOM_SPI_UNLOCK();
+        return false;
+    }
 
-    count = fwrite(source, 1, length, handle);
+    count = fwrite(source, 1, (size_t) length, handle);
     fclose(handle);
-	
-    if (count < length)
-	return false;
-		
-    return true;
+    DOOM_SPI_UNLOCK();
+    return count == (size_t) length;
 }
 
 
@@ -145,25 +151,61 @@ boolean M_WriteFile(char *name, void *source, int length)
 int M_ReadFile(char *name, byte **buffer)
 {
     FILE *handle;
-    int	count, length;
+    size_t count;
+    long file_length;
+    int length;
     byte *buf;
-	
-    DOOM_SPI_LOCK(); handle = fopen(name, "rb"); if (handle == NULL) { DOOM_SPI_UNLOCK(); I_Error ("Couldn't read file %s", name); } length = M_FileLength(handle); DOOM_SPI_UNLOCK(); buf = Z_Malloc (length, PU_STATIC, NULL); DOOM_SPI_LOCK(); count = fread(buf, 1, length, handle); fclose (handle); DOOM_SPI_UNLOCK(); if (count < length) I_Error ("Couldn't read file %s", name); *buffer = buf; return length;
+
+    if (buffer == NULL)
+    {
+        I_Error("M_ReadFile: NULL output buffer");
+        return 0;
+    }
+
+    *buffer = NULL;
+    DOOM_SPI_LOCK();
+    handle = fopen(name, "rb");
     if (handle == NULL)
-	I_Error ("Couldn't read file %s", name);
+    {
+        DOOM_SPI_UNLOCK();
+        I_Error("Couldn't read file %s", name);
+        return 0;
+    }
 
-    // find the size of the file by seeking to the end and
-    // reading the current position
+    file_length = M_FileLength(handle);
+    DOOM_SPI_UNLOCK();
 
-    length = M_FileLength(handle);
-    
-    buf = Z_Malloc (length, PU_STATIC, NULL);
-    count = fread(buf, 1, length, handle);
-    fclose (handle);
-	
-    if (count < length)
-	I_Error ("Couldn't read file %s", name);
-		
+    if (file_length < 0 || file_length > INT_MAX)
+    {
+        DOOM_SPI_LOCK();
+        fclose(handle);
+        DOOM_SPI_UNLOCK();
+        I_Error("Invalid file length while reading %s", name);
+        return 0;
+    }
+
+    length = (int) file_length;
+    buf = Z_Malloc(length, PU_STATIC, NULL);
+    if (buf == NULL)
+    {
+        DOOM_SPI_LOCK();
+        fclose(handle);
+        DOOM_SPI_UNLOCK();
+        I_Error("Out of memory while reading %s", name);
+        return 0;
+    }
+
+    DOOM_SPI_LOCK();
+    count = fread(buf, 1, (size_t) length, handle);
+    fclose(handle);
+    DOOM_SPI_UNLOCK();
+    if (count != (size_t) length)
+    {
+        Z_Free(buf);
+        I_Error("Couldn't read file %s", name);
+        return 0;
+    }
+
     *buffer = buf;
     return length;
 }
@@ -193,15 +235,22 @@ char *M_TempFile(char *s)
     tempdir = "/tmp";
 #endif
 
-    return M_StringJoin(tempdir, DIR_SEPARATOR_S, s, NULL);
+    return M_StringJoin(tempdir, DIR_SEPARATOR_S, s, (char *) NULL);
 }
 
 boolean M_StrToInt(const char *str, int *result)
 {
-    return sscanf(str, " 0x%x", result) == 1
-        || sscanf(str, " 0X%x", result) == 1
-        || sscanf(str, " 0%o", result) == 1
-        || sscanf(str, " %d", result) == 1;
+    unsigned int unsigned_result;
+
+    if (sscanf(str, " 0x%x", &unsigned_result) == 1
+        || sscanf(str, " 0X%x", &unsigned_result) == 1
+        || sscanf(str, " 0%o", &unsigned_result) == 1)
+    {
+        *result = (int) unsigned_result;
+        return true;
+    }
+
+    return sscanf(str, " %d", result) == 1;
 }
 
 void M_ExtractFileBase(char *path, char *dest)
@@ -548,4 +597,3 @@ char *M_OEMToUTF8(const char *oem)
 }
 
 #endif
-

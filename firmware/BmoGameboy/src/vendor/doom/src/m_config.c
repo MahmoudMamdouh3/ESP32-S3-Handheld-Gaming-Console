@@ -1715,12 +1715,20 @@ static void SaveDefaultCollection(default_collection_t *collection)
 
 static int ParseIntParameter(char *strparm)
 {
-    int parm;
+    int parm = 0;
+    unsigned int hexparm;
 
     if (strparm[0] == '0' && strparm[1] == 'x')
-        sscanf(strparm+2, "%x", &parm);
+    {
+        if (sscanf(strparm + 2, "%x", &hexparm) == 1)
+        {
+            return (int) hexparm;
+        }
+    }
     else
+    {
         sscanf(strparm, "%i", &parm);
+    }
 
     return parm;
 }
@@ -1902,7 +1910,7 @@ void M_LoadDefaults (void)
     else
     {
         doom_defaults.filename
-            = M_StringJoin(configdir, default_main_config, NULL);
+            = M_StringJoin(configdir, default_main_config, (char *) NULL);
     }
 
     printf("saving config in %s\n", doom_defaults.filename);
@@ -1925,7 +1933,7 @@ void M_LoadDefaults (void)
     else
     {
         extra_defaults.filename
-            = M_StringJoin(configdir, default_extra_config, NULL);
+            = M_StringJoin(configdir, default_extra_config, (char *) NULL);
     }
 
     LoadDefaultCollection(&doom_defaults);
@@ -2104,19 +2112,20 @@ char *M_GetSaveGameDir(char *iwadname)
 #if ORIGCODE
         // ~/.chocolate-doom/savegames
 
-        topdir = M_StringJoin(configdir, "savegame", NULL);
+        topdir = M_StringJoin(configdir, "savegame", (char *) NULL);
         M_MakeDirectory(topdir);
 
         // eg. ~/.chocolate-doom/savegames/doom2.wad/
 
         savegamedir = M_StringJoin(topdir, DIR_SEPARATOR_S, iwadname,
-                                   DIR_SEPARATOR_S, NULL);
+                                   DIR_SEPARATOR_S, (char *) NULL);
 
         M_MakeDirectory(savegamedir);
 
         free(topdir);
 #else
-        savegamedir = M_StringJoin(configdir, DIR_SEPARATOR_S, ".savegame/", NULL);
+        savegamedir = M_StringJoin(configdir, DIR_SEPARATOR_S, ".savegame/",
+                                   (char *) NULL);
 
         M_MakeDirectory(savegamedir);
 
@@ -2126,4 +2135,3 @@ char *M_GetSaveGameDir(char *iwadname)
 
     return savegamedir;
 }
-
