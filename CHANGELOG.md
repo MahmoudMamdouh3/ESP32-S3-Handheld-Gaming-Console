@@ -6,13 +6,16 @@
 - Added the ROM file filter header to version control despite the generated-ROM-header ignore rule.
 - Made local-only ROM headers optional in firmware and test compilation so clean checkouts do not require ignored content.
 - Skip installed-game integrity checks when the gitignored `games/` directory is absent.
+- Pin Pillow in CI, normalize both path separators in the box-art test helper, and keep the sanitizer probe focused on AddressSanitizer rather than an earlier UBSan report.
 
 ### Verification
 - Clean-checkout compile passed with `Sketch uses 5192960 bytes`; the installed-games test skipped because its gitignored data directory was absent.
-- `python -m unittest discover -s tests -v`: `Ran 182 tests in 63.405s`, `OK`.
+- `python -m unittest discover -s tests -v`: `Ran 158 tests in 50.313s`, `OK`.
 - `python -m tools.guardian verify`, `ui-audit`, and `diff-audit` passed; diff-audit reported 0 critical violations and 0 documentation/rule drift issues.
 - `python scripts/validate_repo.py` passed all nine phases in 184897 ms. Target compile used 5,774,632 / 16,777,216 bytes flash and 253,728 / 327,680 bytes SRAM.
-- Remote GitHub Actions and physical hardware verification are not claimed.
+- Targeted host tests for the sanitizer probe, box-art paths, image pipeline, and native cores passed after the first remote run exposed Linux-only failures.
+- The sanitizer, box-art, image-pipeline, and native-core test selectors passed after the CI fixes.
+- The first remote GitHub Actions run failed in host tests; the causes and follow-up are recorded in the issue ledger. Physical hardware verification is not claimed.
 
 ## [Production-readiness assessment and workstream handoff] - 2026-11-12
 
