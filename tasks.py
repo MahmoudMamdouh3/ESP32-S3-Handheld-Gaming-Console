@@ -395,7 +395,11 @@ def cmd_check(args: argparse.Namespace) -> int:
             )
             if _run_checked([sys.executable, "-m", "unittest", *fast_modules], env=test_env).returncode != 0:
                 failures.append("fast host tests failed")
-        ctest_err = _run_host_ctest()
+        ctest_err = _run_host_ctest(use_sanitizers=getattr(args, "sanitizers", False))
+        if ctest_err:
+            failures.append(ctest_err)
+    elif getattr(args, "sanitizers", False):
+        ctest_err = _run_host_ctest(use_sanitizers=True)
         if ctest_err:
             failures.append(ctest_err)
 
@@ -408,7 +412,7 @@ def cmd_check(args: argparse.Namespace) -> int:
     return 0
 
 
-def _run_host_ctest() -> Optional[str]:
+def _run_host_ctest(use_sanitizers: bool = False) -> Optional[str]:
     """Configure, build, and execute host C++17 CTest suite when CMake/CTest are present."""
     cmake_bin = shutil.which("cmake")
     ctest_bin = shutil.which("ctest")
@@ -418,12 +422,43 @@ def _run_host_ctest() -> Optional[str]:
     if not (REPO_ROOT / "CMakeLists.txt").is_file():
         return "CMakeLists.txt missing for host CTest suite"
 
-    build_dir = REPO_ROOT / "build" / "host-ctest"
-    cmds = [
-        [cmake_bin, "-S", str(REPO_ROOT), "-B", str(build_dir)],
-        [cmake_bin, "--build", str(build_dir), "--config", "Release"],
-        [ctest_bin, "--test-dir", str(build_dir), "-C", "Release", "--output-on-failure"],
-    ]
+    if use_sanitizers:
+        build_dir = REPO_ROOT / "build" / "host-ctest-san"
+        cmake_cfg = [
+            cmake_bin,
+            "-S",
+            str(REPO_ROOT),
+            "-B",
+            str(build_dir),
+            "-DBMO_ENABLE_ASAN_UBSAN=ON",
+            "-DCMAKE_BUILD_TYPE=Debug",
+        ]
+        # Avoid accidentally applying GNU/Clang ASan+UBSan flags under Windows MSVC.
+        if os.name == "nt":
+            cxx_env = os.environ.get("CXX", "")
+            cc_env = os.environ.get("CC", "")
+            clang_cxx = shutil.which("clang++") or cxx_env
+            clang_cc = shutil.which("clang") or cc_env
+            gxx = shutil.which("g++")
+            gcc = shutil.which("gcc")
+            if gxx and gcc:
+                cmake_cfg.extend(["-DCMAKE_C_COMPILER=" + gcc, "-DCMAKE_CXX_COMPILER=" + gxx])
+            elif clang_cxx and clang_cc and "wasi" not in str(clang_cxx).lower():
+                cmake_cfg.extend(["-DCMAKE_C_COMPILER=" + str(clang_cc), "-DCMAKE_CXX_COMPILER=" + str(clang_cxx)])
+            else:
+                return "ASan+UBSan requires GCC or Clang host compiler cleanly (use Linux CI or MinGW/Clang)."
+        cmds = [
+            cmake_cfg,
+            [cmake_bin, "--build", str(build_dir)],
+            [ctest_bin, "--test-dir", str(build_dir), "--output-on-failure"],
+        ]
+    else:
+        build_dir = REPO_ROOT / "build" / "host-ctest"
+        cmds = [
+            [cmake_bin, "-S", str(REPO_ROOT), "-B", str(build_dir)],
+            [cmake_bin, "--build", str(build_dir), "--config", "Release"],
+            [ctest_bin, "--test-dir", str(build_dir), "-C", "Release", "--output-on-failure"],
+        ]
     for cmd in cmds:
         if _run_checked(cmd).returncode != 0:
             return f"host CTest step failed: {' '.join(cmd)}"
@@ -432,7 +467,7 @@ def _run_host_ctest() -> Optional[str]:
 
 def cmd_test(args: argparse.Namespace) -> int:
     """Run full host unit test suites and validate_repo."""
-    ctest_err = _run_host_ctest()
+    ctest_err = _run_host_ctest(use_sanitizers=getattr(args, "sanitizers", False))
     if ctest_err:
         print(f"FAIL: {ctest_err}")
         return 1
@@ -729,11 +764,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_check.add_argument("--cppcheck", action="store_true", help="Include cppcheck static analysis.")
     p_check.add_argument("--no-tests", action="store_true", help="Skip Python unit tests.")
     p_check.add_argument("--with-all-tests", action="store_true", help="Include slower WASI execution and CAD mesh tests.")
+    p_check.add_argument("--sanitizers", action="store_true", help="Run host C++17 CTest suite with ASan+UBSan.")
     p_check.add_argument("--strict-lint", action="store_true", help="Fail if ruff is unavailable.")
     p_check.set_defaults(func=cmd_check)
 
     p_test = sub.add_parser("test", help="Run full unittest suite and repository validator.")
     p_test.add_argument("--strict", action="store_true", help="Require target compile inside validate_repo.py.")
+    p_test.add_argument("--sanitizers", action="store_true", help="Build and run host C++17 CTest suite with ASan+UBSan.")
     p_test.set_defaults(func=cmd_test)
 
     p_build = sub.add_parser("build", help="Compile firmware profile(s) with sketch.yaml and strict warning reporting.")

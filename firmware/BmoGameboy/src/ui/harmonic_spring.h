@@ -23,15 +23,13 @@ struct HarmonicSpring {
     vel = 0.0f;
   }
 
-  void setTarget(float tgt) {
-    target = tgt;
-  }
+  void setTarget(float tgt) { target = tgt; }
 
   bool update(float dt) {
     if (!std::isfinite(dt) || dt <= 0.0f) return false;
     if (dt > 0.05f) dt = 0.05f;
-    if (!std::isfinite(val) || !std::isfinite(vel) || !std::isfinite(target) ||
-        !std::isfinite(omega) || !std::isfinite(zeta) || omega <= 0.0f || zeta < 0.0f) {
+    if (!std::isfinite(val) || !std::isfinite(vel) || !std::isfinite(target) || !std::isfinite(omega) ||
+        !std::isfinite(zeta) || omega <= 0.0f || zeta < 0.0f) {
       return false;
     }
     float diff = val - target;

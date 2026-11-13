@@ -114,7 +114,7 @@ class PlatformMappingTests(unittest.TestCase):
             elif key == "p8":
                 self.assertIn("33333U", FRAME_PACING)
             else:
-                self.assertIn("default: return 16667U", FRAME_PACING)
+                self.assertRegex(FRAME_PACING, r"default:\s+return\s+16667U")
 
 
 if __name__ == "__main__":

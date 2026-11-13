@@ -14,7 +14,8 @@ constexpr char normalizePathByte(char value) {
 
 constexpr uint32_t crc32RelativePath(const char* relativePath) {
   if (!relativePath) return 0;
-  while (*relativePath == '/' || *relativePath == '\\') ++relativePath;
+  while (*relativePath == '/' || *relativePath == '\\')
+    ++relativePath;
   uint32_t crc = 0xFFFFFFFFU;
   while (*relativePath) {
     crc ^= static_cast<uint8_t>(normalizePathByte(*relativePath++));
@@ -30,7 +31,8 @@ inline bool make(const char* relativePath, char* output, size_t outputSize) {
   output[0] = '\0';
 
   const char* pathEnd = relativePath + strlen(relativePath);
-  while (pathEnd > relativePath && (pathEnd[-1] == '/' || pathEnd[-1] == '\\')) --pathEnd;
+  while (pathEnd > relativePath && (pathEnd[-1] == '/' || pathEnd[-1] == '\\'))
+    --pathEnd;
   if (pathEnd == relativePath) return false;
 
   const char* filename = relativePath;
@@ -59,7 +61,8 @@ inline bool make(const char* relativePath, char* output, size_t outputSize) {
       previousUnderscore = true;
     }
   }
-  while (prefixLength > 0 && prefix[prefixLength - 1] == '_') --prefixLength;
+  while (prefixLength > 0 && prefix[prefixLength - 1] == '_')
+    --prefixLength;
   if (prefixLength == 0) {
     prefix[0] = 'r';
     prefix[1] = 'o';
@@ -68,12 +71,12 @@ inline bool make(const char* relativePath, char* output, size_t outputSize) {
   }
   prefix[prefixLength] = '\0';
 
-  const int written = snprintf(output, outputSize, "%s_%08lx", prefix,
-                               static_cast<unsigned long>(crc32RelativePath(relativePath)));
+  const int written =
+      snprintf(output, outputSize, "%s_%08lx", prefix, static_cast<unsigned long>(crc32RelativePath(relativePath)));
   if (written < 0 || written > 32 || static_cast<size_t>(written) >= outputSize) {
     output[0] = '\0';
     return false;
   }
   return true;
 }
-}
+} // namespace RomKey

@@ -29,13 +29,14 @@
 #include "fake08/src/host.h"
 #include "fake08/src/vm.h"
 
-Host::Host(int, int)
-    : currKDown(0), currKHeld(0), _logFilePrefix("bmo"), _cartDirectory("/") {
+Host::Host(int, int) : currKDown(0), currKHeld(0), _logFilePrefix("bmo"), _cartDirectory("/") {
   setUpPaletteColors();
 }
 void Host::loadSettingsIni() {}
 void Host::saveSettingsIni() {}
-std::string Host::getCartDataFile(std::string cartDataKey) { return cartDataKey; }
+std::string Host::getCartDataFile(std::string cartDataKey) {
+  return cartDataKey;
+}
 void Host::setUpPaletteColors() {
   static const Color kBase[16] = {
       COLOR_00, COLOR_01, COLOR_02, COLOR_03, COLOR_04, COLOR_05, COLOR_06, COLOR_07,
@@ -53,10 +54,14 @@ void Host::setUpPaletteColors() {
     _paletteColors[i] = kBase[i & 0x0F];
   }
 }
-void Host::oneTimeSetup(Audio*) { setUpPaletteColors(); }
+void Host::oneTimeSetup(Audio*) {
+  setUpPaletteColors();
+}
 void Host::unpackCarts() {}
 void Host::setTargetFps(int) {}
-bool Host::shouldRunMainLoop() { return true; }
+bool Host::shouldRunMainLoop() {
+  return true;
+}
 InputState_t Host::scanInput() {
   InputState_t st;
   st.KDown = 0;
@@ -68,34 +73,67 @@ InputState_t Host::scanInput() {
   st.KBkey = "";
   return st;
 }
-bool Host::shouldQuit() { return false; }
+bool Host::shouldQuit() {
+  return false;
+}
 void Host::changeStretch() {}
-void Host::forceStretch(StretchOption s) { stretch = s; }
+void Host::forceStretch(StretchOption s) {
+  stretch = s;
+}
 void Host::waitForTargetFps() {}
 void Host::drawFrame(uint8_t*, uint8_t*, uint8_t) {}
-bool Host::shouldFillAudioBuff() { return false; }
-void* Host::getAudioBufferPointer() { return nullptr; }
-size_t Host::getAudioBufferSize() { return 0; }
+bool Host::shouldFillAudioBuff() {
+  return false;
+}
+void* Host::getAudioBufferPointer() {
+  return nullptr;
+}
+size_t Host::getAudioBufferSize() {
+  return 0;
+}
 void Host::playFilledAudioBuffer() {}
 void Host::oneTimeCleanup() {}
-double Host::deltaTMs() { return 16.6667; }
-std::vector<std::string> Host::listcarts() { return {}; }
-void Host::overrideLogFilePrefix(const char* p) { if (p) _logFilePrefix = p; }
-const char* Host::logFilePrefix() { return _logFilePrefix.c_str(); }
-std::string Host::customBiosLua() { return _customBiosLua; }
-std::string Host::getCartDataFileContents(std::string) { return ""; }
+double Host::deltaTMs() {
+  return 16.6667;
+}
+std::vector<std::string> Host::listcarts() {
+  return {};
+}
+void Host::overrideLogFilePrefix(const char* p) {
+  if (p) _logFilePrefix = p;
+}
+const char* Host::logFilePrefix() {
+  return _logFilePrefix.c_str();
+}
+std::string Host::customBiosLua() {
+  return _customBiosLua;
+}
+std::string Host::getCartDataFileContents(std::string) {
+  return "";
+}
 void Host::saveCartData(std::string, std::string) {}
-size_t Host::getFileContents(std::string, char*) { return 0; }
+size_t Host::getFileContents(std::string, char*) {
+  return 0;
+}
 void Host::writeBufferToFile(std::string, char*, size_t) {}
-std::string Host::getCartDirectory() { return _cartDirectory; }
-void Host::setCartDirectory(std::string d) { _cartDirectory = d; }
-std::vector<std::string> Host::listdirs() { return {}; }
-int Host::getSetting(std::string) { return 0; }
+std::string Host::getCartDirectory() {
+  return _cartDirectory;
+}
+void Host::setCartDirectory(std::string d) {
+  _cartDirectory = d;
+}
+std::vector<std::string> Host::listdirs() {
+  return {};
+}
+int Host::getSetting(std::string) {
+  return 0;
+}
 void Host::setSetting(std::string, int) {}
-Color* Host::GetPaletteColors() { return _paletteColors; }
-void Host::setPlatformParams(int, int, uint32_t, uint32_t, uint32_t,
-                             std::string logFilePrefixStr, std::string customBiosLuaStr,
-                             std::string cartDirectoryStr) {
+Color* Host::GetPaletteColors() {
+  return _paletteColors;
+}
+void Host::setPlatformParams(int, int, uint32_t, uint32_t, uint32_t, std::string logFilePrefixStr,
+                             std::string customBiosLuaStr, std::string cartDirectoryStr) {
   _logFilePrefix = logFilePrefixStr;
   _customBiosLua = customBiosLuaStr;
   _cartDirectory = cartDirectoryStr;
@@ -106,17 +144,16 @@ extern "C" int test_atari_core_cpp(void) {
   rom[0xFFC] = 0x00U;
   rom[0xFFD] = 0xF0U;
   const uint8_t prog[] = {
-    0xA9U, 0x88U, 0x85U, 0x80U, /* LDA #$88 ; STA $80 */
-    0xA9U, 0x2EU, 0x85U, 0x08U, /* LDA #$2E ; STA COLUPF */
-    0xA9U, 0x44U, 0x85U, 0x09U, /* LDA #$44 ; STA COLUBK */
-    0xA9U, 0xAAU, 0x85U, 0x0EU, /* LDA #$AA ; STA PF1 */
-    0xA9U, 0x02U, 0x85U, 0x02U, /* LDA #$02 ; STA WSYNC */
-    0x85U, 0x00U, 0x85U, 0x02U, /* STA VSYNC ; STA WSYNC */
-    0x85U, 0x02U, 0x85U, 0x02U,
-    0xA9U, 0x00U, 0x85U, 0x00U, /* VSYNC off */
-    0x85U, 0x01U, 0xA2U, 0xFAU, /* VBLANK off ; LDX #$FA */
-    0x85U, 0x02U, 0xCAU, 0xD0U, 0xFBU, /* scanline loop */
-    0x4CU, 0x10U, 0xF0U         /* JMP $F010 */
+      0xA9U, 0x88U, 0x85U, 0x80U,                             /* LDA #$88 ; STA $80 */
+      0xA9U, 0x2EU, 0x85U, 0x08U,                             /* LDA #$2E ; STA COLUPF */
+      0xA9U, 0x44U, 0x85U, 0x09U,                             /* LDA #$44 ; STA COLUBK */
+      0xA9U, 0xAAU, 0x85U, 0x0EU,                             /* LDA #$AA ; STA PF1 */
+      0xA9U, 0x02U, 0x85U, 0x02U,                             /* LDA #$02 ; STA WSYNC */
+      0x85U, 0x00U, 0x85U, 0x02U,                             /* STA VSYNC ; STA WSYNC */
+      0x85U, 0x02U, 0x85U, 0x02U, 0xA9U, 0x00U, 0x85U, 0x00U, /* VSYNC off */
+      0x85U, 0x01U, 0xA2U, 0xFAU,                             /* VBLANK off ; LDX #$FA */
+      0x85U, 0x02U, 0xCAU, 0xD0U, 0xFBU,                      /* scanline loop */
+      0x4CU, 0x10U, 0xF0U                                     /* JMP $F010 */
   };
   memcpy(rom.data(), prog, sizeof(prog));
 
@@ -140,8 +177,8 @@ extern "C" int test_atari_core_cpp(void) {
   osys->propSet().getMD5(md5, props);
   string dtype = props.get(Cartridge_Type);
   string cartId;
-  Cartridge* cart = Cartridge::create(rom.data(), static_cast<uint32_t>(rom.size()), md5,
-                                      dtype, cartId, *osys, *settings, "");
+  Cartridge* cart =
+      Cartridge::create(rom.data(), static_cast<uint32_t>(rom.size()), md5, dtype, cartId, *osys, *settings, "");
   Console* console = cart ? new Console(osys, cart, props) : nullptr;
   if (!console) {
     delete cart;
@@ -203,20 +240,20 @@ extern "C" int test_lynx_core_cpp(void) {
   memcpy(&rom[6], "BS93", 4);
 
   const uint8_t prog[] = {
-    0xA9U, 0x5CU, 0x85U, 0x80U,        /* LDA #$5C ; STA $80 */
-    0xA9U, 0x0DU, 0x8DU, 0x92U, 0xFDU, /* LDA #$0D ; STA $FD92 (DISPCTL) */
-    0xA9U, 0x00U, 0x8DU, 0x94U, 0xFDU, /* LDA #$00 ; STA $FD94 (DISPADR L) */
-    0xA9U, 0x20U, 0x8DU, 0x95U, 0xFDU, /* LDA #$20 ; STA $FD95 (DISPADR H) */
-    0xA9U, 0x0FU, 0x8DU, 0xA0U, 0xFDU, /* LDA #$0F ; STA $FDA0 (Green0) */
-    0x8DU, 0xA1U, 0xFDU,               /* STA $FDA1 (Green1) */
-    0x8DU, 0xB0U, 0xFDU,               /* STA $FDB0 (BlueRed0) */
-    0x8DU, 0xB1U, 0xFDU,               /* STA $FDB1 (BlueRed1) */
-    0xA2U, 0x00U,                      /* LDX #$00 */
-    0xA9U, 0xFFU,                      /* LDA #$FF */
-    0x9DU, 0x00U, 0x20U,               /* STA $2000,X */
-    0x9DU, 0x00U, 0x21U,               /* STA $2100,X */
-    0xE8U, 0xD0U, 0xF7U,               /* INX ; BNE loop */
-    0x80U, 0xFEU                       /* BRA -2 */
+      0xA9U, 0x5CU, 0x85U, 0x80U,        /* LDA #$5C ; STA $80 */
+      0xA9U, 0x0DU, 0x8DU, 0x92U, 0xFDU, /* LDA #$0D ; STA $FD92 (DISPCTL) */
+      0xA9U, 0x00U, 0x8DU, 0x94U, 0xFDU, /* LDA #$00 ; STA $FD94 (DISPADR L) */
+      0xA9U, 0x20U, 0x8DU, 0x95U, 0xFDU, /* LDA #$20 ; STA $FD95 (DISPADR H) */
+      0xA9U, 0x0FU, 0x8DU, 0xA0U, 0xFDU, /* LDA #$0F ; STA $FDA0 (Green0) */
+      0x8DU, 0xA1U, 0xFDU,               /* STA $FDA1 (Green1) */
+      0x8DU, 0xB0U, 0xFDU,               /* STA $FDB0 (BlueRed0) */
+      0x8DU, 0xB1U, 0xFDU,               /* STA $FDB1 (BlueRed1) */
+      0xA2U, 0x00U,                      /* LDX #$00 */
+      0xA9U, 0xFFU,                      /* LDA #$FF */
+      0x9DU, 0x00U, 0x20U,               /* STA $2000,X */
+      0x9DU, 0x00U, 0x21U,               /* STA $2100,X */
+      0xE8U, 0xD0U, 0xF7U,               /* INX ; BNE loop */
+      0x80U, 0xFEU                       /* BRA -2 */
   };
   memcpy(&rom[10], prog, sizeof(prog));
 
@@ -228,8 +265,8 @@ extern "C" int test_lynx_core_cpp(void) {
 
   gAudioEnabled = 0;
   gPrimaryFrameBuffer = reinterpret_cast<UBYTE*>(raw_fb);
-  CSystem* lynx = new CSystem(rom.data(), static_cast<ULONG>(rom.size()),
-                              MIKIE_PIXEL_FORMAT_16BPP_565, HANDY_AUDIO_SAMPLE_FREQ);
+  CSystem* lynx =
+      new CSystem(rom.data(), static_cast<ULONG>(rom.size()), MIKIE_PIXEL_FORMAT_16BPP_565, HANDY_AUDIO_SAMPLE_FREQ);
   if (!lynx || lynx->mFileType == HANDY_FILETYPE_ILLEGAL) {
     gPrimaryFrameBuffer = nullptr;
     delete lynx;
@@ -264,21 +301,20 @@ extern "C" int test_lynx_core_cpp(void) {
 }
 
 extern "C" int test_pico_core_cpp(void) {
-  static const char kCart[] =
-      "pico-8 cartridge // http://www.pico-8.com\n"
-      "version 38\n"
-      "__lua__\n"
-      "function _init()\n"
-      "  poke(0x4300, 0x5A)\n"
-      "end\n"
-      "function _update()\n"
-      "  cnt = (cnt or 0) + 1\n"
-      "  poke(0x4301, cnt % 256)\n"
-      "end\n"
-      "function _draw()\n"
-      "  cls(1)\n"
-      "  rectfill(8, 8, 119, 119, 7)\n"
-      "end\n";
+  static const char kCart[] = "pico-8 cartridge // http://www.pico-8.com\n"
+                              "version 38\n"
+                              "__lua__\n"
+                              "function _init()\n"
+                              "  poke(0x4300, 0x5A)\n"
+                              "end\n"
+                              "function _update()\n"
+                              "  cnt = (cnt or 0) + 1\n"
+                              "  poke(0x4301, cnt % 256)\n"
+                              "end\n"
+                              "function _draw()\n"
+                              "  cls(1)\n"
+                              "  rectfill(8, 8, 119, 119, 7)\n"
+                              "end\n";
 
   PicoRam* mem = new PicoRam();
   Host* host = new Host(128, 128);
@@ -320,11 +356,9 @@ extern "C" int test_pico_core_cpp(void) {
   delete mem;
 
   if (init_marker != 0x5AU || step_count == 0U || nz < 1000) {
-    printf("[HOST_CORE] PICO_8 STATUS=FAIL init=0x%02X steps=%u fb_nz=%d\n",
-           init_marker, step_count, nz);
+    printf("[HOST_CORE] PICO_8 STATUS=FAIL init=0x%02X steps=%u fb_nz=%d\n", init_marker, step_count, nz);
     return 1;
   }
-  printf("[HOST_CORE] PICO_8 STATUS=PASS init=0x%02X steps=%u fb_nz=%d\n",
-         init_marker, step_count, nz);
+  printf("[HOST_CORE] PICO_8 STATUS=PASS init=0x%02X steps=%u fb_nz=%d\n", init_marker, step_count, nz);
   return 0;
 }

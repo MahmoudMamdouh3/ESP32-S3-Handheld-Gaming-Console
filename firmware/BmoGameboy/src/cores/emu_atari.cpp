@@ -100,7 +100,7 @@ void renderTiaToPanel() {
 
   DisplayEmu::streamAtariFrame(s_panelFb);
 }
-}  // namespace
+} // namespace
 
 bool AtariEmu::init(const uint8_t* romData, size_t romSize) {
   if (!romData || romSize == 0 || romSize > 512UL * 1024UL) {
@@ -144,9 +144,8 @@ bool AtariEmu::init(const uint8_t* romData, size_t romSize) {
 
   string cartType = props.get(Cartridge_Type);
   string cartId;
-  Cartridge* cart = Cartridge::create(romData, (uint32_t)romSize, cartMD5,
-                                      cartType, cartId, *s_osystem,
-                                      *s_settings, "");
+  Cartridge* cart =
+      Cartridge::create(romData, (uint32_t)romSize, cartMD5, cartType, cartId, *s_osystem, *s_settings, "");
   if (!cart) {
     destroy();
     return false;
@@ -242,8 +241,7 @@ bool AtariEmu::saveState(const char* romFilename, int slot) {
   if (!s_stateMgr->saveState(ser) || ser.size() == 0 || !ser.data()) {
     return false;
   }
-  return SaveManager::saveState(romFilename, slot, SaveManager::CORE_ATARI,
-                                ser.data(), ser.size(), nullptr, 0);
+  return SaveManager::saveState(romFilename, slot, SaveManager::CORE_ATARI, ser.data(), ser.size(), nullptr, 0);
 }
 
 bool AtariEmu::loadState(const char* romFilename, int slot) {
@@ -252,8 +250,7 @@ bool AtariEmu::loadState(const char* romFilename, int slot) {
   if (!stateBuf) return false;
 
   size_t outSize = 0;
-  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_ATARI,
-                                   stateBuf, ATARI_STATE_BUF_MAX, &outSize,
+  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_ATARI, stateBuf, ATARI_STATE_BUF_MAX, &outSize,
                                    nullptr, 0, nullptr);
   if (ok && outSize > 0) {
     Serializer ser;
@@ -267,7 +264,7 @@ bool AtariEmu::loadState(const char* romFilename, int slot) {
   return ok;
 }
 
-#else  // BMO_EXPERIMENTAL_CORES == 0
+#else // BMO_EXPERIMENTAL_CORES == 0
 
 bool AtariEmu::init(const uint8_t* romData, size_t romSize) {
   (void)romData;

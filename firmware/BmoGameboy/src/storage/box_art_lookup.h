@@ -99,8 +99,8 @@ inline bool parseHex8(const char* text, uint32_t* outValue) {
   return true;
 }
 
-inline bool parseArtFilename(const char* entryName, char* outStem, size_t outStemSize,
-                             bool* outHasKeyCrc, uint32_t* outKeyCrc) {
+inline bool parseArtFilename(const char* entryName, char* outStem, size_t outStemSize, bool* outHasKeyCrc,
+                             uint32_t* outKeyCrc) {
   if (!entryName || !outStem || outStemSize == 0 || !outHasKeyCrc || !outKeyCrc) {
     return false;
   }
@@ -200,7 +200,7 @@ inline void siftDownBase(int32_t* arr, int count, int root, const RomFile* roms)
     root = largest;
   }
 }
-}  // namespace detail
+} // namespace detail
 
 class CatalogMatcher {
 public:
@@ -311,4 +311,4 @@ private:
   int32_t* baseOrder_;
 };
 
-}  // namespace BoxArtLookup
+} // namespace BoxArtLookup

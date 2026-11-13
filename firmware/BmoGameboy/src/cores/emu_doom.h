@@ -4,16 +4,16 @@
 #include "psram_zone_budget.h"
 
 namespace DoomEmu {
-  // Last failure reason string
-  const char* lastError();
+// Last failure reason string
+const char* lastError();
 
-  // Begin the Doom engine.
-  // wadPath must be the absolute path to the WAD on the VFS (e.g. "/sd/DOOM1.WAD")
-  bool init(const char* wadPath);
+// Begin the Doom engine.
+// wadPath must be the absolute path to the WAD on the VFS (e.g. "/sd/DOOM1.WAD")
+bool init(const char* wadPath);
 
-  // Run one frame/tick of Doom
-  void update();
+// Run one frame/tick of Doom
+void update();
 
-  // Shut down Doom
-  void destroy();
-}
+// Shut down Doom
+void destroy();
+} // namespace DoomEmu

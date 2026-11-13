@@ -17,8 +17,8 @@ int main() {
       if (std::fabs(spring.val) > 5.0f || std::fabs(spring.vel) > 100.0f) return 2;
       if (spring.val > maximum) maximum = spring.val;
     }
-    std::printf("dt=%.8f value=%.8f velocity=%.8f max=%.8f overshoot=%.8f\n",
-                dt, spring.val, spring.vel, maximum, maximum - 1.0f);
+    std::printf("dt=%.8f value=%.8f velocity=%.8f max=%.8f overshoot=%.8f\n", dt, spring.val, spring.vel, maximum,
+                maximum - 1.0f);
   }
 
   BmoFaceInternal::HarmonicSpring spring;

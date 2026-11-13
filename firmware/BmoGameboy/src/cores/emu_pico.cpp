@@ -83,13 +83,30 @@ void renderPicoToPanel() {
       int sx = x;
       int sy = y;
       switch (drawMode) {
-        case 129: sx = (PICO_W - 1) - x; break;
-        case 130: sy = (PICO_H - 1) - y; break;
-        case 131: sx = (PICO_W - 1) - x; sy = (PICO_H - 1) - y; break;
-        case 133: sx = y; sy = (PICO_W - 1) - x; break;
-        case 134: sx = (PICO_W - 1) - x; sy = (PICO_H - 1) - y; break;
-        case 135: sx = (PICO_H - 1) - y; sy = x; break;
-        default: break;
+      case 129:
+        sx = (PICO_W - 1) - x;
+        break;
+      case 130:
+        sy = (PICO_H - 1) - y;
+        break;
+      case 131:
+        sx = (PICO_W - 1) - x;
+        sy = (PICO_H - 1) - y;
+        break;
+      case 133:
+        sx = y;
+        sy = (PICO_W - 1) - x;
+        break;
+      case 134:
+        sx = (PICO_W - 1) - x;
+        sy = (PICO_H - 1) - y;
+        break;
+      case 135:
+        sx = (PICO_H - 1) - y;
+        sy = x;
+        break;
+      default:
+        break;
       }
       const int picox = sx / scaleX;
       const int picoy = sy / scaleY;
@@ -101,10 +118,9 @@ void renderPicoToPanel() {
 
   DisplayEmu::streamPicoFrame(s_panelFb);
 }
-}  // namespace
+} // namespace
 
-Host::Host(int windowWidth, int windowHeight)
-    : currKDown(0), currKHeld(0), _logFilePrefix("bmo"), _cartDirectory("/") {
+Host::Host(int windowWidth, int windowHeight) : currKDown(0), currKHeld(0), _logFilePrefix("bmo"), _cartDirectory("/") {
   (void)windowWidth;
   (void)windowHeight;
   setUpPaletteColors();
@@ -112,7 +128,9 @@ Host::Host(int windowWidth, int windowHeight)
 
 void Host::loadSettingsIni() {}
 void Host::saveSettingsIni() {}
-std::string Host::getCartDataFile(std::string cartDataKey) { return cartDataKey; }
+std::string Host::getCartDataFile(std::string cartDataKey) {
+  return cartDataKey;
+}
 
 void Host::setUpPaletteColors() {
   static const Color kBase[16] = {
@@ -138,8 +156,12 @@ void Host::oneTimeSetup(Audio* audio) {
 }
 
 void Host::unpackCarts() {}
-void Host::setTargetFps(int targetFps) { (void)targetFps; }
-bool Host::shouldRunMainLoop() { return s_running; }
+void Host::setTargetFps(int targetFps) {
+  (void)targetFps;
+}
+bool Host::shouldRunMainLoop() {
+  return s_running;
+}
 
 InputState_t Host::scanInput() {
   InputState_t st;
@@ -153,27 +175,45 @@ InputState_t Host::scanInput() {
   return st;
 }
 
-bool Host::shouldQuit() { return !s_running; }
+bool Host::shouldQuit() {
+  return !s_running;
+}
 void Host::changeStretch() {}
-void Host::forceStretch(StretchOption newStretch) { stretch = newStretch; }
+void Host::forceStretch(StretchOption newStretch) {
+  stretch = newStretch;
+}
 void Host::waitForTargetFps() {}
 void Host::drawFrame(uint8_t* picoFb, uint8_t* screenPaletteMap, uint8_t drawMode) {
   (void)picoFb;
   (void)screenPaletteMap;
   (void)drawMode;
 }
-bool Host::shouldFillAudioBuff() { return false; }
-void* Host::getAudioBufferPointer() { return nullptr; }
-size_t Host::getAudioBufferSize() { return 0; }
+bool Host::shouldFillAudioBuff() {
+  return false;
+}
+void* Host::getAudioBufferPointer() {
+  return nullptr;
+}
+size_t Host::getAudioBufferSize() {
+  return 0;
+}
 void Host::playFilledAudioBuffer() {}
 void Host::oneTimeCleanup() {}
-double Host::deltaTMs() { return 16.6667; }
-std::vector<std::string> Host::listcarts() { return {}; }
+double Host::deltaTMs() {
+  return 16.6667;
+}
+std::vector<std::string> Host::listcarts() {
+  return {};
+}
 void Host::overrideLogFilePrefix(const char* newPrefix) {
   if (newPrefix) _logFilePrefix = newPrefix;
 }
-const char* Host::logFilePrefix() { return _logFilePrefix.c_str(); }
-std::string Host::customBiosLua() { return _customBiosLua; }
+const char* Host::logFilePrefix() {
+  return _logFilePrefix.c_str();
+}
+std::string Host::customBiosLua() {
+  return _customBiosLua;
+}
 
 std::string Host::getCartDataFileContents(std::string cartDataKey) {
   if (cartDataKey == s_cartDataKey) return s_cartDataHex;
@@ -197,9 +237,15 @@ void Host::writeBufferToFile(std::string cartDataKey, char* buffer, size_t lengt
   (void)length;
 }
 
-std::string Host::getCartDirectory() { return _cartDirectory; }
-void Host::setCartDirectory(std::string cartDirectory) { _cartDirectory = cartDirectory; }
-std::vector<std::string> Host::listdirs() { return {}; }
+std::string Host::getCartDirectory() {
+  return _cartDirectory;
+}
+void Host::setCartDirectory(std::string cartDirectory) {
+  _cartDirectory = cartDirectory;
+}
+std::vector<std::string> Host::listdirs() {
+  return {};
+}
 
 int Host::getSetting(std::string sname) {
   if (sname == "stretch") return (int)stretch;
@@ -211,18 +257,24 @@ int Host::getSetting(std::string sname) {
 }
 
 void Host::setSetting(std::string sname, int sdata) {
-  if (sname == "stretch") stretch = (StretchOption)sdata;
-  else if (sname == "kbmode") kbmode = (KeyboardOption)sdata;
-  else if (sname == "resizekey") resizekey = (ResizekeyOption)sdata;
-  else if (sname == "menustyle") menustyle = (MenuStyleOption)sdata;
-  else if (sname == "bgcolor") bgcolor = (BgColorOption)sdata;
+  if (sname == "stretch")
+    stretch = (StretchOption)sdata;
+  else if (sname == "kbmode")
+    kbmode = (KeyboardOption)sdata;
+  else if (sname == "resizekey")
+    resizekey = (ResizekeyOption)sdata;
+  else if (sname == "menustyle")
+    menustyle = (MenuStyleOption)sdata;
+  else if (sname == "bgcolor")
+    bgcolor = (BgColorOption)sdata;
 }
 
-Color* Host::GetPaletteColors() { return _paletteColors; }
+Color* Host::GetPaletteColors() {
+  return _paletteColors;
+}
 
-void Host::setPlatformParams(int windowWidth, int windowHeight, uint32_t sdlWindowFlags,
-                             uint32_t sdlRendererFlags, uint32_t sdlPixelFormat,
-                             std::string logFilePrefixStr, std::string customBiosLuaStr,
+void Host::setPlatformParams(int windowWidth, int windowHeight, uint32_t sdlWindowFlags, uint32_t sdlRendererFlags,
+                             uint32_t sdlPixelFormat, std::string logFilePrefixStr, std::string customBiosLuaStr,
                              std::string cartDirectoryStr) {
   (void)windowWidth;
   (void)windowHeight;
@@ -347,8 +399,7 @@ bool PicoEmu::saveBatteryRam(const char* romFilename) {
 bool PicoEmu::loadBatteryRam(const char* romFilename) {
   if (!s_running || !s_memory || !s_vm || !romFilename) return false;
   size_t loaded = 0;
-  if (!SaveManager::loadBatteryRam(romFilename, &s_memory->data[0x5e00],
-                                   PICO_CARTDATA_SIZE, &loaded) || loaded == 0) {
+  if (!SaveManager::loadBatteryRam(romFilename, &s_memory->data[0x5e00], PICO_CARTDATA_SIZE, &loaded) || loaded == 0) {
     return false;
   }
   // Keep in-memory hex cache synchronized if the cart invokes cartdata() later.
@@ -372,9 +423,7 @@ bool PicoEmu::saveState(const char* romFilename, int slot) {
   if (luaLen > 0 && luaLen <= PICO_LUA_STATE_MAX) {
     const size_t ramSize = sizeof(PicoRam);
     const size_t musicSize = sizeof(musicChannel);
-    const size_t totalSize = 4U + sizeof(size_t) + luaLen +
-                             sizeof(size_t) + ramSize +
-                             sizeof(size_t) + musicSize;
+    const size_t totalSize = 4U + sizeof(size_t) + luaLen + sizeof(size_t) + ramSize + sizeof(size_t) + musicSize;
     if (totalSize <= PICO_SAVE_STATE_MAX) {
       size_t off = 0;
       stateBuf[off++] = 'f';
@@ -397,8 +446,7 @@ bool PicoEmu::saveState(const char* romFilename, int slot) {
       memcpy(stateBuf + off, &s_audio->getAudioState()->_musicChannel, musicSize);
       off += musicSize;
 
-      ok = SaveManager::saveState(romFilename, slot, SaveManager::CORE_PICO8,
-                                  stateBuf, off, nullptr, 0);
+      ok = SaveManager::saveState(romFilename, slot, SaveManager::CORE_PICO8, stateBuf, off, nullptr, 0);
     }
   }
 
@@ -414,8 +462,7 @@ bool PicoEmu::loadState(const char* romFilename, int slot) {
   if (!stateBuf) return false;
 
   size_t outSize = 0;
-  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_PICO8,
-                                   stateBuf, PICO_SAVE_STATE_MAX, &outSize,
+  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_PICO8, stateBuf, PICO_SAVE_STATE_MAX, &outSize,
                                    nullptr, 0, nullptr);
   if (ok && outSize >= 4U + sizeof(size_t) && stateBuf[0] == 'f' && stateBuf[1] == '8') {
     size_t off = 4U;
@@ -457,7 +504,7 @@ bool PicoEmu::loadState(const char* romFilename, int slot) {
   return ok;
 }
 
-#else  // BMO_EXPERIMENTAL_CORES == 0
+#else // BMO_EXPERIMENTAL_CORES == 0
 
 Host::Host(int windowWidth, int windowHeight) : currKDown(0), currKHeld(0) {
   (void)windowWidth;
@@ -465,42 +512,100 @@ Host::Host(int windowWidth, int windowHeight) : currKDown(0), currKHeld(0) {
 }
 void Host::loadSettingsIni() {}
 void Host::saveSettingsIni() {}
-std::string Host::getCartDataFile(std::string cartDataKey) { return cartDataKey; }
+std::string Host::getCartDataFile(std::string cartDataKey) {
+  return cartDataKey;
+}
 void Host::setUpPaletteColors() {}
-void Host::oneTimeSetup(Audio* audio) { (void)audio; }
+void Host::oneTimeSetup(Audio* audio) {
+  (void)audio;
+}
 void Host::unpackCarts() {}
-void Host::setTargetFps(int targetFps) { (void)targetFps; }
-bool Host::shouldRunMainLoop() { return false; }
-InputState_t Host::scanInput() { return InputState_t{}; }
-bool Host::shouldQuit() { return true; }
+void Host::setTargetFps(int targetFps) {
+  (void)targetFps;
+}
+bool Host::shouldRunMainLoop() {
+  return false;
+}
+InputState_t Host::scanInput() {
+  return InputState_t{};
+}
+bool Host::shouldQuit() {
+  return true;
+}
 void Host::changeStretch() {}
-void Host::forceStretch(StretchOption newStretch) { (void)newStretch; }
+void Host::forceStretch(StretchOption newStretch) {
+  (void)newStretch;
+}
 void Host::waitForTargetFps() {}
 void Host::drawFrame(uint8_t* picoFb, uint8_t* screenPaletteMap, uint8_t drawMode) {
-  (void)picoFb; (void)screenPaletteMap; (void)drawMode;
+  (void)picoFb;
+  (void)screenPaletteMap;
+  (void)drawMode;
 }
-bool Host::shouldFillAudioBuff() { return false; }
-void* Host::getAudioBufferPointer() { return nullptr; }
-size_t Host::getAudioBufferSize() { return 0; }
+bool Host::shouldFillAudioBuff() {
+  return false;
+}
+void* Host::getAudioBufferPointer() {
+  return nullptr;
+}
+size_t Host::getAudioBufferSize() {
+  return 0;
+}
 void Host::playFilledAudioBuffer() {}
 void Host::oneTimeCleanup() {}
-double Host::deltaTMs() { return 0.0; }
-std::vector<std::string> Host::listcarts() { return {}; }
-void Host::overrideLogFilePrefix(const char* newPrefix) { (void)newPrefix; }
-const char* Host::logFilePrefix() { return ""; }
-std::string Host::customBiosLua() { return ""; }
-std::string Host::getCartDataFileContents(std::string cartDataKey) { (void)cartDataKey; return ""; }
-void Host::saveCartData(std::string cartDataKey, std::string contents) { (void)cartDataKey; (void)contents; }
-size_t Host::getFileContents(std::string fileName, char* buffer) { (void)fileName; (void)buffer; return 0; }
-void Host::writeBufferToFile(std::string cartDataKey, char* buffer, size_t length) {
-  (void)cartDataKey; (void)buffer; (void)length;
+double Host::deltaTMs() {
+  return 0.0;
 }
-std::string Host::getCartDirectory() { return ""; }
-void Host::setCartDirectory(std::string cartDirectory) { (void)cartDirectory; }
-std::vector<std::string> Host::listdirs() { return {}; }
-int Host::getSetting(std::string sname) { (void)sname; return 0; }
-void Host::setSetting(std::string sname, int sdata) { (void)sname; (void)sdata; }
-Color* Host::GetPaletteColors() { return _paletteColors; }
+std::vector<std::string> Host::listcarts() {
+  return {};
+}
+void Host::overrideLogFilePrefix(const char* newPrefix) {
+  (void)newPrefix;
+}
+const char* Host::logFilePrefix() {
+  return "";
+}
+std::string Host::customBiosLua() {
+  return "";
+}
+std::string Host::getCartDataFileContents(std::string cartDataKey) {
+  (void)cartDataKey;
+  return "";
+}
+void Host::saveCartData(std::string cartDataKey, std::string contents) {
+  (void)cartDataKey;
+  (void)contents;
+}
+size_t Host::getFileContents(std::string fileName, char* buffer) {
+  (void)fileName;
+  (void)buffer;
+  return 0;
+}
+void Host::writeBufferToFile(std::string cartDataKey, char* buffer, size_t length) {
+  (void)cartDataKey;
+  (void)buffer;
+  (void)length;
+}
+std::string Host::getCartDirectory() {
+  return "";
+}
+void Host::setCartDirectory(std::string cartDirectory) {
+  (void)cartDirectory;
+}
+std::vector<std::string> Host::listdirs() {
+  return {};
+}
+int Host::getSetting(std::string sname) {
+  (void)sname;
+  return 0;
+}
+void Host::setSetting(std::string sname, int sdata) {
+  (void)sname;
+  (void)sdata;
+}
+Color* Host::GetPaletteColors() {
+  return _paletteColors;
+}
 void Host::setPlatformParams(int, int, uint32_t, uint32_t, uint32_t, std::string, std::string, std::string) {}
 
 bool PicoEmu::init(const uint8_t* romData, size_t romSize) {

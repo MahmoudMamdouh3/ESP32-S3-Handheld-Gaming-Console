@@ -14,9 +14,7 @@ static inline uint16_t bmo_rgb888_to_panel565(uint8_t r, uint8_t g, uint8_t b) {
 
 // Convert host-endian RGB565 (R:15-11, G:10-5, B:4-0) to ST7789 byte-swapped BGR565
 static inline uint16_t bmo_rgb565_to_panel565(uint16_t rgb565) {
-  const uint16_t bgr = (uint16_t)(((rgb565 & 0x001FU) << 11) |
-                                  (rgb565 & 0x07E0U) |
-                                  ((rgb565 & 0xF800U) >> 11));
+  const uint16_t bgr = (uint16_t)(((rgb565 & 0x001FU) << 11) | (rgb565 & 0x07E0U) | ((rgb565 & 0xF800U) >> 11));
   return (uint16_t)((bgr >> 8) | (bgr << 8));
 }
 

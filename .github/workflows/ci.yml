@@ -75,6 +75,13 @@ jobs:
       - name: Configure WASI_SDK_PATH
         run: echo "WASI_SDK_PATH=${{ github.workspace }}/.tools/wasi-sdk-34.0-x86_64-linux" >> "$GITHUB_ENV"
 
+      - name: Run native C++17 CTest suite (Release + ASan/UBSan)
+        run: |
+          cmake -S . -B build/host-ctest
+          cmake --build build/host-ctest --config Release
+          ctest --test-dir build/host-ctest -C Release --output-on-failure
+          python tasks.py check --no-tests --sanitizers
+
       - name: Run host unit tests
         run: python -m unittest discover -s tests -v
 

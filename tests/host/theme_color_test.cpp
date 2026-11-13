@@ -19,4 +19,6 @@ static_assert(Theme::makePanelColor(76, 175, 80) == 0x5569, "green panel word");
 static_assert(Theme::BMO_TONGUE_PINK == 0x7EB4, "pink canvas word");
 static_assert(Theme::makePanelColor(244, 143, 177) == 0xB47E, "pink panel word");
 
-int main() { return 0; }
+int main() {
+  return 0;
+}

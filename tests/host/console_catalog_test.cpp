@@ -6,6 +6,8 @@
 int main() {
   BMO_CHECK(ConsoleCatalog::CONSOLE_COUNT == 16);
   BMO_CHECK(ConsoleCatalog::CONSOLES[0] == ROM_FAVORITES);
+  BMO_CHECK(ConsoleCatalog::kCatalogSpecs[0].type == ROM_FAVORITES);
+  BMO_CHECK(ConsoleCatalog::kCatalogSpecs[0].emulatorIndex == -1);
 
   // Every emulator index 0..14 must exist exactly once in kCatalogSpecs.
   for (int emu = 0; emu < 15; ++emu) {

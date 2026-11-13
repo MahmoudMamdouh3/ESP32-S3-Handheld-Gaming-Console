@@ -97,12 +97,12 @@ static int test_colem_core(void) {
 
   /* Enable TMS9918 display (VDP R1=0xC0), backdrop cyan/blue (VDP R7=0x5A), write $6000=$5A, loop. */
   const uint8_t prog[] = {
-    0x3EU, 0x5AU, 0x32U, 0x00U, 0x60U, /* LD A,5Ah ; LD (6000h),A */
-    0x3EU, 0xC0U, 0xD3U, 0xBFU,        /* LD A,C0h ; OUT (BFh),A */
-    0x3EU, 0x81U, 0xD3U, 0xBFU,        /* LD A,81h ; OUT (BFh),A (VDP R1=C0h) */
-    0x3EU, 0x5AU, 0xD3U, 0xBFU,        /* LD A,5Ah ; OUT (BFh),A */
-    0x3EU, 0x87U, 0xD3U, 0xBFU,        /* LD A,87h ; OUT (BFh),A (VDP R7=5Ah) */
-    0x18U, 0xFEU                       /* JR -2 */
+      0x3EU, 0x5AU, 0x32U, 0x00U, 0x60U, /* LD A,5Ah ; LD (6000h),A */
+      0x3EU, 0xC0U, 0xD3U, 0xBFU,        /* LD A,C0h ; OUT (BFh),A */
+      0x3EU, 0x81U, 0xD3U, 0xBFU,        /* LD A,81h ; OUT (BFh),A (VDP R1=C0h) */
+      0x3EU, 0x5AU, 0xD3U, 0xBFU,        /* LD A,5Ah ; OUT (BFh),A */
+      0x3EU, 0x87U, 0xD3U, 0xBFU,        /* LD A,87h ; OUT (BFh),A (VDP R7=5Ah) */
+      0x18U, 0xFEU                       /* JR -2 */
   };
   memcpy(&rom[0x20], prog, sizeof(prog));
 
@@ -133,12 +133,10 @@ static int test_colem_core(void) {
   bmo_sms_destroy();
 
   if (marker != 0x5AU || nz < 1000) {
-    printf("[HOST_CORE] COLECO STATUS=FAIL wram0=0x%02X non_zero=%d distinct=%d\n",
-           marker, nz, distinct);
+    printf("[HOST_CORE] COLECO STATUS=FAIL wram0=0x%02X non_zero=%d distinct=%d\n", marker, nz, distinct);
     return 1;
   }
-  printf("[HOST_CORE] COLECO STATUS=PASS wram0=0x%02X non_zero=%d distinct=%d\n",
-         marker, nz, distinct);
+  printf("[HOST_CORE] COLECO STATUS=PASS wram0=0x%02X non_zero=%d distinct=%d\n", marker, nz, distinct);
   return 0;
 }
 
@@ -148,18 +146,16 @@ static int test_sms_core(void) {
 
   /* Enable SMS VDP R1=0xC0, R7=0x00, CRAM[0]=0x3F (white) & CRAM[16]=0x3F, write WRAM[0]=0x7B, loop. */
   const uint8_t prog[] = {
-    0x3EU, 0x7BU, 0x32U, 0x00U, 0xC0U, /* LD A,7Bh ; LD (C000h),A */
-    0x3EU, 0xC0U, 0xD3U, 0xBFU,        /* LD A,C0h ; OUT (BFh),A */
-    0x3EU, 0x81U, 0xD3U, 0xBFU,        /* LD A,81h ; OUT (BFh),A (VDP R1=C0h) */
-    0x3EU, 0x00U, 0xD3U, 0xBFU,        /* LD A,00h ; OUT (BFh),A */
-    0x3EU, 0x87U, 0xD3U, 0xBFU,        /* LD A,87h ; OUT (BFh),A (VDP R7=00h backdrop idx) */
-    0x3EU, 0x00U, 0xD3U, 0xBFU,        /* CRAM addr 0 */
-    0x3EU, 0xC0U, 0xD3U, 0xBFU,
-    0x3EU, 0x3FU, 0xD3U, 0xBEU,        /* CRAM[0] = 0x3F */
-    0x3EU, 0x10U, 0xD3U, 0xBFU,        /* CRAM addr 16 (sprite/backdrop bank) */
-    0x3EU, 0xC0U, 0xD3U, 0xBFU,
-    0x3EU, 0x3FU, 0xD3U, 0xBEU,        /* CRAM[16] = 0x3F */
-    0x18U, 0xFEU                       /* JR -2 */
+      0x3EU, 0x7BU, 0x32U, 0x00U, 0xC0U,                      /* LD A,7Bh ; LD (C000h),A */
+      0x3EU, 0xC0U, 0xD3U, 0xBFU,                             /* LD A,C0h ; OUT (BFh),A */
+      0x3EU, 0x81U, 0xD3U, 0xBFU,                             /* LD A,81h ; OUT (BFh),A (VDP R1=C0h) */
+      0x3EU, 0x00U, 0xD3U, 0xBFU,                             /* LD A,00h ; OUT (BFh),A */
+      0x3EU, 0x87U, 0xD3U, 0xBFU,                             /* LD A,87h ; OUT (BFh),A (VDP R7=00h backdrop idx) */
+      0x3EU, 0x00U, 0xD3U, 0xBFU,                             /* CRAM addr 0 */
+      0x3EU, 0xC0U, 0xD3U, 0xBFU, 0x3EU, 0x3FU, 0xD3U, 0xBEU, /* CRAM[0] = 0x3F */
+      0x3EU, 0x10U, 0xD3U, 0xBFU,                             /* CRAM addr 16 (sprite/backdrop bank) */
+      0x3EU, 0xC0U, 0xD3U, 0xBFU, 0x3EU, 0x3FU, 0xD3U, 0xBEU, /* CRAM[16] = 0x3F */
+      0x18U, 0xFEU                                            /* JR -2 */
   };
   memcpy(rom, prog, sizeof(prog));
 
@@ -190,12 +186,10 @@ static int test_sms_core(void) {
   bmo_sms_destroy();
 
   if (marker != 0x7BU || nz < 1000) {
-    printf("[HOST_CORE] SMS_Z80 STATUS=FAIL wram0=0x%02X non_zero=%d distinct=%d\n",
-           marker, nz, distinct);
+    printf("[HOST_CORE] SMS_Z80 STATUS=FAIL wram0=0x%02X non_zero=%d distinct=%d\n", marker, nz, distinct);
     return 1;
   }
-  printf("[HOST_CORE] SMS_Z80 STATUS=PASS wram0=0x%02X non_zero=%d distinct=%d\n",
-         marker, nz, distinct);
+  printf("[HOST_CORE] SMS_Z80 STATUS=PASS wram0=0x%02X non_zero=%d distinct=%d\n", marker, nz, distinct);
   return 0;
 }
 
@@ -220,14 +214,14 @@ static int test_nes_agnes_core(void) {
   prg[0x3FFDU] = 0x80U;
 
   const uint8_t prog[] = {
-    0xA9U, 0x5CU, 0x8DU, 0x00U, 0x60U, /* LDA #$5C ; STA $6000 */
-    0xA9U, 0x3FU, 0x8DU, 0x06U, 0x20U, /* LDA #$3F ; STA $2006 */
-    0xA9U, 0x00U, 0x8DU, 0x06U, 0x20U, /* LDA #$00 ; STA $2006 */
-    0xA9U, 0x21U, 0x8DU, 0x07U, 0x20U, /* LDA #$21 ; STA $2007 (sky blue backdrop) */
-    0xA9U, 0x08U, 0x8DU, 0x01U, 0x20U, /* LDA #$08 ; STA $2001 (enable BG) */
-    0xE8U,                             /* INX ($8019) */
-    0x8EU, 0x01U, 0x60U,               /* STX $6001 */
-    0x4CU, 0x19U, 0x80U                /* JMP $8019 */
+      0xA9U, 0x5CU, 0x8DU, 0x00U, 0x60U, /* LDA #$5C ; STA $6000 */
+      0xA9U, 0x3FU, 0x8DU, 0x06U, 0x20U, /* LDA #$3F ; STA $2006 */
+      0xA9U, 0x00U, 0x8DU, 0x06U, 0x20U, /* LDA #$00 ; STA $2006 */
+      0xA9U, 0x21U, 0x8DU, 0x07U, 0x20U, /* LDA #$21 ; STA $2007 (sky blue backdrop) */
+      0xA9U, 0x08U, 0x8DU, 0x01U, 0x20U, /* LDA #$08 ; STA $2001 (enable BG) */
+      0xE8U,                             /* INX ($8019) */
+      0x8EU, 0x01U, 0x60U,               /* STX $6001 */
+      0x4CU, 0x19U, 0x80U                /* JMP $8019 */
   };
   memcpy(prg, prog, sizeof(prog));
 
@@ -316,8 +310,7 @@ static int test_nes_agnes_core(void) {
   for (int y = 0; y < AGNES_SCREEN_HEIGHT; ++y) {
     for (int x = 0; x < AGNES_SCREEN_WIDTH; ++x) {
       agnes_color_t c = agnes_get_screen_pixel(agn, x, y);
-      fb_b[(size_t)y * AGNES_SCREEN_WIDTH + (size_t)x] =
-          ((uint32_t)c.r << 16) | ((uint32_t)c.g << 8) | (uint32_t)c.b;
+      fb_b[(size_t)y * AGNES_SCREEN_WIDTH + (size_t)x] = ((uint32_t)c.r << 16) | ((uint32_t)c.g << 8) | (uint32_t)c.b;
     }
   }
 

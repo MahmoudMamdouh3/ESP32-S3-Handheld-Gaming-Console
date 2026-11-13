@@ -58,17 +58,17 @@ int test_pce_core(void) {
   /* Map RAM ($F8) into MPR1 ($2000), hardware ($FF) into MPR0 ($0000),
    * write RAM marker $2000 = 0x42, set VCE[0] = 0x01C7, enable VDC display, loop. */
   const uint8_t prog[] = {
-    0xA9U, 0xF8U, 0x53U, 0x02U,        /* LDA #$F8 ; TAM #$02 */
-    0xA9U, 0xFFU, 0x53U, 0x01U,        /* LDA #$FF ; TAM #$01 */
-    0xA9U, 0x42U, 0x8DU, 0x00U, 0x20U, /* LDA #$42 ; STA $2000 */
-    0x9CU, 0x02U, 0x04U,               /* STZ $0402 */
-    0x9CU, 0x03U, 0x04U,               /* STZ $0403 */
-    0xA9U, 0xC7U, 0x8DU, 0x04U, 0x04U, /* LDA #$C7 ; STA $0404 */
-    0xA9U, 0x01U, 0x8DU, 0x05U, 0x04U, /* LDA #$01 ; STA $0405 */
-    0xA9U, 0x05U, 0x8DU, 0x00U, 0x00U, /* LDA #$05 ; STA $0000 */
-    0xA9U, 0xC0U, 0x8DU, 0x02U, 0x00U, /* LDA #$C0 ; STA $0002 */
-    0x9CU, 0x03U, 0x00U,               /* STZ $0003 */
-    0x80U, 0xFEU                       /* BRA -2 */
+      0xA9U, 0xF8U, 0x53U, 0x02U,        /* LDA #$F8 ; TAM #$02 */
+      0xA9U, 0xFFU, 0x53U, 0x01U,        /* LDA #$FF ; TAM #$01 */
+      0xA9U, 0x42U, 0x8DU, 0x00U, 0x20U, /* LDA #$42 ; STA $2000 */
+      0x9CU, 0x02U, 0x04U,               /* STZ $0402 */
+      0x9CU, 0x03U, 0x04U,               /* STZ $0403 */
+      0xA9U, 0xC7U, 0x8DU, 0x04U, 0x04U, /* LDA #$C7 ; STA $0404 */
+      0xA9U, 0x01U, 0x8DU, 0x05U, 0x04U, /* LDA #$01 ; STA $0405 */
+      0xA9U, 0x05U, 0x8DU, 0x00U, 0x00U, /* LDA #$05 ; STA $0000 */
+      0xA9U, 0xC0U, 0x8DU, 0x02U, 0x00U, /* LDA #$C0 ; STA $0002 */
+      0x9CU, 0x03U, 0x00U,               /* STZ $0003 */
+      0x80U, 0xFEU                       /* BRA -2 */
   };
   memcpy(rom, prog, sizeof(prog));
 
@@ -98,11 +98,10 @@ int test_pce_core(void) {
   s_raw_fb = NULL;
 
   if (ram0 != 0x42U || vce0 != 0x01C7U || s_vsync_count != 50) {
-    printf("[HOST_CORE] PC_ENGINE STATUS=FAIL ram0=0x%02X vce0=0x%04X vsync=%d px=%d\n",
-           ram0, vce0, s_vsync_count, s_nonzero_pixels);
+    printf("[HOST_CORE] PC_ENGINE STATUS=FAIL ram0=0x%02X vce0=0x%04X vsync=%d px=%d\n", ram0, vce0, s_vsync_count,
+           s_nonzero_pixels);
     return 1;
   }
-  printf("[HOST_CORE] PC_ENGINE STATUS=PASS ram0=0x%02X vce0=0x%04X vsync=%d\n",
-         ram0, vce0, s_vsync_count);
+  printf("[HOST_CORE] PC_ENGINE STATUS=PASS ram0=0x%02X vce0=0x%04X vsync=%d\n", ram0, vce0, s_vsync_count);
   return 0;
 }

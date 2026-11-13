@@ -26,38 +26,58 @@ static void snes_line_cb(uint32_t y, const uint16_t* pixels, uint32_t width) {
 }
 
 bool S9xInitDisplay(void) {
-  GFX.Pitch          = SNES_WIDTH * sizeof(uint16_t);
-  GFX.Pitch2         = GFX.Pitch;
-  GFX.RealPitch      = GFX.Pitch;
-  GFX.ZPitch         = SNES_WIDTH;
-  GFX.PPL            = SNES_WIDTH;
-  GFX.PPLx2          = SNES_WIDTH * 2U;
-  GFX.Screen         = NULL;
-  GFX.SubScreen      = NULL;
-  GFX.ZBuffer        = NULL;
-  GFX.SubZBuffer     = NULL;
+  GFX.Pitch = SNES_WIDTH * sizeof(uint16_t);
+  GFX.Pitch2 = GFX.Pitch;
+  GFX.RealPitch = GFX.Pitch;
+  GFX.ZPitch = SNES_WIDTH;
+  GFX.PPL = SNES_WIDTH;
+  GFX.PPLx2 = SNES_WIDTH * 2U;
+  GFX.Screen = NULL;
+  GFX.SubScreen = NULL;
+  GFX.ZBuffer = NULL;
+  GFX.SubZBuffer = NULL;
   GFX.LineRenderMode = true;
-  GFX.LinePPL        = SNES_WIDTH;
-  GFX.LinePitch      = SNES_WIDTH * sizeof(uint16_t);
+  GFX.LinePPL = SNES_WIDTH;
+  GFX.LinePitch = SNES_WIDTH * sizeof(uint16_t);
   return true;
 }
 
 void S9xDeinitDisplay(void) {}
 void S9xExtraUsage(void) {}
-void S9xExit(void) { s_snes_running = false; }
-void S9xMessage(int type, int number, const char* message) {
-  (void)type; (void)number; (void)message;
+void S9xExit(void) {
+  s_snes_running = false;
 }
-bool S9xIsSourceLineNeeded(uint32_t srcY) { return srcY < 224U; }
-uint32_t S9xReadJoypad(int32_t port) { (void)port; return 0U; }
+void S9xMessage(int type, int number, const char* message) {
+  (void)type;
+  (void)number;
+  (void)message;
+}
+bool S9xIsSourceLineNeeded(uint32_t srcY) {
+  return srcY < 224U;
+}
+uint32_t S9xReadJoypad(int32_t port) {
+  (void)port;
+  return 0U;
+}
 bool S9xReadMousePosition(int32_t which1, int32_t* x, int32_t* y, uint32_t* buttons) {
-  (void)which1; (void)x; (void)y; (void)buttons; return false;
+  (void)which1;
+  (void)x;
+  (void)y;
+  (void)buttons;
+  return false;
 }
 bool S9xReadSuperScopePosition(int32_t* x, int32_t* y, uint32_t* buttons) {
-  (void)x; (void)y; (void)buttons; return false;
+  (void)x;
+  (void)y;
+  (void)buttons;
+  return false;
 }
-bool JustifierOffscreen(void) { return true; }
-void JustifierButtons(uint32_t* justifiers) { (void)justifiers; }
+bool JustifierOffscreen(void) {
+  return true;
+}
+void JustifierButtons(uint32_t* justifiers) {
+  (void)justifiers;
+}
 
 void S9xAPUWritePort(int32_t Address, uint8_t Byte) {
   if (Memory.FillRAM) {
@@ -96,14 +116,14 @@ int test_snes_core(void) {
 
   /* 65C816 LoROM program at $8000 (offset 0x0000): unblank display, set CRAM[0] green, store WRAM[0]=0x42. */
   const uint8_t prog[] = {
-    0x78U,                             /* SEI */
-    0x18U, 0xFBU,                      /* CLC ; XCE */
-    0xA9U, 0x42U, 0x8DU, 0x00U, 0x00U, /* LDA #$42 ; STA $0000 */
-    0xA9U, 0x0FU, 0x8DU, 0x00U, 0x21U, /* LDA #$0F ; STA $2100 */
-    0xA9U, 0x00U, 0x8DU, 0x21U, 0x21U, /* LDA #$00 ; STA $2121 */
-    0xA9U, 0xE0U, 0x8DU, 0x22U, 0x21U, /* LDA #$E0 ; STA $2122 */
-    0xA9U, 0x03U, 0x8DU, 0x22U, 0x21U, /* LDA #$03 ; STA $2122 */
-    0x80U, 0xFEU                       /* BRA -2 */
+      0x78U,                             /* SEI */
+      0x18U, 0xFBU,                      /* CLC ; XCE */
+      0xA9U, 0x42U, 0x8DU, 0x00U, 0x00U, /* LDA #$42 ; STA $0000 */
+      0xA9U, 0x0FU, 0x8DU, 0x00U, 0x21U, /* LDA #$0F ; STA $2100 */
+      0xA9U, 0x00U, 0x8DU, 0x21U, 0x21U, /* LDA #$00 ; STA $2121 */
+      0xA9U, 0xE0U, 0x8DU, 0x22U, 0x21U, /* LDA #$E0 ; STA $2122 */
+      0xA9U, 0x03U, 0x8DU, 0x22U, 0x21U, /* LDA #$03 ; STA $2122 */
+      0x80U, 0xFEU                       /* BRA -2 */
   };
   memcpy(rom, prog, sizeof(prog));
 
@@ -131,21 +151,20 @@ int test_snes_core(void) {
 
   memset(&Settings, 0, sizeof(Settings));
   Settings.CyclesPercentage = 100;
-  Settings.H_Max            = SNES_CYCLES_PER_SCANLINE;
-  Settings.FrameTimePAL     = 20000;
-  Settings.FrameTimeNTSC    = 16667;
+  Settings.H_Max = SNES_CYCLES_PER_SCANLINE;
+  Settings.FrameTimePAL = 20000;
+  Settings.FrameTimeNTSC = 16667;
   Settings.ControllerOption = SNES_JOYPAD;
-  Settings.HBlankStart      = (256 * Settings.H_Max) / SNES_HCOUNTER_MAX;
-  Settings.Mute             = true;
-  Settings.APUEnabled       = false;
+  Settings.HBlankStart = (256 * Settings.H_Max) / SNES_HCOUNTER_MAX;
+  Settings.Mute = true;
+  Settings.APUEnabled = false;
 
-  Memory.ROM           = rom;
-  Memory.ROM_Offset    = 0;
+  Memory.ROM = rom;
+  Memory.ROM_Offset = 0;
   Memory.ROM_AllocSize = 0x8000U;
 
-  if (!S9xInitDisplay() || !S9xInitMemory() || !S9xInitGFX() ||
-      !S9xInitMap() || !S9xInitPpu() || !S9xInitLineBuffers() ||
-      !LoadROM(NULL)) {
+  if (!S9xInitDisplay() || !S9xInitMemory() || !S9xInitGFX() || !S9xInitMap() || !S9xInitPpu() ||
+      !S9xInitLineBuffers() || !LoadROM(NULL)) {
     S9xSetLineCallback(NULL);
     S9xDeinitDSP();
     S9xDeinitGFX();

@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 namespace {
-  static SemaphoreHandle_t s_spiMutex = nullptr;
+static SemaphoreHandle_t s_spiMutex = nullptr;
 }
 
 void SpiArbiter::init() {

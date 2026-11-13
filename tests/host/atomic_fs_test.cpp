@@ -69,7 +69,8 @@ static int memReadChunk(void*, AtomicFs::ReadHandle* handle, uint8_t* dst, size_
   const size_t avail = r->data.size() - r->pos;
   const size_t take = (len < avail) ? len : avail;
   if (take == 0) return 0;
-  for (size_t i = 0; i < take; ++i) dst[i] = r->data[r->pos + i];
+  for (size_t i = 0; i < take; ++i)
+    dst[i] = r->data[r->pos + i];
   r->pos += take;
   return static_cast<int>(take);
 }
@@ -94,9 +95,8 @@ int main() {
 
   // Normal commit promotes temp -> final, removes backup and temp.
   bool deferred = false;
-  BMO_CHECK(AtomicFs::commitTransaction(ops, "/saves/game.sav.tmp", "/saves/game.sav",
-                                        newData.size(), 0, newData.size(),
-                                        computeFullCrc(newData), &deferred));
+  BMO_CHECK(AtomicFs::commitTransaction(ops, "/saves/game.sav.tmp", "/saves/game.sav", newData.size(), 0,
+                                        newData.size(), computeFullCrc(newData), &deferred));
   BMO_CHECK(!deferred);
   BMO_CHECK(vfs.files["/saves/game.sav"] == newData);
   BMO_CHECK(!memExists(&vfs, "/saves/game.sav.bak"));
@@ -105,18 +105,16 @@ int main() {
   // Rename failure rolls backup back into final path automatically.
   vfs.files["/saves/game.sav.tmp"] = oldData;
   vfs.failRenameToFinal = true;
-  BMO_CHECK(!AtomicFs::commitTransaction(ops, "/saves/game.sav.tmp", "/saves/game.sav",
-                                         oldData.size(), 0, oldData.size(),
-                                         computeFullCrc(oldData)));
+  BMO_CHECK(!AtomicFs::commitTransaction(ops, "/saves/game.sav.tmp", "/saves/game.sav", oldData.size(), 0,
+                                         oldData.size(), computeFullCrc(oldData)));
   BMO_CHECK(vfs.files["/saves/game.sav"] == newData);
   BMO_CHECK(!memExists(&vfs, "/saves/game.sav.bak"));
 
   // Post-rename corruption detects CRC failure and restores previous valid save.
   vfs.failRenameToFinal = false;
   vfs.corruptFinalAfterRename = 1;
-  BMO_CHECK(!AtomicFs::commitTransaction(ops, "/saves/game.sav.tmp", "/saves/game.sav",
-                                         oldData.size(), 0, oldData.size(),
-                                         computeFullCrc(oldData)));
+  BMO_CHECK(!AtomicFs::commitTransaction(ops, "/saves/game.sav.tmp", "/saves/game.sav", oldData.size(), 0,
+                                         oldData.size(), computeFullCrc(oldData)));
   BMO_CHECK(vfs.files["/saves/game.sav"] == newData);
 
   // Interrupted power-loss state (final absent, backup + stale temp present) recovers backup.

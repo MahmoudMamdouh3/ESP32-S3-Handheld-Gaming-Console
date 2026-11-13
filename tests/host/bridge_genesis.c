@@ -45,15 +45,28 @@ int test_genesis_core(void) {
   M68K_RAM = (unsigned char*)calloc(1U, MAX_RAM_SIZE);
   ZRAM = (unsigned char*)calloc(1U, MAX_Z80_RAM_SIZE);
   if (!s_gen_fb || !rom || !VRAM || !M68K_RAM || !ZRAM) {
-    free(s_gen_fb); free(rom); free(VRAM); free(M68K_RAM); free(ZRAM);
-    s_gen_fb = NULL; VRAM = NULL; M68K_RAM = NULL; ZRAM = NULL;
+    free(s_gen_fb);
+    free(rom);
+    free(VRAM);
+    free(M68K_RAM);
+    free(ZRAM);
+    s_gen_fb = NULL;
+    VRAM = NULL;
+    M68K_RAM = NULL;
+    ZRAM = NULL;
     printf("[HOST_CORE] GENESIS_68K STATUS=FAIL (oom)\n");
     return 1;
   }
 
   /* M68K vectors: SSP=$00FF8000, PC=$00000200 */
-  rom[0] = 0x00U; rom[1] = 0xFFU; rom[2] = 0x80U; rom[3] = 0x00U;
-  rom[4] = 0x00U; rom[5] = 0x00U; rom[6] = 0x02U; rom[7] = 0x00U;
+  rom[0] = 0x00U;
+  rom[1] = 0xFFU;
+  rom[2] = 0x80U;
+  rom[3] = 0x00U;
+  rom[4] = 0x00U;
+  rom[5] = 0x00U;
+  rom[6] = 0x02U;
+  rom[7] = 0x00U;
   memcpy(&rom[0x100], "SEGA MEGA DRIVE ", 16);
   memcpy(&rom[0x1F0], "U               ", 16);
 
@@ -66,14 +79,10 @@ int test_genesis_core(void) {
    * MOVE.W #$00EE, $00C00000      (CRAM[0] = 0x0EE yellow)
    * BRA.S -2
    */
-  const uint8_t prog[] = {
-    0x20U, 0x3CU, 0x12U, 0x34U, 0x56U, 0x4DU,
-    0x33U, 0xFCU, 0x00U, 0x42U, 0x00U, 0xFFU, 0x00U, 0x00U,
-    0x23U, 0xFCU, 0x80U, 0x04U, 0x81U, 0x44U, 0x00U, 0xC0U, 0x00U, 0x04U,
-    0x23U, 0xFCU, 0xC0U, 0x00U, 0x00U, 0x00U, 0x00U, 0xC0U, 0x00U, 0x04U,
-    0x33U, 0xFCU, 0x00U, 0xEEU, 0x00U, 0xC0U, 0x00U, 0x00U,
-    0x60U, 0xFEU
-  };
+  const uint8_t prog[] = {0x20U, 0x3CU, 0x12U, 0x34U, 0x56U, 0x4DU, 0x33U, 0xFCU, 0x00U, 0x42U, 0x00U,
+                          0xFFU, 0x00U, 0x00U, 0x23U, 0xFCU, 0x80U, 0x04U, 0x81U, 0x44U, 0x00U, 0xC0U,
+                          0x00U, 0x04U, 0x23U, 0xFCU, 0xC0U, 0x00U, 0x00U, 0x00U, 0x00U, 0xC0U, 0x00U,
+                          0x04U, 0x33U, 0xFCU, 0x00U, 0xEEU, 0x00U, 0xC0U, 0x00U, 0x00U, 0x60U, 0xFEU};
   memcpy(&rom[0x200], prog, sizeof(prog));
 
   gwenesis_vdp_allocate_buffers();
@@ -124,11 +133,9 @@ int test_genesis_core(void) {
   s_gen_fb = NULL;
 
   if (d0 != 0x1234564DU || ram0 != 0x0042U || nz < 1000) {
-    printf("[HOST_CORE] GENESIS_68K STATUS=FAIL d0=0x%08X ram0=0x%04X non_zero=%d\n",
-           d0, ram0, nz);
+    printf("[HOST_CORE] GENESIS_68K STATUS=FAIL d0=0x%08X ram0=0x%04X non_zero=%d\n", d0, ram0, nz);
     return 1;
   }
-  printf("[HOST_CORE] GENESIS_68K STATUS=PASS d0=0x%08X ram0=0x%04X non_zero=%d\n",
-         d0, ram0, nz);
+  printf("[HOST_CORE] GENESIS_68K STATUS=PASS d0=0x%08X ram0=0x%04X non_zero=%d\n", d0, ram0, nz);
   return 0;
 }

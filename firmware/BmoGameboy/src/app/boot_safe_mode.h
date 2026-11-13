@@ -25,11 +25,8 @@ struct BootSpiDecision {
  * Holding SELECT or B at boot forces the conservative fallback clock (40 MHz)
  * so unstable breadboard wiring can always recover cleanly.
  */
-constexpr BootSpiDecision resolveBootDisplaySpiClock(bool selectPressed,
-                                                     bool bPressed,
-                                                     uint32_t savedClockHz,
-                                                     uint32_t defaultClockHz,
-                                                     uint32_t fallbackClockHz) {
+constexpr BootSpiDecision resolveBootDisplaySpiClock(bool selectPressed, bool bPressed, uint32_t savedClockHz,
+                                                     uint32_t defaultClockHz, uint32_t fallbackClockHz) {
   if (selectPressed || bPressed) {
     return BootSpiDecision{fallbackClockHz, true};
   }
@@ -37,4 +34,4 @@ constexpr BootSpiDecision resolveBootDisplaySpiClock(bool selectPressed,
   return BootSpiDecision{resolved, false};
 }
 
-}  // namespace BmoApp
+} // namespace BmoApp

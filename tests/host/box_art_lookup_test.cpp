@@ -2,9 +2,14 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../../firmware/BmoGameboy/src/storage/box_art_lookup.h"
+#include "box_art_lookup.h"
+#include "test_check.h"
 
 int main() {
+  char baseBuf[32] = "";
+  BoxArtLookup::getBaseName("snes/Chrono Trigger (USA).sfc", baseBuf, sizeof(baseBuf));
+  BMO_CHECK(strcmp(baseBuf, "Chrono Trigger (USA)") == 0);
+
   RomFile roms[5] = {};
   roms[0].filename = "gb/Mario.gb";
   roms[1].filename = "nes/Mario.nes";

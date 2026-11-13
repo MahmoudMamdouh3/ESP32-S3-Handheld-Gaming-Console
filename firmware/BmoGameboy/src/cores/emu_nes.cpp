@@ -1,4 +1,4 @@
-#pragma GCC optimize ("O3,unroll-loops")
+#pragma GCC optimize("O3,unroll-loops")
 #include "emu_nes.h"
 #include "../third_party/agnes/agnes.h"
 #include "../ui/display_emu.h"
@@ -33,7 +33,7 @@ bool NesEmu::init(const uint8_t* romData, size_t romSize) {
   if (!agnes_ctx) {
     return false;
   }
-  
+
   // Cast away const since agnes loads data (it doesn't modify it, but API lacks const)
   if (!agnes_load_ines_data(agnes_ctx, (void*)romData, romSize)) {
     agnes_destroy(agnes_ctx);
@@ -104,8 +104,7 @@ bool NesEmu::saveState(const char* romFilename, int slot) {
   uint8_t* buf = getNesStateBuf();
   if (!buf || s_nesStateSize == 0) return false;
   agnes_dump_state(agnes_ctx, (agnes_state_t*)buf);
-  return SaveManager::saveState(romFilename, slot, SaveManager::CORE_NES,
-                                buf, s_nesStateSize);
+  return SaveManager::saveState(romFilename, slot, SaveManager::CORE_NES, buf, s_nesStateSize);
 }
 
 bool NesEmu::loadState(const char* romFilename, int slot) {
@@ -113,8 +112,7 @@ bool NesEmu::loadState(const char* romFilename, int slot) {
   uint8_t* buf = getNesStateBuf();
   if (!buf || s_nesStateSize == 0) return false;
   size_t stateSize = 0;
-  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_NES,
-                                   buf, s_nesStateSize, &stateSize);
+  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_NES, buf, s_nesStateSize, &stateSize);
   if (ok && stateSize == s_nesStateSize) {
     return agnes_restore_state(agnes_ctx, (const agnes_state_t*)buf);
   }

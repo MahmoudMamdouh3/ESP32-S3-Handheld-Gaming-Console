@@ -63,6 +63,10 @@ class BuildAndTasksTests(unittest.TestCase):
         self.assertIn("audio-compile-only", ci_text)
         self.assertIn("battery-compile-only", ci_text)
         self.assertIn("debug-log-compile-only", ci_text)
+        self.assertIn("profiler-compile-only", ci_text)
+        self.assertIn("--sanitizers", ci_text)
+        tasks_text = (REPO_ROOT / "tasks.py").read_text(encoding="utf-8")
+        self.assertIn("BMO_ENABLE_ASAN_UBSAN=ON", tasks_text)
 
 
 if __name__ == "__main__":

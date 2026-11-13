@@ -28,8 +28,7 @@ struct InputFrame {
     return (idx >= 0 && idx < BUTTON_COUNT) && ((justReleasedMask & (1U << idx)) != 0);
   }
   constexpr bool triggeredOrRepeat(int idx) const {
-    return (idx >= 0 && idx < BUTTON_COUNT) &&
-           (((justPressedMask | repeatMask) & (1U << idx)) != 0);
+    return (idx >= 0 && idx < BUTTON_COUNT) && (((justPressedMask | repeatMask) & (1U << idx)) != 0);
   }
 };
 
@@ -39,13 +38,10 @@ struct InputFrame {
  * chatter in UI navigation and providing ergonomic held-D-pad repeat.
  */
 class Debouncer {
- public:
-  explicit Debouncer(uint32_t debounceMs = DEFAULT_DEBOUNCE_MS,
-                     uint32_t repeatInitialMs = DEFAULT_REPEAT_INITIAL_MS,
+public:
+  explicit Debouncer(uint32_t debounceMs = DEFAULT_DEBOUNCE_MS, uint32_t repeatInitialMs = DEFAULT_REPEAT_INITIAL_MS,
                      uint32_t repeatIntervalMs = DEFAULT_REPEAT_INTERVAL_MS)
-      : debounceMs_(debounceMs),
-        repeatInitialMs_(repeatInitialMs),
-        repeatIntervalMs_(repeatIntervalMs) {
+      : debounceMs_(debounceMs), repeatInitialMs_(repeatInitialMs), repeatIntervalMs_(repeatIntervalMs) {
     reset(0);
   }
 
@@ -100,8 +96,7 @@ class Debouncer {
           justReleased = static_cast<uint16_t>(justReleased | bit);
           repeatArmed_[i] = false;
         }
-      } else if (enableRepeat && stableNow &&
-                 static_cast<int32_t>(nowMs - suppressedUntilMs_) >= 0) {
+      } else if (enableRepeat && stableNow && static_cast<int32_t>(nowMs - suppressedUntilMs_) >= 0) {
         const uint32_t heldMs = static_cast<uint32_t>(nowMs - pressedSinceMs_[i]);
         if (!repeatArmed_[i]) {
           if (heldMs >= repeatInitialMs_) {
@@ -109,8 +104,7 @@ class Debouncer {
             lastRepeatAtMs_[i] = nowMs;
             repeats = static_cast<uint16_t>(repeats | bit);
           }
-        } else if (repeatIntervalMs_ > 0 &&
-                   static_cast<uint32_t>(nowMs - lastRepeatAtMs_[i]) >= repeatIntervalMs_) {
+        } else if (repeatIntervalMs_ > 0 && static_cast<uint32_t>(nowMs - lastRepeatAtMs_[i]) >= repeatIntervalMs_) {
           lastRepeatAtMs_[i] = nowMs;
           repeats = static_cast<uint16_t>(repeats | bit);
         }
@@ -132,7 +126,7 @@ class Debouncer {
     return frame;
   }
 
- private:
+private:
   uint32_t debounceMs_;
   uint32_t repeatInitialMs_;
   uint32_t repeatIntervalMs_;
@@ -145,4 +139,4 @@ class Debouncer {
   uint32_t suppressedUntilMs_ = 0;
 };
 
-}  // namespace BmoInput
+} // namespace BmoInput

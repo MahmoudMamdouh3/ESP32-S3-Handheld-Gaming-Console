@@ -17,4 +17,4 @@ constexpr size_t computeZoneBytes(size_t largestFreePsramBlock) {
   if (candidate > DOOM_ZONE_CAP_BYTES) return DOOM_ZONE_CAP_BYTES;
   return candidate;
 }
-}
+} // namespace DoomEmu

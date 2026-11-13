@@ -10,9 +10,15 @@ namespace SdAtomicOps {
 
 #if FEATURE_SD_CARD
 namespace detail {
-inline bool sdExists(void*, const char* path) { return SD.exists(path); }
-inline bool sdRemove(void*, const char* path) { return SD.remove(path); }
-inline bool sdRename(void*, const char* src, const char* dst) { return SD.rename(src, dst); }
+inline bool sdExists(void*, const char* path) {
+  return SD.exists(path);
+}
+inline bool sdRemove(void*, const char* path) {
+  return SD.remove(path);
+}
+inline bool sdRename(void*, const char* src, const char* dst) {
+  return SD.rename(src, dst);
+}
 
 inline bool sdOpenRead(void*, const char* path, AtomicFs::ReadHandle* outHandle) {
   File* fp = new File(SD.open(path, FILE_READ));
@@ -42,7 +48,7 @@ inline void sdCloseRead(void*, AtomicFs::ReadHandle* handle) {
   delete fp;
   handle->impl = nullptr;
 }
-}  // namespace detail
+} // namespace detail
 
 inline AtomicFs::FsOps makeOps() {
   AtomicFs::FsOps ops{};
@@ -57,4 +63,4 @@ inline AtomicFs::FsOps makeOps() {
 }
 #endif
 
-}  // namespace SdAtomicOps
+} // namespace SdAtomicOps

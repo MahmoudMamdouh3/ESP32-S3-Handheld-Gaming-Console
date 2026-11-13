@@ -35,21 +35,9 @@ inline float coverage(float dist, float aaBand) {
   return smoothstepf(aaBand, 0.0f, dist);
 }
 
-enum EyeStyle : uint8_t {
-  EYE_CAPSULE = 0,
-  EYE_CRESCENT_UP,
-  EYE_LINE_SLEEP,
-  EYE_HEART,
-  EYE_CROSS_ERROR,
-  EYE_WINK_LEFT
-};
+enum EyeStyle : uint8_t { EYE_CAPSULE = 0, EYE_CRESCENT_UP, EYE_LINE_SLEEP, EYE_HEART, EYE_CROSS_ERROR, EYE_WINK_LEFT };
 
-enum MouthStyle : uint8_t {
-  MOUTH_ARC = 0,
-  MOUTH_OPEN_CAVITY,
-  MOUTH_ROUND_O,
-  MOUTH_ZIGZAG_ERROR
-};
+enum MouthStyle : uint8_t { MOUTH_ARC = 0, MOUTH_OPEN_CAVITY, MOUTH_ROUND_O, MOUTH_ZIGZAG_ERROR };
 
 struct ExprTarget {
   float eyeOpenness;
@@ -67,25 +55,42 @@ struct ExprTarget {
 };
 
 inline constexpr ExprTarget EXPR_TABLE[18] = {
-  /* 0  IDLE         */ { 0.90f, 0.10f, 0.16f, 0.28f,  0.12f, 0.22f,  0.35f, 0.02f, -0.22f, 0.35f, EYE_CAPSULE,     MOUTH_ARC },
-  /* 1  SURPRISED    */ { 1.15f, 0.11f, 0.20f, 0.28f,  0.15f, 0.12f,  0.00f, 0.14f, -0.25f, 0.20f, EYE_CAPSULE,     MOUTH_ROUND_O },
-  /* 2  HAPPY        */ { 0.70f, 0.11f, 0.15f, 0.28f,  0.12f, 0.26f,  0.65f, 0.16f, -0.20f, 0.85f, EYE_CRESCENT_UP, MOUTH_OPEN_CAVITY },
-  /* 3  SLEEPY       */ { 0.30f, 0.10f, 0.15f, 0.28f,  0.08f, 0.18f,  0.15f, 0.02f, -0.24f, 0.20f, EYE_CAPSULE,     MOUTH_ARC },
-  /* 4  LOW_BATTERY  */ { 0.45f, 0.09f, 0.14f, 0.28f,  0.06f, 0.20f, -0.30f, 0.02f, -0.25f, 0.15f, EYE_CAPSULE,     MOUTH_ARC },
-  /* 5  CHARGING     */ { 0.85f, 0.10f, 0.16f, 0.28f,  0.12f, 0.22f,  0.30f, 0.02f, -0.22f, 0.40f, EYE_CAPSULE,     MOUTH_ARC },
-  /* 6  ERROR        */ { 1.00f, 0.11f, 0.16f, 0.28f,  0.12f, 0.24f, -0.60f, 0.03f, -0.18f, 0.00f, EYE_CROSS_ERROR, MOUTH_ZIGZAG_ERROR },
-  /* 7  SHUTDOWN     */ { 0.05f, 0.10f, 0.15f, 0.28f,  0.06f, 0.16f,  0.05f, 0.01f, -0.26f, 0.10f, EYE_LINE_SLEEP,  MOUTH_ARC },
-  /* 8  HIDDEN       */ { 0.00f, 0.00f, 0.00f, 0.00f,  0.00f, 0.00f,  0.00f, 0.00f,  0.00f, 0.00f, EYE_CAPSULE,     MOUTH_ARC },
-  /* 9  JOY          */ { 0.80f, 0.12f, 0.16f, 0.28f,  0.14f, 0.28f,  0.80f, 0.20f, -0.18f, 0.95f, EYE_CRESCENT_UP, MOUTH_OPEN_CAVITY },
-  /* 10 SLEEPING     */ { 0.00f, 0.10f, 0.15f, 0.28f,  0.06f, 0.16f,  0.10f, 0.01f, -0.25f, 0.25f, EYE_LINE_SLEEP,  MOUTH_ARC },
-  /* 11 WINK         */ { 0.90f, 0.10f, 0.16f, 0.28f,  0.12f, 0.24f,  0.45f, 0.04f, -0.20f, 0.70f, EYE_WINK_LEFT,   MOUTH_ARC },
-  /* 12 BLUSH        */ { 0.65f, 0.10f, 0.15f, 0.28f,  0.09f, 0.18f,  0.30f, 0.02f, -0.23f, 1.00f, EYE_CAPSULE,     MOUTH_ARC },
-  /* 13 CONFUSED     */ { 0.85f, 0.10f, 0.16f, 0.28f,  0.12f, 0.20f,  0.10f, 0.03f, -0.22f, 0.30f, EYE_CAPSULE,     MOUTH_ARC },
-  /* 14 ANNOYED      */ { 0.50f, 0.10f, 0.14f, 0.28f,  0.10f, 0.20f, -0.10f, 0.02f, -0.22f, 0.20f, EYE_CAPSULE,     MOUTH_ARC },
-  /* 15 LOVE         */ { 0.95f, 0.12f, 0.18f, 0.28f,  0.13f, 0.24f,  0.60f, 0.12f, -0.20f, 0.90f, EYE_HEART,       MOUTH_OPEN_CAVITY },
-  /* 16 TICKLED      */ { 0.75f, 0.12f, 0.15f, 0.28f,  0.15f, 0.28f,  0.85f, 0.22f, -0.16f, 1.00f, EYE_CRESCENT_UP, MOUTH_OPEN_CAVITY },
-  /* 17 CELEBRATING  */ { 0.85f, 0.12f, 0.17f, 0.28f,  0.14f, 0.30f,  0.75f, 0.20f, -0.18f, 0.90f, EYE_CRESCENT_UP, MOUTH_OPEN_CAVITY }
-};
+    /* 0  IDLE         */ {0.90f, 0.10f, 0.16f, 0.28f, 0.12f, 0.22f, 0.35f, 0.02f, -0.22f, 0.35f, EYE_CAPSULE,
+                           MOUTH_ARC},
+    /* 1  SURPRISED    */
+    {1.15f, 0.11f, 0.20f, 0.28f, 0.15f, 0.12f, 0.00f, 0.14f, -0.25f, 0.20f, EYE_CAPSULE, MOUTH_ROUND_O},
+    /* 2  HAPPY        */
+    {0.70f, 0.11f, 0.15f, 0.28f, 0.12f, 0.26f, 0.65f, 0.16f, -0.20f, 0.85f, EYE_CRESCENT_UP, MOUTH_OPEN_CAVITY},
+    /* 3  SLEEPY       */
+    {0.30f, 0.10f, 0.15f, 0.28f, 0.08f, 0.18f, 0.15f, 0.02f, -0.24f, 0.20f, EYE_CAPSULE, MOUTH_ARC},
+    /* 4  LOW_BATTERY  */
+    {0.45f, 0.09f, 0.14f, 0.28f, 0.06f, 0.20f, -0.30f, 0.02f, -0.25f, 0.15f, EYE_CAPSULE, MOUTH_ARC},
+    /* 5  CHARGING     */
+    {0.85f, 0.10f, 0.16f, 0.28f, 0.12f, 0.22f, 0.30f, 0.02f, -0.22f, 0.40f, EYE_CAPSULE, MOUTH_ARC},
+    /* 6  ERROR        */
+    {1.00f, 0.11f, 0.16f, 0.28f, 0.12f, 0.24f, -0.60f, 0.03f, -0.18f, 0.00f, EYE_CROSS_ERROR, MOUTH_ZIGZAG_ERROR},
+    /* 7  SHUTDOWN     */
+    {0.05f, 0.10f, 0.15f, 0.28f, 0.06f, 0.16f, 0.05f, 0.01f, -0.26f, 0.10f, EYE_LINE_SLEEP, MOUTH_ARC},
+    /* 8  HIDDEN       */
+    {0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, EYE_CAPSULE, MOUTH_ARC},
+    /* 9  JOY          */
+    {0.80f, 0.12f, 0.16f, 0.28f, 0.14f, 0.28f, 0.80f, 0.20f, -0.18f, 0.95f, EYE_CRESCENT_UP, MOUTH_OPEN_CAVITY},
+    /* 10 SLEEPING     */
+    {0.00f, 0.10f, 0.15f, 0.28f, 0.06f, 0.16f, 0.10f, 0.01f, -0.25f, 0.25f, EYE_LINE_SLEEP, MOUTH_ARC},
+    /* 11 WINK         */
+    {0.90f, 0.10f, 0.16f, 0.28f, 0.12f, 0.24f, 0.45f, 0.04f, -0.20f, 0.70f, EYE_WINK_LEFT, MOUTH_ARC},
+    /* 12 BLUSH        */
+    {0.65f, 0.10f, 0.15f, 0.28f, 0.09f, 0.18f, 0.30f, 0.02f, -0.23f, 1.00f, EYE_CAPSULE, MOUTH_ARC},
+    /* 13 CONFUSED     */
+    {0.85f, 0.10f, 0.16f, 0.28f, 0.12f, 0.20f, 0.10f, 0.03f, -0.22f, 0.30f, EYE_CAPSULE, MOUTH_ARC},
+    /* 14 ANNOYED      */
+    {0.50f, 0.10f, 0.14f, 0.28f, 0.10f, 0.20f, -0.10f, 0.02f, -0.22f, 0.20f, EYE_CAPSULE, MOUTH_ARC},
+    /* 15 LOVE         */
+    {0.95f, 0.12f, 0.18f, 0.28f, 0.13f, 0.24f, 0.60f, 0.12f, -0.20f, 0.90f, EYE_HEART, MOUTH_OPEN_CAVITY},
+    /* 16 TICKLED      */
+    {0.75f, 0.12f, 0.15f, 0.28f, 0.15f, 0.28f, 0.85f, 0.22f, -0.16f, 1.00f, EYE_CRESCENT_UP, MOUTH_OPEN_CAVITY},
+    /* 17 CELEBRATING  */
+    {0.85f, 0.12f, 0.17f, 0.28f, 0.14f, 0.30f, 0.75f, 0.20f, -0.18f, 0.90f, EYE_CRESCENT_UP, MOUTH_OPEN_CAVITY}};
 
 inline float sdfCapsuleV(float px, float py, float r, float h) {
   py = fabsf(py) - h;
@@ -147,8 +152,8 @@ inline float sdfMouthStroke(float px, float py, float width, float curve, float 
   return fabsf(py - arcY) - thickness;
 }
 
-inline void evaluateMouthCavity(float px, float py, float width, float curve, float openness,
-                                float& outCavityDist, float& outTongueDist, float& outBorderDist) {
+inline void evaluateMouthCavity(float px, float py, float width, float curve, float openness, float& outCavityDist,
+                                float& outTongueDist, float& outBorderDist) {
   const float normX = px / (width + 1e-6f);
   if (fabsf(normX) >= 1.0f) {
     outCavityDist = 1.0f;
@@ -176,9 +181,8 @@ inline void evaluateMouthCavity(float px, float py, float width, float curve, fl
 }
 
 inline uint16_t packBGR565(uint8_t r, uint8_t g, uint8_t b) {
-  const uint16_t bgr = static_cast<uint16_t>(((uint16_t)(b & 0xF8U) << 8) |
-                                             ((uint16_t)(g & 0xFCU) << 3) |
-                                             ((uint16_t)r >> 3));
+  const uint16_t bgr =
+      static_cast<uint16_t>(((uint16_t)(b & 0xF8U) << 8) | ((uint16_t)(g & 0xFCU) << 3) | ((uint16_t)r >> 3));
   return static_cast<uint16_t>((bgr << 8) | (bgr >> 8));
 }
 
@@ -186,11 +190,7 @@ inline uint16_t packBGR565(uint8_t r, uint8_t g, uint8_t b) {
  * Pure C++ golden/preview renderer for an ExprTarget snapshot (no globals, no PSRAM).
  * Evaluates all pixels in `dst[destW x destH]` for deterministic host comparison.
  */
-inline void renderTargetSnapshot(const ExprTarget& target,
-                                 bool sleepingBg,
-                                 uint16_t* dst,
-                                 int destW,
-                                 int destH) {
+inline void renderTargetSnapshot(const ExprTarget& target, bool sleepingBg, uint16_t* dst, int destW, int destH) {
   if (!dst || destW <= 0 || destH <= 0) return;
   const float baseBgR = sleepingBg ? (111.0f / 255.0f) : (138.0f / 255.0f);
   const float baseBgG = sleepingBg ? (184.0f / 255.0f) : (213.0f / 255.0f);
@@ -340,11 +340,10 @@ inline void renderTargetSnapshot(const ExprTarget& target,
         }
       }
 
-      row[px] = packBGR565(static_cast<uint8_t>(cr * 255.0f + 0.5f),
-                           static_cast<uint8_t>(cg * 255.0f + 0.5f),
+      row[px] = packBGR565(static_cast<uint8_t>(cr * 255.0f + 0.5f), static_cast<uint8_t>(cg * 255.0f + 0.5f),
                            static_cast<uint8_t>(cb * 255.0f + 0.5f));
     }
   }
 }
 
-}  // namespace BmoFaceSdf
+} // namespace BmoFaceSdf

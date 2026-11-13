@@ -1,4 +1,5 @@
 #include "box_art.h"
+#include "bmp_header.h"
 #include "box_art_lookup.h"
 #include "sd_card.h"
 #include "../hal/config.h"
@@ -292,25 +293,15 @@ bool BoxArt::loadBmp(const char* path) {
     return false;
   }
 
-  // Validate BM magic
-  if (header[0] != 'B' || header[1] != 'M') {
+  BmpHeader::Info bmpInfo;
+  if (!BmpHeader::parse64x64(header, static_cast<uint32_t>(f.size()), &bmpInfo)) {
     f.close();
     return false;
   }
 
-  uint32_t dataOffset = header[10] | (header[11] << 8) | (header[12] << 16) | (header[13] << 24);
-  int32_t width = header[18] | (header[19] << 8) | (header[20] << 16) | (header[21] << 24);
-  int32_t height = header[22] | (header[23] << 8) | (header[24] << 16) | (header[25] << 24);
-  uint16_t bpp = header[28] | (header[29] << 8);
-
-  bool bottomUp = (height > 0);
-  int absHeight = bottomUp ? height : -height;
-
-  // We only support 64x64 BMPs (or close approximations)
-  if (width != 64 || absHeight != 64 || (bpp != 24 && bpp != 16)) {
-    f.close();
-    return false;
-  }
+  const uint32_t dataOffset = bmpInfo.dataOffset;
+  const uint16_t bpp = bmpInfo.bpp;
+  const bool bottomUp = bmpInfo.bottomUp;
 
   if (!f.seek(dataOffset)) {
     f.close();

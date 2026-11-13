@@ -20,7 +20,7 @@
 extern int finscan;
 
 int m_bIsActive = 0;
-EMUINFO m_emuInfo = { NGPC, 0, { 0 } };
+EMUINFO m_emuInfo = {NGPC, 0, {0}};
 struct ngp_screen* race_ngp_screen = NULL;
 char retro_save_directory[3] = "/";
 int tipo_consola = 0;
@@ -61,33 +61,33 @@ unsigned char* pattern_table = NULL;
 static unsigned char s_dummy_scanline = 0;
 
 static void map_vdp_tables(void) {
-  sprite_table           = (unsigned char*)get_address(0x00008800U);
-  pattern_table          = (unsigned char*)get_address(0x0000A000U);
-  patterns               = (unsigned short*)pattern_table;
-  tile_table_front       = (unsigned short*)get_address(0x00009000U);
-  tile_table_back        = (unsigned short*)get_address(0x00009800U);
-  palette_table          = (unsigned short*)get_address(0x00008200U);
-  bw_palette_table       = (unsigned char*)get_address(0x00008100U);
+  sprite_table = (unsigned char*)get_address(0x00008800U);
+  pattern_table = (unsigned char*)get_address(0x0000A000U);
+  patterns = (unsigned short*)pattern_table;
+  tile_table_front = (unsigned short*)get_address(0x00009000U);
+  tile_table_back = (unsigned short*)get_address(0x00009800U);
+  palette_table = (unsigned short*)get_address(0x00008200U);
+  bw_palette_table = (unsigned char*)get_address(0x00008100U);
   sprite_palette_numbers = (unsigned char*)get_address(0x00008C00U);
 
-  scanlineY   = (unsigned char*)get_address(0x00008009U);
-  frame0Pri   = (unsigned char*)get_address(0x00008000U);
-  frame1Pri   = (unsigned char*)get_address(0x00008030U);
+  scanlineY = (unsigned char*)get_address(0x00008009U);
+  frame0Pri = (unsigned char*)get_address(0x00008000U);
+  frame1Pri = (unsigned char*)get_address(0x00008030U);
   wndTopLeftX = (unsigned char*)get_address(0x00008002U);
   wndTopLeftY = (unsigned char*)get_address(0x00008003U);
-  wndSizeX    = (unsigned char*)get_address(0x00008004U);
-  wndSizeY    = (unsigned char*)get_address(0x00008005U);
+  wndSizeX = (unsigned char*)get_address(0x00008004U);
+  wndSizeY = (unsigned char*)get_address(0x00008005U);
   scrollSpriteX = (unsigned char*)get_address(0x00008020U);
   scrollSpriteY = (unsigned char*)get_address(0x00008021U);
-  scrollFrontX  = (unsigned char*)get_address(0x00008032U);
-  scrollFrontY  = (unsigned char*)get_address(0x00008033U);
-  scrollBackX   = (unsigned char*)get_address(0x00008034U);
-  scrollBackY   = (unsigned char*)get_address(0x00008035U);
-  bgSelect      = (unsigned char*)get_address(0x00008118U);
-  bgTable       = (unsigned short*)get_address(0x000083E0U);
-  oowSelect     = (unsigned char*)get_address(0x00008012U);
-  oowTable      = (unsigned short*)get_address(0x000083F0U);
-  color_switch  = (unsigned char*)get_address(0x00006F91U);
+  scrollFrontX = (unsigned char*)get_address(0x00008032U);
+  scrollFrontY = (unsigned char*)get_address(0x00008033U);
+  scrollBackX = (unsigned char*)get_address(0x00008034U);
+  scrollBackY = (unsigned char*)get_address(0x00008035U);
+  bgSelect = (unsigned char*)get_address(0x00008118U);
+  bgTable = (unsigned short*)get_address(0x000083E0U);
+  oowSelect = (unsigned char*)get_address(0x00008012U);
+  oowTable = (unsigned short*)get_address(0x000083F0U);
+  color_switch = (unsigned char*)get_address(0x00006F91U);
 
   if (!scanlineY) scanlineY = &s_dummy_scanline;
   rasterY = scanlineY;
@@ -130,10 +130,10 @@ int test_ngp_core(void) {
 
   /* TLCS-900H at ROM+0x100: write 0x7E -> $5000, 0x0FFF -> $83E0 (bgTable[0]), 0x80 -> $8118, JR -2 */
   const uint8_t prog[] = {
-    0xF1U, 0x00U, 0x50U, 0x00U, 0x7EU,        /* LD (5000h), 7Eh */
-    0xF1U, 0xE0U, 0x83U, 0x02U, 0xFFU, 0x0FU, /* LDW (83E0h), 0FFFh */
-    0xF1U, 0x18U, 0x81U, 0x00U, 0x80U,        /* LD (8118h), 80h */
-    0x68U, 0xFEU                              /* JR T, -2 */
+      0xF1U, 0x00U, 0x50U, 0x00U, 0x7EU,        /* LD (5000h), 7Eh */
+      0xF1U, 0xE0U, 0x83U, 0x02U, 0xFFU, 0x0FU, /* LDW (83E0h), 0FFFh */
+      0xF1U, 0x18U, 0x81U, 0x00U, 0x80U,        /* LD (8118h), 80h */
+      0x68U, 0xFEU                              /* JR T, -2 */
   };
   memcpy(rom + 0x100U, prog, sizeof(prog));
 
@@ -174,8 +174,10 @@ int test_ngp_core(void) {
     return 1;
   }
   if (wndTopLeftX && wndTopLeftY && wndSizeX && wndSizeY) {
-    *wndTopLeftX = 0; *wndTopLeftY = 0;
-    *wndSizeX = 160; *wndSizeY = 152;
+    *wndTopLeftX = 0;
+    *wndTopLeftY = 0;
+    *wndSizeX = 160;
+    *wndSizeY = 152;
   }
   if (frame0Pri) *frame0Pri |= 0xC0U;
   finscan = 198;
