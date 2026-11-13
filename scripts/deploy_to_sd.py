@@ -9,11 +9,12 @@ import tempfile
 import warnings
 from pathlib import Path
 
+from scripts.repo_tools import get_data_dir
 from scripts.rom_key import make_rom_key
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SRC_GAMES = REPO_ROOT / "games"
-SRC_BOXART = REPO_ROOT / "roms" / "boxart"
+SRC_GAMES = get_data_dir(REPO_ROOT) / "games"
+SRC_BOXART = get_data_dir(REPO_ROOT) / "roms" / "boxart"
 ROM_EXTENSIONS = frozenset({
     ".gb", ".gbc", ".nes", ".wad", ".sms", ".gg", ".pce", ".a26",
     ".p8", ".gen", ".md", ".smd", ".sfc", ".smc", ".ws",
@@ -189,9 +190,14 @@ def deploy(
     dest_root: Path,
     apply: bool = False,
     expected_label: str = EXPECTED_VOLUME_LABEL,
+    src_games: Path | None = None,
+    src_boxart: Path | None = None,
 ) -> int:
+    data_dir = get_data_dir(REPO_ROOT)
+    games_dir = src_games if src_games is not None else (data_dir / "games")
+    boxart_dir = src_boxart if src_boxart is not None else (data_dir / "roms" / "boxart")
     verify_destination_root(dest_root)
-    tasks = deployment_tasks(SRC_GAMES, SRC_BOXART, dest_root)
+    tasks = deployment_tasks(games_dir, boxart_dir, dest_root)
     game_count = sum(src.suffix.lower() in ROM_EXTENSIONS for src, _ in tasks)
     art_count = len(tasks) - game_count
     updates, unchanged, update_bytes = deployment_plan(tasks, report_progress=True)
@@ -277,8 +283,26 @@ def main(argv: list[str] | None = None) -> int:
         default=EXPECTED_VOLUME_LABEL,
         help=f"Required SD volume label for writes (default: {EXPECTED_VOLUME_LABEL}).",
     )
+    parser.add_argument(
+        "--games-dir",
+        type=Path,
+        default=None,
+        help="Source directory containing user-supplied ROMs (default: BMO_DATA_DIR/games).",
+    )
+    parser.add_argument(
+        "--boxart-dir",
+        type=Path,
+        default=None,
+        help="Source directory containing converted .raw/.bmp covers (default: BMO_DATA_DIR/roms/boxart).",
+    )
     args = parser.parse_args(argv)
-    return deploy(args.destination, apply=args.apply, expected_label=args.expected_label)
+    return deploy(
+        args.destination,
+        apply=args.apply,
+        expected_label=args.expected_label,
+        src_games=args.games_dir,
+        src_boxart=args.boxart_dir,
+    )
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 /**
  * Internal electronics stack, fasteners, 3D wire harnesses, and planned expansion
- * assemblies for the BMO Gameboy interactive teardown view.
+ * assemblies for the BMO Handheld interactive teardown view.
  *
  * All dimensions are in centimetres (1 cm = 10 mm) matching Bmo3DConsole and the
  * shell CAD in tools/enclosure/generate_bmo_enclosure.py. Pin assignments match

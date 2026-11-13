@@ -1,10 +1,11 @@
 """
-scripts/deploy_sd_complete.py — Production BMO Gameboy SD Card Deployer & Indexer
-Consistently structures all 31,326 games and 14,168 box arts onto FAT32 SD Card (F:\),
-bypassing single-directory FAT32 limits by console partitioning, and generates the
-official .bmo_index binary cache for instantaneous 15ms console boot.
+scripts/deploy_sd_complete.py — Local BMO Handheld SD Card Deployer & Indexer
+Structures user-supplied games and converted box art onto a FAT32 SD card root,
+bypassing single-directory FAT32 limits by console partitioning, and writes a
+.bmo_index binary cache matching firmware/BmoGameboy/src/core/rom_index.h.
 """
 
+import argparse
 import os
 import sys
 import time
@@ -18,14 +19,15 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.deploy_to_sd import copy_single_file as atomic_copy_single_file, validate_target_collisions
+from scripts.repo_tools import get_data_dir
 from scripts.rom_key import make_rom_key
 
-SRC_GAMES = REPO_ROOT / "games"
-SRC_BOXART = REPO_ROOT / "roms" / "boxart"
-DEST_ROOT = Path(r"F:")
-DEST_BOXART = DEST_ROOT / "boxart"
-DEST_SAVES = DEST_ROOT / "saves"
-DEST_SHOTS = DEST_ROOT / "screenshots"
+SRC_GAMES = get_data_dir(REPO_ROOT) / "games"
+SRC_BOXART = get_data_dir(REPO_ROOT) / "roms" / "boxart"
+DEST_ROOT: Path | None = None
+DEST_BOXART: Path | None = None
+DEST_SAVES: Path | None = None
+DEST_SHOTS: Path | None = None
 
 # Matches firmware RomType enum values in firmware/BmoGameboy/src/core/sd_card.h.
 EXT_MAP = {
@@ -74,7 +76,7 @@ def catalog_fingerprint(entry_count: int, total_bytes: int, root_stamp: int, ent
     return zlib.crc32(words) & 0xFFFFFFFF
 
 
-def generate_binary_index(deployed_games, boxart_keys):
+def generate_binary_index(deployed_games, boxart_keys, dest_root: Path | None = None):
     """
     Constructs a BMO Binary ROM Index v2 payload ("BMOIDX02").
     Header (36 bytes) + N * Entry (72 bytes). Writes timestamp=0 because the
@@ -115,8 +117,12 @@ def generate_binary_index(deployed_games, boxart_keys):
 
     header = struct.pack('<8s7I', magic, version, entry_count, entry_size, crc, timestamp, res0, res1)
 
-    index_path = DEST_ROOT / ".bmo_index"
-    temp_path = DEST_ROOT / ".bmo_index.tmp"
+    target_root = dest_root if dest_root is not None else DEST_ROOT
+    if target_root is None:
+        raise ValueError("Destination root is required (--destination).")
+
+    index_path = target_root / ".bmo_index"
+    temp_path = target_root / ".bmo_index.tmp"
     with open(temp_path, 'wb') as f:
         f.write(header)
         f.write(entries_bytes)
@@ -126,28 +132,42 @@ def generate_binary_index(deployed_games, boxart_keys):
 
     print(f"[*] Pre-compiled BMOIDX02 index written to {index_path} ({len(header) + len(entries_bytes):,} bytes, {entry_count:,} ROMs, CRC: {hex(crc)})")
 
-def main():
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Deploy user-supplied ROMs and covers to an SD card root and build /.bmo_index.")
+    parser.add_argument("--destination", type=Path, required=True, help="Target SD card root path (e.g. F:\\)")
+    parser.add_argument("--games-dir", type=Path, default=None, help="Source ROM directory (default: BMO_DATA_DIR/games)")
+    parser.add_argument("--boxart-dir", type=Path, default=None, help="Source box-art directory (default: BMO_DATA_DIR/roms/boxart)")
+    args = parser.parse_args(argv)
+
+    data_dir = get_data_dir(REPO_ROOT)
+    src_games_dir = args.games_dir if args.games_dir is not None else (data_dir / "games")
+    src_boxart_dir = args.boxart_dir if args.boxart_dir is not None else (data_dir / "roms" / "boxart")
+    dest_root = args.destination
+    dest_boxart = dest_root / "boxart"
+    dest_saves = dest_root / "saves"
+    dest_shots = dest_root / "screenshots"
+
     print("==================================================================")
-    print("[*] COMPLETE BMO GAMEBOY SD CARD DEPLOYMENT & VERIFICATION")
-    print(f"Source Games:   {SRC_GAMES}")
-    print(f"Source Boxart:  {SRC_BOXART}")
-    print(f"Destination:    {DEST_ROOT}")
+    print("[*] COMPLETE BMO HANDHELD SD CARD DEPLOYMENT & VERIFICATION")
+    print(f"Source Games:   {src_games_dir}")
+    print(f"Source Boxart:  {src_boxart_dir}")
+    print(f"Destination:    {dest_root}")
     print("==================================================================")
 
-    if not DEST_ROOT.exists():
-        print(f"[ERROR] SD Card at {DEST_ROOT} not accessible!")
-        return
+    if not dest_root.exists():
+        print(f"[ERROR] SD Card at {dest_root} not accessible!")
+        return 1
 
-    DEST_BOXART.mkdir(parents=True, exist_ok=True)
-    DEST_SAVES.mkdir(parents=True, exist_ok=True)
-    DEST_SHOTS.mkdir(parents=True, exist_ok=True)
+    dest_boxart.mkdir(parents=True, exist_ok=True)
+    dest_saves.mkdir(parents=True, exist_ok=True)
+    dest_shots.mkdir(parents=True, exist_ok=True)
 
     # 1. Games Selection & Box Art Keying (strictly .raw keyed files + validated lengths)
     print("\n[*] Phase 1: Planning Games & Keyed 64x64 Box Art (.raw)...")
-    src_games = [p for p in SRC_GAMES.iterdir() if p.is_file()] if SRC_GAMES.exists() else []
+    src_games = [p for p in src_games_dir.iterdir() if p.is_file()] if src_games_dir.exists() else []
     src_raw_by_stem = {
         sf.stem.lower(): sf
-        for sf in (SRC_BOXART.glob("*.raw") if SRC_BOXART.exists() else [])
+        for sf in (src_boxart_dir.glob("*.raw") if src_boxart_dir.exists() else [])
         if sf.is_file()
     }
     print(f"[*] Total source games: {len(src_games):,}; master covers: {len(src_raw_by_stem):,}")
@@ -165,14 +185,14 @@ def main():
         rel_path = f"{folder}/{sg.name}"
         if len(rel_path.encode('utf-8')) > 63:
             raise ValueError(f"ROM path exceeds firmware 63-byte limit: {rel_path}")
-        df = DEST_ROOT / folder / sg.name
+        df = dest_root / folder / sg.name
         deployed_games_meta.append((rel_path, rom_type, sg.stat().st_size))
         game_tasks.append((sg, df))
         cover_src = src_raw_by_stem.get(sg.stem.lower())
         if cover_src:
-            boxart_tasks.append((cover_src, DEST_BOXART / f"{make_rom_key(rel_path)}.raw"))
+            boxart_tasks.append((cover_src, dest_boxart / f"{make_rom_key(rel_path)}.raw"))
 
-    validate_target_collisions(game_tasks + boxart_tasks, DEST_ROOT)
+    validate_target_collisions(game_tasks + boxart_tasks, dest_root)
 
     print(f"[*] Box art tasks queued: {len(boxart_tasks):,}")
     if boxart_tasks:
@@ -183,7 +203,7 @@ def main():
                 if (idx + 1) % 1000 == 0 or idx + 1 == len(boxart_tasks):
                     print(f"  Boxart progress: {idx + 1:,}/{len(boxart_tasks):,}")
 
-    existing_boxarts = {f.stem.lower() for f in DEST_BOXART.glob("*.raw")}
+    existing_boxarts = {f.stem.lower() for f in dest_boxart.glob("*.raw")}
     print(f"[*] Box Art ready on SD Card: {len(existing_boxarts):,} covers active.")
 
     print(f"[*] Synchronizing {len(game_tasks):,} verified game files...")
@@ -203,21 +223,22 @@ def main():
                     print(f"  [{pct:5.1f}%] {idx + 1:,}/{len(game_tasks):,} games verified | Speed: {speed:.2f} MB/s | Elapsed: {int(elapsed)}s", flush=True)
 
     # 3. Generate Binary Index
-    generate_binary_index(deployed_games_meta, existing_boxarts)
+    generate_binary_index(deployed_games_meta, existing_boxarts, dest_root=dest_root)
 
     # 4. Final Audit
     print("\n==================================================================")
     print("DEPLOYMENT & PLAYABILITY AUDIT:")
     total_sd_games = 0
     for folder, _ in sorted(set(EXT_MAP.values())):
-        cdir = DEST_ROOT / folder
+        cdir = dest_root / folder
         cnt = len(list(cdir.iterdir())) if cdir.exists() else 0
         total_sd_games += cnt
         print(f"  - {folder:6s}: {cnt:,} games")
     print(f"Total Games Verified on SD Card: {total_sd_games:,}")
-    print(f"Total Box Art Files on SD Card:  {len(list(DEST_BOXART.glob('*.raw'))):,}")
+    print(f"Total Box Art Files on SD Card:  {len(list(dest_boxart.glob('*.raw'))):,}")
     print("==================================================================")
+    return 0
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())
 

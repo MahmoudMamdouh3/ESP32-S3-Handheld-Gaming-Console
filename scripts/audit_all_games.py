@@ -1,9 +1,17 @@
+import argparse
 import os
 import sys
 from pathlib import Path
 from collections import defaultdict
 
-GAMES_DIR = Path(r"E:\BMO Gameboy\games")
+SCRIPTS_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPTS_DIR.parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from repo_tools import get_data_dir
+
+GAMES_DIR = get_data_dir(REPO_ROOT) / "games"
 
 def validate_nes(data):
     if len(data) < 16:
@@ -133,11 +141,14 @@ VALIDATORS = {
     '.wad': validate_doom,
 }
 
-def scan_games():
+def scan_games(games_dir: Path = GAMES_DIR):
     stats = defaultdict(lambda: {'total': 0, 'valid': 0, 'broken': 0, 'zero_byte': 0})
     broken_files = []
-    
-    for entry in GAMES_DIR.iterdir():
+    if not games_dir.is_dir():
+        print(f"Games directory not found: {games_dir}")
+        return 1
+
+    for entry in games_dir.iterdir():
         if not entry.is_file():
             continue
         ext = entry.suffix.lower()
@@ -167,7 +178,7 @@ def scan_games():
         else:
             stats[ext]['valid'] += 1
 
-    print("=== AUDIT OF E:\\BMO Gameboy\\games ===")
+    print(f"=== AUDIT OF {games_dir} ===")
     for ext, s in sorted(stats.items(), key=lambda x: -x[1]['total']):
         print(f"{ext:<6}: Total: {s['total']:<6} | Valid: {s['valid']:<6} | Broken: {s['broken']:<4} | Zero-byte: {s['zero_byte']}")
     
@@ -178,7 +189,17 @@ def scan_games():
         if len(broken_files) > 20:
             print(f"  ... and {len(broken_files) - 20} more")
     else:
-        print("\n[+] 100% of tested games in E:\\BMO Gameboy\\games passed header and integrity checks!")
+        print(f"\n[+] 100% of tested games in {games_dir} passed header and integrity checks!")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Audit user-supplied ROM files in BMO_DATA_DIR/games.")
+    parser.add_argument("--games-dir", type=Path, default=None, help="Directory containing ROM files")
+    args = parser.parse_args()
+    target = args.games_dir if args.games_dir is not None else (get_data_dir(REPO_ROOT) / "games")
+    return scan_games(target)
+
 
 if __name__ == '__main__':
-    scan_games()
+    raise SystemExit(main())

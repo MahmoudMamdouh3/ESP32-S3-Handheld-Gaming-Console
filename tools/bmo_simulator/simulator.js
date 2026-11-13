@@ -557,7 +557,7 @@ class BmoSimulator {
     const quotes = this.wasmEngine.bmoQuotes();
     if (!quotes.length) return;
     const prevValue = select.value;
-    select.innerHTML = "";
+    select.replaceChildren();
     quotes.forEach((quote, idx) => {
       const opt = document.createElement("option");
       opt.value = String(idx);
@@ -1001,35 +1001,7 @@ class BmoSimulator {
       });
     }
 
-    const btnVerifyHost = document.getElementById("btn-verify-host-cores");
-    if (btnVerifyHost) {
-      btnVerifyHost.addEventListener("click", async () => {
-        const log = document.getElementById("playtest-engine-log");
-        if (log) log.textContent = "Running 11 native host C cores across 50 frames...";
-        try {
-          const tokenResp = await fetch("/api/host-cores/token", {
-            cache: "no-store",
-            credentials: "same-origin",
-          });
-          if (!tokenResp.ok) throw new Error("Could not open a local test session");
-          const session = await tokenResp.json();
-          const resp = await fetch("/api/host-cores/run", {
-            method: "POST",
-            cache: "no-store",
-            credentials: "same-origin",
-            headers: { "X-BMO-Session": session.token },
-          });
-          if (resp.ok) {
-            const data = await resp.json();
-            if (log) log.textContent = `Host Cores: ${data.message || "All 11 cores verified"}`;
-          } else {
-            if (log) log.textContent = `Host runner returned HTTP ${resp.status}`;
-          }
-        } catch (err) {
-          if (log) log.textContent = `Host runner available via run_simulator.py (${err.message})`;
-        }
-      });
-    }
+    // Host runner button removed: local simulator operates statically in browser WASM.
 
     this.setupBmoModeControls();
     this.setupInternalsControls();
@@ -1482,12 +1454,20 @@ class BmoSimulator {
     if (historyEl) historyEl.innerText = data.historicalSignificance;
 
     if (gamesContainer && data.hallmarkGames) {
-      gamesContainer.innerHTML = data.hallmarkGames.map(g => `
-        <div class="hallmark-game-item">
-          <div class="hallmark-title">${g.title} (${g.year})</div>
-          <div class="hallmark-desc">${g.significance}</div>
-        </div>
-      `).join("");
+      gamesContainer.replaceChildren(
+        ...data.hallmarkGames.map(g => {
+          const item = document.createElement("div");
+          item.className = "hallmark-game-item";
+          const title = document.createElement("div");
+          title.className = "hallmark-title";
+          title.textContent = `${g.title} (${g.year})`;
+          const desc = document.createElement("div");
+          desc.className = "hallmark-desc";
+          desc.textContent = String(g.significance ?? "");
+          item.append(title, desc);
+          return item;
+        })
+      );
     }
   }
 
@@ -1638,7 +1618,7 @@ class BmoSimulator {
     this.ctx.fillStyle = "#ffffff";
     this.ctx.font = "bold 16px 'Press Start 2P', monospace";
     this.ctx.textAlign = "center";
-    this.ctx.fillText("BMO GAMEBOY", 160, 156);
+    this.ctx.fillText("BMO HANDHELD", 160, 156);
 
     this.ctx.fillStyle = "#cef5e4";
     this.ctx.font = "11px 'Outfit', sans-serif";

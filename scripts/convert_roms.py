@@ -1,22 +1,19 @@
 """
-scripts/convert_roms.py — Convert binary ROM files into 4-byte aligned C .rodata headers.
+scripts/convert_roms.py — Convert user-supplied binary ROM files into 4-byte aligned C .rodata headers.
 """
 
 import argparse
+import sys
 from pathlib import Path
-from typing import List, Tuple
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPTS_DIR.parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from repo_tools import get_data_dir, sanitize_identifier
+
 ROM_DIR = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "assets" / "roms"
-
-DEFAULT_ROMS: List[Tuple[str, str, str]] = [
-    ("Amazing Spider-Man, The (USA, Europe).gb", "rom_amazingspiderman", "rom_spiderman.h"),
-    ("Kirby's Dream Land 2 (USA, Europe) (SGB Enhanced).gb", "rom_kirby2", "rom_kirby2.h"),
-    ("Legend of Zelda, The - Link's Awakening (USA, Europe) (Rev 2).gb", "rom_zeldala", "rom_zeldala.h"),
-    ("Sneaky Snakes (USA, Europe).gb", "rom_sneakysnakes", "rom_sneakysnakes.h"),
-    ("Super Mario Land (World) (Rev 1).gb", "rom_supermarioland", "rom_supermarioland.h"),
-    ("Tetris 2 (USA, Europe) (SGB Enhanced).gb", "rom_tetris2", "rom_tetris2.h"),
-]
 
 
 def bin_to_header(in_path: Path, out_path: Path, var_name: str) -> int:
@@ -37,28 +34,41 @@ def bin_to_header(in_path: Path, out_path: Path, var_name: str) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Convert ROM binaries to C .rodata headers.")
+    parser = argparse.ArgumentParser(description="Convert user-supplied ROM binaries to C .rodata headers.")
     parser.add_argument("--input", "-i", type=Path, help="Single input ROM binary path")
-    parser.add_argument("--output", "-o", type=Path, help="Output .h header path")
-    parser.add_argument("--var", "-v", type=str, help="C array variable name")
+    parser.add_argument("--output", "-o", type=Path, help="Output .h header path (default: local_baked_rom.h)")
+    parser.add_argument("--var", "-v", type=str, default=None, help="C array variable name")
+    parser.add_argument("--rom-dir", type=Path, default=None, help="Directory of user-supplied .gb/.gbc ROMs to convert")
     args = parser.parse_args()
 
-    if args.input and args.output and args.var:
+    if args.input:
         if not args.input.exists():
             print(f"Input file not found: {args.input}")
             return 1
-        sz = bin_to_header(args.input, args.output, args.var)
-        print(f"Saved {args.output} ({sz:,} bytes)")
+        out_path = args.output or (ROM_DIR / "local_baked_rom.h")
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        var_name = args.var or f"rom_{sanitize_identifier(args.input.stem)}"
+        sz = bin_to_header(args.input, out_path, var_name)
+        print(f"Saved {out_path} ({sz:,} bytes)")
         return 0
 
-    for filename, var_name, out_file in DEFAULT_ROMS:
-        in_path = ROM_DIR / filename
-        out_path = ROM_DIR / out_file
-        if not in_path.exists():
-            print(f"Skipping {filename}: file not found at {in_path}")
+    src_dir = args.rom_dir or (get_data_dir(REPO_ROOT) / "roms")
+    if not src_dir.is_dir():
+        print(f"No ROM directory at {src_dir}; pass --input <path> or --rom-dir <dir>.")
+        return 1
+
+    converted = 0
+    for rom_path in sorted(src_dir.iterdir()):
+        if not rom_path.is_file() or rom_path.suffix.lower() not in {".gb", ".gbc"}:
             continue
-        sz = bin_to_header(in_path, out_path, var_name)
+        ident = sanitize_identifier(rom_path.stem)
+        out_path = ROM_DIR / f"rom_{ident}.h"
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        sz = bin_to_header(rom_path, out_path, f"rom_{ident}")
         print(f"Saved {out_path} ({sz:,} bytes)")
+        converted += 1
+
+    print(f"Converted {converted} ROM header(s) from {src_dir}.")
     return 0
 
 

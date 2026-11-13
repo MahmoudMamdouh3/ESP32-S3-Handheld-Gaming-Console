@@ -123,16 +123,17 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
     def test_04_fetch_covers_bgr565_and_bmp_generator(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             out_dir = Path(tmpdir)
-            raw_path, bmp_path = fetch_covers.write_cover_files("Virtual_BMO_Test", out_dir)
+            raw_path, bmp_path = fetch_covers.write_cover_files(
+                "Homebrew_Test", out_dir, rom_relative_path="gb/Homebrew_Test.gb"
+            )
             self.assertTrue(raw_path.exists())
             self.assertTrue(bmp_path.exists())
             self.assertEqual(raw_path.stat().st_size, 64 * 64 * 2)
             bmp_bytes = bmp_path.read_bytes()
             self.assertEqual(bmp_bytes[:2], b"BM")
             self.assertEqual(len(bmp_bytes), 54 + 64 * 64 * 3)
-            url = fetch_covers.build_libretro_thumbnail_url("Zelda (USA).gbc")
-            self.assertIsNotNone(url)
-            self.assertIn("Nintendo%20-%20Game%20Boy%20Color", url)
+            self.assertFalse(hasattr(fetch_covers, "build_libretro_thumbnail_url"))
+            self.assertEqual(fetch_covers.slugify_title("Demo Cart (PD).gb"), "demo_cart")
 
     def test_05_telemetry_plotter_parser_and_summary(self):
         text = telemetry_plotter.generate_synthetic_telemetry(10)
@@ -151,7 +152,7 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         plot = telemetry_plotter.render_ascii_plot(
             samples, frame_windows=windows, source_label="SYNTHETIC"
         )
-        self.assertIn("BMO GAMEBOY TELEMETRY & FRAME PACING REPORT [SYNTHETIC]", plot)
+        self.assertIn("BMO HANDHELD TELEMETRY & FRAME PACING REPORT [SYNTHETIC]", plot)
         self.assertIn("p95=6200us", plot)
 
     def test_06_web_simulator_webserial_sd_manager_and_rom_dropzone(self):
@@ -359,6 +360,7 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         self.assertTrue(hasattr(run_simulator, "Handler"))
         self.assertEqual(run_simulator.Handler.extensions_map.get(".wasm"), "application/wasm")
         self.assertTrue(hasattr(run_simulator.Handler, "do_POST"))
+        self.assertIn("default-src 'self'", run_simulator.CSP_POLICY)
         self.assertEqual(run_simulator.HOST, "127.0.0.1")
         self.assertTrue(run_simulator.valid_host_header("127.0.0.1:8080"))
         self.assertFalse(run_simulator.valid_host_header("localhost:8080"))
@@ -367,7 +369,8 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         html = (REPO_ROOT / "tools" / "bmo_simulator" / "index.html").read_text(encoding="utf-8")
         self.assertIn("wasm-playtest-panel", html)
         self.assertIn("btn-wasm-save-state", html)
-        self.assertIn("btn-verify-host-cores", html)
+        self.assertNotIn("btn-verify-host-cores", html)
+        self.assertIn('http-equiv="Content-Security-Policy"', html)
 
     def test_10_top_picks_curation_and_mbc7_rom_playability(self):
         sd_h = (FIRMWARE_DIR / "src" / "core" / "sd_card.h").read_text(encoding="utf-8")

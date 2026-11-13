@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BMO Gameboy — Browser Game Simulator</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'">
+  <title>BMO Handheld — Browser Game Simulator</title>
   <link rel="stylesheet" href="simulator.css">
 </head>
 <body data-theme="bmo-teal">
@@ -121,7 +122,7 @@
           </div>
 
           <!-- Bezel Footer Logo -->
-          <div class="bezel-footer-logo">BMO <span>GAMEBOY</span></div>
+          <div class="bezel-footer-logo">BMO <span>HANDHELD</span></div>
         </div>
 
         <!-- Controls Section -->
@@ -575,10 +576,9 @@
           <button class="control-pill" id="btn-wasm-load-state">Load State (session)</button>
           <button class="control-pill" id="btn-wasm-toggle-bezel">Toggle Bezel</button>
           <button class="control-pill" id="btn-wasm-toggle-ab">Swap A/B</button>
-          <button class="control-pill" id="btn-verify-host-cores">Verify 11 Host Cores</button>
         </div>
         <div id="playtest-engine-log" style="margin-top: 8px; font-family: monospace; font-size: 11px; opacity: 0.85;">
-          The BMO companion uses the firmware SDF renderer, expression system, speech timer, gaze, petting, and dance APIs in WebAssembly. Console ROM gameplay remains optional and does not execute the firmware menus.
+          The BMO companion uses the firmware SDF renderer, expression system, speech timer, gaze, petting, and dance APIs in WebAssembly. Console ROM gameplay remains optional and does not execute the firmware menus. Run host C core tests in a terminal via python -m unittest discover -s tests -p test_native_cores_execution.py.
         </div>
       </div>
 

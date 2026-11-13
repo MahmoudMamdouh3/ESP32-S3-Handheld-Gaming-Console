@@ -1,7 +1,16 @@
+import argparse
 import os
+import sys
 from pathlib import Path
 
-GAMES_DIR = Path(r"E:\BMO Gameboy\games")
+SCRIPTS_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPTS_DIR.parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from repo_tools import get_data_dir
+
+GAMES_DIR = get_data_dir(REPO_ROOT) / "games"
 
 def deinterleave_smd(payload):
     out = bytearray(len(payload))
@@ -17,10 +26,10 @@ def deinterleave_smd(payload):
             out[b:b+len(block)] = block
     return bytes(out)
 
-def fix_smd_files():
+def fix_smd_files(games_dir: Path = GAMES_DIR):
     fixed = 0
     skipped = 0
-    for f in GAMES_DIR.glob("*.gen"):
+    for f in games_dir.glob("*.gen"):
         try:
             with open(f, 'rb') as fp:
                 data = fp.read()
@@ -42,4 +51,7 @@ def fix_smd_files():
     print(f"SMD Conversion Complete: {fixed} files de-interleaved and converted to clean raw Genesis ROMs ({skipped} already raw).")
 
 if __name__ == '__main__':
-    fix_smd_files()
+    parser = argparse.ArgumentParser(description="Convert interleaved .smd Genesis ROMs in BMO_DATA_DIR/games.")
+    parser.add_argument("--games-dir", type=Path, default=None)
+    args = parser.parse_args()
+    fix_smd_files(args.games_dir or (get_data_dir(REPO_ROOT) / "games"))

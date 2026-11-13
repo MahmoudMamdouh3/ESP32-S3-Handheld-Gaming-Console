@@ -1,5 +1,5 @@
 """
-tools/telemetry_plotter.py — BMO Gameboy serial telemetry parser and report renderer.
+tools/telemetry_plotter.py — BMO Handheld serial telemetry parser and report renderer.
 """
 
 import argparse
@@ -163,7 +163,7 @@ def render_ascii_plot(samples: List[TelemetrySample], width: int = 50,
     summary = summarize_telemetry(samples)
     lines = [
         "=" * 70,
-        f" BMO GAMEBOY TELEMETRY & FRAME PACING REPORT [{source_label}]",
+        f" BMO HANDHELD TELEMETRY & FRAME PACING REPORT [{source_label}]",
         "=" * 70,
         f" Samples: {summary.sample_count} | Mean FPS: {summary.mean_fps:.2f} (min {summary.min_fps}, max {summary.max_fps})",
         f" Frame Latency: mean={summary.mean_frame_us:.1f}us | p50={summary.p50_frame_us:.1f}us | p95={summary.p95_frame_us:.1f}us | p99={summary.p99_frame_us:.1f}us",
@@ -206,7 +206,7 @@ def _with_synthetic_suffix(path: Path) -> Path:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Analyze and plot BMO Gameboy serial telemetry logs.")
+    parser = argparse.ArgumentParser(description="Analyze and plot BMO Handheld serial telemetry logs.")
     parser.add_argument("--input", type=Path, default=None, help="Path to captured serial log file")
     parser.add_argument("--output", type=Path, default=None, help="ASCII report output path")
     parser.add_argument("--json-out", type=Path, default=None, help="Optional JSON summary output path")

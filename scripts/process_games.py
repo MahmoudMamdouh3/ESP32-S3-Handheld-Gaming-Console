@@ -2,7 +2,7 @@ import re
 import zipfile
 from pathlib import Path
 
-from repo_tools import find_game_roots, sanitize_identifier
+from repo_tools import find_game_roots, get_data_dir, sanitize_identifier
 
 try:
     from PIL import Image, ImageDraw, ImageFont
@@ -72,7 +72,7 @@ def generate_gradient_cover(title, out_path, var_name):
 
 
 def main():
-    game_roots = find_game_roots(REPO_ROOT)
+    game_roots = find_game_roots(get_data_dir(REPO_ROOT))
     if not game_roots:
         raise FileNotFoundError('No game directories found under the repo root.')
 

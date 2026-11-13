@@ -46,7 +46,6 @@ class RomFileFilterTests(unittest.TestCase):
         for script_rel in (
             "scripts/deploy_to_sd.py",
             "scripts/deploy_sd_complete.py",
-            "scripts/auto_install_romsets.py",
             "tools/bmo_simulator/console_history_data.js",
         ):
             self.assertNotIn(".a78", (REPO_ROOT / script_rel).read_text(encoding="utf-8").lower())

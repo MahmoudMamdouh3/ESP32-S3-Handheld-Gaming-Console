@@ -42,8 +42,8 @@ def verify_all_baked_roms() -> List[Tuple[str, bool, int, int]]:
 def main() -> int:
     results = verify_all_baked_roms()
     if not results:
-        print("No baked ROM headers found.")
-        return 1
+        print("No baked ROM headers present (BMO_ENABLE_BAKED_ROMS=0 default).")
+        return 0
 
     failures = 0
     for name, ok, actual, expected in results:
