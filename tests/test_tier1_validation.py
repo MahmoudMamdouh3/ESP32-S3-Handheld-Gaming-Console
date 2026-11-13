@@ -51,11 +51,11 @@ class TestTier1FirmwareValidation(unittest.TestCase):
             self.assertTrue(f.exists(), f"Missing required vendor source: {f}")
 
     def test_03_teardown_contract_compliance(self):
-        """Verify that every Tier 1 emulator destroy() is registered in CoreRegistry and dispatched by BmoGameboy.ino."""
-        ino_content = (FIRMWARE_DIR / "BmoGameboy.ino").read_text(encoding="utf-8")
+        """Verify that every Tier 1 emulator destroy() is registered in CoreRegistry and dispatched by bmo_app.cpp."""
+        app_content = (FIRMWARE_DIR / "src" / "app" / "bmo_app.cpp").read_text(encoding="utf-8")
         reg_content = (FIRMWARE_DIR / "src" / "cores" / "core_registry.h").read_text(encoding="utf-8")
-        self.assertIn("CoreRegistry::findByIndex", ino_content)
-        self.assertIn("core->destroy()", ino_content)
+        self.assertIn("CoreRegistry::findByIndex", app_content)
+        self.assertIn("core->destroy()", app_content)
 
         required_destroys = [
             "SmsEmu::destroy",
@@ -94,11 +94,11 @@ class TestTier1FirmwareValidation(unittest.TestCase):
             self.assertIn(m, header, f"Missing display streaming method: {m}")
 
     def test_06_sd_card_rom_types_and_extensions(self):
-        """Verify sd_card.cpp recognizes all Tier 1 extensions."""
-        sd_code = (FIRMWARE_DIR / "src" / "storage" / "sd_card.cpp").read_text(encoding="utf-8")
+        """Verify ConsoleCatalog / sd_catalog.cpp recognizes all Tier 1 extensions."""
+        cat_code = (FIRMWARE_DIR / "src" / "ui" / "console_catalog.h").read_text(encoding="utf-8")
         required_exts = [".sms", ".gg", ".pce", ".a26", ".p8", ".gb", ".gbc", ".nes", ".wad"]
         for ext in required_exts:
-            self.assertIn(ext, sd_code, f"Extension {ext} not handled in determineType in sd_card.cpp")
+            self.assertIn(ext, cat_code, f"Extension {ext} not handled in console_catalog.h")
 
     def test_07_installed_games_integrity(self):
         """Verify all games in games/ directory are non-empty and have valid extensions."""

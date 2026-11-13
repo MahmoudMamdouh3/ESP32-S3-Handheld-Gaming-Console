@@ -12,93 +12,93 @@
 #endif
 
 namespace {
-  static uint16_t* s_boxArtBuf = nullptr;
-  static char s_cachedRomName[64] = "";
-  static bool s_hasArt = false;
+static uint16_t* s_boxArtBuf = nullptr;
+static char s_cachedRomName[64] = "";
+static bool s_hasArt = false;
 
-  uint16_t rgbToDisplayColor(uint8_t r, uint8_t g, uint8_t b) {
-    return Theme::makeUiColor(r, g, b);
-  }
+uint16_t rgbToDisplayColor(uint8_t r, uint8_t g, uint8_t b) {
+  return Theme::makeUiColor(r, g, b);
+}
 
 #if FEATURE_SD_CARD
-  bool sameNameIgnoreAsciiCase(const char* left, const char* right) {
-    return BoxArtLookup::sameNameIgnoreAsciiCase(left, right);
-  }
-
-  void markArtDirectory(const char* folderPath, BoxArtLookup::CatalogMatcher& matcher) {
-    File dir = SD.open(folderPath);
-    if (!dir || !dir.isDirectory()) {
-      if (dir) dir.close();
-      return;
-    }
-    while (true) {
-      File entry = dir.openNextFile();
-      if (!entry) break;
-      if (!entry.isDirectory()) {
-        matcher.markArtFile(entry.name());
-      }
-      entry.close();
-    }
-    dir.close();
-  }
-
-  bool legacyBaseIsUnique(const char* romFilename, const char* legacyBase) {
-    if (!romFilename || !legacyBase || legacyBase[0] == '\0') return false;
-    const int romCount = SDCard::getRomCount();
-    for (int i = 0; i < romCount; ++i) {
-      const RomFile* other = SDCard::getRomInfo(i);
-      if (!other || strcmp(other->filename, romFilename) == 0) continue;
-      char otherBase[64];
-      BoxArt::getBaseName(other->filename, otherBase, sizeof(otherBase));
-      if (sameNameIgnoreAsciiCase(legacyBase, otherBase)) return false;
-    }
-    return true;
-  }
-
-  bool migrateLegacyArt(const char* sourcePath, const char* destinationPath) {
-    if (!sourcePath || !destinationPath || SD.exists(destinationPath)) return false;
-    char temporaryPath[144];
-    const int pathLength = snprintf(temporaryPath, sizeof(temporaryPath), "%s.tmp", destinationPath);
-    if (pathLength <= 0 || static_cast<size_t>(pathLength) >= sizeof(temporaryPath)) return false;
-    if (SD.exists(temporaryPath)) SD.remove(temporaryPath);
-
-    File source = SD.open(sourcePath, FILE_READ);
-    if (!source) return false;
-    const size_t expectedSize = source.size();
-    File target = SD.open(temporaryPath, FILE_WRITE);
-    if (!target) {
-      source.close();
-      return false;
-    }
-
-    uint8_t buffer[256];
-    size_t copied = 0;
-    bool writeOk = true;
-    while (source.available()) {
-      const int bytesRead = source.read(buffer, sizeof(buffer));
-      if (bytesRead <= 0 || target.write(buffer, static_cast<size_t>(bytesRead)) != static_cast<size_t>(bytesRead)) {
-        writeOk = false;
-        break;
-      }
-      copied += static_cast<size_t>(bytesRead);
-    }
-    target.flush();
-    target.close();
-    source.close();
-    if (!writeOk || copied != expectedSize) return false;
-
-    File verification = SD.open(temporaryPath, FILE_READ);
-    const bool verified = verification && verification.size() == expectedSize;
-    if (verification) verification.close();
-    if (!verified || !SD.rename(temporaryPath, destinationPath)) return false;
-
-    File migrated = SD.open(destinationPath, FILE_READ);
-    const bool finalVerified = migrated && migrated.size() == expectedSize;
-    if (migrated) migrated.close();
-    return finalVerified;
-  }
-#endif
+bool sameNameIgnoreAsciiCase(const char* left, const char* right) {
+  return BoxArtLookup::sameNameIgnoreAsciiCase(left, right);
 }
+
+void markArtDirectory(const char* folderPath, BoxArtLookup::CatalogMatcher& matcher) {
+  File dir = SD.open(folderPath);
+  if (!dir || !dir.isDirectory()) {
+    if (dir) dir.close();
+    return;
+  }
+  while (true) {
+    File entry = dir.openNextFile();
+    if (!entry) break;
+    if (!entry.isDirectory()) {
+      matcher.markArtFile(entry.name());
+    }
+    entry.close();
+  }
+  dir.close();
+}
+
+bool legacyBaseIsUnique(const char* romFilename, const char* legacyBase) {
+  if (!romFilename || !legacyBase || legacyBase[0] == '\0') return false;
+  const int romCount = SDCard::getRomCount();
+  for (int i = 0; i < romCount; ++i) {
+    const RomFile* other = SDCard::getRomInfo(i);
+    if (!other || strcmp(other->filename, romFilename) == 0) continue;
+    char otherBase[64];
+    BoxArt::getBaseName(other->filename, otherBase, sizeof(otherBase));
+    if (sameNameIgnoreAsciiCase(legacyBase, otherBase)) return false;
+  }
+  return true;
+}
+
+bool migrateLegacyArt(const char* sourcePath, const char* destinationPath) {
+  if (!sourcePath || !destinationPath || SD.exists(destinationPath)) return false;
+  char temporaryPath[144];
+  const int pathLength = snprintf(temporaryPath, sizeof(temporaryPath), "%s.tmp", destinationPath);
+  if (pathLength <= 0 || static_cast<size_t>(pathLength) >= sizeof(temporaryPath)) return false;
+  if (SD.exists(temporaryPath)) SD.remove(temporaryPath);
+
+  File source = SD.open(sourcePath, FILE_READ);
+  if (!source) return false;
+  const size_t expectedSize = source.size();
+  File target = SD.open(temporaryPath, FILE_WRITE);
+  if (!target) {
+    source.close();
+    return false;
+  }
+
+  uint8_t buffer[256];
+  size_t copied = 0;
+  bool writeOk = true;
+  while (source.available()) {
+    const int bytesRead = source.read(buffer, sizeof(buffer));
+    if (bytesRead <= 0 || target.write(buffer, static_cast<size_t>(bytesRead)) != static_cast<size_t>(bytesRead)) {
+      writeOk = false;
+      break;
+    }
+    copied += static_cast<size_t>(bytesRead);
+  }
+  target.flush();
+  target.close();
+  source.close();
+  if (!writeOk || copied != expectedSize) return false;
+
+  File verification = SD.open(temporaryPath, FILE_READ);
+  const bool verified = verification && verification.size() == expectedSize;
+  if (verification) verification.close();
+  if (!verified || !SD.rename(temporaryPath, destinationPath)) return false;
+
+  File migrated = SD.open(destinationPath, FILE_READ);
+  const bool finalVerified = migrated && migrated.size() == expectedSize;
+  if (migrated) migrated.close();
+  return finalVerified;
+}
+#endif
+} // namespace
 
 bool BoxArt::init() {
   if (!s_boxArtBuf) {
@@ -153,8 +153,8 @@ void BoxArt::populateCatalogAvailability(RomFile* roms, int count) {
 
   auto* keysBuf = static_cast<BoxArtLookup::KeyEntry*>(
       heap_caps_malloc(static_cast<size_t>(count) * sizeof(BoxArtLookup::KeyEntry), MALLOC_CAP_SPIRAM));
-  auto* baseOrderBuf = static_cast<int32_t*>(
-      heap_caps_malloc(static_cast<size_t>(count) * sizeof(int32_t), MALLOC_CAP_SPIRAM));
+  auto* baseOrderBuf =
+      static_cast<int32_t*>(heap_caps_malloc(static_cast<size_t>(count) * sizeof(int32_t), MALLOC_CAP_SPIRAM));
 
   BoxArtLookup::CatalogMatcher matcher;
   if (keysBuf && baseOrderBuf && matcher.init(roms, count, keysBuf, baseOrderBuf)) {
@@ -229,44 +229,32 @@ bool BoxArt::load(const char* romFilename) {
   char legacyBase[64];
   getBaseName(romFilename, legacyBase, sizeof(legacyBase));
 
-  char paths[8][128];
+  const bool legacyBaseUnique = legacyBaseIsUnique(romFilename, legacyBase);
   const char* folders[] = {"/boxart", "/covers"};
   const char* extensions[] = {"raw", "bmp"};
-  size_t pathCount = 0;
-  for (const char* folder : folders) {
-    for (const char* extension : extensions) {
-      snprintf(paths[pathCount++], sizeof(paths[0]), "%s/%s.%s", folder, key, extension);
-    }
-  }
-  const bool legacyBaseUnique = legacyBaseIsUnique(romFilename, legacyBase);
-  if (legacyBaseUnique) {
+  const char* stems[2] = {key, legacyBase};
+  const size_t stemCount = legacyBaseUnique ? 2U : 1U;
+  char candidatePath[128];
+
+  SpiArbiter::ScopedLock spiLock;
+  for (size_t s = 0; s < stemCount; ++s) {
     for (const char* folder : folders) {
       for (const char* extension : extensions) {
-        snprintf(paths[pathCount++], sizeof(paths[0]), "%s/%s.%s", folder, legacyBase, extension);
-      }
-    }
-  }
-  SpiArbiter::ScopedLock spiLock;
-
-  for (size_t i = 0; i < pathCount; ++i) {
-    const bool isBmp = strstr(paths[i], ".bmp") != nullptr;
-    if (isBmp ? loadBmp(paths[i]) : loadRaw(paths[i])) {
-      s_hasArt = true;
-      if (i >= 4 && legacyBaseUnique) {
-        char keyPath[128];
-        const char* folderEnd = strrchr(paths[i], '/');
-        const char* extension = isBmp ? ".bmp" : ".raw";
-        if (folderEnd) {
-          const size_t folderLength = static_cast<size_t>(folderEnd - paths[i]);
-          if (folderLength < sizeof(keyPath)) {
-            memcpy(keyPath, paths[i], folderLength);
-            keyPath[folderLength] = '\0';
-            snprintf(keyPath + folderLength, sizeof(keyPath) - folderLength, "/%s%s", key, extension);
-            migrateLegacyArt(paths[i], keyPath);
+        const int written = snprintf(candidatePath, sizeof(candidatePath), "%s/%s.%s", folder, stems[s], extension);
+        if (written <= 0 || static_cast<size_t>(written) >= sizeof(candidatePath)) continue;
+        const bool isBmp = (strcmp(extension, "bmp") == 0);
+        if (isBmp ? loadBmp(candidatePath) : loadRaw(candidatePath)) {
+          s_hasArt = true;
+          if (s == 1U && legacyBaseUnique) {
+            char keyPath[128];
+            const int keyLen = snprintf(keyPath, sizeof(keyPath), "%s/%s.%s", folder, key, extension);
+            if (keyLen > 0 && static_cast<size_t>(keyLen) < sizeof(keyPath)) {
+              migrateLegacyArt(candidatePath, keyPath);
+            }
           }
+          return true;
         }
       }
-      return true;
     }
   }
 #endif
@@ -311,9 +299,9 @@ bool BoxArt::loadBmp(const char* path) {
   }
 
   uint32_t dataOffset = header[10] | (header[11] << 8) | (header[12] << 16) | (header[13] << 24);
-  int32_t width  = header[18] | (header[19] << 8) | (header[20] << 16) | (header[21] << 24);
+  int32_t width = header[18] | (header[19] << 8) | (header[20] << 16) | (header[21] << 24);
   int32_t height = header[22] | (header[23] << 8) | (header[24] << 16) | (header[25] << 24);
-  uint16_t bpp   = header[28] | (header[29] << 8);
+  uint16_t bpp = header[28] | (header[29] << 8);
 
   bool bottomUp = (height > 0);
   int absHeight = bottomUp ? height : -height;

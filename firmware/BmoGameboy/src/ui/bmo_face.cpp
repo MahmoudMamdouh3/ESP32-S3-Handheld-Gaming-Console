@@ -1,4 +1,4 @@
-#pragma GCC optimize("O3,unroll-loops")
+#pragma GCC optimize("O3,unroll-loops") // Arduino ESP32 builds at -Os; hot pixel SDF loop needs -O3.
 // -----------------------------------------------------------------------
 // bmo_face.cpp  –  BMO 2D SDF Mascot Face Renderer.
 //
@@ -22,6 +22,7 @@
 // -----------------------------------------------------------------------
 
 #include "bmo_face.h"
+#include "bmo_face_sdf.h"
 #include "harmonic_spring.h"
 #include "display_emu.h"
 #include "../hal/config.h"
@@ -41,34 +42,27 @@ using BmoFaceInternal::HarmonicSpring;
 // Colour packing — produces byte-swapped BGR565 for ST7789 display
 // ---------------------------------------------------------------------------
 static inline uint16_t packBGR565(uint8_t r, uint8_t g, uint8_t b) {
-  uint16_t bgr = ((uint16_t)(b & 0xF8) << 8)
-               | ((uint16_t)(g & 0xFC) << 3)
-               | ((uint16_t)r >> 3);
+  uint16_t bgr = ((uint16_t)(b & 0xF8) << 8) | ((uint16_t)(g & 0xFC) << 3) | ((uint16_t)r >> 3);
   return (uint16_t)((bgr << 8) | (bgr >> 8)); // byte-swap for SPI
 }
 
 // Adventure Time BMO Color Palette
-static const uint16_t COL_MINT_BG     = packBGR565(138, 213, 195); // #8AD5C3
-static const uint16_t COL_DUSK_BG     = packBGR565(111, 184, 167); // #6FB8A7 (Sleep mode)
-static const uint16_t COL_CHARCOAL    = packBGR565(16, 30, 43);    // #101E2B (Eyes, mouth line)
-static const uint16_t COL_CAVITY      = packBGR565(18, 28, 38);    // #121C26 (Mouth cavity)
-static const uint16_t COL_BLUSH       = packBGR565(255, 139, 167); // #FF8BA7 (Cheeks)
-static const uint16_t COL_TONGUE      = packBGR565(250, 127, 143); // #FA7F8F (Tongue)
-static const uint16_t COL_GLINT       = packBGR565(255, 255, 255); // #FFFFFF (Catchlight)
-static const uint16_t COL_STAR        = packBGR565(255, 224, 102); // #FFE066 (Celebration star)
-static const uint16_t COL_DREAM_Z     = packBGR565(210, 245, 238); // #D2F5EE (Sleep bubble)
-static const uint16_t COL_ERROR_RED   = packBGR565(225, 36, 48);   // #E12430 (Error cross)
+static const uint16_t COL_MINT_BG = packBGR565(138, 213, 195); // #8AD5C3
+static const uint16_t COL_DUSK_BG = packBGR565(111, 184, 167); // #6FB8A7 (Sleep mode)
+static const uint16_t COL_CHARCOAL = packBGR565(16, 30, 43);   // #101E2B (Eyes, mouth line)
+static const uint16_t COL_CAVITY = packBGR565(18, 28, 38);     // #121C26 (Mouth cavity)
+static const uint16_t COL_BLUSH = packBGR565(255, 139, 167);   // #FF8BA7 (Cheeks)
+static const uint16_t COL_TONGUE = packBGR565(250, 127, 143);  // #FA7F8F (Tongue)
+static const uint16_t COL_GLINT = packBGR565(255, 255, 255);   // #FFFFFF (Catchlight)
+static const uint16_t COL_STAR = packBGR565(255, 224, 102);    // #FFE066 (Celebration star)
+static const uint16_t COL_DREAM_Z = packBGR565(210, 245, 238); // #D2F5EE (Sleep bubble)
+static const uint16_t COL_ERROR_RED = packBGR565(225, 36, 48); // #E12430 (Error cross)
 
 // ---------------------------------------------------------------------------
 // Math helpers
 // ---------------------------------------------------------------------------
 static inline float clampf(float v, float lo, float hi) {
   return v < lo ? lo : (v > hi ? hi : v);
-}
-
-static inline float smoothstepf(float lo, float hi, float t) {
-  t = clampf((t - lo) / (hi - lo), 0.0f, 1.0f);
-  return t * t * (3.0f - 2.0f * t);
 }
 
 static inline float lerpf(float a, float b, float t) {
@@ -82,19 +76,19 @@ static inline float lerpf(float a, float b, float t) {
 // Facial geometry styles
 // ---------------------------------------------------------------------------
 enum EyeStyle {
-  EYE_CAPSULE = 0,    // Vertical capsule / elongated pill oval with glint
-  EYE_CRESCENT_UP,    // Smiling upside-down crescent arc (^ ^)
-  EYE_LINE_SLEEP,     // Closed peaceful horizontal line (- -)
-  EYE_HEART,          // Glowing cute beating heart
-  EYE_CROSS_ERROR,    // Sharp red cross (X X)
-  EYE_WINK_LEFT       // Left crescent, right capsule
+  EYE_CAPSULE = 0, // Vertical capsule / elongated pill oval with glint
+  EYE_CRESCENT_UP, // Smiling upside-down crescent arc (^ ^)
+  EYE_LINE_SLEEP,  // Closed peaceful horizontal line (- -)
+  EYE_HEART,       // Glowing cute beating heart
+  EYE_CROSS_ERROR, // Sharp red cross (X X)
+  EYE_WINK_LEFT    // Left crescent, right capsule
 };
 
 enum MouthStyle {
-  MOUTH_ARC = 0,      // Gentle curved smile or frown line
-  MOUTH_OPEN_CAVITY,  // Open mouth with dark cavity and warm coral tongue
-  MOUTH_ROUND_O,      // Surprised round circular "O" mouth
-  MOUTH_ZIGZAG_ERROR  // Jagged error mouth
+  MOUTH_ARC = 0,     // Gentle curved smile or frown line
+  MOUTH_OPEN_CAVITY, // Open mouth with dark cavity and warm coral tongue
+  MOUTH_ROUND_O,     // Surprised round circular "O" mouth
+  MOUTH_ZIGZAG_ERROR // Jagged error mouth
 };
 
 // ---------------------------------------------------------------------------
@@ -117,43 +111,48 @@ struct ExprTarget {
 
 // Target Table for 18 Expressions
 static const ExprTarget EXPR_TABLE[] = {
-  /* IDLE         */ { 0.90f, 0.10f, 0.16f, 0.28f,  0.12f, 0.22f,  0.35f, 0.02f, -0.22f, 0.35f, EYE_CAPSULE,     MOUTH_ARC },
-  /* SURPRISED    */ { 1.15f, 0.11f, 0.20f, 0.28f,  0.15f, 0.12f,  0.00f, 0.14f, -0.25f, 0.20f, EYE_CAPSULE,     MOUTH_ROUND_O },
-  /* HAPPY        */ { 0.70f, 0.11f, 0.15f, 0.28f,  0.12f, 0.26f,  0.65f, 0.16f, -0.20f, 0.85f, EYE_CRESCENT_UP, MOUTH_OPEN_CAVITY },
-  /* SLEEPY       */ { 0.30f, 0.10f, 0.15f, 0.28f,  0.08f, 0.18f,  0.15f, 0.02f, -0.24f, 0.20f, EYE_CAPSULE,     MOUTH_ARC },
-  /* LOW_BATTERY  */ { 0.45f, 0.09f, 0.14f, 0.28f,  0.06f, 0.20f, -0.30f, 0.02f, -0.25f, 0.15f, EYE_CAPSULE,     MOUTH_ARC },
-  /* CHARGING     */ { 0.85f, 0.10f, 0.16f, 0.28f,  0.12f, 0.22f,  0.30f, 0.02f, -0.22f, 0.40f, EYE_CAPSULE,     MOUTH_ARC },
-  /* ERROR        */ { 1.00f, 0.11f, 0.16f, 0.28f,  0.12f, 0.24f, -0.60f, 0.03f, -0.18f, 0.00f, EYE_CROSS_ERROR, MOUTH_ZIGZAG_ERROR },
-  /* SHUTDOWN     */ { 0.05f, 0.10f, 0.15f, 0.28f,  0.06f, 0.16f,  0.05f, 0.01f, -0.26f, 0.10f, EYE_LINE_SLEEP,  MOUTH_ARC },
-  /* HIDDEN       */ { 0.00f, 0.00f, 0.00f, 0.00f,  0.00f, 0.00f,  0.00f, 0.00f,  0.00f, 0.00f, EYE_CAPSULE,     MOUTH_ARC },
-  /* JOY          */ { 0.80f, 0.12f, 0.16f, 0.28f,  0.14f, 0.28f,  0.80f, 0.20f, -0.18f, 0.95f, EYE_CRESCENT_UP, MOUTH_OPEN_CAVITY },
-  /* SLEEPING     */ { 0.00f, 0.10f, 0.15f, 0.28f,  0.06f, 0.16f,  0.10f, 0.01f, -0.25f, 0.25f, EYE_LINE_SLEEP,  MOUTH_ARC },
-  /* WINK         */ { 0.90f, 0.10f, 0.16f, 0.28f,  0.12f, 0.24f,  0.45f, 0.04f, -0.20f, 0.70f, EYE_WINK_LEFT,   MOUTH_ARC },
-  /* BLUSH        */ { 0.65f, 0.10f, 0.15f, 0.28f,  0.09f, 0.18f,  0.30f, 0.02f, -0.23f, 1.00f, EYE_CAPSULE,     MOUTH_ARC },
-  /* CONFUSED     */ { 0.85f, 0.10f, 0.16f, 0.28f,  0.12f, 0.20f,  0.10f, 0.03f, -0.22f, 0.30f, EYE_CAPSULE,     MOUTH_ARC },
-  /* ANNOYED      */ { 0.50f, 0.10f, 0.14f, 0.28f,  0.10f, 0.20f, -0.10f, 0.02f, -0.22f, 0.20f, EYE_CAPSULE,     MOUTH_ARC },
-  /* LOVE         */ { 0.95f, 0.12f, 0.18f, 0.28f,  0.13f, 0.24f,  0.60f, 0.12f, -0.20f, 0.90f, EYE_HEART,       MOUTH_OPEN_CAVITY },
-  /* TICKLED      */ { 0.75f, 0.12f, 0.15f, 0.28f,  0.15f, 0.28f,  0.85f, 0.22f, -0.16f, 1.00f, EYE_CRESCENT_UP, MOUTH_OPEN_CAVITY },
-  /* CELEBRATING  */ { 0.85f, 0.12f, 0.17f, 0.28f,  0.14f, 0.30f,  0.75f, 0.20f, -0.18f, 0.90f, EYE_CRESCENT_UP, MOUTH_OPEN_CAVITY }
-};
+    /* IDLE         */ {0.90f, 0.10f, 0.16f, 0.28f, 0.12f, 0.22f, 0.35f, 0.02f, -0.22f, 0.35f, EYE_CAPSULE, MOUTH_ARC},
+    /* SURPRISED    */
+    {1.15f, 0.11f, 0.20f, 0.28f, 0.15f, 0.12f, 0.00f, 0.14f, -0.25f, 0.20f, EYE_CAPSULE, MOUTH_ROUND_O},
+    /* HAPPY        */
+    {0.70f, 0.11f, 0.15f, 0.28f, 0.12f, 0.26f, 0.65f, 0.16f, -0.20f, 0.85f, EYE_CRESCENT_UP, MOUTH_OPEN_CAVITY},
+    /* SLEEPY       */ {0.30f, 0.10f, 0.15f, 0.28f, 0.08f, 0.18f, 0.15f, 0.02f, -0.24f, 0.20f, EYE_CAPSULE, MOUTH_ARC},
+    /* LOW_BATTERY  */ {0.45f, 0.09f, 0.14f, 0.28f, 0.06f, 0.20f, -0.30f, 0.02f, -0.25f, 0.15f, EYE_CAPSULE, MOUTH_ARC},
+    /* CHARGING     */ {0.85f, 0.10f, 0.16f, 0.28f, 0.12f, 0.22f, 0.30f, 0.02f, -0.22f, 0.40f, EYE_CAPSULE, MOUTH_ARC},
+    /* ERROR        */
+    {1.00f, 0.11f, 0.16f, 0.28f, 0.12f, 0.24f, -0.60f, 0.03f, -0.18f, 0.00f, EYE_CROSS_ERROR, MOUTH_ZIGZAG_ERROR},
+    /* SHUTDOWN     */
+    {0.05f, 0.10f, 0.15f, 0.28f, 0.06f, 0.16f, 0.05f, 0.01f, -0.26f, 0.10f, EYE_LINE_SLEEP, MOUTH_ARC},
+    /* HIDDEN       */ {0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, EYE_CAPSULE, MOUTH_ARC},
+    /* JOY          */
+    {0.80f, 0.12f, 0.16f, 0.28f, 0.14f, 0.28f, 0.80f, 0.20f, -0.18f, 0.95f, EYE_CRESCENT_UP, MOUTH_OPEN_CAVITY},
+    /* SLEEPING     */
+    {0.00f, 0.10f, 0.15f, 0.28f, 0.06f, 0.16f, 0.10f, 0.01f, -0.25f, 0.25f, EYE_LINE_SLEEP, MOUTH_ARC},
+    /* WINK         */
+    {0.90f, 0.10f, 0.16f, 0.28f, 0.12f, 0.24f, 0.45f, 0.04f, -0.20f, 0.70f, EYE_WINK_LEFT, MOUTH_ARC},
+    /* BLUSH        */ {0.65f, 0.10f, 0.15f, 0.28f, 0.09f, 0.18f, 0.30f, 0.02f, -0.23f, 1.00f, EYE_CAPSULE, MOUTH_ARC},
+    /* CONFUSED     */ {0.85f, 0.10f, 0.16f, 0.28f, 0.12f, 0.20f, 0.10f, 0.03f, -0.22f, 0.30f, EYE_CAPSULE, MOUTH_ARC},
+    /* ANNOYED      */ {0.50f, 0.10f, 0.14f, 0.28f, 0.10f, 0.20f, -0.10f, 0.02f, -0.22f, 0.20f, EYE_CAPSULE, MOUTH_ARC},
+    /* LOVE         */
+    {0.95f, 0.12f, 0.18f, 0.28f, 0.13f, 0.24f, 0.60f, 0.12f, -0.20f, 0.90f, EYE_HEART, MOUTH_OPEN_CAVITY},
+    /* TICKLED      */
+    {0.75f, 0.12f, 0.15f, 0.28f, 0.15f, 0.28f, 0.85f, 0.22f, -0.16f, 1.00f, EYE_CRESCENT_UP, MOUTH_OPEN_CAVITY},
+    /* CELEBRATING  */
+    {0.85f, 0.12f, 0.17f, 0.28f, 0.14f, 0.30f, 0.75f, 0.20f, -0.18f, 0.90f, EYE_CRESCENT_UP, MOUTH_OPEN_CAVITY}};
 
 // ---------------------------------------------------------------------------
 // Ambient Particle System (Sleep Bubbles & Star Sparkles)
 // ---------------------------------------------------------------------------
-enum ParticleType {
-  PARTICLE_NONE = 0,
-  PARTICLE_DREAM_Z,
-  PARTICLE_SPARKLE
-};
+enum ParticleType { PARTICLE_NONE = 0, PARTICLE_DREAM_Z, PARTICLE_SPARKLE };
 
 struct MascotParticle {
   ParticleType type;
-  float x;      // normalized face coordinates
+  float x; // normalized face coordinates
   float y;
   float vx;
   float vy;
   float scale;
-  float life;   // 0.0 to 1.0
+  float life; // 0.0 to 1.0
   float maxLife;
   float seed;
 };
@@ -180,50 +179,50 @@ static HarmonicSpring s_spSquashX;
 static HarmonicSpring s_spGazeX;
 static HarmonicSpring s_spGazeY;
 
-static EyeStyle   s_activeEyeStyle   = EYE_CAPSULE;
+static EyeStyle s_activeEyeStyle = EYE_CAPSULE;
 static MouthStyle s_activeMouthStyle = MOUTH_ARC;
-static bool       s_dirty            = false;
+static bool s_dirty = false;
 
 // Biological Dynamics
-static float s_breathPhase    = 0.0f;
-static float s_breathAmp      = 0.025f;
-static float s_breathSpeed    = 1.95f; // ~3.2s period (2*pi / 1.95)
+static float s_breathPhase = 0.0f;
+static float s_breathAmp = 0.025f;
+static float s_breathSpeed = 1.95f; // ~3.2s period (2*pi / 1.95)
 
 // Gaze Saccades
 static unsigned long s_lastSaccadeMs = 0;
 static unsigned long s_nextSaccadeMs = 2800;
-static bool          s_userGazeActive = false;
+static bool s_userGazeActive = false;
 static unsigned long s_userGazeEndMs = 0;
 
 // Blinking
-static unsigned long s_lastBlinkMs   = 0;
-static unsigned long s_nextBlinkMs   = 3200;
-static float         s_blinkProgress = 0.0f;
-static bool          s_blinking      = false;
-static unsigned long s_blinkStartMs  = 0;
-static int           s_blinkPhase    = 0; // 0=single blink, 1=double blink first, 2=double blink second
+static unsigned long s_lastBlinkMs = 0;
+static unsigned long s_nextBlinkMs = 3200;
+static float s_blinkProgress = 0.0f;
+static bool s_blinking = false;
+static unsigned long s_blinkStartMs = 0;
+static int s_blinkPhase = 0; // 0=single blink, 1=double blink first, 2=double blink second
 
 // High-Definition Octal PSRAM Framebuffer (320x240x2 = 153.6 KB, 0 bytes DRAM!)
 static uint16_t* s_psramFaceBuf = nullptr;
 static unsigned long s_lastUpdateUs = 0;
 
 // Speech & Dialogue State
-static char          s_speechText[64] = "";
+static char s_speechText[64] = "";
 static unsigned long s_speechExpireMs = 0;
-static int           s_speechVisibleChars = 0;
+static int s_speechVisibleChars = 0;
 static unsigned long s_speechLastCharMs = 0;
-static bool          s_speechActive = false;
+static bool s_speechActive = false;
 
 // Dance Party Parameters
-static bool          s_danceActive = false;
-static float         s_danceBpm = 125.0f;
-static float         s_dancePhase = 0.0f;
+static bool s_danceActive = false;
+static float s_danceBpm = 125.0f;
+static float s_dancePhase = 0.0f;
 static unsigned long s_danceEndMs = 0;
 
 // Companion Relationship & Metrics
-static int           s_buddyLevel = 1;
-static int           s_happiness = 95;
-static int           s_totalPets = 0;
+static int s_buddyLevel = 1;
+static int s_happiness = 95;
+static int s_totalPets = 0;
 
 // ---------------------------------------------------------------------------
 // Particle Helpers
@@ -386,32 +385,32 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
   // Anti-aliasing band: 1.25 screen pixels mapped into normalized [-1, 1] units
   const float aaStepX = (2.0f / (float)destW) * 1.25f;
   const float aaStepY = (2.0f / (float)destH) * 1.25f;
-  const float aaBand  = (aaStepX + aaStepY) * 0.5f;
+  const float aaBand = (aaStepX + aaStepY) * 0.5f;
 
   // Physics parameters live snapshot
-  const float eyeOpenness    = s_spOpenness.val * (1.0f - s_blinkProgress);
-  const float eyeW           = s_spEyeW.val * s_spSquashX.val;
-  const float eyeH           = s_spEyeH.val * clampf(eyeOpenness, 0.005f, 1.2f);
-  const float eyeOffX        = s_spEyeOffX.val;
-  const float eyeOffY        = s_spEyeOffY.val + s_spBounceY.val + s_breathAmp * sinf(s_breathPhase);
-  const float mouthW         = s_spMouthW.val * s_spSquashX.val;
-  const float mouthCrv       = s_spMouthCrv.val;
-  const float mouthOpen      = s_spMouthOpen.val;
-  const float mouthOffY      = s_spMouthOffY.val + s_spBounceY.val * 0.8f + s_breathAmp * sinf(s_breathPhase);
+  const float eyeOpenness = s_spOpenness.val * (1.0f - s_blinkProgress);
+  const float eyeW = s_spEyeW.val * s_spSquashX.val;
+  const float eyeH = s_spEyeH.val * clampf(eyeOpenness, 0.005f, 1.2f);
+  const float eyeOffX = s_spEyeOffX.val;
+  const float eyeOffY = s_spEyeOffY.val + s_spBounceY.val + s_breathAmp * sinf(s_breathPhase);
+  const float mouthW = s_spMouthW.val * s_spSquashX.val;
+  const float mouthCrv = s_spMouthCrv.val;
+  const float mouthOpen = s_spMouthOpen.val;
+  const float mouthOffY = s_spMouthOffY.val + s_spBounceY.val * 0.8f + s_breathAmp * sinf(s_breathPhase);
   const float blushIntensity = clampf(s_spBlush.val, 0.0f, 1.0f);
-  const float gazeX          = s_spGazeX.val;
-  const float gazeY          = s_spGazeY.val;
+  const float gazeX = s_spGazeX.val;
+  const float gazeY = s_spGazeY.val;
 
   // Eye centers with gaze offset
-  const float leftEyeCx  = -eyeOffX + gazeX * 0.06f;
-  const float rightEyeCx =  eyeOffX + gazeX * 0.06f;
-  const float eyeCy      =  eyeOffY + gazeY * 0.06f;
+  const float leftEyeCx = -eyeOffX + gazeX * 0.06f;
+  const float rightEyeCx = eyeOffX + gazeX * 0.06f;
+  const float eyeCy = eyeOffY + gazeY * 0.06f;
 
   // Cheeks centers
-  const float leftCheekCx  = -eyeOffX * 1.52f;
-  const float rightCheekCx =  eyeOffX * 1.52f;
-  const float cheekCy      =  eyeOffY - eyeH * 0.82f;
-  const float cheekR       =  0.13f;
+  const float leftCheekCx = -eyeOffX * 1.52f;
+  const float rightCheekCx = eyeOffX * 1.52f;
+  const float cheekCy = eyeOffY - eyeH * 0.82f;
+  const float cheekR = 0.13f;
 
   // Fast background clear of the destination box (alignment-safe 32-bit stores)
   const uint32_t bgDword = ((uint32_t)bgColor << 16) | (uint32_t)bgColor;
@@ -430,37 +429,33 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
   }
 
   // Feature screen-space bounding boxes limit pixel evaluation to face regions.
-  auto normToPixelX = [&](float nx) -> int {
-    return (int)(((nx + 1.0f) * 0.5f) * (float)destW);
-  };
-  auto normToPixelY = [&](float ny) -> int {
-    return (int)(((1.0f - ny) * 0.5f) * (float)destH);
-  };
+  auto normToPixelX = [&](float nx) -> int { return (int)(((nx + 1.0f) * 0.5f) * (float)destW); };
+  auto normToPixelY = [&](float ny) -> int { return (int)(((1.0f - ny) * 0.5f) * (float)destH); };
 
-  const int bLeftEyeX0  = max(0, normToPixelX(leftEyeCx - eyeW * 1.6f - aaBand));
-  const int bLeftEyeX1  = min(destW - 1, normToPixelX(leftEyeCx + eyeW * 1.6f + aaBand));
+  const int bLeftEyeX0 = max(0, normToPixelX(leftEyeCx - eyeW * 1.6f - aaBand));
+  const int bLeftEyeX1 = min(destW - 1, normToPixelX(leftEyeCx + eyeW * 1.6f + aaBand));
   const int bRightEyeX0 = max(0, normToPixelX(rightEyeCx - eyeW * 1.6f - aaBand));
   const int bRightEyeX1 = min(destW - 1, normToPixelX(rightEyeCx + eyeW * 1.6f + aaBand));
-  const int bEyeY0      = max(0, normToPixelY(eyeCy + eyeH * 1.6f + aaBand));
-  const int bEyeY1      = min(destH - 1, normToPixelY(eyeCy - eyeH * 1.6f - aaBand));
+  const int bEyeY0 = max(0, normToPixelY(eyeCy + eyeH * 1.6f + aaBand));
+  const int bEyeY1 = min(destH - 1, normToPixelY(eyeCy - eyeH * 1.6f - aaBand));
 
-  const int bCheekL_X0  = max(0, normToPixelX(leftCheekCx - cheekR * 1.4f));
-  const int bCheekL_X1  = min(destW - 1, normToPixelX(leftCheekCx + cheekR * 1.4f));
-  const int bCheekR_X0  = max(0, normToPixelX(rightCheekCx - cheekR * 1.4f));
-  const int bCheekR_X1  = min(destW - 1, normToPixelX(rightCheekCx + cheekR * 1.4f));
-  const int bCheekY0    = max(0, normToPixelY(cheekCy + cheekR * 1.4f));
-  const int bCheekY1    = min(destH - 1, normToPixelY(cheekCy - cheekR * 1.4f));
+  const int bCheekL_X0 = max(0, normToPixelX(leftCheekCx - cheekR * 1.4f));
+  const int bCheekL_X1 = min(destW - 1, normToPixelX(leftCheekCx + cheekR * 1.4f));
+  const int bCheekR_X0 = max(0, normToPixelX(rightCheekCx - cheekR * 1.4f));
+  const int bCheekR_X1 = min(destW - 1, normToPixelX(rightCheekCx + cheekR * 1.4f));
+  const int bCheekY0 = max(0, normToPixelY(cheekCy + cheekR * 1.4f));
+  const int bCheekY1 = min(destH - 1, normToPixelY(cheekCy - cheekR * 1.4f));
 
-  const int bMouthX0    = max(0, normToPixelX(-mouthW * 1.3f - aaBand));
-  const int bMouthX1    = min(destW - 1, normToPixelX( mouthW * 1.3f + aaBand));
-  const int bMouthY0    = max(0, normToPixelY(mouthOffY + fabsf(mouthCrv) * mouthW * mouthW + mouthOpen * 1.8f + aaBand));
-  const int bMouthY1    = min(destH - 1, normToPixelY(mouthOffY - mouthOpen * 1.8f - aaBand));
+  const int bMouthX0 = max(0, normToPixelX(-mouthW * 1.3f - aaBand));
+  const int bMouthX1 = min(destW - 1, normToPixelX(mouthW * 1.3f + aaBand));
+  const int bMouthY0 = max(0, normToPixelY(mouthOffY + fabsf(mouthCrv) * mouthW * mouthW + mouthOpen * 1.8f + aaBand));
+  const int bMouthY1 = min(destH - 1, normToPixelY(mouthOffY - mouthOpen * 1.8f - aaBand));
 
   // Speech bubble bounding box (Y in [12, 64] px)
-  const int bBubbleX0   = max(0, normToPixelX(-0.43f - aaBand));
-  const int bBubbleX1   = min(destW - 1, normToPixelX( 0.43f + aaBand));
-  const int bBubbleY0   = max(0, normToPixelY( 0.708f + 0.095f + aaBand));
-  const int bBubbleY1   = min(destH - 1, normToPixelY( 0.50f - aaBand));
+  const int bBubbleX0 = max(0, normToPixelX(-0.43f - aaBand));
+  const int bBubbleX1 = min(destW - 1, normToPixelX(0.43f + aaBand));
+  const int bBubbleY0 = max(0, normToPixelY(0.708f + 0.095f + aaBand));
+  const int bBubbleY1 = min(destH - 1, normToPixelY(0.50f - aaBand));
 
   // Pixel evaluation pass strictly inside bounding areas
   int minBoundY = min(min(bEyeY0, bCheekY0), bMouthY0);
@@ -475,12 +470,14 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
     uint16_t* row = &dst[(destY + py) * stride + destX];
 
     for (int px = 0; px < destW; ++px) {
-      bool inLeftEye  = (px >= bLeftEyeX0 && px <= bLeftEyeX1 && py >= bEyeY0 && py <= bEyeY1);
+      bool inLeftEye = (px >= bLeftEyeX0 && px <= bLeftEyeX1 && py >= bEyeY0 && py <= bEyeY1);
       bool inRightEye = (px >= bRightEyeX0 && px <= bRightEyeX1 && py >= bEyeY0 && py <= bEyeY1);
-      bool inLeftCheek  = (blushIntensity > 0.05f && px >= bCheekL_X0 && px <= bCheekL_X1 && py >= bCheekY0 && py <= bCheekY1);
-      bool inRightCheek = (blushIntensity > 0.05f && px >= bCheekR_X0 && px <= bCheekR_X1 && py >= bCheekY0 && py <= bCheekY1);
-      bool inMouth    = (px >= bMouthX0 && px <= bMouthX1 && py >= bMouthY0 && py <= bMouthY1);
-      bool inBubble   = (s_speechActive && px >= bBubbleX0 && px <= bBubbleX1 && py >= bBubbleY0 && py <= bBubbleY1);
+      bool inLeftCheek =
+          (blushIntensity > 0.05f && px >= bCheekL_X0 && px <= bCheekL_X1 && py >= bCheekY0 && py <= bCheekY1);
+      bool inRightCheek =
+          (blushIntensity > 0.05f && px >= bCheekR_X0 && px <= bCheekR_X1 && py >= bCheekY0 && py <= bCheekY1);
+      bool inMouth = (px >= bMouthX0 && px <= bMouthX1 && py >= bMouthY0 && py <= bMouthY1);
+      bool inBubble = (s_speechActive && px >= bBubbleX0 && px <= bBubbleX1 && py >= bBubbleY0 && py <= bBubbleY1);
 
       if (!inLeftEye && !inRightEye && !inLeftCheek && !inRightCheek && !inMouth && !inBubble) {
         continue; // Culled! Already filled with background.
@@ -500,9 +497,9 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
           dTail = fabsf(nx - 0.03f) - halfW;
         }
         float dBubble = fminf(dBox, dTail);
-        float bubbleAlpha = smoothstepf(aaBand, 0.0f, dBubble);
+        float bubbleAlpha = BmoFaceSdf::coverage(dBubble, aaBand);
         if (bubbleAlpha > 0.005f) {
-          float borderAlpha = smoothstepf(aaBand, 0.0f, fabsf(dBubble) - 0.010f);
+          float borderAlpha = BmoFaceSdf::coverage(fabsf(dBubble) - 0.010f, aaBand);
           if (borderAlpha > 0.35f) {
             cr = lerpf(cr, 16.0f / 255.0f, bubbleAlpha);
             cg = lerpf(cg, 30.0f / 255.0f, bubbleAlpha);
@@ -520,7 +517,7 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
         float chX = inLeftCheek ? (nx - leftCheekCx) : (nx - rightCheekCx);
         float chY = ny - cheekCy;
         float dCheek = sqrtf(chX * chX + chY * chY);
-        float blushAlpha = blushIntensity * smoothstepf(cheekR, 0.0f, dCheek) * 0.75f;
+        float blushAlpha = blushIntensity * BmoFaceSdf::coverage(dCheek, cheekR) * 0.75f;
         if (blushAlpha > 0.005f) {
           cr = lerpf(cr, 255.0f / 255.0f, blushAlpha);
           cg = lerpf(cg, 139.0f / 255.0f, blushAlpha);
@@ -550,8 +547,8 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
 
           // Specular catchlight inside open eye
           float glintCx = -capR * 0.32f + gazeX * capR * 0.20f;
-          float glintCy =  capH * 0.40f + gazeY * capH * 0.20f;
-          float glintR  =  capR * 0.38f;
+          float glintCy = capH * 0.40f + gazeY * capH * 0.20f;
+          float glintR = capR * 0.38f;
           float gdx = eyeDx - glintCx;
           float gdy = eyeDy - glintCy;
           dGlint = sqrtf(gdx * gdx + gdy * gdy) - glintR;
@@ -566,10 +563,10 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
 
         } else if (curStyle == EYE_CROSS_ERROR) {
           // Cross X eyes
-          float rxa =  eyeDx * 0.7071f + eyeDy * 0.7071f;
+          float rxa = eyeDx * 0.7071f + eyeDy * 0.7071f;
           float rya = -eyeDx * 0.7071f + eyeDy * 0.7071f;
-          float rxb =  eyeDx * 0.7071f - eyeDy * 0.7071f;
-          float ryb =  eyeDx * 0.7071f + eyeDy * 0.7071f;
+          float rxb = eyeDx * 0.7071f - eyeDy * 0.7071f;
+          float ryb = eyeDx * 0.7071f + eyeDy * 0.7071f;
           float d1 = fmaxf(fabsf(rxa) - eyeW * 0.85f, fabsf(rya) - 0.025f);
           float d2 = fmaxf(fabsf(rxb) - eyeW * 0.85f, fabsf(ryb) - 0.025f);
           dEye = fminf(d1, d2);
@@ -579,12 +576,12 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
         }
 
         // Composite Eye
-        float eyeAlpha = smoothstepf(aaBand, 0.0f, dEye);
+        float eyeAlpha = BmoFaceSdf::coverage(dEye, aaBand);
         if (eyeAlpha > 0.002f) {
           if (curStyle == EYE_CROSS_ERROR) {
             cr = lerpf(cr, 225.0f / 255.0f, eyeAlpha);
-            cg = lerpf(cg,  36.0f / 255.0f, eyeAlpha);
-            cb = lerpf(cb,  48.0f / 255.0f, eyeAlpha);
+            cg = lerpf(cg, 36.0f / 255.0f, eyeAlpha);
+            cb = lerpf(cb, 48.0f / 255.0f, eyeAlpha);
           } else if (curStyle == EYE_HEART) {
             cr = lerpf(cr, 255.0f / 255.0f, eyeAlpha);
             cg = lerpf(cg, 105.0f / 255.0f, eyeAlpha);
@@ -597,7 +594,7 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
 
           // Specular glint layer
           if (curStyle == EYE_CAPSULE) {
-            float glintAlpha = smoothstepf(aaBand, 0.0f, dGlint);
+            float glintAlpha = BmoFaceSdf::coverage(dGlint, aaBand);
             cr = lerpf(cr, 1.0f, glintAlpha);
             cg = lerpf(cg, 1.0f, glintAlpha);
             cb = lerpf(cb, 1.0f, glintAlpha);
@@ -614,13 +611,13 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
           float dCavity, dTongue, dBorder;
           evaluateMouthCavity(mDx, mDy, mouthW, mouthCrv, mouthOpen, dCavity, dTongue, dBorder);
 
-          float cavityAlpha = smoothstepf(aaBand, 0.0f, dCavity);
+          float cavityAlpha = BmoFaceSdf::coverage(dCavity, aaBand);
           if (cavityAlpha > 0.002f) {
             cr = lerpf(cr, 18.0f / 255.0f, cavityAlpha);
             cg = lerpf(cg, 28.0f / 255.0f, cavityAlpha);
             cb = lerpf(cb, 38.0f / 255.0f, cavityAlpha);
 
-            float tongueAlpha = smoothstepf(aaBand, 0.0f, dTongue);
+            float tongueAlpha = BmoFaceSdf::coverage(dTongue, aaBand);
             if (tongueAlpha > 0.002f) {
               cr = lerpf(cr, 250.0f / 255.0f, tongueAlpha);
               cg = lerpf(cg, 127.0f / 255.0f, tongueAlpha);
@@ -628,7 +625,7 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
             }
           }
 
-          float borderAlpha = smoothstepf(aaBand, 0.0f, dBorder);
+          float borderAlpha = BmoFaceSdf::coverage(dBorder, aaBand);
           if (borderAlpha > 0.002f) {
             cr = lerpf(cr, 16.0f / 255.0f, borderAlpha);
             cg = lerpf(cg, 30.0f / 255.0f, borderAlpha);
@@ -638,19 +635,19 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
         } else if (s_activeMouthStyle == MOUTH_ROUND_O) {
           float mRad = mouthW * 0.55f;
           float dCircle = sqrtf(mDx * mDx + mDy * mDy) - mRad;
-          float fillAlpha = smoothstepf(aaBand, 0.0f, dCircle);
+          float fillAlpha = BmoFaceSdf::coverage(dCircle, aaBand);
           cr = lerpf(cr, 18.0f / 255.0f, fillAlpha);
           cg = lerpf(cg, 28.0f / 255.0f, fillAlpha);
           cb = lerpf(cb, 38.0f / 255.0f, fillAlpha);
 
-          float strokeAlpha = smoothstepf(aaBand, 0.0f, fabsf(dCircle) - 0.024f);
+          float strokeAlpha = BmoFaceSdf::coverage(fabsf(dCircle) - 0.024f, aaBand);
           cr = lerpf(cr, 16.0f / 255.0f, strokeAlpha);
           cg = lerpf(cg, 30.0f / 255.0f, strokeAlpha);
           cb = lerpf(cb, 43.0f / 255.0f, strokeAlpha);
 
         } else if (s_activeMouthStyle == MOUTH_ZIGZAG_ERROR) {
           float dZig = fabsf(mDy - sinf(mDx * 25.0f) * 0.035f) - 0.025f;
-          float zigAlpha = smoothstepf(aaBand, 0.0f, dZig);
+          float zigAlpha = BmoFaceSdf::coverage(dZig, aaBand);
           cr = lerpf(cr, 16.0f / 255.0f, zigAlpha);
           cg = lerpf(cg, 30.0f / 255.0f, zigAlpha);
           cb = lerpf(cb, 43.0f / 255.0f, zigAlpha);
@@ -658,7 +655,7 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
         } else {
           // Closed smiling or frowning stroke
           float dStroke = sdfMouthStroke(mDx, mDy, mouthW, mouthCrv, 0.025f);
-          float mouthAlpha = smoothstepf(aaBand, 0.0f, dStroke);
+          float mouthAlpha = BmoFaceSdf::coverage(dStroke, aaBand);
           if (mouthAlpha > 0.002f) {
             cr = lerpf(cr, 16.0f / 255.0f, mouthAlpha);
             cg = lerpf(cg, 30.0f / 255.0f, mouthAlpha);
@@ -667,9 +664,7 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
         }
       }
 
-      row[px] = packBGR565((uint8_t)(cr * 255.0f + 0.5f),
-                           (uint8_t)(cg * 255.0f + 0.5f),
-                           (uint8_t)(cb * 255.0f + 0.5f));
+      row[px] = packBGR565((uint8_t)(cr * 255.0f + 0.5f), (uint8_t)(cg * 255.0f + 0.5f), (uint8_t)(cb * 255.0f + 0.5f));
     }
   }
 
@@ -707,13 +702,13 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
           dPart = sqrtf(dx * dx + dy * dy) - 0.7f;
         }
 
-        float pAlpha = smoothstepf(aaBand, 0.0f, dPart) * alpha;
+        float pAlpha = BmoFaceSdf::coverage(dPart, aaBand) * alpha;
         if (pAlpha > 0.01f) {
           uint16_t origSwapped = row[x];
           uint16_t origBgr = (uint16_t)((origSwapped >> 8) | (origSwapped << 8));
           // Unpack byte-swapped BGR565: bits 15..11 = B, bits 10..5 = G, bits 4..0 = R
-          float r = (float)(origBgr & 0x1F)         / 31.0f;
-          float g = (float)((origBgr >> 5)  & 0x3F) / 63.0f;
+          float r = (float)(origBgr & 0x1F) / 31.0f;
+          float g = (float)((origBgr >> 5) & 0x3F) / 63.0f;
           float b = (float)((origBgr >> 11) & 0x1F) / 31.0f;
 
           if (s_particles[i].type == PARTICLE_SPARKLE) {
@@ -725,9 +720,7 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
             g = lerpf(g, 0.96f, pAlpha);
             b = lerpf(b, 0.93f, pAlpha);
           }
-          row[x] = packBGR565((uint8_t)(r * 255.0f + 0.5f),
-                              (uint8_t)(g * 255.0f + 0.5f),
-                              (uint8_t)(b * 255.0f + 0.5f));
+          row[x] = packBGR565((uint8_t)(r * 255.0f + 0.5f), (uint8_t)(g * 255.0f + 0.5f), (uint8_t)(b * 255.0f + 0.5f));
         }
       }
     }
@@ -773,16 +766,16 @@ void begin() {
   s_spGazeX.init(0.0f, 18.0f, 0.75f);
   s_spGazeY.init(0.0f, 18.0f, 0.75f);
 
-  s_activeEyeStyle   = t.eyeStyle;
+  s_activeEyeStyle = t.eyeStyle;
   s_activeMouthStyle = t.mouthStyle;
-  s_expr             = IDLE;
-  s_dirty            = true;
+  s_expr = IDLE;
+  s_dirty = true;
 
-  s_lastBlinkMs   = millis();
-  s_nextBlinkMs   = (unsigned long)random(2500, 5000);
+  s_lastBlinkMs = millis();
+  s_nextBlinkMs = (unsigned long)random(2500, 5000);
   s_lastSaccadeMs = millis();
   s_nextSaccadeMs = (unsigned long)random(2000, 4500);
-  s_lastUpdateUs  = micros();
+  s_lastUpdateUs = micros();
 
   for (int i = 0; i < MAX_PARTICLES; ++i) {
     s_particles[i].type = PARTICLE_NONE;
@@ -832,11 +825,11 @@ void setExpression(BmoExpression expr) {
     }
   }
 
-  s_activeEyeStyle   = t.eyeStyle;
+  s_activeEyeStyle = t.eyeStyle;
   s_activeMouthStyle = t.mouthStyle;
-  s_blinking         = false;
-  s_blinkProgress    = 0.0f;
-  s_dirty            = true;
+  s_blinking = false;
+  s_blinkProgress = 0.0f;
+  s_dirty = true;
 }
 
 BmoExpression getExpression() {
@@ -847,7 +840,7 @@ void setGaze(float gx, float gy) {
   s_spGazeX.setTarget(clampf(gx, -1.0f, 1.0f));
   s_spGazeY.setTarget(clampf(gy, -1.0f, 1.0f));
   s_userGazeActive = true;
-  s_userGazeEndMs  = millis() + 1400; // retain gaze for 1.4s then drift back
+  s_userGazeEndMs = millis() + 1400; // retain gaze for 1.4s then drift back
   s_dirty = true;
 }
 
@@ -862,9 +855,9 @@ void tickle(float intensity) {
 void triggerWink() {
   setExpression(WINK);
   // Spawn 3 celebration star sparkles
-  spawnParticle(PARTICLE_SPARKLE, 0.42f, 0.22f,  0.08f, 0.12f, 0.06f, 0.8f);
-  spawnParticle(PARTICLE_SPARKLE, 0.48f, 0.14f,  0.12f, 0.04f, 0.05f, 0.9f);
-  spawnParticle(PARTICLE_SPARKLE, 0.38f, 0.30f,  0.04f, 0.16f, 0.04f, 0.7f);
+  spawnParticle(PARTICLE_SPARKLE, 0.42f, 0.22f, 0.08f, 0.12f, 0.06f, 0.8f);
+  spawnParticle(PARTICLE_SPARKLE, 0.48f, 0.14f, 0.12f, 0.04f, 0.05f, 0.9f);
+  spawnParticle(PARTICLE_SPARKLE, 0.38f, 0.30f, 0.04f, 0.16f, 0.04f, 0.7f);
   s_dirty = true;
 }
 
@@ -915,17 +908,17 @@ void update() {
   // 3. Autonomous Blinking
   if (!s_blinking && (s_expr == IDLE || s_expr == HAPPY || s_expr == CHARGING || s_expr == JOY)) {
     if ((nowMs - s_lastBlinkMs) >= s_nextBlinkMs) {
-      s_blinking     = true;
+      s_blinking = true;
       s_blinkStartMs = nowMs;
-      s_blinkPhase   = (random(0, 5) == 0) ? 1 : 0; // occasional double blink
+      s_blinkPhase = (random(0, 5) == 0) ? 1 : 0; // occasional double blink
     }
   }
 
   if (s_blinking) {
     unsigned long elapsed = nowMs - s_blinkStartMs;
     const unsigned long BLINK_CLOSE_MS = 45;
-    const unsigned long BLINK_HOLD_MS  = 20;
-    const unsigned long BLINK_OPEN_MS  = 75;
+    const unsigned long BLINK_HOLD_MS = 20;
+    const unsigned long BLINK_OPEN_MS = 75;
 
     if (elapsed < BLINK_CLOSE_MS) {
       s_blinkProgress = (float)elapsed / (float)BLINK_CLOSE_MS;
@@ -941,10 +934,10 @@ void update() {
         s_blinkStartMs = nowMs;
         s_blinkProgress = 0.0f;
       } else {
-        s_blinking      = false;
+        s_blinking = false;
         s_blinkProgress = 0.0f;
-        s_lastBlinkMs   = nowMs;
-        s_nextBlinkMs   = (unsigned long)random(2500, 5500);
+        s_lastBlinkMs = nowMs;
+        s_nextBlinkMs = (unsigned long)random(2500, 5500);
       }
     }
     s_dirty = true;
@@ -993,7 +986,7 @@ void update() {
       if (s_dancePhase > 628.31853f) s_dancePhase -= 628.31853f;
 
       s_spBounceY.val = 0.09f * sinf(s_dancePhase);
-      s_spGazeX.val   = 0.45f * sinf(s_dancePhase * 0.5f);
+      s_spGazeX.val = 0.45f * sinf(s_dancePhase * 0.5f);
       s_spSquashX.val = 1.0f + 0.12f * cosf(s_dancePhase);
 
       static float s_lastDanceSine = 0.0f;

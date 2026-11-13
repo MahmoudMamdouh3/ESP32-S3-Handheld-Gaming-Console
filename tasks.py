@@ -59,7 +59,7 @@ BUILD_PROFILES: Dict[str, List[str]] = {
 }
 
 FIRST_PARTY_WARN_RE = re.compile(
-    r"firmware[/\\]BmoGameboy[/\\](BmoGameboy\.ino|src[/\\](hal|storage|ui|cores)[/\\]).*?:\s*warning:",
+    r"firmware[/\\]BmoGameboy[/\\](BmoGameboy\.ino|src[/\\](app|hal|storage|ui|cores|tests)[/\\]).*?:\s*warning:",
     re.IGNORECASE,
 )
 
@@ -250,10 +250,12 @@ def first_party_cpp_files() -> List[Path]:
     """Return sorted first-party C/C++ sources/headers (never third_party)."""
     files: List[Path] = []
     for rel in (
+        "firmware/BmoGameboy/src/app",
         "firmware/BmoGameboy/src/hal",
         "firmware/BmoGameboy/src/storage",
         "firmware/BmoGameboy/src/ui",
         "firmware/BmoGameboy/src/cores",
+        "firmware/BmoGameboy/src/tests",
         "tests/host",
     ):
         directory = REPO_ROOT / rel
@@ -392,6 +394,9 @@ def cmd_check(args: argparse.Namespace) -> int:
             )
             if _run_checked([sys.executable, "-m", "unittest", *fast_modules], env=test_env).returncode != 0:
                 failures.append("fast host tests failed")
+        ctest_err = _run_host_ctest()
+        if ctest_err:
+            failures.append(ctest_err)
 
     if failures:
         print("\nCHECK FAILED:")
@@ -402,8 +407,34 @@ def cmd_check(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_host_ctest() -> Optional[str]:
+    """Configure, build, and execute host C++17 CTest suite when CMake/CTest are present."""
+    cmake_bin = shutil.which("cmake")
+    ctest_bin = shutil.which("ctest")
+    if not cmake_bin or not ctest_bin:
+        print("  INFO: cmake/ctest not found; skipping native C++17 CTest suite.")
+        return None
+    if not (REPO_ROOT / "CMakeLists.txt").is_file():
+        return "CMakeLists.txt missing for host CTest suite"
+
+    build_dir = REPO_ROOT / "build" / "host-ctest"
+    cmds = [
+        [cmake_bin, "-S", str(REPO_ROOT), "-B", str(build_dir)],
+        [cmake_bin, "--build", str(build_dir), "--config", "Release"],
+        [ctest_bin, "--test-dir", str(build_dir), "-C", "Release", "--output-on-failure"],
+    ]
+    for cmd in cmds:
+        if _run_checked(cmd).returncode != 0:
+            return f"host CTest step failed: {' '.join(cmd)}"
+    return None
+
+
 def cmd_test(args: argparse.Namespace) -> int:
     """Run full host unit test suites and validate_repo."""
+    ctest_err = _run_host_ctest()
+    if ctest_err:
+        print(f"FAIL: {ctest_err}")
+        return 1
     cmds = [
         [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"],
         [sys.executable, "-m", "unittest", "discover", "-s", "tools/guardian/tests", "-v"],

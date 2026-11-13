@@ -342,8 +342,8 @@ class FirmwareAstLinter:
                         )
                     )
 
-        # Rule 4: Check for sub-optimal SD card SPI frequency in sd_card.cpp
-        if rel_path_str.endswith("sd_card.cpp"):
+        # Rule 4: Check for sub-optimal SD card SPI frequency
+        if rel_path_str.endswith(("sd_card.cpp", "sd_mount.cpp")):
             for idx, line in enumerate(lines, 1):
                 if "SD.begin" in line and "4000000" in line:
                     findings.append(
@@ -358,9 +358,13 @@ class FirmwareAstLinter:
                         )
                     )
 
-        # Rule 5: Check for O(N) linear scans called in per-frame loop in BmoGameboy.ino
-        if rel_path_str.endswith("BmoGameboy.ino"):
-            loop_idx = next((i for i, l in enumerate(lines, 1) if "void loop()" in l), 9999)
+        # Rule 5: Check for O(N) linear scans called in per-frame loop in BmoGameboy.ino / bmo_app.cpp
+        if rel_path_str.endswith(("BmoGameboy.ino", "bmo_app.cpp")):
+            loop_idx = (
+                next((i for i, l in enumerate(lines, 1) if "void loop()" in l), 9999)
+                if rel_path_str.endswith("BmoGameboy.ino")
+                else 0
+            )
             for idx, line in enumerate(lines, 1):
                 clean = line.strip()
                 if clean.startswith(("//", "/*")):
@@ -377,9 +381,9 @@ class FirmwareAstLinter:
                             suggested_fix="Cache console game counts in a static array at SD scan time.",
                         )
                     )
-                if idx > loop_idx and "rebuildVisibleGames()" in clean:
-                    prev_lines = " ".join(lines[max(0, idx - 3) : idx])
-                    if "visibleGamesDirty" not in prev_lines and "visibleGamesDirty" not in clean:
+                if idx > loop_idx and "rebuildVisibleGames()" in clean and not clean.startswith("void "):
+                    prev_lines = " ".join(lines[max(0, idx - 3) : idx]).lower()
+                    if "visiblegamesdirty" not in prev_lines and "visiblegamesdirty" not in clean.lower():
                         findings.append(
                             LintFinding(
                                 rule_id="UNGUARDED_PER_FRAME_FILTER",

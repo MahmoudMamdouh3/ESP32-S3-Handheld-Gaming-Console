@@ -36,7 +36,7 @@ class BmoMascotSourceTests(unittest.TestCase):
         self.assertIn("const float nextVelocity =", spring)
 
     def test_speech_particle_and_dance_limits_match_source(self):
-        self.assertIn("static char          s_speechText[64]", self.source)
+        self.assertRegex(self.source, r"static char\s+s_speechText\[64\]")
         self.assertIn("strncpy(s_speechText, quote, sizeof(s_speechText) - 1)", self.source)
         self.assertIn("s_speechText[sizeof(s_speechText) - 1] = '\\0'", self.source)
         self.assertIn("nowMs - s_speechLastCharMs >= 25", self.source)

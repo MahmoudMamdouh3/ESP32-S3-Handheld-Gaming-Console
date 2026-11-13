@@ -172,7 +172,7 @@ class TestQualityOfLifeAndUnifiedPersistence(unittest.TestCase):
 
     def test_02_sdcard_recent_history_api(self):
         sd_h = (SRC_DIR / "storage" / "sd_card.h").read_text(encoding="utf-8")
-        sd_cpp = (SRC_DIR / "storage" / "sd_card.cpp").read_text(encoding="utf-8")
+        sd_cpp = (SRC_DIR / "storage" / "sd_metadata.cpp").read_text(encoding="utf-8")
         for sym in ("recordRecentLaunch", "getRecentCount", "getRecentFilename", "loadRecentHistory", "saveRecentHistory"):
             self.assertIn(sym, sd_h)
             self.assertIn(sym, sd_cpp)
@@ -186,7 +186,7 @@ class TestQualityOfLifeAndUnifiedPersistence(unittest.TestCase):
         self.assertIn("/screenshots", sm_cpp)
 
     def test_04_ino_wires_supported_battery_persistence_and_all_save_states(self):
-        ino = (FIRMWARE_DIR / "BmoGameboy.ino").read_text(encoding="utf-8")
+        app_cpp = (SRC_DIR / "app" / "bmo_app.cpp").read_text(encoding="utf-8")
         reg = (SRC_DIR / "cores" / "core_registry.h").read_text(encoding="utf-8")
         cores = ("WalnutEmu", "PeanutEmu", "NesEmu", "SmsEmu", "PceEmu", "AtariEmu",
                  "PicoEmu", "GenesisEmu", "SNESEmu", "WSwanEmu", "NGPEmu", "LynxEmu", "ColemEmu")
@@ -209,12 +209,12 @@ class TestQualityOfLifeAndUnifiedPersistence(unittest.TestCase):
         self.assertIn("hasNesBattery", reg)
         self.assertIn("hasSnesBattery", reg)
         self.assertIn("hasLynxBattery", reg)
-        self.assertIn("CoreRegistry::findByIndex", ino)
-        self.assertIn("autoSaveCurrentBatteryRam", ino)
-        self.assertIn("quickSaveState", ino)
-        self.assertIn("quickLoadState", ino)
-        self.assertIn("kKonamiSeq", ino)
-        self.assertIn("SDCard::recordRecentLaunch", ino)
+        self.assertIn("CoreRegistry::findByIndex", app_cpp)
+        self.assertIn("autoSaveCurrentBatteryRam", app_cpp)
+        self.assertIn("quickSaveState", app_cpp)
+        self.assertIn("quickLoadState", app_cpp)
+        self.assertIn("kKonamiSeq", app_cpp)
+        self.assertIn("SDCard::recordRecentLaunch", app_cpp)
 
 
 if __name__ == "__main__":

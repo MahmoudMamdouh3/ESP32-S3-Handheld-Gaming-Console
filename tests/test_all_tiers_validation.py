@@ -118,15 +118,15 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
     # test_03: All 14 teardown calls are wired via CoreRegistry + BmoGameboy.ino
     # ------------------------------------------------------------------
     def test_03_teardown_compliance_all_14_emulators(self):
-        """Verify all 14 destroy symbols are registered in CoreRegistry and dispatched in BmoGameboy.ino."""
-        ino = FIRMWARE_DIR / 'BmoGameboy.ino'
+        """Verify all 14 destroy symbols are registered in CoreRegistry and dispatched in bmo_app.cpp."""
+        app = FIRMWARE_DIR / 'src' / 'app' / 'bmo_app.cpp'
         reg = FIRMWARE_DIR / 'src' / 'cores' / 'core_registry.h'
-        self.assertTrue(ino.exists(), 'BmoGameboy.ino not found')
+        self.assertTrue(app.exists(), 'bmo_app.cpp not found')
         self.assertTrue(reg.exists(), 'core_registry.h not found')
-        ino_content = ino.read_text(encoding='utf-8')
+        app_content = app.read_text(encoding='utf-8')
         reg_content = reg.read_text(encoding='utf-8')
-        self.assertIn('CoreRegistry::findByIndex', ino_content)
-        self.assertIn('core->destroy()', ino_content)
+        self.assertIn('CoreRegistry::findByIndex', app_content)
+        self.assertIn('core->destroy()', app_content)
         for td in EXPECTED_TEARDOWNS:
             sym = td[:-2] if td.endswith('()') else td
             self.assertIn(
@@ -175,10 +175,10 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
     # test_06: sd_card.cpp registers all 21 extensions
     # ------------------------------------------------------------------
     def test_06_sd_card_all_21_extensions_registered(self):
-        """Verify sd_card.cpp detects and maps all 21 ROM file extensions."""
-        code = (FIRMWARE_DIR / 'src' / 'storage' / 'sd_card.cpp').read_text(encoding='utf-8')
+        """Verify console_catalog.h / sd_catalog.cpp detects and maps all 21 ROM file extensions."""
+        code = (FIRMWARE_DIR / 'src' / 'ui' / 'console_catalog.h').read_text(encoding='utf-8')
         for ext in EXPECTED_EXTENSIONS:
-            self.assertIn(ext, code, f'Extension "{ext}" not registered in sd_card.cpp')
+            self.assertIn(ext, code, f'Extension "{ext}" not registered in console_catalog.h')
 
     # ------------------------------------------------------------------
     # test_07: Installed game library health (if present)

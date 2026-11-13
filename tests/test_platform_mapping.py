@@ -4,10 +4,12 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INO = (REPO_ROOT / "firmware" / "BmoGameboy" / "BmoGameboy.ino").read_text(encoding="utf-8")
+BMO_APP = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "app" / "bmo_app.cpp").read_text(encoding="utf-8")
+CONSOLE_CATALOG = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "console_catalog.h").read_text(encoding="utf-8")
 CORE_REGISTRY = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "cores" / "core_registry.h").read_text(encoding="utf-8")
 COMPAT_DOC = (REPO_ROOT / "docs" / "compatibility.md").read_text(encoding="utf-8")
-SD_CPP = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage" / "sd_card.cpp").read_text(encoding="utf-8")
-DISPLAY_CPP = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "display_emu.cpp").read_text(encoding="utf-8")
+SD_CATALOG_CPP = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage" / "sd_catalog.cpp").read_text(encoding="utf-8")
+DISPLAY_WORKER_CPP = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "display_worker.cpp").read_text(encoding="utf-8")
 FRAME_PACING = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "frame_pacing.h").read_text(encoding="utf-8")
 
 
@@ -50,20 +52,20 @@ def dispatch_map(function_body, action):
 
 class PlatformMappingTests(unittest.TestCase):
     def test_all_routes_and_documented_indices_agree(self):
-        console_body = re.search(r"static const RomType CONSOLES\[\]\s*=\s*\{(.*?)\};", INO, re.S).group(1)
+        console_body = re.search(r"inline constexpr RomType CONSOLES\[\]\s*=\s*\{(.*?)\};", CONSOLE_CATALOG, re.S).group(1)
         consoles = re.findall(r"ROM_[A-Z0-9_]+", console_body)
         self.assertEqual(consoles, ["ROM_FAVORITES"] + [row[0] for row in PLATFORMS])
         self.assertEqual((len(consoles), len(PLATFORMS)), (16, 15))
 
-        # Verify BmoGameboy.ino dispatches launch, frame stepping, palette cycling, and destroy through CoreRegistry.
-        self.assertIn("CoreRegistry::findByRomType(selectedRom->type)", INO)
-        self.assertIn("activeCore->start(selectedRom, romData, romSize)", INO)
-        destroy_body = INO.split("static void destroyActiveEmulator()", 1)[1].split("if (currentRomBuffer)", 1)[0]
-        self.assertIn("CoreRegistry::findByIndex(selectedEmulatorIndex)", destroy_body)
+        # Verify bmo_app.cpp dispatches launch, frame stepping, palette cycling, and destroy through CoreRegistry.
+        self.assertIn("CoreRegistry::findByRomType(selectedRom->type)", BMO_APP)
+        self.assertIn("activeCore->start(selectedRom, romData, romSize)", BMO_APP)
+        destroy_body = BMO_APP.split("void destroyActiveEmulator()", 1)[1].split("if (s_currentRomBuffer)", 1)[0]
+        self.assertIn("CoreRegistry::findByIndex(s_selectedEmulatorIndex)", destroy_body)
         self.assertIn("core->destroy()", destroy_body)
-        self.assertIn("if (activeCore && activeCore->stepFrame)", INO)
-        self.assertIn("activeCore->stepFrame()", INO)
-        self.assertIn("activeCore->supportsDmgPalette", INO)
+        self.assertIn("if (activeCore && activeCore->stepFrame)", BMO_APP)
+        self.assertIn("activeCore->stepFrame()", BMO_APP)
+        self.assertIn("activeCore->supportsDmgPalette", BMO_APP)
 
         table_match = re.search(r"kCores\[\]\s*=\s*\{(.*?)\};", CORE_REGISTRY, re.S)
         self.assertIsNotNone(table_match, "CoreRegistry::detail::kCores[] missing in core_registry.h")
@@ -104,7 +106,7 @@ class PlatformMappingTests(unittest.TestCase):
             self.assertIn(f"{viewport[0]}×{viewport[1]} @({offset[0]},{offset[1]})", doc_line)
             self.assertIn(f"{period:,} µs", doc_line)
             for ext in extensions:
-                self.assertIn(f'"{ext}"', SD_CPP)
+                self.assertIn(f'"{ext}"', CONSOLE_CATALOG)
             if key in ("gb", "gbc"):
                 self.assertIn("16742U", FRAME_PACING)
             elif key == "doom":

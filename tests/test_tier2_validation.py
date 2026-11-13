@@ -54,11 +54,11 @@ class TestTier2FirmwareValidation(unittest.TestCase):
             self.assertTrue(f.exists(), f"Missing required vendor engine: {f}")
 
     def test_03_teardown_contract_compliance(self):
-        """Verify all Tier 2 emulators implement destroy() in CoreRegistry and are dispatched by BmoGameboy.ino."""
-        ino_content = (FIRMWARE_DIR / "BmoGameboy.ino").read_text(encoding="utf-8")
+        """Verify all Tier 2 emulators implement destroy() in CoreRegistry and are dispatched by bmo_app.cpp."""
+        app_content = (FIRMWARE_DIR / "src" / "app" / "bmo_app.cpp").read_text(encoding="utf-8")
         reg_content = (FIRMWARE_DIR / "src" / "cores" / "core_registry.h").read_text(encoding="utf-8")
-        self.assertIn("CoreRegistry::findByIndex", ino_content)
-        self.assertIn("core->destroy()", ino_content)
+        self.assertIn("CoreRegistry::findByIndex", app_content)
+        self.assertIn("core->destroy()", app_content)
         required_destroys = [
             "GenesisEmu::destroy",
             "SNESEmu::destroy",
@@ -94,11 +94,11 @@ class TestTier2FirmwareValidation(unittest.TestCase):
             self.assertIn(m, header, f"Missing display streaming method: {m}")
 
     def test_06_sd_card_tier2_extension_routing(self):
-        """Verify sd_card.cpp recognizes all Tier 2 extensions."""
-        sd_code = (FIRMWARE_DIR / "src" / "storage" / "sd_card.cpp").read_text(encoding="utf-8")
+        """Verify ConsoleCatalog recognizes all Tier 2 extensions."""
+        cat_code = (FIRMWARE_DIR / "src" / "ui" / "console_catalog.h").read_text(encoding="utf-8")
         required_exts = [".gen", ".md", ".smd", ".sfc", ".smc", ".ws", ".wsc", ".ngp", ".ngc", ".lnx", ".col", ".sg"]
         for ext in required_exts:
-            self.assertIn(ext, sd_code, f"Extension {ext} not recognized in sd_card.cpp")
+            self.assertIn(ext, cat_code, f"Extension {ext} not recognized in console_catalog.h")
 
 if __name__ == "__main__":
     unittest.main()

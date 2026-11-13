@@ -39,7 +39,7 @@ class RomFileFilterTests(unittest.TestCase):
                            check=True, capture_output=True, text=True)
 
     def test_atari_7800_extension_is_not_mapped_to_atari_2600(self):
-        scanner = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage" / "sd_card.cpp").read_text(encoding="utf-8")
+        scanner = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "console_catalog.h").read_text(encoding="utf-8") + "\n" + (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage" / "sd_catalog.cpp").read_text(encoding="utf-8")
         display_h = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "display_emu.h").read_text(encoding="utf-8")
         atari_cpp = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "cores" / "emu_atari.cpp").read_text(encoding="utf-8")
         self.assertNotIn(".a78", scanner.lower())

@@ -259,13 +259,13 @@ def check_firmware_safety_guardrails():
         if not re.search(rf"#define\s+{flag}\s+0\b", config_text):
             issues.append(f"config.h: {flag} must be exactly 0 (hardware hard stop)")
 
-    ino_path = FIRMWARE_DIR / "BmoGameboy.ino"
-    if ino_path.exists():
-        ino_text = ino_path.read_text(encoding="utf-8")
-        if "CoreRegistry::findByIndex" not in ino_text or "core->destroy()" not in ino_text:
-            issues.append("BmoGameboy.ino: missing CoreRegistry teardown dispatch in destroyActiveEmulator()")
+    app_path = FIRMWARE_DIR / "src" / "app" / "bmo_app.cpp"
+    if app_path.exists():
+        app_text = app_path.read_text(encoding="utf-8")
+        if "CoreRegistry::findByIndex" not in app_text or "core->destroy()" not in app_text:
+            issues.append("src/app/bmo_app.cpp: missing CoreRegistry teardown dispatch in destroyActiveEmulator()")
     else:
-        issues.append("BmoGameboy.ino not found")
+        issues.append("src/app/bmo_app.cpp not found")
 
     registry_path = FIRMWARE_DIR / "src" / "cores" / "core_registry.h"
     if registry_path.exists():
@@ -342,14 +342,18 @@ def check_structural_soundness():
             if not (emu_dir / (stem + ext)).exists():
                 issues.append(f"Missing emulator wrapper: src/cores/{stem}{ext}")
 
-    sd_cpp = FIRMWARE_DIR / "src" / "storage" / "sd_card.cpp"
-    if sd_cpp.exists():
-        sd_text = sd_cpp.read_text(encoding="utf-8")
+    for sd_module in ("sd_mount.cpp", "sd_catalog.cpp", "sd_metadata.cpp"):
+        if not (FIRMWARE_DIR / "src" / "storage" / sd_module).exists():
+            issues.append(f"Missing SD storage module: src/storage/{sd_module}")
+
+    catalog_h = FIRMWARE_DIR / "src" / "ui" / "console_catalog.h"
+    if catalog_h.exists():
+        cat_text = catalog_h.read_text(encoding="utf-8")
         for ext in EXPECTED_EXTENSIONS:
-            if ext not in sd_text:
-                issues.append(f'sd_card.cpp: extension "{ext}" not registered')
+            if ext not in cat_text:
+                issues.append(f'console_catalog.h: extension "{ext}" not registered')
     else:
-        issues.append("sd_card.cpp not found")
+        issues.append("src/ui/console_catalog.h not found")
 
     display_h = FIRMWARE_DIR / "src" / "ui" / "display_emu.h"
     if display_h.exists():

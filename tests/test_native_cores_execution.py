@@ -198,20 +198,20 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
 
     def test_02_recursive_folder_hierarchy_navigation_in_sd_card(self):
         sd_h = (FIRMWARE_DIR / "src" / "storage" / "sd_card.h").read_text(encoding="utf-8")
-        sd_cpp = (FIRMWARE_DIR / "src" / "storage" / "sd_card.cpp").read_text(encoding="utf-8")
+        sd_cpp = (FIRMWARE_DIR / "src" / "storage" / "sd_catalog.cpp").read_text(encoding="utf-8")
         self.assertIn("scanDirectory", sd_h)
         self.assertIn("SDCard::scanDirectory", sd_cpp)
         self.assertIn("isIgnoredDirName", sd_cpp)
 
     def test_03_custom_console_bezels_and_pause_menu_qol_wiring(self):
         disp_h = (FIRMWARE_DIR / "src" / "ui" / "display_emu.h").read_text(encoding="utf-8")
-        disp_cpp = (FIRMWARE_DIR / "src" / "ui" / "display_emu.cpp").read_text(encoding="utf-8")
-        ino = (FIRMWARE_DIR / "BmoGameboy.ino").read_text(encoding="utf-8")
+        disp_cpp = (FIRMWARE_DIR / "src" / "ui" / "display_worker.cpp").read_text(encoding="utf-8")
+        app_cpp = (FIRMWARE_DIR / "src" / "app" / "bmo_app.cpp").read_text(encoding="utf-8")
         for sym in ["setBezelEnabled", "isBezelEnabled", "toggleBezel", "drawConsoleBezel", "getLastFramebuffer"]:
             self.assertIn(sym, disp_h)
             self.assertIn(f"DisplayEmu::{sym}", disp_cpp)
-        self.assertIn("DisplayEmu::drawConsoleBezel(selectedEmulatorIndex)", ino)
-        self.assertIn("SaveManager::saveScreenshotBmp", ino)
+        self.assertIn("DisplayEmu::drawConsoleBezel(s_selectedEmulatorIndex)", app_cpp)
+        self.assertIn("SaveManager::saveScreenshotBmp", app_cpp)
 
     def test_04_fetch_covers_bgr565_and_bmp_generator(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -464,10 +464,10 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
 
     def test_10_top_picks_curation_and_mbc7_rom_playability(self):
         sd_h = (FIRMWARE_DIR / "src" / "storage" / "sd_card.h").read_text(encoding="utf-8")
-        sd_cpp = (FIRMWARE_DIR / "src" / "storage" / "sd_card.cpp").read_text(encoding="utf-8")
+        sd_cpp = (FIRMWARE_DIR / "src" / "storage" / "sd_catalog.cpp").read_text(encoding="utf-8")
         disp_h = (FIRMWARE_DIR / "src" / "ui" / "display_emu.h").read_text(encoding="utf-8")
-        disp_cpp = (FIRMWARE_DIR / "src" / "ui" / "display_emu.cpp").read_text(encoding="utf-8")
-        ino_src = (FIRMWARE_DIR / "BmoGameboy.ino").read_text(encoding="utf-8")
+        disp_cpp = (FIRMWARE_DIR / "src" / "ui" / "ui_menus.cpp").read_text(encoding="utf-8")
+        app_cpp = (FIRMWARE_DIR / "src" / "app" / "bmo_app.cpp").read_text(encoding="utf-8")
         walnut_h = (FIRMWARE_DIR / "src" / "third_party" / "walnut_cgb" / "walnut_cgb.h").read_text(encoding="utf-8")
         peanut_h = (FIRMWARE_DIR / "src" / "third_party" / "peanut_gb" / "peanut_gb.h").read_text(encoding="utf-8")
 
@@ -476,7 +476,7 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         self.assertIn("SDCard::isPopularGame", sd_cpp)
         self.assertIn("void setTopPicksFilter(bool enabled);", disp_h)
         self.assertIn("TOP PICK", disp_cpp)
-        self.assertIn("s_topPicksOnly", ino_src)
+        self.assertIn("s_topPicksOnly", app_cpp)
         self.assertIn("0x22", walnut_h)
         self.assertIn("0x22", peanut_h)
 
