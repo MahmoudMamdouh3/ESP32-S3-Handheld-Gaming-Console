@@ -127,13 +127,18 @@ void testSPISDCondention() {
   }
   
   unsigned long start = micros();
-  // Perform 100 fast dummy reads intermixed with pushing random pixels
-  uint16_t dummyPixel = 0xFFFF;
-  for (int i = 0; i < 100; i++) {
-    size_t dummySize = 0;
-    uint8_t* dump = SDCard::loadRom("nonexistent_dummy.rom", &dummySize);
-    DisplayEmu::pushPixelsRaw(0, &dummyPixel, 1);
-    if (dump) SDCard::freeRom(dump);
+  // Perform 100 fast dummy reads intermixed with pushing a valid 240-pixel row
+  uint16_t* dummyRow = static_cast<uint16_t*>(heap_caps_calloc(240, sizeof(uint16_t), MALLOC_CAP_SPIRAM));
+  ASSERT_TRUE(dummyRow != nullptr, "Failed to allocate PSRAM scratch row for SPI contention test");
+  if (dummyRow) {
+    dummyRow[0] = 0xFFFF;
+    for (int i = 0; i < 100; i++) {
+      size_t dummySize = 0;
+      uint8_t* dump = SDCard::loadRom("nonexistent_dummy.rom", &dummySize);
+      DisplayEmu::pushPixels(0, dummyRow, 1);
+      if (dump) SDCard::freeRom(dump);
+    }
+    heap_caps_free(dummyRow);
   }
   unsigned long elapsed = micros() - start;
   

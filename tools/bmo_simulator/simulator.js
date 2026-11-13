@@ -54,6 +54,8 @@ class BmoSimulator {
     this.bootTimer = 0;
     this.lastFrameTime = performance.now();
     this.fps = 60;
+    this._activeMouseButton = null;
+    this._boundRenderLoop = this.renderLoop.bind(this);
 
     // BMO Mascot Procedural 2D SDF State
     this.bmo = {
@@ -131,7 +133,7 @@ class BmoSimulator {
     }
 
     // Start 60 FPS Render Loop
-    requestAnimationFrame(this.renderLoop.bind(this));
+    requestAnimationFrame(this._boundRenderLoop);
   }
 
   showSimulatorMessage(message, isError = false) {
@@ -333,13 +335,9 @@ class BmoSimulator {
       if (el) {
         el.addEventListener("mousedown", () => {
           el.classList.add("pressed");
+          this._activeMouseButton = { el, b };
           if (this.wasmEngine) this.wasmEngine.setButtonBit(b.bit, true);
           this.handleButtonPress(b.key);
-        });
-        window.addEventListener("mouseup", () => {
-          el.classList.remove("pressed");
-          if (this.wasmEngine) this.wasmEngine.setButtonBit(b.bit, false);
-          this.handleButtonRelease(b.key);
         });
         el.addEventListener("touchstart", (e) => {
           e.preventDefault();
@@ -353,6 +351,14 @@ class BmoSimulator {
           this.handleButtonRelease(b.key);
         });
       }
+    });
+    window.addEventListener("mouseup", () => {
+      if (!this._activeMouseButton) return;
+      const { el, b } = this._activeMouseButton;
+      this._activeMouseButton = null;
+      el.classList.remove("pressed");
+      if (this.wasmEngine) this.wasmEngine.setButtonBit(b.bit, false);
+      this.handleButtonRelease(b.key);
     });
   }
 
@@ -939,7 +945,7 @@ class BmoSimulator {
       }
     }
 
-    requestAnimationFrame(this.renderLoop.bind(this));
+    requestAnimationFrame(this._boundRenderLoop);
   }
 
   updateBmoAnimation(dt) {

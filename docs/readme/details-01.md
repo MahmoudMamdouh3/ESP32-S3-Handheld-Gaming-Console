@@ -16,7 +16,7 @@
 
 <div align="center">
   <img src="../assets/sim_top_picks_library.png" width="460" alt="ROM Library Browser with Top Picks" />
-  <p><em>Earlier UI capture; current browser gameplay requires a user-supplied Game Boy ROM.</em></p>
+  <p><em>Earlier UI capture; current browser gameplay supports user-supplied Game Boy (<code>.gb</code>), NES (<code>.nes</code>), Atari 2600 (<code>.a26</code>), and ColecoVision (<code>.col</code>) ROMs.</em></p>
 </div>
 
 <div align="center">
@@ -31,7 +31,7 @@
 - **MCU:** ESP32-S3-WROOM-1 (`N16R8` — dual-core Xtensa LX7 @ 240 MHz, 16 MB Quad SPI Flash, 8 MB Octal SPI PSRAM)
 - **Display:** 2.4" ST7789 IPS TFT (320×240 landscape, 80 MHz SPI)
 - **Storage:** MicroSD over SPI (FAT32) + built-in flash fallback ROMs when no SD card is inserted
-- **Input:** 12 tactile buttons wired active-low (`INPUT_PULLUP`); X, Y, L, R are supported in firmware and the simulator and need to be wired
+- **Input:** Eight tactile buttons are recorded as physically wired, active-low (`INPUT_PULLUP`); X, Y, L, R are supported but are not soldered on the current board
 
 | Component | Macro (`config.h`) | GPIO | Notes |
 | :--- | :--- | :--- | :--- |
@@ -49,7 +49,7 @@
 
 ## Firmware Hardware Simulation
 
-The Wokwi project runs the compiled ESP32-S3 firmware and wires the simulator to the same GPIO assignments in `src/core/config.h`: all twelve active-low buttons, the shared display/SD SPI clock and MOSI, separate chip selects, and the SD MISO line. Battery and I2S audio parts are intentionally absent.
+The Wokwi project runs the compiled ESP32-S3 firmware and simulates all twelve configured active-low button inputs using the GPIO assignments in `src/core/config.h`, including X/Y/L/R that are not soldered on the physical board. The simulated circuit also includes the shared display/SD SPI clock and MOSI, separate chip selects, and SD MISO. Battery and I2S audio parts are intentionally absent. The diagram is not an as-built wiring record.
 
 1. Compile with the repository's ESP32-S3 settings and the output path used by [`wokwi.toml`](../../wokwi.toml):
 

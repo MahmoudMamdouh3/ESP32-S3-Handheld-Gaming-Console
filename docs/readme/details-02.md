@@ -14,7 +14,7 @@ The launcher has Favorites plus fifteen platform selections. SMS and Game Gear s
 | DOOM | `.wad` | doomgeneric |
 | Master System / Game Gear | `.sms`, `.gg` | SMS Plus |
 | PC Engine | `.pce` | PCE |
-| Atari 2600 / Atari 7800 scanner family | `.a26`, `.a78` | Atari wrapper |
+| Atari 2600 | `.a26` | Atari wrapper |
 | PICO-8-style runtime | `.p8` | Custom text-cart runtime; does not execute official Lua carts |
 | Genesis | `.gen`, `.md`, `.smd` | Genesis |
 | SNES | `.sfc`, `.smc` | SNES |
@@ -45,7 +45,7 @@ Battery RAM is saved only for supported cartridge formats. A game with no suppor
 
 ## Build and verification
 
-Requirements: Arduino CLI, ESP32 core `3.3.12` as pinned by CI, Adafruit GFX, and Adafruit ST7735/ST7789. The board target is ESP32-S3-N16R8 with QIO flash, OPI PSRAM, and the repository's custom partition table.
+Requirements: Arduino CLI, ESP32 core `3.3.11` as pinned by CI and `firmware/BmoGameboy/sketch.yaml`, Adafruit GFX, and Adafruit ST7735/ST7789. The board target is ESP32-S3-N16R8 with QIO flash, OPI PSRAM, and the repository's custom partition table.
 
 ```powershell
 arduino-cli compile --fqbn "esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi" firmware/BmoGameboy
@@ -54,7 +54,7 @@ python scripts/validate_repo.py
 python -m tools.guardian verify
 ```
 
-The repository validator has phases 0–6. Phase 0 warns and skips target compile when Arduino CLI is missing. A skipped build cannot be reported as a compile pass. See [Section 14](../software-design-document/section-14.md).
+The repository validator has phases 0–8. Phase 0 warns and skips target compile when Arduino CLI is missing in advisory mode; strict mode fails instead. A skipped build cannot be reported as a compile pass. See [Section 14](../software-design-document/section-14.md).
 
 ## License and game content
 

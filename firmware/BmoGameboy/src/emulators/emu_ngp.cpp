@@ -83,12 +83,16 @@ bool NGPEmu::saveState(const char* romFilename, int slot) {
 
 bool NGPEmu::loadState(const char* romFilename, int slot) {
   if (!running || !ngpRam || !romFilename) return false;
+  const size_t expectedRamSize = 32 * 1024;
+  uint8_t* tempRam = (uint8_t*)heap_caps_malloc(expectedRamSize, MALLOC_CAP_SPIRAM);
+  if (!tempRam) return false;
   ngp_t tempState;
   size_t stateSize = 0, ramSize = 0;
   bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_NGP,
                                    &tempState, sizeof(tempState), &stateSize,
-                                   ngpRam, 32 * 1024, &ramSize);
-  if (ok && stateSize == sizeof(ngp_t)) {
+                                   tempRam, expectedRamSize, &ramSize);
+  if (ok && stateSize == sizeof(ngp_t) && ramSize == expectedRamSize) {
+    memcpy(ngpRam, tempRam, expectedRamSize);
     uint8_t* rom = ngpState.rom;
     uint32_t rom_size = ngpState.rom_size;
     uint8_t* ram = ngpState.ram;
@@ -98,7 +102,9 @@ bool NGPEmu::loadState(const char* romFilename, int slot) {
     ngpState.rom_size = rom_size;
     ngpState.ram = ram;
     ngpState.framebuffer = fb;
+    heap_caps_free(tempRam);
     return true;
   }
+  heap_caps_free(tempRam);
   return false;
 }

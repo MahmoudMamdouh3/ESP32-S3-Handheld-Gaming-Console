@@ -114,7 +114,7 @@ ROM_PACKS = [
 
 SUPPORTED_EXTS = (
     ".gb", ".gbc", ".nes", ".wad", ".sms", ".gg", ".pce",
-    ".a26", ".a78", ".p8", ".gen", ".md", ".smd", ".sfc",
+    ".a26", ".p8", ".gen", ".md", ".smd", ".sfc",
     ".smc", ".ws", ".wsc", ".ngp", ".ngc", ".lnx", ".col", ".sg"
 )
 

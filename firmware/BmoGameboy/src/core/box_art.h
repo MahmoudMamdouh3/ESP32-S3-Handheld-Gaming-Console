@@ -4,6 +4,8 @@
 #include <Adafruit_GFX.h>
 #include "theme.h"
 
+struct RomFile;
+
 // BoxArt: 64x64 Retro Box Art & Thumbnail Engine
 // Supports 64x64 uncompressed raw 16-bit (RGB565/BGR565) and 16/24-bit BMP images
 // from /boxart/ or /covers/ on MicroSD card.
@@ -27,6 +29,9 @@ public:
 
   // Checks if a box art file exists on the SD card for a given ROM
   static bool existsForRom(const char* romFilename);
+
+  // Batch-evaluates hasBoxArt across the complete ROM catalog in O((N + M) log N)
+  static void populateCatalogAvailability(RomFile* roms, int count);
 
   // Helper to extract the basename without file extension into outBaseName
   static void getBaseName(const char* romFilename, char* outBaseName, size_t maxLen);

@@ -1,6 +1,6 @@
 # Hardware Measurement Record
 
-This document is the procedure and evidence format for measurements on the soldered handheld. No hardware measurements were performed during the 2026-11-07 software audit. Firmware configuration, host tests, and simulators do not count as device measurements.
+This document is the procedure and evidence format for measurements on the soldered handheld. As of 2026-11-12, no physical board measurements are recorded in this repository. Firmware configuration, host tests, target compilation, and simulators do not count as device measurements.
 
 ## Evidence requirements
 

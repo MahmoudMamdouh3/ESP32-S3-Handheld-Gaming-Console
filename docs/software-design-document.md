@@ -65,4 +65,4 @@ Architecture decisions are indexed in [`docs/decisions/`](decisions/README.md). 
 
 ## Evidence status
 
-The 2026-11-07 follow-up obtained a fresh target build with the committed profile; the build evidence and scope are recorded in [Section 02](software-design-document/section-02.md), [Section 06](software-design-document/section-06.md), and [the dated handoff](handoffs/2026-11-07-remediation.md). No CI workflow run or physical device measurements are claimed. Current open findings are linked from [the issue ledger](../.agents/rules/04_known_issues.md).
+The 2026-11-07 follow-up and the later audit pull requests obtained target-compile and CI evidence; see [Section 14](software-design-document/section-14.md), the [logical/performance audit handoff](handoffs/2026-11-12-logical-performance-audit.md), and the [production-readiness handoff](handoffs/2026-11-12-production-readiness.md) for dated results. GitHub Actions validation completed for PRs #2 and #3. No physical device measurements are claimed. Current open findings are linked from [the issue ledger](../.agents/rules/04_known_issues.md).

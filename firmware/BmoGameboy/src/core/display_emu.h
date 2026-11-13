@@ -79,6 +79,7 @@ namespace DisplayEmu {
   bool toggleBezel();
   void drawConsoleBezel(int consoleIndex);
   const uint16_t* getLastFramebuffer(int* outWidth, int* outHeight);
+  void resetLastFramebuffer();
 
   // ---------------------------------------------------------------------------
   // Pixel push API

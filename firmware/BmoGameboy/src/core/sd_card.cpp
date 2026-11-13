@@ -747,7 +747,7 @@ void SDCard::scanDirectory(const char* dirPath, int depth, bool hasArtDirs) {
         romList[numRoms].filename[63] = '\0';
         romList[numRoms].type = type;
         romList[numRoms].isFavorite = false;
-        romList[numRoms].hasBoxArt = hasArtDirs ? BoxArt::existsForRom(relPath) : false;
+        romList[numRoms].hasBoxArt = false;
         romList[numRoms].isPopular = SDCard::isPopularGame(baseName, type);
         romList[numRoms].fileSize = fileSize;
         if (type <= ROM_COLEM) {
@@ -762,6 +762,7 @@ void SDCard::scanDirectory(const char* dirPath, int depth, bool hasArtDirs) {
     }
   }
   dir.close();
+  (void)hasArtDirs;
 #else
   (void)dirPath;
   (void)depth;
@@ -775,25 +776,28 @@ void SDCard::scanRoms() {
   poolGrowthFailed = false;
   SpiArbiter::lock();
 
-  const bool hasArtDirs = SD.exists("/boxart") || SD.exists("/covers");
-  for (int i = 0; i < BAKED_ROM_COUNT && i < numRoms; ++i) {
-    romList[i].hasBoxArt = hasArtDirs ? BoxArt::existsForRom(romList[i].filename) : false;
-  }
-
   // Try fast-loading cached index first (<15ms vs 3500ms directory crawl)
   recoverIndexTransaction();
   if (loadIndex()) {
+    const bool hasArtDirs = SD.exists("/boxart") || SD.exists("/covers");
+    for (int i = 0; i < BAKED_ROM_COUNT && i < numRoms; ++i) {
+      romList[i].hasBoxArt = hasArtDirs ? BoxArt::existsForRom(romList[i].filename) : false;
+    }
     SpiArbiter::unlock();
     return;
   }
 
   // Grow the PSRAM pool as the cold scan finds ROMs; small libraries do not
   // reserve the 36,000-entry maximum up front.
-  scanDirectory("/", 0, hasArtDirs);
+  scanDirectory("/", 0, false);
   SpiArbiter::unlock();
 
   // Sort newly crawled ROMs alphabetically
   sortRoms();
+
+  // Compute hasBoxArt across the complete catalog in O((N + M) log N) so legacy
+  // stem collision detection sees every ROM across all directories.
+  BoxArt::populateCatalogAvailability(romList, numRoms);
 
   // Do not cache an incomplete library. The next boot will retry the scan.
   if (skippedRomCount == 0) {

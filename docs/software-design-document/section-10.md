@@ -4,7 +4,7 @@
 
 ## 10.1 Catalog scan and ROM dispatch
 
-`SDCard::begin()` registers baked catalog entries, initializes the bounded ROM pool, attempts the SD catalog index, and falls back to directory scanning when the cache cannot be reused. The scanner traverses up to depth 3, skips hidden/system/art/save directories, classifies extensions using `determineType()`, stores the relative filename and file size, checks for matching art, sorts the catalog, and applies favorites/popular metadata. Unsupported or overlong names are skipped and counted; see the source for exact extension mapping.
+`SDCard::begin()` ensures the bounded ROM pool, registers baked catalog entries, attempts the `BMOIDX02` SD catalog index (checking baked ROM art availability after index load), and falls back to directory scanning when the cache cannot be reused. Cold scanning traverses up to depth 3, skips hidden/system/art/save directories, classifies extensions using `determineType()`, stores the relative filename and file size, sorts the catalog, populates box-art availability in one pass via `BoxArt::populateCatalogAvailability()`, and applies favorites/popular metadata. Unsupported or overlong names are skipped and counted; see the source for exact extension mapping.
 
 The deployment script and firmware share path-key behavior through [`path_key.h`](../../firmware/BmoGameboy/src/core/path_key.h) and [`scripts/rom_key.py`](../../scripts/rom_key.py). Keys use normalized relative paths and CRC32 plus a readable sanitized basename prefix. CRC32 is a low-collision, non-cryptographic checksum component; the basename prefix reduces collisions but does not eliminate them.
 
@@ -46,7 +46,7 @@ Battery persistence is separate from battery voltage monitoring. GB/GBC and NES/
 
 ## 10.5 Artwork lookup and migration
 
-`BoxArt` loads 64×64 raw or BMP assets from `/boxart/` and `/covers/`, preferring keyed paths. Legacy basename art is considered only when unique in the catalog. Migration copies to a temporary file, verifies the copied size, renames the new keyed destination, and retains the old file. Artwork is cached in PSRAM and drawn through the display subsystem.
+`BoxArt` loads 64×64 raw or BMP assets from `/boxart/` and `/covers/`, preferring keyed paths. Legacy basename art is matched only when the basename is unique across the full catalog (computed during `BoxArt::populateCatalogAvailability()` or verified on demand). Migration copies to a temporary file, verifies the copied size, renames the new keyed destination, and retains the old file. Artwork is cached in PSRAM and drawn through the display subsystem.
 
 ## 10.6 Data preservation
 

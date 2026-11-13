@@ -130,14 +130,19 @@ class DocTruthVerifier:
             if p.name not in historical_rule_logs
         ) if rules_dir.exists() else []
 
+        sdd_docs = sorted((self.repo_root / "docs" / "software-design-document").glob("*.md")) if (self.repo_root / "docs" / "software-design-document").exists() else []
+        readme_docs = sorted((self.repo_root / "docs" / "readme").glob("*.md")) if (self.repo_root / "docs" / "readme").exists() else []
+        wiring_docs = sorted((self.repo_root / "docs" / "wiring").glob("*.md")) if (self.repo_root / "docs" / "wiring").exists() else []
+        top_docs = sorted(
+            p for p in (self.repo_root / "docs").glob("*.md")
+        ) if (self.repo_root / "docs").exists() else []
+        viz_readme = [self.repo_root / "visualizations" / "README.md"]
+
         target_docs = [
             self.repo_root / "README.md",
             self.repo_root / "AGENTS.md",
-            self.repo_root / "docs" / "hardware-notes.md",
-            self.repo_root / "docs" / "software-design-document.md",
-            self.repo_root / "docs" / "wiring" / "01-display-and-buttons.md",
-            self.repo_root / "docs" / "wiring" / "02-sd-card.md",
-        ] + rule_docs
+            self.repo_root / "DESIGN.md",
+        ] + top_docs + sdd_docs + readme_docs + wiring_docs + viz_readme + rule_docs
 
         for doc_path in target_docs:
             if not doc_path.exists():

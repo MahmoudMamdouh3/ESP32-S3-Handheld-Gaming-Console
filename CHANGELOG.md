@@ -1,5 +1,23 @@
 # Changelog
 
+## [Repository bug/performance fixes and documentation reconciliation] - 2026-11-12
+
+### Changed
+- **Firmware bug and performance fixes**:
+  - Added catalog-wide O((N + M) log N) box-art availability matching via `BoxArtLookup::CatalogMatcher` (`box_art_lookup.h`, `BoxArt::populateCatalogAvailability`) invoked after sorting in `SDCard::scanRoms()`, fixing legacy basename collision misses across subdirectories and cutting repeated SD directory probes.
+  - Updated `DisplayEmu` to record streamed DMG/GBC frames into `s_streamCapBuf`, clear stale screenshot state in `resetLastFramebuffer()` and on Game Gear format edge cases, and render dark-text-safe `UI_WHITE` on coral `PLAY` footer pills.
+  - Added PSRAM save-state staging buffers in `emu_lynx.cpp`, `emu_ngp.cpp`, `emu_peanut.cpp`, and `emu_walnut.cpp` so failed loads no longer corrupt active cartridge/emulator RAM before validation.
+  - Fixed `BmoFace` speech bubble vertical dirty-clear bounds (`maxBoundY` in `bmo_face.cpp`), updated `bmo_face.h` header notes to reflect the 320x240 Octal PSRAM canvas, fixed `testSPISDCondention` in `unit_tests.cpp` to push a valid 240-pixel PSRAM scratch row via `DisplayEmu::pushPixels()`, and fixed `BmoGameboy.ino` `wadPath[72]` length guarding (`selectedEmulatorIndex = 3` inside the `wadLen` check) plus catalog/UI cache invalidation after SD retry/rebuild in Diagnostics.
+- **Tools, simulator, and script fixes**:
+  - Synchronized `scripts/deploy_sd_complete.py` to write `BMOIDX02` indexes matching `BmoIndex::catalogFingerprint`, validate filename collisions, copy atomically via `deploy_to_sd.py`, and remove unimplemented `.a78`/`.sgx` mappings from deploy/install scripts (`auto_install_romsets.py`, `deploy_to_sd.py`).
+  - Fixed `tools/bmo_simulator/simulator.js` (`_activeMouseButton`, cached `_boundRenderLoop`), `wasm_playtest_engine.js` (draw last frame behind unloaded overlay), `console_history_data.js` (`.a26`), and `index.html` button telemetry copy (`8 wired + 4 optional`).
+  - Expanded `tools/guardian/core/doc_verifier.py` to audit all active SDD/readme/wiring/top-level docs (`DESIGN.md`, `visualizations/README.md`), fixed `tools/guardian/core/elf_analyzer.py` toolchain version discovery, fixed Windows path handling in `scripts/generate_code_visualizations.py`, and updated `scripts/generate_ai_knowledge_base.py`, `scripts/install_git_hooks.py`, and `scripts/validate_repo.py` docstring.
+- **Documentation and rule reconciliation**:
+  - Reconciled `.agents/rules/` (`03`, `04`, `06`–`09`, `12`–`14`, `16`–`18`, `21`, `22`, `25`, `29`, `30`, `33`–`35`, `37`–`40`, `42`, `44`, `README.md`), `DESIGN.md`, `docs/software-design-document/section-10.md`, `docs/readme/details-01.md` & `details-02.md`, `docs/research_embedded_ui_frameworks_unevaluated.md`, and `docs/performance_report.md` (with Cppcheck) against live source, pinout, and test counts, then regenerated derived rule bundles, symbol tables, knowledge graphs, and code visualizations.
+
+### Verification
+- Host unit tests (`python -m unittest discover -s tests -v`), Guardian verification (`python -m tools.guardian verify`), AST/architecture audit, UI audit, diff audit, markdown link checker, color token verification, Cppcheck report (`0` findings), and full 9-phase `python scripts/validate_repo.py --require-target-compile` passed after final edits. Physical ESP32-S3 hardware remains unverified.
+
 ## [Logical and performance audit] - 2026-11-12
 
 ### Fixed

@@ -83,12 +83,16 @@ bool LynxEmu::saveState(const char* romFilename, int slot) {
 
 bool LynxEmu::loadState(const char* romFilename, int slot) {
   if (!running || !lynxRam || !romFilename) return false;
+  const size_t expectedRamSize = 64 * 1024;
+  uint8_t* tempRam = (uint8_t*)heap_caps_malloc(expectedRamSize, MALLOC_CAP_SPIRAM);
+  if (!tempRam) return false;
   lynx_t tempState;
   size_t stateSize = 0, ramSize = 0;
   bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_LYNX,
                                    &tempState, sizeof(tempState), &stateSize,
-                                   lynxRam, 64 * 1024, &ramSize);
-  if (ok && stateSize == sizeof(lynx_t)) {
+                                   tempRam, expectedRamSize, &ramSize);
+  if (ok && stateSize == sizeof(lynx_t) && ramSize == expectedRamSize) {
+    memcpy(lynxRam, tempRam, expectedRamSize);
     uint8_t* rom = lynxState.rom;
     uint32_t rom_size = lynxState.rom_size;
     uint8_t* ram = lynxState.ram;
@@ -98,7 +102,9 @@ bool LynxEmu::loadState(const char* romFilename, int slot) {
     lynxState.rom_size = rom_size;
     lynxState.ram = ram;
     lynxState.framebuffer = fb;
+    heap_caps_free(tempRam);
     return true;
   }
+  heap_caps_free(tempRam);
   return false;
 }

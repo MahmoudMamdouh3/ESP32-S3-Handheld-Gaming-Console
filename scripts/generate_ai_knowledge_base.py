@@ -305,7 +305,7 @@ def build_knowledge_base():
                 "intent_keywords": ["emulator", "core", "tier", "nes", "genesis", "snes", "doom", "peanut", "walnut", "sms", "atari", "lynx", "wswan", "ngp", "colem", "pico", "pce"],
                 "mandatory_rules": ["12_extensibility_contract.md", "26_emulator_exit_contract.md", "32_modular_core_template.md"],
                 "primary_files": ["firmware/BmoGameboy/src/emulators/", "firmware/BmoGameboy/BmoGameboy.ino"],
-                "guardrails": ["Must implement destroy() to free PSRAM and wire into teardownCurrentEmulator()", "Must implement saveState/loadState/saveBatteryRam/loadBatteryRam", "Must include #pragma GCC optimize(\"O3,unroll-loops\")"],
+                "guardrails": ["Must implement destroy() to free PSRAM and wire into destroyActiveEmulator()", "Must implement saveState/loadState/saveBatteryRam/loadBatteryRam", "Must include #pragma GCC optimize(\"O3,unroll-loops\")"],
                 "verification_command": "python -m tools.guardian verify && python scripts/validate_repo.py",
             },
             "bake_rom_into_flash": {

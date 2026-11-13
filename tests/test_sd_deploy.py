@@ -1,7 +1,10 @@
+import struct
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+from scripts import deploy_sd_complete
 from scripts.deploy_to_sd import (
     copy_single_file,
     deployment_plan,
@@ -117,6 +120,28 @@ class TestSdDeployment(unittest.TestCase):
             self.assertEqual(size, source.stat().st_size)
             self.assertEqual(destination.read_bytes(), source.read_bytes())
             self.assertEqual(list(root.glob(".bmo-copy-*.tmp")), [])
+
+    def test_deploy_sd_complete_uses_bmo_index_v2_and_rejects_unsupported_extensions(self):
+        self.assertNotIn(".a78", deploy_sd_complete.EXT_MAP)
+        self.assertNotIn(".sgx", deploy_sd_complete.EXT_MAP)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            dest_root = Path(temp_dir)
+            games = [("gb/Mario.gb", 2, 1024), ("nes/Contra.nes", 4, 2048)]
+            keyed = {make_rom_key("gb/Mario.gb").lower()}
+            with patch.object(deploy_sd_complete, "DEST_ROOT", dest_root):
+                deploy_sd_complete.generate_binary_index(games, keyed)
+
+            payload = (dest_root / ".bmo_index").read_bytes()
+            self.assertEqual(len(payload), 36 + 2 * 72)
+            magic, ver, count, entry_size, crc, ts, res0, res1 = struct.unpack("<8s7I", payload[:36])
+            self.assertEqual(magic, b"BMOIDX02")
+            self.assertEqual(ver, 2)
+            self.assertEqual(count, 2)
+            self.assertEqual(entry_size, 72)
+            self.assertEqual(ts, 0)
+            self.assertEqual(res0, 3072)
+            self.assertEqual(res1, deploy_sd_complete.catalog_fingerprint(2, 3072, 0, crc))
 
 
 if __name__ == "__main__":

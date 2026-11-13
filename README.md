@@ -20,7 +20,8 @@ The browser simulator, Wokwi model, host C runners, and target firmware are sepa
 - [Part 1: Simulator and hardware model](docs/readme/details-01.md)
 - [Part 2: Systems, controls, build, and checks](docs/readme/details-02.md)
 - [Active issue registry](.agents/rules/04_known_issues.md)
-- [Current audit handoff](docs/handoffs/2026-11-07-remediation.md)
+- [Current logical/performance audit handoff](docs/handoffs/2026-11-12-logical-performance-audit.md)
+- [Production-readiness handoff](docs/handoffs/2026-11-12-production-readiness.md) (historical review and workstream record)
 - [Generated firmware symbol index](docs/generated/symbols.md)
 - [Decision records](docs/decisions/README.md)
 

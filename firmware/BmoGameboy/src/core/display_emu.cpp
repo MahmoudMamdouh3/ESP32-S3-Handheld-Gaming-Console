@@ -76,6 +76,8 @@ namespace {
   static LastFrameFormat s_lastFrameFmt = FRAME_FMT_NONE;
   static int s_lastFrameW = 0;
   static int s_lastFrameH = 0;
+  static uint16_t* s_streamCapBuf = nullptr;
+  static int s_streamCapPixels = 0;
 
   enum DisplayCmdType {
     CMD_NONE = 0,
@@ -573,17 +575,32 @@ void DisplayEmu::startFrame() {
   // The ST7789 will auto-advance its write pointer after each pixel pair,
   // so all 144 scanlines can stream contiguously.
   tft.setAddrWindow(OFFSET_X, OFFSET_Y, 240, 216);
+  s_streamCapBuf = (uint16_t*)s_asyncEmuBuf[s_activeEmuBuf];
+  s_streamCapPixels = 0;
 }
 
 void DisplayEmu::endFrame() {
   tft.endWrite();
   SpiArbiter::unlock();
+  if (s_streamCapBuf && s_streamCapPixels == 240 * 216) {
+    s_lastFrameW = 240;
+    s_lastFrameH = 216;
+    s_lastFrameFmt = FRAME_FMT_RAW16;
+    s_lastFramePtr = s_streamCapBuf;
+    s_lastRaw8Ptr = nullptr;
+  }
+  s_streamCapBuf = nullptr;
+  s_streamCapPixels = 0;
 }
 
 // streamPixelRow: bare pixel data push — MUST be called inside startFrame/endFrame.
 // pixelCount is the number of uint16_t pixels (240 for a single row, 480 for a
 // doubled row). No setAddrWindow, no CS assert/deassert.
 void DisplayEmu::streamPixelRow(const uint16_t* buf, int pixelCount) {
+  if (s_streamCapBuf && buf && pixelCount > 0 && s_streamCapPixels + pixelCount <= 240 * 216) {
+    memcpy(&s_streamCapBuf[s_streamCapPixels], buf, (size_t)pixelCount * sizeof(uint16_t));
+  }
+  s_streamCapPixels += pixelCount;
   SPI.writeBytes((const uint8_t*)buf, pixelCount * 2);
 }
 
@@ -599,6 +616,7 @@ void DisplayEmu::streamRawFrameAsync(const uint16_t* fb, int x, int y, int w, in
   s_lastFrameW = w;
   s_lastFrameH = h;
   s_lastFrameFmt = FRAME_FMT_RAW16;
+  s_lastRaw8Ptr = nullptr;
 
   if (s_displayTaskHandle && s_displayQueue && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
     waitForDisplay();
@@ -629,6 +647,7 @@ void DisplayEmu::streamNESFrame(const uint8_t* nes_framebuffer) {
   s_lastFrameW = 256;
   s_lastFrameH = 240;
   s_lastFrameFmt = FRAME_FMT_NES8;
+  s_lastFramePtr = nullptr;
 
   if (s_displayTaskHandle && s_displayQueue && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
     waitForDisplay();
@@ -674,6 +693,7 @@ void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
   s_lastFrameW = 320;
   s_lastFrameH = 200;
   s_lastFrameFmt = FRAME_FMT_DOOM8;
+  s_lastFramePtr = nullptr;
 
   if (s_displayTaskHandle && s_displayQueue && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
     waitForDisplay();
@@ -746,6 +766,19 @@ void DisplayEmu::streamSMSFrame(const uint16_t* sms_framebuffer, bool isGameGear
       xQueueSend(s_displayQueue, &cmd, portMAX_DELAY);
       s_activeEmuBuf = 1 - s_activeEmuBuf;
     } else {
+      if (s_asyncEmuBuf[0]) {
+        uint16_t* dst = (uint16_t*)s_asyncEmuBuf[0];
+        for (int r = 0; r < 144; ++r) {
+          memcpy(&dst[r * 160], &sms_framebuffer[(24 + r) * 256 + 48], 160 * sizeof(uint16_t));
+        }
+        s_lastFramePtr = dst;
+      } else {
+        s_lastFramePtr = nullptr;
+        s_lastFrameFmt = FRAME_FMT_NONE;
+        s_lastFrameW = 0;
+        s_lastFrameH = 0;
+      }
+      s_lastRaw8Ptr = nullptr;
       waitForDisplay();
       SpiArbiter::lock();
       tft.startWrite();
@@ -1049,7 +1082,7 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
     menuCanvas->setTextColor(UI_YELLOW);
     menuCanvas->print("BUILT-IN GAMES ONLY - SD CARD NOT FOUND");
   } else {
-    drawButtonPill(10,  220, "A",   "PLAY",   UI_CORAL,  UI_BLACK, UI_BLACK);
+    drawButtonPill(10,  220, "A",   "PLAY",   UI_CORAL,  UI_BLACK, UI_WHITE);
     drawButtonPill(88,  220, "UP",  "BMO",    UI_MINT,   UI_BLACK, UI_WHITE);
     drawButtonPill(160, 220, "SEL", "SPECS",  UI_TEAL,   UI_BLACK, UI_WHITE);
     drawButtonPill(238, 220, "< >", "SYSTEM", UI_YELLOW, UI_BLACK, UI_WHITE);
@@ -1402,7 +1435,7 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   // Footer action bar with button badges
   menuCanvas->fillRect(0, 214, 320, 26, UI_DEEP_TEAL);
   menuCanvas->drawFastHLine(0, 213, 320, UI_TEAL);
-  drawButtonPill(6,   220, "A",   "PLAY", UI_CORAL,  UI_BLACK, UI_BLACK);
+  drawButtonPill(6,   220, "A",   "PLAY", UI_CORAL,  UI_BLACK, UI_WHITE);
   drawButtonPill(56,  220, "B",   "BACK", UI_MINT,   UI_BLACK, UI_WHITE);
   drawButtonPill(106, 220, "SEL", isFav ? "UNSTAR" : "STAR", UI_YELLOW, UI_BLACK, UI_WHITE);
   drawButtonPill(180, 220, "ST",  s_topPicksFilter ? "ALL" : "TOP", UI_BLUE, UI_WHITE, UI_WHITE);
@@ -2057,6 +2090,17 @@ const uint16_t* DisplayEmu::getLastFramebuffer(int* outWidth, int* outHeight) {
   }
 
   return s_lastFramePtr;
+}
+
+void DisplayEmu::resetLastFramebuffer() {
+  waitForDisplay();
+  s_lastFramePtr = nullptr;
+  s_lastRaw8Ptr = nullptr;
+  s_lastFrameFmt = FRAME_FMT_NONE;
+  s_lastFrameW = 0;
+  s_lastFrameH = 0;
+  s_streamCapBuf = nullptr;
+  s_streamCapPixels = 0;
 }
 
 void DisplayEmu::drawConsoleBezel(int consoleIndex) {

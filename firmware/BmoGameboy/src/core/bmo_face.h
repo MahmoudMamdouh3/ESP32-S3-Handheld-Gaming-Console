@@ -10,8 +10,8 @@
 // Sizing tunables — adjust these without touching render logic:
 //
 //   FACE_FB_W / FACE_FB_H  : internal framebuffer dimensions (pixels).
-//                            128×128 = 32 KB in DRAM; fits alongside ROM
-//                            buffers without touching PSRAM.
+//                            320×240 = 153,600 B in Octal PSRAM; leaves DRAM
+//                            free for system stacks and audio/DMA buffers.
 //
 //   FACE_MENU_X / Y        : top-left corner of the small face in menus.
 //   FACE_MENU_SIZE         : pixel width/height of the corner face blit.

@@ -78,7 +78,7 @@ def scan_codebase():
                 continue
             if p.suffix.lower() not in {".c", ".cpp", ".h", ".hpp", ".ino", ".py", ".js"}:
                 continue
-            if "assets/roms" in p.parts and p.stat().st_size > 100000:
+            if "assets/roms" in p.as_posix() and p.stat().st_size > 100000:
                 continue
             if any(part in {".git", ".venv", "venv", "build", "__pycache__"} for part in p.parts):
                 continue
@@ -122,7 +122,7 @@ def generate_gitdiagram_artifacts(files, includes):
     subgraph Physical_Hardware ["1. Physical Hardware & Soldered Pins"]
         ESP32["ESP32-S3 Dual LX7 (240MHz, 16MB Flash, 8MB PSRAM)"]
         Display["2.4-inch ST7789 SPI LCD (320x240, 80MHz SPI)"]
-        Buttons["12 Tactile Buttons (GPIO Direct Matrix)"]
+        Buttons["8 Wired Buttons (+4 Optional X/Y/L/R)"]
         SD["MicroSD Card Slot (SPI Mode, 25MHz)"]
         Battery["LiPo / USB-C Power Rail"]
     end
@@ -307,7 +307,7 @@ def generate_gitdiagram_artifacts(files, includes):
   <div class="legend">
     <div class="legend-item">
       <h3>1. Hardware & Pins</h3>
-      <p>Physical connections: 2.4" ST7789 display (SPI), 12 input buttons, MicroSD card reader on shared bus, and power rails.</p>
+      <p>Physical connections: 2.4" ST7789 display (SPI), 8 wired buttons (+4 optional X/Y/L/R), MicroSD card reader on shared bus, and power rails.</p>
     </div>
     <div class="legend-item">
       <h3>2. Firmware Drivers (`src/core/`)</h3>
@@ -456,7 +456,7 @@ def generate_understand_anything_artifacts(files):
                     "step": 3,
                     "target": "src/emulators/",
                     "title": "Emulator Joypad State Update",
-                    "summary": "Each emulator core maps the 12 BMO buttons to its native gamepad (e.g. A/B for Game Boy, A/B/X/Y/L/R for SNES, Arrows/Ctrl for DOOM)."
+                    "summary": "Each emulator core maps active BMO controls (8 wired + optional X/Y/L/R) to its native gamepad (e.g. A/B for Game Boy, A/B/X/Y/L/R for SNES, Arrows/Ctrl for DOOM)."
                 },
                 {
                     "step": 4,
@@ -1523,7 +1523,7 @@ Double-click `visualizations/index.html` in your file explorer to open the maste
   <div class="mental-model">
     <h2>The 3 Pillars of Your Handheld Console</h2>
     <ol>
-      <li><strong>Hardware Interface (<code>firmware/BmoGameboy/src/core/</code>):</strong> Talks to your soldered screen (ST7789), 12 input buttons, SD card reader, and animated BMO expressions.</li>
+      <li><strong>Hardware Interface (<code>firmware/BmoGameboy/src/core/</code>):</strong> Talks to your soldered screen (ST7789), 8 wired buttons (+4 optional X/Y/L/R), SD card reader, and animated BMO expressions.</li>
       <li><strong>14 Console Engines (<code>src/emulators/</code> &amp; <code>src/engine/</code>):</strong> Standalone emulator cores (GB, GBC, NES, SMS, PCE, Atari, Pico-8, Genesis, SNES, WonderSwan, NGP, Lynx, Coleco, DOOM).</li>
       <li><strong>Safety Guardrails &amp; Simulator (<code>tools/guardian/</code> &amp; <code>tools/bmo_simulator/</code>):</strong> Automated test suite verifying memory limits before flashing, plus the web playtester and 3D enclosure CAD.</li>
     </ol>

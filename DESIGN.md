@@ -61,7 +61,7 @@ These renderer-local colors are packed by `bmo_face.cpp` for the face canvas. `C
 
 ### Game Boy DMG 4-Shade Runtime Palettes
 
-The 14 emulator cores render indexed 2-bit DMG pixels mapped through 5 selectable hardware palettes:
+The Game Boy wrappers (`Peanut-GB` and `Walnut-CGB` in DMG mode) render indexed 2-bit DMG pixels mapped through 5 selectable hardware palettes:
 
 1. **Classic Green (1989 Pea-Soup STN LCD):**
    - Shade 0: `#9BBC0F` (`0xD7EE`)
@@ -131,15 +131,15 @@ All spatial dimensions across both embedded C++ layouts and web stylesheets stri
   - `Theme::TEXT_SIZE_SMALL` (`1`): 6×8 px per glyph (up to 53 chars per 320px row).
   - `Theme::TEXT_SIZE_BODY`  (`1`): Standard list items and metadata.
   - `Theme::TEXT_SIZE_TITLE` (`2`): 12×16 px per glyph (up to 26 chars per 320px row).
-- **Banners & Warnings:** `FreeSans9pt7b` vector font loaded from PROGMEM for prominent modal notices.
+- **Banners, Card Titles & Warnings:** `FreeSans9pt7b` and `FreeSans12pt7b` vector fonts included from Adafruit GFX (`src/core/display_emu.cpp`).
 
 ---
 
 ## 5. Component Specifications & Interaction States
 
 ### A. Selection Indicator (Embedded Menus & Lists)
-- **Invariant (Rule 08):** Menu selection states MUST use outline rectangles (`drawRoundRect`), **never** filled rectangles (`fillRoundRect`).
-- **Benchmark Ground Truth:** Filling a $250 \times 16\text{ px}$ rounded rectangle on SPI TFT costs $8.4\text{ ms}$; drawing an outline costs $2.1\text{ ms}$, saving $6.3\text{ ms}$ per frame to preserve 60 Hz responsiveness.
+- **Invariant (Rule 08):** Menu selection states should use outline rectangles (`drawRoundRect`) rather than large solid fills for list cursors.
+- **Architectural Rationale:** Avoids unnecessary pixel fills on selection highlights and separates item borders cleanly (`UI_YELLOW` / `UI_TEAL`).
 - **Visual Spec:** Radius 4px, border color `Theme::BMO_DPAD_YELLOW` or `Theme::BMO_BODY_TEAL`, line thickness 1px or 2px.
 
 ### B. Interactive Control Pills & Buttons (Web Simulator)
@@ -150,10 +150,10 @@ Every interactive control MUST implement four distinct visual states:
 4. **Active / Pressed:** Physical depression transform (`transform: translateY(2px)`) with shadow collapse to simulate tactile mechanical switch travel.
 
 ### C. Floating Toast HUD
-- **Dimensions:** $230 \times 22\text{ px}$ pill centered horizontally at $X = 45$, $Y = 8$.
+- **Dimensions:** $230 \times 22\text{ px}$ pill centered horizontally at $X = 45$, target $Y = 8$.
 - **Surface:** `Theme::BMO_DARK_FOREST` background with 11px corner radius.
 - **Border:** 1px `Theme::BMO_DPAD_YELLOW` for notifications, `Theme::BMO_CORAL_RED` for errors.
-- **Typography:** `Theme::BMO_WHITE` centered single-line text (max 42 characters).
+- **Typography:** `Theme::BMO_WHITE` centered single-line text.
 
 ### D. 1:1 Console Bezel & Lens
 - **Aspect Ratio:** Exact 4:3 (320×240) active screen window surrounded by a 12px radius deep teal bezel (`#1A4B42`).
@@ -167,10 +167,11 @@ Transitions must not feel robotic (linear) or sluggish. All UI motion adheres to
 
 $$\ddot{x} + 2\zeta\omega_n \dot{x} + \omega_n^2 (x - x_{\text{target}}) = 0$$
 
-- **Damping Ratio ($\zeta$):** $0.72$ (near-critical damping: fast settling time with $< 5\%$ overshoot).
-- **Natural Frequency ($\omega_n$):** $22.0\text{ rad/s}$ (settles within $\approx 180\text{ ms}$).
-- **Delta-Time Step:** $\Delta t = \min(\Delta t_{\text{actual}}, 0.033\text{ s})$ stepped at 60 Hz.
-- **Execution Invariant:** Firmware animations are stepped in non-blocking loop iterations using `millis()` delta math. Blocking calls (`delay()`) inside drawing routines are prohibited.
+- **Carousel Spring:** $\zeta = 0.72$, $\omega_n = 22.0\text{ rad/s}$ (`display_emu.cpp`).
+- **Toast HUD Spring:** $\zeta = 0.75$, $\omega_n = 24.0\text{ rad/s}$ (`display_emu.cpp`).
+- **Face Springs (`HarmonicSpring`):** Per-feature parameters in `bmo_face.cpp` ($\zeta \in [0.65, 0.75]$, $\omega_n \in [16, 24]\text{ rad/s}$).
+- **Delta-Time Guard:** Carousel/Toast fall back to `0.01666 s` when `dt <= 0` or `dt > 0.050 s`; `HarmonicSpring::update()` caps `dt` at `0.05 s`.
+- **Execution Invariant:** Firmware animations are stepped in non-blocking loop iterations using `millis()`/`micros()` delta math. Blocking calls (`delay()`) inside drawing routines are prohibited.
 
 ---
 

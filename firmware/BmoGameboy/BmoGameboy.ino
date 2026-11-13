@@ -243,6 +243,7 @@ static void destroyActiveEmulator() {
   }
   currentRomBufferSize = 0;
   currentRomFilename[0] = '\0';
+  DisplayEmu::resetLastFramebuffer();
 }
 
 static void finishQuitToConsole() {
@@ -630,12 +631,20 @@ void loop() {
     } else if (canPress() && !spiStressPattern && btnSelect.pressed && btnSelect.changed) {
       if (!SDCard::isMounted()) {
         const bool mounted = SDCard::begin();
-        if (mounted) SaveManager::begin();
+        if (mounted) {
+          SaveManager::begin();
+          syncVisiblePoolCapacity();
+          s_consoleCountsDirty = true;
+          visibleGamesDirty = true;
+        }
         DisplayEmu::showToast(mounted ? "SD CARD RETRY SUCCEEDED" : "SD CARD STILL NOT FOUND",
                               Theme::BMO_DPAD_YELLOW, 3000);
       } else {
         DisplayEmu::showToast("RESCANNING SD LIBRARY", Theme::BMO_DPAD_YELLOW, 10000);
         SDCard::rebuildIndex();
+        syncVisiblePoolCapacity();
+        s_consoleCountsDirty = true;
+        visibleGamesDirty = true;
         DisplayEmu::showToast(SDCard::getSkippedRomCount() == 0
                                   ? "LIBRARY RESCAN COMPLETE"
                                   : "RESCAN COMPLETE; SOME PATHS SKIPPED",
@@ -972,10 +981,12 @@ void loop() {
         // Boot appropriate emulator core based on file extension
         if (selectedRom->type == ROM_WAD) {
           // DOOM handles its own PSRAM loading via standard C file I/O
-          static char wadPath[64]; // "/sd/" + name + NUL
-          snprintf(wadPath, sizeof(wadPath), "/sd/%s", selectedRom->filename);
-          success = DoomEmu::begin(wadPath);
-          selectedEmulatorIndex = 3;
+          static char wadPath[72]; // "/sd/" (4) + max 63-char path + NUL
+          const int wadLen = snprintf(wadPath, sizeof(wadPath), "/sd/%s", selectedRom->filename);
+          if (wadLen > 4 && static_cast<size_t>(wadLen) < sizeof(wadPath)) {
+            success = DoomEmu::begin(wadPath);
+            selectedEmulatorIndex = 3;
+          }
         } else if (selectedRom->type == ROM_NES) {
           success = NesEmu::begin(romData, romSize);
           selectedEmulatorIndex = 2; 

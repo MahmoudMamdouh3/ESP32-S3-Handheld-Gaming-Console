@@ -15,6 +15,8 @@ Phases:
      AGENT_MANIFEST engine_status fields)
   5  ROM Archive Data Health
   6  Rules & Manifest Integrity
+  7  Cross-Document & Rule Truth Parity
+  8  UI Design System & Anti-AI-Slop Standards
 """
 
 import argparse

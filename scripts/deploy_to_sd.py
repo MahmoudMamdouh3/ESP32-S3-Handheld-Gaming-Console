@@ -16,7 +16,7 @@ SRC_GAMES = REPO_ROOT / "games"
 SRC_BOXART = REPO_ROOT / "roms" / "boxart"
 ROM_EXTENSIONS = frozenset({
     ".gb", ".gbc", ".nes", ".wad", ".sms", ".gg", ".pce", ".a26",
-    ".a78", ".p8", ".gen", ".md", ".smd", ".sfc", ".smc", ".ws",
+    ".p8", ".gen", ".md", ".smd", ".sfc", ".smc", ".ws",
     ".wsc", ".ngp", ".ngc", ".lnx", ".col", ".sg",
 })
 BOXART_EXTENSIONS = frozenset({".raw", ".bmp"})

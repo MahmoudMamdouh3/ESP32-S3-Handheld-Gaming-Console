@@ -1,4 +1,5 @@
 #include "box_art.h"
+#include "box_art_lookup.h"
 #include "sd_card.h"
 #include "config.h"
 #include "spi_arbiter.h"
@@ -21,15 +22,24 @@ namespace {
 
 #if FEATURE_SD_CARD
   bool sameNameIgnoreAsciiCase(const char* left, const char* right) {
-    if (!left || !right) return false;
-    while (*left && *right) {
-      char a = *left++;
-      char b = *right++;
-      if (a >= 'A' && a <= 'Z') a = static_cast<char>(a + ('a' - 'A'));
-      if (b >= 'A' && b <= 'Z') b = static_cast<char>(b + ('a' - 'A'));
-      if (a != b) return false;
+    return BoxArtLookup::sameNameIgnoreAsciiCase(left, right);
+  }
+
+  void markArtDirectory(const char* folderPath, BoxArtLookup::CatalogMatcher& matcher) {
+    File dir = SD.open(folderPath);
+    if (!dir || !dir.isDirectory()) {
+      if (dir) dir.close();
+      return;
     }
-    return *left == *right;
+    while (true) {
+      File entry = dir.openNextFile();
+      if (!entry) break;
+      if (!entry.isDirectory()) {
+        matcher.markArtFile(entry.name());
+      }
+      entry.close();
+    }
+    dir.close();
   }
 
   bool legacyBaseIsUnique(const char* romFilename, const char* legacyBase) {
@@ -119,22 +129,44 @@ const uint16_t* BoxArt::getBuffer() {
 }
 
 void BoxArt::getBaseName(const char* romFilename, char* outBaseName, size_t maxLen) {
-  if (!romFilename || !outBaseName || maxLen == 0) return;
-  outBaseName[0] = '\0';
-  
-  // Strip path if present
-  const char* base = strrchr(romFilename, '/');
-  if (!base) base = strrchr(romFilename, '\\');
-  base = base ? base + 1 : romFilename;
-  
-  strncpy(outBaseName, base, maxLen - 1);
-  outBaseName[maxLen - 1] = '\0';
-  
-  // Strip file extension
-  char* dot = strrchr(outBaseName, '.');
-  if (dot) {
-    *dot = '\0';
+  BoxArtLookup::getBaseName(romFilename, outBaseName, maxLen);
+}
+
+void BoxArt::populateCatalogAvailability(RomFile* roms, int count) {
+  if (!roms || count <= 0) return;
+  for (int i = 0; i < count; ++i) {
+    roms[i].hasBoxArt = 0;
   }
+#if FEATURE_SD_CARD
+  if (!SDCard::isMounted()) return;
+
+  SpiArbiter::lock();
+  const bool hasBoxartDir = SD.exists("/boxart");
+  const bool hasCoversDir = SD.exists("/covers");
+  if (!hasBoxartDir && !hasCoversDir) {
+    SpiArbiter::unlock();
+    return;
+  }
+
+  auto* keysBuf = static_cast<BoxArtLookup::KeyEntry*>(
+      heap_caps_malloc(static_cast<size_t>(count) * sizeof(BoxArtLookup::KeyEntry), MALLOC_CAP_SPIRAM));
+  auto* baseOrderBuf = static_cast<int32_t*>(
+      heap_caps_malloc(static_cast<size_t>(count) * sizeof(int32_t), MALLOC_CAP_SPIRAM));
+
+  BoxArtLookup::CatalogMatcher matcher;
+  if (keysBuf && baseOrderBuf && matcher.init(roms, count, keysBuf, baseOrderBuf)) {
+    if (hasBoxartDir) markArtDirectory("/boxart", matcher);
+    if (hasCoversDir) markArtDirectory("/covers", matcher);
+  } else {
+    for (int i = 0; i < count; ++i) {
+      roms[i].hasBoxArt = existsForRom(roms[i].filename) ? 1 : 0;
+    }
+  }
+
+  if (keysBuf) heap_caps_free(keysBuf);
+  if (baseOrderBuf) heap_caps_free(baseOrderBuf);
+  SpiArbiter::unlock();
+#endif
 }
 
 bool BoxArt::existsForRom(const char* romFilename) {

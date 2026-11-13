@@ -1,7 +1,7 @@
 """
 scripts/install_git_hooks.py — Automated Git Pre-Commit & Commit-Msg Hook Installer
 Installs:
-  1. .git/hooks/pre-commit: Runs scripts/validate_repo.py (which rebuilds knowledge base + runs all 8 CI phases)
+  1. .git/hooks/pre-commit: Runs scripts/validate_repo.py (which rebuilds knowledge base + runs all 9 CI phases)
   2. .git/hooks/commit-msg: Enforces structured two-part commit messages (-m "subject" -m "- bullet points")
 """
 
@@ -20,7 +20,7 @@ def install_hooks() -> int:
     pre_commit_path = GIT_HOOKS_DIR / "pre-commit"
     pre_commit_content = """#!/bin/sh
 # BMO Handheld Console — Pre-Commit AI Validation & Knowledge Sync Hook
-echo "[Git Hook] Running AI Guardian 8-Phase CI Validation & Knowledge Sync..."
+echo "[Git Hook] Running AI Guardian 9-Phase CI Validation & Knowledge Sync..."
 python scripts/validate_repo.py
 if [ $? -ne 0 ]; then
     echo "[Git Hook] Pre-commit validation FAILED. Commit aborted."

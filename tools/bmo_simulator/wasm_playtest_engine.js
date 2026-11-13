@@ -356,14 +356,20 @@ class WasmPlaytestEngine {
       ctx.textAlign = "right";
       ctx.fillText(`F:${this.frameCount}`, 314, 10);
     }
+    ctx.imageSmoothingEnabled = false;
+    if (this.loaded || this.frameCount > 0) {
+      ctx.drawImage(this.offscreenCanvas, this.viewport.ox, this.viewport.oy, this.viewport.w, this.viewport.h);
+    }
     if (!this.loaded) {
+      if (this.frameCount > 0) {
+        ctx.fillStyle = "rgba(10, 18, 20, 0.78)";
+        ctx.fillRect(this.viewport.ox, this.viewport.oy, this.viewport.w, this.viewport.h);
+      }
       ctx.fillStyle = "#cef5e4";
       ctx.font = "bold 12px 'JetBrains Mono', monospace";
       ctx.textAlign = "center";
       ctx.fillText(this.runtimeError || "LOAD A SUPPORTED ROM TO PLAY", 160, 120);
     }
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(this.offscreenCanvas, this.viewport.ox, this.viewport.oy, this.viewport.w, this.viewport.h);
   }
 }
 

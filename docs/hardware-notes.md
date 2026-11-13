@@ -1,6 +1,6 @@
 # Hardware Notes
 
-This page separates configuration facts from observations and proposed wiring. The current board is a permanent perfboard build, so firmware must follow the existing wiring. The pin map in [`config.h`](../firmware/BmoGameboy/src/core/config.h) and [hardware rule](../.agents/rules/01_hardware.md) is the source of truth.
+This page separates configuration facts from observations and proposed wiring. The current board is a permanent perfboard build, so firmware must follow the existing wiring. The pin map in [`config.h`](../firmware/BmoGameboy/src/core/config.h) and [hardware rule](../.agents/rules/01_hardware.md) is the source of truth. This page was consistency-reviewed on 2026-11-12; no new electrical measurements were taken.
 
 ## Current assembly
 

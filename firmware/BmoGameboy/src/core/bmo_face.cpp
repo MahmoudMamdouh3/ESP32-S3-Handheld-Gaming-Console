@@ -465,8 +465,11 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
 
   // Pixel evaluation pass strictly inside bounding areas
   int minBoundY = min(min(bEyeY0, bCheekY0), bMouthY0);
-  if (s_speechActive) minBoundY = min(minBoundY, bBubbleY0);
-  const int maxBoundY = max(max(bEyeY1, bCheekY1), bMouthY1);
+  int maxBoundY = max(max(bEyeY1, bCheekY1), bMouthY1);
+  if (s_speechActive) {
+    minBoundY = min(minBoundY, bBubbleY0);
+    maxBoundY = max(maxBoundY, bBubbleY1);
+  }
 
   for (int py = minBoundY; py <= maxBoundY; ++py) {
     float ny = 1.0f - 2.0f * ((float)py + 0.5f) / (float)destH;

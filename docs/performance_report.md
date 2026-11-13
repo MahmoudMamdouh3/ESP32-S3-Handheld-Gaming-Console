@@ -1,8 +1,8 @@
 # BMO Handheld Console — Complete Line-by-Line Benchmark & Architecture Audit
-**Generated:** 2026-11-12 19:44:56
+**Generated:** 2026-11-12 22:46:01
 **Target MCU:** ESP32-S3-N16R8 (240MHz Xtensa LX7, 16MB QIO Flash, 8MB Octal PSRAM)
 **Display:** ST7789VW 2.4" TFT on Shared 80MHz FSPI
-**Total Repository Files Audited:** 594 files (421,480 total lines, 384,746 SLOC)
+**Total Repository Files Audited:** 594 files (421,768 total lines, 385,034 SLOC)
 **Ground-Truth Quality Gate:** PASS (Zero Critical Violations)
 
 ---
@@ -12,7 +12,7 @@
 | Metric | Measured Value | Hardware Budget | Utilization | Health Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **Internal SRAM (DRAM)** | 253,728 bytes | 327,680 bytes | 77.4% | ⚠️ TIGHT (77.4%) |
-| **Program Flash Sections / Physical Chip** | 5,774,633 bytes | 16,777,216 bytes | 34.4% | ✅ OK (Chip headroom 65.6%) |
+| **Program Flash Sections / Physical Chip** | 5,777,865 bytes | 16,777,216 bytes | 34.4% | ✅ OK (Chip headroom 65.6%) |
 | **Static PSRAM** | 0 bytes | 8,388,608 bytes | 0.0% | ✅ OK |
 | **Dynamic PSRAM Runtime** | Not measured | 8,388,608 bytes | Not measured | ⚪ DEVICE TELEMETRY REQUIRED |
 | **AST Critical Findings** | 0 | 0 allowed | - | ✅ PASS (0 Critical) |
@@ -59,11 +59,11 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `.agents/rules/01_hardware.md` | `AGENT_RULES` | 63 | 55 | 0 | 8 | 87.3% |
 | `.agents/rules/02_architecture.md` | `AGENT_RULES` | 20 | 15 | 0 | 5 | 75.0% |
 | `.agents/rules/03_conventions.md` | `AGENT_RULES` | 63 | 53 | 0 | 10 | 84.1% |
-| `.agents/rules/04_known_issues.md` | `AGENT_RULES` | 78 | 69 | 0 | 9 | 88.5% |
+| `.agents/rules/04_known_issues.md` | `AGENT_RULES` | 80 | 71 | 0 | 9 | 88.8% |
 | `.agents/rules/05_git_workflow.md` | `AGENT_RULES` | 35 | 29 | 0 | 6 | 82.9% |
 | `.agents/rules/06_verification_standards.md` | `AGENT_RULES` | 117 | 100 | 0 | 17 | 85.5% |
-| `.agents/rules/07_task_protocol.md` | `AGENT_RULES` | 61 | 56 | 0 | 5 | 91.8% |
-| `.agents/rules/08_ui_style_guide.md` | `AGENT_RULES` | 53 | 47 | 0 | 6 | 88.7% |
+| `.agents/rules/07_task_protocol.md` | `AGENT_RULES` | 60 | 55 | 0 | 5 | 91.7% |
+| `.agents/rules/08_ui_style_guide.md` | `AGENT_RULES` | 51 | 45 | 0 | 6 | 88.2% |
 | `.agents/rules/09_testing_infrastructure.md` | `AGENT_RULES` | 20 | 17 | 0 | 3 | 85.0% |
 | `.agents/rules/10_symbol_reference.md` | `AGENT_RULES` | 21 | 14 | 0 | 7 | 66.7% |
 | `.agents/rules/11_rules_meta.md` | `AGENT_RULES` | 22 | 21 | 0 | 1 | 95.5% |
@@ -73,10 +73,10 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `.agents/rules/15_performance_budgets.md` | `AGENT_RULES` | 19 | 10 | 0 | 9 | 52.6% |
 | `.agents/rules/16_logging_and_diagnostics.md` | `AGENT_RULES` | 20 | 15 | 0 | 5 | 75.0% |
 | `.agents/rules/17_release_and_versioning.md` | `AGENT_RULES` | 25 | 20 | 0 | 5 | 80.0% |
-| `.agents/rules/18_dependency_and_vendor_sync.md` | `AGENT_RULES` | 34 | 28 | 0 | 6 | 82.4% |
+| `.agents/rules/18_dependency_and_vendor_sync.md` | `AGENT_RULES` | 35 | 29 | 0 | 6 | 82.9% |
 | `.agents/rules/19_security_and_data_integrity.md` | `AGENT_RULES` | 23 | 12 | 0 | 11 | 52.2% |
 | `.agents/rules/20_multi_agent_protocol.md` | `AGENT_RULES` | 19 | 15 | 0 | 4 | 78.9% |
-| `.agents/rules/21_documentation_standards.md` | `AGENT_RULES` | 19 | 15 | 0 | 4 | 78.9% |
+| `.agents/rules/21_documentation_standards.md` | `AGENT_RULES` | 21 | 17 | 0 | 4 | 81.0% |
 | `.agents/rules/22_review_checklist.md` | `AGENT_RULES` | 14 | 12 | 0 | 2 | 85.7% |
 | `.agents/rules/23_incident_postmortem_log.md` | `AGENT_RULES` | 35 | 29 | 0 | 6 | 82.9% |
 | `.agents/rules/24_vendor_flag_safety.md` | `AGENT_RULES` | 78 | 68 | 0 | 10 | 87.2% |
@@ -90,26 +90,26 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `.agents/rules/32_modular_core_template.md` | `AGENT_RULES` | 24 | 19 | 0 | 5 | 79.2% |
 | `.agents/rules/33_agent_handoff_and_optimization_cycle.md` | `AGENT_RULES` | 59 | 44 | 0 | 15 | 74.6% |
 | `.agents/rules/34_ai_agent_sandbox_and_guardrails.md` | `AGENT_RULES` | 51 | 37 | 0 | 14 | 72.5% |
-| `.agents/rules/35_bmo_face_contract.md` | `AGENT_RULES` | 71 | 64 | 0 | 7 | 90.1% |
+| `.agents/rules/35_bmo_face_contract.md` | `AGENT_RULES` | 51 | 44 | 0 | 7 | 86.3% |
 | `.agents/rules/36_bug_intake_protocol.md` | `AGENT_RULES` | 68 | 60 | 0 | 8 | 88.2% |
 | `.agents/rules/37_rom_governance_and_flash_budget.md` | `AGENT_RULES` | 59 | 53 | 0 | 6 | 89.8% |
-| `.agents/rules/38_mandatory_documentation_update.md` | `AGENT_RULES` | 96 | 74 | 0 | 22 | 77.1% |
+| `.agents/rules/38_mandatory_documentation_update.md` | `AGENT_RULES` | 91 | 69 | 0 | 22 | 75.8% |
 | `.agents/rules/39_performance_and_benchmark_framework.md` | `AGENT_RULES` | 70 | 51 | 0 | 19 | 72.9% |
 | `.agents/rules/40_ai_knowledge_graph_and_indexing_protocol.md` | `AGENT_RULES` | 76 | 59 | 0 | 17 | 77.6% |
 | `.agents/rules/41_engineering_communication_and_critical_pushback.md` | `AGENT_RULES` | 76 | 56 | 0 | 20 | 73.7% |
 | `.agents/rules/42_quality_of_life_and_roadmap_ledger.md` | `AGENT_RULES` | 120 | 90 | 0 | 30 | 75.0% |
 | `.agents/rules/43_no_ai_jargon_and_buzzwords.md` | `AGENT_RULES` | 51 | 36 | 0 | 15 | 70.6% |
-| `.agents/rules/44_anti_ai_ui_design_standards.md` | `AGENT_RULES` | 75 | 55 | 0 | 20 | 73.3% |
+| `.agents/rules/44_anti_ai_ui_design_standards.md` | `AGENT_RULES` | 74 | 54 | 0 | 20 | 73.0% |
 | `.agents/rules/CONTEXT_INDEX.json` | `AGENT_RULES` | 341 | 341 | 0 | 0 | 100.0% |
-| `.agents/rules/README.md` | `AGENT_RULES` | 61 | 57 | 0 | 4 | 93.4% |
+| `.agents/rules/README.md` | `AGENT_RULES` | 62 | 58 | 0 | 4 | 93.5% |
 | `.mcp.json` | `OTHER` | 9 | 9 | 0 | 0 | 100.0% |
 | `AGENTS.md` | `OTHER` | 19 | 16 | 0 | 3 | 84.2% |
 | `AGENT_DECISION_TREE.json` | `OTHER` | 287 | 287 | 0 | 0 | 100.0% |
-| `AGENT_KNOWLEDGE_GRAPH.json` | `OTHER` | 21,511 | 21,511 | 0 | 0 | 100.0% |
+| `AGENT_KNOWLEDGE_GRAPH.json` | `OTHER` | 21,551 | 21,551 | 0 | 0 | 100.0% |
 | `AGENT_MANIFEST.json` | `OTHER` | 307 | 307 | 0 | 0 | 100.0% |
-| `CHANGELOG.md` | `OTHER` | 81 | 65 | 0 | 16 | 80.2% |
-| `DESIGN.md` | `OTHER` | 195 | 151 | 0 | 44 | 77.4% |
-| `README.md` | `OTHER` | 43 | 30 | 0 | 13 | 69.8% |
+| `CHANGELOG.md` | `OTHER` | 100 | 81 | 0 | 19 | 81.0% |
+| `DESIGN.md` | `OTHER` | 196 | 152 | 0 | 44 | 77.6% |
+| `README.md` | `OTHER` | 44 | 31 | 0 | 13 | 70.5% |
 | `diagram.json` | `OTHER` | 158 | 155 | 0 | 3 | 98.1% |
 | `docs/archive/changelog-history-01.md` | `DOCUMENTATION` | 53 | 46 | 0 | 7 | 86.8% |
 | `docs/archive/changelog-history-02.md` | `DOCUMENTATION` | 86 | 74 | 0 | 12 | 86.0% |
@@ -140,12 +140,12 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `docs/consolidated-rules/rule-01_hardware-01.md` | `DOCUMENTATION` | 67 | 57 | 0 | 10 | 85.1% |
 | `docs/consolidated-rules/rule-02_architecture-01.md` | `DOCUMENTATION` | 24 | 17 | 0 | 7 | 70.8% |
 | `docs/consolidated-rules/rule-03_conventions-01.md` | `DOCUMENTATION` | 67 | 55 | 0 | 12 | 82.1% |
-| `docs/consolidated-rules/rule-04_known_issues-01.md` | `DOCUMENTATION` | 72 | 63 | 0 | 9 | 87.5% |
+| `docs/consolidated-rules/rule-04_known_issues-01.md` | `DOCUMENTATION` | 74 | 65 | 0 | 9 | 87.8% |
 | `docs/consolidated-rules/rule-04_known_issues-02.md` | `DOCUMENTATION` | 13 | 10 | 0 | 3 | 76.9% |
 | `docs/consolidated-rules/rule-05_git_workflow-01.md` | `DOCUMENTATION` | 39 | 31 | 0 | 8 | 79.5% |
 | `docs/consolidated-rules/rule-06_verification_standards-01.md` | `DOCUMENTATION` | 121 | 102 | 0 | 19 | 84.3% |
-| `docs/consolidated-rules/rule-07_task_protocol-01.md` | `DOCUMENTATION` | 65 | 58 | 0 | 7 | 89.2% |
-| `docs/consolidated-rules/rule-08_ui_style_guide-01.md` | `DOCUMENTATION` | 57 | 49 | 0 | 8 | 86.0% |
+| `docs/consolidated-rules/rule-07_task_protocol-01.md` | `DOCUMENTATION` | 64 | 57 | 0 | 7 | 89.1% |
+| `docs/consolidated-rules/rule-08_ui_style_guide-01.md` | `DOCUMENTATION` | 55 | 47 | 0 | 8 | 85.5% |
 | `docs/consolidated-rules/rule-09_testing_infrastructure-01.md` | `DOCUMENTATION` | 24 | 19 | 0 | 5 | 79.2% |
 | `docs/consolidated-rules/rule-10_symbol_reference-01.md` | `DOCUMENTATION` | 25 | 16 | 0 | 9 | 64.0% |
 | `docs/consolidated-rules/rule-11_rules_meta-01.md` | `DOCUMENTATION` | 26 | 23 | 0 | 3 | 88.5% |
@@ -155,10 +155,10 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `docs/consolidated-rules/rule-15_performance_budgets-01.md` | `DOCUMENTATION` | 23 | 12 | 0 | 11 | 52.2% |
 | `docs/consolidated-rules/rule-16_logging_and_diagnostics-01.md` | `DOCUMENTATION` | 24 | 17 | 0 | 7 | 70.8% |
 | `docs/consolidated-rules/rule-17_release_and_versioning-01.md` | `DOCUMENTATION` | 29 | 22 | 0 | 7 | 75.9% |
-| `docs/consolidated-rules/rule-18_dependency_and_vendor_sync-01.md` | `DOCUMENTATION` | 38 | 30 | 0 | 8 | 78.9% |
+| `docs/consolidated-rules/rule-18_dependency_and_vendor_sync-01.md` | `DOCUMENTATION` | 39 | 31 | 0 | 8 | 79.5% |
 | `docs/consolidated-rules/rule-19_security_and_data_integrity-01.md` | `DOCUMENTATION` | 27 | 14 | 0 | 13 | 51.9% |
 | `docs/consolidated-rules/rule-20_multi_agent_protocol-01.md` | `DOCUMENTATION` | 23 | 17 | 0 | 6 | 73.9% |
-| `docs/consolidated-rules/rule-21_documentation_standards-01.md` | `DOCUMENTATION` | 23 | 17 | 0 | 6 | 73.9% |
+| `docs/consolidated-rules/rule-21_documentation_standards-01.md` | `DOCUMENTATION` | 25 | 19 | 0 | 6 | 76.0% |
 | `docs/consolidated-rules/rule-22_review_checklist-01.md` | `DOCUMENTATION` | 18 | 14 | 0 | 4 | 77.8% |
 | `docs/consolidated-rules/rule-23_incident_postmortem_log-01.md` | `DOCUMENTATION` | 39 | 31 | 0 | 8 | 79.5% |
 | `docs/consolidated-rules/rule-24_vendor_flag_safety-01.md` | `DOCUMENTATION` | 82 | 70 | 0 | 12 | 85.4% |
@@ -172,17 +172,17 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `docs/consolidated-rules/rule-32_modular_core_template-01.md` | `DOCUMENTATION` | 28 | 21 | 0 | 7 | 75.0% |
 | `docs/consolidated-rules/rule-33_agent_handoff_and_optimization_cycle-01.md` | `DOCUMENTATION` | 63 | 46 | 0 | 17 | 73.0% |
 | `docs/consolidated-rules/rule-34_ai_agent_sandbox_and_guardrails-01.md` | `DOCUMENTATION` | 55 | 39 | 0 | 16 | 70.9% |
-| `docs/consolidated-rules/rule-35_bmo_face_contract-01.md` | `DOCUMENTATION` | 75 | 66 | 0 | 9 | 88.0% |
+| `docs/consolidated-rules/rule-35_bmo_face_contract-01.md` | `DOCUMENTATION` | 55 | 46 | 0 | 9 | 83.6% |
 | `docs/consolidated-rules/rule-36_bug_intake_protocol-01.md` | `DOCUMENTATION` | 72 | 62 | 0 | 10 | 86.1% |
 | `docs/consolidated-rules/rule-37_rom_governance_and_flash_budget-01.md` | `DOCUMENTATION` | 63 | 55 | 0 | 8 | 87.3% |
-| `docs/consolidated-rules/rule-38_mandatory_documentation_update-01.md` | `DOCUMENTATION` | 100 | 76 | 0 | 24 | 76.0% |
+| `docs/consolidated-rules/rule-38_mandatory_documentation_update-01.md` | `DOCUMENTATION` | 95 | 71 | 0 | 24 | 74.7% |
 | `docs/consolidated-rules/rule-39_performance_and_benchmark_framework-01.md` | `DOCUMENTATION` | 74 | 53 | 0 | 21 | 71.6% |
 | `docs/consolidated-rules/rule-40_ai_knowledge_graph_and_indexing_protocol-01.md` | `DOCUMENTATION` | 80 | 61 | 0 | 19 | 76.2% |
 | `docs/consolidated-rules/rule-41_engineering_communication_and_critical_pushback-01.md` | `DOCUMENTATION` | 80 | 58 | 0 | 22 | 72.5% |
 | `docs/consolidated-rules/rule-42_quality_of_life_and_roadmap_ledger-01.md` | `DOCUMENTATION` | 84 | 62 | 0 | 22 | 73.8% |
 | `docs/consolidated-rules/rule-42_quality_of_life_and_roadmap_ledger-02.md` | `DOCUMENTATION` | 43 | 32 | 0 | 11 | 74.4% |
 | `docs/consolidated-rules/rule-43_no_ai_jargon_and_buzzwords-01.md` | `DOCUMENTATION` | 55 | 38 | 0 | 17 | 69.1% |
-| `docs/consolidated-rules/rule-44_anti_ai_ui_design_standards-01.md` | `DOCUMENTATION` | 79 | 57 | 0 | 22 | 72.2% |
+| `docs/consolidated-rules/rule-44_anti_ai_ui_design_standards-01.md` | `DOCUMENTATION` | 78 | 56 | 0 | 22 | 71.8% |
 | `docs/decisions/0001-hardware-configuration.md` | `DOCUMENTATION` | 17 | 10 | 0 | 7 | 58.8% |
 | `docs/decisions/0002-shared-spi-bus.md` | `DOCUMENTATION` | 17 | 10 | 0 | 7 | 58.8% |
 | `docs/decisions/0003-rom-keys-and-index-v2.md` | `DOCUMENTATION` | 17 | 10 | 0 | 7 | 58.8% |
@@ -196,13 +196,13 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `docs/decisions/0011-index-path-storage.md` | `DOCUMENTATION` | 17 | 14 | 0 | 3 | 82.4% |
 | `docs/decisions/0012-save-state-schema.md` | `DOCUMENTATION` | 9 | 8 | 0 | 1 | 88.9% |
 | `docs/decisions/0013-partition-layout.md` | `DOCUMENTATION` | 8 | 7 | 0 | 1 | 87.5% |
-| `docs/decisions/0014-display-spi-clock.md` | `DOCUMENTATION` | 11 | 10 | 0 | 1 | 90.9% |
+| `docs/decisions/0014-display-spi-clock.md` | `DOCUMENTATION` | 12 | 11 | 0 | 1 | 91.7% |
 | `docs/decisions/README.md` | `DOCUMENTATION` | 22 | 19 | 0 | 3 | 86.4% |
 | `docs/enclosure-3d-printing.md` | `DOCUMENTATION` | 99 | 67 | 0 | 32 | 67.7% |
 | `docs/face-render-measurement-template.md` | `DOCUMENTATION` | 19 | 18 | 0 | 1 | 94.7% |
 | `docs/generated/symbols.md` | `DOCUMENTATION` | 17 | 14 | 0 | 3 | 82.4% |
-| `docs/generated/symbols/core-01.md` | `DOCUMENTATION` | 262 | 227 | 0 | 35 | 86.6% |
-| `docs/generated/symbols/core-02.md` | `DOCUMENTATION` | 80 | 71 | 0 | 9 | 88.8% |
+| `docs/generated/symbols/core-01.md` | `DOCUMENTATION` | 273 | 242 | 0 | 31 | 88.6% |
+| `docs/generated/symbols/core-02.md` | `DOCUMENTATION` | 120 | 105 | 0 | 15 | 87.5% |
 | `docs/generated/symbols/emulators-01.md` | `DOCUMENTATION` | 172 | 141 | 0 | 31 | 82.0% |
 | `docs/generated/symbols/engine-01.md` | `DOCUMENTATION` | 212 | 209 | 0 | 3 | 98.6% |
 | `docs/generated/symbols/engine-02.md` | `DOCUMENTATION` | 225 | 222 | 0 | 3 | 98.7% |
@@ -213,14 +213,14 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `docs/generated/symbols/engine-07.md` | `DOCUMENTATION` | 196 | 193 | 0 | 3 | 98.5% |
 | `docs/generated/symbols/engine-08.md` | `DOCUMENTATION` | 117 | 114 | 0 | 3 | 97.4% |
 | `docs/handoffs/2026-11-07-remediation.md` | `DOCUMENTATION` | 112 | 92 | 0 | 20 | 82.1% |
-| `docs/handoffs/2026-11-12-logical-performance-audit.md` | `DOCUMENTATION` | 37 | 27 | 0 | 10 | 73.0% |
+| `docs/handoffs/2026-11-12-logical-performance-audit.md` | `DOCUMENTATION` | 41 | 31 | 0 | 10 | 75.6% |
 | `docs/handoffs/2026-11-12-production-readiness.md` | `DOCUMENTATION` | 151 | 121 | 0 | 30 | 80.1% |
 | `docs/hardware-measurement-template.json` | `DOCUMENTATION` | 18 | 18 | 0 | 0 | 100.0% |
 | `docs/hardware-measurement-template.md` | `DOCUMENTATION` | 14 | 13 | 0 | 1 | 92.9% |
 | `docs/hardware-notes.md` | `DOCUMENTATION` | 51 | 31 | 0 | 20 | 60.8% |
 | `docs/hardware_measurements.md` | `DOCUMENTATION` | 34 | 22 | 0 | 12 | 64.7% |
 | `docs/performance_and_benchmarking.md` | `DOCUMENTATION` | 28 | 16 | 0 | 12 | 57.1% |
-| `docs/performance_report.md` | `DOCUMENTATION` | 760 | 735 | 0 | 25 | 96.7% |
+| `docs/performance_report.md` | `DOCUMENTATION` | 720 | 695 | 0 | 25 | 96.5% |
 | `docs/readme/details-01.md` | `DOCUMENTATION` | 93 | 62 | 0 | 31 | 66.7% |
 | `docs/readme/details-02.md` | `DOCUMENTATION` | 61 | 44 | 0 | 17 | 72.1% |
 | `docs/research_embedded_ui_frameworks_unevaluated.md` | `DOCUMENTATION` | 57 | 48 | 0 | 9 | 84.2% |
@@ -248,7 +248,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `docs/software-design-document/section-17.md` | `DOCUMENTATION` | 25 | 17 | 0 | 8 | 68.0% |
 | `docs/wiring/01-display-and-buttons.md` | `DOCUMENTATION` | 51 | 37 | 0 | 14 | 72.5% |
 | `docs/wiring/02-sd-card.md` | `DOCUMENTATION` | 33 | 23 | 0 | 10 | 69.7% |
-| `firmware/BmoGameboy/BmoGameboy.ino` | `FIRMWARE_TOP` | 1,349 | 1,180 | 67 | 102 | 87.5% |
+| `firmware/BmoGameboy/BmoGameboy.ino` | `FIRMWARE_TOP` | 1,360 | 1,191 | 67 | 102 | 87.6% |
 | `firmware/BmoGameboy/partitions.csv` | `FIRMWARE_TOP` | 5 | 5 | 0 | 0 | 100.0% |
 | `firmware/BmoGameboy/src/assets/bmo_assets.h` | `BAKED_ROMS` | 17 | 13 | 2 | 2 | 76.5% |
 | `firmware/BmoGameboy/src/assets/roms/aladdin.h` | `BAKED_ROMS` | 65,542 | 65,542 | 0 | 0 | 100.0% |
@@ -260,15 +260,15 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `firmware/BmoGameboy/src/core/battery.cpp` | `FIRMWARE_CORE` | 84 | 72 | 2 | 10 | 85.7% |
 | `firmware/BmoGameboy/src/core/battery.h` | `FIRMWARE_CORE` | 21 | 10 | 5 | 6 | 47.6% |
 | `firmware/BmoGameboy/src/core/battery_save.h` | `FIRMWARE_CORE` | 48 | 43 | 0 | 5 | 89.6% |
-| `firmware/BmoGameboy/src/core/bmo_face.cpp` | `FIRMWARE_CORE` | 1,149 | 865 | 139 | 145 | 75.3% |
+| `firmware/BmoGameboy/src/core/bmo_face.cpp` | `FIRMWARE_CORE` | 1,152 | 868 | 139 | 145 | 75.3% |
 | `firmware/BmoGameboy/src/core/bmo_face.h` | `FIRMWARE_CORE` | 124 | 58 | 46 | 20 | 46.8% |
-| `firmware/BmoGameboy/src/core/box_art.cpp` | `FIRMWARE_CORE` | 368 | 313 | 9 | 46 | 85.1% |
-| `firmware/BmoGameboy/src/core/box_art.h` | `FIRMWARE_CORE` | 37 | 23 | 7 | 7 | 62.2% |
+| `firmware/BmoGameboy/src/core/box_art.cpp` | `FIRMWARE_CORE` | 400 | 344 | 7 | 49 | 86.0% |
+| `firmware/BmoGameboy/src/core/box_art.h` | `FIRMWARE_CORE` | 42 | 25 | 8 | 9 | 59.5% |
 | `firmware/BmoGameboy/src/core/buttons.cpp` | `FIRMWARE_CORE` | 134 | 104 | 10 | 20 | 77.6% |
 | `firmware/BmoGameboy/src/core/buttons.h` | `FIRMWARE_CORE` | 48 | 23 | 15 | 10 | 47.9% |
 | `firmware/BmoGameboy/src/core/config.h` | `FIRMWARE_CORE` | 129 | 75 | 37 | 17 | 58.1% |
-| `firmware/BmoGameboy/src/core/display_emu.cpp` | `FIRMWARE_CORE` | 2,116 | 1,731 | 126 | 259 | 81.8% |
-| `firmware/BmoGameboy/src/core/display_emu.h` | `FIRMWARE_CORE` | 190 | 74 | 70 | 46 | 38.9% |
+| `firmware/BmoGameboy/src/core/display_emu.cpp` | `FIRMWARE_CORE` | 2,160 | 1,774 | 126 | 260 | 82.1% |
+| `firmware/BmoGameboy/src/core/display_emu.h` | `FIRMWARE_CORE` | 191 | 75 | 70 | 46 | 39.3% |
 | `firmware/BmoGameboy/src/core/fram_save.cpp` | `FIRMWARE_CORE` | 74 | 55 | 5 | 14 | 74.3% |
 | `firmware/BmoGameboy/src/core/fram_save.h` | `FIRMWARE_CORE` | 13 | 8 | 2 | 3 | 61.5% |
 | `firmware/BmoGameboy/src/core/frame_pacing.h` | `FIRMWARE_CORE` | 26 | 17 | 6 | 3 | 65.4% |
@@ -282,7 +282,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `firmware/BmoGameboy/src/core/rom_index.h` | `FIRMWARE_CORE` | 64 | 54 | 2 | 8 | 84.4% |
 | `firmware/BmoGameboy/src/core/save_manager.cpp` | `FIRMWARE_CORE` | 767 | 659 | 12 | 96 | 85.9% |
 | `firmware/BmoGameboy/src/core/save_manager.h` | `FIRMWARE_CORE` | 73 | 54 | 7 | 12 | 74.0% |
-| `firmware/BmoGameboy/src/core/sd_card.cpp` | `FIRMWARE_CORE` | 1,250 | 1,121 | 23 | 106 | 89.7% |
+| `firmware/BmoGameboy/src/core/sd_card.cpp` | `FIRMWARE_CORE` | 1,254 | 1,123 | 25 | 106 | 89.6% |
 | `firmware/BmoGameboy/src/core/sd_card.h` | `FIRMWARE_CORE` | 94 | 74 | 8 | 12 | 78.7% |
 | `firmware/BmoGameboy/src/core/spi_arbiter.cpp` | `FIRMWARE_CORE` | 25 | 21 | 0 | 4 | 84.0% |
 | `firmware/BmoGameboy/src/core/spi_arbiter.h` | `FIRMWARE_CORE` | 24 | 6 | 14 | 4 | 25.0% |
@@ -295,15 +295,15 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `firmware/BmoGameboy/src/emulators/emu_doom.h` | `EMULATOR_WRAPPERS` | 19 | 10 | 5 | 4 | 52.6% |
 | `firmware/BmoGameboy/src/emulators/emu_genesis.cpp` | `EMULATOR_WRAPPERS` | 138 | 125 | 0 | 13 | 90.6% |
 | `firmware/BmoGameboy/src/emulators/emu_genesis.h` | `EMULATOR_WRAPPERS` | 16 | 14 | 0 | 2 | 87.5% |
-| `firmware/BmoGameboy/src/emulators/emu_lynx.cpp` | `EMULATOR_WRAPPERS` | 104 | 91 | 0 | 13 | 87.5% |
+| `firmware/BmoGameboy/src/emulators/emu_lynx.cpp` | `EMULATOR_WRAPPERS` | 110 | 97 | 0 | 13 | 88.2% |
 | `firmware/BmoGameboy/src/emulators/emu_lynx.h` | `EMULATOR_WRAPPERS` | 16 | 14 | 0 | 2 | 87.5% |
 | `firmware/BmoGameboy/src/emulators/emu_nes.cpp` | `EMULATOR_WRAPPERS` | 126 | 104 | 5 | 17 | 82.5% |
 | `firmware/BmoGameboy/src/emulators/emu_nes.h` | `EMULATOR_WRAPPERS` | 18 | 14 | 1 | 3 | 77.8% |
-| `firmware/BmoGameboy/src/emulators/emu_ngp.cpp` | `EMULATOR_WRAPPERS` | 104 | 91 | 0 | 13 | 87.5% |
+| `firmware/BmoGameboy/src/emulators/emu_ngp.cpp` | `EMULATOR_WRAPPERS` | 110 | 97 | 0 | 13 | 88.2% |
 | `firmware/BmoGameboy/src/emulators/emu_ngp.h` | `EMULATOR_WRAPPERS` | 16 | 14 | 0 | 2 | 87.5% |
 | `firmware/BmoGameboy/src/emulators/emu_pce.cpp` | `EMULATOR_WRAPPERS` | 103 | 86 | 1 | 16 | 83.5% |
 | `firmware/BmoGameboy/src/emulators/emu_pce.h` | `EMULATOR_WRAPPERS` | 19 | 14 | 1 | 4 | 73.7% |
-| `firmware/BmoGameboy/src/emulators/emu_peanut.cpp` | `EMULATOR_WRAPPERS` | 237 | 176 | 24 | 37 | 74.3% |
+| `firmware/BmoGameboy/src/emulators/emu_peanut.cpp` | `EMULATOR_WRAPPERS` | 245 | 184 | 24 | 37 | 75.1% |
 | `firmware/BmoGameboy/src/emulators/emu_peanut.h` | `EMULATOR_WRAPPERS` | 22 | 12 | 5 | 5 | 54.5% |
 | `firmware/BmoGameboy/src/emulators/emu_pico.cpp` | `EMULATOR_WRAPPERS` | 101 | 85 | 1 | 15 | 84.2% |
 | `firmware/BmoGameboy/src/emulators/emu_pico.h` | `EMULATOR_WRAPPERS` | 17 | 14 | 0 | 3 | 82.4% |
@@ -311,13 +311,13 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `firmware/BmoGameboy/src/emulators/emu_sms.h` | `EMULATOR_WRAPPERS` | 18 | 14 | 1 | 3 | 77.8% |
 | `firmware/BmoGameboy/src/emulators/emu_snes.cpp` | `EMULATOR_WRAPPERS` | 138 | 125 | 0 | 13 | 90.6% |
 | `firmware/BmoGameboy/src/emulators/emu_snes.h` | `EMULATOR_WRAPPERS` | 16 | 14 | 0 | 2 | 87.5% |
-| `firmware/BmoGameboy/src/emulators/emu_walnut.cpp` | `EMULATOR_WRAPPERS` | 297 | 197 | 58 | 42 | 66.3% |
+| `firmware/BmoGameboy/src/emulators/emu_walnut.cpp` | `EMULATOR_WRAPPERS` | 305 | 205 | 58 | 42 | 67.2% |
 | `firmware/BmoGameboy/src/emulators/emu_walnut.h` | `EMULATOR_WRAPPERS` | 22 | 12 | 5 | 5 | 54.5% |
 | `firmware/BmoGameboy/src/emulators/emu_wswan.cpp` | `EMULATOR_WRAPPERS` | 121 | 108 | 0 | 13 | 89.3% |
 | `firmware/BmoGameboy/src/emulators/emu_wswan.h` | `EMULATOR_WRAPPERS` | 16 | 14 | 0 | 2 | 87.5% |
 | `firmware/BmoGameboy/src/emulators/psram_zone_budget.h` | `EMULATOR_WRAPPERS` | 20 | 17 | 0 | 3 | 85.0% |
 | `firmware/BmoGameboy/src/engine/walnut_cgb/walnut_cgb.h` | `ENGINE_GBC` | 9,983 | 7,751 | 889 | 1,343 | 77.6% |
-| `firmware/BmoGameboy/src/tests/unit_tests.cpp` | `FIRMWARE_TOP` | 169 | 120 | 21 | 28 | 71.0% |
+| `firmware/BmoGameboy/src/tests/unit_tests.cpp` | `FIRMWARE_TOP` | 174 | 125 | 21 | 28 | 71.8% |
 | `firmware/BmoGameboy/src/tests/unit_tests.h` | `FIRMWARE_TOP` | 5 | 2 | 2 | 1 | 40.0% |
 | `firmware/BmoGameboy/src/vendor/agnes/agnes.c` | `VENDOR_ENGINES` | 2,640 | 2,225 | 96 | 319 | 84.3% |
 | `firmware/BmoGameboy/src/vendor/agnes/agnes.h` | `VENDOR_ENGINES` | 88 | 51 | 21 | 16 | 58.0% |
@@ -534,7 +534,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `scripts/check_markdown_links.py` | `SCRIPTS` | 25 | 17 | 1 | 7 | 68.0% |
 | `scripts/color_calc.py` | `SCRIPTS` | 52 | 37 | 4 | 11 | 71.2% |
 | `scripts/convert_roms.py` | `SCRIPTS` | 66 | 52 | 3 | 11 | 78.8% |
-| `scripts/deploy_sd_complete.py` | `SCRIPTS` | 227 | 164 | 28 | 35 | 72.2% |
+| `scripts/deploy_sd_complete.py` | `SCRIPTS` | 223 | 183 | 9 | 31 | 82.1% |
 | `scripts/deploy_to_sd.py` | `SCRIPTS` | 285 | 245 | 3 | 37 | 86.0% |
 | `scripts/extract_atari.py` | `SCRIPTS` | 61 | 48 | 3 | 10 | 78.7% |
 | `scripts/fetch_atari2600_boxarts.py` | `SCRIPTS` | 159 | 131 | 5 | 23 | 82.4% |
@@ -549,7 +549,7 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `scripts/rom_key.py` | `SCRIPTS` | 38 | 30 | 2 | 6 | 78.9% |
 | `scripts/test_candidate_sets.py` | `SCRIPTS` | 35 | 32 | 1 | 2 | 91.4% |
 | `scripts/test_runner.py` | `SCRIPTS` | 59 | 41 | 3 | 15 | 69.5% |
-| `scripts/validate_repo.py` | `SCRIPTS` | 640 | 497 | 59 | 84 | 77.7% |
+| `scripts/validate_repo.py` | `SCRIPTS` | 642 | 499 | 59 | 84 | 77.7% |
 | `scripts/verify_collection_urls.py` | `SCRIPTS` | 30 | 27 | 0 | 3 | 90.0% |
 | `scripts/verify_color_tokens.py` | `SCRIPTS` | 102 | 82 | 1 | 19 | 80.4% |
 | `tests/host/battery_save_test.cpp` | `TESTS` | 10 | 9 | 0 | 1 | 90.0% |
@@ -571,8 +571,8 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `tests/test_battery_save.py` | `TESTS` | 27 | 21 | 0 | 6 | 77.8% |
 | `tests/test_bmo_face_spring.py` | `TESTS` | 60 | 52 | 0 | 8 | 86.7% |
 | `tests/test_bmo_mascot_engine.py` | `TESTS` | 49 | 40 | 0 | 9 | 81.6% |
-| `tests/test_box_art.py` | `TESTS` | 113 | 85 | 8 | 20 | 75.2% |
-| `tests/test_elf_analyzer.py` | `TESTS` | 39 | 32 | 0 | 7 | 82.1% |
+| `tests/test_box_art.py` | `TESTS` | 155 | 123 | 8 | 24 | 79.4% |
+| `tests/test_elf_analyzer.py` | `TESTS` | 64 | 54 | 0 | 10 | 84.4% |
 | `tests/test_enclosure_generator.py` | `TESTS` | 103 | 87 | 1 | 15 | 84.5% |
 | `tests/test_frame_pacing.py` | `TESTS` | 44 | 36 | 0 | 8 | 81.8% |
 | `tests/test_frame_percentiles.py` | `TESTS` | 39 | 32 | 0 | 7 | 82.1% |
@@ -586,12 +586,12 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `tests/test_platform_mapping.py` | `TESTS` | 115 | 101 | 0 | 14 | 87.8% |
 | `tests/test_psram_budget.py` | `TESTS` | 39 | 30 | 0 | 9 | 76.9% |
 | `tests/test_repo_tools.py` | `TESTS` | 71 | 53 | 4 | 14 | 74.6% |
-| `tests/test_rom_file_filter.py` | `TESTS` | 49 | 41 | 0 | 8 | 83.7% |
+| `tests/test_rom_file_filter.py` | `TESTS` | 56 | 48 | 0 | 8 | 85.7% |
 | `tests/test_rom_index.py` | `TESTS` | 183 | 130 | 24 | 29 | 71.0% |
 | `tests/test_rom_index_layout.py` | `TESTS` | 27 | 21 | 0 | 6 | 77.8% |
 | `tests/test_rom_key.py` | `TESTS` | 86 | 72 | 0 | 14 | 83.7% |
 | `tests/test_save_manager.py` | `TESTS` | 126 | 106 | 2 | 18 | 84.1% |
-| `tests/test_sd_deploy.py` | `TESTS` | 123 | 103 | 0 | 20 | 83.7% |
+| `tests/test_sd_deploy.py` | `TESTS` | 148 | 125 | 0 | 23 | 84.5% |
 | `tests/test_simulator_security.py` | `TESTS` | 35 | 27 | 0 | 8 | 77.1% |
 | `tests/test_spi_arbiter.py` | `TESTS` | 48 | 39 | 0 | 9 | 81.2% |
 | `tests/test_telemetry_plotter.py` | `TESTS` | 55 | 48 | 0 | 7 | 87.3% |
@@ -632,8 +632,8 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `tools/guardian/core/bus_model.py` | `GUARDIAN_TOOLCHAIN` | 270 | 242 | 7 | 21 | 89.6% |
 | `tools/guardian/core/clang_tidy_runner.py` | `GUARDIAN_TOOLCHAIN` | 146 | 126 | 3 | 17 | 86.3% |
 | `tools/guardian/core/cppcheck_runner.py` | `GUARDIAN_TOOLCHAIN` | 128 | 105 | 6 | 17 | 82.0% |
-| `tools/guardian/core/doc_verifier.py` | `GUARDIAN_TOOLCHAIN` | 359 | 317 | 14 | 28 | 88.3% |
-| `tools/guardian/core/elf_analyzer.py` | `GUARDIAN_TOOLCHAIN` | 226 | 195 | 3 | 28 | 86.3% |
+| `tools/guardian/core/doc_verifier.py` | `GUARDIAN_TOOLCHAIN` | 364 | 321 | 14 | 29 | 88.2% |
+| `tools/guardian/core/elf_analyzer.py` | `GUARDIAN_TOOLCHAIN` | 232 | 201 | 3 | 28 | 86.6% |
 | `tools/guardian/core/host_bench.py` | `GUARDIAN_TOOLCHAIN` | 297 | 251 | 11 | 35 | 84.5% |
 | `tools/guardian/core/psram_budget.py` | `GUARDIAN_TOOLCHAIN` | 336 | 300 | 5 | 31 | 89.3% |
 | `tools/guardian/core/report_gen.py` | `GUARDIAN_TOOLCHAIN` | 295 | 269 | 3 | 23 | 91.2% |
@@ -646,8 +646,8 @@ Exhaustive line-by-line statistics across every single file in the repository:
 | `tools/host_test.cpp` | `TOOLS` | 123 | 99 | 2 | 22 | 80.5% |
 | `tools/telemetry_plotter.py` | `TOOLS` | 241 | 202 | 7 | 32 | 83.8% |
 | `visualizations/README.md` | `OTHER` | 25 | 18 | 0 | 7 | 72.0% |
-| `visualizations/codecharta/bmo_gameboy.cc.json` | `OTHER` | 4,269 | 4,269 | 0 | 0 | 100.0% |
-| `visualizations/codegraphcontext/cgc_graph.json` | `OTHER` | 550 | 550 | 0 | 0 | 100.0% |
+| `visualizations/codecharta/bmo_gameboy.cc.json` | `OTHER` | 4,306 | 4,306 | 0 | 0 | 100.0% |
+| `visualizations/codegraphcontext/cgc_graph.json` | `OTHER` | 530 | 530 | 0 | 0 | 100.0% |
 | `visualizations/understand_anything/graph.json` | `OTHER` | 174 | 174 | 0 | 0 | 100.0% |
 
 ---
@@ -656,14 +656,14 @@ Exhaustive line-by-line statistics across every single file in the repository:
 
 | Benchmark Kernel | Iterations | Total Time | Avg Latency | Throughput | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **BMO_SDF_Procedural_Face_Render_Unculled** | 100 | 123.84 ms | 1238.420 µs | 3.31 MOps/s | Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling. |
-| **BMO_SDF_Procedural_Face_Render_Culled** | 200 | 87.51 ms | 437.555 µs | 9.36 MOps/s | Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction). |
-| **4Pixel_Coalesced_Aligned_Store_Kernel** | 50,000 | 112.04 ms | 2.241 µs | 13.39 MOps/s | Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling. |
-| **O1_Palette_Scanline_Transformation** | 10,000 | 43.69 ms | 4.369 µs | 54.93 MOps/s | Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput. |
-| **CPU_Emulation_Opcode_Dispatch** | 500,000 | 32.06 ms | 0.064 µs | 15.60 MOps/s | Simulates CPU opcode fetch-decode-execute cycle dispatch throughput. |
-| **Direct_GPIO_Atomic_Bitmask_Sampling** | 100,000 | 53.38 ms | 0.534 µs | 14.99 MOps/s | Measures atomic 8-pin bitmask unpacking (GPIO 4,5,6,7,16,17,18,21) replacing 8 digitalRead calls. |
-| **SD_Catalog_O1_Query_And_Page_Jump** | 10,000 | 1.64 ms | 0.164 µs | 6.11 MOps/s | Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations. |
-| **Native_C_11_Cores_575_Frames** | 575 | 178.04 ms | 309.640 µs | 3.23 MOps/s | Executes 50 frames across all 11 native C emulator engines + save-state replay (575 frames total, kFPS). |
+| **BMO_SDF_Procedural_Face_Render_Unculled** | 100 | 111.48 ms | 1114.846 µs | 3.67 MOps/s | Evaluates raw procedural 2D SDF math across 128x128 grid without spatial culling. |
+| **BMO_SDF_Procedural_Face_Render_Culled** | 200 | 87.86 ms | 439.285 µs | 9.32 MOps/s | Evaluates procedural 2D SDF with bounding-box spatial culling (~75% math reduction). |
+| **4Pixel_Coalesced_Aligned_Store_Kernel** | 50,000 | 113.05 ms | 2.261 µs | 13.27 MOps/s | Measures throughput of Xtensa LX7 32-bit coalesced memory stores for 3:2 scaling. |
+| **O1_Palette_Scanline_Transformation** | 10,000 | 39.78 ms | 3.978 µs | 60.34 MOps/s | Measures 240-pixel scanline indexed-to-BGR565 palette transform throughput. |
+| **CPU_Emulation_Opcode_Dispatch** | 500,000 | 30.60 ms | 0.061 µs | 16.34 MOps/s | Simulates CPU opcode fetch-decode-execute cycle dispatch throughput. |
+| **Direct_GPIO_Atomic_Bitmask_Sampling** | 100,000 | 48.10 ms | 0.481 µs | 16.63 MOps/s | Measures atomic 8-pin bitmask unpacking (GPIO 4,5,6,7,16,17,18,21) replacing 8 digitalRead calls. |
+| **SD_Catalog_O1_Query_And_Page_Jump** | 10,000 | 1.56 ms | 0.156 µs | 6.43 MOps/s | Measures 16,384 PSRAM ROM O(1) count queries and rapid +/-10 page-jump calculations. |
+| **Native_C_11_Cores_575_Frames** | 575 | 150.96 ms | 262.531 µs | 3.81 MOps/s | Executes 50 frames across all 11 native C emulator engines + save-state replay (575 frames total, kFPS). |
 
 ---
 
@@ -695,7 +695,7 @@ No Cppcheck findings.
 | Size (Bytes) | Function Symbol | Section |
 | :--- | :--- | :--- |
 | 30,780 | `WGB::__gb_step_cpu(WGB::gb_s*)` | `text` |
-| 19,805 | `(anonymous namespace)::renderMascotInternal(unsigned short*, int, int, int, int, int)` | `text` |
+| 19,793 | `(anonymous namespace)::renderMascotInternal(unsigned short*, int, int, int, int, int)` | `text` |
 | 16,667 | `atari_cpu_step` | `text` |
 | 16,504 | `colem_step_frame` | `text` |
 | 15,180 | `PGB::__gb_step_cpu(PGB::gb_s*)` | `text` |

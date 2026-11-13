@@ -67,10 +67,16 @@ class ElfAnalyzer:
             data_dirs.append(Path(user_profile) / ".arduino15")
         data_dirs.append(Path.home() / ".arduino15")
 
-        candidates = [
-            data_dir / "packages" / "esp32" / "tools" / "esp-x32" / "2601" / "bin"
-            for data_dir in dict.fromkeys(data_dirs)
-        ]
+        candidates = []
+        for data_dir in dict.fromkeys(data_dirs):
+            esp_x32_root = data_dir / "packages" / "esp32" / "tools" / "esp-x32"
+            if esp_x32_root.exists():
+                version_bins = sorted(
+                    (p / "bin" for p in esp_x32_root.iterdir() if p.is_dir()),
+                    reverse=True,
+                )
+                candidates.extend(version_bins)
+            candidates.append(esp_x32_root / "2601" / "bin")
         for c in candidates:
             if c.exists() and (c / "xtensa-esp32s3-elf-size.exe").exists():
                 return c

@@ -43,7 +43,7 @@ Do not upgrade a claim's evidence label based on a compile, code comment, old re
 | BMO face | `bmo_face.*`, `theme.h` | Procedural renderer and expression controls | Panel appearance is not calibrated by host tests |
 | Telemetry | `BmoGameboy.ino`, `tools/telemetry_plotter.py` | Per-second FPS/execution summary and a non-overlapping 600-sample percentile window | No current board capture |
 | Simulator | `tools/bmo_simulator/` | Browser UI, WebGL model, selected WASM engines, upload and local host-test endpoint | Not an electrical or full firmware emulator |
-| Verification | `tests/`, `tools/guardian/`, `scripts/validate_repo.py` | Unit/static/source checks and a pinned CI target compile | Target build evidence is recorded in Section 02 and Section 06; CI results require a completed workflow run |
+| Verification | `tests/`, `tools/guardian/`, `scripts/validate_repo.py` | Unit/static/source checks and a pinned CI target compile | Local and CI results are dated evidence; neither proves physical hardware behavior |
 
 ## 1.5 Feature flags and hardware presence
 

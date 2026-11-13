@@ -13,7 +13,7 @@ const CONSOLE_HISTORY_DATABASE = {
     generation: "2nd Generation (8-bit)",
     tagline: "The Pioneer of Programmable Home Consoles & Cartridge Culture",
     badgeColor: "#E056FD",
-    ext: ".a26, .a78",
+    ext: ".a26",
     specs: {
       cpu: "MOS Technology 6507 @ 1.19 MHz",
       ram: "128 Bytes (Integrated in 6532 RIOT)",
