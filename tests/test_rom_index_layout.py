@@ -8,7 +8,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 class RomIndexLayoutTests(unittest.TestCase):
-    def test_v2_disk_layout_compile_time_contract(self):
+    def test_v3_disk_layout_compile_time_contract(self):
         compiler = find_wasi_cxx(REPO_ROOT)
         source = REPO_ROOT / "tests" / "host" / "rom_index_layout_test.cpp"
         include = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage"

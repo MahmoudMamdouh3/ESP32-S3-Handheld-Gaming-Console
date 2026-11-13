@@ -1,4 +1,4 @@
-#pragma GCC optimize ("O3,unroll-loops")
+#pragma GCC optimize("O3,unroll-loops")
 #include "emu_doom.h"
 #include "../ui/display_emu.h"
 #include "../hal/buttons.h"
@@ -23,71 +23,74 @@ extern "C" {
 
 // Ring-buffer for Doom key events — O(1) dequeue vs O(256) table scan.
 // Only 12 physical buttons exist; a 16-slot ring (power-of-2 for fast masking) is plenty.
-struct DoomKeyEvent { uint8_t key; uint8_t pressed; };
+struct DoomKeyEvent {
+  uint8_t key;
+  uint8_t pressed;
+};
 static DoomKeyEvent s_keyRing[16];
-static int          s_keyRingHead = 0;
-static int          s_keyRingTail = 0;
+static int s_keyRingHead = 0;
+static int s_keyRingTail = 0;
 // Per-key edge-detect: 0 = idle/released, 1 = pressed/held.
-static uint8_t      s_keyState[256];
+static uint8_t s_keyState[256];
 
-static size_t  s_targetZoneBytes = DoomEmu::DOOM_ZONE_FLOOR_BYTES;
+static size_t s_targetZoneBytes = DoomEmu::DOOM_ZONE_FLOOR_BYTES;
 static jmp_buf s_doomBailoutJmp;
 // volatile preserves state across setjmp/longjmp; keep init/update free of non-trivial destructors across s_doomJmpEnv.
 static volatile bool s_doomJmpActive = false;
-static bool    s_doomInitialized = false;
-static char    s_lastError[96] = "";
+static bool s_doomInitialized = false;
+static char s_lastError[96] = "";
 
 static void showDoomErrorToast() {
-    char message[40];
-    const char* reason = s_lastError[0] ? s_lastError : "ENGINE ERROR";
-    snprintf(message, sizeof(message), "DOOM: %.31s", reason);
-    DisplayEmu::showToast(message, Theme::ACCENT_RED, 3000);
+  char message[40];
+  const char* reason = s_lastError[0] ? s_lastError : "ENGINE ERROR";
+  snprintf(message, sizeof(message), "DOOM: %.31s", reason);
+  DisplayEmu::showToast(message, Theme::ACCENT_RED, 3000);
 }
 
 extern "C" {
-    void Doom_Bailout(const char* msg);
+void Doom_Bailout(const char* msg);
 
-    void* Doom_MallocPSRAM(size_t size) {
-        void* ptr = heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
-        if (!ptr) {
-            LOG_ERROR("Failed to allocate %d bytes in PSRAM for DOOM!", (int)size);
-            if (s_doomJmpActive) {
-                Doom_Bailout("DOOM PSRAM allocation failed");
-            }
-        }
-        return ptr;
+void* Doom_MallocPSRAM(size_t size) {
+  void* ptr = heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
+  if (!ptr) {
+    LOG_ERROR("Failed to allocate %d bytes in PSRAM for DOOM!", (int)size);
+    if (s_doomJmpActive) {
+      Doom_Bailout("DOOM PSRAM allocation failed");
     }
+  }
+  return ptr;
+}
 
-    void Doom_FreePSRAM(void* ptr) {
-        if (ptr) {
-            heap_caps_free(ptr);
-        }
-    }
+void Doom_FreePSRAM(void* ptr) {
+  if (ptr) {
+    heap_caps_free(ptr);
+  }
+}
 
-    size_t Doom_GetTargetZoneBytes(void) {
-        return s_targetZoneBytes;
-    }
+size_t Doom_GetTargetZoneBytes(void) {
+  return s_targetZoneBytes;
+}
 
-    void Doom_Bailout(const char* msg) {
-        if (msg && msg[0]) {
-            snprintf(s_lastError, sizeof(s_lastError), "%s", msg);
-        } else {
-            snprintf(s_lastError, sizeof(s_lastError), "DOOM engine error");
-        }
-        LOG_ERROR("[DOOM] Engine bailout: %s", s_lastError);
-        if (s_doomJmpActive) {
-            s_doomJmpActive = false;
-            longjmp(s_doomBailoutJmp, 1);
-        }
-    }
+void Doom_Bailout(const char* msg) {
+  if (msg && msg[0]) {
+    snprintf(s_lastError, sizeof(s_lastError), "%s", msg);
+  } else {
+    snprintf(s_lastError, sizeof(s_lastError), "DOOM engine error");
+  }
+  LOG_ERROR("[DOOM] Engine bailout: %s", s_lastError);
+  if (s_doomJmpActive) {
+    s_doomJmpActive = false;
+    longjmp(s_doomBailoutJmp, 1);
+  }
+}
 
-    void Doom_SpiLock(void) {
-        SpiArbiter::lock();
-    }
+void Doom_SpiLock(void) {
+  SpiArbiter::lock();
+}
 
-    void Doom_SpiUnlock(void) {
-        SpiArbiter::unlock();
-    }
+void Doom_SpiUnlock(void) {
+  SpiArbiter::unlock();
+}
 }
 
 extern "C" {
@@ -118,12 +121,12 @@ int DG_GetKey(int* pressed, unsigned char* key) {
   // O(1) ring-buffer dequeue — no 256-entry table scan.
   if (s_keyRingTail == s_keyRingHead) return 0;
   *pressed = s_keyRing[s_keyRingTail].pressed;
-  *key     = s_keyRing[s_keyRingTail].key;
+  *key = s_keyRing[s_keyRingTail].key;
   s_keyRingTail = (s_keyRingTail + 1) & 15;
   return 1;
 }
 
-void DG_SetWindowTitle(const char * title) {
+void DG_SetWindowTitle(const char* title) {
   // Not used in embedded
 }
 
@@ -135,8 +138,8 @@ static void updateDoomKey(int doomKey, bool pressed) {
     if (s_keyState[doomKey] == 0) {
       s_keyState[doomKey] = 1;
       int next = (s_keyRingHead + 1) & 15;
-      if (next != s_keyRingTail) {  // ring not full
-        s_keyRing[s_keyRingHead] = { (uint8_t)doomKey, 1 };
+      if (next != s_keyRingTail) { // ring not full
+        s_keyRing[s_keyRingHead] = {(uint8_t)doomKey, 1};
         s_keyRingHead = next;
       }
     }
@@ -145,7 +148,7 @@ static void updateDoomKey(int doomKey, bool pressed) {
       s_keyState[doomKey] = 0;
       int next = (s_keyRingHead + 1) & 15;
       if (next != s_keyRingTail) {
-        s_keyRing[s_keyRingHead] = { (uint8_t)doomKey, 0 };
+        s_keyRing[s_keyRingHead] = {(uint8_t)doomKey, 0};
         s_keyRingHead = next;
       }
     }
@@ -154,7 +157,7 @@ static void updateDoomKey(int doomKey, bool pressed) {
 
 namespace DoomEmu {
 
-static char s_wadPath[128];
+static char s_wadPath[264];
 static char* s_argv[4];
 
 const char* lastError() {
@@ -175,12 +178,12 @@ bool init(const char* wadPath) {
   size_t freePsram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
   size_t largestBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
   size_t zoneBytes = computeZoneBytes(largestBlock);
-  LOG_INFO("[DOOM] PSRAM pre-launch: free=%u B, largest_block=%u B, target_zone=%u B",
-           (unsigned)freePsram, (unsigned)largestBlock, (unsigned)zoneBytes);
+  LOG_INFO("[DOOM] PSRAM pre-launch: free=%u B, largest_block=%u B, target_zone=%u B", (unsigned)freePsram,
+           (unsigned)largestBlock, (unsigned)zoneBytes);
   if (zoneBytes < DOOM_ZONE_FLOOR_BYTES) {
     snprintf(s_lastError, sizeof(s_lastError), "PSRAM BLOCK TOO SMALL FOR DOOM");
-    LOG_ERROR("[DOOM] Largest free PSRAM block (%u B) below floor (%u B required)",
-              (unsigned)largestBlock, (unsigned)(DOOM_ZONE_FLOOR_BYTES + DOOM_ZONE_MARGIN_BYTES));
+    LOG_ERROR("[DOOM] Largest free PSRAM block (%u B) below floor (%u B required)", (unsigned)largestBlock,
+              (unsigned)(DOOM_ZONE_FLOOR_BYTES + DOOM_ZONE_MARGIN_BYTES));
     DisplayEmu::showToast("DOOM: LOW PSRAM", Theme::ACCENT_RED, 2200);
     return false;
   }
@@ -269,10 +272,10 @@ void update() {
   // DPAD = Arrows
   // L / R = Strafe left / right
   // X / Y = Next / previous weapon
-  
+
   updateDoomKey(KEY_RCTRL, Buttons::get(Buttons::A).pressed);
-  updateDoomKey(' ',       Buttons::get(Buttons::B).pressed);
-  updateDoomKey(KEY_TAB,   Buttons::get(Buttons::SELECT).pressed);
+  updateDoomKey(' ', Buttons::get(Buttons::B).pressed);
+  updateDoomKey(KEY_TAB, Buttons::get(Buttons::SELECT).pressed);
   updateDoomKey(KEY_ENTER, Buttons::get(Buttons::START).pressed);
   updateDoomKey(KEY_UPARROW, Buttons::get(Buttons::UP).pressed);
   updateDoomKey(KEY_DOWNARROW, Buttons::get(Buttons::DOWN).pressed);
@@ -299,7 +302,7 @@ void update() {
     return;
   }
   unsigned long elapsedTick = millis() - startTick;
-  
+
   if (elapsedTick > 40) {
     LOG_WARN("DOOM latency spike detected: %lu ms", elapsedTick);
   }

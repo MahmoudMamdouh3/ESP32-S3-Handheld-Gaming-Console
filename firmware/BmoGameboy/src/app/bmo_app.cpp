@@ -53,7 +53,7 @@ int s_visibleGameCount = 0;
 
 uint8_t* s_currentRomBuffer = nullptr;
 size_t s_currentRomBufferSize = 0;
-char s_currentRomFilename[64] = "";
+char s_currentRomFilename[SDCard::MAX_ROM_PATH_LEN + 1] = "";
 
 int s_pauseOption = 0;
 PauseQuit::State s_pauseQuitState;
@@ -111,9 +111,12 @@ void syncVisiblePoolCapacity() {
 }
 
 bool currentGameHasBatterySaveSupport() {
-  if (!s_currentRomBuffer) return false;
   const CoreRegistry::CoreDescriptor* core = CoreRegistry::findByIndex(s_selectedEmulatorIndex);
-  if (!core || !core->hasBatterySave) return false;
+  if (!core) return false;
+  if (core->hasActiveBatteryRam) {
+    return core->hasActiveBatteryRam();
+  }
+  if (!s_currentRomBuffer || !core->hasBatterySave) return false;
   return core->hasBatterySave(s_currentRomBuffer, s_currentRomBufferSize);
 }
 
@@ -601,6 +604,23 @@ void launchSelectedRom(const RomFile* selectedRom) {
     return;
   }
 
+  if (!SDCard::verifyRomIdentity(selectedRom, romData, romSize)) {
+    LOG_WARN("ROM mismatch on launch (%s); rebuilding SD index.", selectedRom->filename);
+    SDCard::freeRom(romData);
+    DisplayEmu::showToast("SD CHANGED: RESCANNING...", Theme::BMO_DPAD_YELLOW, 2500);
+    SDCard::rebuildIndex();
+    syncVisiblePoolCapacity();
+    s_consoleCountsDirty = true;
+    s_visibleGamesDirty = true;
+    rebuildVisibleGames();
+    refreshSelectedBoxArt();
+    DisplayEmu::showToast("LIBRARY UPDATED", Theme::BMO_DPAD_YELLOW, 1800);
+    s_currentState = BmoApp::STATE_GAME_MENU;
+    BmoFace::setExpression(BmoFace::IDLE);
+    Buttons::suppressMenuInputUntil((uint32_t)(millis() + 300U));
+    return;
+  }
+
   bool success = false;
   const CoreRegistry::CoreDescriptor* activeCore = CoreRegistry::findByRomType(selectedRom->type);
   if (activeCore && activeCore->start) {
@@ -627,7 +647,8 @@ void launchSelectedRom(const RomFile* selectedRom) {
   s_currentRomFilename[sizeof(s_currentRomFilename) - 1] = '\0';
   SDCard::recordRecentLaunch(s_currentRomFilename);
 
-  if (activeCore && activeCore->loadBatteryRam && currentGameHasBatterySaveSupport()) {
+  if (activeCore && activeCore->loadBatteryRam && activeCore->hasBatterySave &&
+      activeCore->hasBatterySave(s_currentRomBuffer, s_currentRomBufferSize)) {
     activeCore->loadBatteryRam(s_currentRomFilename);
   }
 

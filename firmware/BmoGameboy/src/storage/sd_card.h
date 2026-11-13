@@ -1,6 +1,7 @@
 #pragma once
-#include <stdint.h>
+
 #include <stddef.h>
+#include <stdint.h>
 
 enum RomType : uint8_t {
   ROM_UNKNOWN,
@@ -23,21 +24,37 @@ enum RomType : uint8_t {
 };
 
 struct RomFile {
-  char filename[64];
+  const char* filename; // Pointer into PSRAM variable-length path arena (<= MAX_ROM_PATH_LEN bytes)
+  uint32_t fileSize;    // File size in bytes on FAT32 card
+  uint32_t crc32Prefix; // Standard CRC32 of first min(fileSize, 4096) bytes
   RomType type;
   uint8_t isFavorite;
   uint8_t hasBoxArt;
   uint8_t isPopular;
-  uint32_t fileSize;
 };
 
-static_assert(sizeof(RomFile) == 72, "RomFile cached index layout changed");
-static_assert(offsetof(RomFile, fileSize) == 68, "RomFile fileSize offset changed");
+static_assert(sizeof(RomFile) == (sizeof(const char*) == 4U ? 16U : 24U), "RomFile compact layout changed");
+static_assert(offsetof(RomFile, fileSize) == sizeof(const char*), "RomFile fileSize offset changed");
+static_assert(offsetof(RomFile, crc32Prefix) == sizeof(const char*) + 4U, "RomFile crc32Prefix offset changed");
 
 class SDCard {
 public:
   static constexpr int MIN_ROM_POOL = 256;
   static constexpr int MAX_ROM_POOL = 36000;
+  static constexpr size_t MAX_ROM_PATH_LEN = 255U;
+
+  struct ScanStats {
+    uint32_t ignoredNames;
+    uint32_t hiddenOrSystem;
+    uint32_t filteredFormat;
+    uint32_t pathTooLong;
+    uint32_t poolFull;
+    uint32_t unreadable;
+    bool cancelled;
+  };
+
+  using ScanCancelFn = bool (*)();
+  using ScanProgressFn = void (*)(int scannedCount);
 
   static constexpr int computePoolCapacity(int catalogCount) {
     if (catalogCount < 0) catalogCount = 0;
@@ -49,21 +66,25 @@ public:
   }
   static int getPoolCapacity();
   static int getSkippedRomCount();
+  static ScanStats getScanStats();
 
   static bool begin();
   static bool isMounted();
   // Nominal SPI clock selected for the successful mount attempt, derived from
   // the pinned Arduino-ESP32 clock divider. Zero when the card is not mounted.
   static uint32_t getClockHz();
-  
-  // Scans the SD directory hierarchy (up to depth 3) for ROMs and builds a list
-  static void scanRoms();
+
+  // Scans the SD directory hierarchy (up to depth 3) for ROMs and builds a catalog
+  static void scanRoms(ScanCancelFn shouldCancel = nullptr, ScanProgressFn onProgress = nullptr);
   static void scanDirectory(const char* dirPath, int depth, bool hasArtDirs);
   static int getRomCount();
   static int getRomCountForType(RomType type);
   static int getPopularCountForType(RomType type);
   static bool isPopularGame(const char* filename, RomType type);
   static const RomFile* getRomInfo(int index);
+  static const RomFile* findRomByPath(const char* relativePath);
+  static uint32_t findRomFileSize(const char* relativePath);
+  static bool verifyRomIdentity(const RomFile* rom, const uint8_t* loadedBuffer = nullptr, size_t loadedSize = 0);
 
   // Favorites Management API
   static bool isFavorite(int index);
@@ -73,7 +94,7 @@ public:
   static void saveFavorites();
   static void loadFavorites();
 
-  // Binary ROM Index Cache (.bmo_index) API
+  // Binary ROM Index Cache (.bmo_index) API (BMOIDX03, auto-rebuilds BMOIDX02)
   static bool loadIndex();
   static bool saveIndex();
   static void rebuildIndex();
@@ -85,10 +106,9 @@ public:
   static const char* getRecentFilename(int index);
   static void loadRecentHistory();
   static void saveRecentHistory();
-  
+
   // Dynamically load a ROM file entirely into PSRAM
   // Returns pointer to PSRAM buffer (must be free'd via freeRom) or nullptr on failure.
   static uint8_t* loadRom(const char* filename, size_t* outSize);
   static void freeRom(uint8_t* buffer);
-  
 };

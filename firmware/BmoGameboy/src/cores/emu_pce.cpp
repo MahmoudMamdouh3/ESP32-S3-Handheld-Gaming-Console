@@ -1,4 +1,4 @@
-#pragma GCC optimize ("O3,unroll-loops")
+#pragma GCC optimize("O3,unroll-loops")
 #include "emu_pce.h"
 #include "../hal/config.h"
 #include "../ui/display_emu.h"
@@ -19,16 +19,16 @@ extern "C" {
 }
 
 namespace {
-  constexpr int kPcePanelW = 256;
-  constexpr int kPcePanelH = 240;
+constexpr int kPcePanelW = 256;
+constexpr int kPcePanelH = 240;
 
-  uint8_t*  s_rawFb = nullptr;      // 16-byte scratch prefix + XBUF_WIDTH * (XBUF_HEIGHT + 1)
-  uint16_t* s_panelFb = nullptr;    // 256 x 240 ST7789 panel BGR565 in PSRAM
-  uint16_t* s_palette565 = nullptr; // 256-entry pre-swapped BGR565 LUT
-  bool      s_running = false;
-  uint32_t  s_prevSrcW = 0;
-  uint32_t  s_prevSrcH = 0;
-}
+uint8_t* s_rawFb = nullptr;       // 16-byte scratch prefix + XBUF_WIDTH * (XBUF_HEIGHT + 1)
+uint16_t* s_panelFb = nullptr;    // 256 x 240 ST7789 panel BGR565 in PSRAM
+uint16_t* s_palette565 = nullptr; // 256-entry pre-swapped BGR565 LUT
+bool s_running = false;
+uint32_t s_prevSrcW = 0;
+uint32_t s_prevSrcH = 0;
+} // namespace
 
 extern "C" uint8_t* osd_gfx_framebuffer(int width, int height) {
   (void)width;
@@ -38,14 +38,14 @@ extern "C" uint8_t* osd_gfx_framebuffer(int width, int height) {
 
 extern "C" void osd_input_read(uint8_t joypads[8]) {
   uint8_t pad = 0;
-  if (Buttons::get(Buttons::B).pressed)      pad |= JOY_A;       // Button I
-  if (Buttons::get(Buttons::A).pressed)      pad |= JOY_B;       // Button II
+  if (Buttons::get(Buttons::B).pressed) pad |= JOY_A; // Button I
+  if (Buttons::get(Buttons::A).pressed) pad |= JOY_B; // Button II
   if (Buttons::get(Buttons::SELECT).pressed) pad |= JOY_SELECT;
-  if (Buttons::get(Buttons::START).pressed)  pad |= JOY_RUN;
-  if (Buttons::get(Buttons::UP).pressed)     pad |= JOY_UP;
-  if (Buttons::get(Buttons::RIGHT).pressed)  pad |= JOY_RIGHT;
-  if (Buttons::get(Buttons::DOWN).pressed)   pad |= JOY_DOWN;
-  if (Buttons::get(Buttons::LEFT).pressed)   pad |= JOY_LEFT;
+  if (Buttons::get(Buttons::START).pressed) pad |= JOY_RUN;
+  if (Buttons::get(Buttons::UP).pressed) pad |= JOY_UP;
+  if (Buttons::get(Buttons::RIGHT).pressed) pad |= JOY_RIGHT;
+  if (Buttons::get(Buttons::DOWN).pressed) pad |= JOY_DOWN;
+  if (Buttons::get(Buttons::LEFT).pressed) pad |= JOY_LEFT;
   joypads[0] = pad;
   memset(&joypads[1], 0, 7);
 }
@@ -64,15 +64,11 @@ extern "C" void osd_vsync(void) {
     s_prevSrcH = srcH;
   }
 
-  const uint32_t srcYStart = (srcH > static_cast<uint32_t>(kPcePanelH))
-                               ? ((srcH - static_cast<uint32_t>(kPcePanelH)) / 2U)
-                               : 0U;
-  const uint32_t dstYStart = (srcH < static_cast<uint32_t>(kPcePanelH))
-                               ? ((static_cast<uint32_t>(kPcePanelH) - srcH) / 2U)
-                               : 0U;
-  const uint32_t copyH = (srcH <= static_cast<uint32_t>(kPcePanelH))
-                           ? srcH
-                           : static_cast<uint32_t>(kPcePanelH);
+  const uint32_t srcYStart =
+      (srcH > static_cast<uint32_t>(kPcePanelH)) ? ((srcH - static_cast<uint32_t>(kPcePanelH)) / 2U) : 0U;
+  const uint32_t dstYStart =
+      (srcH < static_cast<uint32_t>(kPcePanelH)) ? ((static_cast<uint32_t>(kPcePanelH) - srcH) / 2U) : 0U;
+  const uint32_t copyH = (srcH <= static_cast<uint32_t>(kPcePanelH)) ? srcH : static_cast<uint32_t>(kPcePanelH);
 
   const uint8_t* srcBase = s_rawFb + 16;
   const uint16_t* pal = s_palette565;
@@ -105,10 +101,8 @@ bool PceEmu::init(const uint8_t* romData, size_t romSize) {
   destroy();
   if (!romData || romSize < 0x2000U) return false;
 
-  s_rawFb = static_cast<uint8_t*>(
-    bmo_psram_calloc(1, 16U + static_cast<size_t>(XBUF_WIDTH) * (XBUF_HEIGHT + 1U)));
-  s_panelFb = static_cast<uint16_t*>(
-    bmo_psram_calloc(static_cast<size_t>(kPcePanelW) * kPcePanelH, sizeof(uint16_t)));
+  s_rawFb = static_cast<uint8_t*>(bmo_psram_calloc(1, 16U + static_cast<size_t>(XBUF_WIDTH) * (XBUF_HEIGHT + 1U)));
+  s_panelFb = static_cast<uint16_t*>(bmo_psram_calloc(static_cast<size_t>(kPcePanelW) * kPcePanelH, sizeof(uint16_t)));
   if (!s_rawFb || !s_panelFb) {
     destroy();
     return false;
@@ -165,6 +159,10 @@ void PceEmu::destroy() {
   }
 }
 
+bool PceEmu::hasActiveBattery() {
+  return s_running && PCE.BackupRAM && BatterySave::pceBramHasHeader(PCE.BackupRAM, 0x2000U);
+}
+
 bool PceEmu::saveBatteryRam(const char* romFilename) {
   if (!s_running || !romFilename || !PCE.BackupRAM) return false;
   if (!BatterySave::pceBramHasHeader(PCE.BackupRAM, 0x2000U)) {
@@ -187,8 +185,7 @@ bool PceEmu::saveState(const char* romFilename, int slot) {
 
   size_t actualLen = 0;
   bool ok = (PceSaveStateMem(buf, cap, &actualLen) == 0) &&
-            SaveManager::saveState(romFilename, slot, SaveManager::CORE_PCE,
-                                   buf, actualLen);
+            SaveManager::saveState(romFilename, slot, SaveManager::CORE_PCE, buf, actualLen);
   bmo_psram_free(buf);
   return ok;
 }
@@ -201,8 +198,7 @@ bool PceEmu::loadState(const char* romFilename, int slot) {
   if (!buf) return false;
 
   size_t loadedLen = 0;
-  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_PCE,
-                                   buf, cap, &loadedLen) &&
+  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_PCE, buf, cap, &loadedLen) &&
             (PceLoadStateMem(buf, loadedLen) == 0);
   bmo_psram_free(buf);
   return ok;
@@ -219,9 +215,27 @@ bool PceEmu::init(const uint8_t* romData, size_t romSize) {
 
 void PceEmu::update() {}
 void PceEmu::destroy() {}
-bool PceEmu::saveBatteryRam(const char* romFilename) { (void)romFilename; return false; }
-bool PceEmu::loadBatteryRam(const char* romFilename) { (void)romFilename; return false; }
-bool PceEmu::saveState(const char* romFilename, int slot) { (void)romFilename; (void)slot; return false; }
-bool PceEmu::loadState(const char* romFilename, int slot) { (void)romFilename; (void)slot; return false; }
+bool PceEmu::hasActiveBattery() {
+  return false;
+}
+
+bool PceEmu::saveBatteryRam(const char* romFilename) {
+  (void)romFilename;
+  return false;
+}
+bool PceEmu::loadBatteryRam(const char* romFilename) {
+  (void)romFilename;
+  return false;
+}
+bool PceEmu::saveState(const char* romFilename, int slot) {
+  (void)romFilename;
+  (void)slot;
+  return false;
+}
+bool PceEmu::loadState(const char* romFilename, int slot) {
+  (void)romFilename;
+  (void)slot;
+  return false;
+}
 
 #endif // BMO_EXPERIMENTAL_CORES

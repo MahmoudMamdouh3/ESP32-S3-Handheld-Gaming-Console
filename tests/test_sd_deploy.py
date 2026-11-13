@@ -41,7 +41,7 @@ class TestSdDeployment(unittest.TestCase):
                 ],
             )
 
-    def test_rom_path_over_firmware_limit_is_rejected(self):
+    def test_rom_path_accepts_nested_long_paths_and_rejects_over_255_bytes(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             games = root / "games"
@@ -49,8 +49,16 @@ class TestSdDeployment(unittest.TestCase):
             destination = root / "card"
             for directory in (games, art, destination):
                 directory.mkdir()
-            long_name = "a" * 60 + ".nes"
-            (games / long_name).write_bytes(b"rom")
+            sub = games / ("a" * 40) / ("b" * 40)
+            sub.mkdir(parents=True)
+            nested_ok = sub / "demo.nes"
+            nested_ok.write_bytes(b"rom")
+            tasks = deployment_tasks(games, art, destination)
+            self.assertEqual(len(tasks), 1)
+
+            too_deep = games / ("x" * 130) / ("y" * 130)
+            too_deep.mkdir(parents=True)
+            (too_deep / "too_long.nes").write_bytes(b"rom")
 
             with self.assertRaisesRegex(ValueError, "too long"):
                 deployment_tasks(games, art, destination)
@@ -121,27 +129,46 @@ class TestSdDeployment(unittest.TestCase):
             self.assertEqual(destination.read_bytes(), source.read_bytes())
             self.assertEqual(list(root.glob(".bmo-copy-*.tmp")), [])
 
-    def test_deploy_sd_complete_uses_bmo_index_v2_and_rejects_unsupported_extensions(self):
+    def test_deploy_sd_complete_uses_bmo_index_v3_and_rejects_unsupported_extensions(self):
         self.assertNotIn(".a78", deploy_sd_complete.EXT_MAP)
         self.assertNotIn(".sgx", deploy_sd_complete.EXT_MAP)
 
         with tempfile.TemporaryDirectory() as temp_dir:
             dest_root = Path(temp_dir)
-            games = [("gb/Mario.gb", 2, 1024), ("nes/Contra.nes", 4, 2048)]
+            games = [("gb/Mario.gb", 2, 1024, 0xAABBCCDD), ("nes/Contra.nes", 4, 2048, 0x11223344)]
             keyed = {make_rom_key("gb/Mario.gb").lower()}
             with patch.object(deploy_sd_complete, "DEST_ROOT", dest_root):
                 deploy_sd_complete.generate_binary_index(games, keyed)
 
             payload = (dest_root / ".bmo_index").read_bytes()
-            self.assertEqual(len(payload), 36 + 2 * 72)
-            magic, ver, count, entry_size, crc, ts, res0, res1 = struct.unpack("<8s7I", payload[:36])
-            self.assertEqual(magic, b"BMOIDX02")
-            self.assertEqual(ver, 2)
+            magic, ver, count, entry_size, str_bytes, crc, ts, tot_lo, tot_hi, fp = struct.unpack(
+                "<8s9I", payload[:44]
+            )
+            self.assertEqual(magic, b"BMOIDX03")
+            self.assertEqual(ver, 3)
             self.assertEqual(count, 2)
-            self.assertEqual(entry_size, 72)
+            self.assertEqual(entry_size, 20)
+            self.assertEqual(len(payload), 44 + 2 * 20 + str_bytes)
             self.assertEqual(ts, 0)
-            self.assertEqual(res0, 3072)
-            self.assertEqual(res1, deploy_sd_complete.catalog_fingerprint(2, 3072, 0, crc))
+            self.assertEqual(tot_lo, 3072)
+            self.assertEqual(tot_hi, 0)
+            self.assertEqual(
+                fp,
+                deploy_sd_complete.catalog_fingerprint(2, str_bytes, 3072, 0, crc),
+            )
+            first_entry = struct.unpack("<IHBBIII", payload[44:64])
+            # Contra.nes sorts before Mario.gb by basename.
+            contra_off, contra_len, contra_type, contra_flags, contra_sz, contra_prefix, contra_res = first_entry
+            self.assertEqual(contra_type, 4)
+            self.assertEqual(contra_flags, 0)
+            self.assertEqual(contra_sz, 2048)
+            self.assertEqual(contra_prefix, 0x11223344)
+            self.assertEqual(contra_res, 0)
+            str_table = payload[44 + 2 * 20 :]
+            self.assertEqual(
+                str_table[contra_off : contra_off + contra_len].decode("utf-8"),
+                "nes/Contra.nes",
+            )
 
 
 if __name__ == "__main__":

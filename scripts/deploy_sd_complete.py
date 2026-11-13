@@ -61,59 +61,109 @@ def copy_single_file(args):
         return (False, 0, str(e))
 
 
-def catalog_fingerprint(entry_count: int, total_bytes: int, root_stamp: int, entries_crc: int) -> int:
+def compute_prefix_crc32(path: Path, max_bytes: int = 4096) -> int:
+    """IEEE CRC32 over up to the first 4 KiB of a ROM file, matching firmware verifyRomIdentity."""
+    with path.open("rb") as f:
+        chunk = f.read(max_bytes)
+    return (zlib.crc32(chunk) & 0xFFFFFFFF) if chunk else 0
+
+
+def catalog_fingerprint(
+    entry_count: int, string_table_bytes: int, total_bytes: int, root_stamp: int, payload_crc: int
+) -> int:
     """Matches BmoIndex::catalogFingerprint in firmware/BmoGameboy/src/storage/rom_index.h."""
     words = struct.pack(
-        "<IIIII",
+        "<IIIIII",
         entry_count & 0xFFFFFFFF,
+        string_table_bytes & 0xFFFFFFFF,
         total_bytes & 0xFFFFFFFF,
         (total_bytes >> 32) & 0xFFFFFFFF,
         root_stamp & 0xFFFFFFFF,
-        entries_crc & 0xFFFFFFFF,
+        payload_crc & 0xFFFFFFFF,
     )
     return zlib.crc32(words) & 0xFFFFFFFF
 
 
 def generate_binary_index(deployed_games, boxart_keys, dest_root: Path | None = None):
     """
-    Constructs a BMO Binary ROM Index v2 payload ("BMOIDX02").
-    Header (36 bytes) + N * Entry (72 bytes). Writes timestamp=0 because the
-    host OS cannot precompute ESP32 FATFS rootDirectoryStamp(), so the console
-    safely stamps or refreshes on mount.
+    Constructs a BMO Binary ROM Index v3 payload ("BMOIDX03").
+    Header (44 bytes) + N * Entry (20 bytes) + UTF-8 string table.
+    Writes timestamp=0 because the host OS cannot precompute ESP32 FATFS
+    rootDirectoryStamp(), so the console stamps or refreshes atomically on mount.
     """
-    print("\n[*] Generating pre-compiled BMO v2 index (/.bmo_index)...")
+    print("\n[*] Generating pre-compiled BMO v3 index (/.bmo_index)...")
+
+    normalized = []
+    for item in deployed_games:
+        if len(item) == 3:
+            rel_path, rom_type, fsize = item
+            crc_prefix = 0
+        elif len(item) == 4:
+            rel_path, rom_type, fsize, crc_prefix = item
+        else:
+            raise ValueError(f"Unexpected deployed game tuple shape: {item!r}")
+        normalized.append((rel_path, rom_type, fsize, crc_prefix))
 
     def sort_key(item):
-        rel_path, rom_type, fsize = item
+        rel_path, _, _, _ = item
         base = rel_path.split('/')[-1].lower()
         return (base, rel_path.lower())
 
-    sorted_games = sorted(deployed_games, key=sort_key)
+    sorted_games = sorted(normalized, key=sort_key)
 
     entries_bytes = bytearray()
+    string_table = bytearray()
     total_file_bytes = 0
-    for rel_path, rom_type, fsize in sorted_games:
+    for rel_path, rom_type, fsize, crc_prefix in sorted_games:
         fname_bytes = rel_path.encode('utf-8')
-        if len(fname_bytes) > 63:
-            raise ValueError(f"ROM path exceeds firmware 63-byte limit: {rel_path}")
-        fname_padded = fname_bytes.ljust(64, b'\x00')
-        has_boxart = 1 if make_rom_key(rel_path).lower() in boxart_keys else 0
-        is_favorite = 0
+        if len(fname_bytes) == 0 or len(fname_bytes) > 255:
+            raise ValueError(f"ROM path must be 1..255 UTF-8 bytes: {rel_path}")
+        path_offset = len(string_table)
+        path_length = len(fname_bytes)
+        string_table.extend(fname_bytes)
+        string_table.append(0)
+
+        has_boxart = 0x02 if make_rom_key(rel_path).lower() in boxart_keys else 0x00
+        flags = has_boxart
         reserved = 0
-        entry = struct.pack('<64sBBBBI', fname_padded, rom_type, is_favorite, has_boxart, reserved, fsize)
+        entry = struct.pack(
+            '<IHBBIII',
+            path_offset,
+            path_length,
+            rom_type,
+            flags,
+            fsize,
+            crc_prefix & 0xFFFFFFFF,
+            reserved,
+        )
         entries_bytes.extend(entry)
         total_file_bytes += fsize
 
-    crc = zlib.crc32(entries_bytes) & 0xFFFFFFFF
-    magic = b"BMOIDX02"
-    version = 2
+    payload = bytes(entries_bytes) + bytes(string_table)
+    crc = zlib.crc32(payload) & 0xFFFFFFFF
+    magic = b"BMOIDX03"
+    version = 3
     entry_count = len(sorted_games)
-    entry_size = 72
+    entry_size = 20
+    string_table_bytes = len(string_table)
     timestamp = 0
-    res0 = total_file_bytes & 0xFFFFFFFF
-    res1 = catalog_fingerprint(entry_count, total_file_bytes, timestamp, crc)
+    total_low = total_file_bytes & 0xFFFFFFFF
+    total_high = (total_file_bytes >> 32) & 0xFFFFFFFF
+    fingerprint = catalog_fingerprint(entry_count, string_table_bytes, total_file_bytes, timestamp, crc)
 
-    header = struct.pack('<8s7I', magic, version, entry_count, entry_size, crc, timestamp, res0, res1)
+    header = struct.pack(
+        '<8s9I',
+        magic,
+        version,
+        entry_count,
+        entry_size,
+        string_table_bytes,
+        crc,
+        timestamp,
+        total_low,
+        total_high,
+        fingerprint,
+    )
 
     target_root = dest_root if dest_root is not None else DEST_ROOT
     if target_root is None:
@@ -123,12 +173,15 @@ def generate_binary_index(deployed_games, boxart_keys, dest_root: Path | None = 
     temp_path = target_root / ".bmo_index.tmp"
     with open(temp_path, 'wb') as f:
         f.write(header)
-        f.write(entries_bytes)
+        f.write(payload)
         f.flush()
         os.fsync(f.fileno())
     os.replace(temp_path, index_path)
 
-    print(f"[*] Pre-compiled BMOIDX02 index written to {index_path} ({len(header) + len(entries_bytes):,} bytes, {entry_count:,} ROMs, CRC: {hex(crc)})")
+    print(
+        f"[*] Pre-compiled BMOIDX03 index written to {index_path} "
+        f"({len(header) + len(payload):,} bytes, {entry_count:,} ROMs, CRC: {hex(crc)})"
+    )
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Deploy user-supplied ROMs and covers to an SD card root and build /.bmo_index.")
@@ -181,10 +234,10 @@ def main(argv: list[str] | None = None) -> int:
             continue
         folder, rom_type = mapping
         rel_path = f"{folder}/{sg.name}"
-        if len(rel_path.encode('utf-8')) > 63:
-            raise ValueError(f"ROM path exceeds firmware 63-byte limit: {rel_path}")
+        if len(rel_path.encode('utf-8')) > 255:
+            raise ValueError(f"ROM path exceeds firmware 255-byte limit: {rel_path}")
         df = dest_root / folder / sg.name
-        deployed_games_meta.append((rel_path, rom_type, sg.stat().st_size))
+        deployed_games_meta.append((rel_path, rom_type, sg.stat().st_size, compute_prefix_crc32(sg)))
         game_tasks.append((sg, df))
         cover_src = src_raw_by_stem.get(sg.stem.lower())
         if cover_src:

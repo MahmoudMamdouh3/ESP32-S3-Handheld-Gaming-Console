@@ -1,4 +1,4 @@
-#pragma GCC optimize ("O3,unroll-loops")
+#pragma GCC optimize("O3,unroll-loops")
 #include "emu_sms.h"
 #include "../hal/config.h"
 #include "../ui/display_emu.h"
@@ -12,10 +12,10 @@
 #include "../third_party/smsplus/smsplus_bmo.h"
 
 namespace {
-  uint16_t* s_panelFb = nullptr;  // 256 x 192 panel BGR565 in PSRAM
-  bool s_isGameGear = false;
-  bool s_running = false;
-}
+uint16_t* s_panelFb = nullptr; // 256 x 192 panel BGR565 in PSRAM
+bool s_isGameGear = false;
+bool s_running = false;
+} // namespace
 
 bool SmsEmu::init(const uint8_t* romData, size_t romSize, bool isGameGear) {
   destroy();
@@ -42,12 +42,12 @@ void SmsEmu::update() {
   if (!s_running || !s_panelFb || !bmo_sms_is_running()) return;
 
   int pad = 0;
-  if (Buttons::get(Buttons::UP).pressed)     pad |= BMO_SMS_INPUT_UP;
-  if (Buttons::get(Buttons::DOWN).pressed)   pad |= BMO_SMS_INPUT_DOWN;
-  if (Buttons::get(Buttons::LEFT).pressed)   pad |= BMO_SMS_INPUT_LEFT;
-  if (Buttons::get(Buttons::RIGHT).pressed)  pad |= BMO_SMS_INPUT_RIGHT;
-  if (Buttons::get(Buttons::A).pressed)      pad |= BMO_SMS_INPUT_BUTTON1;
-  if (Buttons::get(Buttons::B).pressed)      pad |= BMO_SMS_INPUT_BUTTON2;
+  if (Buttons::get(Buttons::UP).pressed) pad |= BMO_SMS_INPUT_UP;
+  if (Buttons::get(Buttons::DOWN).pressed) pad |= BMO_SMS_INPUT_DOWN;
+  if (Buttons::get(Buttons::LEFT).pressed) pad |= BMO_SMS_INPUT_LEFT;
+  if (Buttons::get(Buttons::RIGHT).pressed) pad |= BMO_SMS_INPUT_RIGHT;
+  if (Buttons::get(Buttons::A).pressed) pad |= BMO_SMS_INPUT_BUTTON1;
+  if (Buttons::get(Buttons::B).pressed) pad |= BMO_SMS_INPUT_BUTTON2;
 
   int sys = 0;
   if (Buttons::get(Buttons::START).pressed) {
@@ -68,6 +68,13 @@ void SmsEmu::destroy() {
     bmo_psram_free(s_panelFb);
     s_panelFb = nullptr;
   }
+}
+
+bool SmsEmu::hasActiveBattery() {
+  if (!s_running) return false;
+  size_t sramSize = 0;
+  uint8_t* sram = bmo_sms_sram_data(&sramSize);
+  return sram && sramSize > 0 && bmo_sms_sram_used();
 }
 
 bool SmsEmu::saveBatteryRam(const char* romFilename) {
@@ -95,8 +102,7 @@ bool SmsEmu::saveState(const char* romFilename, int slot) {
 
   size_t actualSize = 0;
   bool ok = bmo_sms_save_state(blob, cap, &actualSize) &&
-            SaveManager::saveState(romFilename, slot, SaveManager::CORE_SMS,
-                                   blob, actualSize);
+            SaveManager::saveState(romFilename, slot, SaveManager::CORE_SMS, blob, actualSize);
   bmo_psram_free(blob);
   return ok;
 }
@@ -109,8 +115,7 @@ bool SmsEmu::loadState(const char* romFilename, int slot) {
   if (!blob) return false;
 
   size_t loadedSize = 0;
-  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_SMS,
-                                   blob, cap, &loadedSize) &&
+  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_SMS, blob, cap, &loadedSize) &&
             bmo_sms_load_state(blob, loadedSize);
   bmo_psram_free(blob);
   return ok;
@@ -128,9 +133,27 @@ bool SmsEmu::init(const uint8_t* romData, size_t romSize, bool isGameGear) {
 
 void SmsEmu::update() {}
 void SmsEmu::destroy() {}
-bool SmsEmu::saveBatteryRam(const char* romFilename) { (void)romFilename; return false; }
-bool SmsEmu::loadBatteryRam(const char* romFilename) { (void)romFilename; return false; }
-bool SmsEmu::saveState(const char* romFilename, int slot) { (void)romFilename; (void)slot; return false; }
-bool SmsEmu::loadState(const char* romFilename, int slot) { (void)romFilename; (void)slot; return false; }
+bool SmsEmu::hasActiveBattery() {
+  return false;
+}
+
+bool SmsEmu::saveBatteryRam(const char* romFilename) {
+  (void)romFilename;
+  return false;
+}
+bool SmsEmu::loadBatteryRam(const char* romFilename) {
+  (void)romFilename;
+  return false;
+}
+bool SmsEmu::saveState(const char* romFilename, int slot) {
+  (void)romFilename;
+  (void)slot;
+  return false;
+}
+bool SmsEmu::loadState(const char* romFilename, int slot) {
+  (void)romFilename;
+  (void)slot;
+  return false;
+}
 
 #endif // BMO_EXPERIMENTAL_CORES

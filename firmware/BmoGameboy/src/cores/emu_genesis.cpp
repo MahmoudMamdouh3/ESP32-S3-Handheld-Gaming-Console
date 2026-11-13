@@ -1,4 +1,4 @@
-#pragma GCC optimize ("O3,unroll-loops")
+#pragma GCC optimize("O3,unroll-loops")
 #include "emu_genesis.h"
 #include "../hal/config.h"
 #include "../ui/display_emu.h"
@@ -13,38 +13,38 @@
 #include <string.h>
 
 extern "C" {
-  #include "../third_party/gwenesis/bus/gwenesis_bus.h"
-  #include "../third_party/gwenesis/cpus/M68K/m68k.h"
-  #include "../third_party/gwenesis/io/gwenesis_io.h"
-  #include "../third_party/gwenesis/vdp/gwenesis_vdp.h"
-  #include "../third_party/gwenesis/sound/ym2612.h"
-  #include "../third_party/gwenesis/sound/gwenesis_sn76489.h"
-  #include "../third_party/gwenesis/sound/z80inst.h"
-  #include "../third_party/gwenesis/savestate/gwenesis_savestate.h"
+#include "../third_party/gwenesis/bus/gwenesis_bus.h"
+#include "../third_party/gwenesis/cpus/M68K/m68k.h"
+#include "../third_party/gwenesis/io/gwenesis_io.h"
+#include "../third_party/gwenesis/vdp/gwenesis_vdp.h"
+#include "../third_party/gwenesis/sound/ym2612.h"
+#include "../third_party/gwenesis/sound/gwenesis_sn76489.h"
+#include "../third_party/gwenesis/sound/z80inst.h"
+#include "../third_party/gwenesis/savestate/gwenesis_savestate.h"
 
-  void load_cartridge(unsigned char* buffer, size_t size);
-  void power_on(void);
-  void reset_emulation(void);
-  void gwenesis_SN76489_Init(int PSGClockValue, int SamplingRate, int freq_divisor);
+void load_cartridge(unsigned char* buffer, size_t size);
+void power_on(void);
+void reset_emulation(void);
+void gwenesis_SN76489_Init(int PSGClockValue, int SamplingRate, int freq_divisor);
 }
 
 // Globals required by Gwenesis core modules
 extern "C" {
-  int scan_line = 0;
-  int system_clock = 0;
-  int frame_counter = 0;
-  uint16_t v_counter = 0;
-  int16_t* gwenesis_ym2612_buffer = nullptr;
-  int16_t* gwenesis_sn76489_buffer = nullptr;
+int scan_line = 0;
+int system_clock = 0;
+int frame_counter = 0;
+uint16_t v_counter = 0;
+int16_t* gwenesis_ym2612_buffer = nullptr;
+int16_t* gwenesis_sn76489_buffer = nullptr;
 }
 
 namespace {
-  constexpr int kGenWidth = 320;
-  constexpr int kGenHeight = 224;
-  constexpr size_t kGenMaxArchiveBytes = 256U * 1024U;
-  uint16_t* s_panelFb = nullptr; // 320 x 224 panel BGR565 in PSRAM
-  bool s_running = false;
-  volatile bool s_sramDirty = false;
+constexpr int kGenWidth = 320;
+constexpr int kGenHeight = 224;
+constexpr size_t kGenMaxArchiveBytes = 256U * 1024U;
+uint16_t* s_panelFb = nullptr; // 320 x 224 panel BGR565 in PSRAM
+bool s_running = false;
+volatile bool s_sramDirty = false;
 } // namespace
 
 extern "C" void genesis_save_mark_dirty_c(void) {
@@ -61,11 +61,13 @@ extern "C" void GWENESIS_PUSH_SCANLINE(int line, const uint16_t* src16, int w) {
   } else {
     // Center H32 (256 px) lines inside 320 px display framebuffer.
     const int leftPad = (kGenWidth - w) / 2;
-    for (int x = 0; x < leftPad; ++x) dst[x] = 0;
+    for (int x = 0; x < leftPad; ++x)
+      dst[x] = 0;
     for (int x = 0; x < w; ++x) {
       dst[leftPad + x] = bmo_rgb565_to_panel565(src16[x]);
     }
-    for (int x = leftPad + w; x < kGenWidth; ++x) dst[x] = 0;
+    for (int x = leftPad + w; x < kGenWidth; ++x)
+      dst[x] = 0;
   }
 }
 
@@ -74,17 +76,17 @@ extern "C" void gwenesis_io_get_buttons(void) {
   for (int b = 0; b < 8; ++b) {
     gwenesis_io_pad_release_button(0, b);
   }
-  if (Buttons::get(Buttons::UP).pressed)     gwenesis_io_pad_press_button(0, 0);
-  if (Buttons::get(Buttons::DOWN).pressed)   gwenesis_io_pad_press_button(0, 1);
-  if (Buttons::get(Buttons::LEFT).pressed)   gwenesis_io_pad_press_button(0, 2);
-  if (Buttons::get(Buttons::RIGHT).pressed)  gwenesis_io_pad_press_button(0, 3);
+  if (Buttons::get(Buttons::UP).pressed) gwenesis_io_pad_press_button(0, 0);
+  if (Buttons::get(Buttons::DOWN).pressed) gwenesis_io_pad_press_button(0, 1);
+  if (Buttons::get(Buttons::LEFT).pressed) gwenesis_io_pad_press_button(0, 2);
+  if (Buttons::get(Buttons::RIGHT).pressed) gwenesis_io_pad_press_button(0, 3);
   // Map SELECT/X -> C so 3-button Genesis titles are playable on the wired A/B/START/SELECT board.
   if (Buttons::get(Buttons::X).pressed || Buttons::get(Buttons::SELECT).pressed) {
     gwenesis_io_pad_press_button(0, 4);
   }
-  if (Buttons::get(Buttons::B).pressed)      gwenesis_io_pad_press_button(0, 5);
-  if (Buttons::get(Buttons::A).pressed)      gwenesis_io_pad_press_button(0, 6);
-  if (Buttons::get(Buttons::START).pressed)  gwenesis_io_pad_press_button(0, 7);
+  if (Buttons::get(Buttons::B).pressed) gwenesis_io_pad_press_button(0, 5);
+  if (Buttons::get(Buttons::A).pressed) gwenesis_io_pad_press_button(0, 6);
+  if (Buttons::get(Buttons::START).pressed) gwenesis_io_pad_press_button(0, 7);
 }
 
 bool GenesisEmu::init(uint8_t* romData, size_t romSize) {
@@ -92,9 +94,9 @@ bool GenesisEmu::init(uint8_t* romData, size_t romSize) {
   if (!romData || romSize < 0x200U) return false;
 
   s_panelFb = static_cast<uint16_t*>(bmo_psram_calloc((size_t)kGenWidth * kGenHeight, sizeof(uint16_t)));
-  VRAM      = static_cast<unsigned char*>(bmo_psram_calloc(VRAM_MAX_SIZE, 1));
-  M68K_RAM  = static_cast<unsigned char*>(bmo_psram_calloc(MAX_RAM_SIZE, 1));
-  ZRAM      = static_cast<unsigned char*>(bmo_psram_calloc(MAX_Z80_RAM_SIZE, 1));
+  VRAM = static_cast<unsigned char*>(bmo_psram_calloc(VRAM_MAX_SIZE, 1));
+  M68K_RAM = static_cast<unsigned char*>(bmo_psram_calloc(MAX_RAM_SIZE, 1));
+  ZRAM = static_cast<unsigned char*>(bmo_psram_calloc(MAX_Z80_RAM_SIZE, 1));
   if (!s_panelFb || !VRAM || !M68K_RAM || !ZRAM) {
     destroy();
     return false;
@@ -191,6 +193,10 @@ static size_t genesisSramBytes() {
   return sz;
 }
 
+bool GenesisEmu::hasActiveBattery() {
+  return s_running && genesisSramBytes() > 0;
+}
+
 bool GenesisEmu::saveBatteryRam(const char* romFilename) {
   const size_t sz = genesisSramBytes();
   if (!s_running || !romFilename || sz == 0) return false;
@@ -213,11 +219,8 @@ bool GenesisEmu::saveState(const char* romFilename, int slot) {
   bool ok = saveGwenesisStateSaveToBuffer(buf, kGenMaxArchiveBytes, &outBytes);
   if (ok) {
     const size_t sramSz = genesisSramBytes();
-    ok = SaveManager::saveState(
-      romFilename, slot, SaveManager::CORE_GENESIS,
-      buf, outBytes,
-      (sramSz > 0) ? SRAM : nullptr, sramSz
-    );
+    ok = SaveManager::saveState(romFilename, slot, SaveManager::CORE_GENESIS, buf, outBytes,
+                                (sramSz > 0) ? SRAM : nullptr, sramSz);
   }
   saveGwenesisStateResetArchive();
   bmo_psram_free(buf);
@@ -232,11 +235,8 @@ bool GenesisEmu::loadState(const char* romFilename, int slot) {
   size_t outState = 0;
   size_t outRam = 0;
   const size_t sramSz = genesisSramBytes();
-  bool ok = SaveManager::loadState(
-    romFilename, slot, SaveManager::CORE_GENESIS,
-    buf, kGenMaxArchiveBytes, &outState,
-    (sramSz > 0) ? SRAM : nullptr, sramSz, &outRam
-  );
+  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_GENESIS, buf, kGenMaxArchiveBytes, &outState,
+                                   (sramSz > 0) ? SRAM : nullptr, sramSz, &outRam);
   if (ok) {
     ok = saveGwenesisStateLoadFromBuffer(buf, outState);
   }
@@ -256,10 +256,30 @@ bool GenesisEmu::init(uint8_t* romData, size_t romSize) {
 
 void GenesisEmu::update() {}
 void GenesisEmu::destroy() {}
-bool GenesisEmu::isRunning() { return false; }
-bool GenesisEmu::saveBatteryRam(const char* romFilename) { (void)romFilename; return false; }
-bool GenesisEmu::loadBatteryRam(const char* romFilename) { (void)romFilename; return false; }
-bool GenesisEmu::saveState(const char* romFilename, int slot) { (void)romFilename; (void)slot; return false; }
-bool GenesisEmu::loadState(const char* romFilename, int slot) { (void)romFilename; (void)slot; return false; }
+bool GenesisEmu::isRunning() {
+  return false;
+}
+bool GenesisEmu::hasActiveBattery() {
+  return false;
+}
+
+bool GenesisEmu::saveBatteryRam(const char* romFilename) {
+  (void)romFilename;
+  return false;
+}
+bool GenesisEmu::loadBatteryRam(const char* romFilename) {
+  (void)romFilename;
+  return false;
+}
+bool GenesisEmu::saveState(const char* romFilename, int slot) {
+  (void)romFilename;
+  (void)slot;
+  return false;
+}
+bool GenesisEmu::loadState(const char* romFilename, int slot) {
+  (void)romFilename;
+  (void)slot;
+  return false;
+}
 
 #endif // BMO_EXPERIMENTAL_CORES

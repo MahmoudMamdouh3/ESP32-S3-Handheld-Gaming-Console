@@ -6,11 +6,11 @@
 
 int main() {
   RomFile roms[5] = {};
-  strcpy(roms[0].filename, "gb/Mario.gb");
-  strcpy(roms[1].filename, "nes/Mario.nes");
-  strcpy(roms[2].filename, "gbc/Zelda.gbc");
-  strcpy(roms[3].filename, "snes/Chrono Trigger (USA).sfc");
-  strcpy(roms[4].filename, "Virtual BMO (Official Game).gb");
+  roms[0].filename = "gb/Mario.gb";
+  roms[1].filename = "nes/Mario.nes";
+  roms[2].filename = "gbc/Zelda.gbc";
+  roms[3].filename = "snes/Chrono Trigger (USA).sfc";
+  roms[4].filename = "Virtual BMO (Official Game).gb";
 
   BoxArtLookup::KeyEntry keys[5] = {};
   int32_t baseOrder[5] = {};

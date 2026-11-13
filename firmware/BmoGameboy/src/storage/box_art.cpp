@@ -13,7 +13,7 @@
 
 namespace {
 static uint16_t* s_boxArtBuf = nullptr;
-static char s_cachedRomName[64] = "";
+static char s_cachedRomName[SDCard::MAX_ROM_PATH_LEN + 1] = "";
 static bool s_hasArt = false;
 
 uint16_t rgbToDisplayColor(uint8_t r, uint8_t g, uint8_t b) {

@@ -8,6 +8,7 @@ public:
   static bool init(const uint8_t* romData, size_t romSize);
   static void update();
   static void destroy();
+  static bool hasActiveBattery();
 
   // Non-Volatile Battery RAM & Save State APIs
   static bool saveBatteryRam(const char* romFilename);
@@ -15,4 +16,3 @@ public:
   static bool saveState(const char* romFilename, int slot);
   static bool loadState(const char* romFilename, int slot);
 };
-

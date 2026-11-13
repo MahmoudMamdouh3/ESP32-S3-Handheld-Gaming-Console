@@ -51,7 +51,7 @@ def deployment_tasks(
     )
     relative_paths = {path: path.relative_to(src_games).as_posix() for path in games}
     for relative_path in relative_paths.values():
-        if len(relative_path.encode("utf-8")) >= 64:
+        if len(relative_path.encode("utf-8")) > 255:
             raise ValueError(f"ROM path is too long for firmware index: {relative_path}")
 
     games_by_stem: dict[str, list[Path]] = {}

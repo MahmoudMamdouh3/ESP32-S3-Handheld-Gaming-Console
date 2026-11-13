@@ -32,26 +32,105 @@ RomFile* romList = fallbackRomList;
 int maxCapacity = 32;
 int numRoms = 0;
 int skippedRomCount = 0;
+SDCard::ScanStats scanStats = {};
 bool poolGrowthFailed = false;
 int favoritesCount = 0;
 int romCountsByType[ROM_COLEM + 1] = {0};
+
+static char* s_pathArena = nullptr;
+static size_t s_pathArenaUsed = 0;
+static size_t s_pathArenaCap = 0;
+
+static bool growPathArena(size_t requiredCap) {
+  if (requiredCap <= s_pathArenaCap && s_pathArena != nullptr) {
+    return true;
+  }
+  size_t nextCap = (s_pathArenaCap == 0) ? 16384U : s_pathArenaCap;
+  while (nextCap < requiredCap) {
+    if (nextCap > (4U * 1024U * 1024U)) return false;
+    nextCap *= 2U;
+  }
+
+  const uintptr_t oldStart = reinterpret_cast<uintptr_t>(s_pathArena);
+  const uintptr_t oldEnd = oldStart + s_pathArenaUsed;
+  char* nextBuf = static_cast<char*>(s_pathArena ? heap_caps_realloc(s_pathArena, nextCap, MALLOC_CAP_SPIRAM)
+                                                 : heap_caps_malloc(nextCap, MALLOC_CAP_SPIRAM));
+  if (!nextBuf) {
+    return false;
+  }
+  if (s_pathArena && oldStart != reinterpret_cast<uintptr_t>(nextBuf)) {
+    const ptrdiff_t delta = nextBuf - reinterpret_cast<const char*>(oldStart);
+    for (int i = 0; i < numRoms; ++i) {
+      const uintptr_t addr = reinterpret_cast<uintptr_t>(romList[i].filename);
+      if (addr >= oldStart && addr < oldEnd) {
+        romList[i].filename = romList[i].filename + delta;
+      }
+    }
+  }
+  s_pathArena = nextBuf;
+  s_pathArenaCap = nextCap;
+  return true;
+}
+
+void resetPathArena() {
+  if (s_pathArena) {
+    heap_caps_free(s_pathArena);
+    s_pathArena = nullptr;
+  }
+  s_pathArenaUsed = 0;
+  s_pathArenaCap = 0;
+}
+
+bool reserveExactPathArena(size_t totalBytes) {
+  resetPathArena();
+  if (totalBytes == 0U) return true;
+  s_pathArena = static_cast<char*>(heap_caps_malloc(totalBytes, MALLOC_CAP_SPIRAM));
+  if (!s_pathArena) return false;
+  s_pathArenaCap = totalBytes;
+  s_pathArenaUsed = totalBytes;
+  return true;
+}
+
+const char* internPath(const char* relPath, size_t length) {
+  if (!relPath || length == 0 || length > SDCard::MAX_ROM_PATH_LEN) return nullptr;
+  const size_t needed = s_pathArenaUsed + length + 1U;
+  if (!growPathArena(needed)) {
+    return nullptr;
+  }
+  char* dst = s_pathArena + s_pathArenaUsed;
+  memcpy(dst, relPath, length);
+  dst[length] = '\0';
+  s_pathArenaUsed += length + 1U;
+  return dst;
+}
+
+void appendArenaPathDirect(const char* src, size_t len, size_t offset) {
+  if (!s_pathArena || !src || offset + len + 1U > s_pathArenaCap) return;
+  memcpy(s_pathArena + offset, src, len + 1U);
+}
+
+const char* arenaBase() {
+  return s_pathArena;
+}
 
 bool ensurePoolCapacity(int targetCapacity) {
   if (targetCapacity < SDCard::MIN_ROM_POOL) targetCapacity = SDCard::MIN_ROM_POOL;
   if (targetCapacity > SDCard::MAX_ROM_POOL) targetCapacity = SDCard::MAX_ROM_POOL;
   if (romList == fallbackRomList) {
-    RomFile* psramList = (RomFile*)heap_caps_malloc(sizeof(RomFile) * (size_t)targetCapacity, MALLOC_CAP_SPIRAM);
+    RomFile* psramList = static_cast<RomFile*>(
+        heap_caps_malloc(sizeof(RomFile) * static_cast<size_t>(targetCapacity), MALLOC_CAP_SPIRAM));
     if (!psramList) return false;
     if (numRoms > 0) {
       const int copyCount = (numRoms < targetCapacity) ? numRoms : targetCapacity;
-      memcpy(psramList, fallbackRomList, sizeof(RomFile) * (size_t)copyCount);
+      memcpy(psramList, fallbackRomList, sizeof(RomFile) * static_cast<size_t>(copyCount));
     }
     romList = psramList;
     maxCapacity = targetCapacity;
     return true;
   }
   if (targetCapacity == maxCapacity) return true;
-  RomFile* resized = (RomFile*)heap_caps_realloc(romList, sizeof(RomFile) * (size_t)targetCapacity, MALLOC_CAP_SPIRAM);
+  RomFile* resized = static_cast<RomFile*>(
+      heap_caps_realloc(romList, sizeof(RomFile) * static_cast<size_t>(targetCapacity), MALLOC_CAP_SPIRAM));
   if (!resized) return (maxCapacity >= targetCapacity);
   romList = resized;
   maxCapacity = targetCapacity;
@@ -66,13 +145,13 @@ int bakedRomCount() {
 void seedBakedRoms() {
 #if BMO_HAS_LOCAL_BAKED_ROM
   if (numRoms >= maxCapacity) return;
-  strncpy(romList[numRoms].filename, local_baked_rom_name, 63);
-  romList[numRoms].filename[63] = '\0';
+  romList[numRoms].filename = local_baked_rom_name;
   romList[numRoms].type = local_baked_rom_type;
-  romList[numRoms].isFavorite = true;
-  romList[numRoms].hasBoxArt = false;
-  romList[numRoms].isPopular = true;
-  romList[numRoms].fileSize = 0;
+  romList[numRoms].isFavorite = 1;
+  romList[numRoms].hasBoxArt = 0;
+  romList[numRoms].isPopular = 1;
+  romList[numRoms].fileSize = static_cast<uint32_t>(local_baked_rom_size);
+  romList[numRoms].crc32Prefix = 0;
   favoritesCount++;
   if (local_baked_rom_type <= ROM_COLEM) {
     romCountsByType[local_baked_rom_type]++;
@@ -85,7 +164,7 @@ const uint8_t* tryLoadBakedRom(const char* filename, size_t* outSize) {
 #if BMO_HAS_LOCAL_BAKED_ROM
   if (filename && outSize && strcmp(filename, local_baked_rom_name) == 0) {
     *outSize = local_baked_rom_size;
-    return (const uint8_t*)local_baked_rom;
+    return static_cast<const uint8_t*>(local_baked_rom);
   }
 #else
   (void)filename;
@@ -113,13 +192,20 @@ int SDCard::getSkippedRomCount() {
   return BmoSdInternal::skippedRomCount;
 }
 
+SDCard::ScanStats SDCard::getScanStats() {
+  return BmoSdInternal::scanStats;
+}
+
 bool SDCard::begin() {
   using namespace BmoSdInternal;
   numRoms = 0;
   skippedRomCount = 0;
+  scanStats = ScanStats{};
   poolGrowthFailed = false;
   favoritesCount = 0;
   memset(romCountsByType, 0, sizeof(romCountsByType));
+  memset(fallbackRomList, 0, sizeof(fallbackRomList));
+  resetPathArena();
 
   ensurePoolCapacity(MIN_ROM_POOL);
   seedBakedRoms();

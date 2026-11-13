@@ -18,8 +18,10 @@ class PsramBudgetTests(unittest.TestCase):
 
     def test_report_uses_rom_file_declaration_and_reports_aggregate_upper_bound(self):
         report = PsramBudgetAnalyzer(REPO_ROOT).analyze()
-        self.assertEqual(report.rom_file_sizeof, 72)
-        self.assertEqual(report.persistent_total_max, 3656192)
+        self.assertEqual(report.rom_file_sizeof, 16)
+        self.assertEqual(report.persistent_total_max, 5834496)
+        self.assertLess(report.persistent_total_2k, 1600000)
+        self.assertGreaterEqual(report.doom_zone_2k_catalog, 6291456)
         self.assertIn("DOOM zone upper bound", PsramBudgetAnalyzer(REPO_ROOT).format_markdown())
 
     def test_firmware_zone_sizing_compile_time_contract(self):

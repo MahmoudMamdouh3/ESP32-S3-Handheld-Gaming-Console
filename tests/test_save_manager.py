@@ -4,49 +4,73 @@ import zlib
 from pathlib import Path
 
 class SaveManagerBinaryTests(unittest.TestCase):
-    MAGIC = 0x31535342  # "BSS1"
-    VERSION = 1
+    MAGIC_V1 = 0x31535342  # "BSS1"
+    VERSION_V1 = 1
+    HEADER_V1_FORMAT = "<IIIIIII32s"
+    HEADER_V1_SIZE = struct.calcsize(HEADER_V1_FORMAT)
 
-    HEADER_FORMAT = "<IIIIIII32s"
+    MAGIC = 0x32535342  # "BSS2"
+    VERSION = 2
+    HEADER_FORMAT = "<IIIIIIIIII32s"
     HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
 
     def compute_crc32(self, data: bytes) -> int:
         return zlib.crc32(data) & 0xFFFFFFFF
 
-    def test_header_packing_and_unpacking(self):
+    def test_v2_and_legacy_v1_header_packing_and_unpacking(self):
         core_id = 1  # CORE_GB_DMG
         timestamp = 12345678
+        path_key_hash = self.compute_crc32(b"gb/Pokemon Red.gb")
+        rom_size = 1048576
         state_data = b"MOCK_GAMEBOY_STATE_PAYLOAD_HERE"
         ram_data = b"MOCK_BATTERY_RAM_HERE"
-        
+
         crc = self.compute_crc32(state_data + ram_data)
         rom_title = b"Pokemon Red\x00" + b"\x00" * 20
 
-        packed_header = struct.pack(
+        packed_v2 = struct.pack(
             self.HEADER_FORMAT,
             self.MAGIC,
             self.VERSION,
+            self.HEADER_SIZE,
+            timestamp,
+            core_id,
+            path_key_hash,
+            rom_size,
+            len(state_data),
+            len(ram_data),
+            crc,
+            rom_title,
+        )
+        self.assertEqual(len(packed_v2), 72)
+
+        magic, ver, hdr_sz, ts, cid, pk, rsz, s_size, r_size, unpacked_crc, title = struct.unpack(
+            self.HEADER_FORMAT, packed_v2
+        )
+        self.assertEqual(magic, self.MAGIC)
+        self.assertEqual(ver, self.VERSION)
+        self.assertEqual(hdr_sz, 72)
+        self.assertEqual(ts, timestamp)
+        self.assertEqual(cid, core_id)
+        self.assertEqual(pk, path_key_hash)
+        self.assertEqual(rsz, rom_size)
+        self.assertEqual(s_size, len(state_data))
+        self.assertEqual(r_size, len(ram_data))
+        self.assertEqual(unpacked_crc, crc)
+        self.assertTrue(title.startswith(b"Pokemon Red"))
+
+        packed_v1 = struct.pack(
+            self.HEADER_V1_FORMAT,
+            self.MAGIC_V1,
+            self.VERSION_V1,
             timestamp,
             core_id,
             len(state_data),
             len(ram_data),
             crc,
-            rom_title
+            rom_title,
         )
-
-        self.assertEqual(len(packed_header), 60)  # 7 * 4 + 32 = 60 bytes
-
-        unpacked = struct.unpack(self.HEADER_FORMAT, packed_header)
-        magic, ver, ts, cid, s_size, r_size, unpacked_crc, title = unpacked
-
-        self.assertEqual(magic, self.MAGIC)
-        self.assertEqual(ver, self.VERSION)
-        self.assertEqual(ts, timestamp)
-        self.assertEqual(cid, core_id)
-        self.assertEqual(s_size, len(state_data))
-        self.assertEqual(r_size, len(ram_data))
-        self.assertEqual(unpacked_crc, crc)
-        self.assertTrue(title.startswith(b"Pokemon Red"))
+        self.assertEqual(len(packed_v1), 60)
 
     def test_crc32_corruption_detection(self):
         state_data = bytearray(b"ORIGINAL_STATE_BUFFER")
@@ -87,15 +111,18 @@ class SaveManagerBinaryTests(unittest.TestCase):
                 self.HEADER_FORMAT,
                 self.MAGIC,
                 self.VERSION,
+                self.HEADER_SIZE,
                 1000,
                 cid,
+                0xCAFEBABE,
+                65536,
                 64,
                 0,
                 0x12345678,
                 b"Test Core\x00" + b"\x00" * 22
             )
             unpacked = struct.unpack(self.HEADER_FORMAT, packed)
-            self.assertEqual(unpacked[3], cid, f"Core ID mismatch for {name}")
+            self.assertEqual(unpacked[4], cid, f"Core ID mismatch for {name}")
 
     def test_pce_save_state_payload(self):
         # PCE has ~73KB context (8KB RAM, 64KB VRAM, 1KB palette, registers)
@@ -109,17 +136,20 @@ class SaveManagerBinaryTests(unittest.TestCase):
             self.HEADER_FORMAT,
             self.MAGIC,
             self.VERSION,
+            self.HEADER_SIZE,
             9999,
             6,  # CORE_PCE
+            0x12345678,
+            262144,
             len(state_payload),
             0x2000,
             crc,
             b"Bonks Adventure\x00" + b"\x00" * 16
         )
         unpacked = struct.unpack(self.HEADER_FORMAT, packed_hdr)
-        self.assertEqual(unpacked[3], 6)
-        self.assertEqual(unpacked[4], len(state_payload))
-        self.assertEqual(unpacked[6], crc)
+        self.assertEqual(unpacked[4], 6)
+        self.assertEqual(unpacked[7], len(state_payload))
+        self.assertEqual(unpacked[9], crc)
 
 if __name__ == "__main__":
     unittest.main()

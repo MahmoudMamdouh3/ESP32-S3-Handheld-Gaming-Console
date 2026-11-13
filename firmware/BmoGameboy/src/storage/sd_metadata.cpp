@@ -2,6 +2,7 @@
 #include "../hal/config.h"
 #include "../hal/spi_arbiter.h"
 #include "atomic_fs.h"
+#include "rom_path_match.h"
 #include "sd_atomic_ops.h"
 #if FEATURE_SD_CARD
 #include <SD.h>
@@ -13,20 +14,25 @@
 namespace {
 
 constexpr int MAX_RECENT_HISTORY = 10;
-char s_recentHistory[MAX_RECENT_HISTORY][64];
+char s_recentHistory[MAX_RECENT_HISTORY][SDCard::MAX_ROM_PATH_LEN + 1U];
 int s_recentCount = 0;
 
 #if FEATURE_SD_CARD
 bool writeMetadataLine(File& file, const char* line, size_t& byteCount, uint32_t& crc) {
   if (!line) return false;
   const size_t length = strlen(line);
-  if (file.write((const uint8_t*)line, length) != length) return false;
+  if (file.write(reinterpret_cast<const uint8_t*>(line), length) != length) return false;
   static const uint8_t lineEnding[] = {'\r', '\n'};
   if (file.write(lineEnding, sizeof(lineEnding)) != sizeof(lineEnding)) return false;
-  crc = AtomicFs::crc32Update((const uint8_t*)line, length, crc);
+  crc = AtomicFs::crc32Update(reinterpret_cast<const uint8_t*>(line), length, crc);
   crc = AtomicFs::crc32Update(lineEnding, sizeof(lineEnding), crc);
   byteCount += length + sizeof(lineEnding);
   return true;
+}
+
+const char* catalogPathAt(int index) {
+  if (index < 0 || index >= BmoSdInternal::numRoms) return nullptr;
+  return BmoSdInternal::romList[index].filename;
 }
 #endif
 
@@ -35,15 +41,15 @@ bool writeMetadataLine(File& file, const char* line, size_t& byteCount, uint32_t
 bool SDCard::isFavorite(int index) {
   using namespace BmoSdInternal;
   if (index < 0 || index >= numRoms) return false;
-  return romList[index].isFavorite;
+  return romList[index].isFavorite != 0U;
 }
 
 bool SDCard::isFavorite(const char* filename) {
   using namespace BmoSdInternal;
   if (!filename) return false;
   for (int i = 0; i < numRoms; ++i) {
-    if (strcmp(romList[i].filename, filename) == 0) {
-      return romList[i].isFavorite;
+    if (romList[i].filename && RomPathMatch::equalsNormalized(romList[i].filename, filename)) {
+      return romList[i].isFavorite != 0U;
     }
   }
   return false;
@@ -53,10 +59,10 @@ void SDCard::toggleFavorite(int index) {
   using namespace BmoSdInternal;
   if (index < 0 || index >= numRoms) return;
   if (romList[index].isFavorite) {
-    romList[index].isFavorite = false;
+    romList[index].isFavorite = 0U;
     favoritesCount--;
   } else {
-    romList[index].isFavorite = true;
+    romList[index].isFavorite = 1U;
     favoritesCount++;
   }
   saveFavorites();
@@ -64,9 +70,12 @@ void SDCard::toggleFavorite(int index) {
 
 void SDCard::recordRecentLaunch(const char* filename) {
   if (!filename || filename[0] == '\0') return;
+  const char* normalized = RomPathMatch::normalizeRelative(filename);
+  if (!normalized[0] || strlen(normalized) > MAX_ROM_PATH_LEN) return;
+
   int existing = -1;
   for (int i = 0; i < s_recentCount; ++i) {
-    if (strcmp(s_recentHistory[i], filename) == 0) {
+    if (RomPathMatch::equalsNormalized(s_recentHistory[i], normalized)) {
       existing = i;
       break;
     }
@@ -74,10 +83,10 @@ void SDCard::recordRecentLaunch(const char* filename) {
   const int limit =
       (existing >= 0) ? existing : ((s_recentCount < MAX_RECENT_HISTORY) ? s_recentCount++ : (MAX_RECENT_HISTORY - 1));
   for (int i = limit; i > 0; --i) {
-    memcpy(s_recentHistory[i], s_recentHistory[i - 1], 64);
+    memcpy(s_recentHistory[i], s_recentHistory[i - 1], sizeof(s_recentHistory[0]));
   }
-  strncpy(s_recentHistory[0], filename, 63);
-  s_recentHistory[0][63] = '\0';
+  strncpy(s_recentHistory[0], normalized, sizeof(s_recentHistory[0]) - 1U);
+  s_recentHistory[0][sizeof(s_recentHistory[0]) - 1U] = '\0';
   saveRecentHistory();
 }
 
@@ -129,33 +138,52 @@ void SDCard::saveRecentHistory() {
 void SDCard::loadRecentHistory() {
   s_recentCount = 0;
 #if FEATURE_SD_CARD
-  if (!BmoSdInternal::mounted) return;
-  SpiArbiter::ScopedLock spiLock;
-  const AtomicFs::FsOps ops = SdAtomicOps::makeOps();
-  if (!AtomicFs::recoverTransaction(ops, "/history.txt")) {
-    return;
-  }
-  if (!SD.exists("/history.txt")) {
-    return;
-  }
-  File f = SD.open("/history.txt", FILE_READ);
-  if (!f) {
-    return;
-  }
-  char line[64];
-  while (f.available() && s_recentCount < MAX_RECENT_HISTORY) {
-    int len = f.readBytesUntil('\n', line, (int)sizeof(line) - 1);
-    line[len] = '\0';
-    while (len > 0 && (line[len - 1] == '\r' || line[len - 1] == ' ')) {
-      line[--len] = '\0';
+  using namespace BmoSdInternal;
+  if (!mounted) return;
+  bool migratedLegacy = false;
+  {
+    SpiArbiter::ScopedLock spiLock;
+    const AtomicFs::FsOps ops = SdAtomicOps::makeOps();
+    if (!AtomicFs::recoverTransaction(ops, "/history.txt")) {
+      return;
     }
-    if (len > 0) {
-      strncpy(s_recentHistory[s_recentCount], line, 63);
-      s_recentHistory[s_recentCount][63] = '\0';
-      s_recentCount++;
+    if (!SD.exists("/history.txt")) {
+      return;
     }
+    File f = SD.open("/history.txt", FILE_READ);
+    if (!f) {
+      return;
+    }
+    char line[MAX_ROM_PATH_LEN + 2U];
+    while (f.available() && s_recentCount < MAX_RECENT_HISTORY) {
+      int len = f.readBytesUntil('\n', line, static_cast<int>(sizeof(line)) - 1);
+      line[len] = '\0';
+      while (len > 0 && (line[len - 1] == '\r' || line[len - 1] == ' ')) {
+        line[--len] = '\0';
+      }
+      if (len <= 0) continue;
+
+      const char* resolved = RomPathMatch::normalizeRelative(line);
+      if (numRoms > 0) {
+        bool migrated = false;
+        const int idx = RomPathMatch::resolveCatalogIndex(resolved, numRoms, catalogPathAt, &migrated);
+        if (idx >= 0 && romList[idx].filename) {
+          resolved = romList[idx].filename;
+          if (migrated) migratedLegacy = true;
+        }
+      }
+      if (resolved[0] != '\0') {
+        strncpy(s_recentHistory[s_recentCount], resolved, sizeof(s_recentHistory[0]) - 1U);
+        s_recentHistory[s_recentCount][sizeof(s_recentHistory[0]) - 1U] = '\0';
+        s_recentCount++;
+      }
+    }
+    f.close();
   }
-  f.close();
+  if (migratedLegacy) {
+    LOG_INFO_STR("SDCard: Migrated legacy basename entries in /history.txt to full ROM paths");
+    saveRecentHistory();
+  }
 #endif
 }
 
@@ -185,7 +213,7 @@ void SDCard::saveFavorites() {
     size_t byteCount = 0;
     uint32_t crc = 0xFFFFFFFFU;
     for (int i = 0; i < numRoms; ++i) {
-      if (romList[i].isFavorite) {
+      if (romList[i].isFavorite && romList[i].filename) {
         if (!writeMetadataLine(f, romList[i].filename, byteCount, crc)) {
           ok = false;
           break;
@@ -209,42 +237,49 @@ void SDCard::loadFavorites() {
 #if FEATURE_SD_CARD
   using namespace BmoSdInternal;
   if (!mounted) return;
-  SpiArbiter::ScopedLock spiLock;
-  const AtomicFs::FsOps ops = SdAtomicOps::makeOps();
-  if (!AtomicFs::recoverTransaction(ops, "/favorites.txt")) {
-    return;
-  }
-  if (!SD.exists("/favorites.txt")) {
-    return;
-  }
-  File f = SD.open("/favorites.txt", FILE_READ);
-  if (!f) {
-    return;
-  }
-  favoritesCount = 0;
-  for (int i = 0; i < numRoms; ++i) {
-    romList[i].isFavorite = false;
-  }
-  char line[64];
-  while (f.available()) {
-    int len = f.readBytesUntil('\n', line, (int)sizeof(line) - 1);
-    line[len] = '\0';
-    while (len > 0 && (line[len - 1] == '\r' || line[len - 1] == ' ')) {
-      line[--len] = '\0';
+  bool migratedLegacy = false;
+  {
+    SpiArbiter::ScopedLock spiLock;
+    const AtomicFs::FsOps ops = SdAtomicOps::makeOps();
+    if (!AtomicFs::recoverTransaction(ops, "/favorites.txt")) {
+      return;
     }
-    if (len > 0) {
-      for (int i = 0; i < numRoms; ++i) {
-        if (strcmp(romList[i].filename, line) == 0) {
-          if (!romList[i].isFavorite) {
-            romList[i].isFavorite = true;
-            favoritesCount++;
-          }
-          break;
+    if (!SD.exists("/favorites.txt")) {
+      return;
+    }
+    File f = SD.open("/favorites.txt", FILE_READ);
+    if (!f) {
+      return;
+    }
+    favoritesCount = 0;
+    for (int i = 0; i < numRoms; ++i) {
+      romList[i].isFavorite = 0U;
+    }
+    char line[MAX_ROM_PATH_LEN + 2U];
+    while (f.available()) {
+      int len = f.readBytesUntil('\n', line, static_cast<int>(sizeof(line)) - 1);
+      line[len] = '\0';
+      while (len > 0 && (line[len - 1] == '\r' || line[len - 1] == ' ')) {
+        line[--len] = '\0';
+      }
+      if (len <= 0) continue;
+
+      bool migrated = false;
+      const int idx = RomPathMatch::resolveCatalogIndex(line, numRoms, catalogPathAt, &migrated);
+      if (idx >= 0) {
+        if (!romList[idx].isFavorite) {
+          romList[idx].isFavorite = 1U;
+          favoritesCount++;
         }
+        if (migrated) migratedLegacy = true;
       }
     }
+    f.close();
   }
-  f.close();
+  if (migratedLegacy) {
+    LOG_INFO_STR("SDCard: Migrated legacy basename entries in /favorites.txt to full ROM paths");
+    saveFavorites();
+  }
 #endif
 }
 
@@ -258,8 +293,13 @@ uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
   }
 
 #if FEATURE_SD_CARD
-  char path[128];
-  snprintf(path, sizeof(path), "/%s", filename);
+  char path[MAX_ROM_PATH_LEN + 2U];
+  const char* clean = RomPathMatch::normalizeRelative(filename);
+  const int wrote = snprintf(path, sizeof(path), "/%s", clean);
+  if (wrote <= 1 || static_cast<size_t>(wrote) >= sizeof(path)) {
+    return nullptr;
+  }
+
   uint8_t* buffer = nullptr;
   size_t size = 0;
   size_t bytesRead = 0;
@@ -277,17 +317,17 @@ uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
     }
     *outSize = size;
 
-    buffer = (uint8_t*)heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
+    buffer = static_cast<uint8_t*>(heap_caps_malloc(size, MALLOC_CAP_SPIRAM));
     if (!buffer) {
       file.close();
       return nullptr;
     }
 
     while (bytesRead < size) {
-      const size_t toRead = (size - bytesRead > 65536) ? 65536 : (size - bytesRead);
+      const size_t toRead = (size - bytesRead > 65536U) ? 65536U : (size - bytesRead);
       const int chunk = file.read(buffer + bytesRead, toRead);
       if (chunk <= 0) break;
-      bytesRead += (size_t)chunk;
+      bytesRead += static_cast<size_t>(chunk);
     }
     file.close();
   }

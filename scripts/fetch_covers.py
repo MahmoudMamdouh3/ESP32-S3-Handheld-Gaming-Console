@@ -208,7 +208,7 @@ def sync_all_covers(
         local_img = _find_local_source_image(stem, search_dirs)
         px = image_to_pixels_rgb(local_img, target_width, target_height) if local_img else None
         relative_path = rom_path.relative_to(resolved_rom_dir).as_posix()
-        if len(relative_path.encode("utf-8")) >= 64:
+        if len(relative_path.encode("utf-8")) > 255:
             raise ValueError(f"ROM path is too long for firmware index: {relative_path}")
 
         write_cover_files(

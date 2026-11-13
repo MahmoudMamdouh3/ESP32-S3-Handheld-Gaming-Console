@@ -1,4 +1,4 @@
-#pragma GCC optimize ("O3,unroll-loops")
+#pragma GCC optimize("O3,unroll-loops")
 #include "emu_wswan.h"
 #include "../hal/config.h"
 #include "../ui/display_emu.h"
@@ -13,37 +13,37 @@
 #include <string.h>
 
 extern "C" {
-  #include "../third_party/oswan/WS.h"
-  #include "../third_party/oswan/WSRender.h"
-  #include "../third_party/oswan/WSFileio.h"
+#include "../third_party/oswan/WS.h"
+#include "../third_party/oswan/WSRender.h"
+#include "../third_party/oswan/WSFileio.h"
 }
 
 namespace {
-  constexpr int kWsWidth = 224;
-  constexpr int kWsHeight = 144;
-  uint16_t* s_panelFb = nullptr; // 224 x 144 panel BGR565 in PSRAM
-  bool s_running = false;
+constexpr int kWsWidth = 224;
+constexpr int kWsHeight = 144;
+uint16_t* s_panelFb = nullptr; // 224 x 144 panel BGR565 in PSRAM
+bool s_running = false;
 
-  // WonderSwan KEYCTL bit layout matching oswan IO[0xB5]
-  enum : int {
-    WS_Y1     = 1 << 0,
-    WS_Y2     = 1 << 1,
-    WS_Y3     = 1 << 2,
-    WS_Y4     = 1 << 3,
-    WS_X1     = 1 << 4,
-    WS_X2     = 1 << 5,
-    WS_X3     = 1 << 6,
-    WS_X4     = 1 << 7,
-    WS_OPTION = 1 << 8,
-    WS_START  = 1 << 9,
-    WS_A      = 1 << 10,
-    WS_B      = 1 << 11,
-  };
+// WonderSwan KEYCTL bit layout matching oswan IO[0xB5]
+enum : int {
+  WS_Y1 = 1 << 0,
+  WS_Y2 = 1 << 1,
+  WS_Y3 = 1 << 2,
+  WS_Y4 = 1 << 3,
+  WS_X1 = 1 << 4,
+  WS_X2 = 1 << 5,
+  WS_X3 = 1 << 6,
+  WS_X4 = 1 << 7,
+  WS_OPTION = 1 << 8,
+  WS_START = 1 << 9,
+  WS_A = 1 << 10,
+  WS_B = 1 << 11,
+};
 
-  size_t wsTotalRamSaveBytes() {
-    if (RAMBanks <= 0 || RAMSize <= 0 || !RAMMap) return 0;
-    return (RAMSize < 0x10000) ? static_cast<size_t>(RAMSize) : static_cast<size_t>(RAMBanks) * 0x10000U;
-  }
+size_t wsTotalRamSaveBytes() {
+  if (RAMBanks <= 0 || RAMSize <= 0 || !RAMMap) return 0;
+  return (RAMSize < 0x10000) ? static_cast<size_t>(RAMSize) : static_cast<size_t>(RAMBanks) * 0x10000U;
+}
 } // namespace
 
 extern "C" void ws_graphics_paint(void) {
@@ -76,9 +76,9 @@ extern "C" int ws_input_poll(int mode) {
     if (l) state |= WS_Y4;
   }
 
-  if (Buttons::get(Buttons::A).pressed)      state |= WS_A;
-  if (Buttons::get(Buttons::B).pressed)      state |= WS_B;
-  if (Buttons::get(Buttons::START).pressed)  state |= WS_START;
+  if (Buttons::get(Buttons::A).pressed) state |= WS_A;
+  if (Buttons::get(Buttons::B).pressed) state |= WS_B;
+  if (Buttons::get(Buttons::START).pressed) state |= WS_START;
   if (Buttons::get(Buttons::SELECT).pressed) state |= WS_OPTION;
   return state;
 }
@@ -128,6 +128,10 @@ bool WSwanEmu::isRunning() {
   return s_running;
 }
 
+bool WSwanEmu::hasActiveBattery() {
+  return s_running && wsTotalRamSaveBytes() > 0;
+}
+
 bool WSwanEmu::saveBatteryRam(const char* romFilename) {
   const size_t totalBytes = wsTotalRamSaveBytes();
   if (!s_running || !romFilename || totalBytes == 0) return false;
@@ -137,8 +141,10 @@ bool WSwanEmu::saveBatteryRam(const char* romFilename) {
   uint8_t* staging = static_cast<uint8_t*>(bmo_psram_malloc(totalBytes));
   if (!staging) return false;
   for (int i = 0; i < RAMBanks; ++i) {
-    if (RAMMap[i]) memcpy(staging + (size_t)i * 0x10000U, RAMMap[i], 0x10000U);
-    else           memset(staging + (size_t)i * 0x10000U, 0, 0x10000U);
+    if (RAMMap[i])
+      memcpy(staging + (size_t)i * 0x10000U, RAMMap[i], 0x10000U);
+    else
+      memset(staging + (size_t)i * 0x10000U, 0, 0x10000U);
   }
   bool ok = SaveManager::saveBatteryRam(romFilename, staging, totalBytes);
   bmo_psram_free(staging);
@@ -209,10 +215,30 @@ bool WSwanEmu::init(uint8_t* romData, size_t romSize, bool isColor) {
 
 void WSwanEmu::update() {}
 void WSwanEmu::destroy() {}
-bool WSwanEmu::isRunning() { return false; }
-bool WSwanEmu::saveBatteryRam(const char* romFilename) { (void)romFilename; return false; }
-bool WSwanEmu::loadBatteryRam(const char* romFilename) { (void)romFilename; return false; }
-bool WSwanEmu::saveState(const char* romFilename, int slot) { (void)romFilename; (void)slot; return false; }
-bool WSwanEmu::loadState(const char* romFilename, int slot) { (void)romFilename; (void)slot; return false; }
+bool WSwanEmu::isRunning() {
+  return false;
+}
+bool WSwanEmu::hasActiveBattery() {
+  return false;
+}
+
+bool WSwanEmu::saveBatteryRam(const char* romFilename) {
+  (void)romFilename;
+  return false;
+}
+bool WSwanEmu::loadBatteryRam(const char* romFilename) {
+  (void)romFilename;
+  return false;
+}
+bool WSwanEmu::saveState(const char* romFilename, int slot) {
+  (void)romFilename;
+  (void)slot;
+  return false;
+}
+bool WSwanEmu::loadState(const char* romFilename, int slot) {
+  (void)romFilename;
+  (void)slot;
+  return false;
+}
 
 #endif // BMO_EXPERIMENTAL_CORES

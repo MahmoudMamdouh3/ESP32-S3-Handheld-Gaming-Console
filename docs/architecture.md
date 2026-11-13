@@ -29,7 +29,7 @@ Display (`TFT_CS=10`) and MicroSD (`SD_CS=13`) share FSPI `SCK=12` and `MOSI=11`
 - **DRAM (`327,680 B` usable):**
   - Reserved for FreeRTOS stacks, DMA/SPI descriptors, and static variables; static bloat is checked via `arduino-cli` reports and `python -m tools.guardian profile-elf`.
 - **Octal PSRAM (`8 MiB`, `MALLOC_CAP_SPIRAM`):**
-  - Stores the ROM catalog pool (`SDCard::computePoolCapacity()`, `256..36,000` `RomFile` entries @ `72 B`), `BmoFace` `320x240` BGR565 canvas (`153,600 B`), `BoxArt` `64x64` cache (`8,192 B`), display staging buffers, active loaded ROM buffer, and DOOM heap (`DoomEmu::computeZoneBytes()`, `2.5–6 MiB` clamped with `512 KiB` safety margin).
+  - Stores the ROM catalog pool (`SDCard::computePoolCapacity()`, `256..36,000` `RomFile` entries @ `16 B` + variable-length `s_pathArena`), `BmoFace` `320x240` BGR565 canvas (`153,600 B`), `BoxArt` `64x64` cache (`8,192 B`), display staging buffers, active loaded ROM buffer, and DOOM heap (`DoomEmu::computeZoneBytes()`, `2.5–6 MiB` clamped with `512 KiB` safety margin).
   - Run `python -m tools.guardian psram-budget` to compute the exact source-derived PSRAM ledger (`HOST_TESTED` via `tests/test_psram_budget.py`).
 
 ## Separate Execution Environments (Important Boundaries)

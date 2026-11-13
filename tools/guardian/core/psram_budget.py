@@ -145,11 +145,18 @@ class PsramBudgetAnalyzer:
             line = raw_line.split("//", 1)[0].strip()
             if not line:
                 continue
-            match = re.fullmatch(r"([A-Za-z_][A-Za-z_0-9]*)\s+[A-Za-z_][A-Za-z_0-9]*(?:\s*\[\s*(\d+)\s*\])?\s*;", line)
+            match = re.fullmatch(
+                r"((?:const\s+)?[A-Za-z_][A-Za-z_0-9]*(?:\s*\*+)?)\s+[A-Za-z_][A-Za-z_0-9]*(?:\s*\[\s*(\d+)\s*\])?\s*;",
+                line,
+            )
             if not match:
                 raise ValueError(f"Unsupported RomFile field declaration: {line}")
             field_type, count_text = match.groups()
-            unit_size, alignment = sizes.get(field_type, (0, 0))
+            normalized_type = " ".join(field_type.split())
+            if normalized_type.endswith("*"):
+                unit_size, alignment = (4, 4)
+            else:
+                unit_size, alignment = sizes.get(normalized_type, (0, 0))
             if not unit_size:
                 raise ValueError(f"Unsupported RomFile field type: {field_type}")
             count = int(count_text) if count_text else 1
@@ -178,6 +185,17 @@ class PsramBudgetAnalyzer:
                 bytes_at_floor=min_pool * rom_sz,
                 bytes_at_2k=pool_2k * rom_sz,
                 bytes_at_max=max_pool * rom_sz,
+                persistence="Persistent (dynamic pool)",
+            ),
+            PsramAllocationSite(
+                symbol="SDCard::s_pathArena",
+                file_path="firmware/BmoGameboy/src/storage/sd_mount.cpp",
+                line_number=self._find_line("firmware/BmoGameboy/src/storage/sd_mount.cpp", r"s_pathArena\s*=\s*static_cast"),
+                unit_bytes=1,
+                count_formula="Pow2 path arena (16 KiB..4 MiB) or exact stringTableBytes",
+                bytes_at_floor=16384,
+                bytes_at_2k=131072,
+                bytes_at_max=4194304,
                 persistence="Persistent (dynamic pool)",
             ),
             PsramAllocationSite(

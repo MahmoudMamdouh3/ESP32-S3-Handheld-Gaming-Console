@@ -1,4 +1,4 @@
-#pragma GCC optimize ("O3,unroll-loops")
+#pragma GCC optimize("O3,unroll-loops")
 #include "emu_snes.h"
 #include "../hal/config.h"
 #include "../ui/display_emu.h"
@@ -14,53 +14,53 @@
 #include <string.h>
 
 extern "C" {
-  #include "../third_party/snes9x/snes9x.h"
-  #include "../third_party/snes9x/src/dsp.h"
-  void S9xSetLineCallback(S9xLineCallback cb);
+#include "../third_party/snes9x/snes9x.h"
+#include "../third_party/snes9x/src/dsp.h"
+void S9xSetLineCallback(S9xLineCallback cb);
 }
 
 namespace {
-  constexpr size_t kSnesMaxSramBytes = 0x20000U;
-  uint16_t* s_panelFb = nullptr; // 256 x 224 panel BGR565 in PSRAM
-  size_t s_sramSaveSize = 0;
-  bool s_running = false;
-  uint32_t s_apuRand = 0xA55A1234U;
+constexpr size_t kSnesMaxSramBytes = 0x20000U;
+uint16_t* s_panelFb = nullptr; // 256 x 224 panel BGR565 in PSRAM
+size_t s_sramSaveSize = 0;
+bool s_running = false;
+uint32_t s_apuRand = 0xA55A1234U;
 
-  void snesLineCallback(uint32_t y, const uint16_t* pixels, uint32_t width) {
-    if (!s_panelFb || !pixels || y >= 224U || width == 0) return;
-    uint16_t* dst = s_panelFb + (size_t)y * 256U;
-    if (width > 256U) {
-      // Sample down 512 px hi-res pseudo/interlace scanlines cleanly to 256 px.
-      for (uint32_t x = 0; x < 256U; ++x) {
-        dst[x] = bmo_rgb565_to_panel565(pixels[x * 2U]);
-      }
-    } else {
-      for (uint32_t x = 0; x < width; ++x) {
-        dst[x] = bmo_rgb565_to_panel565(pixels[x]);
-      }
-      for (uint32_t x = width; x < 256U; ++x) {
-        dst[x] = 0;
-      }
+void snesLineCallback(uint32_t y, const uint16_t* pixels, uint32_t width) {
+  if (!s_panelFb || !pixels || y >= 224U || width == 0) return;
+  uint16_t* dst = s_panelFb + (size_t)y * 256U;
+  if (width > 256U) {
+    // Sample down 512 px hi-res pseudo/interlace scanlines cleanly to 256 px.
+    for (uint32_t x = 0; x < 256U; ++x) {
+      dst[x] = bmo_rgb565_to_panel565(pixels[x * 2U]);
+    }
+  } else {
+    for (uint32_t x = 0; x < width; ++x) {
+      dst[x] = bmo_rgb565_to_panel565(pixels[x]);
+    }
+    for (uint32_t x = width; x < 256U; ++x) {
+      dst[x] = 0;
     }
   }
+}
 } // namespace
 
 extern "C" {
 
 bool S9xInitDisplay(void) {
-  GFX.Pitch          = SNES_WIDTH * sizeof(uint16_t);
-  GFX.Pitch2         = GFX.Pitch;
-  GFX.RealPitch      = GFX.Pitch;
-  GFX.ZPitch         = SNES_WIDTH;
-  GFX.PPL            = SNES_WIDTH;
-  GFX.PPLx2          = SNES_WIDTH * 2U;
-  GFX.Screen         = nullptr;
-  GFX.SubScreen      = nullptr;
-  GFX.ZBuffer        = nullptr;
-  GFX.SubZBuffer     = nullptr;
+  GFX.Pitch = SNES_WIDTH * sizeof(uint16_t);
+  GFX.Pitch2 = GFX.Pitch;
+  GFX.RealPitch = GFX.Pitch;
+  GFX.ZPitch = SNES_WIDTH;
+  GFX.PPL = SNES_WIDTH;
+  GFX.PPLx2 = SNES_WIDTH * 2U;
+  GFX.Screen = nullptr;
+  GFX.SubScreen = nullptr;
+  GFX.ZBuffer = nullptr;
+  GFX.SubZBuffer = nullptr;
   GFX.LineRenderMode = true;
-  GFX.LinePPL        = SNES_WIDTH;
-  GFX.LinePitch      = SNES_WIDTH * sizeof(uint16_t);
+  GFX.LinePPL = SNES_WIDTH;
+  GFX.LinePitch = SNES_WIDTH * sizeof(uint16_t);
   return true;
 }
 
@@ -84,28 +84,33 @@ bool S9xIsSourceLineNeeded(uint32_t srcY) {
 uint32_t S9xReadJoypad(int32_t port) {
   if (port != 0) return 0;
   uint32_t pad = 0;
-  if (Buttons::get(Buttons::UP).pressed)     pad |= SNES_UP_MASK;
-  if (Buttons::get(Buttons::DOWN).pressed)   pad |= SNES_DOWN_MASK;
-  if (Buttons::get(Buttons::LEFT).pressed)   pad |= SNES_LEFT_MASK;
-  if (Buttons::get(Buttons::RIGHT).pressed)  pad |= SNES_RIGHT_MASK;
-  if (Buttons::get(Buttons::A).pressed)      pad |= SNES_A_MASK;
-  if (Buttons::get(Buttons::B).pressed)      pad |= SNES_B_MASK;
-  if (Buttons::get(Buttons::X).pressed)      pad |= SNES_X_MASK;
-  if (Buttons::get(Buttons::Y).pressed)      pad |= SNES_Y_MASK;
-  if (Buttons::get(Buttons::L).pressed)      pad |= SNES_TL_MASK;
-  if (Buttons::get(Buttons::R).pressed)      pad |= SNES_TR_MASK;
-  if (Buttons::get(Buttons::START).pressed)  pad |= SNES_START_MASK;
+  if (Buttons::get(Buttons::UP).pressed) pad |= SNES_UP_MASK;
+  if (Buttons::get(Buttons::DOWN).pressed) pad |= SNES_DOWN_MASK;
+  if (Buttons::get(Buttons::LEFT).pressed) pad |= SNES_LEFT_MASK;
+  if (Buttons::get(Buttons::RIGHT).pressed) pad |= SNES_RIGHT_MASK;
+  if (Buttons::get(Buttons::A).pressed) pad |= SNES_A_MASK;
+  if (Buttons::get(Buttons::B).pressed) pad |= SNES_B_MASK;
+  if (Buttons::get(Buttons::X).pressed) pad |= SNES_X_MASK;
+  if (Buttons::get(Buttons::Y).pressed) pad |= SNES_Y_MASK;
+  if (Buttons::get(Buttons::L).pressed) pad |= SNES_TL_MASK;
+  if (Buttons::get(Buttons::R).pressed) pad |= SNES_TR_MASK;
+  if (Buttons::get(Buttons::START).pressed) pad |= SNES_START_MASK;
   if (Buttons::get(Buttons::SELECT).pressed) pad |= SNES_SELECT_MASK;
   return pad;
 }
 
 bool S9xReadMousePosition(int32_t which1, int32_t* x, int32_t* y, uint32_t* buttons) {
-  (void)which1; (void)x; (void)y; (void)buttons;
+  (void)which1;
+  (void)x;
+  (void)y;
+  (void)buttons;
   return false;
 }
 
 bool S9xReadSuperScopePosition(int32_t* x, int32_t* y, uint32_t* buttons) {
-  (void)x; (void)y; (void)buttons;
+  (void)x;
+  (void)y;
+  (void)buttons;
   return false;
 }
 
@@ -167,25 +172,24 @@ bool SNESEmu::init(uint8_t* romData, size_t romSize) {
 
   memset(&Settings, 0, sizeof(Settings));
   Settings.CyclesPercentage = 100;
-  Settings.H_Max            = SNES_CYCLES_PER_SCANLINE;
-  Settings.FrameTimePAL     = 20000;
-  Settings.FrameTimeNTSC    = 16667;
+  Settings.H_Max = SNES_CYCLES_PER_SCANLINE;
+  Settings.FrameTimePAL = 20000;
+  Settings.FrameTimeNTSC = 16667;
   Settings.ControllerOption = SNES_JOYPAD;
-  Settings.HBlankStart      = (256 * Settings.H_Max) / SNES_HCOUNTER_MAX;
+  Settings.HBlankStart = (256 * Settings.H_Max) / SNES_HCOUNTER_MAX;
   Settings.SoundPlaybackRate = 0;
-  Settings.SoundBufferSize   = 0;
-  Settings.ThreadSound       = false;
-  Settings.Mute              = true;
-  Settings.APUEnabled        = false;
-  Settings.DisableSoundEcho  = false;
+  Settings.SoundBufferSize = 0;
+  Settings.ThreadSound = false;
+  Settings.Mute = true;
+  Settings.APUEnabled = false;
+  Settings.DisableSoundEcho = false;
 
-  Memory.ROM           = romData;
-  Memory.ROM_Offset    = 0;
+  Memory.ROM = romData;
+  Memory.ROM_Offset = 0;
   Memory.ROM_AllocSize = (uint32_t)romSize;
 
-  if (!S9xInitDisplay() || !S9xInitMemory() || !S9xInitGFX() ||
-      !S9xInitMap() || !S9xInitPpu() || !S9xInitLineBuffers() ||
-      !LoadROM(nullptr)) {
+  if (!S9xInitDisplay() || !S9xInitMemory() || !S9xInitGFX() || !S9xInitMap() || !S9xInitPpu() ||
+      !S9xInitLineBuffers() || !LoadROM(nullptr)) {
     destroy();
     return false;
   }
@@ -226,6 +230,10 @@ bool SNESEmu::isRunning() {
   return s_running;
 }
 
+bool SNESEmu::hasActiveBattery() {
+  return s_running && Memory.SRAM && s_sramSaveSize > 0;
+}
+
 bool SNESEmu::saveBatteryRam(const char* romFilename) {
   if (!s_running || !romFilename || !Memory.SRAM || s_sramSaveSize == 0) return false;
   return SaveManager::saveBatteryRam(romFilename, Memory.SRAM, s_sramSaveSize);
@@ -246,11 +254,8 @@ bool SNESEmu::saveState(const char* romFilename, int slot) {
   size_t outBytes = 0;
   bool ok = S9xBmoSerialize(buf, cap, &outBytes);
   if (ok) {
-    ok = SaveManager::saveState(
-      romFilename, slot, SaveManager::CORE_SNES,
-      buf, outBytes,
-      (s_sramSaveSize > 0 && Memory.SRAM) ? Memory.SRAM : nullptr, s_sramSaveSize
-    );
+    ok = SaveManager::saveState(romFilename, slot, SaveManager::CORE_SNES, buf, outBytes,
+                                (s_sramSaveSize > 0 && Memory.SRAM) ? Memory.SRAM : nullptr, s_sramSaveSize);
   }
   bmo_psram_free(buf);
   return ok;
@@ -264,11 +269,9 @@ bool SNESEmu::loadState(const char* romFilename, int slot) {
 
   size_t outState = 0;
   size_t outRam = 0;
-  bool ok = SaveManager::loadState(
-    romFilename, slot, SaveManager::CORE_SNES,
-    buf, cap, &outState,
-    (s_sramSaveSize > 0 && Memory.SRAM) ? Memory.SRAM : nullptr, s_sramSaveSize, &outRam
-  );
+  bool ok =
+      SaveManager::loadState(romFilename, slot, SaveManager::CORE_SNES, buf, cap, &outState,
+                             (s_sramSaveSize > 0 && Memory.SRAM) ? Memory.SRAM : nullptr, s_sramSaveSize, &outRam);
   if (ok) {
     ok = S9xBmoUnserialize(buf, outState);
   }
@@ -287,10 +290,29 @@ bool SNESEmu::init(uint8_t* romData, size_t romSize) {
 
 void SNESEmu::update() {}
 void SNESEmu::destroy() {}
-bool SNESEmu::isRunning() { return false; }
-bool SNESEmu::saveBatteryRam(const char* romFilename) { (void)romFilename; return false; }
-bool SNESEmu::loadBatteryRam(const char* romFilename) { (void)romFilename; return false; }
-bool SNESEmu::saveState(const char* romFilename, int slot) { (void)romFilename; (void)slot; return false; }
-bool SNESEmu::loadState(const char* romFilename, int slot) { (void)romFilename; (void)slot; return false; }
+bool SNESEmu::isRunning() {
+  return false;
+}
+bool SNESEmu::hasActiveBattery() {
+  return false;
+}
+bool SNESEmu::saveBatteryRam(const char* romFilename) {
+  (void)romFilename;
+  return false;
+}
+bool SNESEmu::loadBatteryRam(const char* romFilename) {
+  (void)romFilename;
+  return false;
+}
+bool SNESEmu::saveState(const char* romFilename, int slot) {
+  (void)romFilename;
+  (void)slot;
+  return false;
+}
+bool SNESEmu::loadState(const char* romFilename, int slot) {
+  (void)romFilename;
+  (void)slot;
+  return false;
+}
 
 #endif // BMO_EXPERIMENTAL_CORES

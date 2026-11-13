@@ -209,7 +209,7 @@ class TestGuardianEngine(unittest.TestCase):
             with redirect_stdout(psram_buf):
                 self.assertEqual(cmd_psram_budget(Args()), 0)
             payload = json.loads(psram_buf.getvalue())
-            self.assertEqual(payload["rom_file_sizeof"], 72)
+            self.assertEqual(payload["rom_file_sizeof"], 16)
             self.assertEqual(verify_color_tokens_main(), 0)
 
 
