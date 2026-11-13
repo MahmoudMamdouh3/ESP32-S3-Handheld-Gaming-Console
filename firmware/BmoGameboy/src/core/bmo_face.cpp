@@ -501,9 +501,9 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
           dTail = fabsf(nx - 0.03f) - halfW;
         }
         float dBubble = fminf(dBox, dTail);
-        float bubbleAlpha = smoothstepf(aaBand, 0.0f, -dBubble);
+        float bubbleAlpha = smoothstepf(aaBand, 0.0f, dBubble);
         if (bubbleAlpha > 0.005f) {
-          float borderAlpha = smoothstepf(aaBand, 0.0f, -(fabsf(dBubble) - 0.010f));
+          float borderAlpha = smoothstepf(aaBand, 0.0f, fabsf(dBubble) - 0.010f);
           if (borderAlpha > 0.35f) {
             cr = lerpf(cr, 16.0f / 255.0f, bubbleAlpha);
             cg = lerpf(cg, 30.0f / 255.0f, bubbleAlpha);
@@ -580,7 +580,7 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
         }
 
         // Composite Eye
-        float eyeAlpha = smoothstepf(aaBand, 0.0f, -dEye);
+        float eyeAlpha = smoothstepf(aaBand, 0.0f, dEye);
         if (eyeAlpha > 0.002f) {
           if (curStyle == EYE_CROSS_ERROR) {
             cr = lerpf(cr, 225.0f / 255.0f, eyeAlpha);
@@ -598,7 +598,7 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
 
           // Specular glint layer
           if (curStyle == EYE_CAPSULE) {
-            float glintAlpha = smoothstepf(aaBand, 0.0f, -dGlint);
+            float glintAlpha = smoothstepf(aaBand, 0.0f, dGlint);
             cr = lerpf(cr, 1.0f, glintAlpha);
             cg = lerpf(cg, 1.0f, glintAlpha);
             cb = lerpf(cb, 1.0f, glintAlpha);
@@ -615,13 +615,13 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
           float dCavity, dTongue, dBorder;
           evaluateMouthCavity(mDx, mDy, mouthW, mouthCrv, mouthOpen, dCavity, dTongue, dBorder);
 
-          float cavityAlpha = smoothstepf(aaBand, 0.0f, -dCavity);
+          float cavityAlpha = smoothstepf(aaBand, 0.0f, dCavity);
           if (cavityAlpha > 0.002f) {
             cr = lerpf(cr, 18.0f / 255.0f, cavityAlpha);
             cg = lerpf(cg, 28.0f / 255.0f, cavityAlpha);
             cb = lerpf(cb, 38.0f / 255.0f, cavityAlpha);
 
-            float tongueAlpha = smoothstepf(aaBand, 0.0f, -dTongue);
+            float tongueAlpha = smoothstepf(aaBand, 0.0f, dTongue);
             if (tongueAlpha > 0.002f) {
               cr = lerpf(cr, 250.0f / 255.0f, tongueAlpha);
               cg = lerpf(cg, 127.0f / 255.0f, tongueAlpha);
@@ -629,7 +629,7 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
             }
           }
 
-          float borderAlpha = smoothstepf(aaBand, 0.0f, -dBorder);
+          float borderAlpha = smoothstepf(aaBand, 0.0f, dBorder);
           if (borderAlpha > 0.002f) {
             cr = lerpf(cr, 16.0f / 255.0f, borderAlpha);
             cg = lerpf(cg, 30.0f / 255.0f, borderAlpha);
@@ -639,19 +639,19 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
         } else if (s_activeMouthStyle == MOUTH_ROUND_O) {
           float mRad = mouthW * 0.55f;
           float dCircle = sqrtf(mDx * mDx + mDy * mDy) - mRad;
-          float fillAlpha = smoothstepf(aaBand, 0.0f, -dCircle);
+          float fillAlpha = smoothstepf(aaBand, 0.0f, dCircle);
           cr = lerpf(cr, 18.0f / 255.0f, fillAlpha);
           cg = lerpf(cg, 28.0f / 255.0f, fillAlpha);
           cb = lerpf(cb, 38.0f / 255.0f, fillAlpha);
 
-          float strokeAlpha = smoothstepf(aaBand, 0.0f, -(fabsf(dCircle) - 0.024f));
+          float strokeAlpha = smoothstepf(aaBand, 0.0f, fabsf(dCircle) - 0.024f);
           cr = lerpf(cr, 16.0f / 255.0f, strokeAlpha);
           cg = lerpf(cg, 30.0f / 255.0f, strokeAlpha);
           cb = lerpf(cb, 43.0f / 255.0f, strokeAlpha);
 
         } else if (s_activeMouthStyle == MOUTH_ZIGZAG_ERROR) {
           float dZig = fabsf(mDy - sinf(mDx * 25.0f) * 0.035f) - 0.025f;
-          float zigAlpha = smoothstepf(aaBand, 0.0f, -dZig);
+          float zigAlpha = smoothstepf(aaBand, 0.0f, dZig);
           cr = lerpf(cr, 16.0f / 255.0f, zigAlpha);
           cg = lerpf(cg, 30.0f / 255.0f, zigAlpha);
           cb = lerpf(cb, 43.0f / 255.0f, zigAlpha);
@@ -659,7 +659,7 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
         } else {
           // Closed smiling or frowning stroke
           float dStroke = sdfMouthStroke(mDx, mDy, mouthW, mouthCrv, 0.025f);
-          float mouthAlpha = smoothstepf(aaBand, 0.0f, -dStroke);
+          float mouthAlpha = smoothstepf(aaBand, 0.0f, dStroke);
           if (mouthAlpha > 0.002f) {
             cr = lerpf(cr, 16.0f / 255.0f, mouthAlpha);
             cg = lerpf(cg, 30.0f / 255.0f, mouthAlpha);
@@ -708,7 +708,7 @@ static void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY
           dPart = sqrtf(dx * dx + dy * dy) - 0.7f;
         }
 
-        float pAlpha = smoothstepf(aaBand, 0.0f, -dPart) * alpha;
+        float pAlpha = smoothstepf(aaBand, 0.0f, dPart) * alpha;
         if (pAlpha > 0.01f) {
           uint16_t origSwapped = row[x];
           uint16_t origBgr = (uint16_t)((origSwapped >> 8) | (origSwapped << 8));

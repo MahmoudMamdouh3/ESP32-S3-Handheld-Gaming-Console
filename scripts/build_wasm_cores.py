@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import base64
 import os
 import shutil
 import subprocess
@@ -208,6 +209,11 @@ def build_wasm_module(output_path: Path | None = WASM_OUT_PATH) -> bytes:
             raise RuntimeError("WASI compiler produced an invalid WebAssembly module")
         if output_path is not None:
             output_path.write_bytes(wasm_bytes)
+            b64_payload = base64.b64encode(wasm_bytes).decode("ascii")
+            output_path.with_suffix(".b64.js").write_text(
+                f'window.BMO_PLAYTEST_WASM_B64 = "{b64_payload}";\n',
+                encoding="utf-8",
+            )
     return wasm_bytes
 
 

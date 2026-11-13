@@ -477,6 +477,24 @@ class TestGuardianEngine(unittest.TestCase):
             vendor.write_text("void probe() {\n  uint8_t scratch[4096];\n}\n", encoding="utf-8")
             self.assertEqual(FirmwareAstLinter(firmware).lint_file(vendor), [])
 
+    def test_25_markdown_link_audit_respects_nested_fences(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "bundle.md").write_text(
+                "`````markdown\n"
+                "```\n"
+                "[ignored inside nested fence](nonexistent.md)\n"
+                "```\n"
+                "still inside outer five-backtick fence [also ignored](gone.md)\n"
+                "`````\n"
+                "[real broken link](missing.md)\n",
+                encoding="utf-8",
+            )
+            issues = DocTruthVerifier(root).verify_markdown_links()
+            self.assertEqual(len(issues), 1)
+            self.assertEqual(issues[0].line_number, 7)
+            self.assertEqual(issues[0].category, "UNRESOLVED_LINK")
+
 
 if __name__ == "__main__":
     unittest.main()

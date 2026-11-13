@@ -67,6 +67,11 @@ def allow_host_core_request(client_address: str, now: float | None = None) -> bo
 class Handler(http.server.SimpleHTTPRequestHandler):
     server_version = "BmoSimulator/1"
     sys_version = ""
+    extensions_map = {
+        **http.server.SimpleHTTPRequestHandler.extensions_map,
+        ".wasm": "application/wasm",
+        ".js": "application/javascript; charset=utf-8",
+    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(DIRECTORY), **kwargs)

@@ -64,22 +64,43 @@ class WasmPlaytestEngine {
     this.offscreenCtx = this.offscreenCanvas ? this.offscreenCanvas.getContext("2d") : null;
   }
 
+  decodeEmbeddedWasm() {
+    const b64 = (typeof window !== "undefined" && typeof window.BMO_PLAYTEST_WASM_B64 === "string")
+      ? window.BMO_PLAYTEST_WASM_B64
+      : "";
+    if (!b64 || typeof atob !== "function") return null;
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+  }
+
   async init() {
     if (this.ready) return true;
-    let wasmBytes;
+    let wasmBytes = null;
     if (typeof window === "undefined" && typeof require === "function" && typeof __dirname !== "undefined") {
       const fs = require("fs");
       const path = require("path");
       wasmBytes = fs.readFileSync(path.join(__dirname, "bmo_playtest_cores.wasm"));
     } else {
-      if (typeof fetch !== "function" || window.location.protocol === "file:") {
+      if (typeof fetch === "function" && window.location.protocol !== "file:") {
+        try {
+          const response = await fetch("bmo_playtest_cores.wasm");
+          if (response.ok) {
+            wasmBytes = await response.arrayBuffer();
+          }
+        } catch (_) {
+          wasmBytes = null;
+        }
+      }
+      if (!wasmBytes) {
+        wasmBytes = this.decodeEmbeddedWasm();
+      }
+      if (!wasmBytes) {
         throw new Error("Open the simulator through run_simulator.py so the WebAssembly core can load.");
       }
-      const response = await fetch("bmo_playtest_cores.wasm");
-      if (!response.ok) {
-        throw new Error(`Could not load the WebAssembly emulator cores (HTTP ${response.status}).`);
-      }
-      wasmBytes = await response.arrayBuffer();
     }
     const wasi = {
       random_get: (pointer, length) => {
