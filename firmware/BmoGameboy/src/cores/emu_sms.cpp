@@ -17,7 +17,7 @@ namespace {
   bool s_running = false;
 }
 
-bool SmsEmu::begin(const uint8_t* romData, size_t romSize, bool isGameGear) {
+bool SmsEmu::init(const uint8_t* romData, size_t romSize, bool isGameGear) {
   destroy();
   if (!romData || romSize == 0) return false;
 
@@ -38,8 +38,9 @@ bool SmsEmu::begin(const uint8_t* romData, size_t romSize, bool isGameGear) {
   return true;
 }
 
-void SmsEmu::updateJoypad() {
-  if (!s_running) return;
+void SmsEmu::update() {
+  if (!s_running || !s_panelFb || !bmo_sms_is_running()) return;
+
   int pad = 0;
   if (Buttons::get(Buttons::UP).pressed)     pad |= BMO_SMS_INPUT_UP;
   if (Buttons::get(Buttons::DOWN).pressed)   pad |= BMO_SMS_INPUT_DOWN;
@@ -54,12 +55,6 @@ void SmsEmu::updateJoypad() {
   }
 
   bmo_sms_set_input(pad, sys);
-}
-
-void SmsEmu::runFrame() {
-  if (!s_running || !s_panelFb || !bmo_sms_is_running()) return;
-
-  updateJoypad();
   bmo_sms_run_frame(0);
   bmo_sms_render_panel565(s_panelFb);
   DisplayEmu::streamSMSFrame(s_panelFb, s_isGameGear);
@@ -122,7 +117,7 @@ bool SmsEmu::loadState(const char* romFilename, int slot) {
 }
 
 #else // BMO_EXPERIMENTAL_CORES == 0
-bool SmsEmu::begin(const uint8_t* romData, size_t romSize, bool isGameGear) {
+bool SmsEmu::init(const uint8_t* romData, size_t romSize, bool isGameGear) {
   (void)isGameGear;
   (void)romData;
   (void)romSize;
@@ -131,8 +126,7 @@ bool SmsEmu::begin(const uint8_t* romData, size_t romSize, bool isGameGear) {
   return false;
 }
 
-void SmsEmu::updateJoypad() {}
-void SmsEmu::runFrame() {}
+void SmsEmu::update() {}
 void SmsEmu::destroy() {}
 bool SmsEmu::saveBatteryRam(const char* romFilename) { (void)romFilename; return false; }
 bool SmsEmu::loadBatteryRam(const char* romFilename) { (void)romFilename; return false; }

@@ -17,6 +17,7 @@
 #include "emu_ngp.h"
 #include "emu_lynx.h"
 #include "emu_colem.h"
+#include "doom_wad_path.h"
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
@@ -48,11 +49,7 @@ inline bool hasExtension(const char* filename, const char* ext) {
 
 inline bool startWalnut(const RomFile* rom, uint8_t* romData, size_t romSize) {
   (void)rom;
-  return WalnutEmu::begin(romData, romSize);
-}
-inline void stepWalnut() {
-  WalnutEmu::updateJoypad();
-  WalnutEmu::runFrame();
+  return WalnutEmu::init(romData, romSize);
 }
 inline bool hasGbBattery(const uint8_t* romData, size_t romSize) {
   if (!romData || romSize <= 0x0149U) return false;
@@ -61,20 +58,12 @@ inline bool hasGbBattery(const uint8_t* romData, size_t romSize) {
 
 inline bool startPeanut(const RomFile* rom, uint8_t* romData, size_t romSize) {
   (void)rom;
-  return PeanutEmu::begin(romData, romSize);
-}
-inline void stepPeanut() {
-  PeanutEmu::updateJoypad();
-  PeanutEmu::runFrame();
+  return PeanutEmu::init(romData, romSize);
 }
 
 inline bool startNes(const RomFile* rom, uint8_t* romData, size_t romSize) {
   (void)rom;
-  return NesEmu::begin(romData, romSize);
-}
-inline void stepNes() {
-  NesEmu::updateJoypad();
-  NesEmu::runFrame();
+  return NesEmu::init(romData, romSize);
 }
 inline bool hasNesBattery(const uint8_t* romData, size_t romSize) {
   return romData && romSize >= 16U && BatterySave::nesHeaderHasBattery(romData[6]);
@@ -84,10 +73,9 @@ inline bool startDoom(const RomFile* rom, uint8_t* romData, size_t romSize) {
   (void)romData;
   (void)romSize;
   if (!rom) return false;
-  static char wadPath[72];
-  const int wadLen = snprintf(wadPath, sizeof(wadPath), "/sd/%s", rom->filename);
-  if (wadLen <= 4 || static_cast<size_t>(wadLen) >= sizeof(wadPath)) return false;
-  return DoomEmu::begin(wadPath);
+  static char wadPath[DoomWadPath::MAX_WAD_PATH_BYTES];
+  if (!DoomWadPath::build(rom->filename, wadPath, sizeof(wadPath))) return false;
+  return DoomEmu::init(wadPath);
 }
 
 inline bool noBattery(const uint8_t*, size_t) { return false; }
@@ -97,23 +85,23 @@ inline bool noStateOp(const char*, int) { return false; }
 
 inline bool startSms(const RomFile* rom, uint8_t* romData, size_t romSize) {
   (void)rom;
-  return SmsEmu::begin(romData, romSize, false);
+  return SmsEmu::init(romData, romSize, false);
 }
 inline bool startGg(const RomFile* rom, uint8_t* romData, size_t romSize) {
   (void)rom;
-  return SmsEmu::begin(romData, romSize, true);
+  return SmsEmu::init(romData, romSize, true);
 }
 inline bool startPce(const RomFile* rom, uint8_t* romData, size_t romSize) {
   (void)rom;
-  return PceEmu::begin(romData, romSize);
+  return PceEmu::init(romData, romSize);
 }
 inline bool startAtari(const RomFile* rom, uint8_t* romData, size_t romSize) {
   (void)rom;
-  return AtariEmu::begin(romData, romSize);
+  return AtariEmu::init(romData, romSize);
 }
 inline bool startPico(const RomFile* rom, uint8_t* romData, size_t romSize) {
   (void)rom;
-  return PicoEmu::begin(romData, romSize);
+  return PicoEmu::init(romData, romSize);
 }
 inline bool startGenesis(const RomFile* rom, uint8_t* romData, size_t romSize) {
   (void)rom;
@@ -147,15 +135,15 @@ inline bool startColem(const RomFile* rom, uint8_t* romData, size_t romSize) {
 }
 
 inline constexpr CoreDescriptor kCores[] = {
-  { 0, ROM_GBC,     true,  startWalnut,  stepWalnut,         WalnutEmu::destroy,  hasGbBattery,  WalnutEmu::loadBatteryRam,  WalnutEmu::saveBatteryRam,  WalnutEmu::saveState,  WalnutEmu::loadState },
-  { 1, ROM_GB,      true,  startPeanut,  stepPeanut,         PeanutEmu::destroy,  hasGbBattery,  PeanutEmu::loadBatteryRam,  PeanutEmu::saveBatteryRam,  PeanutEmu::saveState,  PeanutEmu::loadState },
-  { 2, ROM_NES,     false, startNes,     stepNes,            NesEmu::destroy,     hasNesBattery, NesEmu::loadBatteryRam,     NesEmu::saveBatteryRam,     NesEmu::saveState,     NesEmu::loadState },
-  { 3, ROM_WAD,     false, startDoom,    DoomEmu::runFrame,  DoomEmu::destroy,    noBattery,     noFileOp,                  noFileOp,                  noStateOp,             noStateOp },
-  { 4, ROM_SMS,     false, startSms,     SmsEmu::runFrame,   SmsEmu::destroy,     alwaysBattery, SmsEmu::loadBatteryRam,     SmsEmu::saveBatteryRam,     SmsEmu::saveState,     SmsEmu::loadState },
-  { 5, ROM_GG,      false, startGg,      SmsEmu::runFrame,   SmsEmu::destroy,     alwaysBattery, SmsEmu::loadBatteryRam,     SmsEmu::saveBatteryRam,     SmsEmu::saveState,     SmsEmu::loadState },
-  { 6, ROM_PCE,     false, startPce,     PceEmu::runFrame,   PceEmu::destroy,     alwaysBattery, PceEmu::loadBatteryRam,     PceEmu::saveBatteryRam,     PceEmu::saveState,     PceEmu::loadState },
-  { 7, ROM_ATARI,   false, startAtari,   AtariEmu::runFrame, AtariEmu::destroy,   noBattery,     AtariEmu::loadBatteryRam,   AtariEmu::saveBatteryRam,   AtariEmu::saveState,   AtariEmu::loadState },
-  { 8, ROM_PICO8,   false, startPico,    PicoEmu::runFrame,  PicoEmu::destroy,    noBattery,     PicoEmu::loadBatteryRam,    PicoEmu::saveBatteryRam,    PicoEmu::saveState,    PicoEmu::loadState },
+  { 0, ROM_GBC,     true,  startWalnut,  WalnutEmu::update,  WalnutEmu::destroy,  hasGbBattery,  WalnutEmu::loadBatteryRam,  WalnutEmu::saveBatteryRam,  WalnutEmu::saveState,  WalnutEmu::loadState },
+  { 1, ROM_GB,      true,  startPeanut,  PeanutEmu::update,  PeanutEmu::destroy,  hasGbBattery,  PeanutEmu::loadBatteryRam,  PeanutEmu::saveBatteryRam,  PeanutEmu::saveState,  PeanutEmu::loadState },
+  { 2, ROM_NES,     false, startNes,     NesEmu::update,     NesEmu::destroy,     hasNesBattery, NesEmu::loadBatteryRam,     NesEmu::saveBatteryRam,     NesEmu::saveState,     NesEmu::loadState },
+  { 3, ROM_WAD,     false, startDoom,    DoomEmu::update,    DoomEmu::destroy,    noBattery,     noFileOp,                  noFileOp,                  noStateOp,             noStateOp },
+  { 4, ROM_SMS,     false, startSms,     SmsEmu::update,     SmsEmu::destroy,     alwaysBattery, SmsEmu::loadBatteryRam,     SmsEmu::saveBatteryRam,     SmsEmu::saveState,     SmsEmu::loadState },
+  { 5, ROM_GG,      false, startGg,      SmsEmu::update,     SmsEmu::destroy,     alwaysBattery, SmsEmu::loadBatteryRam,     SmsEmu::saveBatteryRam,     SmsEmu::saveState,     SmsEmu::loadState },
+  { 6, ROM_PCE,     false, startPce,     PceEmu::update,     PceEmu::destroy,     alwaysBattery, PceEmu::loadBatteryRam,     PceEmu::saveBatteryRam,     PceEmu::saveState,     PceEmu::loadState },
+  { 7, ROM_ATARI,   false, startAtari,   AtariEmu::update,   AtariEmu::destroy,   noBattery,     AtariEmu::loadBatteryRam,   AtariEmu::saveBatteryRam,   AtariEmu::saveState,   AtariEmu::loadState },
+  { 8, ROM_PICO8,   false, startPico,    PicoEmu::update,    PicoEmu::destroy,    noBattery,     PicoEmu::loadBatteryRam,    PicoEmu::saveBatteryRam,    PicoEmu::saveState,    PicoEmu::loadState },
   { 9, ROM_GENESIS, false, startGenesis, GenesisEmu::update, GenesisEmu::destroy, alwaysBattery, GenesisEmu::loadBatteryRam, GenesisEmu::saveBatteryRam, GenesisEmu::saveState, GenesisEmu::loadState },
   {10, ROM_SNES,    false, startSnes,    SNESEmu::update,    SNESEmu::destroy,    hasSnesBattery,SNESEmu::loadBatteryRam,    SNESEmu::saveBatteryRam,    SNESEmu::saveState,    SNESEmu::loadState },
   {11, ROM_WSWAN,   false, startWSwan,   WSwanEmu::update,   WSwanEmu::destroy,   alwaysBattery, WSwanEmu::loadBatteryRam,   WSwanEmu::saveBatteryRam,   WSwanEmu::saveState,   WSwanEmu::loadState },
@@ -163,6 +151,20 @@ inline constexpr CoreDescriptor kCores[] = {
   {13, ROM_LYNX,    false, startLynx,    LynxEmu::update,    LynxEmu::destroy,    hasLynxBattery,LynxEmu::loadBatteryRam,    LynxEmu::saveBatteryRam,    LynxEmu::saveState,    LynxEmu::loadState },
   {14, ROM_COLEM,   false, startColem,   ColemEmu::update,   ColemEmu::destroy,   noBattery,     ColemEmu::loadBatteryRam,   ColemEmu::saveBatteryRam,   ColemEmu::saveState,   ColemEmu::loadState },
 };
+
+constexpr bool validateDescriptors() {
+  if (sizeof(kCores) / sizeof(kCores[0]) != 15) return false;
+  for (int i = 0; i < 15; ++i) {
+    const auto& d = kCores[i];
+    if (d.emulatorIndex != i) return false;
+    if (!d.start || !d.stepFrame || !d.destroy || !d.hasBatterySave ||
+        !d.loadBatteryRam || !d.saveBatteryRam || !d.saveState || !d.loadState) {
+      return false;
+    }
+  }
+  return true;
+}
+static_assert(validateDescriptors(), "kCores registry invariant broken");
 
 }  // namespace detail
 

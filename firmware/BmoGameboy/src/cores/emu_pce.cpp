@@ -101,7 +101,7 @@ extern "C" void osd_vsync(void) {
   DisplayEmu::streamPCEFrame(s_panelFb);
 }
 
-bool PceEmu::begin(const uint8_t* romData, size_t romSize) {
+bool PceEmu::init(const uint8_t* romData, size_t romSize) {
   destroy();
   if (!romData || romSize < 0x2000U) return false;
 
@@ -140,13 +140,9 @@ bool PceEmu::begin(const uint8_t* romData, size_t romSize) {
   return true;
 }
 
-void PceEmu::updateJoypad() {
+void PceEmu::update() {
   if (!s_running) return;
   osd_input_read(PCE.Joypad.regs);
-}
-
-void PceEmu::runFrame() {
-  if (!s_running) return;
   StepPCE();
 }
 
@@ -213,7 +209,7 @@ bool PceEmu::loadState(const char* romFilename, int slot) {
 }
 
 #else // BMO_EXPERIMENTAL_CORES == 0
-bool PceEmu::begin(const uint8_t* romData, size_t romSize) {
+bool PceEmu::init(const uint8_t* romData, size_t romSize) {
   (void)romData;
   (void)romSize;
   LOG_WARN_STR("[pce] Experimental core disabled (-DBMO_EXPERIMENTAL_CORES=1 to enable)");
@@ -221,8 +217,7 @@ bool PceEmu::begin(const uint8_t* romData, size_t romSize) {
   return false;
 }
 
-void PceEmu::updateJoypad() {}
-void PceEmu::runFrame() {}
+void PceEmu::update() {}
 void PceEmu::destroy() {}
 bool PceEmu::saveBatteryRam(const char* romFilename) { (void)romFilename; return false; }
 bool PceEmu::loadBatteryRam(const char* romFilename) { (void)romFilename; return false; }

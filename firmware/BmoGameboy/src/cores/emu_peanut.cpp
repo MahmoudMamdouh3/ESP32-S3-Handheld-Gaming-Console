@@ -131,7 +131,7 @@ namespace {
   }
 }
 
-bool PeanutEmu::begin(const uint8_t* rom_data, size_t rom_len) {
+bool PeanutEmu::init(const uint8_t* rom_data, size_t rom_len) {
   destroy();
   current_rom_data = rom_data;
   current_rom_len = rom_len;
@@ -181,14 +181,10 @@ bool PeanutEmu::begin(const uint8_t* rom_data, size_t rom_len) {
   return true;
 }
 
-void PeanutEmu::updateJoypad() {
+void PeanutEmu::update() {
   if (!gb) return;
   // NB2: Single branchless bitmask direct copy - zero function call overhead.
   gb->direct.joypad = Buttons::gb_joypad_state;
-}
-
-void PeanutEmu::runFrame() {
-  if (!gb) return;
   static int lastPaletteIdx = -1;
   int curPaletteIdx = DisplayEmu::getDmgPaletteIndex();
   if (curPaletteIdx != lastPaletteIdx) {
@@ -200,7 +196,7 @@ void PeanutEmu::runFrame() {
   }
 
   // startFrame holds SPI bus open and sets address window once for the
-  // entire 240×216 frame (N1 + N3).
+  // entire 240x216 frame (N1 + N3).
   DisplayEmu::startFrame();
   gb_run_frame(gb);
   DisplayEmu::endFrame();

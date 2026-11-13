@@ -234,7 +234,7 @@ void Host::setPlatformParams(int windowWidth, int windowHeight, uint32_t sdlWind
   _cartDirectory = cartDirectoryStr;
 }
 
-bool PicoEmu::begin(const uint8_t* romData, size_t romSize) {
+bool PicoEmu::init(const uint8_t* romData, size_t romSize) {
   if (!romData || romSize == 0) return false;
   destroy();
 
@@ -281,8 +281,8 @@ bool PicoEmu::begin(const uint8_t* romData, size_t romSize) {
   return true;
 }
 
-void PicoEmu::updateJoypad() {
-  if (!s_running) return;
+void PicoEmu::update() {
+  if (!s_running || !s_vm) return;
   uint8_t held = 0;
   if (Buttons::get(Buttons::LEFT).pressed) held |= P8_KEY_LEFT;
   if (Buttons::get(Buttons::RIGHT).pressed) held |= P8_KEY_RIGHT;
@@ -295,10 +295,7 @@ void PicoEmu::updateJoypad() {
   s_currDown = held & (uint8_t)(~s_prevHeld);
   s_currHeld = held;
   s_prevHeld = held;
-}
 
-void PicoEmu::runFrame() {
-  if (!s_running || !s_vm) return;
   s_vm->Step();
   renderPicoToPanel();
 }
@@ -506,14 +503,13 @@ void Host::setSetting(std::string sname, int sdata) { (void)sname; (void)sdata; 
 Color* Host::GetPaletteColors() { return _paletteColors; }
 void Host::setPlatformParams(int, int, uint32_t, uint32_t, uint32_t, std::string, std::string, std::string) {}
 
-bool PicoEmu::begin(const uint8_t* romData, size_t romSize) {
+bool PicoEmu::init(const uint8_t* romData, size_t romSize) {
   (void)romData;
   (void)romSize;
   return false;
 }
 
-void PicoEmu::updateJoypad() {}
-void PicoEmu::runFrame() {}
+void PicoEmu::update() {}
 void PicoEmu::destroy() {}
 
 bool PicoEmu::saveBatteryRam(const char* romFilename) {

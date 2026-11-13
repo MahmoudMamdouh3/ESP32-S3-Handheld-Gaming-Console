@@ -32,7 +32,8 @@ static uint8_t      s_keyState[256];
 
 static size_t  s_targetZoneBytes = DoomEmu::DOOM_ZONE_FLOOR_BYTES;
 static jmp_buf s_doomBailoutJmp;
-static bool    s_doomJmpActive = false;
+// volatile preserves state across setjmp/longjmp; keep init/update free of non-trivial destructors across s_doomJmpEnv.
+static volatile bool s_doomJmpActive = false;
 static bool    s_doomInitialized = false;
 static char    s_lastError[96] = "";
 
@@ -160,7 +161,7 @@ const char* lastError() {
   return s_lastError;
 }
 
-bool begin(const char* wadPath) {
+bool init(const char* wadPath) {
   if (s_doomInitialized) {
     destroy();
   }
@@ -256,7 +257,7 @@ bool begin(const char* wadPath) {
   return true;
 }
 
-void runFrame() {
+void update() {
   if (!s_doomInitialized) return;
   // Update button state (handled globally in BmoGameboy.ino loop)
 
@@ -326,14 +327,14 @@ const char* lastError() {
   return kDoomDisabledMsg;
 }
 
-bool begin(const char* wadPath) {
+bool init(const char* wadPath) {
   (void)wadPath;
   LOG_WARN_STR("[DOOM] Engine disabled at compile time (set BMO_ENABLE_DOOM=1 to enable)");
   DisplayEmu::showToast("DOOM CORE OFF", Theme::ACCENT_RED, 2200);
   return false;
 }
 
-void runFrame() {}
+void update() {}
 
 void destroy() {}
 

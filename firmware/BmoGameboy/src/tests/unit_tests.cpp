@@ -62,10 +62,10 @@ void testEmulatorRejection() {
   
   uint8_t bad_rom[100] = {0};
   
-  bool peanut_result = PeanutEmu::begin(bad_rom, sizeof(bad_rom));
+  bool peanut_result = PeanutEmu::init(bad_rom, sizeof(bad_rom));
   ASSERT_EQ(peanut_result, false, "PeanutEmu should reject corrupt ROM");
-  
-  bool walnut_result = WalnutEmu::begin(bad_rom, sizeof(bad_rom));
+
+  bool walnut_result = WalnutEmu::init(bad_rom, sizeof(bad_rom));
   ASSERT_EQ(walnut_result, false, "WalnutEmu should reject corrupt ROM");
 }
 

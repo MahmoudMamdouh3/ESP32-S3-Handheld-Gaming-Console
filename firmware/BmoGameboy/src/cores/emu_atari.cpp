@@ -102,7 +102,7 @@ void renderTiaToPanel() {
 }
 }  // namespace
 
-bool AtariEmu::begin(const uint8_t* romData, size_t romSize) {
+bool AtariEmu::init(const uint8_t* romData, size_t romSize) {
   if (!romData || romSize == 0 || romSize > 512UL * 1024UL) {
     return false;
   }
@@ -174,8 +174,8 @@ bool AtariEmu::begin(const uint8_t* romData, size_t romSize) {
   return true;
 }
 
-void AtariEmu::updateJoypad() {
-  if (!s_running || !s_osystem) return;
+void AtariEmu::update() {
+  if (!s_running || !s_osystem || !s_console) return;
   Event& ev = s_osystem->eventHandler().event();
 
   const bool up = Buttons::get(Buttons::UP).pressed;
@@ -193,10 +193,7 @@ void AtariEmu::updateJoypad() {
   ev.set(Event::JoystickZeroFire, fire ? 1 : 0);
   ev.set(Event::ConsoleSelect, selectBtn ? 1 : 0);
   ev.set(Event::ConsoleReset, resetBtn ? 1 : 0);
-}
 
-void AtariEmu::runFrame() {
-  if (!s_running || !s_console) return;
   s_console->tia().update();
   renderTiaToPanel();
 }
@@ -272,14 +269,13 @@ bool AtariEmu::loadState(const char* romFilename, int slot) {
 
 #else  // BMO_EXPERIMENTAL_CORES == 0
 
-bool AtariEmu::begin(const uint8_t* romData, size_t romSize) {
+bool AtariEmu::init(const uint8_t* romData, size_t romSize) {
   (void)romData;
   (void)romSize;
   return false;
 }
 
-void AtariEmu::updateJoypad() {}
-void AtariEmu::runFrame() {}
+void AtariEmu::update() {}
 void AtariEmu::destroy() {}
 
 bool AtariEmu::saveBatteryRam(const char* romFilename) {

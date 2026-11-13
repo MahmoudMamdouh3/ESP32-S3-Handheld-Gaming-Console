@@ -24,7 +24,7 @@ static uint8_t* getNesStateBuf() {
   return s_nesStateBuf;
 }
 
-bool NesEmu::begin(const uint8_t* romData, size_t romSize) {
+bool NesEmu::init(const uint8_t* romData, size_t romSize) {
   s_nesHasBatteryRam = false;
   if (agnes_ctx) {
     agnes_destroy(agnes_ctx);
@@ -44,11 +44,11 @@ bool NesEmu::begin(const uint8_t* romData, size_t romSize) {
   return true;
 }
 
-void NesEmu::updateJoypad() {
+void NesEmu::update() {
   if (!agnes_ctx) return;
-  
+
   agnes_input_t input = {0};
-  
+
   // Map Gameboy buttons to NES buttons
   input.a = Buttons::get(Buttons::A).pressed;
   input.b = Buttons::get(Buttons::B).pressed;
@@ -58,17 +58,13 @@ void NesEmu::updateJoypad() {
   input.down = Buttons::get(Buttons::DOWN).pressed;
   input.left = Buttons::get(Buttons::LEFT).pressed;
   input.right = Buttons::get(Buttons::RIGHT).pressed;
-  
+
   // Set controller 1, controller 2 is null
   agnes_set_input(agnes_ctx, &input, nullptr);
-}
 
-void NesEmu::runFrame() {
-  if (!agnes_ctx) return;
-  
   // Render one frame
   agnes_next_frame(agnes_ctx);
-  
+
   // Stream to display
   const uint8_t* frame_buffer = agnes_get_screen_buffer(agnes_ctx);
   DisplayEmu::streamNESFrame(frame_buffer);

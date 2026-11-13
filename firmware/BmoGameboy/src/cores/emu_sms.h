@@ -5,9 +5,8 @@
 
 class SmsEmu {
 public:
-  static bool begin(const uint8_t* romData, size_t romSize, bool isGameGear = false);
-  static void updateJoypad();
-  static void runFrame();
+  static bool init(const uint8_t* romData, size_t romSize, bool isGameGear = false);
+  static void update();
   static void destroy();
 
   // Non-Volatile Battery RAM & Save State APIs

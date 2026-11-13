@@ -202,7 +202,7 @@ namespace {
   }
 }
 
-bool WalnutEmu::begin(const uint8_t* rom_data, size_t rom_len) {
+bool WalnutEmu::init(const uint8_t* rom_data, size_t rom_len) {
   destroy();
   current_rom_data = rom_data;
   current_rom_len = rom_len;
@@ -250,16 +250,12 @@ bool WalnutEmu::begin(const uint8_t* rom_data, size_t rom_len) {
   return true;
 }
 
-void WalnutEmu::updateJoypad() {
+void WalnutEmu::update() {
   if (!gb) return;
   // NB2: Single branchless bitmask direct copy - zero function call overhead.
   gb->direct.joypad = Buttons::gb_joypad_state;
-}
-
-void WalnutEmu::runFrame() {
-  if (!gb) return;
   // startFrame holds the SPI bus open and sets the address window once for
-  // the entire 240×216 frame (N1 + N3).
+  // the entire 240x216 frame (N1 + N3).
   DisplayEmu::startFrame();
   gb_run_frame_dualfetch(gb);
   DisplayEmu::endFrame();
