@@ -1,2 +1,2 @@
 trimesh==4.6.8
-manifold3d==3.0.1
+manifold3d==3.5.4
