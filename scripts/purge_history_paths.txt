@@ -1,0 +1,55 @@
+# Phase 1B history-purge path exclusion list for git-filter-repo
+# Usage: git filter-repo --invert-paths --paths-from-file scripts/purge_history_paths.txt
+# Every entry below was verified absent from current HEAD (audit/tech-lead).
+
+# 1. Commercial ROM archives and legacy baked ROM headers (26.68 MiB raw / 6.08 MiB pack)
+Gameboy games/
+Gameboyt color games/
+firmware/BmoGameboy/src/assets/roms/
+firmware/03_emulator/aladdin.h
+firmware/03_emulator/lego_racers.h
+firmware/03_emulator/mario_deluxe.h
+firmware/03_emulator/zelda_ages.h
+firmware/03_emulator/rom_data_test.h
+
+# 2. Binary toolchains, compiled native artifacts, and checked-in WASM (132.28 MiB raw / 106.78 MiB pack)
+zig.zip
+arduino-cli.zip
+arduino-cli.exe
+arduino-cli-bin/
+host_test.exe
+host_test.pdb
+unit_tests.o
+emu_peanut.o
+emu_walnut.o
+tools/bmo_simulator/bmo_playtest_cores.wasm
+
+# 3. Deleted oversized media/archives in resources/ and docs/assets/ (26.60 MiB raw / 25.89 MiB pack)
+# Active tracked assets (resources/aseprite/*.aseprite and docs/assets/sim_console_*.png, sim_living_companion.png) are preserved.
+resources/Gemini_Generated_Image_w5u0ulw5u0ulw5u0.png
+resources/Virtual BMO GBS Source Code.zip
+resources/imagine_how_that_would_look_li.mp4
+resources/Scallion (2-pack) by Cyberbellum.zip
+docs/assets/console_demo.gif
+docs/assets/hardware_and_states.png
+docs/assets/hardware_bmo_face.png
+docs/assets/hardware_charging.png
+docs/assets/hardware_gameplay.png
+docs/assets/bmo_carousel_menu.jpg
+docs/assets/bmo_game_library.jpg
+docs/assets/bmo_hardware_showcase.jpg
+docs/assets/bmo_living_companion.jpg
+docs/assets/native_emu_gameplay_grid.png
+docs/assets/sim_full_workstation.png
+docs/assets/sim_top_picks_library.png
+
+# 4. Removed AI-governance rules, knowledge-graph churn, and generated dumps (257.76 MiB raw / 21.82 MiB pack)
+AGENT_KNOWLEDGE_GRAPH.json
+AGENT_MANIFEST.json
+AGENT_DECISION_TREE.json
+visualizations/
+.agents/
+docs/consolidated-rules/
+docs/consolidated-rules.md
+docs/archive/
+docs/generated/
