@@ -1,18 +1,5 @@
 #include "src/hal/config.h"
-#include "src/cores/emu_peanut.h"
-#include "src/cores/emu_walnut.h"
-#include "src/cores/emu_nes.h"
-#include "src/cores/emu_doom.h"
-#include "src/cores/emu_sms.h"
-#include "src/cores/emu_pce.h"
-#include "src/cores/emu_atari.h"
-#include "src/cores/emu_pico.h"
-#include "src/cores/emu_genesis.h"
-#include "src/cores/emu_snes.h"
-#include "src/cores/emu_wswan.h"
-#include "src/cores/emu_ngp.h"
-#include "src/cores/emu_lynx.h"
-#include "src/cores/emu_colem.h"
+#include "src/cores/core_registry.h"
 #include "src/tests/unit_tests.h"
 #include "src/hal/buttons.h"
 #include "src/storage/sd_card.h"
@@ -29,6 +16,7 @@
 #include "src/ui/frame_pacing.h"
 #include "src/ui/frame_percentiles.h"
 #include <SPI.h>
+#include <Preferences.h>
 #include <stdlib.h>
 #include <rom/ets_sys.h>      // N7: ets_delay_us for tight hardware-timer spin
 #include <esp_heap_caps.h>    // BM2: IRAM usage reporting
@@ -107,134 +95,35 @@ static bool s_pauseHasBatt = false;
 
 static bool currentGameHasBatterySaveSupport() {
   if (!currentRomBuffer) return false;
-  if (selectedEmulatorIndex == 0 || selectedEmulatorIndex == 1) {
-    if (currentRomBufferSize <= 0x0149) return false;
-    return BatterySave::gameBoyBatteryBytes(currentRomBuffer[0x0147], currentRomBuffer[0x0149]) > 0;
-  }
-  if (selectedEmulatorIndex == 2) {
-    return currentRomBufferSize >= 16 && BatterySave::nesHeaderHasBattery(currentRomBuffer[6]);
-  }
-  if (selectedEmulatorIndex == 6) return true; // PCE BRAM is modeled as backup RAM.
-  if (selectedEmulatorIndex == 10) {
-    const size_t offset = ((currentRomBufferSize & 0x7FFFU) == 512U) ? 512U : 0U;
-    const size_t codeOffset = offset + 0x7FD8U;
-    return codeOffset < currentRomBufferSize &&
-           BatterySave::snesLoRomBatteryBytes(currentRomBuffer[codeOffset]) > 0;
-  }
-  return false;
+  const CoreRegistry::CoreDescriptor* core = CoreRegistry::findByIndex(selectedEmulatorIndex);
+  if (!core || !core->hasBatterySave) return false;
+  return core->hasBatterySave(currentRomBuffer, currentRomBufferSize);
 }
 
 static bool autoSaveCurrentBatteryRam() {
   if (currentRomFilename[0] == '\0' || !currentGameHasBatterySaveSupport()) return false;
-  if (selectedEmulatorIndex == 0) {
-    return WalnutEmu::saveBatteryRam(currentRomFilename);
-  } else if (selectedEmulatorIndex == 1) {
-    return PeanutEmu::saveBatteryRam(currentRomFilename);
-  } else if (selectedEmulatorIndex == 2) {
-    return NesEmu::saveBatteryRam(currentRomFilename);
-  } else if (selectedEmulatorIndex == 6) {
-    return PceEmu::saveBatteryRam(currentRomFilename);
-  } else if (selectedEmulatorIndex == 10) {
-    return SNESEmu::saveBatteryRam(currentRomFilename);
-  }
-  return false;
+  const CoreRegistry::CoreDescriptor* core = CoreRegistry::findByIndex(selectedEmulatorIndex);
+  return core && core->saveBatteryRam ? core->saveBatteryRam(currentRomFilename) : false;
 }
 
 static bool quickSaveState(int slot) {
   if (currentRomFilename[0] == '\0') return false;
-  if (selectedEmulatorIndex == 0) {
-    return WalnutEmu::saveState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 1) {
-    return PeanutEmu::saveState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 2) {
-    return NesEmu::saveState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 4 || selectedEmulatorIndex == 5) {
-    return SmsEmu::saveState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 6) {
-    return PceEmu::saveState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 7) {
-    return AtariEmu::saveState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 8) {
-    return PicoEmu::saveState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 9) {
-    return GenesisEmu::saveState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 10) {
-    return SNESEmu::saveState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 11) {
-    return WSwanEmu::saveState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 12) {
-    return NGPEmu::saveState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 13) {
-    return LynxEmu::saveState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 14) {
-    return ColemEmu::saveState(currentRomFilename, slot);
-  }
-  return false;
+  const CoreRegistry::CoreDescriptor* core = CoreRegistry::findByIndex(selectedEmulatorIndex);
+  return core && core->saveState ? core->saveState(currentRomFilename, slot) : false;
 }
 
 static bool quickLoadState(int slot) {
   if (currentRomFilename[0] == '\0') return false;
-  if (selectedEmulatorIndex == 0) {
-    return WalnutEmu::loadState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 1) {
-    return PeanutEmu::loadState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 2) {
-    return NesEmu::loadState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 4 || selectedEmulatorIndex == 5) {
-    return SmsEmu::loadState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 6) {
-    return PceEmu::loadState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 7) {
-    return AtariEmu::loadState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 8) {
-    return PicoEmu::loadState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 9) {
-    return GenesisEmu::loadState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 10) {
-    return SNESEmu::loadState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 11) {
-    return WSwanEmu::loadState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 12) {
-    return NGPEmu::loadState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 13) {
-    return LynxEmu::loadState(currentRomFilename, slot);
-  } else if (selectedEmulatorIndex == 14) {
-    return ColemEmu::loadState(currentRomFilename, slot);
-  }
-  return false;
+  const CoreRegistry::CoreDescriptor* core = CoreRegistry::findByIndex(selectedEmulatorIndex);
+  return core && core->loadState ? core->loadState(currentRomFilename, slot) : false;
 }
 
 
 static void destroyActiveEmulator() {
   DisplayEmu::waitForDisplay();
-  if (selectedEmulatorIndex == 0) {
-    WalnutEmu::destroy();
-  } else if (selectedEmulatorIndex == 1) {
-    PeanutEmu::destroy();
-  } else if (selectedEmulatorIndex == 2) {
-    NesEmu::destroy();
-  } else if (selectedEmulatorIndex == 3) {
-    DoomEmu::destroy();
-  } else if (selectedEmulatorIndex == 4 || selectedEmulatorIndex == 5) {
-    SmsEmu::destroy();
-  } else if (selectedEmulatorIndex == 6) {
-    PceEmu::destroy();
-  } else if (selectedEmulatorIndex == 7) {
-    AtariEmu::destroy();
-  } else if (selectedEmulatorIndex == 8) {
-    PicoEmu::destroy();
-  } else if (selectedEmulatorIndex == 9) {
-    GenesisEmu::destroy();
-  } else if (selectedEmulatorIndex == 10) {
-    SNESEmu::destroy();
-  } else if (selectedEmulatorIndex == 11) {
-    WSwanEmu::destroy();
-  } else if (selectedEmulatorIndex == 12) {
-    NGPEmu::destroy();
-  } else if (selectedEmulatorIndex == 13) {
-    LynxEmu::destroy();
-  } else if (selectedEmulatorIndex == 14) {
-    ColemEmu::destroy();
+  const CoreRegistry::CoreDescriptor* core = CoreRegistry::findByIndex(selectedEmulatorIndex);
+  if (core && core->destroy) {
+    core->destroy();
   }
   
   if (currentRomBuffer) {
@@ -370,6 +259,32 @@ int frames = 0;
 int droppedFrames = 0;
 int totalDroppedFramesThisSecond = 0;
 
+namespace {
+constexpr const char* kDisplayPrefsNamespace = "bmo_disp";
+constexpr const char* kDisplaySpiHzKey = "spi_hz";
+
+uint32_t loadSavedDisplaySpiClock() {
+  Preferences prefs;
+  if (!prefs.begin(kDisplayPrefsNamespace, true)) {
+    return TFT_SPI_HZ;
+  }
+  const uint32_t savedHz = prefs.getUInt(kDisplaySpiHzKey, TFT_SPI_HZ);
+  prefs.end();
+  return (savedHz == TFT_SPI_FALLBACK_HZ) ? TFT_SPI_FALLBACK_HZ : TFT_SPI_HZ;
+}
+
+void persistDisplaySpiClock(uint32_t spiClockHz) {
+  const uint32_t sanitizedHz =
+      (spiClockHz == TFT_SPI_FALLBACK_HZ) ? TFT_SPI_FALLBACK_HZ : TFT_SPI_HZ;
+  Preferences prefs;
+  if (!prefs.begin(kDisplayPrefsNamespace, false)) {
+    return;
+  }
+  prefs.putUInt(kDisplaySpiHzKey, sanitizedHz);
+  prefs.end();
+}
+}  // namespace
+
 void setup() {
   Serial.begin(115200);
   // USB CDC writes can wait under host backpressure; logging is best-effort so
@@ -401,7 +316,19 @@ void setup() {
   #endif
 
   Buttons::begin();
-  DisplayEmu::begin();
+  Buttons::update();
+  const bool safeBootRequested =
+      Buttons::get(Buttons::SELECT).pressed || Buttons::get(Buttons::B).pressed;
+  uint32_t initialSpiHz = safeBootRequested ? TFT_SPI_FALLBACK_HZ : loadSavedDisplaySpiClock();
+  if (safeBootRequested) {
+    persistDisplaySpiClock(TFT_SPI_FALLBACK_HZ);
+    LOG_WARN("[SAFE_MODE] SELECT/B held at boot; forced display SPI clock to %lu MHz",
+             (unsigned long)(TFT_SPI_FALLBACK_HZ / 1000000UL));
+  }
+  DisplayEmu::begin(initialSpiHz);
+  if (safeBootRequested) {
+    DisplayEmu::showToast("SAFE MODE: 40 MHz SPI", Theme::BMO_DPAD_YELLOW, 3500);
+  }
   Battery::begin();
   BmoFace::begin();
   BmoFace::setExpression(BmoFace::IDLE);
@@ -584,12 +511,12 @@ void loop() {
 
   } else if (currentState == STATE_DIAGNOSTICS) {
     static bool spiStressPattern = false;
-    static bool spiStressFallback = false;
     static uint32_t spiStressFrame = 0;
     static unsigned long lastStackLogMs = 0;
     const unsigned long diagFrameStart = millis();
     DisplayEmu::initMenuUI();
     Buttons::update();
+    bool spiStressFallback = (DisplayEmu::getDiagnosticSpiClock() == TFT_SPI_FALLBACK_HZ);
 
     uint16_t btnMask = 0;
     if (Buttons::get(Buttons::UP).pressed)     btnMask |= (1 << 0);
@@ -611,22 +538,18 @@ void loop() {
     const auto& btnRight = Buttons::get(Buttons::RIGHT);
     const auto& btnSelect = Buttons::get(Buttons::SELECT);
     if (canPress() && btnB.pressed && btnB.changed) {
-      if (spiStressFallback) DisplayEmu::setDiagnosticSpiClock(TFT_SPI_HZ);
       spiStressPattern = false;
-      spiStressFallback = false;
       currentState = STATE_CONSOLE_MENU;
       lastButtonMs = millis();
     } else if (canPress() && btnA.pressed && btnA.changed) {
       spiStressPattern = !spiStressPattern;
-      if (!spiStressPattern && spiStressFallback) {
-        DisplayEmu::setDiagnosticSpiClock(TFT_SPI_HZ);
-        spiStressFallback = false;
-      }
       lastButtonMs = millis();
     } else if (canPress() && spiStressPattern &&
                ((btnLeft.pressed && btnLeft.changed) || (btnRight.pressed && btnRight.changed))) {
       spiStressFallback = !spiStressFallback;
-      DisplayEmu::setDiagnosticSpiClock(spiStressFallback ? TFT_SPI_FALLBACK_HZ : TFT_SPI_HZ);
+      const uint32_t nextSpiHz = spiStressFallback ? TFT_SPI_FALLBACK_HZ : TFT_SPI_HZ;
+      DisplayEmu::setDiagnosticSpiClock(nextSpiHz);
+      persistDisplaySpiClock(nextSpiHz);
       lastButtonMs = millis();
     } else if (canPress() && !spiStressPattern && btnSelect.pressed && btnSelect.changed) {
       if (!SDCard::isMounted()) {
@@ -957,8 +880,8 @@ void loop() {
         DisplayEmu::clearScreen();
 
         if (selectedRom->type == ROM_WAD && !BMO_ENABLE_DOOM) {
-          LOG_WARN_STR("DOOM disabled in MIT default build (-DBMO_ENABLE_DOOM=1 to enable)");
-          DisplayEmu::showToast("DOOM DISABLED (MIT BUILD)", Theme::ACCENT_RED, 2000);
+          LOG_WARN_STR("DOOM disabled at compile time (-DBMO_ENABLE_DOOM=1 to enable)");
+          DisplayEmu::showToast("DOOM CORE OFF", Theme::ACCENT_RED, 2000);
           delay(1200);
           if (selectedRom->hasBoxArt) BoxArt::load(selectedRom->filename);
           currentState = STATE_GAME_MENU;
@@ -995,58 +918,10 @@ void loop() {
         }
 
         bool success = false;
-        
-        // Boot appropriate emulator core based on file extension
-        if (selectedRom->type == ROM_WAD) {
-          // DOOM handles its own PSRAM loading via standard C file I/O
-          static char wadPath[72]; // "/sd/" (4) + max 63-char path + NUL
-          const int wadLen = snprintf(wadPath, sizeof(wadPath), "/sd/%s", selectedRom->filename);
-          if (wadLen > 4 && static_cast<size_t>(wadLen) < sizeof(wadPath)) {
-            success = DoomEmu::begin(wadPath);
-            selectedEmulatorIndex = 3;
-          }
-        } else if (selectedRom->type == ROM_NES) {
-          success = NesEmu::begin(romData, romSize);
-          selectedEmulatorIndex = 2; 
-        } else if (selectedRom->type == ROM_GBC) {
-          success = WalnutEmu::begin(romData, romSize);
-          selectedEmulatorIndex = 0;
-        } else if (selectedRom->type == ROM_GB) {
-          success = PeanutEmu::begin(romData, romSize);
-          selectedEmulatorIndex = 1;
-        } else if (selectedRom->type == ROM_SMS) {
-          success = SmsEmu::begin(romData, romSize, false);
-          selectedEmulatorIndex = 4;
-        } else if (selectedRom->type == ROM_GG) {
-          success = SmsEmu::begin(romData, romSize, true);
-          selectedEmulatorIndex = 5;
-        } else if (selectedRom->type == ROM_PCE) {
-          success = PceEmu::begin(romData, romSize);
-          selectedEmulatorIndex = 6;
-        } else if (selectedRom->type == ROM_ATARI) {
-          success = AtariEmu::begin(romData, romSize);
-          selectedEmulatorIndex = 7;
-        } else if (selectedRom->type == ROM_PICO8) {
-          success = PicoEmu::begin(romData, romSize);
-          selectedEmulatorIndex = 8;
-        } else if (selectedRom->type == ROM_GENESIS) {
-          success = GenesisEmu::init(romData, romSize);
-          selectedEmulatorIndex = 9;
-        } else if (selectedRom->type == ROM_SNES) {
-          success = SNESEmu::init(romData, romSize);
-          selectedEmulatorIndex = 10;
-        } else if (selectedRom->type == ROM_WSWAN) {
-          success = WSwanEmu::init(romData, romSize, true);
-          selectedEmulatorIndex = 11;
-        } else if (selectedRom->type == ROM_NGP) {
-          success = NGPEmu::init(romData, romSize, true);
-          selectedEmulatorIndex = 12;
-        } else if (selectedRom->type == ROM_LYNX) {
-          success = LynxEmu::init(romData, romSize);
-          selectedEmulatorIndex = 13;
-        } else if (selectedRom->type == ROM_COLEM) {
-          success = ColemEmu::init(romData, romSize);
-          selectedEmulatorIndex = 14;
+        const CoreRegistry::CoreDescriptor* activeCore = CoreRegistry::findByRomType(selectedRom->type);
+        if (activeCore && activeCore->start) {
+          success = activeCore->start(selectedRom, romData, romSize);
+          selectedEmulatorIndex = activeCore->emulatorIndex;
         }
         
         if (!success) {
@@ -1068,16 +943,8 @@ void loop() {
         SDCard::recordRecentLaunch(currentRomFilename);
 
         // Transparent Auto-Load Battery RAM (.sav)
-        if (selectedEmulatorIndex == 0) {
-          WalnutEmu::loadBatteryRam(currentRomFilename);
-        } else if (selectedEmulatorIndex == 1) {
-          PeanutEmu::loadBatteryRam(currentRomFilename);
-        } else if (selectedEmulatorIndex == 2) {
-          NesEmu::loadBatteryRam(currentRomFilename);
-        } else if (selectedEmulatorIndex == 6) {
-          PceEmu::loadBatteryRam(currentRomFilename);
-        } else if (selectedEmulatorIndex == 10) {
-          SNESEmu::loadBatteryRam(currentRomFilename);
+        if (activeCore && activeCore->loadBatteryRam && currentGameHasBatterySaveSupport()) {
+          activeCore->loadBatteryRam(currentRomFilename);
         }
 
         resetFrameStats();
@@ -1143,7 +1010,8 @@ void loop() {
     }
 
     // Runtime DMG Palette Switcher: SELECT + DOWN
-    if (select && down && (selectedEmulatorIndex == 0 || selectedEmulatorIndex == 1)) {
+    const CoreRegistry::CoreDescriptor* activeCore = CoreRegistry::findByIndex(selectedEmulatorIndex);
+    if (select && down && activeCore && activeCore->supportsDmgPalette) {
       DisplayEmu::cycleDmgPalette();
     }
 
@@ -1165,37 +1033,8 @@ void loop() {
       return;
     }
 
-    if (selectedEmulatorIndex == 3) {
-      DoomEmu::runFrame();
-    } else if (selectedEmulatorIndex == 2) {
-      NesEmu::updateJoypad();
-      NesEmu::runFrame();
-    } else if (selectedEmulatorIndex == 0) {
-      WalnutEmu::updateJoypad();
-      WalnutEmu::runFrame();
-    } else if (selectedEmulatorIndex == 1) {
-      PeanutEmu::updateJoypad();
-      PeanutEmu::runFrame();
-    } else if (selectedEmulatorIndex == 4 || selectedEmulatorIndex == 5) {
-      SmsEmu::runFrame();
-    } else if (selectedEmulatorIndex == 6) {
-      PceEmu::runFrame();
-    } else if (selectedEmulatorIndex == 7) {
-      AtariEmu::runFrame();
-    } else if (selectedEmulatorIndex == 8) {
-      PicoEmu::runFrame();
-    } else if (selectedEmulatorIndex == 9) {
-      GenesisEmu::update();
-    } else if (selectedEmulatorIndex == 10) {
-      SNESEmu::update();
-    } else if (selectedEmulatorIndex == 11) {
-      WSwanEmu::update();
-    } else if (selectedEmulatorIndex == 12) {
-      NGPEmu::update();
-    } else if (selectedEmulatorIndex == 13) {
-      LynxEmu::update();
-    } else if (selectedEmulatorIndex == 14) {
-      ColemEmu::update();
+    if (activeCore && activeCore->stepFrame) {
+      activeCore->stepFrame();
     }
 
     unsigned long elapsed = micros() - frameStart;

@@ -20,4 +20,15 @@ namespace SpiArbiter {
 
   // Releases exclusive lock on the shared SPI bus.
   void unlock();
+
+  // RAII guard for shared SPI bus access; guarantees unlock() on every return path.
+  class [[nodiscard]] ScopedLock {
+   public:
+    ScopedLock() { lock(); }
+    ~ScopedLock() { unlock(); }
+    ScopedLock(const ScopedLock&) = delete;
+    ScopedLock& operator=(const ScopedLock&) = delete;
+    ScopedLock(ScopedLock&&) = delete;
+    ScopedLock& operator=(ScopedLock&&) = delete;
+  };
 }

@@ -72,6 +72,7 @@ namespace {
 
   static uint8_t* s_asyncEmuBuf[2] = {nullptr, nullptr};
   static int s_activeEmuBuf = 0;
+  static uint32_t s_activeSpiHz = TFT_SPI_HZ;
   static bool s_bezelEnabled = true;
   static const uint16_t* s_lastFramePtr = nullptr;
   static const uint8_t* s_lastRaw8Ptr = nullptr;
@@ -110,21 +111,19 @@ namespace {
       if (xQueueReceive(s_displayQueue, &cmd, portMAX_DELAY) == pdTRUE) {
         s_displayBusy = true;
         if ((cmd.type == CMD_PUSH_CANVAS || cmd.type == CMD_PUSH_FULLSCREEN) && cmd.buffer) {
-          SpiArbiter::lock();
+          SpiArbiter::ScopedLock spiLock;
           tft.startWrite();
           tft.setAddrWindow(0, 0, 320, 240);
           SPI.writeBytes((const uint8_t*)cmd.buffer, 320 * 240 * 2);
           tft.endWrite();
-          SpiArbiter::unlock();
         } else if (cmd.type == CMD_STREAM_RAW16 && cmd.buffer) {
-          SpiArbiter::lock();
+          SpiArbiter::ScopedLock spiLock;
           tft.startWrite();
           tft.setAddrWindow(cmd.x, cmd.y, cmd.w, cmd.h);
           SPI.writeBytes((const uint8_t*)cmd.buffer, (size_t)cmd.w * cmd.h * 2);
           tft.endWrite();
-          SpiArbiter::unlock();
         } else if (cmd.type == CMD_STREAM_NES && cmd.buffer) {
-          SpiArbiter::lock();
+          SpiArbiter::ScopedLock spiLock;
           tft.startWrite();
           tft.setAddrWindow(32, 0, 256, 240);
           uint32_t* out32 = (uint32_t*)s_nesRowBuf;
@@ -142,7 +141,6 @@ namespace {
             SPI.writeBytes((const uint8_t*)s_nesRowBuf, 256 * 2);
           }
           tft.endWrite();
-          SpiArbiter::unlock();
 #if BMO_ENABLE_DOOM
         } else if (cmd.type == CMD_STREAM_DOOM && cmd.buffer) {
           if (memcmp(s_lastColors, colors, sizeof(s_lastColors)) != 0) {
@@ -153,7 +151,7 @@ namespace {
               s_doomPalette[i] = (p >> 8) | (p << 8);
             }
           }
-          SpiArbiter::lock();
+          SpiArbiter::ScopedLock spiLock;
           tft.startWrite();
           tft.setAddrWindow(0, 20, 320, 200);
           uint32_t* out32 = (uint32_t*)s_doomLineBuf;
@@ -171,7 +169,6 @@ namespace {
             SPI.writeBytes((const uint8_t*)s_doomLineBuf, 320 * 2);
           }
           tft.endWrite();
-          SpiArbiter::unlock();
 #endif
         }
         s_displayBusy = false;
@@ -442,12 +439,11 @@ namespace {
     }
     if (!menuCanvasArr[0] || !menuCanvasArr[1]) {
       if (menuCanvas) {
-        SpiArbiter::lock();
+        SpiArbiter::ScopedLock spiLock;
         tft.startWrite();
         tft.setAddrWindow(0, 0, 320, 240);
         SPI.writeBytes((const uint8_t*)menuCanvas->getBuffer(), 320 * 240 * 2);
         tft.endWrite();
-        SpiArbiter::unlock();
       }
       return;
     }
@@ -465,12 +461,11 @@ namespace {
       activeDrawCanvas = 1 - activeDrawCanvas;
       menuCanvas = menuCanvasArr[activeDrawCanvas];
     } else {
-      SpiArbiter::lock();
+      SpiArbiter::ScopedLock spiLock;
       tft.startWrite();
       tft.setAddrWindow(0, 0, 320, 240);
       SPI.writeBytes((const uint8_t*)drawnBuf, 320 * 240 * 2);
       tft.endWrite();
-      SpiArbiter::unlock();
     }
   }
 }
@@ -495,8 +490,9 @@ const uint16_t DisplayEmu::NES_PALETTE[64] = {
   0xCFFE, 0xCFDF, 0xD7BF, 0xDBBF, 0xFF07, 0xDFFE, 0x0000, 0x0000,
 };
 
-void DisplayEmu::begin() {
+void DisplayEmu::begin(uint32_t initialSpiHz) {
   SpiArbiter::init();
+  s_activeSpiHz = (initialSpiHz == TFT_SPI_FALLBACK_HZ) ? TFT_SPI_FALLBACK_HZ : TFT_SPI_HZ;
 
   if (!s_asyncEmuBuf[0]) {
     s_asyncEmuBuf[0] = (uint8_t*)heap_caps_malloc(320 * 240 * 2, MALLOC_CAP_SPIRAM);
@@ -523,35 +519,35 @@ void DisplayEmu::begin() {
     );
   }
 
-  SpiArbiter::lock();
-  tft.init(TFT_WIDTH, TFT_HEIGHT);
-  tft.setSPISpeed(TFT_SPI_HZ); // Keep the configured display clock for normal use.
-  tft.setRotation(3); // Flipped Landscape mode (270 degrees)
+  {
+    SpiArbiter::ScopedLock spiLock;
+    tft.init(TFT_WIDTH, TFT_HEIGHT);
+    tft.setSPISpeed(s_activeSpiHz);
+    tft.setRotation(3); // Flipped Landscape mode (270 degrees)
 
-  // FIX: Some ST7789 panels are configured for BGR instead of RGB by default,
-  // causing colors to look swapped (e.g., Mario looks blue, sky looks orange).
-  // We manually flip the RGB/BGR bit (0x08) in the MADCTL register (0x36)
-  // to correct the color order across the entire system.
-  SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
-  digitalWrite(TFT_DC, LOW);
-  digitalWrite(TFT_CS, LOW);
-  SPI.transfer(0x36); // MADCTL command
-  digitalWrite(TFT_DC, HIGH);
-  SPI.transfer(MADCTL_MY | MADCTL_MV | MADCTL_BGR); // Preserve configured 0xA8 orientation and BGR order.
-  digitalWrite(TFT_CS, HIGH);
-  SPI.endTransaction();
+    // FIX: Some ST7789 panels are configured for BGR instead of RGB by default,
+    // causing colors to look swapped (e.g., Mario looks blue, sky looks orange).
+    // We manually flip the RGB/BGR bit (0x08) in the MADCTL register (0x36)
+    // to correct the color order across the entire system.
+    SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
+    digitalWrite(TFT_DC, LOW);
+    digitalWrite(TFT_CS, LOW);
+    SPI.transfer(0x36); // MADCTL command
+    digitalWrite(TFT_DC, HIGH);
+    SPI.transfer(MADCTL_MY | MADCTL_MV | MADCTL_BGR); // Preserve configured 0xA8 orientation and BGR order.
+    digitalWrite(TFT_CS, HIGH);
+    SPI.endTransaction();
 
-  tft.fillScreen(ST77XX_BLACK);
-  SpiArbiter::unlock();
+    tft.fillScreen(ST77XX_BLACK);
+  }
 
   initMenuUI();
 }
 
 void DisplayEmu::clearScreen() {
   waitForDisplay();
-  SpiArbiter::lock();
+  SpiArbiter::ScopedLock spiLock;
   tft.fillScreen(ST77XX_BLACK);
-  SpiArbiter::unlock();
 }
 
 // ---------------------------------------------------------------------------
@@ -637,12 +633,11 @@ void DisplayEmu::streamRawFrameAsync(const uint16_t* fb, int x, int y, int w, in
     s_lastFramePtr = fb;
     // Synchronous fallback
     waitForDisplay();
-    SpiArbiter::lock();
+    SpiArbiter::ScopedLock spiLock;
     tft.startWrite();
     tft.setAddrWindow(x, y, w, h);
     SPI.writeBytes((const uint8_t*)fb, byteCount);
     tft.endWrite();
-    SpiArbiter::unlock();
   }
 }
 
@@ -670,7 +665,7 @@ void DisplayEmu::streamNESFrame(const uint8_t* nes_framebuffer) {
   s_lastRaw8Ptr = nes_framebuffer;
   // Fallback synchronous blit
   waitForDisplay();
-  SpiArbiter::lock();
+  SpiArbiter::ScopedLock spiLock;
   tft.startWrite();
   tft.setAddrWindow(32, 0, 256, 240); // Center 256x240 on 320x240 display
   
@@ -689,7 +684,6 @@ void DisplayEmu::streamNESFrame(const uint8_t* nes_framebuffer) {
   }
   
   tft.endWrite();
-  SpiArbiter::unlock();
 }
 
 #if BMO_ENABLE_DOOM
@@ -717,7 +711,7 @@ void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
   s_lastRaw8Ptr = cmap;
   // Fallback synchronous blit
   waitForDisplay();
-  SpiArbiter::lock();
+  SpiArbiter::ScopedLock spiLock;
   tft.startWrite();
   tft.setAddrWindow(0, 20, 320, 200);
 
@@ -745,7 +739,6 @@ void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
   }
   
   tft.endWrite();
-  SpiArbiter::unlock();
 }
 #else
 void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
@@ -790,14 +783,13 @@ void DisplayEmu::streamSMSFrame(const uint16_t* sms_framebuffer, bool isGameGear
       }
       s_lastRaw8Ptr = nullptr;
       waitForDisplay();
-      SpiArbiter::lock();
+      SpiArbiter::ScopedLock spiLock;
       tft.startWrite();
       tft.setAddrWindow(80, 48, 160, 144);
       for (int r = 0; r < 144; ++r) {
         SPI.writeBytes((const uint8_t*)&sms_framebuffer[(24 + r) * 256 + 48], 160 * 2);
       }
       tft.endWrite();
-      SpiArbiter::unlock();
     }
   } else {
     streamRawFrameAsync(sms_framebuffer, 32, 24, 256, 192);
@@ -857,12 +849,11 @@ void DisplayEmu::streamGBFrame(const uint16_t* gb_framebuffer) {
 // ---------------------------------------------------------------------------
 void DisplayEmu::pushPixels(int yOffset, const uint16_t* rowBuffer, int rowsToDraw) {
   waitForDisplay();
-  SpiArbiter::lock();
+  SpiArbiter::ScopedLock spiLock;
   tft.startWrite();
   tft.setAddrWindow(OFFSET_X, OFFSET_Y + yOffset, 240, rowsToDraw);
   SPI.writeBytes((const uint8_t*)rowBuffer, 240 * rowsToDraw * 2);
   tft.endWrite();
-  SpiArbiter::unlock();
 }
 
 // pushPixelsRaw: used inside a caller-managed startWrite/endWrite block.
@@ -879,12 +870,11 @@ void DisplayEmu::pushPixelsFullScreen(const uint16_t* buffer) {
 // 320×240 display.  Self-contained SPI transaction (startWrite/endWrite).
 void DisplayEmu::pushPixelsAt(int x, int y, int w, int h, const uint16_t* buf) {
   waitForDisplay();
-  SpiArbiter::lock();
+  SpiArbiter::ScopedLock spiLock;
   tft.startWrite();
   tft.setAddrWindow(x, y, w, h);
   SPI.writeBytes((const uint8_t*)buf, (uint32_t)w * h * 2);
   tft.endWrite();
-  SpiArbiter::unlock();
 }
 
 void DisplayEmu::startDirectWindow(int x, int y, int w, int h) {
@@ -1071,7 +1061,7 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
   const bool isExpDisabled = (currentConsole >= ROM_SMS && !BMO_EXPERIMENTAL_CORES);
   if (isDoomDisabled || isExpDisabled) {
     menuCanvas->setTextColor(UI_CORAL);
-    menuCanvas->print(isDoomDisabled ? "* DOOM OFF (MIT)" : "* EXPERIMENTAL (OFF)");
+    menuCanvas->print(isDoomDisabled ? "* DOOM (OFF)" : "* EXPERIMENTAL (OFF)");
   } else {
     menuCanvas->setTextColor(UI_YELLOW);
     char countBuf[32];
@@ -1572,7 +1562,7 @@ void DisplayEmu::drawPauseMenu(const char* romTitle, int currentSlot, bool hasSa
 
 void DisplayEmu::showSDCardWarning() {
   waitForDisplay();
-  SpiArbiter::lock();
+  SpiArbiter::ScopedLock spiLock;
   tft.fillRect(40, 80, 240, 80, Theme::PANEL_DEEP_TEAL);
   tft.drawRect(42, 82, 236, 76, Theme::PANEL_DPAD_YELLOW);
   tft.setFont(&FreeSans9pt7b);
@@ -1581,7 +1571,6 @@ void DisplayEmu::showSDCardWarning() {
   tft.print("SD CARD REQUIRED");
   tft.setCursor(55, 135);
   tft.print("FOR THIS CONSOLE");
-  SpiArbiter::unlock();
 }
 
 void DisplayEmu::sanitizeRomTitle(const char* src, char* dst, size_t maxLen) {
@@ -1817,9 +1806,13 @@ void DisplayEmu::drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeD
 void DisplayEmu::setDiagnosticSpiClock(uint32_t spiClockHz) {
   if (spiClockHz != TFT_SPI_HZ && spiClockHz != TFT_SPI_FALLBACK_HZ) return;
   waitForDisplay();
-  SpiArbiter::lock();
+  SpiArbiter::ScopedLock spiLock;
+  s_activeSpiHz = spiClockHz;
   tft.setSPISpeed(spiClockHz);
-  SpiArbiter::unlock();
+}
+
+uint32_t DisplayEmu::getDiagnosticSpiClock() {
+  return s_activeSpiHz;
 }
 
 uint32_t DisplayEmu::getDisplayStackHighWaterMarkWords() {

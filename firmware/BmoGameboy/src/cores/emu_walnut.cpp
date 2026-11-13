@@ -41,7 +41,7 @@ namespace {
   // E3: Align the massive emulator state struct to the ESP32-S3 D-cache line
   // size (32 bytes). Prevents the hot cpu_reg struct from straddling two
   // cache lines, which causes a 2x penalty on every register access.
-  static struct gb_s __attribute__((aligned(32))) gb;
+  static struct gb_s* gb = nullptr;
   
   const uint8_t* current_rom_data = nullptr;
   size_t current_rom_len = 0;
@@ -52,8 +52,9 @@ namespace {
   static uint8_t* cart_ram = nullptr;
 
   static size_t batteryRamSize() {
-    const uint8_t type = gb.gb_rom_read ? gb.gb_rom_read(&gb, 0x0147) : 0;
-    const uint8_t sizeCode = gb.gb_rom_read ? gb.gb_rom_read(&gb, 0x0149) : 0;
+    if (!gb) return 0;
+    const uint8_t type = gb->gb_rom_read ? gb->gb_rom_read(gb, 0x0147) : 0;
+    const uint8_t sizeCode = gb->gb_rom_read ? gb->gb_rom_read(gb, 0x0149) : 0;
     const size_t size = BatterySave::gameBoyBatteryBytes(type, sizeCode);
     return size <= CART_RAM_SIZE ? size : 0;
   }
@@ -196,6 +197,7 @@ namespace {
 }
 
 bool WalnutEmu::begin(const uint8_t* rom_data, size_t rom_len) {
+  destroy();
   current_rom_data = rom_data;
   current_rom_len = rom_len;
 
@@ -204,44 +206,56 @@ bool WalnutEmu::begin(const uint8_t* rom_data, size_t rom_len) {
     DMG_ON_GBC_PAL_256[i] = DMG_ON_GBC_PAL[(((i >> 4) & 0x03) << 2) | (i & 0x03)];
   }
 
+  gb = (struct gb_s*)heap_caps_aligned_alloc(32, sizeof(struct gb_s), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  if (!gb) {
+    gb = (struct gb_s*)heap_caps_aligned_alloc(32, sizeof(struct gb_s), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+  }
+  if (!gb) {
+    LOG_ERROR_STR("Walnut-CGB: unable to allocate emulator state.");
+    return false;
+  }
+  memset(gb, 0, sizeof(struct gb_s));
+
+  cart_ram = (uint8_t*)heap_caps_malloc(CART_RAM_SIZE, MALLOC_CAP_SPIRAM);
   if (!cart_ram) {
-    cart_ram = (uint8_t*)heap_caps_malloc(CART_RAM_SIZE, MALLOC_CAP_SPIRAM);
-    if (!cart_ram) {
-      LOG_ERROR_STR("Walnut-CGB: unable to allocate PSRAM cartridge RAM.");
-      return false;
-    }
+    LOG_ERROR_STR("Walnut-CGB: unable to allocate PSRAM cartridge RAM.");
+    destroy();
+    return false;
   }
 
   // Clear cart RAM so previous game's save data cannot bleed into the next.
   memset(cart_ram, 0, CART_RAM_SIZE);
   
-  enum gb_init_error_e ret = gb_init(&gb,
+  enum gb_init_error_e ret = gb_init(gb,
     gb_rom_read, gb_rom_read16, gb_rom_read32,
     gb_cart_ram_read, gb_cart_ram_write,
     gb_error, nullptr);
   if (ret != GB_INIT_NO_ERROR) {
     LOG_ERROR("Walnut-CGB init error: %d", ret);
+    destroy();
     return false;
   }
   
-  gb_init_lcd(&gb, lcd_draw_line);
+  gb_init_lcd(gb, lcd_draw_line);
 
   // Reset joypad so no button press fires on the very first emulator frame.
-  gb.direct.joypad = 0xFF;
+  gb->direct.joypad = 0xFF;
 
   return true;
 }
 
 void WalnutEmu::updateJoypad() {
+  if (!gb) return;
   // NB2: Single branchless bitmask direct copy - zero function call overhead.
-  gb.direct.joypad = Buttons::gb_joypad_state;
+  gb->direct.joypad = Buttons::gb_joypad_state;
 }
 
 void WalnutEmu::runFrame() {
+  if (!gb) return;
   // startFrame holds the SPI bus open and sets the address window once for
   // the entire 240×216 frame (N1 + N3).
   DisplayEmu::startFrame();
-  gb_run_frame_dualfetch(&gb);
+  gb_run_frame_dualfetch(gb);
   DisplayEmu::endFrame();
 }
 
@@ -250,30 +264,36 @@ void WalnutEmu::destroy() {
     heap_caps_free(cart_ram); // matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
     cart_ram = nullptr;
   }
+  if (gb) {
+    heap_caps_free(gb);
+    gb = nullptr;
+  }
+  current_rom_data = nullptr;
+  current_rom_len = 0;
 }
 
 bool WalnutEmu::saveBatteryRam(const char* romFilename) {
-  if (!cart_ram || !romFilename) return false;
+  if (!gb || !cart_ram || !romFilename) return false;
   const size_t size = batteryRamSize();
   if (size == 0) return false;
   return SaveManager::saveBatteryRam(romFilename, cart_ram, size);
 }
 
 bool WalnutEmu::loadBatteryRam(const char* romFilename) {
-  if (!cart_ram || !romFilename) return false;
+  if (!gb || !cart_ram || !romFilename) return false;
   const size_t size = batteryRamSize();
   if (size == 0) return false;
   return SaveManager::loadBatteryRam(romFilename, cart_ram, size);
 }
 
 bool WalnutEmu::saveState(const char* romFilename, int slot) {
-  if (!cart_ram || !romFilename) return false;
+  if (!gb || !cart_ram || !romFilename) return false;
   return SaveManager::saveState(romFilename, slot, SaveManager::CORE_GB_CGB,
-                                &gb, sizeof(gb), cart_ram, CART_RAM_SIZE);
+                                gb, sizeof(struct gb_s), cart_ram, CART_RAM_SIZE);
 }
 
 bool WalnutEmu::loadState(const char* romFilename, int slot) {
-  if (!cart_ram || !romFilename) return false;
+  if (!gb || !cart_ram || !romFilename) return false;
   struct gb_s* tempGb = (struct gb_s*)heap_caps_malloc(sizeof(struct gb_s), MALLOC_CAP_SPIRAM);
   uint8_t* tempRam = (uint8_t*)heap_caps_malloc(CART_RAM_SIZE, MALLOC_CAP_SPIRAM);
   if (!tempGb || !tempRam) {
@@ -294,7 +314,7 @@ bool WalnutEmu::loadState(const char* romFilename, int slot) {
     tempGb->gb_cart_ram_write = gb_cart_ram_write;
     tempGb->gb_error = gb_error;
     tempGb->display.lcd_draw_line = lcd_draw_line;
-    memcpy(&gb, tempGb, sizeof(gb));
+    memcpy(gb, tempGb, sizeof(struct gb_s));
     heap_caps_free(tempRam);
     heap_caps_free(tempGb);
     return true;

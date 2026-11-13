@@ -6,110 +6,119 @@
 #include <Arduino.h>
 
 #if BMO_EXPERIMENTAL_CORES
-#include "../engines/smsplus/sms.h"
 #include "../hal/buttons.h"
+#include "../hal/psram_alloc.h"
 #include "../storage/save_manager.h"
-#include <Arduino.h>
-#include <esp_heap_caps.h>
+#include "../third_party/smsplus/smsplus_bmo.h"
 
-static sms_context_t* sms_ctx = nullptr;
-static bool s_is_gamegear = false;
+namespace {
+  uint16_t* s_panelFb = nullptr;  // 256 x 192 panel BGR565 in PSRAM
+  bool s_isGameGear = false;
+  bool s_running = false;
+}
 
 bool SmsEmu::begin(const uint8_t* romData, size_t romSize, bool isGameGear) {
-  if (sms_ctx) {
-    sms_destroy(sms_ctx);
-    sms_ctx = nullptr;
-  }
-  s_is_gamegear = isGameGear;
-  sms_ctx = sms_create();
-  if (!sms_ctx) {
+  destroy();
+  if (!romData || romSize == 0) return false;
+
+  s_panelFb = static_cast<uint16_t*>(bmo_psram_calloc(256U * 192U, sizeof(uint16_t)));
+  if (!s_panelFb) {
+    destroy();
     return false;
   }
-  
-  if (!sms_load_rom(sms_ctx, romData, romSize, isGameGear)) {
-    sms_destroy(sms_ctx);
-    sms_ctx = nullptr;
+
+  const BmoSmsConsoleMode mode = isGameGear ? BMO_SMS_CONSOLE_GG : BMO_SMS_CONSOLE_SMS;
+  if (!bmo_sms_init(romData, romSize, mode, nullptr)) {
+    destroy();
     return false;
   }
+
+  s_isGameGear = isGameGear;
+  s_running = true;
   return true;
 }
 
 void SmsEmu::updateJoypad() {
-  if (!sms_ctx) return;
-  
-  // SMS Port $DC bits (active-low 0=pressed):
-  // Bit 0: Up, Bit 1: Down, Bit 2: Left, Bit 3: Right, Bit 4: Button 1 (B), Bit 5: Button 2 (A)
-  uint8_t pad = 0xFF;
-  if (Buttons::get(Buttons::UP).pressed)    pad &= ~(1 << 0);
-  if (Buttons::get(Buttons::DOWN).pressed)  pad &= ~(1 << 1);
-  if (Buttons::get(Buttons::LEFT).pressed)  pad &= ~(1 << 2);
-  if (Buttons::get(Buttons::RIGHT).pressed) pad &= ~(1 << 3);
-  if (Buttons::get(Buttons::B).pressed)      pad &= ~(1 << 4); // Button 1
-  if (Buttons::get(Buttons::A).pressed)      pad &= ~(1 << 5); // Button 2
-  
-  uint8_t sys = 0xFF;
-  if (Buttons::get(Buttons::START).pressed) sys &= ~(1 << 0); // Pause / Start
-  
-  sms_set_input(sms_ctx, pad, sys);
+  if (!s_running) return;
+  int pad = 0;
+  if (Buttons::get(Buttons::UP).pressed)     pad |= BMO_SMS_INPUT_UP;
+  if (Buttons::get(Buttons::DOWN).pressed)   pad |= BMO_SMS_INPUT_DOWN;
+  if (Buttons::get(Buttons::LEFT).pressed)   pad |= BMO_SMS_INPUT_LEFT;
+  if (Buttons::get(Buttons::RIGHT).pressed)  pad |= BMO_SMS_INPUT_RIGHT;
+  if (Buttons::get(Buttons::A).pressed)      pad |= BMO_SMS_INPUT_BUTTON1;
+  if (Buttons::get(Buttons::B).pressed)      pad |= BMO_SMS_INPUT_BUTTON2;
+
+  int sys = 0;
+  if (Buttons::get(Buttons::START).pressed) {
+    sys |= s_isGameGear ? BMO_SMS_SYS_START : BMO_SMS_SYS_PAUSE;
+  }
+
+  bmo_sms_set_input(pad, sys);
 }
 
 void SmsEmu::runFrame() {
-  if (!sms_ctx) return;
-  
-  // updateJoypad() is called here internally (NOT from BmoGameboy.ino).
-  // Unlike GB/NES which expose separate updateJoypad() calls in the main loop,
-  // SMS polls buttons inside runFrame() — do NOT add a redundant external call.
+  if (!s_running || !s_panelFb || !bmo_sms_is_running()) return;
+
   updateJoypad();
-  sms_run_frame(sms_ctx);
-  
-  if (sms_ctx->framebuffer) {
-    DisplayEmu::streamSMSFrame(sms_ctx->framebuffer, s_is_gamegear);
-  }
+  bmo_sms_run_frame(0);
+  bmo_sms_render_panel565(s_panelFb);
+  DisplayEmu::streamSMSFrame(s_panelFb, s_isGameGear);
 }
 
 void SmsEmu::destroy() {
-  if (sms_ctx) {
-    sms_destroy(sms_ctx);
-    sms_ctx = nullptr;
+  s_running = false;
+  s_isGameGear = false;
+  bmo_sms_destroy();
+  if (s_panelFb) {
+    bmo_psram_free(s_panelFb);
+    s_panelFb = nullptr;
   }
 }
 
 bool SmsEmu::saveBatteryRam(const char* romFilename) {
-  (void)romFilename;
-  return false;
+  if (!s_running || !romFilename) return false;
+  size_t sramSize = 0;
+  uint8_t* sram = bmo_sms_sram_data(&sramSize);
+  if (!sram || sramSize == 0 || !bmo_sms_sram_used()) return false;
+  return SaveManager::saveBatteryRam(romFilename, sram, sramSize);
 }
 
 bool SmsEmu::loadBatteryRam(const char* romFilename) {
-  (void)romFilename;
-  return false;
+  if (!s_running || !romFilename) return false;
+  size_t sramSize = 0;
+  uint8_t* sram = bmo_sms_sram_data(&sramSize);
+  if (!sram || sramSize == 0) return false;
+  return SaveManager::loadBatteryRam(romFilename, sram, sramSize);
 }
 
 bool SmsEmu::saveState(const char* romFilename, int slot) {
-  if (!sms_ctx || !romFilename) return false;
-  return SaveManager::saveState(romFilename, slot, SaveManager::CORE_SMS,
-                                sms_ctx, sizeof(sms_context_t));
+  if (!s_running || !romFilename) return false;
+  const size_t cap = bmo_sms_state_size();
+  if (cap == 0) return false;
+  uint8_t* blob = static_cast<uint8_t*>(bmo_psram_malloc(cap));
+  if (!blob) return false;
+
+  size_t actualSize = 0;
+  bool ok = bmo_sms_save_state(blob, cap, &actualSize) &&
+            SaveManager::saveState(romFilename, slot, SaveManager::CORE_SMS,
+                                   blob, actualSize);
+  bmo_psram_free(blob);
+  return ok;
 }
 
 bool SmsEmu::loadState(const char* romFilename, int slot) {
-  if (!sms_ctx || !romFilename) return false;
-  sms_context_t* tempCtx = (sms_context_t*)heap_caps_malloc(sizeof(sms_context_t), MALLOC_CAP_SPIRAM);
-  if (!tempCtx) return false;
-  size_t ctxSize = 0;
+  if (!s_running || !romFilename) return false;
+  const size_t cap = bmo_sms_state_size();
+  if (cap == 0) return false;
+  uint8_t* blob = static_cast<uint8_t*>(bmo_psram_malloc(cap));
+  if (!blob) return false;
+
+  size_t loadedSize = 0;
   bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_SMS,
-                                   tempCtx, sizeof(sms_context_t), &ctxSize);
-  if (ok && ctxSize == sizeof(sms_context_t)) {
-    const uint8_t* rom = sms_ctx->rom;
-    size_t rom_size = sms_ctx->rom_size;
-    uint16_t* fb = sms_ctx->framebuffer;
-    memcpy(sms_ctx, tempCtx, sizeof(sms_context_t));
-    sms_ctx->rom = rom;
-    sms_ctx->rom_size = rom_size;
-    sms_ctx->framebuffer = fb;
-    heap_caps_free(tempCtx);
-    return true;
-  }
-  heap_caps_free(tempCtx);
-  return false;
+                                   blob, cap, &loadedSize) &&
+            bmo_sms_load_state(blob, loadedSize);
+  bmo_psram_free(blob);
+  return ok;
 }
 
 #else // BMO_EXPERIMENTAL_CORES == 0

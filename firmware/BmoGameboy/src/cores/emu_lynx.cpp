@@ -6,111 +6,147 @@
 #include <Arduino.h>
 
 #if BMO_EXPERIMENTAL_CORES
-#include "../engines/lynx/lynx.h"
 #include "../hal/buttons.h"
+#include "../hal/panel_color.h"
+#include "../hal/psram_alloc.h"
 #include "../storage/save_manager.h"
-#include <esp_heap_caps.h>
-#include <string.h>
+#include "../third_party/handy/handy.h"
 
 namespace {
-  lynx_t lynxState;
-  uint16_t* lynxFb = nullptr;   // 160 x 102 in PSRAM
-  uint8_t* lynxRam = nullptr;   // 64KB RAM in PSRAM
-  bool running = false;
+  constexpr size_t kLynxStateCap = 192U * 1024U;
+
+  CSystem*  s_lynx = nullptr;
+  uint16_t* s_rawFb = nullptr;   // 160 x 102 RGB565 host-endian in PSRAM
+  uint16_t* s_panelFb = nullptr; // 160 x 102 ST7789 panel BGR565 in PSRAM
+  bool      s_running = false;
 }
 
 bool LynxEmu::init(uint8_t* romData, size_t romSize) {
   destroy();
   if (!romData || romSize < 64) return false;
 
-  lynxFb = (uint16_t*)heap_caps_malloc(160 * 102 * sizeof(uint16_t), MALLOC_CAP_SPIRAM);
-  lynxRam = (uint8_t*)heap_caps_malloc(64 * 1024, MALLOC_CAP_SPIRAM);
-
-  if (!lynxFb || !lynxRam) {
+  s_rawFb = static_cast<uint16_t*>(
+    bmo_psram_calloc(HANDY_SCREEN_WIDTH * HANDY_SCREEN_HEIGHT, sizeof(uint16_t)));
+  s_panelFb = static_cast<uint16_t*>(
+    bmo_psram_calloc(HANDY_SCREEN_WIDTH * HANDY_SCREEN_HEIGHT, sizeof(uint16_t)));
+  if (!s_rawFb || !s_panelFb) {
     destroy();
     return false;
   }
 
-  lynx_init(&lynxState, romData, romSize, lynxRam, lynxFb);
-  running = true;
+  gAudioEnabled = 0;
+  gPrimaryFrameBuffer = reinterpret_cast<UBYTE*>(s_rawFb);
+
+  s_lynx = new CSystem(romData, static_cast<ULONG>(romSize),
+                       MIKIE_PIXEL_FORMAT_16BPP_565, HANDY_AUDIO_SAMPLE_FREQ);
+  if (!s_lynx || s_lynx->mFileType == HANDY_FILETYPE_ILLEGAL) {
+    destroy();
+    return false;
+  }
+
+  s_lynx->mMikie->SetRotation(MIKIE_NO_ROTATE);
+  s_running = true;
   return true;
 }
 
 void LynxEmu::update() {
-  if (!running || !lynxFb) return;
-  uint8_t pad = 0;
-  if (Buttons::get(Buttons::UP).pressed)     pad |= 0x01;
-  if (Buttons::get(Buttons::DOWN).pressed)   pad |= 0x02;
-  if (Buttons::get(Buttons::LEFT).pressed)   pad |= 0x04;
-  if (Buttons::get(Buttons::RIGHT).pressed)  pad |= 0x08;
-  if (Buttons::get(Buttons::A).pressed)      pad |= 0x10; // A
-  if (Buttons::get(Buttons::B).pressed)      pad |= 0x20; // B
-  if (Buttons::get(Buttons::START).pressed)  pad |= 0x40; // Option 1
-  lynx_set_buttons(&lynxState, pad);
+  if (!s_running || !s_lynx || !s_rawFb || !s_panelFb) return;
 
-  lynx_step_frame(&lynxState);
-  DisplayEmu::streamLynxFrame(lynxFb, 160, 102);
+  ULONG pad = 0;
+  if (Buttons::get(Buttons::UP).pressed)     pad |= BUTTON_UP;
+  if (Buttons::get(Buttons::DOWN).pressed)   pad |= BUTTON_DOWN;
+  if (Buttons::get(Buttons::LEFT).pressed)   pad |= BUTTON_LEFT;
+  if (Buttons::get(Buttons::RIGHT).pressed)  pad |= BUTTON_RIGHT;
+  if (Buttons::get(Buttons::A).pressed)      pad |= BUTTON_A;
+  if (Buttons::get(Buttons::B).pressed)      pad |= BUTTON_B;
+  if (Buttons::get(Buttons::START).pressed)  pad |= BUTTON_PAUSE;
+  if (Buttons::get(Buttons::SELECT).pressed) pad |= BUTTON_OPT1;
+  if (Buttons::get(Buttons::X).pressed)      pad |= BUTTON_OPT2;
+
+  s_lynx->SetButtonData(pad);
+  s_lynx->UpdateFrame(true);
+
+  const int count = HANDY_SCREEN_WIDTH * HANDY_SCREEN_HEIGHT;
+  for (int i = 0; i < count; ++i) {
+    s_panelFb[i] = bmo_rgb565_to_panel565(s_rawFb[i]);
+  }
+  DisplayEmu::streamLynxFrame(s_panelFb, HANDY_SCREEN_WIDTH, HANDY_SCREEN_HEIGHT);
 }
 
 void LynxEmu::destroy() {
-  running = false;
-  if (lynxFb) {
-    heap_caps_free(lynxFb);
-    lynxFb = nullptr;
+  s_running = false;
+  gPrimaryFrameBuffer = nullptr;
+  if (s_lynx) {
+    delete s_lynx;
+    s_lynx = nullptr;
   }
-  if (lynxRam) {
-    heap_caps_free(lynxRam);
-    lynxRam = nullptr;
+  if (s_rawFb) {
+    bmo_psram_free(s_rawFb);
+    s_rawFb = nullptr;
   }
-  memset(&lynxState, 0, sizeof(lynxState));
+  if (s_panelFb) {
+    bmo_psram_free(s_panelFb);
+    s_panelFb = nullptr;
+  }
 }
 
 bool LynxEmu::isRunning() {
-  return running;
+  return s_running && s_lynx != nullptr;
 }
 
 bool LynxEmu::saveBatteryRam(const char* romFilename) {
-  (void)romFilename;
-  return false;
+  if (!s_running || !s_lynx || !s_lynx->mEEPROM || !romFilename) return false;
+  if (!s_lynx->mEEPROM->Available() || s_lynx->mEEPROM->Size() <= 0) return false;
+  return SaveManager::saveBatteryRam(romFilename,
+                                     s_lynx->mEEPROM->Data(),
+                                     static_cast<size_t>(s_lynx->mEEPROM->Size()));
 }
 
 bool LynxEmu::loadBatteryRam(const char* romFilename) {
-  (void)romFilename;
-  return false;
+  if (!s_running || !s_lynx || !s_lynx->mEEPROM || !romFilename) return false;
+  if (!s_lynx->mEEPROM->Available() || s_lynx->mEEPROM->Size() <= 0) return false;
+  const int sz = s_lynx->mEEPROM->Size();
+  uint8_t* tmp = static_cast<uint8_t*>(bmo_psram_malloc(static_cast<size_t>(sz)));
+  if (!tmp) return false;
+
+  size_t loaded = 0;
+  bool ok = SaveManager::loadBatteryRam(romFilename, tmp, static_cast<size_t>(sz), &loaded) &&
+            loaded > 0;
+  if (ok) {
+    s_lynx->mEEPROM->InitFrom(reinterpret_cast<char*>(tmp), static_cast<int>(loaded));
+  }
+  bmo_psram_free(tmp);
+  return ok;
 }
 
 bool LynxEmu::saveState(const char* romFilename, int slot) {
-  if (!running || !lynxRam || !romFilename) return false;
-  return SaveManager::saveState(romFilename, slot, SaveManager::CORE_LYNX,
-                                &lynxState, sizeof(lynx_t), lynxRam, 64 * 1024);
+  if (!s_running || !s_lynx || !romFilename) return false;
+  uint8_t* buf = static_cast<uint8_t*>(bmo_psram_malloc(kLynxStateCap));
+  if (!buf) return false;
+
+  LSS_FILE lss = { buf, 0, static_cast<ULONG>(kLynxStateCap) };
+  bool ok = s_lynx->ContextSave(&lss) &&
+            lss.index > 0 &&
+            SaveManager::saveState(romFilename, slot, SaveManager::CORE_LYNX,
+                                   buf, static_cast<size_t>(lss.index));
+  bmo_psram_free(buf);
+  return ok;
 }
 
 bool LynxEmu::loadState(const char* romFilename, int slot) {
-  if (!running || !lynxRam || !romFilename) return false;
-  const size_t expectedRamSize = 64 * 1024;
-  uint8_t* tempRam = (uint8_t*)heap_caps_malloc(expectedRamSize, MALLOC_CAP_SPIRAM);
-  if (!tempRam) return false;
-  lynx_t tempState;
-  size_t stateSize = 0, ramSize = 0;
+  if (!s_running || !s_lynx || !romFilename) return false;
+  uint8_t* buf = static_cast<uint8_t*>(bmo_psram_malloc(kLynxStateCap));
+  if (!buf) return false;
+
+  size_t loaded = 0;
   bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_LYNX,
-                                   &tempState, sizeof(tempState), &stateSize,
-                                   tempRam, expectedRamSize, &ramSize);
-  if (ok && stateSize == sizeof(lynx_t) && ramSize == expectedRamSize) {
-    memcpy(lynxRam, tempRam, expectedRamSize);
-    uint8_t* rom = lynxState.rom;
-    uint32_t rom_size = lynxState.rom_size;
-    uint8_t* ram = lynxState.ram;
-    uint16_t* fb = lynxState.framebuffer;
-    memcpy(&lynxState, &tempState, sizeof(lynx_t));
-    lynxState.rom = rom;
-    lynxState.rom_size = rom_size;
-    lynxState.ram = ram;
-    lynxState.framebuffer = fb;
-    heap_caps_free(tempRam);
-    return true;
+                                   buf, kLynxStateCap, &loaded);
+  if (ok && loaded > 0) {
+    LSS_FILE lss = { buf, 0, static_cast<ULONG>(loaded) };
+    ok = s_lynx->ContextLoad(&lss);
   }
-  heap_caps_free(tempRam);
-  return false;
+  bmo_psram_free(buf);
+  return ok;
 }
 
 #else // BMO_EXPERIMENTAL_CORES == 0

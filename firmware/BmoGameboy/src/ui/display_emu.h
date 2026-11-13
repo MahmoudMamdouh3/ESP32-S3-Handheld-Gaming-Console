@@ -1,11 +1,12 @@
 #pragma once
 #include <stdint.h>
+#include "../hal/config.h"
 #include "../storage/sd_card.h"
 #include "theme.h"
 
 namespace DisplayEmu {
   // Initialize the display. MUST be called after SPI.begin().
-  void begin();
+  void begin(uint32_t initialSpiHz = TFT_SPI_HZ);
 
   // Clear the screen to black before launching a game.
   void clearScreen();
@@ -56,6 +57,7 @@ namespace DisplayEmu {
                                 uint32_t sdClockHz = 0);
   uint32_t getDisplayStackHighWaterMarkWords();
   void setDiagnosticSpiClock(uint32_t spiClockHz);
+  uint32_t getDiagnosticSpiClock();
   void drawSpiStressPattern(uint32_t spiClockHz, uint32_t frameNumber);
 
   // Renders a hardware silhouette pixel-art icon for a retro console

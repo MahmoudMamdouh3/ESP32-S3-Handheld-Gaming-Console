@@ -202,13 +202,14 @@ bool begin(const char* wadPath) {
   // so missing or corrupt files return false instead of triggering I_Error -> exit(-1).
   uint8_t hdr[12] = {0};
   size_t bytesRead = 0;
-  SpiArbiter::lock();
-  FILE* f = fopen(s_wadPath, "rb");
-  if (f) {
-    bytesRead = fread(hdr, 1, sizeof(hdr), f);
-    fclose(f);
+  {
+    SpiArbiter::ScopedLock spiLock;
+    FILE* f = fopen(s_wadPath, "rb");
+    if (f) {
+      bytesRead = fread(hdr, 1, sizeof(hdr), f);
+      fclose(f);
+    }
   }
-  SpiArbiter::unlock();
 
   if (bytesRead < 12) {
     snprintf(s_lastError, sizeof(s_lastError), "WAD READ ERROR");
@@ -327,8 +328,8 @@ const char* lastError() {
 
 bool begin(const char* wadPath) {
   (void)wadPath;
-  LOG_WARN_STR("[DOOM] Engine disabled in MIT default build (set BMO_ENABLE_DOOM=1 for GPL build)");
-  DisplayEmu::showToast("DOOM DISABLED (MIT BUILD)", Theme::ACCENT_RED, 2200);
+  LOG_WARN_STR("[DOOM] Engine disabled at compile time (set BMO_ENABLE_DOOM=1 to enable)");
+  DisplayEmu::showToast("DOOM CORE OFF", Theme::ACCENT_RED, 2200);
   return false;
 }
 

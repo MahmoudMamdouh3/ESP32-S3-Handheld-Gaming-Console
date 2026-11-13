@@ -140,11 +140,14 @@ void BoxArt::populateCatalogAvailability(RomFile* roms, int count) {
 #if FEATURE_SD_CARD
   if (!SDCard::isMounted()) return;
 
-  SpiArbiter::lock();
-  const bool hasBoxartDir = SD.exists("/boxart");
-  const bool hasCoversDir = SD.exists("/covers");
+  bool hasBoxartDir = false;
+  bool hasCoversDir = false;
+  {
+    SpiArbiter::ScopedLock spiLock;
+    hasBoxartDir = SD.exists("/boxart");
+    hasCoversDir = SD.exists("/covers");
+  }
   if (!hasBoxartDir && !hasCoversDir) {
-    SpiArbiter::unlock();
     return;
   }
 
@@ -155,6 +158,7 @@ void BoxArt::populateCatalogAvailability(RomFile* roms, int count) {
 
   BoxArtLookup::CatalogMatcher matcher;
   if (keysBuf && baseOrderBuf && matcher.init(roms, count, keysBuf, baseOrderBuf)) {
+    SpiArbiter::ScopedLock spiLock;
     if (hasBoxartDir) markArtDirectory("/boxart", matcher);
     if (hasCoversDir) markArtDirectory("/covers", matcher);
   } else {
@@ -165,7 +169,6 @@ void BoxArt::populateCatalogAvailability(RomFile* roms, int count) {
 
   if (keysBuf) heap_caps_free(keysBuf);
   if (baseOrderBuf) heap_caps_free(baseOrderBuf);
-  SpiArbiter::unlock();
 #endif
 }
 
@@ -179,26 +182,24 @@ bool BoxArt::existsForRom(const char* romFilename) {
   getBaseName(romFilename, legacyBase, sizeof(legacyBase));
 
   char path[128];
-  SpiArbiter::lock();
+  SpiArbiter::ScopedLock spiLock;
 
   const char* folders[] = {"/boxart", "/covers"};
   const char* extensions[] = {"raw", "bmp"};
   for (const char* folder : folders) {
     for (const char* extension : extensions) {
       snprintf(path, sizeof(path), "%s/%s.%s", folder, key, extension);
-      if (SD.exists(path)) { SpiArbiter::unlock(); return true; }
+      if (SD.exists(path)) return true;
     }
   }
   if (legacyBaseIsUnique(romFilename, legacyBase)) {
     for (const char* folder : folders) {
       for (const char* extension : extensions) {
         snprintf(path, sizeof(path), "%s/%s.%s", folder, legacyBase, extension);
-        if (SD.exists(path)) { SpiArbiter::unlock(); return true; }
+        if (SD.exists(path)) return true;
       }
     }
   }
-
-  SpiArbiter::unlock();
 #endif
   return false;
 }
@@ -245,7 +246,7 @@ bool BoxArt::load(const char* romFilename) {
       }
     }
   }
-  SpiArbiter::lock();
+  SpiArbiter::ScopedLock spiLock;
 
   for (size_t i = 0; i < pathCount; ++i) {
     const bool isBmp = strstr(paths[i], ".bmp") != nullptr;
@@ -265,12 +266,9 @@ bool BoxArt::load(const char* romFilename) {
           }
         }
       }
-      SpiArbiter::unlock();
       return true;
     }
   }
-
-  SpiArbiter::unlock();
 #endif
   return false;
 }

@@ -201,11 +201,10 @@ namespace SaveManager {
 #if FEATURE_SD_CARD
     if (!SDCard::isMounted()) return false;
     DisplayEmu::waitForDisplay();
-    SpiArbiter::lock();
+    SpiArbiter::ScopedLock spiLock;
     if (!SD.exists("/saves")) {
       SD.mkdir("/saves");
     }
-    SpiArbiter::unlock();
     return true;
 #else
     return false;
@@ -238,32 +237,33 @@ namespace SaveManager {
     if (!makeTemporaryPath(path, temporaryPath, sizeof(temporaryPath))) return false;
 
     DisplayEmu::waitForDisplay();
-    SpiArbiter::lock();
+    size_t written = 0;
+    bool committed = false;
+    {
+      SpiArbiter::ScopedLock spiLock;
 
-    if (!recoverAtomicWrite(path)) {
-      SpiArbiter::unlock();
-      return false;
+      if (!recoverAtomicWrite(path)) {
+        return false;
+      }
+
+      if (!SD.exists("/saves")) {
+        SD.mkdir("/saves");
+      }
+
+      if (SD.exists(temporaryPath)) SD.remove(temporaryPath);
+      File f = SD.open(temporaryPath, FILE_WRITE);
+      if (!f) {
+        LOG_ERROR("SaveManager: Failed to open %s for write", path);
+        return false;
+      }
+
+      written = f.write(ram, ramSize);
+      f.flush();
+      f.close();
+      const uint32_t crc = computeCRC32(ram, ramSize, 0xFFFFFFFFU) ^ 0xFFFFFFFFU;
+      committed = written == ramSize &&
+          finishAtomicWrite(temporaryPath, path, ramSize, 0, ramSize, crc);
     }
-
-    if (!SD.exists("/saves")) {
-      SD.mkdir("/saves");
-    }
-
-    if (SD.exists(temporaryPath)) SD.remove(temporaryPath);
-    File f = SD.open(temporaryPath, FILE_WRITE);
-    if (!f) {
-      SpiArbiter::unlock();
-      LOG_ERROR("SaveManager: Failed to open %s for write", path);
-      return false;
-    }
-
-    size_t written = f.write(ram, ramSize);
-    f.flush();
-    f.close();
-    const uint32_t crc = computeCRC32(ram, ramSize, 0xFFFFFFFFU) ^ 0xFFFFFFFFU;
-    const bool committed = written == ramSize &&
-        finishAtomicWrite(temporaryPath, path, ramSize, 0, ramSize, crc);
-    SpiArbiter::unlock();
 
     if (committed) {
       LOG_INFO("SaveManager: Saved battery RAM to %s (%u bytes)", path, (unsigned int)ramSize);
@@ -291,39 +291,38 @@ namespace SaveManager {
     bool usedLegacyPath = false;
 
     DisplayEmu::waitForDisplay();
-    SpiArbiter::lock();
+    size_t fileSize = 0;
+    size_t bytesRead = 0;
+    {
+      SpiArbiter::ScopedLock spiLock;
 
-    if (!recoverAtomicWrite(path)) {
-      SpiArbiter::unlock();
-      return false;
-    }
-    if (hasLegacyPath && !recoverAtomicWrite(legacyPath)) {
-      SpiArbiter::unlock();
-      return false;
-    }
-
-    if (!SD.exists(path)) {
-      if (!hasLegacyPath || !SD.exists(legacyPath)) {
-        SpiArbiter::unlock();
-        return false; // No existing save file
+      if (!recoverAtomicWrite(path)) {
+        return false;
       }
-      strncpy(path, legacyPath, sizeof(path) - 1);
-      path[sizeof(path) - 1] = '\0';
-      usedLegacyPath = true;
-    }
+      if (hasLegacyPath && !recoverAtomicWrite(legacyPath)) {
+        return false;
+      }
 
-    File f = SD.open(path, FILE_READ);
-    if (!f) {
-      SpiArbiter::unlock();
-      LOG_WARN("SaveManager: Failed to open %s for read", path);
-      return false;
-    }
+      if (!SD.exists(path)) {
+        if (!hasLegacyPath || !SD.exists(legacyPath)) {
+          return false; // No existing save file
+        }
+        strncpy(path, legacyPath, sizeof(path) - 1);
+        path[sizeof(path) - 1] = '\0';
+        usedLegacyPath = true;
+      }
 
-    size_t fileSize = f.size();
-    size_t toRead = (fileSize < maxRamSize) ? fileSize : maxRamSize;
-    size_t bytesRead = f.read(ram, toRead);
-    f.close();
-    SpiArbiter::unlock();
+      File f = SD.open(path, FILE_READ);
+      if (!f) {
+        LOG_WARN("SaveManager: Failed to open %s for read", path);
+        return false;
+      }
+
+      fileSize = f.size();
+      size_t toRead = (fileSize < maxRamSize) ? fileSize : maxRamSize;
+      bytesRead = f.read(ram, toRead);
+      f.close();
+    }
 
     if (outLoadedSize) *outLoadedSize = bytesRead;
     LOG_INFO("SaveManager: Loaded battery RAM from %s (%u bytes)", path, (unsigned int)bytesRead);
@@ -347,12 +346,11 @@ namespace SaveManager {
     const bool hasLegacyPath = makeLegacyBatterySavePath(romFilename, legacyPath, sizeof(legacyPath));
 
     DisplayEmu::waitForDisplay();
-    SpiArbiter::lock();
+    SpiArbiter::ScopedLock spiLock;
     const bool recovered = recoverAtomicWrite(path) &&
         (!hasLegacyPath || recoverAtomicWrite(legacyPath));
     bool exists = recovered &&
         (SD.exists(path) || (hasLegacyPath && SD.exists(legacyPath)));
-    SpiArbiter::unlock();
     return exists;
 #else
     return false;
@@ -391,40 +389,40 @@ namespace SaveManager {
     extractBaseName(romFilename, header.romTitle, sizeof(header.romTitle));
 
     DisplayEmu::waitForDisplay();
-    SpiArbiter::lock();
+    bool committed = false;
+    {
+      SpiArbiter::ScopedLock spiLock;
 
-    if (!recoverAtomicWrite(path)) {
-      SpiArbiter::unlock();
-      return false;
+      if (!recoverAtomicWrite(path)) {
+        return false;
+      }
+
+      if (!SD.exists("/saves")) {
+        SD.mkdir("/saves");
+      }
+
+      if (SD.exists(temporaryPath)) SD.remove(temporaryPath);
+      File f = SD.open(temporaryPath, FILE_WRITE);
+      if (!f) {
+        LOG_ERROR("SaveManager: Failed to open %s for write", path);
+        return false;
+      }
+
+      size_t headerWritten = f.write((const uint8_t*)&header, sizeof(header));
+      size_t stateWritten = f.write((const uint8_t*)stateData, stateSize);
+      size_t ramWritten = 0;
+      if (ramData && ramSize > 0) {
+        ramWritten = f.write(ramData, ramSize);
+      }
+
+      f.flush();
+      f.close();
+      const size_t expectedFileSize = sizeof(header) + stateSize + ramSize;
+      committed = (headerWritten == sizeof(header)) &&
+          (stateWritten == stateSize) && (ramWritten == ramSize) &&
+          finishAtomicWrite(temporaryPath, path, expectedFileSize, sizeof(header),
+                           stateSize + ramSize, crc);
     }
-
-    if (!SD.exists("/saves")) {
-      SD.mkdir("/saves");
-    }
-
-    if (SD.exists(temporaryPath)) SD.remove(temporaryPath);
-    File f = SD.open(temporaryPath, FILE_WRITE);
-    if (!f) {
-      SpiArbiter::unlock();
-      LOG_ERROR("SaveManager: Failed to open %s for write", path);
-      return false;
-    }
-
-    size_t headerWritten = f.write((const uint8_t*)&header, sizeof(header));
-    size_t stateWritten = f.write((const uint8_t*)stateData, stateSize);
-    size_t ramWritten = 0;
-    if (ramData && ramSize > 0) {
-      ramWritten = f.write(ramData, ramSize);
-    }
-
-    f.flush();
-    f.close();
-    const size_t expectedFileSize = sizeof(header) + stateSize + ramSize;
-    const bool committed = (headerWritten == sizeof(header)) &&
-        (stateWritten == stateSize) && (ramWritten == ramSize) &&
-        finishAtomicWrite(temporaryPath, path, expectedFileSize, sizeof(header),
-                         stateSize + ramSize, crc);
-    SpiArbiter::unlock();
 
     bool ok = committed;
 
@@ -457,101 +455,93 @@ namespace SaveManager {
     bool usedLegacyPath = false;
 
     DisplayEmu::waitForDisplay();
-    SpiArbiter::lock();
-
-    if (!recoverAtomicWrite(path)) {
-      SpiArbiter::unlock();
-      return false;
-    }
-    if (hasLegacyPath && !recoverAtomicWrite(legacyPath)) {
-      SpiArbiter::unlock();
-      return false;
-    }
-
-    if (!SD.exists(path)) {
-      if (!hasLegacyPath || !SD.exists(legacyPath)) {
-        SpiArbiter::unlock();
-        return false;
-      }
-      strncpy(path, legacyPath, sizeof(path) - 1);
-      path[sizeof(path) - 1] = '\0';
-      usedLegacyPath = true;
-    }
-
-    File f = SD.open(path, FILE_READ);
-    if (!f) {
-      SpiArbiter::unlock();
-      LOG_WARN("SaveManager: Failed to open %s for read", path);
-      return false;
-    }
-
     SaveStateHeader header;
-    if (f.read((uint8_t*)&header, sizeof(header)) != sizeof(header)) {
-      f.close();
-      SpiArbiter::unlock();
-      LOG_ERROR("SaveManager: Truncated header in %s", path);
-      return false;
-    }
-
-    if (header.magic != SAVE_STATE_MAGIC || header.version != SAVE_STATE_VERSION) {
-      f.close();
-      SpiArbiter::unlock();
-      LOG_ERROR("SaveManager: Invalid header in %s (magic: 0x%08X)", path, (unsigned int)header.magic);
-      return false;
-    }
-
-    if (header.coreId != expectedCoreId) {
-      f.close();
-      SpiArbiter::unlock();
-      LOG_ERROR("SaveManager: Core mismatch in %s (expected %u, got %u)",
-                path, (unsigned int)expectedCoreId, (unsigned int)header.coreId);
-      return false;
-    }
-
-    if (header.stateSize > maxStateSize) {
-      f.close();
-      SpiArbiter::unlock();
-      LOG_ERROR("SaveManager: State buffer overflow (stateSize %u > max %u)",
-                (unsigned int)header.stateSize, (unsigned int)maxStateSize);
-      return false;
-    }
-
-    if (header.ramSize > 0 && (!ramData || header.ramSize > maxRamSize)) {
-      f.close();
-      SpiArbiter::unlock();
-      LOG_ERROR("SaveManager: RAM buffer overflow (ramSize %u > max %u)",
-                (unsigned int)header.ramSize, (unsigned int)maxRamSize);
-      return false;
-    }
-
-    uint8_t* tempState = (uint8_t*)heap_caps_malloc(header.stateSize, MALLOC_CAP_SPIRAM);
-    if (!tempState) {
-      f.close();
-      SpiArbiter::unlock();
-      LOG_ERROR("SaveManager: Out of PSRAM staging state load (%u B)", (unsigned int)header.stateSize);
-      return false;
-    }
-
+    uint8_t* tempState = nullptr;
     uint8_t* tempRam = nullptr;
-    if (header.ramSize > 0) {
-      tempRam = (uint8_t*)heap_caps_malloc(header.ramSize, MALLOC_CAP_SPIRAM);
-      if (!tempRam) {
-        heap_caps_free(tempState);
-        f.close();
-        SpiArbiter::unlock();
-        LOG_ERROR("SaveManager: Out of PSRAM staging RAM load (%u B)", (unsigned int)header.ramSize);
+    size_t stateRead = 0;
+    size_t ramRead = 0;
+    {
+      SpiArbiter::ScopedLock spiLock;
+
+      if (!recoverAtomicWrite(path)) {
         return false;
       }
-    }
+      if (hasLegacyPath && !recoverAtomicWrite(legacyPath)) {
+        return false;
+      }
 
-    size_t stateRead = f.read(tempState, header.stateSize);
-    size_t ramRead = 0;
-    if (header.ramSize > 0) {
-      ramRead = f.read(tempRam, header.ramSize);
-    }
+      if (!SD.exists(path)) {
+        if (!hasLegacyPath || !SD.exists(legacyPath)) {
+          return false;
+        }
+        strncpy(path, legacyPath, sizeof(path) - 1);
+        path[sizeof(path) - 1] = '\0';
+        usedLegacyPath = true;
+      }
 
-    f.close();
-    SpiArbiter::unlock();
+      File f = SD.open(path, FILE_READ);
+      if (!f) {
+        LOG_WARN("SaveManager: Failed to open %s for read", path);
+        return false;
+      }
+
+      if (f.read((uint8_t*)&header, sizeof(header)) != sizeof(header)) {
+        f.close();
+        LOG_ERROR("SaveManager: Truncated header in %s", path);
+        return false;
+      }
+
+      if (header.magic != SAVE_STATE_MAGIC || header.version != SAVE_STATE_VERSION) {
+        f.close();
+        LOG_ERROR("SaveManager: Invalid header in %s (magic: 0x%08X)", path, (unsigned int)header.magic);
+        return false;
+      }
+
+      if (header.coreId != expectedCoreId) {
+        f.close();
+        LOG_ERROR("SaveManager: Core mismatch in %s (expected %u, got %u)",
+                  path, (unsigned int)expectedCoreId, (unsigned int)header.coreId);
+        return false;
+      }
+
+      if (header.stateSize > maxStateSize) {
+        f.close();
+        LOG_ERROR("SaveManager: State buffer overflow (stateSize %u > max %u)",
+                  (unsigned int)header.stateSize, (unsigned int)maxStateSize);
+        return false;
+      }
+
+      if (header.ramSize > 0 && (!ramData || header.ramSize > maxRamSize)) {
+        f.close();
+        LOG_ERROR("SaveManager: RAM buffer overflow (ramSize %u > max %u)",
+                  (unsigned int)header.ramSize, (unsigned int)maxRamSize);
+        return false;
+      }
+
+      tempState = (uint8_t*)heap_caps_malloc(header.stateSize, MALLOC_CAP_SPIRAM);
+      if (!tempState) {
+        f.close();
+        LOG_ERROR("SaveManager: Out of PSRAM staging state load (%u B)", (unsigned int)header.stateSize);
+        return false;
+      }
+
+      if (header.ramSize > 0) {
+        tempRam = (uint8_t*)heap_caps_malloc(header.ramSize, MALLOC_CAP_SPIRAM);
+        if (!tempRam) {
+          heap_caps_free(tempState);
+          f.close();
+          LOG_ERROR("SaveManager: Out of PSRAM staging RAM load (%u B)", (unsigned int)header.ramSize);
+          return false;
+        }
+      }
+
+      stateRead = f.read(tempState, header.stateSize);
+      if (header.ramSize > 0) {
+        ramRead = f.read(tempRam, header.ramSize);
+      }
+
+      f.close();
+    }
 
     if (stateRead != header.stateSize || (header.ramSize > 0 && ramRead != header.ramSize)) {
       heap_caps_free(tempState);
@@ -607,12 +597,11 @@ namespace SaveManager {
     const bool hasLegacyPath = makeLegacySaveStatePath(romFilename, slot, legacyPath, sizeof(legacyPath));
 
     DisplayEmu::waitForDisplay();
-    SpiArbiter::lock();
+    SpiArbiter::ScopedLock spiLock;
     const bool recovered = recoverAtomicWrite(path) &&
         (!hasLegacyPath || recoverAtomicWrite(legacyPath));
     bool exists = recovered &&
         (SD.exists(path) || (hasLegacyPath && SD.exists(legacyPath)));
-    SpiArbiter::unlock();
     return exists;
 #else
     return false;
@@ -630,20 +619,17 @@ namespace SaveManager {
     const bool hasLegacyPath = makeLegacySaveStatePath(romFilename, slot, legacyPath, sizeof(legacyPath));
 
     DisplayEmu::waitForDisplay();
-    SpiArbiter::lock();
+    SpiArbiter::ScopedLock spiLock;
 
     if (!recoverAtomicWrite(path)) {
-      SpiArbiter::unlock();
       return false;
     }
     if (hasLegacyPath && !recoverAtomicWrite(legacyPath)) {
-      SpiArbiter::unlock();
       return false;
     }
 
     if (!SD.exists(path)) {
       if (!hasLegacyPath || !SD.exists(legacyPath)) {
-        SpiArbiter::unlock();
         return false;
       }
       strncpy(path, legacyPath, sizeof(path) - 1);
@@ -652,13 +638,11 @@ namespace SaveManager {
 
     File f = SD.open(path, FILE_READ);
     if (!f) {
-      SpiArbiter::unlock();
       return false;
     }
 
     size_t n = f.read((uint8_t*)outHeader, sizeof(SaveStateHeader));
     f.close();
-    SpiArbiter::unlock();
 
     return (n == sizeof(SaveStateHeader) && outHeader->magic == SAVE_STATE_MAGIC);
 #else
@@ -681,10 +665,9 @@ namespace SaveManager {
     if (!makeTemporaryPath(path, temporaryPath, sizeof(temporaryPath))) return false;
 
     DisplayEmu::waitForDisplay();
-    SpiArbiter::lock();
+    SpiArbiter::ScopedLock spiLock;
 
     if (!recoverAtomicWrite(path)) {
-      SpiArbiter::unlock();
       return false;
     }
 
@@ -695,7 +678,6 @@ namespace SaveManager {
     if (SD.exists(temporaryPath)) SD.remove(temporaryPath);
     File f = SD.open(temporaryPath, FILE_WRITE);
     if (!f) {
-      SpiArbiter::unlock();
       return false;
     }
 
@@ -727,7 +709,6 @@ namespace SaveManager {
     uint32_t screenshotCrc = computeCRC32(header, sizeof(header), 0xFFFFFFFFU);
     if (f.write(header, sizeof(header)) != sizeof(header)) {
       f.close();
-      SpiArbiter::unlock();
       return false;
     }
 
@@ -747,7 +728,6 @@ namespace SaveManager {
       }
       if (f.write(rowBuf, rowStride) != rowStride) {
         f.close();
-        SpiArbiter::unlock();
         return false;
       }
       screenshotCrc = computeCRC32(rowBuf, rowStride, screenshotCrc);
@@ -757,7 +737,6 @@ namespace SaveManager {
     f.close();
     const bool committed = finishAtomicWrite(temporaryPath, path, fileSize, 0,
                                               fileSize, screenshotCrc ^ 0xFFFFFFFFU);
-    SpiArbiter::unlock();
     return committed;
 #else
     return false;

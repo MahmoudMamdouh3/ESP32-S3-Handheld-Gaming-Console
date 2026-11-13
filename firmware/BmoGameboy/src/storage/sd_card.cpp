@@ -319,44 +319,44 @@ bool SDCard::begin() {
 #endif
 
 #if FEATURE_SD_CARD
-  SpiArbiter::lock();
-  const uint32_t candidatesHz[] = {SD_SPI_HZ, 20000000UL, 10000000UL, 4000000UL};
-  uint32_t successfulRequestHz = 0;
-  for (size_t candidateIndex = 0;
-       candidateIndex < sizeof(candidatesHz) / sizeof(candidatesHz[0]);
-       ++candidateIndex) {
-    const uint32_t candidateHz = candidatesHz[candidateIndex];
-    if (candidateHz == 0 || candidateHz > SD_SPI_HZ) continue;
+  {
+    SpiArbiter::ScopedLock spiLock;
+    const uint32_t candidatesHz[] = {SD_SPI_HZ, 20000000UL, 10000000UL, 4000000UL};
+    uint32_t successfulRequestHz = 0;
+    for (size_t candidateIndex = 0;
+         candidateIndex < sizeof(candidatesHz) / sizeof(candidatesHz[0]);
+         ++candidateIndex) {
+      const uint32_t candidateHz = candidatesHz[candidateIndex];
+      if (candidateHz == 0 || candidateHz > SD_SPI_HZ) continue;
 
-    bool duplicate = false;
-    for (size_t earlier = 0; earlier < candidateIndex; ++earlier) {
-      if (candidatesHz[earlier] == candidateHz) duplicate = true;
+      bool duplicate = false;
+      for (size_t earlier = 0; earlier < candidateIndex; ++earlier) {
+        if (candidatesHz[earlier] == candidateHz) duplicate = true;
+      }
+      if (duplicate) continue;
+
+      if (SD.begin(SD_CS, SPI, candidateHz, "/sd")) {
+        successfulRequestHz = candidateHz;
+        break;
+      }
+      LOG_WARN("SD mount failed at %lu Hz; trying a lower SPI clock when available",
+               (unsigned long)candidateHz);
+      SD.end();
     }
-    if (duplicate) continue;
 
-    if (SD.begin(SD_CS, SPI, candidateHz, "/sd")) {
-      successfulRequestHz = candidateHz;
-      break;
+    if (successfulRequestHz == 0) {
+      mounted = false;
+      mountedClockHz = 0;
+      // Do not reset numRoms to 0, because we have baked ROMs!
+      return false;
     }
-    LOG_WARN("SD mount failed at %lu Hz; trying a lower SPI clock when available",
-             (unsigned long)candidateHz);
-    SD.end();
+    mounted = true;
+    const uint32_t cappedRequestHz = successfulRequestHz > 25000000UL ? 25000000UL : successfulRequestHz;
+    mountedClockHz = spiClockDivToFrequency(nullptr,
+                                             spiFrequencyToClockDiv(nullptr, cappedRequestHz));
+    LOG_INFO("SD mounted with nominal SPI clock %lu Hz (request %lu Hz)",
+             (unsigned long)mountedClockHz, (unsigned long)successfulRequestHz);
   }
-
-  if (successfulRequestHz == 0) {
-    mounted = false;
-    mountedClockHz = 0;
-    SpiArbiter::unlock();
-    // Do not reset numRoms to 0, because we have baked ROMs!
-    return false;
-  }
-  mounted = true;
-  const uint32_t cappedRequestHz = successfulRequestHz > 25000000UL ? 25000000UL : successfulRequestHz;
-  mountedClockHz = spiClockDivToFrequency(nullptr,
-                                           spiFrequencyToClockDiv(nullptr, cappedRequestHz));
-  LOG_INFO("SD mounted with nominal SPI clock %lu Hz (request %lu Hz)",
-           (unsigned long)mountedClockHz, (unsigned long)successfulRequestHz);
-  SpiArbiter::unlock();
   scanRoms();
   loadFavorites();
   loadRecentHistory();
@@ -596,26 +596,26 @@ bool SDCard::saveIndex() {
 
 void SDCard::rebuildIndex() {
 #if FEATURE_SD_CARD
-  SpiArbiter::lock();
-  skippedRomCount = 0;
-  poolGrowthFailed = false;
-  if (SD.exists(BMO_INDEX_PATH)) SD.remove(BMO_INDEX_PATH);
-  if (SD.exists(BMO_INDEX_TEMP_PATH)) SD.remove(BMO_INDEX_TEMP_PATH);
-  if (SD.exists(BMO_INDEX_BACKUP_PATH)) SD.remove(BMO_INDEX_BACKUP_PATH);
+  {
+    SpiArbiter::ScopedLock spiLock;
+    skippedRomCount = 0;
+    poolGrowthFailed = false;
+    if (SD.exists(BMO_INDEX_PATH)) SD.remove(BMO_INDEX_PATH);
+    if (SD.exists(BMO_INDEX_TEMP_PATH)) SD.remove(BMO_INDEX_TEMP_PATH);
+    if (SD.exists(BMO_INDEX_BACKUP_PATH)) SD.remove(BMO_INDEX_BACKUP_PATH);
 
-  numRoms = BAKED_ROM_COUNT;
-  s_favoritesCount = 0;
-  memset(romCountsByType, 0, sizeof(romCountsByType));
-  for (int i = 0; i < BAKED_ROM_COUNT; ++i) {
-    if (romList[i].type <= ROM_COLEM) {
-      romCountsByType[romList[i].type]++;
-    }
-    if (romList[i].isFavorite) {
-      s_favoritesCount++;
+    numRoms = BAKED_ROM_COUNT;
+    s_favoritesCount = 0;
+    memset(romCountsByType, 0, sizeof(romCountsByType));
+    for (int i = 0; i < BAKED_ROM_COUNT; ++i) {
+      if (romList[i].type <= ROM_COLEM) {
+        romCountsByType[romList[i].type]++;
+      }
+      if (romList[i].isFavorite) {
+        s_favoritesCount++;
+      }
     }
   }
-
-  SpiArbiter::unlock();
   scanRoms();
   loadFavorites();
 #endif
@@ -732,23 +732,28 @@ void SDCard::scanRoms() {
 #if FEATURE_SD_CARD
   skippedRomCount = 0;
   poolGrowthFailed = false;
-  SpiArbiter::lock();
+  bool loadedFromCache = false;
+  bool hasArtDirs = false;
+  {
+    SpiArbiter::ScopedLock spiLock;
 
-  // Try fast-loading cached index first (<15ms vs 3500ms directory crawl)
-  recoverIndexTransaction();
-  if (loadIndex()) {
-    const bool hasArtDirs = SD.exists("/boxart") || SD.exists("/covers");
+    // Try fast-loading cached index first (<15ms vs 3500ms directory crawl)
+    recoverIndexTransaction();
+    if (loadIndex()) {
+      loadedFromCache = true;
+      hasArtDirs = SD.exists("/boxart") || SD.exists("/covers");
+    } else {
+      // Grow the PSRAM pool as the cold scan finds ROMs; small libraries do not
+      // reserve the 36,000-entry maximum up front.
+      scanDirectory("/", 0, false);
+    }
+  }
+  if (loadedFromCache) {
     for (int i = 0; i < BAKED_ROM_COUNT && i < numRoms; ++i) {
       romList[i].hasBoxArt = hasArtDirs ? BoxArt::existsForRom(romList[i].filename) : false;
     }
-    SpiArbiter::unlock();
     return;
   }
-
-  // Grow the PSRAM pool as the cold scan finds ROMs; small libraries do not
-  // reserve the 36,000-entry maximum up front.
-  scanDirectory("/", 0, false);
-  SpiArbiter::unlock();
 
   // Sort newly crawled ROMs alphabetically
   sortRoms();
@@ -759,9 +764,8 @@ void SDCard::scanRoms() {
 
   // Do not cache an incomplete library. The next boot will retry the scan.
   if (skippedRomCount == 0) {
-    SpiArbiter::lock();
+    SpiArbiter::ScopedLock spiLock;
     saveIndex();
-    SpiArbiter::unlock();
   }
   if (skippedRomCount != 0) {
     LOG_WARN("SDCard: skipped %d ROM paths; library index not saved", skippedRomCount);
@@ -968,27 +972,29 @@ const char* SDCard::getRecentFilename(int index) {
 void SDCard::saveRecentHistory() {
 #if FEATURE_SD_CARD
   if (!mounted) return;
-  SpiArbiter::lock();
-  const char* finalPath = "/history.txt";
-  char temporaryPath[64];
-  bool ok = recoverMetadataFile(finalPath) &&
-      makeMetadataPath(finalPath, ".tmp", temporaryPath, sizeof(temporaryPath));
-  if (ok && SD.exists(temporaryPath)) ok = SD.remove(temporaryPath);
-  File f = ok ? SD.open(temporaryPath, FILE_WRITE) : File();
-  if (f) {
-    size_t byteCount = 0;
-    uint32_t crc = 0xFFFFFFFFU;
-    for (int i = 0; i < s_recentCount && ok; ++i) {
-      ok = writeMetadataLine(f, s_recentHistory[i], byteCount, crc);
+  bool ok = false;
+  {
+    SpiArbiter::ScopedLock spiLock;
+    const char* finalPath = "/history.txt";
+    char temporaryPath[64];
+    ok = recoverMetadataFile(finalPath) &&
+        makeMetadataPath(finalPath, ".tmp", temporaryPath, sizeof(temporaryPath));
+    if (ok && SD.exists(temporaryPath)) ok = SD.remove(temporaryPath);
+    File f = ok ? SD.open(temporaryPath, FILE_WRITE) : File();
+    if (f) {
+      size_t byteCount = 0;
+      uint32_t crc = 0xFFFFFFFFU;
+      for (int i = 0; i < s_recentCount && ok; ++i) {
+        ok = writeMetadataLine(f, s_recentHistory[i], byteCount, crc);
+      }
+      f.flush();
+      f.close();
+      ok = ok && commitMetadataFile(temporaryPath, finalPath, byteCount,
+                                    crc ^ 0xFFFFFFFFU);
+    } else {
+      ok = false;
     }
-    f.flush();
-    f.close();
-    ok = ok && commitMetadataFile(temporaryPath, finalPath, byteCount,
-                                  crc ^ 0xFFFFFFFFU);
-  } else {
-    ok = false;
   }
-  SpiArbiter::unlock();
   if (!ok) LOG_WARN_STR("SDCard: Could not commit recent-history metadata");
 #endif
 }
@@ -997,18 +1003,15 @@ void SDCard::loadRecentHistory() {
   s_recentCount = 0;
 #if FEATURE_SD_CARD
   if (!mounted) return;
-  SpiArbiter::lock();
+  SpiArbiter::ScopedLock spiLock;
   if (!recoverMetadataFile("/history.txt")) {
-    SpiArbiter::unlock();
     return;
   }
   if (!SD.exists("/history.txt")) {
-    SpiArbiter::unlock();
     return;
   }
   File f = SD.open("/history.txt", FILE_READ);
   if (!f) {
-    SpiArbiter::unlock();
     return;
   }
   char line[64];
@@ -1025,7 +1028,6 @@ void SDCard::loadRecentHistory() {
     }
   }
   f.close();
-  SpiArbiter::unlock();
 #endif
 }
 
@@ -1037,33 +1039,34 @@ int SDCard::getFavoritesCount() {
 void SDCard::saveFavorites() {
 #if FEATURE_SD_CARD
   if (!mounted) return;
-  SpiArbiter::lock();
-  const char* finalPath = "/favorites.txt";
-  char temporaryPath[64];
-  bool ok = recoverMetadataFile(finalPath) &&
-      makeMetadataPath(finalPath, ".tmp", temporaryPath, sizeof(temporaryPath));
-  if (ok && SD.exists(temporaryPath)) ok = SD.remove(temporaryPath);
-  File f = ok ? SD.open(temporaryPath, FILE_WRITE) : File();
-  if (!f) {
-    SpiArbiter::unlock();
-    LOG_WARN_STR("SDCard: Could not stage favorite metadata");
-    return;
-  }
-  size_t byteCount = 0;
-  uint32_t crc = 0xFFFFFFFFU;
-  for (int i = 0; i < numRoms; ++i) {
-    if (romList[i].isFavorite) {
-      if (!writeMetadataLine(f, romList[i].filename, byteCount, crc)) {
-        ok = false;
-        break;
+  bool ok = false;
+  {
+    SpiArbiter::ScopedLock spiLock;
+    const char* finalPath = "/favorites.txt";
+    char temporaryPath[64];
+    ok = recoverMetadataFile(finalPath) &&
+        makeMetadataPath(finalPath, ".tmp", temporaryPath, sizeof(temporaryPath));
+    if (ok && SD.exists(temporaryPath)) ok = SD.remove(temporaryPath);
+    File f = ok ? SD.open(temporaryPath, FILE_WRITE) : File();
+    if (!f) {
+      LOG_WARN_STR("SDCard: Could not stage favorite metadata");
+      return;
+    }
+    size_t byteCount = 0;
+    uint32_t crc = 0xFFFFFFFFU;
+    for (int i = 0; i < numRoms; ++i) {
+      if (romList[i].isFavorite) {
+        if (!writeMetadataLine(f, romList[i].filename, byteCount, crc)) {
+          ok = false;
+          break;
+        }
       }
     }
+    f.flush();
+    f.close();
+    ok = ok && commitMetadataFile(temporaryPath, finalPath, byteCount,
+                                  crc ^ 0xFFFFFFFFU);
   }
-  f.flush();
-  f.close();
-  ok = ok && commitMetadataFile(temporaryPath, finalPath, byteCount,
-                                crc ^ 0xFFFFFFFFU);
-  SpiArbiter::unlock();
   if (!ok) LOG_WARN_STR("SDCard: Could not commit favorite metadata");
 #endif
 }
@@ -1071,18 +1074,15 @@ void SDCard::saveFavorites() {
 void SDCard::loadFavorites() {
 #if FEATURE_SD_CARD
   if (!mounted) return;
-  SpiArbiter::lock();
+  SpiArbiter::ScopedLock spiLock;
   if (!recoverMetadataFile("/favorites.txt")) {
-    SpiArbiter::unlock();
     return;
   }
   if (!SD.exists("/favorites.txt")) {
-    SpiArbiter::unlock();
     return;
   }
   File f = SD.open("/favorites.txt", FILE_READ);
   if (!f) {
-    SpiArbiter::unlock();
     return;
   }
   // Authoritative override when /favorites.txt exists on SD card.
@@ -1112,7 +1112,6 @@ void SDCard::loadFavorites() {
     }
   }
   f.close();
-  SpiArbiter::unlock();
 #endif
 }
 
@@ -1132,40 +1131,40 @@ uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
   // H-3: Stack buffer instead of Arduino String — avoids DRAM heap alloc on every ROM launch.
   char path[128];
   snprintf(path, sizeof(path), "/%s", filename);
-  SpiArbiter::lock();
-  File file = SD.open(path, FILE_READ);
-  if (!file) {
-    SpiArbiter::unlock();
-    return nullptr;
-  }
-
-  size_t size = file.size();
-  if (size == 0) {
-    file.close();
-    SpiArbiter::unlock();
-    return nullptr;
-  }
-  *outSize = size;
-
-  // Allocate strictly in PSRAM (external SPI RAM) since ROMs are up to 4MB
-  uint8_t* buffer = (uint8_t*)heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
-  if (!buffer) {
-    file.close();
-    SpiArbiter::unlock();
-    return nullptr;
-  }
-
-  // Read entire file in multi-sector burst chunks (64KB chunk bursts)
+  uint8_t* buffer = nullptr;
+  size_t size = 0;
   size_t bytesRead = 0;
-  while (bytesRead < size) {
-    size_t toRead = (size - bytesRead > 65536) ? 65536 : (size - bytesRead);
-    int chunk = file.read(buffer + bytesRead, toRead);
-    if (chunk <= 0) break; // EOF or error
-    bytesRead += chunk;
+  {
+    SpiArbiter::ScopedLock spiLock;
+    File file = SD.open(path, FILE_READ);
+    if (!file) {
+      return nullptr;
+    }
+
+    size = file.size();
+    if (size == 0) {
+      file.close();
+      return nullptr;
+    }
+    *outSize = size;
+
+    // Allocate strictly in PSRAM (external SPI RAM) since ROMs are up to 4MB
+    buffer = (uint8_t*)heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
+    if (!buffer) {
+      file.close();
+      return nullptr;
+    }
+
+    // Read entire file in multi-sector burst chunks (64KB chunk bursts)
+    while (bytesRead < size) {
+      size_t toRead = (size - bytesRead > 65536) ? 65536 : (size - bytesRead);
+      int chunk = file.read(buffer + bytesRead, toRead);
+      if (chunk <= 0) break; // EOF or error
+      bytesRead += chunk;
+    }
+    
+    file.close();
   }
-  
-  file.close();
-  SpiArbiter::unlock();
   if (bytesRead != size) {
     // Never hand a truncated ROM to an emulator: it can fail much later with
     // a misleading crash or an out-of-bounds bank read.

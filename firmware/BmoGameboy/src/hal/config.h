@@ -21,20 +21,19 @@
 #define FEATURE_AUDIO 0
 #define FEATURE_BATTERY_MONITOR 0
 
-// Optional compile-time features (disabled by default for clean public MIT builds)
+// Optional compile-time features (enabled by default; override via build properties if needed)
 #ifndef BMO_ENABLE_BAKED_ROMS
 #define BMO_ENABLE_BAKED_ROMS 0
 #endif
 
 #ifndef BMO_ENABLE_DOOM
-#define BMO_ENABLE_DOOM 0
+#define BMO_ENABLE_DOOM 1
 #endif
 
-// Unverified experimental mini-cores (SMS/GG, PCE, Atari, PICO-8, Genesis,
-// SNES, WonderSwan, NGP, Lynx, ColecoVision) are excluded by default so the
-// public firmware links only GB, GBC, and NES unless explicitly enabled.
+// Extra retro console cores (SMS/GG/Coleco/SG-1000, PCE, Atari 2600, PICO-8,
+// Genesis, SNES, WonderSwan, NGP, Lynx) compiled in by default.
 #ifndef BMO_EXPERIMENTAL_CORES
-#define BMO_EXPERIMENTAL_CORES 0
+#define BMO_EXPERIMENTAL_CORES 1
 #endif
 
 // ---------- Display: ST7789, 2.4", 240x320, SPI ----------
