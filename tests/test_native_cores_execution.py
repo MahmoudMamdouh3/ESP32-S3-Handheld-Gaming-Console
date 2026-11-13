@@ -386,6 +386,97 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         self.assertIn("0x22", walnut_h)
         self.assertIn("0x22", peanut_h)
 
+    def test_11_bmo_mode_simulator_controls_and_wasm_bridge(self):
+        html = (REPO_ROOT / "tools" / "bmo_simulator" / "index.html").read_text(encoding="utf-8")
+        js = (REPO_ROOT / "tools" / "bmo_simulator" / "simulator.js").read_text(encoding="utf-8")
+        css = (REPO_ROOT / "tools" / "bmo_simulator" / "simulator.css").read_text(encoding="utf-8")
+
+        for required_id in (
+            "btn-bmo-mode",
+            "bmo-mode-panel",
+            "btn-bmo-enter",
+            "btn-bmo-exit",
+            "btn-bmo-reset",
+            "btn-bmo-pet",
+            "btn-bmo-tickle",
+            "btn-bmo-wink",
+            "btn-bmo-blush",
+            "btn-bmo-joy",
+            "btn-bmo-dance",
+            "slider-bmo-bpm",
+            "chk-bmo-autocycle",
+            "chk-bmo-autosleep",
+            "chk-bmo-hud",
+            "bmo-gaze-pad",
+            "select-bmo-quote",
+            "input-bmo-speech",
+            "btn-bmo-say-custom",
+            "btn-bmo-clear-speech",
+        ):
+            self.assertIn(f'id="{required_id}"', html)
+
+        expected_expressions = (
+            "IDLE", "SURPRISED", "HAPPY", "SLEEPY", "LOW_BATTERY", "CHARGING",
+            "ERROR", "SHUTDOWN", "HIDDEN", "JOY", "SLEEPING", "WINK",
+            "BLUSH", "CONFUSED", "ANNOYED", "LOVE", "TICKLED", "CELEBRATING",
+        )
+        for expr_name in expected_expressions:
+            self.assertIn(f'data-bmo-expr="{expr_name}"', html)
+
+        self.assertIn('stateParam === "bmo"', js)
+        self.assertIn("enterBmoMode()", js)
+        self.assertIn("setupBmoModeControls()", js)
+        self.assertIn("wrapSpeechLines(", js)
+        self.assertIn("isEditableTarget", js)
+        self.assertIn(".bmo-gaze-pad:focus-visible", css)
+
+        node_bin = shutil.which("node")
+        if node_bin:
+            js_test = (
+                "const {WasmPlaytestEngine,BMO_EXPRESSION_NAMES,BMO_EXPRESSIONS}=require('./tools/bmo_simulator/wasm_playtest_engine.js');"
+                "(async()=>{"
+                "  if(BMO_EXPRESSION_NAMES.length!==18) throw new Error('expected 18 expressions');"
+                "  const eng=new WasmPlaytestEngine();"
+                "  await eng.init();"
+                "  let putImg=null;"
+                "  const mockCtx={createImageData:(w,h)=>({width:w,height:h,data:new Uint8ClampedArray(w*h*4)}),putImageData:(img)=>{putImg=img;}};"
+                "  eng.renderBmoFrame(mockCtx, 1000);"
+                "  const r=putImg.data[0], g=putImg.data[1], b=putImg.data[2], a=putImg.data[3];"
+                "  if(a!==255 || Math.abs(r-138)>6 || Math.abs(g-213)>6 || Math.abs(b-195)>6 || !(g>r && b>r))"
+                "    throw new Error('BGR565 unpack color mismatch rgb='+JSON.stringify([r,g,b,a]));"
+                "  for(let i=0;i<BMO_EXPRESSION_NAMES.length;i++){"
+                "    const name=BMO_EXPRESSION_NAMES[i];"
+                "    if(BMO_EXPRESSIONS[name]!==i) throw new Error('enum mismatch '+name);"
+                "    eng.setBmoExpression(name);"
+                "    if(eng.bmoExpression()!==i) throw new Error('failed to set expression '+name);"
+                "  }"
+                "  eng.tickleBmo(1.0);"
+                "  if(eng.bmoExpression()!==BMO_EXPRESSIONS.TICKLED) throw new Error('tickle did not set TICKLED');"
+                "  eng.startBmoDance(180);"
+                "  if(!eng.bmoIsDancing()) throw new Error('startBmoDance failed');"
+                "  eng.stopBmoDance();"
+                "  if(eng.bmoIsDancing()) throw new Error('stopBmoDance failed');"
+                "  const quotes=eng.bmoQuotes();"
+                "  if(quotes.length!==10 || quotes[0]!=='Who wants to play video games?!')"
+                "    throw new Error('quotes mismatch: '+JSON.stringify(quotes));"
+                "  eng.sayBmoText('Hello BMO Mode!', 3500);"
+                "  if(!eng.bmoHasSpeech() || eng.bmoCurrentQuote()!=='Hello BMO Mode!')"
+                "    throw new Error('custom speech mismatch: '+eng.bmoCurrentQuote());"
+                "  eng.clearBmoSpeech();"
+                "  if(eng.bmoHasSpeech()) throw new Error('clearBmoSpeech failed');"
+                "  console.log('BMO_MODE_WASM_BRIDGE_PASS rgb='+r+','+g+','+b);"
+                "})().catch(err=>{console.error(err);process.exit(1);});"
+            )
+            proc = subprocess.run(
+                [node_bin, "-e", js_test],
+                cwd=str(REPO_ROOT),
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            self.assertEqual(proc.returncode, 0, msg=f"Node BMO Mode test failed: {proc.stderr}\n{proc.stdout}")
+            self.assertIn("BMO_MODE_WASM_BRIDGE_PASS", proc.stdout)
+
 
 class TestCoverArtPipeline(unittest.TestCase):
     """Covers the full-resolution to 64x64 box art conversion path."""

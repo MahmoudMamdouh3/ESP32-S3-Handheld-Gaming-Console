@@ -76,6 +76,16 @@ class BmoSimulator {
     this.bmoLastGazeX = 0;
     this.bmoLastDirectionChangeMs = 0;
     this.bmoDirectionToggleCount = 0;
+    this.bmoModeActive = false;
+    this.bmoAutoSleep = true;
+    this.bmoHudVisible = true;
+    this.bmoAutoCycle = false;
+    this.bmoAutoCycleIndex = 0;
+    this.bmoLastAutoCycleMs = 0;
+    this.bmoDanceBpm = 125;
+    this.bmoGazeX = 0;
+    this.bmoGazeY = 0;
+    this.bmoLastUiSyncMs = 0;
 
     // DMG Runtime Palettes
     this.palettes = {
@@ -98,7 +108,11 @@ class BmoSimulator {
       : null;
     this.engineLoadFailed = false;
     this.engineReady = this.wasmEngine
-      ? this.wasmEngine.init().then(() => true).catch((error) => {
+      ? this.wasmEngine.init().then(() => {
+        this.populateBmoQuotes();
+        this.syncBmoModeUI();
+        return true;
+      }).catch((error) => {
         this.engineLoadFailed = true;
         this.showSimulatorMessage(error.message, true);
         return false;
@@ -165,11 +179,10 @@ class BmoSimulator {
     const stateParam = (params.get("state") || "").toLowerCase();
     if (stateParam === "splash") {
       this.currentState = STATE.BOOT_SPLASH;
+    } else if (stateParam === "bmo") {
+      this.enterBmoMode();
     } else if (stateParam === "mascot") {
-      this.currentState = STATE.IDLE_MASCOT;
-      this.bmoSessionStarted = false;
-      this.bmoEntryGreeting = true;
-      this.bmoLastInputMs = performance.now();
+      this.enterBmoCompanion(true, false);
     } else if (stateParam === "carousel") {
       this.currentState = STATE.CONSOLE_SELECT;
       if (consoleParam === null) this.selectedConsoleIndex = 2; // Game Boy Color
@@ -241,8 +254,15 @@ class BmoSimulator {
       s: 256, S: 256, a: 512, A: 512, q: 1024, Q: 1024, w: 2048, W: 2048
     };
 
+    const isEditableTarget = (target) => {
+      if (!target) return false;
+      const tag = target.tagName ? target.tagName.toUpperCase() : "";
+      return Boolean(target.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT");
+    };
+
     // Keyboard Handler
     window.addEventListener("keydown", (e) => {
+      if (isEditableTarget(e.target)) return;
       if (e.repeat && this.currentState === STATE.IDLE_MASCOT) return;
       if (this.wasmEngine && keyBitMap[e.key]) {
         this.wasmEngine.setButtonBit(keyBitMap[e.key], true);
@@ -303,6 +323,7 @@ class BmoSimulator {
     });
 
     window.addEventListener("keyup", (e) => {
+      if (isEditableTarget(e.target)) return;
       if (this.wasmEngine && keyBitMap[e.key]) {
         this.wasmEngine.setButtonBit(keyBitMap[e.key], false);
       }
@@ -360,30 +381,205 @@ class BmoSimulator {
       if (this.wasmEngine) this.wasmEngine.setButtonBit(b.bit, false);
       this.handleButtonRelease(b.key);
     });
+
+    if (this.canvas) {
+      let draggingScreen = false;
+      let screenMoved = false;
+      let startX = 0;
+      let startY = 0;
+      const aimFromCanvasEvent = (e) => {
+        const rect = this.canvas.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        const normX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        const normY = 1 - ((e.clientY - rect.top) / rect.height) * 2;
+        this.setBmoModeGaze(normX, normY);
+      };
+      this.canvas.addEventListener("pointerdown", (e) => {
+        if (this.currentState !== STATE.IDLE_MASCOT) return;
+        draggingScreen = true;
+        screenMoved = false;
+        startX = e.clientX;
+        startY = e.clientY;
+        aimFromCanvasEvent(e);
+      });
+      window.addEventListener("pointermove", (e) => {
+        if (!draggingScreen || this.currentState !== STATE.IDLE_MASCOT) return;
+        if (Math.hypot(e.clientX - startX, e.clientY - startY) > 4) {
+          screenMoved = true;
+        }
+        aimFromCanvasEvent(e);
+      });
+      window.addEventListener("pointerup", () => {
+        if (!draggingScreen) return;
+        draggingScreen = false;
+        if (!screenMoved && this.currentState === STATE.IDLE_MASCOT) {
+          this.runBmoAction((engine) => engine.petBmoCompanion(), false);
+        }
+      });
+    }
   }
 
-  enterBmoCompanion(showGreeting = true) {
+  enterBmoCompanion(showGreeting = true, interactiveSandbox = false) {
     this.currentState = STATE.IDLE_MASCOT;
     this.bmoSessionStarted = false;
     this.bmoEntryGreeting = showGreeting;
+    this.bmoModeActive = interactiveSandbox;
+    this.bmoAutoSleep = !interactiveSandbox;
+    this.bmoAutoCycle = false;
     this.bmoQuoteIndex = 0;
     this.bmoLastInputMs = performance.now();
     this.lastInputActivityMs = this.bmoLastInputMs;
     this.bmoButtonHoldStart = 0;
     this.bmoLastGazeX = 0;
     this.bmoDirectionToggleCount = 0;
+    const chkSleep = document.getElementById("chk-bmo-autosleep");
+    if (chkSleep) chkSleep.checked = this.bmoAutoSleep;
+    const chkCycle = document.getElementById("chk-bmo-autocycle");
+    if (chkCycle) chkCycle.checked = false;
+    this.syncBmoModeUI();
+  }
+
+  enterBmoMode() {
+    this.enterBmoCompanion(true, true);
+  }
+
+  ensureBmoModeActive() {
+    if (this.currentState !== STATE.IDLE_MASCOT) {
+      this.enterBmoCompanion(false, true);
+    } else if (!this.bmoModeActive) {
+      this.bmoModeActive = true;
+      this.bmoAutoSleep = false;
+      const chkSleep = document.getElementById("chk-bmo-autosleep");
+      if (chkSleep) chkSleep.checked = false;
+    }
+    this.bmoSessionStarted = true;
   }
 
   exitBmoCompanion() {
     this.currentState = STATE.CONSOLE_SELECT;
     this.bmoSessionStarted = false;
+    this.bmoModeActive = false;
+    this.bmoAutoCycle = false;
     this.bmoButtonHoldStart = 0;
     if (this.wasmEngine && this.wasmEngine.bmoReady) {
+      this.wasmEngine.stopBmoDance();
       this.wasmEngine.setBmoExpression("HAPPY");
       this.wasmEngine.clearBmoSpeech();
     }
+    const chkCycle = document.getElementById("chk-bmo-autocycle");
+    if (chkCycle) chkCycle.checked = false;
     this.bmoLastInputMs = performance.now();
     this.lastInputActivityMs = this.bmoLastInputMs;
+    this.syncBmoModeUI();
+  }
+
+  runBmoAction(callback, stopCycle = false) {
+    const engine = this.wasmEngine;
+    if (!engine || !engine.bmoReady) {
+      this.showSimulatorMessage("The firmware BMO companion is still loading.", false);
+      return false;
+    }
+    this.ensureBmoModeActive();
+    if (stopCycle) {
+      this.bmoAutoCycle = false;
+      const chkCycle = document.getElementById("chk-bmo-autocycle");
+      if (chkCycle) chkCycle.checked = false;
+    }
+    this.bmoLastInputMs = performance.now();
+    this.lastInputActivityMs = this.bmoLastInputMs;
+    callback(engine);
+    this.syncBmoModeUI();
+    return true;
+  }
+
+  setBmoModeGaze(gx, gy) {
+    const clampedX = Math.max(-1, Math.min(1, Number(gx) || 0));
+    const clampedY = Math.max(-1, Math.min(1, Number(gy) || 0));
+    this.bmoGazeX = clampedX;
+    this.bmoGazeY = clampedY;
+    this.updateBmoGazePadVisual(clampedX, clampedY);
+    this.runBmoAction((engine) => engine.setBmoGaze(clampedX, clampedY));
+  }
+
+  updateBmoGazePadVisual(gx, gy) {
+    const dot = document.getElementById("bmo-gaze-dot");
+    if (dot) {
+      dot.style.left = `${((gx + 1) * 50).toFixed(1)}%`;
+      dot.style.top = `${((1 - gy) * 50).toFixed(1)}%`;
+    }
+    const label = document.getElementById("val-bmo-gaze");
+    if (label) label.textContent = `${gx.toFixed(2)}, ${gy.toFixed(2)}`;
+  }
+
+  resetBmoNeutral() {
+    this.bmoGazeX = 0;
+    this.bmoGazeY = 0;
+    this.updateBmoGazePadVisual(0, 0);
+    this.runBmoAction((engine) => {
+      if (engine.bmoIsDancing()) engine.stopBmoDance();
+      engine.clearBmoSpeech();
+      engine.setBmoGaze(0, 0);
+      engine.setBmoExpression("IDLE");
+    }, true);
+  }
+
+  populateBmoQuotes() {
+    const select = document.getElementById("select-bmo-quote");
+    if (!select || !this.wasmEngine || !this.wasmEngine.bmoReady) return;
+    const quotes = this.wasmEngine.bmoQuotes();
+    if (!quotes.length) return;
+    const prevValue = select.value;
+    select.innerHTML = "";
+    quotes.forEach((quote, idx) => {
+      const opt = document.createElement("option");
+      opt.value = String(idx);
+      opt.textContent = `${idx}: ${quote}`;
+      select.appendChild(opt);
+    });
+    if (prevValue && Number(prevValue) < quotes.length) {
+      select.value = prevValue;
+    }
+  }
+
+  syncBmoModeUI() {
+    const isInMascot = this.currentState === STATE.IDLE_MASCOT;
+    const btnToolbar = document.getElementById("btn-bmo-mode");
+    if (btnToolbar) {
+      btnToolbar.classList.toggle("active", isInMascot);
+      btnToolbar.setAttribute("aria-pressed", isInMascot ? "true" : "false");
+    }
+    const panel = document.getElementById("bmo-mode-panel");
+    if (panel) panel.classList.toggle("is-active", isInMascot);
+
+    const engine = this.wasmEngine;
+    const ready = Boolean(engine && engine.bmoReady);
+    const exprId = ready ? engine.bmoExpression() : 0;
+    const exprName = ready ? engine.bmoExpressionName(exprId) : "IDLE";
+    const dancing = ready ? engine.bmoIsDancing() : false;
+
+    const statusBadge = document.getElementById("bmo-mode-status");
+    if (statusBadge) {
+      statusBadge.textContent = !ready ? "Loading" : isInMascot ? `Active · ${exprName}` : "Standby";
+    }
+    const statExpr = document.getElementById("bmo-stat-expr");
+    if (statExpr) statExpr.textContent = `${exprName} (${exprId})`;
+    const statBuddy = document.getElementById("bmo-stat-buddy");
+    if (statBuddy && ready) statBuddy.textContent = `Lv.${engine.bmoBuddyLevel()}`;
+    const statHappy = document.getElementById("bmo-stat-happy");
+    if (statHappy && ready) statHappy.textContent = `${engine.bmoHappiness()}%`;
+    const statDance = document.getElementById("bmo-stat-dance");
+    if (statDance) statDance.textContent = dancing ? `On (${this.bmoDanceBpm} BPM)` : `Off (${this.bmoDanceBpm} BPM)`;
+
+    const btnDance = document.getElementById("btn-bmo-dance");
+    if (btnDance) {
+      btnDance.classList.toggle("active", dancing);
+      btnDance.setAttribute("aria-pressed", dancing ? "true" : "false");
+      btnDance.textContent = dancing ? "Stop Dance" : "Dance Party";
+    }
+    document.querySelectorAll(".bmo-expr-btn").forEach((btn) => {
+      const targetExpr = btn.getAttribute("data-bmo-expr");
+      btn.classList.toggle("active", isInMascot && targetExpr === exprName);
+    });
   }
 
   handleButtonRelease(key) {
@@ -795,7 +991,155 @@ class BmoSimulator {
       });
     }
 
+    this.setupBmoModeControls();
     this.updateSidebarMuseumView();
+  }
+
+  setupBmoModeControls() {
+    const bindClick = (id, handler) => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener("click", handler);
+      return el;
+    };
+
+    bindClick("btn-bmo-mode", () => {
+      if (this.currentState === STATE.IDLE_MASCOT) this.exitBmoCompanion();
+      else this.enterBmoMode();
+    });
+    bindClick("btn-bmo-enter", () => this.enterBmoMode());
+    bindClick("btn-bmo-exit", () => this.exitBmoCompanion());
+    bindClick("btn-bmo-reset", () => this.resetBmoNeutral());
+
+    document.querySelectorAll(".bmo-expr-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const expr = btn.getAttribute("data-bmo-expr");
+        if (expr) this.runBmoAction((engine) => engine.setBmoExpression(expr), true);
+      });
+    });
+
+    bindClick("btn-bmo-pet", () => this.runBmoAction((engine) => engine.petBmoCompanion()));
+    bindClick("btn-bmo-tickle", () => this.runBmoAction((engine) => engine.tickleBmo(1.0)));
+    bindClick("btn-bmo-wink", () => this.runBmoAction((engine) => engine.triggerBmoWink()));
+    bindClick("btn-bmo-blush", () => this.runBmoAction((engine) => engine.triggerBmoBlush()));
+    bindClick("btn-bmo-joy", () => this.runBmoAction((engine) => engine.triggerBmoJoy()));
+    bindClick("btn-bmo-dance", () => this.runBmoAction((engine) => {
+      if (engine.bmoIsDancing()) engine.stopBmoDance();
+      else engine.startBmoDance(this.bmoDanceBpm);
+    }));
+
+    const bpmSlider = document.getElementById("slider-bmo-bpm");
+    const bpmVal = document.getElementById("val-bmo-bpm");
+    if (bpmSlider) {
+      bpmSlider.addEventListener("input", () => {
+        this.bmoDanceBpm = parseInt(bpmSlider.value, 10) || 125;
+        if (bpmVal) bpmVal.textContent = `${this.bmoDanceBpm} BPM`;
+        if (this.wasmEngine && this.wasmEngine.bmoReady && this.wasmEngine.bmoIsDancing()) {
+          this.wasmEngine.startBmoDance(this.bmoDanceBpm);
+        }
+        this.syncBmoModeUI();
+      });
+    }
+
+    const chkAutoCycle = document.getElementById("chk-bmo-autocycle");
+    if (chkAutoCycle) {
+      chkAutoCycle.addEventListener("change", () => {
+        this.bmoAutoCycle = chkAutoCycle.checked;
+        if (this.bmoAutoCycle) {
+          this.ensureBmoModeActive();
+          this.bmoLastAutoCycleMs = performance.now();
+          const names = (window.BMO_EXPRESSION_NAMES || []).filter((n) => n !== "HIDDEN");
+          if (names.length) {
+            const nextExpr = names[this.bmoAutoCycleIndex % names.length];
+            this.runBmoAction((engine) => engine.setBmoExpression(nextExpr), false);
+            this.bmoAutoCycleIndex = (this.bmoAutoCycleIndex + 1) % names.length;
+          }
+        }
+        this.syncBmoModeUI();
+      });
+    }
+
+    const chkAutoSleep = document.getElementById("chk-bmo-autosleep");
+    if (chkAutoSleep) {
+      chkAutoSleep.checked = this.bmoAutoSleep;
+      chkAutoSleep.addEventListener("change", () => {
+        this.bmoAutoSleep = chkAutoSleep.checked;
+        this.bmoLastInputMs = performance.now();
+      });
+    }
+
+    const chkHud = document.getElementById("chk-bmo-hud");
+    if (chkHud) {
+      chkHud.checked = this.bmoHudVisible;
+      chkHud.addEventListener("change", () => {
+        this.bmoHudVisible = chkHud.checked;
+      });
+    }
+
+    const gazePad = document.getElementById("bmo-gaze-pad");
+    if (gazePad) {
+      let draggingGaze = false;
+      const updateFromPadPointer = (e) => {
+        const rect = gazePad.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        const gx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        const gy = 1 - ((e.clientY - rect.top) / rect.height) * 2;
+        this.setBmoModeGaze(gx, gy);
+      };
+      gazePad.addEventListener("pointerdown", (e) => {
+        draggingGaze = true;
+        if (typeof gazePad.setPointerCapture === "function") {
+          try { gazePad.setPointerCapture(e.pointerId); } catch (_) { /* ignore synthetic events */ }
+        }
+        updateFromPadPointer(e);
+      });
+      gazePad.addEventListener("pointermove", (e) => {
+        if (draggingGaze) updateFromPadPointer(e);
+      });
+      window.addEventListener("pointerup", () => {
+        draggingGaze = false;
+      });
+    }
+
+    document.querySelectorAll(".bmo-gaze-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const pair = (btn.getAttribute("data-gaze") || "0,0").split(",");
+        this.setBmoModeGaze(parseFloat(pair[0]), parseFloat(pair[1]));
+      });
+    });
+
+    const quoteSelect = document.getElementById("select-bmo-quote");
+    bindClick("btn-bmo-say-quote", () => {
+      const idx = quoteSelect ? parseInt(quoteSelect.value, 10) || 0 : 0;
+      this.runBmoAction((engine) => engine.sayBmoQuote(idx, 3800));
+    });
+    bindClick("btn-bmo-random-quote", () => {
+      const count = quoteSelect ? quoteSelect.options.length : 10;
+      const idx = Math.floor(Math.random() * Math.max(1, count));
+      if (quoteSelect && idx < quoteSelect.options.length) quoteSelect.value = String(idx);
+      this.runBmoAction((engine) => engine.sayBmoQuote(idx, 3800));
+    });
+
+    const customInput = document.getElementById("input-bmo-speech");
+    const submitCustomSpeech = () => {
+      if (!customInput) return;
+      const text = customInput.value.trim();
+      if (!text) return;
+      this.runBmoAction((engine) => engine.sayBmoText(text, 4000));
+    };
+    bindClick("btn-bmo-say-custom", submitCustomSpeech);
+    if (customInput) {
+      customInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          submitCustomSpeech();
+        }
+      });
+    }
+    bindClick("btn-bmo-clear-speech", () => {
+      this.runBmoAction((engine) => engine.clearBmoSpeech());
+    });
+    this.populateBmoQuotes();
+    this.syncBmoModeUI();
   }
 
   handleExternalButtonPress(key) {
@@ -1493,6 +1837,40 @@ class BmoSimulator {
     this.ctx.fillText("PRESS B TO RETURN", 160, 220);
   }
 
+  wrapSpeechLines(text, maxWidth, maxLines = 2) {
+    const words = String(text || "").split(/\s+/).filter(Boolean);
+    if (words.length === 0) return [];
+    const lines = [];
+    let current = "";
+    for (const word of words) {
+      const candidate = current ? `${current} ${word}` : word;
+      if (this.ctx.measureText(candidate).width <= maxWidth) {
+        current = candidate;
+      } else if (current) {
+        lines.push(current);
+        if (lines.length === maxLines) {
+          current = "";
+          break;
+        }
+        current = word;
+      } else {
+        lines.push(word);
+        if (lines.length === maxLines) {
+          current = "";
+          break;
+        }
+      }
+    }
+    if (current && lines.length < maxLines) lines.push(current);
+    return lines.map((line) => {
+      let clipped = line;
+      while (clipped.length > 3 && this.ctx.measureText(clipped).width > maxWidth) {
+        clipped = clipped.slice(0, -3) + "..";
+      }
+      return clipped;
+    });
+  }
+
   renderIdleMascotScreen(now = performance.now()) {
     const engine = this.wasmEngine;
     if (!engine || !engine.bmoReady) {
@@ -1525,6 +1903,7 @@ class BmoSimulator {
     if (mask & 0x02) gazeY -= 0.85;
     if (gazeX !== 0 || gazeY !== 0) {
       engine.setBmoGaze(gazeX, gazeY);
+      this.updateBmoGazePadVisual(gazeX, gazeY);
       this.bmoLastInputMs = now;
     }
 
@@ -1534,46 +1913,81 @@ class BmoSimulator {
       return;
     }
 
+    if (this.bmoAutoCycle && now - this.bmoLastAutoCycleMs >= 2500) {
+      const cycleNames = (window.BMO_EXPRESSION_NAMES || []).filter((n) => n !== "HIDDEN");
+      if (cycleNames.length > 0) {
+        const nextExpr = cycleNames[this.bmoAutoCycleIndex % cycleNames.length];
+        engine.setBmoExpression(nextExpr);
+        this.bmoAutoCycleIndex = (this.bmoAutoCycleIndex + 1) % cycleNames.length;
+        this.bmoLastAutoCycleMs = now;
+        this.bmoLastInputMs = now;
+      }
+    }
+
     const idleSeconds = Math.floor((now - this.bmoLastInputMs) / 1000);
-    if (idleSeconds > 45 && engine.bmoExpression() !== 10) {
-      engine.setBmoExpression("SLEEPING");
-    } else if (idleSeconds > 20 && idleSeconds <= 45 && engine.bmoExpression() === 0) {
-      engine.setBmoExpression("SLEEPY");
+    if (this.bmoAutoSleep) {
+      if (idleSeconds > 45 && engine.bmoExpression() !== 10) {
+        engine.setBmoExpression("SLEEPING");
+      } else if (idleSeconds > 20 && idleSeconds <= 45 && engine.bmoExpression() === 0) {
+        engine.setBmoExpression("SLEEPY");
+      }
     }
 
     engine.renderBmoFrame(this.ctx, now);
     if (engine.bmoHasSpeech()) {
-      const visibleChars = engine.bmoVisibleChars();
-      const speech = engine.bmoCurrentQuote().slice(0, visibleChars);
+      const visibleChars = Math.max(0, engine.bmoVisibleChars());
+      const fullQuote = engine.bmoCurrentQuote();
       this.ctx.fillStyle = "#101E2B";
       this.ctx.font = "8px monospace";
-      this.ctx.textAlign = "left";
-      this.ctx.fillText(speech, Math.max(36, 160 - visibleChars * 3), 31);
-    } else {
+      this.ctx.textAlign = "center";
+      const lines = this.wrapSpeechLines(fullQuote, 116, 2);
+      let remaining = visibleChars;
+      const shownLines = [];
+      for (const line of lines) {
+        if (remaining <= 0) break;
+        shownLines.push(line.slice(0, remaining));
+        remaining -= line.length + 1;
+      }
+      if (lines.length <= 1) {
+        if (shownLines[0]) this.ctx.fillText(shownLines[0], 160, 38);
+      } else {
+        if (shownLines[0]) this.ctx.fillText(shownLines[0], 160, 33);
+        if (shownLines[1]) this.ctx.fillText(shownLines[1], 160, 42);
+      }
+    } else if (this.bmoHudVisible) {
       this.ctx.fillStyle = "#1A4B42";
       this.ctx.fillRect(40, 8, 240, 22);
       this.ctx.strokeStyle = "#CEF5E4";
       this.ctx.lineWidth = 1;
       this.ctx.strokeRect(40, 8, 240, 22);
+      const exprName = engine.bmoExpressionName();
       const title = engine.bmoIsDancing() ? "* BMO DANCE PARTY! *"
-        : idleSeconds > 40 ? "BMO IS SLEEPING..."
-          : idleSeconds > 20 ? "BMO IS SLEEPY..." : "LIVING BMO COMPANION";
+        : this.bmoModeActive ? `BMO MODE: ${exprName}`
+          : (this.bmoAutoSleep && idleSeconds > 40) ? "BMO IS SLEEPING..."
+            : (this.bmoAutoSleep && idleSeconds > 20) ? "BMO IS SLEEPY..." : "LIVING BMO COMPANION";
       this.ctx.fillStyle = "#FFE033";
       this.ctx.font = "bold 12px Arial, sans-serif";
       this.ctx.textAlign = "center";
       this.ctx.fillText(title, 160, 24);
     }
 
-    const prompt = "D-PAD:LOOK/PET  A:WINK  B:BLUSH  SEL:TALK  UP:DANCE  START:BACK";
-    this.ctx.fillStyle = "#0F2620";
-    this.ctx.fillRect(6, 214, 308, 22);
-    this.ctx.strokeStyle = "#5FB49C";
-    this.ctx.lineWidth = 1;
-    this.ctx.strokeRect(6, 214, 308, 22);
-    this.ctx.fillStyle = "#CEF5E4";
-    this.ctx.font = "8px monospace";
-    this.ctx.textAlign = "center";
-    this.ctx.fillText(prompt, 160, 221);
+    if (this.bmoHudVisible) {
+      const prompt = "D-PAD:LOOK/PET  A:WINK  B:BLUSH  SEL:TALK  UP:DANCE  START:BACK";
+      this.ctx.fillStyle = "#0F2620";
+      this.ctx.fillRect(6, 214, 308, 22);
+      this.ctx.strokeStyle = "#5FB49C";
+      this.ctx.lineWidth = 1;
+      this.ctx.strokeRect(6, 214, 308, 22);
+      this.ctx.fillStyle = "#CEF5E4";
+      this.ctx.font = "8px monospace";
+      this.ctx.textAlign = "center";
+      this.ctx.fillText(prompt, 160, 228);
+    }
+
+    if (now - this.bmoLastUiSyncMs >= 120) {
+      this.bmoLastUiSyncMs = now;
+      this.syncBmoModeUI();
+    }
   }
 
   // Same slug rule as scripts/fetch_covers.py slugify_title().

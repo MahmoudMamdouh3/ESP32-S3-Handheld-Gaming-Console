@@ -6,6 +6,29 @@ const GAMEBOY_VIEWPORT = { w: 240, h: 216, scale: 1, ox: 40, oy: 12 };
 const NES_VIEWPORT = { w: 256, h: 240, scale: 1, ox: 32, oy: 0 };
 const ATARI_VIEWPORT = { w: 160, h: 192, scale: 1, ox: 80, oy: 24 };
 const COLECO_VIEWPORT = { w: 256, h: 192, scale: 1, ox: 32, oy: 24 };
+const BMO_EXPRESSION_NAMES = [
+  "IDLE",
+  "SURPRISED",
+  "HAPPY",
+  "SLEEPY",
+  "LOW_BATTERY",
+  "CHARGING",
+  "ERROR",
+  "SHUTDOWN",
+  "HIDDEN",
+  "JOY",
+  "SLEEPING",
+  "WINK",
+  "BLUSH",
+  "CONFUSED",
+  "ANNOYED",
+  "LOVE",
+  "TICKLED",
+  "CELEBRATING",
+];
+const BMO_EXPRESSIONS = Object.freeze(
+  Object.fromEntries(BMO_EXPRESSION_NAMES.map((name, index) => [name, index]))
+);
 const CORE_CONFIG = {
   ROM_GB: { prefix: "bmo_emu", name: "Peanut-GB", viewport: GAMEBOY_VIEWPORT, frameRate: 59.7275 },
   ROM_NES: { prefix: "bmo_nes", name: "Agnes NES", viewport: NES_VIEWPORT, frameRate: 60.0988 },
@@ -99,23 +122,37 @@ class WasmPlaytestEngine {
     const pixels = new Uint16Array(this.exports.memory.buffer, fbPtr, 320 * 240);
     const image = ctx.createImageData(320, 240);
     const rgba = image.data;
+    // BmoFace::packBGR565 stores byte-swapped BGR565 for ST7789 SPI order.
     for (let i = 0; i < pixels.length; i++) {
       const pixel = pixels[i];
+      const bgr = ((pixel & 0xFF) << 8) | ((pixel >> 8) & 0xFF);
       const index = i * 4;
-      rgba[index] = ((pixel >> 11) & 0x1F) * 255 / 31;
-      rgba[index + 1] = ((pixel >> 5) & 0x3F) * 255 / 63;
-      rgba[index + 2] = (pixel & 0x1F) * 255 / 31;
+      rgba[index] = (bgr & 0x1F) * 255 / 31;
+      rgba[index + 1] = ((bgr >> 5) & 0x3F) * 255 / 63;
+      rgba[index + 2] = ((bgr >> 11) & 0x1F) * 255 / 31;
       rgba[index + 3] = 255;
     }
     ctx.putImageData(image, 0, 0);
   }
 
+  readCString(pointer, maxLen = 128) {
+    if (!pointer || !this.exports) return "";
+    const memory = new Uint8Array(this.exports.memory.buffer);
+    let end = pointer;
+    const limit = Math.min(memory.length, pointer + maxLen);
+    while (end < limit && memory[end] !== 0) end++;
+    return new TextDecoder().decode(memory.subarray(pointer, end));
+  }
+
   setBmoExpression(expression) {
-    const values = {
-      IDLE: 0, SURPRISED: 1, HAPPY: 2, SLEEPY: 3, SLEEPING: 10, JOY: 9
-    };
-    const value = values[expression];
+    let value;
+    if (typeof expression === "number" && Number.isInteger(expression)) {
+      value = expression >= 0 && expression < BMO_EXPRESSION_NAMES.length ? expression : undefined;
+    } else if (typeof expression === "string") {
+      value = BMO_EXPRESSIONS[expression.trim().toUpperCase()];
+    }
     if (value === undefined) throw new Error(`Unsupported firmware BMO expression: ${expression}`);
+    this.updateBmoClock();
     this.exports.bmo_face_set_expression(value);
   }
 
@@ -139,20 +176,68 @@ class WasmPlaytestEngine {
     this.exports.bmo_face_trigger_joy();
   }
 
+  tickleBmo(intensity = 1.0) {
+    this.updateBmoClock();
+    this.exports.bmo_face_tickle(intensity);
+  }
+
   petBmoCompanion() {
     this.updateBmoClock();
     this.exports.bmo_face_pet_companion();
   }
 
-  sayBmoQuote(index, durationMs) {
+  sayBmoQuote(index, durationMs = 3500) {
     this.updateBmoClock();
     const result = this.exports.bmo_face_say_quote(index, durationMs);
     if (result !== 0) throw new Error(`The firmware BMO companion rejected quote ${index}.`);
   }
 
+  sayBmoText(text, durationMs = 3500) {
+    const clean = String(text ?? "").trim();
+    if (!clean) {
+      this.clearBmoSpeech();
+      return;
+    }
+    const bufPtr = this.exports.bmo_face_speech_buffer();
+    const capacity = this.exports.bmo_face_speech_capacity();
+    if (!bufPtr || capacity < 2) {
+      throw new Error("The firmware BMO speech buffer is unavailable.");
+    }
+    const encoded = new TextEncoder().encode(clean);
+    const length = Math.min(encoded.length, capacity - 1);
+    const memory = new Uint8Array(this.exports.memory.buffer);
+    memory.set(encoded.subarray(0, length), bufPtr);
+    memory[bufPtr + length] = 0;
+    this.updateBmoClock();
+    const result = this.exports.bmo_face_say_buffer(length, durationMs);
+    if (result !== 0) {
+      throw new Error("The firmware BMO companion rejected custom speech text.");
+    }
+  }
+
+  bmoQuotes() {
+    if (!this.exports || !this.exports.bmo_face_quote_count) return [];
+    const count = this.exports.bmo_face_quote_count();
+    const list = [];
+    for (let i = 0; i < count; i++) {
+      list.push(this.readCString(this.exports.bmo_face_quote_text(i), 128));
+    }
+    return list;
+  }
+
   clearBmoSpeech() {
     this.updateBmoClock();
     this.exports.bmo_face_clear_speech();
+  }
+
+  startBmoDance(bpm = 125) {
+    this.updateBmoClock();
+    this.exports.bmo_face_start_dance(bpm);
+  }
+
+  stopBmoDance() {
+    this.updateBmoClock();
+    this.exports.bmo_face_stop_dance();
   }
 
   toggleBmoDance() {
@@ -173,16 +258,15 @@ class WasmPlaytestEngine {
   }
 
   bmoCurrentQuote() {
-    const pointer = this.exports.bmo_face_current_quote();
-    if (!pointer) return "";
-    const memory = new Uint8Array(this.exports.memory.buffer);
-    let end = pointer;
-    while (end < pointer + 64 && memory[end] !== 0) end++;
-    return new TextDecoder().decode(memory.subarray(pointer, end));
+    return this.readCString(this.exports.bmo_face_current_quote(), 64);
   }
 
   bmoExpression() {
     return this.exports.bmo_face_get_expression();
+  }
+
+  bmoExpressionName(expressionId = this.bmoExpression()) {
+    return BMO_EXPRESSION_NAMES[expressionId] || "UNKNOWN";
   }
 
   bmoBuddyLevel() {
@@ -373,10 +457,16 @@ class WasmPlaytestEngine {
   }
 }
 
-if (typeof window !== "undefined") window.WasmPlaytestEngine = WasmPlaytestEngine;
+if (typeof window !== "undefined") {
+  window.WasmPlaytestEngine = WasmPlaytestEngine;
+  window.BMO_EXPRESSIONS = BMO_EXPRESSIONS;
+  window.BMO_EXPRESSION_NAMES = BMO_EXPRESSION_NAMES;
+}
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     WasmPlaytestEngine,
+    BMO_EXPRESSIONS,
+    BMO_EXPRESSION_NAMES,
     GAMEBOY_VIEWPORT,
     NES_VIEWPORT,
     ATARI_VIEWPORT,

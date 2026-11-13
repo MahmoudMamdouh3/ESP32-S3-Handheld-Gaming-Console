@@ -100,6 +100,13 @@ EXPORTS = (
     "bmo_face_current_quote",
     "bmo_face_buddy_level",
     "bmo_face_happiness",
+    "bmo_face_speech_buffer",
+    "bmo_face_speech_capacity",
+    "bmo_face_say_buffer",
+    "bmo_face_start_dance",
+    "bmo_face_stop_dance",
+    "bmo_face_quote_count",
+    "bmo_face_quote_text",
 )
 
 

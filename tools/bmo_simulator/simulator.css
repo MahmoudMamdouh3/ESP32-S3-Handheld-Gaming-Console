@@ -1024,3 +1024,194 @@ kbd.key-cap {
   color: var(--text-main);
   margin-bottom: 4px;
 }
+
+/* ==========================================================================
+   BMO MODE INTERACTIVE MASCOT TEST BENCH
+   ========================================================================== */
+#bmo-mode-panel.is-active {
+  border-color: var(--accent-bmo);
+  box-shadow: 0 0 18px rgba(85, 239, 196, 0.16);
+}
+
+.bmo-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bmo-metrics-grid {
+  margin-top: 12px;
+}
+
+.bmo-section-group {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bmo-section-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--accent-bmo);
+}
+
+.bmo-expr-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bmo-expr-btn {
+  justify-content: center;
+  padding: 6px 8px;
+  font-size: 12px;
+  border-radius: 10px;
+}
+
+.bmo-bpm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.bmo-bpm-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent-bmo);
+  cursor: pointer;
+}
+
+.bmo-toggle-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.bmo-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.bmo-checkbox-label input[type="checkbox"] {
+  accent-color: var(--accent-bmo);
+  cursor: pointer;
+}
+
+.bmo-gaze-layout {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.bmo-gaze-pad {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+  background: var(--bezel-lens);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.bmo-gaze-pad:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 2px;
+}
+
+.bmo-gaze-crosshair-h {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.14);
+  pointer-events: none;
+}
+
+.bmo-gaze-crosshair-v {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 50%;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.14);
+  pointer-events: none;
+}
+
+.bmo-gaze-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent-bmo);
+  border: 2px solid #05141a;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow: 0 0 8px rgba(85, 239, 196, 0.65);
+}
+
+.bmo-gaze-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 36px);
+  gap: 4px;
+}
+
+.bmo-gaze-btn {
+  justify-content: center;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.bmo-speech-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bmo-quote-select {
+  flex: 1;
+  min-width: 0;
+  border-radius: 10px;
+  padding: 6px 10px;
+  background: var(--bezel-lens);
+  color: var(--text-main);
+}
+
+.bmo-text-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bezel-lens);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-main);
+  padding: 6px 10px;
+  font-size: 12px;
+  user-select: text;
+}
+
+.bmo-text-input::placeholder {
+  color: var(--text-dim);
+}
+
+.bmo-text-input:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 2px;
+  border-color: var(--accent-bmo);
+}

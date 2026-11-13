@@ -68,6 +68,7 @@
           <button class="control-pill cam-preset-btn" data-cam="reset">Reset</button>
         </div>
         <div class="stage-toolbar-group">
+          <button class="control-pill" id="btn-bmo-mode" aria-pressed="false" aria-label="Toggle BMO Mascot testing mode">BMO Mode</button>
           <button class="control-pill" id="btn-toggle-viewmode" aria-label="Switch between 3D console model and flat layout">2D Flat View</button>
         </div>
       </div>
@@ -160,6 +161,128 @@
 
     <!-- Sidebar: Console Museum, Specs & Telemetry -->
     <aside class="sidebar-panel">
+
+      <!-- BMO Mode Interactive Mascot Tester Card -->
+      <div class="panel-card" id="bmo-mode-panel">
+        <div class="card-header">
+          <div class="card-title">BMO Mode — Mascot Test Bench</div>
+          <div class="badge-counter" id="bmo-mode-status">Off</div>
+        </div>
+
+        <div class="bmo-btn-row">
+          <button type="button" class="control-pill" id="btn-bmo-enter">Enter BMO Mode</button>
+          <button type="button" class="control-pill" id="btn-bmo-exit">Exit Mode</button>
+          <button type="button" class="control-pill" id="btn-bmo-reset">Reset Neutral</button>
+        </div>
+
+        <div class="telemetry-grid bmo-metrics-grid">
+          <div class="telemetry-box">
+            <div class="telemetry-label">Expression</div>
+            <div class="telemetry-value" id="bmo-stat-expr">IDLE (0)</div>
+          </div>
+          <div class="telemetry-box">
+            <div class="telemetry-label">Buddy / Happy</div>
+            <div class="telemetry-value"><span id="bmo-stat-buddy">Lv.0</span> · <span id="bmo-stat-happy">75%</span></div>
+          </div>
+          <div class="telemetry-box">
+            <div class="telemetry-label">Dance State</div>
+            <div class="telemetry-value" id="bmo-stat-dance">Off (125 BPM)</div>
+          </div>
+          <div class="telemetry-box">
+            <div class="telemetry-label">Gaze Vector</div>
+            <div class="telemetry-value" id="val-bmo-gaze">0.00, 0.00</div>
+          </div>
+        </div>
+
+        <div class="bmo-section-group">
+          <div class="bmo-section-title">Expressions (All 18 Firmware States)</div>
+          <div class="bmo-expr-grid" id="bmo-expr-grid">
+            <button type="button" class="control-pill bmo-expr-btn" data-bmo-expr="IDLE">Idle</button>
+            <button type="button" class="control-pill bmo-expr-btn" data-bmo-expr="HAPPY">Happy</button>
+            <button type="button" class="control-pill bmo-expr-btn" data-bmo-expr="JOY">Joy</button>
+            <button type="button" class="control-pill bmo-expr-btn" data-bmo-expr="SURPRISED">Surprised</button>
+            <button type="button" class="control-pill bmo-expr-btn" data-bmo-expr="WINK">Wink</button>
+            <button type="button" class="control-pill bmo-expr-btn" data-bmo-expr="BLUSH">Blush</button>
+            <button type="button" class="control-pill bmo-expr-btn" data-bmo-expr="LOVE">Love</button>
+            <button type="button" class="control-pill bmo-expr-btn" data-bmo-expr="TICKLED">Tickled</button>
+            <button type="button" class="control-pill bmo-expr-btn" data-bmo-expr="CELEBRATING">Celebrate</button>
+            <button type="button" class="control-pill bmo-expr-btn" data-bmo-expr="SLEEPY">Sleepy</button>
+            <button type="button" class="control-pill bmo-expr-btn" data-bmo-expr="SLEEPING">Sleeping</button>
+            <button type="button" class="control-pill bmo-expr-btn" data-bmo-expr="CONFUSED">Confused</button>
+            <button type="button" class="control-pill bmo-expr-btn" data-bmo-expr="ANNOYED">Annoyed</button>
+            <button type="button" class="control-pill bmo-expr-btn" data-bmo-expr="LOW_BATTERY">Low Batt</button>
+            <button type="button" class="control-pill bmo-expr-btn" data-bmo-expr="CHARGING">Charging</button>
+            <button type="button" class="control-pill bmo-expr-btn" data-bmo-expr="ERROR">Error</button>
+            <button type="button" class="control-pill bmo-expr-btn" data-bmo-expr="SHUTDOWN">Shutdown</button>
+            <button type="button" class="control-pill bmo-expr-btn" data-bmo-expr="HIDDEN">Hidden</button>
+          </div>
+        </div>
+
+        <div class="bmo-section-group">
+          <div class="bmo-section-title">Instant Reactions &amp; Dance</div>
+          <div class="bmo-btn-row">
+            <button type="button" class="control-pill" id="btn-bmo-pet">Pet BMO</button>
+            <button type="button" class="control-pill" id="btn-bmo-tickle">Tickle</button>
+            <button type="button" class="control-pill" id="btn-bmo-wink">Wink + Sparkle</button>
+            <button type="button" class="control-pill" id="btn-bmo-blush">Bashful Blush</button>
+            <button type="button" class="control-pill" id="btn-bmo-joy">Sparkle Joy</button>
+            <button type="button" class="control-pill" id="btn-bmo-dance" aria-pressed="false">Dance Party</button>
+          </div>
+          <div class="bmo-bpm-row">
+            <label for="slider-bmo-bpm" class="slider-label">Dance Tempo <span id="val-bmo-bpm">125 BPM</span></label>
+            <input type="range" id="slider-bmo-bpm" min="60" max="220" value="125" step="5" aria-label="BMO dance tempo in BPM">
+          </div>
+          <div class="bmo-toggle-row">
+            <label class="bmo-checkbox-label">
+              <input type="checkbox" id="chk-bmo-autocycle"> Auto-cycle expressions (2.5s)
+            </label>
+            <label class="bmo-checkbox-label">
+              <input type="checkbox" id="chk-bmo-autosleep"> Auto-sleep timer (20s/45s)
+            </label>
+            <label class="bmo-checkbox-label">
+              <input type="checkbox" id="chk-bmo-hud" checked> On-screen control legend
+            </label>
+          </div>
+        </div>
+
+        <div class="bmo-section-group">
+          <div class="bmo-section-title">Eye Gaze Direction (Drag Pad or Click)</div>
+          <div class="bmo-gaze-layout">
+            <div class="bmo-gaze-pad" id="bmo-gaze-pad" tabindex="0" role="application" aria-label="Drag to aim BMO eye gaze">
+              <div class="bmo-gaze-crosshair-h"></div>
+              <div class="bmo-gaze-crosshair-v"></div>
+              <div class="bmo-gaze-dot" id="bmo-gaze-dot"></div>
+            </div>
+            <div class="bmo-gaze-presets" id="bmo-gaze-presets">
+              <button type="button" class="control-pill bmo-gaze-btn" data-gaze="-0.9,0.8" aria-label="Look up-left">↖</button>
+              <button type="button" class="control-pill bmo-gaze-btn" data-gaze="0,0.9" aria-label="Look up">↑</button>
+              <button type="button" class="control-pill bmo-gaze-btn" data-gaze="0.9,0.8" aria-label="Look up-right">↗</button>
+              <button type="button" class="control-pill bmo-gaze-btn" data-gaze="-1,0" aria-label="Look left">←</button>
+              <button type="button" class="control-pill bmo-gaze-btn" data-gaze="0,0" aria-label="Center gaze">•</button>
+              <button type="button" class="control-pill bmo-gaze-btn" data-gaze="1,0" aria-label="Look right">→</button>
+              <button type="button" class="control-pill bmo-gaze-btn" data-gaze="-0.9,-0.8" aria-label="Look down-left">↙</button>
+              <button type="button" class="control-pill bmo-gaze-btn" data-gaze="0,-0.9" aria-label="Look down">↓</button>
+              <button type="button" class="control-pill bmo-gaze-btn" data-gaze="0.9,-0.8" aria-label="Look down-right">↘</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bmo-section-group">
+          <div class="bmo-section-title">Speech Bubble &amp; Firmware Quotes</div>
+          <div class="bmo-speech-row">
+            <select id="select-bmo-quote" class="control-pill bmo-quote-select" aria-label="Select firmware BMO quote">
+              <option value="0">0: Who wants to play video games?!</option>
+            </select>
+            <button type="button" class="control-pill" id="btn-bmo-say-quote">Speak</button>
+            <button type="button" class="control-pill" id="btn-bmo-random-quote">Random</button>
+          </div>
+          <div class="bmo-speech-row">
+            <input type="text" id="input-bmo-speech" class="bmo-text-input" maxlength="63" placeholder="Type custom BMO speech (max 63 chars)" aria-label="Custom BMO speech text">
+            <button type="button" class="control-pill" id="btn-bmo-say-custom">Say</button>
+            <button type="button" class="control-pill" id="btn-bmo-clear-speech">Clear</button>
+          </div>
+        </div>
+      </div>
 
       <!-- Live Telemetry Card -->
       <div class="panel-card">

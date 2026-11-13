@@ -10,7 +10,10 @@ constexpr uint32_t SCREEN_WIDTH = 320;
 constexpr uint32_t SCREEN_HEIGHT = 240;
 constexpr size_t FRAMEBUFFER_SIZE = SCREEN_WIDTH * SCREEN_HEIGHT;
 
+constexpr size_t CUSTOM_SPEECH_CAPACITY = 64;
+
 uint16_t s_framebuffer[FRAMEBUFFER_SIZE];
+char s_customSpeechBuf[CUSTOM_SPEECH_CAPACITY] = {};
 uint32_t s_clockUs = 0;
 uint32_t s_randomState = 1;
 bool s_initialized = false;
@@ -22,21 +25,22 @@ uint32_t nextRandom() {
   return s_randomState;
 }
 
+const char* const kQuotes[] = {
+  "Who wants to play video games?!",
+  "Yay! BMO is so happy to see you!",
+  "Sometimes life is scary, but we have games!",
+  "Yes, Finn. It goes in my butt.",
+  "BMO chop! If this were a real attack, you'd be dead!",
+  "When bad things happen, I know you want to believe they're a joke.",
+  "I am a little living boy!",
+  "BMO is camera ready! *wink*",
+  "Oh, you are making BMO blush!",
+  "Whew! What a fun dance party!"
+};
+constexpr uint32_t kQuoteCount = sizeof(kQuotes) / sizeof(kQuotes[0]);
+
 const char* quoteForIndex(uint32_t index) {
-  static const char* const quotes[] = {
-    "Who wants to play video games?!",
-    "Yay! BMO is so happy to see you!",
-    "Sometimes life is scary, but we have games!",
-    "Yes, Finn. It goes in my butt.",
-    "BMO chop! If this were a real attack, you'd be dead!",
-    "When bad things happen, I know you want to believe they're a joke.",
-    "I am a little living boy!",
-    "BMO is camera ready! *wink*",
-    "Oh, you are making BMO blush!",
-    "Whew! What a fun dance party!"
-  };
-  constexpr uint32_t quoteCount = sizeof(quotes) / sizeof(quotes[0]);
-  return index < quoteCount ? quotes[index] : nullptr;
+  return index < kQuoteCount ? kQuotes[index] : nullptr;
 }
 
 }  // namespace
@@ -202,6 +206,45 @@ int32_t bmo_face_buddy_level() {
 __attribute__((visibility("default")))
 int32_t bmo_face_happiness() {
   return BmoFace::getHappiness();
+}
+
+__attribute__((visibility("default")))
+char* bmo_face_speech_buffer() {
+  return s_customSpeechBuf;
+}
+
+__attribute__((visibility("default")))
+uint32_t bmo_face_speech_capacity() {
+  return static_cast<uint32_t>(CUSTOM_SPEECH_CAPACITY);
+}
+
+__attribute__((visibility("default")))
+int32_t bmo_face_say_buffer(uint32_t length, uint32_t durationMs) {
+  if (length == 0) return -1;
+  uint32_t safeLen = length < CUSTOM_SPEECH_CAPACITY ? length : static_cast<uint32_t>(CUSTOM_SPEECH_CAPACITY - 1);
+  s_customSpeechBuf[safeLen] = '\0';
+  BmoFace::say(s_customSpeechBuf, durationMs);
+  return 0;
+}
+
+__attribute__((visibility("default")))
+void bmo_face_start_dance(float bpm) {
+  BmoFace::triggerDance(bpm);
+}
+
+__attribute__((visibility("default")))
+void bmo_face_stop_dance() {
+  BmoFace::stopDance();
+}
+
+__attribute__((visibility("default")))
+uint32_t bmo_face_quote_count() {
+  return kQuoteCount;
+}
+
+__attribute__((visibility("default")))
+const char* bmo_face_quote_text(uint32_t index) {
+  return quoteForIndex(index);
 }
 
 }

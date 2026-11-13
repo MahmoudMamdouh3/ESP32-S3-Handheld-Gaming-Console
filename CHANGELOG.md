@@ -1,5 +1,21 @@
 # Changelog
 
+## [BMO Mode Mascot Test Bench in Browser Simulator] - 2026-11-13
+
+### Added
+- **BMO Mode WASM & Simulator Controls**:
+  - Extended `tools/bmo_simulator/bmo_face_wasm.cpp` and `scripts/build_wasm_cores.py` exports with custom speech buffer calls (`bmo_face_speech_buffer`, `bmo_face_speech_capacity`, `bmo_face_say_buffer`), explicit dance tempo start/stop (`bmo_face_start_dance`, `bmo_face_stop_dance`), and quote inspection (`bmo_face_quote_count`, `bmo_face_quote_text`), then rebuilt `tools/bmo_simulator/bmo_playtest_cores.wasm`.
+  - Expanded `tools/bmo_simulator/wasm_playtest_engine.js` with `BMO_EXPRESSIONS` / `BMO_EXPRESSION_NAMES` covering all 18 `BmoFace::BmoExpression` states (`IDLE` through `CELEBRATING`), `tickleBmo()`, `startBmoDance()`, `stopBmoDance()`, `sayBmoText()`, and `bmoQuotes()`.
+  - Added **BMO Mode** (`#btn-bmo-mode`, `?state=bmo`) and the `#bmo-mode-panel` sidebar test bench (`index.html`, `simulator.css`, `simulator.js`) with live Buddy Lv / Happiness / Dance metrics, all 18 expression trigger buttons, instant action buttons (`Pet`, `Tickle`, `Wink + Sparkle`, `Bashful Blush`, `Sparkle Joy`, `Dance Party` + `60–220 BPM` slider), `2.5s` expression auto-cycle, interactive 2D gaze pad + 3×3 presets + direct canvas drag/pet, firmware quote selector, `63`-character custom speech input (with input-focus guard on simulator keybinds), and `Auto-sleep` / `On-screen control legend` toggles.
+  - Added `test_11_bmo_mode_simulator_controls_and_wasm_bridge` in `tests/test_native_cores_execution.py` verifying `#bmo-mode-panel`, all 18 expression controls, BGR565 seafoam mint `#8AD5C3` unpacking, custom speech, tickle, and dance BPM execution in Node against `bmo_playtest_cores.wasm`.
+
+### Fixed
+- Fixed byte-swapped BGR565 pixel unpacking in `WasmPlaytestEngine.renderBmoFrame()` (`wasm_playtest_engine.js`) so the firmware `BmoFace` background renders in seafoam mint (`#8AD5C3`) instead of swapped red/blue channels.
+- Fixed speech-bubble text positioning and 2-line wrapping in `BmoSimulator.renderIdleMascotScreen()` (`simulator.js`) to fit inside the firmware SDF speech bubble (`px 95..225`, `py 25..45`).
+
+### Verification
+- Verified with Node WASM tests, host unit tests, Guardian UI-audit / verify / diff-audit, and full `scripts/validate_repo.py` after final edits (firmware C++ sources untouched; physical hardware unverified).
+
 ## [Repository bug/performance fixes and documentation reconciliation] - 2026-11-12
 
 ### Changed
