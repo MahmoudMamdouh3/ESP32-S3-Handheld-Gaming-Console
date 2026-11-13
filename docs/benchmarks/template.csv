@@ -1,0 +1,16 @@
+platform,rom_sha256_prefix,commit_sha,build_profile,spi_hz,emu_index,n,target_us,fps,min_us,avg_us,max_us,p50_us,p95_us,p99_us,dropped,spi_avg_us,evidence_level,notes
+GB,,UNRECORDED,profiler-compile-only,80000000,1,0,16742,,,,,,,,,NOT_TESTED,Capture >=600 consecutive gameplay frames after launch
+GBC,,UNRECORDED,profiler-compile-only,80000000,0,0,16742,,,,,,,,,NOT_TESTED,Capture >=600 consecutive gameplay frames after launch
+NES,,UNRECORDED,profiler-compile-only,80000000,2,0,16667,,,,,,,,,NOT_TESTED,Capture >=600 consecutive gameplay frames after launch
+DOOM,,UNRECORDED,profiler-compile-only,80000000,3,0,28571,,,,,,,,,NOT_TESTED,Capture >=600 consecutive gameplay frames after launch
+SMS,,UNRECORDED,profiler-compile-only,80000000,4,0,16667,,,,,,,,,NOT_TESTED,Capture >=600 consecutive gameplay frames after launch
+GG,,UNRECORDED,profiler-compile-only,80000000,5,0,16667,,,,,,,,,NOT_TESTED,Capture >=600 consecutive gameplay frames after launch
+PCE,,UNRECORDED,profiler-compile-only,80000000,6,0,16667,,,,,,,,,NOT_TESTED,Capture >=600 consecutive gameplay frames after launch
+ATARI2600,,UNRECORDED,profiler-compile-only,80000000,7,0,16667,,,,,,,,,NOT_TESTED,Capture >=600 consecutive gameplay frames after launch
+PICO8,,UNRECORDED,profiler-compile-only,80000000,8,0,33333,,,,,,,,,NOT_TESTED,Capture >=600 consecutive gameplay frames after launch
+GENESIS,,UNRECORDED,profiler-compile-only,80000000,9,0,16667,,,,,,,,,NOT_TESTED,Capture >=600 consecutive gameplay frames after launch
+SNES,,UNRECORDED,profiler-compile-only,80000000,10,0,16667,,,,,,,,,NOT_TESTED,Capture >=600 consecutive gameplay frames after launch
+WSWAN,,UNRECORDED,profiler-compile-only,80000000,11,0,16667,,,,,,,,,NOT_TESTED,Capture >=600 consecutive gameplay frames after launch
+NGP,,UNRECORDED,profiler-compile-only,80000000,12,0,16667,,,,,,,,,NOT_TESTED,Capture >=600 consecutive gameplay frames after launch
+LYNX,,UNRECORDED,profiler-compile-only,80000000,13,0,16667,,,,,,,,,NOT_TESTED,Capture >=600 consecutive gameplay frames after launch
+COLECO,,UNRECORDED,profiler-compile-only,80000000,14,0,16667,,,,,,,,,NOT_TESTED,Capture >=600 consecutive gameplay frames after launch

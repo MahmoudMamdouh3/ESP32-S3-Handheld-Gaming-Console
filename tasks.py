@@ -56,6 +56,7 @@ BUILD_PROFILES: Dict[str, List[str]] = {
     "audio-compile-only": ["-DFEATURE_AUDIO=1", "-DBMO_HARDWARE_CONFIRMED_AUDIO=1"],
     "battery-compile-only": ["-DFEATURE_BATTERY_MONITOR=1", "-DBMO_HARDWARE_CONFIRMED_BATTERY=1"],
     "debug-log-compile-only": ["-DLOG_LEVEL=LOG_LEVEL_DEBUG"],
+    "profiler-compile-only": ["-DBMO_PROFILE=1"],
 }
 
 FIRST_PARTY_WARN_RE = re.compile(

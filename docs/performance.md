@@ -33,4 +33,4 @@ All timing and memory figures in this repository distinguish:
 
 1. Flash a verified `TARGET_COMPILED` build onto the board and capture serial output at `115200` baud while running target consoles.
 2. Preserve `FPS:` and `Frame window:` lines and analyze them with `python tools/telemetry_plotter.py --input capture.txt --json-out summary.json` (note: running `telemetry_plotter.py` without `--input` emits synthetic test data and must never be cited as hardware evidence).
-3. Record electrical, SPI 80 vs 40 MHz panel stability, stack high-water marks (in words), and PSRAM measurements in [`docs/hardware_measurements.md`](hardware_measurements.md).
+3. Record electrical, SPI 80 vs 40 MHz panel stability, stack high-water marks (in words), and PSRAM measurements in [`docs/hardware_measurements.md`](hardware_measurements.md) and [`docs/benchmarks/README.md`](benchmarks/README.md).

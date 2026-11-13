@@ -10,6 +10,7 @@ from unittest.mock import patch
 from tools.telemetry_plotter import (
     main,
     parse_frame_percentile_windows,
+    parse_profile_csv,
     parse_telemetry_stream,
     render_ascii_plot,
 )
@@ -31,6 +32,21 @@ class TelemetryPlotterTests(unittest.TestCase):
         self.assertEqual(len(windows), 1)
         self.assertEqual((windows[0].emulator_index, windows[0].frame_count), (4, 600))
         self.assertEqual((windows[0].p50_us, windows[0].p95_us, windows[0].p99_us), (1100, 2400, 3100))
+
+    def test_parses_profile_csv_rows_and_falls_back_cleanly(self):
+        csv_log = "\n".join([
+            "[PROFILE_CSV_HDR] emu,n,target_us,fps,min_us,avg_us,max_us,p50_us,p95_us,p99_us,dropped,spi_avg_us",
+            "[PROFILE_CSV] 1,600,16742,60,1401,1967,2400,2100,2370,2394,0,3120",
+        ])
+        rows = parse_profile_csv(csv_log)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual((rows[0].emulator_index, rows[0].frame_count, rows[0].spi_avg_us), (1, 600, 3120))
+        samples = parse_telemetry_stream(csv_log)
+        self.assertEqual(len(samples), 1)
+        self.assertEqual((samples[0].fps, samples[0].min_us, samples[0].avg_us, samples[0].max_us), (60, 1401, 1967, 2400))
+        windows = parse_frame_percentile_windows(csv_log)
+        self.assertEqual(len(windows), 1)
+        self.assertEqual((windows[0].p50_us, windows[0].p95_us, windows[0].p99_us), (2100, 2370, 2394))
 
     def test_synthetic_default_is_stamped_in_title_filename_and_stdout(self):
         with tempfile.TemporaryDirectory() as temp_dir:

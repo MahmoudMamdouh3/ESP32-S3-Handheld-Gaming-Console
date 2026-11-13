@@ -23,6 +23,13 @@ FRAME_WINDOW_RE = re.compile(
     r"target=(?P<target>\d+)us\s+p50=(?P<p50>\d+)us\s+"
     r"p95=(?P<p95>\d+)us\s+p99=(?P<p99>\d+)us"
 )
+PROFILE_CSV_RE = re.compile(
+    r"\[PROFILE_CSV\]\s*"
+    r"(?P<emu>-?\d+),(?P<count>\d+),(?P<target>\d+),(?P<fps>\d+),"
+    r"(?P<min>\d+),(?P<avg>\d+),(?P<max>\d+),"
+    r"(?P<p50>\d+),(?P<p95>\d+),(?P<p99>\d+),"
+    r"(?P<dropped>\d+),(?P<spi_avg>\d+)"
+)
 
 
 @dataclass
@@ -73,6 +80,50 @@ class FramePercentileWindow:
     p99_us: int
 
 
+@dataclass
+class ProfileCsvRow:
+    sample_index: int
+    emulator_index: int
+    frame_count: int
+    target_frame_us: int
+    fps: int
+    min_us: int
+    avg_us: int
+    max_us: int
+    p50_us: int
+    p95_us: int
+    p99_us: int
+    dropped: int
+    spi_avg_us: int
+
+
+def parse_profile_csv(text: str) -> List[ProfileCsvRow]:
+    """Extract `[PROFILE_CSV]` rows emitted by firmware built with `-DBMO_PROFILE=1`."""
+    rows: List[ProfileCsvRow] = []
+    for line in text.splitlines():
+        match = PROFILE_CSV_RE.search(line)
+        if not match:
+            continue
+        rows.append(
+            ProfileCsvRow(
+                sample_index=len(rows),
+                emulator_index=int(match.group("emu")),
+                frame_count=int(match.group("count")),
+                target_frame_us=int(match.group("target")),
+                fps=int(match.group("fps")),
+                min_us=int(match.group("min")),
+                avg_us=int(match.group("avg")),
+                max_us=int(match.group("max")),
+                p50_us=int(match.group("p50")),
+                p95_us=int(match.group("p95")),
+                p99_us=int(match.group("p99")),
+                dropped=int(match.group("dropped")),
+                spi_avg_us=int(match.group("spi_avg")),
+            )
+        )
+    return rows
+
+
 def parse_frame_percentile_windows(text: str) -> List[FramePercentileWindow]:
     """Read firmware percentile reports for unpaced emulator execution time."""
     windows: List[FramePercentileWindow] = []
@@ -89,7 +140,20 @@ def parse_frame_percentile_windows(text: str) -> List[FramePercentileWindow]:
             p95_us=int(match.group("p95")),
             p99_us=int(match.group("p99")),
         ))
-    return windows
+    if windows:
+        return windows
+    return [
+        FramePercentileWindow(
+            sample_index=r.sample_index,
+            emulator_index=r.emulator_index,
+            target_frame_us=r.target_frame_us,
+            frame_count=r.frame_count,
+            p50_us=r.p50_us,
+            p95_us=r.p95_us,
+            p99_us=r.p99_us,
+        )
+        for r in parse_profile_csv(text)
+    ]
 
 
 def parse_telemetry_stream(text: str) -> List[TelemetrySample]:
@@ -112,7 +176,22 @@ def parse_telemetry_stream(text: str) -> List[TelemetrySample]:
                 total_dropped=int(match.group("total_dropped") or 0),
             )
         )
-    return samples
+    if samples:
+        return samples
+    return [
+        TelemetrySample(
+            sample_index=r.sample_index,
+            fps=r.fps,
+            avg_us=r.avg_us,
+            min_us=r.min_us,
+            max_us=r.max_us,
+            emulator_index=r.emulator_index,
+            target_frame_us=r.target_frame_us,
+            dropped=r.dropped,
+            total_dropped=r.dropped,
+        )
+        for r in parse_profile_csv(text)
+    ]
 
 
 def _percentile(sorted_vals: List[int], pct: float) -> float:

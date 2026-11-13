@@ -5,6 +5,7 @@
 #include "../hal/battery.h"
 #include "../hal/buttons.h"
 #include "../hal/config.h"
+#include "../hal/profiler.h"
 #include "../hal/spi_arbiter.h"
 #include "../storage/battery_save.h"
 #include "../storage/box_art.h"
@@ -359,8 +360,10 @@ void handleConsoleMenu() {
     }
     s_consoleCountsDirty = false;
   }
+  BMO_PROFILE_START(ZONE_MENU_RENDER);
   DisplayEmu::drawConsoleSelectMenu(s_selectedConsoleIndex, s_cachedConsoleCounts, ConsoleCatalog::CONSOLE_COUNT,
                                     SDCard::isMounted());
+  BMO_PROFILE_END(ZONE_MENU_RENDER);
   paceMenuFrame(menuFrameStart);
 }
 
@@ -381,6 +384,7 @@ void handleConsoleMuseum() {
 
 void handleDiagnostics() {
   static bool spiStressPattern = false;
+  static bool diagShowProfiler = false;
   static uint32_t spiStressFrame = 0;
   static unsigned long lastStackLogMs = 0;
   const unsigned long diagFrameStart = millis();
@@ -391,8 +395,13 @@ void handleDiagnostics() {
   const uint16_t btnMask = Buttons::rawMask();
   bool spiStressFallback = (DisplayEmu::getDiagnosticSpiClock() == TFT_SPI_FALLBACK_HZ);
 
+  if (input.edgePressed(Buttons::SELECT) && !spiStressPattern) {
+    diagShowProfiler = !diagShowProfiler;
+  }
+
   if (input.edgePressed(Buttons::B)) {
     spiStressPattern = false;
+    diagShowProfiler = false;
     s_currentState = BmoApp::STATE_CONSOLE_MENU;
     Buttons::suppressMenuInputUntil((uint32_t)(millis() + 180U));
   } else if (input.edgePressed(Buttons::A)) {
@@ -439,6 +448,8 @@ void handleDiagnostics() {
 
   if (spiStressPattern) {
     DisplayEmu::drawSpiStressPattern(spiStressFallback ? TFT_SPI_FALLBACK_HZ : TFT_SPI_HZ, spiStressFrame++);
+  } else if (diagShowProfiler) {
+    DisplayEmu::drawDiagnosticsProfiler(millis(), freePsram, largestPsramBlock);
   } else {
     DisplayEmu::drawDiagnosticsDashboard(millis(), freeDram, freePsram, freeIram, btnMask, largestPsramBlock,
                                          (uint32_t)SDCard::getSkippedRomCount(), loopStackHighWaterWords,
@@ -770,8 +781,10 @@ void handleGameMenu() {
     return;
   }
 
+  BMO_PROFILE_START(ZONE_MENU_RENDER);
   DisplayEmu::drawGameSelectMenu(s_visibleGames, s_visibleGameCount, s_selectedGameIndex,
                                  ConsoleCatalog::CONSOLES[s_selectedConsoleIndex], SDCard::isMounted());
+  BMO_PROFILE_END(ZONE_MENU_RENDER);
   paceMenuFrame(menuFrameStart);
 }
 
@@ -784,6 +797,7 @@ void handleEmulator() {
     }
     s_launchCelebrationPending = false;
     DisplayEmu::drawConsoleBezel(s_selectedEmulatorIndex);
+    BMO_PROFILE_RESET();
     s_lastFpsLogMs = millis();
     return;
   }
@@ -850,7 +864,9 @@ void handleEmulator() {
   }
 
   if (activeCore && activeCore->stepFrame) {
+    BMO_PROFILE_START(ZONE_EMU_FRAME);
     activeCore->stepFrame();
+    BMO_PROFILE_END(ZONE_EMU_FRAME);
   }
 
   unsigned long elapsed = micros() - frameStart;
@@ -886,6 +902,8 @@ void handleEmulator() {
       LOG_INFO("FPS: %d | Emu: %d target=%luus | Frame: avg=%luus min=%luus max=%luus", s_frames,
                s_selectedEmulatorIndex, targetFrameUs, avg, s_frameTimeMin, s_frameTimeMax);
     }
+    BMO_PROFILE_REPORT_FRAME_INTERVAL(1000UL, s_selectedEmulatorIndex, (uint32_t)targetFrameUs, (uint32_t)s_frames,
+                                      (uint32_t)s_totalDroppedFramesThisSecond);
     s_frames = 0;
     s_totalDroppedFramesThisSecond = 0;
     s_lastFpsLogMs = now;
@@ -1022,8 +1040,10 @@ void handlePauseMenu() {
     s_pauseMetaDirty = false;
   }
 
+  BMO_PROFILE_START(ZONE_MENU_RENDER);
   DisplayEmu::drawPauseMenu(s_currentRomFilename, currentSlot, s_pauseHasSave, s_pauseHasBatt, batterySaveSupported,
                             s_pauseOption, s_pauseToast);
+  BMO_PROFILE_END(ZONE_MENU_RENDER);
   s_pauseToast[0] = '\0';
   paceMenuFrame(pauseStart);
 }
@@ -1070,12 +1090,16 @@ void BmoApp::setup() {
   if (spiDecision.safeModeForced) {
     DisplayEmu::showToast("SAFE MODE: 40 MHz SPI", Theme::BMO_DPAD_YELLOW, 3500);
   }
+  BMO_PROFILE_BEGIN();
   Battery::begin();
   BmoFace::begin();
   BmoFace::setExpression(BmoFace::IDLE);
   s_bootSplashStartMs = millis();
 
-  if (!SDCard::begin()) {
+  BMO_PROFILE_START(ZONE_SD_READ);
+  const bool sdOk = SDCard::begin();
+  BMO_PROFILE_END(ZONE_SD_READ);
+  if (!sdOk) {
     LOG_ERROR_STR("Failed to mount SD card!");
   } else {
     LOG_INFO("SD Card mounted. Found %d ROMs.", SDCard::getRomCount());
@@ -1095,7 +1119,9 @@ void BmoApp::loop() {
   Battery::update();
   Buttons::setGameplayMode(s_currentState == BmoApp::STATE_EMULATOR);
   if (s_currentState != BmoApp::STATE_EMULATOR && s_currentState != BmoApp::STATE_PAUSE_MENU) {
+    BMO_PROFILE_START(ZONE_BMO_FACE_RENDER);
     BmoFace::update();
+    BMO_PROFILE_END(ZONE_BMO_FACE_RENDER);
   }
 
   switch (s_currentState) {

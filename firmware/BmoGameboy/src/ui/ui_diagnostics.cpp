@@ -1,6 +1,7 @@
 #include "display_internal.h"
 #include "../hal/battery.h"
 #include "../hal/config.h"
+#include "../hal/profiler.h"
 #include <Fonts/FreeSans9pt7b.h>
 #include <esp_heap_caps.h>
 
@@ -99,7 +100,71 @@ void DisplayEmu::drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeD
     menuCanvas->print(k.label);
   }
 
-  drawFooter("A SPI TEST  |  B EXIT");
+  drawFooter("A SPI | SEL PROF | B EXIT");
+  writeMenuCanvas();
+}
+
+void DisplayEmu::drawDiagnosticsProfiler(unsigned long uptimeMs, uint32_t freePsram, uint32_t largestPsramBlock) {
+  using namespace BmoDisplayInternal;
+  if (!menuCanvas) return;
+
+  menuCanvas->fillScreen(UI_BLACK);
+  menuCanvas->drawRoundRect(8, 8, 304, 224, 8, UI_TEAL);
+  menuCanvas->fillRect(0, 0, 320, 36, UI_DEEP_TEAL);
+
+  menuCanvas->setFont(&FreeSans9pt7b);
+  drawCentered("FRAME PROFILER", 24, UI_YELLOW);
+
+  menuCanvas->setFont();
+  menuCanvas->setTextColor(UI_WHITE);
+  menuCanvas->setCursor(18, 46);
+  menuCanvas->printf("Build Flag : %s", BmoProfiler::isEnabled() ? "BMO_PROFILE=1 (ACTIVE)" : "BMO_PROFILE=0 (OFF)");
+  menuCanvas->setCursor(18, 58);
+  const unsigned long sec = uptimeMs / 1000UL;
+  menuCanvas->printf("Uptime: %lum %lus | PSRAM: %u / %u B", sec / 60UL, sec % 60UL, (unsigned int)freePsram,
+                     (unsigned int)largestPsramBlock);
+
+  BmoProfilerTypes::FrameSummary summary;
+  const bool hasSummary = BmoProfiler::getFrameSummary(summary);
+
+  menuCanvas->setCursor(18, 76);
+  menuCanvas->setTextColor(UI_YELLOW);
+  menuCanvas->print("--- 600-FRAME WINDOW (EMU_FRAME) ---");
+  menuCanvas->setTextColor(UI_WHITE);
+  if (hasSummary) {
+    menuCanvas->setCursor(18, 88);
+    menuCanvas->printf("Samples: %u / 600 (total %u)", (unsigned int)summary.sampleCount,
+                       (unsigned int)summary.totalFrames);
+    menuCanvas->setCursor(18, 100);
+    menuCanvas->printf("Min / Avg / Max: %u / %u / %u us", (unsigned int)summary.minUs, (unsigned int)summary.avgUs,
+                       (unsigned int)summary.maxUs);
+    menuCanvas->setCursor(18, 112);
+    menuCanvas->printf("p50 / p95 / p99: %u / %u / %u us", (unsigned int)summary.p50Us, (unsigned int)summary.p95Us,
+                       (unsigned int)summary.p99Us);
+  } else {
+    menuCanvas->setCursor(18, 88);
+    menuCanvas->print(BmoProfiler::isEnabled() ? "No emulator frames sampled yet."
+                                               : "Compile with -DBMO_PROFILE=1 for telemetry.");
+    menuCanvas->setCursor(18, 100);
+    menuCanvas->print("Min / Avg / Max: N/A (NOT_TESTED)");
+    menuCanvas->setCursor(18, 112);
+    menuCanvas->print("p50 / p95 / p99: N/A (NOT_TESTED)");
+  }
+
+  menuCanvas->setCursor(18, 130);
+  menuCanvas->setTextColor(UI_YELLOW);
+  menuCanvas->print("--- ACTIVE PROFILER ZONES (us) ---");
+  menuCanvas->setTextColor(UI_WHITE);
+
+  const char* kLabels[ZONE_COUNT] = {"EMU_FRAME", "SPI_STREAM", "BMO_FACE", "MENU_DRAW", "SD_READ"};
+  for (int i = 0; i < ZONE_COUNT; ++i) {
+    const ProfileZone z = static_cast<ProfileZone>(i);
+    menuCanvas->setCursor(18, 144 + i * 13);
+    menuCanvas->printf("%-10s min=%5u avg=%5u max=%5u", kLabels[i], (unsigned int)BmoProfiler::getZoneMinUs(z),
+                       (unsigned int)BmoProfiler::getZoneAvgUs(z), (unsigned int)BmoProfiler::getZoneMaxUs(z));
+  }
+
+  drawFooter("SEL MATRIX  |  B EXIT");
   writeMenuCanvas();
 }
 

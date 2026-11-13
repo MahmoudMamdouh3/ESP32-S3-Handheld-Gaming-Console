@@ -11,9 +11,9 @@ Keep four kinds of evidence distinct:
 
 ## Current frame timing
 
-`FramePacing::targetFrameUs()` gives nominal budgets of 16,742 us for GB/GBC, 28,571 us for DOOM, 33,333 us for the PICO-8-style runtime, and 16,667 us for other wrapper indices. PAL/region detection is not implemented. The main loop samples 600 execution durations per window; p50/p95/p99 cover wrapper/core execution before the pacing wait and do not isolate the display worker or scan-out.
+`FramePacing::targetFrameUs()` gives nominal budgets of 16,742 us for GB/GBC, 28,571 us for DOOM, 33,333 us for the PICO-8-style runtime, and 16,667 us for other wrapper indices. PAL/region detection is not implemented. All active emulator wrappers — including Game Boy (`PeanutEmu`) and Game Boy Color (`WalnutEmu`) via PSRAM ping-pong `DisplayEmu::acquireAsyncFrameBuffer()` / `submitGBFrameAsync()` — stream frames asynchronously on Core 0 (`NOT_TESTED` on physical hardware).
 
-The optional `BmoProfiler` CCOUNT service defaults off and is not called by the main frame loop. `tools/telemetry_plotter.py` accepts captured serial logs; no-input mode generates synthetic records and must not be described as a device measurement.
+The optional `BmoProfiler` service (`-DBMO_PROFILE=1` / `-DFEATURE_PROFILER=1`) defaults off and compiles to zero overhead in default builds. When enabled, it records Core 0/Core 1 zone durations using `esp_timer_get_time()`, maintains a 600-frame sliding ring (`min`/`avg`/`max`/`p50`/`p95`/`p99`), displays live metrics in the Diagnostics Profiler screen (`SELECT`), and prints `[PROFILE_CSV]` records alongside `[INFO] FPS:` and `[INFO] Frame window:` logs. `tools/telemetry_plotter.py` accepts both `[INFO]` and `[PROFILE_CSV]` captures; no-input mode generates synthetic records and must not be described as a device measurement. See [`docs/benchmarks/README.md`](benchmarks/README.md) and [`docs/benchmarks/template.csv`](benchmarks/template.csv) (`NOT_TESTED`).
 
 ## Current memory and bus analysis
 

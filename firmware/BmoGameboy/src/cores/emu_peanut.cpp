@@ -16,120 +16,132 @@
 #include <stdlib.h>
 
 #if FEATURE_AUDIO
-  extern "C" __attribute__((weak)) uint8_t audio_read(const uint16_t addr) {
-    return 0; // Replace with actual APU read if minigb_apu is integrated
-  }
-  extern "C" __attribute__((weak)) void audio_write(const uint16_t addr, const uint8_t val) {
-    // Replace with actual APU write / I2S push
-  }
+extern "C" __attribute__((weak)) uint8_t audio_read(const uint16_t addr) {
+  return 0; // Replace with actual APU read if minigb_apu is integrated
+}
+extern "C" __attribute__((weak)) void audio_write(const uint16_t addr, const uint8_t val) {
+  // Replace with actual APU write / I2S push
+}
 #else
-  extern "C" __attribute__((weak)) uint8_t audio_read(const uint16_t addr) { return 0; }
-  extern "C" __attribute__((weak)) void audio_write(const uint16_t addr, const uint8_t val) {}
+extern "C" __attribute__((weak)) uint8_t audio_read(const uint16_t addr) {
+  return 0;
+}
+extern "C" __attribute__((weak)) void audio_write(const uint16_t addr, const uint8_t val) {}
 #endif
 
 namespace PGB {
-  #include "../third_party/peanut_gb/peanut_gb.h"
+#include "../third_party/peanut_gb/peanut_gb.h"
 }
 using namespace PGB;
 
 namespace {
-  // Stub audio callbacks moved above
-  
-  // E3: Align the emulator state struct to the ESP32-S3 D-cache line
-  // size (32 bytes). Prevents cache thrashing on hot registers.
-  static struct gb_s* gb = nullptr;
-  
-  const uint8_t* current_rom_data = nullptr;
-  size_t current_rom_len = 0;
-  
-  // Keep cartridge save RAM out of scarce internal DRAM.  128 KB covers the
-  // larger MBC5/CGB save configurations; PSRAM latency is acceptable here
-  // because cartridge-RAM access is far less frequent than CPU registers.
-  static constexpr size_t CART_RAM_SIZE = 128 * 1024;
-  static uint8_t* cart_ram = nullptr;
+// Stub audio callbacks moved above
 
-  static size_t batteryRamSize() {
-    if (!gb) return 0;
-    const uint8_t type = gb->gb_rom_read ? gb->gb_rom_read(gb, 0x0147) : 0;
-    const uint8_t sizeCode = gb->gb_rom_read ? gb->gb_rom_read(gb, 0x0149) : 0;
-    const size_t size = BatterySave::gameBoyBatteryBytes(type, sizeCode);
-    return size <= CART_RAM_SIZE ? size : 0;
-  }
+// E3: Align the emulator state struct to the ESP32-S3 D-cache line
+// size (32 bytes). Prevents cache thrashing on hot registers.
+static struct gb_s* gb = nullptr;
 
-  // N5: Module-level, 4-byte aligned — avoids BSS contention with gb_s data.
-  static uint16_t __attribute__((aligned(4))) rowBuffer[480];
+const uint8_t* current_rom_data = nullptr;
+size_t current_rom_len = 0;
 
-  static uint16_t PAL_256[256];
+// Keep cartridge save RAM out of scarce internal DRAM.  128 KB covers the
+// larger MBC5/CGB save configurations; PSRAM latency is acceptable here
+// because cartridge-RAM access is far less frequent than CPU registers.
+static constexpr size_t CART_RAM_SIZE = 128 * 1024;
+static uint8_t* cart_ram = nullptr;
 
-  // N1: IRAM_ATTR — these callbacks are invoked ~280K times per frame by the
-  // emulator core; zero-wait-state IRAM placement eliminates I-cache stalls.
+static size_t batteryRamSize() {
+  if (!gb) return 0;
+  const uint8_t type = gb->gb_rom_read ? gb->gb_rom_read(gb, 0x0147) : 0;
+  const uint8_t sizeCode = gb->gb_rom_read ? gb->gb_rom_read(gb, 0x0149) : 0;
+  const size_t size = BatterySave::gameBoyBatteryBytes(type, sizeCode);
+  return size <= CART_RAM_SIZE ? size : 0;
+}
 
-  IRAM_ATTR uint8_t gb_rom_read(struct gb_s *gbCtx, const uint_fast32_t addr) {
-    (void)gbCtx;
-    if (addr >= current_rom_len) return 0xFF;
-    return current_rom_data[addr];
-  }
-  
-  IRAM_ATTR uint8_t gb_cart_ram_read(struct gb_s *gbCtx, const uint_fast32_t addr) {
-    (void)gbCtx;
-    if (!cart_ram || addr >= CART_RAM_SIZE) {
-      static bool warned = false;
-      if (!warned) { LOG_WARN_STR("WARNING: Cart RAM read overflow!"); warned = true; }
-      return 0xFF;
+// N5: Module-level, 4-byte aligned — avoids BSS contention with gb_s data.
+static uint16_t __attribute__((aligned(4))) rowBuffer[240];
+static uint16_t* s_asyncGbFrame = nullptr;
+
+static uint16_t PAL_256[256];
+
+// N1: IRAM_ATTR — these callbacks are invoked ~280K times per frame by the
+// emulator core; zero-wait-state IRAM placement eliminates I-cache stalls.
+
+IRAM_ATTR uint8_t gb_rom_read(struct gb_s* gbCtx, const uint_fast32_t addr) {
+  (void)gbCtx;
+  if (addr >= current_rom_len) return 0xFF;
+  return current_rom_data[addr];
+}
+
+IRAM_ATTR uint8_t gb_cart_ram_read(struct gb_s* gbCtx, const uint_fast32_t addr) {
+  (void)gbCtx;
+  if (!cart_ram || addr >= CART_RAM_SIZE) {
+    static bool warned = false;
+    if (!warned) {
+      LOG_WARN_STR("WARNING: Cart RAM read overflow!");
+      warned = true;
     }
-    return cart_ram[addr];
+    return 0xFF;
   }
-  
-  IRAM_ATTR void gb_cart_ram_write(struct gb_s *gbCtx, const uint_fast32_t addr, const uint8_t val) {
-    (void)gbCtx;
-    if (!cart_ram || addr >= CART_RAM_SIZE) {
-      static bool warned = false;
-      if (!warned) { LOG_WARN_STR("WARNING: Cart RAM write overflow!"); warned = true; }
-      return;
+  return cart_ram[addr];
+}
+
+IRAM_ATTR void gb_cart_ram_write(struct gb_s* gbCtx, const uint_fast32_t addr, const uint8_t val) {
+  (void)gbCtx;
+  if (!cart_ram || addr >= CART_RAM_SIZE) {
+    static bool warned = false;
+    if (!warned) {
+      LOG_WARN_STR("WARNING: Cart RAM write overflow!");
+      warned = true;
     }
-    cart_ram[addr] = val;
+    return;
   }
-  
-  void gb_error(struct gb_s *gbCtx, const enum gb_error_e gb_err, const uint16_t val) {
-    (void)gbCtx;
-    LOG_ERROR("Peanut-GB Error: %d at PC 0x%04X", gb_err, val);
-    Serial.flush();
-    BmoFace::setExpression(BmoFace::ERROR);
-    BmoFace::draw(); // Force draw immediately before restart
-    esp_restart();
+  cart_ram[addr] = val;
+}
+
+void gb_error(struct gb_s* gbCtx, const enum gb_error_e gb_err, const uint16_t val) {
+  (void)gbCtx;
+  LOG_ERROR("Peanut-GB Error: %d at PC 0x%04X", gb_err, val);
+  Serial.flush();
+  BmoFace::setExpression(BmoFace::ERROR);
+  BmoFace::draw(); // Force draw immediately before restart
+  esp_restart();
+}
+
+// N1: lcd_draw_line in IRAM — called 144×/frame.
+IRAM_ATTR void lcd_draw_line(struct gb_s* gbCtx, const uint8_t pixels[160], const uint_fast8_t line) {
+  (void)gbCtx;
+  // E1: Process 4 source pixels per iteration → 6 output pixels.
+  // This perfectly aligns to three 32-bit memory stores (12 bytes),
+  // eliminating unaligned store penalties on the Xtensa LX7 CPU.
+  uint32_t* out32 = (uint32_t*)rowBuffer;
+  for (int g = 0; g < 40; g++) {
+    uint16_t pA = PAL_256[pixels[g * 4]];
+    uint16_t pB = PAL_256[pixels[g * 4 + 1]];
+    uint16_t pC = PAL_256[pixels[g * 4 + 2]];
+    uint16_t pD = PAL_256[pixels[g * 4 + 3]];
+
+    out32[0] = (uint32_t)pA | ((uint32_t)pA << 16);
+    out32[1] = (uint32_t)pB | ((uint32_t)pC << 16);
+    out32[2] = (uint32_t)pC | ((uint32_t)pD << 16);
+
+    out32 += 3;
   }
 
-  // N1: lcd_draw_line in IRAM — called 144×/frame.
-  IRAM_ATTR void lcd_draw_line(struct gb_s *gbCtx, const uint8_t pixels[160], const uint_fast8_t line) {
-    (void)gbCtx;
-    // E1: Process 4 source pixels per iteration → 6 output pixels.
-    // This perfectly aligns to three 32-bit memory stores (12 bytes),
-    // eliminating unaligned store penalties on the Xtensa LX7 CPU.
-    uint32_t* out32 = (uint32_t*)rowBuffer;
-    for (int g = 0; g < 40; g++) {
-      uint16_t pA = PAL_256[pixels[g * 4]];
-      uint16_t pB = PAL_256[pixels[g * 4 + 1]];
-      uint16_t pC = PAL_256[pixels[g * 4 + 2]];
-      uint16_t pD = PAL_256[pixels[g * 4 + 3]];
-      
-      out32[0] = (uint32_t)pA | ((uint32_t)pA << 16);
-      out32[1] = (uint32_t)pB | ((uint32_t)pC << 16);
-      out32[2] = (uint32_t)pC | ((uint32_t)pD << 16);
-      
-      out32 += 3;
-    }
-
-    // N3: No setAddrWindow per line — startFrame() set it once for 240×216.
-    // Exact 3:2 nearest-neighbour scale. Horizontally, A B C D becomes
-    // A A B C C D; duplicating the even source rows gives the identical
-    // top-left anchored mapping vertically (0,0,1,2,2,3,...).
-    const int rows_to_draw = (line & 1u) ? 1 : 2;
+  // N3: Scale into inactive PSRAM ping-pong framebuffer so Core 0 DisplayWorker
+  // can DMA-stream this frame concurrently while Core 1 starts the next frame.
+  // Exact 3:2 nearest-neighbour scale (A B C D -> A A B C C D), duplicating even source rows.
+  const int rows_to_draw = (line & 1u) ? 1 : 2;
+  const int y0 = (static_cast<int>(line >> 1) * 3) + ((line & 1u) ? 2 : 0);
+  if (s_asyncGbFrame && line < 144U) {
+    uint16_t* dstRow = &s_asyncGbFrame[y0 * 240];
+    memcpy(dstRow, rowBuffer, 240U * sizeof(uint16_t));
     if (rows_to_draw == 2) {
-      memcpy(&rowBuffer[240], &rowBuffer[0], 240 * 2);
+      memcpy(dstRow + 240, rowBuffer, 240U * sizeof(uint16_t));
     }
-    DisplayEmu::streamPixelRow(rowBuffer, 240 * rows_to_draw);
   }
 }
+} // namespace
 
 bool PeanutEmu::init(const uint8_t* rom_data, size_t rom_len) {
   destroy();
@@ -163,20 +175,19 @@ bool PeanutEmu::init(const uint8_t* rom_data, size_t rom_len) {
 
   LOG_INFO_STR("Initializing Peanut-GB...");
   LOG_INFO("ROM loaded: %u bytes", rom_len);
-  
-  enum gb_init_error_e ret = gb_init(gb, &gb_rom_read, &gb_cart_ram_read, &gb_cart_ram_write,
-                                     &gb_error, nullptr);
+
+  enum gb_init_error_e ret = gb_init(gb, &gb_rom_read, &gb_cart_ram_read, &gb_cart_ram_write, &gb_error, nullptr);
   if (ret != GB_INIT_NO_ERROR) {
     LOG_ERROR("gb_init() failed: %d", ret);
     destroy();
     return false;
   }
-  
+
   gb_init_lcd(gb, &lcd_draw_line);
 
   // Reset joypad so no button fires on the first emulator frame.
   gb->direct.joypad = 0xFF;
-  
+
   LOG_INFO_STR("Peanut-GB initialized.");
   return true;
 }
@@ -195,14 +206,18 @@ void PeanutEmu::update() {
     lastPaletteIdx = curPaletteIdx;
   }
 
-  // startFrame holds SPI bus open and sets address window once for the
-  // entire 240x216 frame (N1 + N3).
-  DisplayEmu::startFrame();
+  s_asyncGbFrame = DisplayEmu::acquireAsyncFrameBuffer();
+  if (!s_asyncGbFrame) {
+    return;
+  }
   gb_run_frame(gb);
-  DisplayEmu::endFrame();
+  DisplayEmu::submitGBFrameAsync(s_asyncGbFrame);
+  s_asyncGbFrame = nullptr;
 }
 
 void PeanutEmu::destroy() {
+  s_asyncGbFrame = nullptr;
+  DisplayEmu::waitForDisplay();
   if (cart_ram) {
     heap_caps_free(cart_ram); // matched to heap_caps_malloc(MALLOC_CAP_SPIRAM)
     cart_ram = nullptr;
@@ -231,8 +246,8 @@ bool PeanutEmu::loadBatteryRam(const char* romFilename) {
 
 bool PeanutEmu::saveState(const char* romFilename, int slot) {
   if (!gb || !cart_ram || !romFilename) return false;
-  return SaveManager::saveState(romFilename, slot, SaveManager::CORE_GB_DMG,
-                                gb, sizeof(struct gb_s), cart_ram, CART_RAM_SIZE);
+  return SaveManager::saveState(romFilename, slot, SaveManager::CORE_GB_DMG, gb, sizeof(struct gb_s), cart_ram,
+                                CART_RAM_SIZE);
 }
 
 bool PeanutEmu::loadState(const char* romFilename, int slot) {
@@ -245,8 +260,7 @@ bool PeanutEmu::loadState(const char* romFilename, int slot) {
     return false;
   }
   size_t gbSize = 0, ramSize = 0;
-  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_GB_DMG,
-                                   tempGb, sizeof(struct gb_s), &gbSize,
+  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_GB_DMG, tempGb, sizeof(struct gb_s), &gbSize,
                                    tempRam, CART_RAM_SIZE, &ramSize);
   if (ok && gbSize == sizeof(struct gb_s) && ramSize == CART_RAM_SIZE) {
     memcpy(cart_ram, tempRam, CART_RAM_SIZE);

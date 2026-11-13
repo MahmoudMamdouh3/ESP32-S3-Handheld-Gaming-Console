@@ -3,6 +3,7 @@
 
 #include "display_internal.h"
 #include "../hal/config.h"
+#include "../hal/profiler.h"
 #include "../hal/spi_arbiter.h"
 #include <SPI.h>
 #include <cstring>
@@ -103,6 +104,7 @@ void displayWorkerTask(void* pvParameters) {
   while (true) {
     if (xQueueReceive(s_displayQueue, &cmd, kDisplayIdlePollTicks) == pdTRUE) {
       s_displayBusy = true;
+      BMO_PROFILE_START(ZONE_SPI_STREAM);
       if ((cmd.type == CMD_PUSH_CANVAS || cmd.type == CMD_PUSH_FULLSCREEN) && cmd.buffer) {
         SpiArbiter::ScopedLock spiLock;
         tft.startWrite();
@@ -164,6 +166,7 @@ void displayWorkerTask(void* pvParameters) {
         tft.endWrite();
 #endif
       }
+      BMO_PROFILE_END(ZONE_SPI_STREAM);
       s_displayBusy = false;
       xSemaphoreGive(s_displayDoneSem);
     }
@@ -295,6 +298,55 @@ void DisplayEmu::streamPixelRow(const uint16_t* buf, int pixelCount) {
   }
   s_streamCapPixels += pixelCount;
   SPI.writeBytes((const uint8_t*)buf, pixelCount * 2);
+}
+
+uint16_t* DisplayEmu::acquireAsyncFrameBuffer() {
+  if (s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
+    return (uint16_t*)s_asyncEmuBuf[s_activeEmuBuf];
+  }
+  return (uint16_t*)s_asyncEmuBuf[0];
+}
+
+void DisplayEmu::submitAsyncFrameBuffer(uint16_t* fb, int x, int y, int w, int h) {
+  if (!fb || w <= 0 || h <= 0) return;
+  const size_t byteCount = (size_t)w * (size_t)h * 2U;
+  if (byteCount > (320U * 240U * 2U)) return;
+
+  s_lastFrameW = w;
+  s_lastFrameH = h;
+  s_lastFrameFmt = FRAME_FMT_RAW16;
+  s_lastRaw8Ptr = nullptr;
+
+  if (s_displayTaskHandle && s_displayQueue && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
+    waitForDisplay();
+    xSemaphoreTake(s_displayDoneSem, 0);
+
+    s_lastFramePtr = fb;
+    const DisplayTaskCmd cmd = {CMD_STREAM_RAW16, fb, (int16_t)x, (int16_t)y, (int16_t)w, (int16_t)h};
+    if (enqueueDisplayCmd(cmd)) {
+      if (fb == (uint16_t*)s_asyncEmuBuf[0]) {
+        s_activeEmuBuf = 1;
+      } else if (fb == (uint16_t*)s_asyncEmuBuf[1]) {
+        s_activeEmuBuf = 0;
+      } else {
+        s_activeEmuBuf = 1 - s_activeEmuBuf;
+      }
+    }
+  } else {
+    s_lastFramePtr = fb;
+    waitForDisplay();
+    SpiArbiter::ScopedLock spiLock;
+    BMO_PROFILE_START(ZONE_SPI_STREAM);
+    tft.startWrite();
+    tft.setAddrWindow(x, y, w, h);
+    SPI.writeBytes((const uint8_t*)fb, byteCount);
+    tft.endWrite();
+    BMO_PROFILE_END(ZONE_SPI_STREAM);
+  }
+}
+
+void DisplayEmu::submitGBFrameAsync(uint16_t* gb_framebuffer) {
+  submitAsyncFrameBuffer(gb_framebuffer, OFFSET_X, OFFSET_Y, 240, 216);
 }
 
 void DisplayEmu::streamRawFrameAsync(const uint16_t* fb, int x, int y, int w, int h) {

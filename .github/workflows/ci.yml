@@ -130,6 +130,7 @@ jobs:
           python tasks.py build --profile audio-compile-only --warnings strict --fail-on-warnings
           python tasks.py build --profile battery-compile-only --warnings strict --fail-on-warnings
           python tasks.py build --profile debug-log-compile-only --warnings strict --fail-on-warnings
+          python tasks.py build --profile profiler-compile-only --warnings strict --fail-on-warnings
 
       - name: Upload compiled firmware artifacts (default profile)
         uses: actions/upload-artifact@v4
