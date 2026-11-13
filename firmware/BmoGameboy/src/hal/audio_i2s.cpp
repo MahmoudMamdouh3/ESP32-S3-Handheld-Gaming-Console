@@ -2,6 +2,9 @@
 #include "config.h"
 
 #if FEATURE_AUDIO
+#if !defined(BMO_HARDWARE_CONFIRMED_AUDIO) || !BMO_HARDWARE_CONFIRMED_AUDIO
+#error "FEATURE_AUDIO=1 requires -DBMO_HARDWARE_CONFIRMED_AUDIO=1 confirming physical I2S DAC hardware"
+#endif
 #include <Arduino.h>
 #include <driver/i2s.h>
 
@@ -10,25 +13,24 @@
 namespace AudioI2S {
 
 bool begin() {
-    i2s_config_t i2s_config = {
-        .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
-        .sample_rate = 44100, // Standard GB/GBC sample rate
-        .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
-        .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
-        .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1, // Interrupt level 1
-        .dma_buf_count = 4,                       // Number of DMA buffers
-        .dma_buf_len = 512,                       // Size of each DMA buffer
-        .use_apll = false,
-        .tx_desc_auto_clear = true
-    };
+    i2s_config_t i2s_config = {};
+    i2s_config.mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX);
+    i2s_config.sample_rate = 44100; // Standard GB/GBC sample rate
+    i2s_config.bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT;
+    i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
+    i2s_config.communication_format = I2S_COMM_FORMAT_STAND_I2S;
+    i2s_config.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1; // Interrupt level 1
+    i2s_config.dma_desc_num = 4;                        // Number of DMA descriptors
+    i2s_config.dma_frame_num = 512;                     // Frames per DMA buffer
+    i2s_config.use_apll = false;
+    i2s_config.tx_desc_auto_clear = true;
 
-    i2s_pin_config_t pin_config = {
-        .bck_io_num = I2S_BCLK,
-        .ws_io_num = I2S_LRC,
-        .data_out_num = I2S_DIN,
-        .data_in_num = I2S_PIN_NO_CHANGE
-    };
+    i2s_pin_config_t pin_config = {};
+    pin_config.mck_io_num = I2S_PIN_NO_CHANGE;
+    pin_config.bck_io_num = I2S_BCLK;
+    pin_config.ws_io_num = I2S_LRC;
+    pin_config.data_out_num = I2S_DIN;
+    pin_config.data_in_num = I2S_PIN_NO_CHANGE;
 
     esp_err_t err = i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL);
     if (err != ESP_OK) {
@@ -58,6 +60,9 @@ void pushSample(int16_t left, int16_t right) {
 #else
 namespace AudioI2S {
     bool begin() { return true; }
-    void pushSample(int16_t left, int16_t right) {}
+    void pushSample(int16_t left, int16_t right) {
+        (void)left;
+        (void)right;
+    }
 }
 #endif

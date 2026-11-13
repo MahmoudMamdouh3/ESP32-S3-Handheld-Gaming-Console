@@ -3,6 +3,11 @@
 #include "../ui/bmo_face.h"
 #include <Arduino.h>
 
+#if FEATURE_BATTERY_MONITOR
+#if !defined(BMO_HARDWARE_CONFIRMED_BATTERY) || !BMO_HARDWARE_CONFIRMED_BATTERY
+#error "FEATURE_BATTERY_MONITOR=1 requires -DBMO_HARDWARE_CONFIRMED_BATTERY=1 confirming physical ADC divider hardware"
+#endif
+
 // Calibration values for the voltage divider (to be finalized on real hardware)
 // Assumes a 100k / 100k divider on the 3.7V-4.2V LiPo connecting to 3.3V ADC.
 #define BATTERY_R1 100000.0f
@@ -14,6 +19,7 @@ namespace {
     float lastVoltage = 3.7f;
     unsigned long lastReadMs = 0;
 }
+#endif
 
 namespace Battery {
 #if FEATURE_BATTERY_MONITOR

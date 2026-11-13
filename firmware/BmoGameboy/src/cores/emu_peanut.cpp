@@ -64,12 +64,14 @@ namespace {
   // N1: IRAM_ATTR — these callbacks are invoked ~280K times per frame by the
   // emulator core; zero-wait-state IRAM placement eliminates I-cache stalls.
 
-  IRAM_ATTR uint8_t gb_rom_read(struct gb_s *gb, const uint_fast32_t addr) {
+  IRAM_ATTR uint8_t gb_rom_read(struct gb_s *gbCtx, const uint_fast32_t addr) {
+    (void)gbCtx;
     if (addr >= current_rom_len) return 0xFF;
     return current_rom_data[addr];
   }
   
-  IRAM_ATTR uint8_t gb_cart_ram_read(struct gb_s *gb, const uint_fast32_t addr) {
+  IRAM_ATTR uint8_t gb_cart_ram_read(struct gb_s *gbCtx, const uint_fast32_t addr) {
+    (void)gbCtx;
     if (!cart_ram || addr >= CART_RAM_SIZE) {
       static bool warned = false;
       if (!warned) { LOG_WARN_STR("WARNING: Cart RAM read overflow!"); warned = true; }
@@ -78,7 +80,8 @@ namespace {
     return cart_ram[addr];
   }
   
-  IRAM_ATTR void gb_cart_ram_write(struct gb_s *gb, const uint_fast32_t addr, const uint8_t val) {
+  IRAM_ATTR void gb_cart_ram_write(struct gb_s *gbCtx, const uint_fast32_t addr, const uint8_t val) {
+    (void)gbCtx;
     if (!cart_ram || addr >= CART_RAM_SIZE) {
       static bool warned = false;
       if (!warned) { LOG_WARN_STR("WARNING: Cart RAM write overflow!"); warned = true; }
@@ -87,7 +90,8 @@ namespace {
     cart_ram[addr] = val;
   }
   
-  void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16_t val) {
+  void gb_error(struct gb_s *gbCtx, const enum gb_error_e gb_err, const uint16_t val) {
+    (void)gbCtx;
     LOG_ERROR("Peanut-GB Error: %d at PC 0x%04X", gb_err, val);
     Serial.flush();
     BmoFace::setExpression(BmoFace::ERROR);
@@ -96,7 +100,8 @@ namespace {
   }
 
   // N1: lcd_draw_line in IRAM — called 144×/frame.
-  IRAM_ATTR void lcd_draw_line(struct gb_s *gb, const uint8_t pixels[160], const uint_fast8_t line) {
+  IRAM_ATTR void lcd_draw_line(struct gb_s *gbCtx, const uint8_t pixels[160], const uint_fast8_t line) {
+    (void)gbCtx;
     // E1: Process 4 source pixels per iteration → 6 output pixels.
     // This perfectly aligns to three 32-bit memory stores (12 bytes),
     // eliminating unaligned store penalties on the Xtensa LX7 CPU.

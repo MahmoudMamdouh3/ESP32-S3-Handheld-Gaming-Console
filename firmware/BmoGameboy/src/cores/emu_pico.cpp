@@ -18,7 +18,7 @@
 #include "../ui/display_emu.h"
 
 #include "../third_party/fake08/src/Audio.h"
-#include "../third_party/fake08/src/Graphics.h"
+#include "../third_party/fake08/src/graphics.h"
 #include "../third_party/fake08/src/Input.h"
 #include "../third_party/fake08/src/PicoRam.h"
 #include "../third_party/fake08/src/fontdata.h"

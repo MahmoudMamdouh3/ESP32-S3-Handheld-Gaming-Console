@@ -17,9 +17,15 @@
 // -----------------------------------------------------------------------------
 // HARDWARE FEATURE FLAGS (Hard stops — see docs/hardware.md)
 // -----------------------------------------------------------------------------
+#ifndef FEATURE_SD_CARD
 #define FEATURE_SD_CARD 1
+#endif
+#ifndef FEATURE_AUDIO
 #define FEATURE_AUDIO 0
+#endif
+#ifndef FEATURE_BATTERY_MONITOR
 #define FEATURE_BATTERY_MONITOR 0
+#endif
 
 // Optional compile-time features (enabled by default; override via build properties if needed)
 #ifndef BMO_ENABLE_BAKED_ROMS

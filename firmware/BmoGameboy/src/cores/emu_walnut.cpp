@@ -87,20 +87,23 @@ namespace {
   // SRAM. They are called ~280,000 times per frame by the emulator core and
   // must never stall on an I-cache miss.
 
-  IRAM_ATTR uint8_t gb_rom_read(struct gb_s *gb, const uint_fast32_t addr) {
+  IRAM_ATTR uint8_t gb_rom_read(struct gb_s *gbCtx, const uint_fast32_t addr) {
+    (void)gbCtx;
     if (addr >= current_rom_len) return 0xFF;
     return current_rom_data[addr];
   }
 
   // BMO-PATCH: Replaced unsafe unaligned pointer casts with byte-wise little-endian reconstruction
-  IRAM_ATTR uint16_t gb_rom_read16(struct gb_s *gb, const uint_fast32_t addr) {
+  IRAM_ATTR uint16_t gb_rom_read16(struct gb_s *gbCtx, const uint_fast32_t addr) {
+    (void)gbCtx;
     if (addr + 2 > current_rom_len) return 0xFFFF;
     return (uint16_t)current_rom_data[addr] | 
           ((uint16_t)current_rom_data[addr + 1] << 8);
   }
 
   // BMO-PATCH: Replaced unsafe unaligned pointer casts with byte-wise little-endian reconstruction
-  IRAM_ATTR uint32_t gb_rom_read32(struct gb_s *gb, const uint_fast32_t addr) {
+  IRAM_ATTR uint32_t gb_rom_read32(struct gb_s *gbCtx, const uint_fast32_t addr) {
+    (void)gbCtx;
     if (addr + 4 > current_rom_len) return 0xFFFFFFFF;
     return (uint32_t)current_rom_data[addr] | 
           ((uint32_t)current_rom_data[addr + 1] << 8) | 
@@ -108,17 +111,20 @@ namespace {
           ((uint32_t)current_rom_data[addr + 3] << 24);
   }
   
-  IRAM_ATTR uint8_t gb_cart_ram_read(struct gb_s *gb, const uint_fast32_t addr) {
+  IRAM_ATTR uint8_t gb_cart_ram_read(struct gb_s *gbCtx, const uint_fast32_t addr) {
+    (void)gbCtx;
     if (!cart_ram || addr >= CART_RAM_SIZE) return 0xFF;
     return cart_ram[addr];
   }
   
-  IRAM_ATTR void gb_cart_ram_write(struct gb_s *gb, const uint_fast32_t addr, const uint8_t val) {
+  IRAM_ATTR void gb_cart_ram_write(struct gb_s *gbCtx, const uint_fast32_t addr, const uint8_t val) {
+    (void)gbCtx;
     if (!cart_ram || addr >= CART_RAM_SIZE) return;
     cart_ram[addr] = val;
   }
   
-  void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16_t val) {
+  void gb_error(struct gb_s *gbCtx, const enum gb_error_e gb_err, const uint16_t val) {
+    (void)gbCtx;
     LOG_ERROR("Walnut-CGB Error: %d at PC 0x%04X", gb_err, val);
     Serial.flush();
     BmoFace::setExpression(BmoFace::ERROR);
@@ -128,10 +134,10 @@ namespace {
 
   // N1: lcd_draw_line is called 144×/frame; IRAM placement eliminates
   // I-cache misses in the pixel-processing inner loop.
-  IRAM_ATTR void lcd_draw_line(struct gb_s *gb, const uint8_t *pixels, const uint_fast8_t line) {
+  IRAM_ATTR void lcd_draw_line(struct gb_s *gbCtx, const uint8_t *pixels, const uint_fast8_t line) {
     // NB1: Hoist cgbMode out of the 240-pixel inner loop. It is constant for
     // the entire scanline — the compiler cannot prove this without the hoist.
-    const uint8_t cgbMode = gb->cgb.cgbMode;
+    const uint8_t cgbMode = gbCtx->cgb.cgbMode;
 
     if (cgbMode) {
       // ---------------------------------------------------------------
@@ -142,7 +148,7 @@ namespace {
       // 2-pixel version performed unaligned 32-bit stores on odd iterations,
       // incurring Xtensa LX7 load/store stall penalties.
       // ---------------------------------------------------------------
-      const uint16_t* pal = gb->cgb.fixPalette;
+      const uint16_t* pal = gbCtx->cgb.fixPalette;
       uint32_t* out32 = (uint32_t*)rowBuffer;
 
       for (int g = 0; g < 40; g++) {

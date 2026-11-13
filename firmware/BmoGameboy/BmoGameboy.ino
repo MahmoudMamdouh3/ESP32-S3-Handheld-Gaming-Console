@@ -199,11 +199,6 @@ static bool s_topPicksOnly = false;
 static int  s_cachedConsoleCounts[CONSOLE_COUNT];
 static bool s_consoleCountsDirty = true;
 
-static int countGamesForConsole(RomType type) {
-  // O(1) lookup via SDCard::getRomCountForType (eliminates 245K iterations per frame)
-  return SDCard::getRomCountForType(type);
-}
-
 static void rebuildVisibleGames() {
   // Gate scan with dirty flag so idle frames do not perform O(N) linear scans
   if (!visibleGamesDirty) return;
