@@ -2,79 +2,144 @@ name: Firmware and host validation
 
 on:
   push:
+    branches:
+      - main
   pull_request:
+    branches:
+      - main
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  validate:
+  lint:
+    name: Lint, guardrails, and links
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    env:
-      BMO_REQUIRE_TARGET_COMPILE: "1"
+    timeout-minutes: 10
     steps:
-      - name: Check out repository
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: |
+            requirements.txt
+            hardware/enclosure/requirements.txt
 
-      - name: Install pinned host test dependencies
-        run: python -m pip install Pillow==12.2.0
+      - name: Install Python verification dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements.txt
 
-      - name: Set up Arduino CLI
-        uses: arduino/setup-arduino-cli@81d310742121c928ea9c8bbd407b4217b432ae02 # v2.0.0
+      - name: Run fast host validation and static checks
+        run: python tasks.py check --no-tests
 
-      - name: Install pinned WASI SDK
-        shell: bash
+  host-tests:
+    name: Host and WASI unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: |
+            requirements.txt
+            hardware/enclosure/requirements.txt
+
+      - name: Install host test dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements.txt
+
+      - name: Cache WASI SDK 34
+        id: wasi-cache
+        uses: actions/cache@v4
+        with:
+          path: .tools/wasi-sdk-34.0-x86_64-linux
+          key: wasi-sdk-34.0-x86_64-linux-b761e3a0
+
+      - name: Download and verify WASI SDK 34
+        if: steps.wasi-cache.outputs.cache-hit != 'true'
         run: |
-          set -euo pipefail
-          mkdir -p "$GITHUB_WORKSPACE/.tools"
-          archive="$RUNNER_TEMP/wasi-sdk-34.0-x86_64-linux.tar.gz"
-          curl --fail --location --retry 3 \
-            --output "$archive" \
-            https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-x86_64-linux.tar.gz
-          echo "b761e3a0721dbae9c09a0059e5fdb2bf917d1b4a8a7b430fb3b5aafb0984b2c4  $archive" | sha256sum --check
-          tar -xzf "$archive" -C "$GITHUB_WORKSPACE/.tools"
-          echo "WASI_SDK_PATH=$GITHUB_WORKSPACE/.tools/wasi-sdk-34.0-x86_64-linux" >> "$GITHUB_ENV"
+          mkdir -p .tools
+          curl -fsSL https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-x86_64-linux.tar.gz -o .tools/wasi-sdk.tar.gz
+          echo "b761e3a0400877cb3e2d3174d334c91fc3742d1a774b1bd22248120c13e7a436  .tools/wasi-sdk.tar.gz" | sha256sum -c -
+          tar -xzf .tools/wasi-sdk.tar.gz -C .tools
+          rm -f .tools/wasi-sdk.tar.gz
 
-      - name: Install pinned ESP32-S3 build dependencies
-        run: |
-          arduino-cli config init --overwrite
-          arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
-          arduino-cli core update-index
-          arduino-cli core install esp32:esp32@3.3.11
-          arduino-cli lib update-index
-          arduino-cli lib install "Adafruit BusIO@1.17.4"
-          arduino-cli lib install "Adafruit GFX Library@1.12.6"
-          arduino-cli lib install "Adafruit ST7735 and ST7789 Library@1.11.0"
+      - name: Configure WASI_SDK_PATH
+        run: echo "WASI_SDK_PATH=${{ github.workspace }}/.tools/wasi-sdk-34.0-x86_64-linux" >> "$GITHUB_ENV"
 
-      - name: Compile ESP32-S3 firmware
-        run: arduino-cli compile --profile esp32s3 --build-path build/target-compile firmware/BmoGameboy
-
-      - name: Install pinned enclosure geometry dependencies
-        run: python -m pip install -r hardware/enclosure/requirements.txt
-
-      - name: Analyze fresh target ELF
-        run: |
-          python -m tools.guardian budget --elf build/target-compile/BmoGameboy.ino.elf
-          python -m tools.guardian profile-elf --elf build/target-compile/BmoGameboy.ino.elf
-
-      - name: Run host tests
+      - name: Run host unit tests
         run: python -m unittest discover -s tests -v
 
-      - name: Run Guardian tests
+      - name: Run Guardian unit tests
         run: python -m unittest discover -s tools/guardian/tests -v
 
-      - name: Run strict repository validator
-        run: python scripts/validate_repo.py --require-target-compile
+  firmware-build:
+    name: ESP32-S3 firmware profiles and size gate
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
 
-      - name: Check Markdown links
-        run: python scripts/check_markdown_links.py
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: |
+            requirements.txt
 
-      - name: Verify color tokens
-        run: python scripts/verify_color_tokens.py
+      - name: Install Python tools
+        run: python -m pip install --disable-pip-version-check -r requirements.txt
+
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v2.0.0
+        with:
+          version: 1.6.0
+
+      - name: Cache Arduino cores, libraries, and compiler cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.arduino15
+            ~/Arduino/libraries
+            build
+          key: ${{ runner.os }}-arduino-${{ hashFiles('firmware/BmoGameboy/sketch.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-arduino-
+
+      - name: Install pinned ESP32 core and libraries from sketch.yaml
+        run: python tasks.py setup --no-hooks --no-pip
+
+      - name: Compile default firmware (strict warnings & size check)
+        run: |
+          python tasks.py build --profile default --warnings strict --fail-on-warnings
+          python tasks.py size --elf build/target-compile/BmoGameboy.ino.elf --check-budgets
+
+      - name: Compile opt-out and dormant safety profiles
+        run: |
+          python tasks.py build --profile no-doom --warnings strict --fail-on-warnings
+          python tasks.py build --profile mit --warnings strict --fail-on-warnings
+          python tasks.py build --profile audio-compile-only --warnings strict --fail-on-warnings
+          python tasks.py build --profile battery-compile-only --warnings strict --fail-on-warnings
+          python tasks.py build --profile debug-log-compile-only --warnings strict --fail-on-warnings
+
+      - name: Upload compiled firmware artifacts (default profile)
+        uses: actions/upload-artifact@v4
+        with:
+          name: esp32s3-firmware-default
+          retention-days: 14
+          path: |
+            build/target-compile/BmoGameboy.ino.bin
+            build/target-compile/BmoGameboy.ino.elf
+            build/target-compile/BmoGameboy.ino.map
+            build/target-compile/BmoGameboy.ino.bootloader.bin
+            build/target-compile/BmoGameboy.ino.partitions.bin
+            build/target-compile/partitions.csv

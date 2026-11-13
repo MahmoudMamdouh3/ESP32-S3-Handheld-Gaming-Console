@@ -4,22 +4,30 @@ Contributions to firmware, host tests, enclosure CAD, and the browser simulator 
 
 ## Setup
 
-1. Enable the lightweight pre-commit hook:
+Use [`tasks.py`](tasks.py) as the unified cross-platform developer entry point (see [docs/build-and-ci.md](docs/build-and-ci.md) for profile details and CI documentation):
+
+```powershell
+# 1. Configure Git hooks, check Python deps, and install pinned ESP32 core/libs from sketch.yaml:
+python tasks.py setup
+
+# 2. Run fast local validation (< 1 min, no firmware compile):
+python tasks.py check
+
+# 3. Run full host test suites + repository validator:
+python tasks.py test
+
+# 4. Compile firmware (default profile + strict first-party warnings):
+python tasks.py build
+python tasks.py size
+```
+
+Equivalent direct commands:
 
 ```powershell
 python scripts/install_git_hooks.py
-```
-
-2. Run the host test suite:
-
-```powershell
+python -m pip install -r requirements.txt
 python -m unittest discover -s tests -v
 python -m unittest discover -s tools/guardian/tests -v
-```
-
-3. Compile firmware (requires Arduino CLI with `esp32:esp32@3.3.11`, `Adafruit BusIO`, `Adafruit GFX Library`, and `Adafruit ST7735 and ST7789 Library`):
-
-```powershell
 .\arduino-cli.exe compile --profile esp32s3 firmware/BmoGameboy
 python scripts/validate_repo.py
 ```

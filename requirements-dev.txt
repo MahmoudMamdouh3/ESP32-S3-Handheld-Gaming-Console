@@ -1,0 +1,3 @@
+-r requirements.txt
+clang-tidy==22.1.8
+cppcheck==1.5.1

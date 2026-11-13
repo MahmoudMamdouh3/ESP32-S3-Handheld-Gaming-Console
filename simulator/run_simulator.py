@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import http.server
 import json
 import socketserver
@@ -134,7 +135,11 @@ def ensure_wasm_artifacts() -> None:
         )
 
 
-def main():
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Run the BMO Handheld loopback browser simulator.")
+    parser.add_argument("--no-open", action="store_true", help="Start HTTP server without opening a browser tab.")
+    args = parser.parse_args(argv)
+
     ensure_wasm_artifacts()
     print("==================================================================")
     print(" BMO HANDHELD CONSOLE SIMULATOR")
@@ -145,7 +150,8 @@ def main():
     print("==================================================================")
 
     with LoopbackThreadingServer((HOST, PORT), Handler) as httpd:
-        webbrowser.open(ORIGIN)
+        if not args.no_open:
+            webbrowser.open(ORIGIN)
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:

@@ -23,6 +23,7 @@ Firmware, host test suite, browser WebAssembly simulator, and 3D-printable enclo
 | System architecture & memory layout | [docs/architecture.md](docs/architecture.md) |
 | Supported consoles, status & controls | [docs/compatibility.md](docs/compatibility.md) |
 | Performance budgets & device measurements | [docs/performance.md](docs/performance.md) & [docs/hardware_measurements.md](docs/hardware_measurements.md) |
+| Build system, tasks CLI & CI architecture | [docs/build-and-ci.md](docs/build-and-ci.md), [tasks.py](tasks.py) |
 | Binary formats (`BMOIDX02`, `BSS1`, SD deployment) | [docs/formats.md](docs/formats.md) |
 | 3D-printable enclosure & wiring guides | [docs/enclosure-3d-printing.md](docs/enclosure-3d-printing.md), [wiring/](docs/wiring/01-display-and-buttons.md) |
 | Visual tokens & UI standards | [DESIGN.md](DESIGN.md) |
@@ -31,29 +32,33 @@ Firmware, host test suite, browser WebAssembly simulator, and 3D-printable enclo
 
 ## Quick Start
 
-### 1. Build Firmware (`TARGET_COMPILED`)
+### 1. Setup & Build Firmware (`TARGET_COMPILED`)
 
-Requires Arduino CLI with `esp32:esp32@3.3.11`, `Adafruit BusIO@1.17.4`, `Adafruit GFX Library@1.12.6`, and `Adafruit ST7735 and ST7789 Library@1.11.0`. Build profile enforces `FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi`.
+Requires Arduino CLI with `esp32:esp32@3.3.11`, `Adafruit BusIO@1.17.4`, `Adafruit GFX Library@1.12.6`, and `Adafruit ST7735 and ST7789 Library@1.11.0` (`firmware/BmoGameboy/sketch.yaml` enforces `FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi`). Use [`tasks.py`](tasks.py) or invoke `arduino-cli` directly:
 
 ```powershell
+# Bootstrap hooks, Python dependencies, and pinned Arduino core/libraries:
+python tasks.py setup
+
 # Default firmware build (all 15 platforms active; BMO_EXPERIMENTAL_CORES=1, BMO_ENABLE_DOOM=1; GPL-2.0-or-later):
+python tasks.py build
 .\arduino-cli.exe compile --profile esp32s3 firmware/BmoGameboy
 
 # Build without DOOM (all 14 other upstream third-party cores active):
-.\arduino-cli.exe compile --profile esp32s3 --build-property compiler.c.extra_flags=-DBMO_ENABLE_DOOM=0 --build-property compiler.cpp.extra_flags=-DBMO_ENABLE_DOOM=0 firmware/BmoGameboy
+python tasks.py build --profile no-doom
 
 # Build minimal permissive MIT core subset only (GB, GBC, NES active):
-.\arduino-cli.exe compile --profile esp32s3 --build-property "compiler.c.extra_flags=-DBMO_EXPERIMENTAL_CORES=0 -DBMO_ENABLE_DOOM=0" --build-property "compiler.cpp.extra_flags=-DBMO_EXPERIMENTAL_CORES=0 -DBMO_ENABLE_DOOM=0" firmware/BmoGameboy
+python tasks.py build --profile mit
 ```
 
-### 2. Run Host Tests & Validator (`HOST_TESTED`)
+### 2. Run Fast Checks & Host Tests (`HOST_TESTED`)
 
 ```powershell
-python -m unittest discover -s tests -v
-python -m unittest discover -s tools/guardian/tests -v
-python scripts/validate_repo.py
-python scripts/check_markdown_links.py
-python scripts/verify_color_tokens.py
+# Fast pre-push checks (< 1 min, no firmware compile):
+python tasks.py check
+
+# Full host test suites & repository validator:
+python tasks.py test
 ```
 
 ### 3. Browser Simulator & 3D Internals Teardown

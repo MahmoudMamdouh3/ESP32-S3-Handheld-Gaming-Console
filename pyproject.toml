@@ -1,0 +1,37 @@
+[project]
+name = "bmo-handheld-tools"
+version = "0.1.0"
+description = "Host tests, firmware validation tooling, browser simulator server, and enclosure CAD scripts for the BMO ESP32-S3 handheld."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "Pillow==12.2.0",
+    "manifold3d==3.0.1",
+    "numpy==2.2.6",
+    "trimesh==4.6.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "clang-tidy==22.1.8",
+    "cppcheck==1.5.1",
+    "ruff>=0.8.0,<1.0.0",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+extend-exclude = [
+    "Book",
+    "firmware/BmoGameboy/src/third_party",
+    "build",
+    "games",
+    "roms",
+    "sdcard",
+    ".tools",
+    ".venv",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
