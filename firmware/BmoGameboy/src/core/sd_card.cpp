@@ -14,20 +14,19 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#if defined(__has_include)
-#if __has_include("../assets/roms/virtual_bmo.h")
-#include "../assets/roms/virtual_bmo.h"
-#define BMO_HAS_VIRTUAL_BMO_ROM 1
+
+// Baked ROMs are disabled by default so the public repository compiles with no
+// embedded game payloads. To include a local user-supplied header under
+// src/assets/roms/local_baked_rom.h, build with -DBMO_ENABLE_BAKED_ROMS=1.
+#if BMO_ENABLE_BAKED_ROMS && defined(__has_include)
+#if __has_include("../assets/roms/local_baked_rom.h")
+#include "../assets/roms/local_baked_rom.h"
+#define BMO_HAS_LOCAL_BAKED_ROM 1
 #endif
 #endif
-#ifndef BMO_HAS_VIRTUAL_BMO_ROM
-#define BMO_HAS_VIRTUAL_BMO_ROM 0
+#ifndef BMO_HAS_LOCAL_BAKED_ROM
+#define BMO_HAS_LOCAL_BAKED_ROM 0
 #endif
-#include "../assets/roms/mario_deluxe.h"
-#include "../assets/roms/zelda_ages.h"
-// Baked GBC ROMs (1MB each; tracked in repository under src/assets/roms/)
-#include "../assets/roms/aladdin.h"
-#include "../assets/roms/lego_racers.h"
 
 namespace {
   static_assert(sizeof(RomFile) == sizeof(BmoIndexEntry), "RomFile and BmoIndexEntry size parity");
@@ -36,7 +35,7 @@ namespace {
   bool mounted = false;
   uint32_t mountedClockHz = 0;
   static const int MAX_ROMS = SDCard::MAX_ROM_POOL;
-  static const int BAKED_ROM_COUNT = 4 + BMO_HAS_VIRTUAL_BMO_ROM;
+  static const int BAKED_ROM_COUNT = BMO_HAS_LOCAL_BAKED_ROM;
   static RomFile fallbackRomList[32];
   static RomFile* romList = fallbackRomList;
   static int maxCapacity = 32;
@@ -303,62 +302,21 @@ bool SDCard::begin() {
 
   ensurePoolCapacity(MIN_ROM_POOL);
 
-  // Keep the optional local Virtual BMO ROM first when it is available.
-#if BMO_HAS_VIRTUAL_BMO_ROM
-  strncpy(romList[numRoms].filename, "Virtual BMO (Official Game).gb", 63);
+  // Optional locally supplied baked ROM (never tracked in git)
+#if BMO_HAS_LOCAL_BAKED_ROM
+  strncpy(romList[numRoms].filename, local_baked_rom_name, 63);
   romList[numRoms].filename[63] = '\0';
-  romList[numRoms].type = ROM_GB;
+  romList[numRoms].type = local_baked_rom_type;
   romList[numRoms].isFavorite = true;
   romList[numRoms].hasBoxArt = false;
   romList[numRoms].isPopular = true;
   romList[numRoms].fileSize = 0;
   s_favoritesCount++;                  // PERF-C1
-  romCountsByType[ROM_GB]++;
+  if (local_baked_rom_type <= ROM_COLEM) {
+    romCountsByType[local_baked_rom_type]++;
+  }
   numRoms++;
 #endif
-
-  // Baked classics
-  strncpy(romList[numRoms].filename, "Super Mario Bros Deluxe (Baked).gbc", 63);
-  romList[numRoms].filename[63] = '\0';
-  romList[numRoms].type = ROM_GBC;
-  romList[numRoms].isFavorite = true;
-  romList[numRoms].hasBoxArt = false;
-  romList[numRoms].isPopular = true;
-  romList[numRoms].fileSize = 0;
-  s_favoritesCount++;                  // PERF-C1
-  romCountsByType[ROM_GBC]++;
-  numRoms++;
-
-  strncpy(romList[numRoms].filename, "Legend of Zelda Ages (Baked).gbc", 63);
-  romList[numRoms].filename[63] = '\0';
-  romList[numRoms].type = ROM_GBC;
-  romList[numRoms].isFavorite = true;
-  romList[numRoms].hasBoxArt = false;
-  romList[numRoms].isPopular = true;
-  romList[numRoms].fileSize = 0;
-  s_favoritesCount++;                  // PERF-C1
-  romCountsByType[ROM_GBC]++;
-  numRoms++;
-
-  strncpy(romList[numRoms].filename, "Aladdin (Baked).gbc", 63);
-  romList[numRoms].filename[63] = '\0';
-  romList[numRoms].type = ROM_GBC;
-  romList[numRoms].isFavorite = false;
-  romList[numRoms].hasBoxArt = false;
-  romList[numRoms].isPopular = true;
-  romList[numRoms].fileSize = 0;
-  romCountsByType[ROM_GBC]++;
-  numRoms++;
-
-  strncpy(romList[numRoms].filename, "Lego Racers (Baked).gbc", 63);
-  romList[numRoms].filename[63] = '\0';
-  romList[numRoms].type = ROM_GBC;
-  romList[numRoms].isFavorite = false;
-  romList[numRoms].hasBoxArt = false;
-  romList[numRoms].isPopular = true;
-  romList[numRoms].fileSize = 0;
-  romCountsByType[ROM_GBC]++;
-  numRoms++;
 
 #if FEATURE_SD_CARD
   SpiArbiter::lock();
@@ -1162,29 +1120,13 @@ uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
   if (!filename || !outSize) return nullptr;
   *outSize = 0;
 
-  // Check for baked ROMs first
-#if BMO_HAS_VIRTUAL_BMO_ROM
-  if (strcmp(filename, "Virtual BMO (Official Game).gb") == 0) {
-    *outSize = virtual_bmo_rom_size;
-    return (uint8_t*)virtual_bmo_rom;
+  // Check for optional locally supplied baked ROM first
+#if BMO_HAS_LOCAL_BAKED_ROM
+  if (strcmp(filename, local_baked_rom_name) == 0) {
+    *outSize = local_baked_rom_size;
+    return (uint8_t*)local_baked_rom;
   }
 #endif
-  if (strcmp(filename, "Super Mario Bros Deluxe (Baked).gbc") == 0) {
-    *outSize = mario_deluxe_rom_size;
-    return (uint8_t*)mario_deluxe_rom;
-  }
-  if (strcmp(filename, "Legend of Zelda Ages (Baked).gbc") == 0) {
-    *outSize = zelda_ages_rom_size;
-    return (uint8_t*)zelda_ages_rom;
-  }
-  if (strcmp(filename, "Aladdin (Baked).gbc") == 0) {
-    *outSize = aladdin_rom_size;
-    return (uint8_t*)aladdin_rom;
-  }
-  if (strcmp(filename, "Lego Racers (Baked).gbc") == 0) {
-    *outSize = lego_racers_rom_size;
-    return (uint8_t*)lego_racers_rom;
-  }
 
 #if FEATURE_SD_CARD
   // H-3: Stack buffer instead of Arduino String — avoids DRAM heap alloc on every ROM launch.
@@ -1239,15 +1181,12 @@ uint8_t* SDCard::loadRom(const char* filename, size_t* outSize) {
 
 void SDCard::freeRom(uint8_t* buffer) {
   if (buffer) {
-    // DO NOT free baked ROM pointers residing in Flash .rodata
-    if (
-#if BMO_HAS_VIRTUAL_BMO_ROM
-        buffer == virtual_bmo_rom ||
-#endif
-        buffer == mario_deluxe_rom || buffer == zelda_ages_rom || buffer == aladdin_rom ||
-        buffer == lego_racers_rom) {
+    // Do not free baked ROM pointers residing in Flash .rodata
+#if BMO_HAS_LOCAL_BAKED_ROM
+    if (buffer == local_baked_rom) {
       return;
     }
+#endif
     heap_caps_free(buffer);
   }
 }

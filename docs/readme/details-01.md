@@ -14,16 +14,6 @@
   <p><em>Console selector carousel. The browser library now lists only ROMs loaded by the user.</em></p>
 </div>
 
-<div align="center">
-  <img src="../assets/sim_top_picks_library.png" width="460" alt="ROM Library Browser with Top Picks" />
-  <p><em>Earlier UI capture; current browser gameplay supports user-supplied Game Boy (<code>.gb</code>), NES (<code>.nes</code>), Atari 2600 (<code>.a26</code>), and ColecoVision (<code>.col</code>) ROMs.</em></p>
-</div>
-
-<div align="center">
-  <img src="../assets/native_emu_gameplay_grid.png" width="680" alt="Native C Emulator Framebuffer Captures" />
-  <p><em>Direct RGB565 framebuffers captured from the native C emulator cores (<code>Walnut-CGB</code> / <code>Peanut-GB</code>) running Super Mario Bros. Deluxe, The Legend of Zelda: Oracle of Ages, Pokémon Red, and Kirby - Tilt 'n' Tumble (MBC7 accelerometer).</em></p>
-</div>
-
 ---
 
 ## Hardware Specs & Pinout

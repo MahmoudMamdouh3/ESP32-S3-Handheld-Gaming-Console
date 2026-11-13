@@ -21,7 +21,7 @@ This record captures the 2026-11-12 production-readiness review, the user decisi
 Verdict: **working prototype / development build; not ready for public or commercial production release.**
 
 1. **Commercial game ROMs committed and compiled into firmware (`P2-02`, [ADR 0008](../decisions/0008-rom-policy-and-licensing.md))**:
-   - [`sd_card.cpp`](../../firmware/BmoGameboy/src/core/sd_card.cpp) includes [`mario_deluxe.h`](../../firmware/BmoGameboy/src/assets/roms/mario_deluxe.h), [`zelda_ages.h`](../../firmware/BmoGameboy/src/assets/roms/zelda_ages.h), [`aladdin.h`](../../firmware/BmoGameboy/src/assets/roms/aladdin.h), and [`lego_racers.h`](../../firmware/BmoGameboy/src/assets/roms/lego_racers.h) alongside the gitignored `firmware/BmoGameboy/src/assets/roms/virtual_bmo.h`.
+   - [`sd_card.cpp`](../../firmware/BmoGameboy/src/core/sd_card.cpp) previously included `mario_deluxe.h`, `zelda_ages.h`, `aladdin.h`, and `lego_racers.h` alongside the gitignored `firmware/BmoGameboy/src/assets/roms/virtual_bmo.h` (removed from firmware/git in Phase 1A).
    - `git ls-files` confirms the four commercial 1 MB ROM headers are tracked in git and returned by `SDCard::loadRom()`. Because the GitHub remote (`origin`) is public, these assets are also present in repository history.
 2. **Open-source licensing and third-party provenance conflicts (`P2-02`, [ADR 0008](../decisions/0008-rom-policy-and-licensing.md))**:
    - Root [`LICENSE`](../../LICENSE) is MIT.

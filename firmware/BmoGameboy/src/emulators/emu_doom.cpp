@@ -4,6 +4,12 @@
 #include "../core/buttons.h"
 #include "../core/spi_arbiter.h"
 #include "../core/config.h"
+#include "../core/theme.h"
+
+#include <Arduino.h>
+#include <string.h>
+
+#if BMO_ENABLE_DOOM
 
 extern "C" {
 #include "../vendor/doom/src/doomgeneric.h"
@@ -11,12 +17,9 @@ extern "C" {
 #include "../vendor/doom/src/m_controls.h"
 }
 
-#include <Arduino.h>
 #include <esp_heap_caps.h>
 #include <setjmp.h>
 #include <stdio.h>
-#include <string.h>
-#include "../core/theme.h"
 
 // PERF-H2: Ring-buffer for Doom key events — O(1) dequeue vs O(256) table scan.
 // Only 12 physical buttons exist; a 16-slot ring (power-of-2 for fast masking) is plenty.
@@ -310,4 +313,29 @@ void destroy() {
   s_keyRingHead = s_keyRingTail = 0;
 }
 
+} // namespace DoomEmu
+
+#else // BMO_ENABLE_DOOM == 0
+
+namespace DoomEmu {
+
+static const char* const kDoomDisabledMsg = "DOOM disabled (build with BMO_ENABLE_DOOM=1)";
+
+const char* lastError() {
+  return kDoomDisabledMsg;
 }
+
+bool begin(const char* wadPath) {
+  (void)wadPath;
+  LOG_WARN_STR("[DOOM] Engine disabled in MIT default build (set BMO_ENABLE_DOOM=1 for GPL build)");
+  DisplayEmu::showToast("DOOM DISABLED (MIT BUILD)", Theme::ACCENT_RED, 2200);
+  return false;
+}
+
+void runFrame() {}
+
+void destroy() {}
+
+} // namespace DoomEmu
+
+#endif // BMO_ENABLE_DOOM

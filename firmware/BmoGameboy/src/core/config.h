@@ -21,6 +21,15 @@
 #define FEATURE_AUDIO 0
 #define FEATURE_BATTERY_MONITOR 0
 
+// Optional compile-time features (disabled by default for clean public MIT builds)
+#ifndef BMO_ENABLE_BAKED_ROMS
+#define BMO_ENABLE_BAKED_ROMS 0
+#endif
+
+#ifndef BMO_ENABLE_DOOM
+#define BMO_ENABLE_DOOM 0
+#endif
+
 // ---------- Display: ST7789, 2.4", 240x320, SPI ----------
 #define TFT_SCK    12
 #define TFT_MOSI   11

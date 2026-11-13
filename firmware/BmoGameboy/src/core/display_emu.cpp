@@ -48,6 +48,8 @@ namespace {
   static constexpr uint8_t MADCTL_MV = 0x20;
   static constexpr uint8_t MADCTL_BGR = 0x08;
 
+  static uint16_t __attribute__((aligned(4))) s_nesRowBuf[256];
+#if BMO_ENABLE_DOOM
   struct color {
     uint32_t b:8;
     uint32_t g:8;
@@ -56,10 +58,10 @@ namespace {
   };
   extern "C" struct color colors[256];
 
-  static uint16_t __attribute__((aligned(4))) s_nesRowBuf[256];
   static uint16_t __attribute__((aligned(4))) s_doomLineBuf[320];
   static uint16_t s_doomPalette[256];
   static struct color s_lastColors[256];
+#endif
 
   enum LastFrameFormat {
     FRAME_FMT_NONE = 0,
@@ -141,6 +143,7 @@ namespace {
           }
           tft.endWrite();
           SpiArbiter::unlock();
+#if BMO_ENABLE_DOOM
         } else if (cmd.type == CMD_STREAM_DOOM && cmd.buffer) {
           if (memcmp(s_lastColors, colors, sizeof(s_lastColors)) != 0) {
             memcpy(s_lastColors, colors, sizeof(s_lastColors));
@@ -169,6 +172,7 @@ namespace {
           }
           tft.endWrite();
           SpiArbiter::unlock();
+#endif
         }
         s_displayBusy = false;
         xSemaphoreGive(s_displayDoneSem);
@@ -688,6 +692,7 @@ void DisplayEmu::streamNESFrame(const uint8_t* nes_framebuffer) {
   SpiArbiter::unlock();
 }
 
+#if BMO_ENABLE_DOOM
 void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
   if (!cmap) return;
   s_lastFrameW = 320;
@@ -742,6 +747,11 @@ void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
   tft.endWrite();
   SpiArbiter::unlock();
 }
+#else
+void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
+  (void)cmap;
+}
+#endif
 
 void DisplayEmu::streamSMSFrame(const uint16_t* sms_framebuffer, bool isGameGear) {
   if (!sms_framebuffer) return;
@@ -928,9 +938,9 @@ void DisplayEmu::drawBootSplash(bool pressAnyButtonBlink) {
   BmoFace::renderToBuffer(menuCanvas->getBuffer(), 320, cx - 60, cy - 40, 120, 80);
   menuCanvas->drawRoundRect(cx - 61, cy - 41, 122, 82, 10, UI_DEEP_TEAL);
 
-  // Title: "BMO GAMEBOY"
+  // Title: "BMO HANDHELD"
   menuCanvas->setFont(&FreeSans12pt7b);
-  drawCentered("BMO GAMEBOY", 152, UI_WHITE);
+  drawCentered("BMO HANDHELD", 152, UI_WHITE);
 
   // Subtitle: "15 Retro Consoles - Thousands of Adventures"
   menuCanvas->setFont();
@@ -2080,6 +2090,7 @@ const uint16_t* DisplayEmu::getLastFramebuffer(int* outWidth, int* outHeight) {
     }
     s_lastFramePtr = convBuf;
     s_lastFrameFmt = FRAME_FMT_RAW16;
+#if BMO_ENABLE_DOOM
   } else if (s_lastFrameFmt == FRAME_FMT_DOOM8 && s_lastRaw8Ptr && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
     uint16_t* convBuf = (uint16_t*)((s_lastRaw8Ptr == s_asyncEmuBuf[0]) ? s_asyncEmuBuf[1] : s_asyncEmuBuf[0]);
     for (int i = 0; i < 320 * 200; ++i) {
@@ -2087,6 +2098,7 @@ const uint16_t* DisplayEmu::getLastFramebuffer(int* outWidth, int* outHeight) {
     }
     s_lastFramePtr = convBuf;
     s_lastFrameFmt = FRAME_FMT_RAW16;
+#endif
   }
 
   return s_lastFramePtr;
@@ -2110,7 +2122,7 @@ void DisplayEmu::drawConsoleBezel(int consoleIndex) {
   }
 
   int vx = 40, vy = 12, vw = 240, vh = 216;
-  const char* label = "BMO GAMEBOY";
+  const char* label = "BMO HANDHELD";
   switch (consoleIndex) {
     case 0:  vx = 40; vy = 12; vw = 240; vh = 216; label = "GAME BOY COLOR"; break;
     case 1:  vx = 40; vy = 12; vw = 240; vh = 216; label = "GAME BOY DMG";   break;
