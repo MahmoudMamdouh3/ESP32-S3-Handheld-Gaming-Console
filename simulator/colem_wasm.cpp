@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../firmware/BmoGameboy/src/engines/colem/colem.h"
+#include "../firmware/BmoGameboy/src/third_party/smsplus/smsplus_bmo.h"
 
 extern "C" uint8_t* bmo_emu_rom_buffer();
 extern "C" uint32_t bmo_emu_rom_capacity();
@@ -13,18 +13,13 @@ namespace {
 constexpr uint32_t SCREEN_WIDTH = 256;
 constexpr uint32_t SCREEN_HEIGHT = 192;
 constexpr size_t FRAMEBUFFER_SIZE = SCREEN_WIDTH * SCREEN_HEIGHT;
-constexpr size_t RAM_SIZE = 8U * 1024U;
-constexpr size_t VRAM_SIZE = 16U * 1024U;
-constexpr size_t SNAPSHOT_MEMORY_SIZE =
-    RAM_SIZE + VRAM_SIZE + FRAMEBUFFER_SIZE * sizeof(uint16_t);
 
-colem_t s_colem;
-uint8_t* s_ram = nullptr;
-uint8_t* s_vram = nullptr;
-uint16_t* s_framebufferSource = nullptr;
+uint16_t s_panelSource[FRAMEBUFFER_SIZE];
 uint16_t s_framebuffer[FRAMEBUFFER_SIZE];
-colem_t* s_snapshot = nullptr;
-uint8_t* s_snapshotMemory = nullptr;
+uint16_t s_snapshotFb[FRAMEBUFFER_SIZE];
+uint8_t* s_snapshotBlob = nullptr;
+size_t s_snapshotBlobCap = 0;
+size_t s_snapshotBlobLen = 0;
 uint32_t s_romChecksum = 0;
 uint32_t s_frameCount = 0;
 uint32_t s_buttonMask = 0;
@@ -45,9 +40,10 @@ uint16_t browserRgb565(uint16_t panelPixel) {
 }
 
 void updateFramebuffer() {
-  if (!s_framebufferSource) return;
+  if (!s_running || !bmo_sms_is_running()) return;
+  bmo_sms_render_panel565(s_panelSource);
   for (size_t i = 0; i < FRAMEBUFFER_SIZE; ++i) {
-    s_framebuffer[i] = browserRgb565(s_framebufferSource[i]);
+    s_framebuffer[i] = browserRgb565(s_panelSource[i]);
   }
 }
 
@@ -61,31 +57,32 @@ uint32_t hashRom(const uint8_t* rom, uint32_t size) {
 
 void applyButtons() {
   if (!s_running) return;
-  uint16_t joystick = 0;
-  if (s_buttonMask & 0x01U) joystick |= 0x0001U;
-  if (s_buttonMask & 0x08U) joystick |= 0x0002U;
-  if (s_buttonMask & 0x02U) joystick |= 0x0004U;
-  if (s_buttonMask & 0x04U) joystick |= 0x0008U;
-  if (s_buttonMask & 0x10U) joystick |= 0x0010U;
-  if (s_buttonMask & 0x20U) joystick |= 0x0020U;
-  if (s_buttonMask & 0x40U) joystick |= 0x0040U;
-  colem_set_joystick(&s_colem, joystick);
+  int pad = 0;
+  if (s_buttonMask & 0x01U) pad |= BMO_SMS_INPUT_UP;
+  if (s_buttonMask & 0x02U) pad |= BMO_SMS_INPUT_DOWN;
+  if (s_buttonMask & 0x04U) pad |= BMO_SMS_INPUT_LEFT;
+  if (s_buttonMask & 0x08U) pad |= BMO_SMS_INPUT_RIGHT;
+  if (s_buttonMask & 0x10U) pad |= BMO_SMS_INPUT_BUTTON1;
+  if (s_buttonMask & 0x20U) pad |= BMO_SMS_INPUT_BUTTON2;
+
+  int keypad = 0x0F;
+  if (s_buttonMask & 0x40U) keypad = 0x01;       // Start -> Keypad 1
+  else if (s_buttonMask & 0x80U) keypad = 0x0A;  // Select -> Keypad *
+  const int sys = (keypad << BMO_SMS_COLECO_KEYPAD_SHIFT);
+
+  bmo_sms_set_input(pad, sys);
 }
 
 void releaseCore() {
   s_running = false;
-  free(s_snapshotMemory);
-  s_snapshotMemory = nullptr;
-  free(s_snapshot);
-  s_snapshot = nullptr;
-  free(s_framebufferSource);
-  s_framebufferSource = nullptr;
-  free(s_vram);
-  s_vram = nullptr;
-  free(s_ram);
-  s_ram = nullptr;
-  memset(&s_colem, 0, sizeof(s_colem));
+  bmo_sms_destroy();
+  free(s_snapshotBlob);
+  s_snapshotBlob = nullptr;
+  s_snapshotBlobCap = 0;
+  s_snapshotBlobLen = 0;
+  memset(s_panelSource, 0, sizeof(s_panelSource));
   memset(s_framebuffer, 0, sizeof(s_framebuffer));
+  memset(s_snapshotFb, 0, sizeof(s_snapshotFb));
   s_romChecksum = 0;
   s_frameCount = 0;
   s_buttonMask = 0;
@@ -110,20 +107,23 @@ int32_t bmo_colem_load_rom(uint32_t size) {
     return s_error;
   }
 
-  s_ram = static_cast<uint8_t*>(calloc(1, RAM_SIZE));
-  s_vram = static_cast<uint8_t*>(calloc(1, VRAM_SIZE));
-  s_framebufferSource = static_cast<uint16_t*>(calloc(FRAMEBUFFER_SIZE, sizeof(uint16_t)));
-  s_snapshot = static_cast<colem_t*>(malloc(sizeof(colem_t)));
-  s_snapshotMemory = static_cast<uint8_t*>(malloc(SNAPSHOT_MEMORY_SIZE));
-  if (!s_ram || !s_vram || !s_framebufferSource || !s_snapshot || !s_snapshotMemory) {
+  if (!bmo_sms_init(rom, size, BMO_SMS_CONSOLE_COLECO, nullptr)) {
     releaseCore();
     s_error = -2;
     return s_error;
   }
 
-  colem_init(&s_colem, rom, size, s_ram, s_vram, s_framebufferSource);
+  s_snapshotBlobCap = bmo_sms_state_size();
+  s_snapshotBlob = static_cast<uint8_t*>(malloc(s_snapshotBlobCap ? s_snapshotBlobCap : 1U));
+  if (!s_snapshotBlob) {
+    releaseCore();
+    s_error = -2;
+    return s_error;
+  }
+
   s_romChecksum = hashRom(rom, size);
   s_running = true;
+  applyButtons();
   updateFramebuffer();
   return 0;
 }
@@ -138,7 +138,7 @@ __attribute__((visibility("default")))
 uint32_t bmo_colem_run_frame() {
   if (!s_running) return s_frameCount;
   applyButtons();
-  colem_step_frame(&s_colem);
+  bmo_sms_run_frame(0);
   ++s_frameCount;
   updateFramebuffer();
   return s_frameCount;
@@ -151,7 +151,8 @@ uint16_t* bmo_colem_framebuffer() {
 
 __attribute__((visibility("default")))
 uint8_t* bmo_colem_ram() {
-  return s_ram;
+  size_t wramSize = 0;
+  return bmo_sms_wram_data(&wramSize);
 }
 
 __attribute__((visibility("default")))
@@ -171,7 +172,18 @@ uint32_t bmo_colem_button_state() {
 
 __attribute__((visibility("default")))
 uint16_t bmo_colem_joystick_state() {
-  return s_running ? s_colem.joystick : 0;
+  if (!s_running) return 0;
+  const int pad0 = bmo_sms_input_pad0();
+  const int sys = bmo_sms_input_system();
+  uint16_t joystick = 0;
+  if (pad0 & BMO_SMS_INPUT_UP)      joystick |= 0x0001U;
+  if (pad0 & BMO_SMS_INPUT_RIGHT)   joystick |= 0x0002U;
+  if (pad0 & BMO_SMS_INPUT_DOWN)    joystick |= 0x0004U;
+  if (pad0 & BMO_SMS_INPUT_LEFT)    joystick |= 0x0008U;
+  if (pad0 & BMO_SMS_INPUT_BUTTON1) joystick |= 0x0010U;
+  if (pad0 & BMO_SMS_INPUT_BUTTON2) joystick |= 0x0020U;
+  if (((sys >> BMO_SMS_COLECO_KEYPAD_SHIFT) & 0x0F) == 0x01) joystick |= 0x0040U;
+  return joystick;
 }
 
 __attribute__((visibility("default")))
@@ -186,18 +198,13 @@ int32_t bmo_colem_is_running() {
 
 __attribute__((visibility("default")))
 void bmo_colem_save_state() {
-  if (!s_running || !s_snapshot || !s_snapshotMemory) return;
-  memcpy(s_snapshot, &s_colem, sizeof(s_colem));
-  s_snapshot->rom = nullptr;
-  s_snapshot->ram = nullptr;
-  s_snapshot->vram = nullptr;
-  s_snapshot->framebuffer = nullptr;
-  uint8_t* cursor = s_snapshotMemory;
-  memcpy(cursor, s_ram, RAM_SIZE);
-  cursor += RAM_SIZE;
-  memcpy(cursor, s_vram, VRAM_SIZE);
-  cursor += VRAM_SIZE;
-  memcpy(cursor, s_framebufferSource, FRAMEBUFFER_SIZE * sizeof(uint16_t));
+  if (!s_running || !s_snapshotBlob) return;
+  size_t outLen = 0;
+  if (!bmo_sms_save_state(s_snapshotBlob, s_snapshotBlobCap, &outLen) || outLen == 0) {
+    return;
+  }
+  s_snapshotBlobLen = outLen;
+  memcpy(s_snapshotFb, s_framebuffer, sizeof(s_framebuffer));
   s_snapshotFrameCount = s_frameCount;
   s_snapshotRomChecksum = s_romChecksum;
   s_snapshotButtonMask = s_buttonMask;
@@ -206,27 +213,17 @@ void bmo_colem_save_state() {
 
 __attribute__((visibility("default")))
 int32_t bmo_colem_load_state() {
-  if (!s_running || !s_snapshot || !s_snapshotMemory || !s_snapshotValid ||
-      s_snapshotRomChecksum != s_romChecksum) {
+  if (!s_running || !s_snapshotBlob || !s_snapshotValid ||
+      s_snapshotRomChecksum != s_romChecksum || s_snapshotBlobLen == 0) {
     return 0;
   }
-  const uint8_t* rom = s_colem.rom;
-  const uint32_t romSize = s_colem.rom_size;
-  memcpy(&s_colem, s_snapshot, sizeof(s_colem));
-  s_colem.rom = const_cast<uint8_t*>(rom);
-  s_colem.rom_size = romSize;
-  s_colem.ram = s_ram;
-  s_colem.vram = s_vram;
-  s_colem.framebuffer = s_framebufferSource;
-  const uint8_t* cursor = s_snapshotMemory;
-  memcpy(s_ram, cursor, RAM_SIZE);
-  cursor += RAM_SIZE;
-  memcpy(s_vram, cursor, VRAM_SIZE);
-  cursor += VRAM_SIZE;
-  memcpy(s_framebufferSource, cursor, FRAMEBUFFER_SIZE * sizeof(uint16_t));
+  if (!bmo_sms_load_state(s_snapshotBlob, s_snapshotBlobLen)) {
+    return 0;
+  }
+  memcpy(s_framebuffer, s_snapshotFb, sizeof(s_framebuffer));
   s_frameCount = s_snapshotFrameCount;
   s_buttonMask = s_snapshotButtonMask;
-  updateFramebuffer();
+  applyButtons();
   return 1;
 }
 

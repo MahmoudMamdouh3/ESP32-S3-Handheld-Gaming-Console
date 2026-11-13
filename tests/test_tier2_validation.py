@@ -35,43 +35,49 @@ class TestTier2FirmwareValidation(unittest.TestCase):
             self.assertTrue(f.exists(), f"Missing required emulator file: {f}")
 
     def test_02_vendor_engines_exist(self):
-        """Verify all Tier 2 vendor engines exist."""
+        """Verify all Tier 2 genuine third-party engines exist."""
         required_vendor = [
-            FIRMWARE_DIR / "src" / "engines" / "genesis" / "genesis.h",
-            FIRMWARE_DIR / "src" / "engines" / "genesis" / "genesis.c",
-            FIRMWARE_DIR / "src" / "engines" / "snes" / "snes.h",
-            FIRMWARE_DIR / "src" / "engines" / "snes" / "snes.c",
-            FIRMWARE_DIR / "src" / "engines" / "wswan" / "wswan.h",
-            FIRMWARE_DIR / "src" / "engines" / "wswan" / "wswan.c",
-            FIRMWARE_DIR / "src" / "engines" / "ngp" / "ngp.h",
-            FIRMWARE_DIR / "src" / "engines" / "ngp" / "ngp.c",
-            FIRMWARE_DIR / "src" / "engines" / "lynx" / "lynx.h",
-            FIRMWARE_DIR / "src" / "engines" / "lynx" / "lynx.c",
-            FIRMWARE_DIR / "src" / "engines" / "colem" / "colem.h",
-            FIRMWARE_DIR / "src" / "engines" / "colem" / "colem.c",
+            FIRMWARE_DIR / "src" / "third_party" / "gwenesis" / "bus" / "gwenesis_bus.h",
+            FIRMWARE_DIR / "src" / "third_party" / "gwenesis" / "bus" / "gwenesis_bus.c",
+            FIRMWARE_DIR / "src" / "third_party" / "snes9x" / "snes9x.h",
+            FIRMWARE_DIR / "src" / "third_party" / "snes9x" / "src" / "cpuexec.c",
+            FIRMWARE_DIR / "src" / "third_party" / "oswan" / "WS.h",
+            FIRMWARE_DIR / "src" / "third_party" / "oswan" / "WS.c",
+            FIRMWARE_DIR / "src" / "third_party" / "race" / "tlcs900h.h",
+            FIRMWARE_DIR / "src" / "third_party" / "race" / "tlcs900h.c",
+            FIRMWARE_DIR / "src" / "third_party" / "handy" / "handy.h",
+            FIRMWARE_DIR / "src" / "third_party" / "handy" / "system.cpp",
+            FIRMWARE_DIR / "src" / "third_party" / "smsplus" / "tms.h",
+            FIRMWARE_DIR / "src" / "third_party" / "smsplus" / "tms.c",
         ]
         for f in required_vendor:
             self.assertTrue(f.exists(), f"Missing required vendor engine: {f}")
 
     def test_03_teardown_contract_compliance(self):
-        """Verify all Tier 2 emulators implement destroy() and are invoked in BmoGameboy.ino."""
+        """Verify all Tier 2 emulators implement destroy() in CoreRegistry and are dispatched by BmoGameboy.ino."""
         ino_content = (FIRMWARE_DIR / "BmoGameboy.ino").read_text(encoding="utf-8")
+        reg_content = (FIRMWARE_DIR / "src" / "cores" / "core_registry.h").read_text(encoding="utf-8")
+        self.assertIn("CoreRegistry::findByIndex", ino_content)
+        self.assertIn("core->destroy()", ino_content)
         required_destroys = [
-            "GenesisEmu::destroy()",
-            "SNESEmu::destroy()",
-            "WSwanEmu::destroy()",
-            "NGPEmu::destroy()",
-            "LynxEmu::destroy()",
-            "ColemEmu::destroy()"
+            "GenesisEmu::destroy",
+            "SNESEmu::destroy",
+            "WSwanEmu::destroy",
+            "NGPEmu::destroy",
+            "LynxEmu::destroy",
+            "ColemEmu::destroy",
         ]
         for d in required_destroys:
-            self.assertIn(d, ino_content, f"Teardown violation: {d} missing in BmoGameboy.ino")
+            self.assertIn(d, reg_content, f"Teardown violation: {d} missing in core_registry.h")
 
     def test_04_psram_allocation_safety(self):
         """Verify all Tier 2 emulators allocate framebuffers and RAM in Octal PSRAM."""
+        psram_h = (FIRMWARE_DIR / "src" / "hal" / "psram_alloc.h").read_text(encoding="utf-8")
+        self.assertIn("MALLOC_CAP_SPIRAM", psram_h)
         for emu_name in ["emu_genesis.cpp", "emu_snes.cpp", "emu_wswan.cpp", "emu_ngp.cpp", "emu_lynx.cpp", "emu_colem.cpp"]:
             code = (FIRMWARE_DIR / "src" / "cores" / emu_name).read_text(encoding="utf-8")
-            self.assertIn("MALLOC_CAP_SPIRAM", code, f"{emu_name} must use MALLOC_CAP_SPIRAM for dynamic memory")
+            uses_psram = ("MALLOC_CAP_SPIRAM" in code) or ("bmo_psram_malloc" in code) or ("bmo_psram_calloc" in code)
+            self.assertTrue(uses_psram, f"{emu_name} must allocate dynamic memory in Octal PSRAM via MALLOC_CAP_SPIRAM or bmo_psram_*")
 
     def test_05_display_streaming_methods(self):
         """Verify DisplayEmu implements streaming methods for all Tier 2 resolutions."""

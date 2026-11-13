@@ -1,11 +1,14 @@
 """
-tests/test_native_cores_execution.py — Native Host C Execution & 50-Frame Visual Regression Suite
-Compiles and executes tests/host/host_cores_runner.c against the actual C emulator sources
-(atari.c, colem.c, lynx.c, ngp.c, snes.c, wswan.c, genesis.c, sms.c, pce.c, pico.c, agnes.c)
+tests/test_native_cores_execution.py — Native Host Execution & 50-Frame Regression Suite
+Compiles and executes tests/host/host_cores_runner.c + per-core C/C++ bridges against the genuine
+upstream emulator engines under firmware/BmoGameboy/src/third_party/
+(stella2014, smsplus, handy, race, snes9x, oswan, gwenesis, huexpress, fake08, agnes)
 and also tests Phase D QoL features (Recursive Folder Navigation, Console Bezels,
 Cover Art Converter, and Serial Telemetry Plotter).
 """
 
+from concurrent.futures import ThreadPoolExecutor
+import os
 import shutil
 import subprocess
 import tempfile
@@ -14,76 +17,166 @@ from pathlib import Path
 
 from scripts import fetch_covers
 from tools import telemetry_plotter
-from host_test_support import require_compiler
+from host_test_support import find_wasi_cxx, require_compiler
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FIRMWARE_DIR = REPO_ROOT / "firmware" / "BmoGameboy"
 
 
-def _find_vcvars64() -> Path | None:
-    candidates = [
-        Path(r"C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat"),
-        Path(r"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"),
-        Path(r"C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"),
-    ]
-    for c in candidates:
-        if c.exists():
-            return c
-    return None
-
-
 class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
-    """Executes all 11 custom C emulator cores natively on host CPU and verifies Phase D tools."""
+    """Executes all 11 genuine upstream emulator engines on host CPU and verifies Phase D tools."""
 
     def test_01_compile_and_execute_all_11_c_emulator_cores_50_frames(self):
-        vcvars = _find_vcvars64()
-        gcc = shutil.which("gcc") or shutil.which("clang")
-        if not vcvars and not gcc:
-            require_compiler(self, None, "Native C compiler")
+        wasi_cxx = find_wasi_cxx(REPO_ROOT)
+        node = shutil.which("node")
+        gcc = shutil.which("gcc")
+        gxx = shutil.which("g++")
+        use_wasi = bool(wasi_cxx and node)
+        if not use_wasi and not (gcc and gxx):
+            require_compiler(self, None, "WASI SDK clang++/node or GNU gcc/g++")
 
-        c_sources = [
-            REPO_ROOT / "tests" / "host" / "host_cores_runner.c",
-            FIRMWARE_DIR / "src" / "engines" / "stella" / "atari.c",
-            FIRMWARE_DIR / "src" / "engines" / "colem" / "colem.c",
-            FIRMWARE_DIR / "src" / "engines" / "lynx" / "lynx.c",
-            FIRMWARE_DIR / "src" / "engines" / "ngp" / "ngp.c",
-            FIRMWARE_DIR / "src" / "engines" / "snes" / "snes.c",
-            FIRMWARE_DIR / "src" / "engines" / "wswan" / "wswan.c",
-            FIRMWARE_DIR / "src" / "engines" / "genesis" / "genesis.c",
-            FIRMWARE_DIR / "src" / "engines" / "smsplus" / "sms.c",
-            FIRMWARE_DIR / "src" / "engines" / "pce" / "pce.c",
-            FIRMWARE_DIR / "src" / "engines" / "pico" / "pico.c",
-            FIRMWARE_DIR / "src" / "third_party" / "agnes" / "agnes.c",
+        third_party = FIRMWARE_DIR / "src" / "third_party"
+        sim_hal = REPO_ROOT / "simulator" / "hal"
+        fw_hal = FIRMWARE_DIR / "src" / "hal"
+        host_dir = REPO_ROOT / "tests" / "host"
+
+        groups = [
+            ("runner", [host_dir / "host_cores_runner.c"], [third_party]),
+            ("agnes", [third_party / "agnes" / "agnes.c"], [third_party / "agnes"]),
+            ("smsplus", sorted((third_party / "smsplus").glob("*.c")), [third_party / "smsplus"]),
+            ("pce", [host_dir / "bridge_pce.c", *sorted((third_party / "huexpress").glob("*.c"))], [third_party / "huexpress"]),
+            ("ngp", [host_dir / "bridge_ngp.c", *sorted((third_party / "race").glob("*.c"))], [third_party / "race"]),
+            ("snes", [host_dir / "bridge_snes.c", *sorted((third_party / "snes9x" / "src").glob("*.c"))], [third_party / "snes9x", third_party / "snes9x" / "src"]),
+            ("wswan", [host_dir / "bridge_wswan.c", *sorted((third_party / "oswan").rglob("*.c"))], [third_party / "oswan", third_party / "oswan" / "cpu"]),
+            ("genesis", [host_dir / "bridge_genesis.c", *sorted((third_party / "gwenesis").rglob("*.c"))], [
+                third_party / "gwenesis",
+                third_party / "gwenesis" / "bus",
+                third_party / "gwenesis" / "cpus" / "M68K",
+                third_party / "gwenesis" / "cpus" / "Z80",
+                third_party / "gwenesis" / "io",
+                third_party / "gwenesis" / "savestate",
+                third_party / "gwenesis" / "sound",
+                third_party / "gwenesis" / "vdp",
+            ]),
+            ("stella", [*sorted((third_party / "stella2014" / "src").glob("*.c")), *sorted((third_party / "stella2014" / "src").glob("*.cpp"))], [third_party / "stella2014" / "src"]),
+            ("handy", sorted((third_party / "handy").glob("*.cpp")), [third_party / "handy"]),
+            ("fake08", sorted((third_party / "fake08" / "src").glob("*.cpp")), [third_party / "fake08" / "src"]),
+            ("cpp_bridge", [host_dir / "host_cores_cpp_bridge.cpp"], [
+                third_party,
+                third_party / "stella2014" / "src",
+                third_party / "handy",
+                third_party / "fake08" / "src",
+            ]),
         ]
+
+        c_compiler = (
+            str(wasi_cxx.with_name("clang.exe" if os.name == "nt" else "clang"))
+            if use_wasi else gcc
+        )
+        cxx_compiler = str(wasi_cxx) if use_wasi else gxx
 
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)
-            exe_path = tmp_path / "host_cores_runner.exe"
-            if vcvars:
-                bat_file = tmp_path / "build_and_run.bat"
-                src_args = " ".join(f'"{s}"' for s in c_sources)
-                bat_file.write_text(
-                    f'@echo off\r\n'
-                    f'call "{vcvars}" >nul\r\n'
-                    f'cl /nologo /O2 /Fe:"{exe_path}" /Fo:"{tmp_path}\\\\" {src_args}\r\n'
-                    f'if errorlevel 1 exit /b 1\r\n'
-                    f'"{exe_path}"\r\n',
-                    encoding="utf-8",
-                )
-                proc = subprocess.run([str(bat_file)], capture_output=True, text=True, timeout=60)
-            else:
-                cmd = [gcc, "-O2", "-o", str(exe_path)] + [str(s) for s in c_sources]
-                subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=60)
-                proc = subprocess.run([str(exe_path)], capture_output=True, text=True, timeout=60)
+            compile_tasks: list[tuple[list[str], Path]] = []
+            obj_paths: list[Path] = []
+            for group_name, sources, includes in groups:
+                group_obj_dir = tmp_path / "objs" / group_name
+                group_obj_dir.mkdir(parents=True, exist_ok=True)
+                inc_flags = [f"-I{sim_hal}", f"-I{fw_hal}", *[f"-I{inc}" for inc in includes]]
+                for idx, src in enumerate(sources):
+                    obj = group_obj_dir / f"{idx:03d}_{src.stem}.o"
+                    obj_paths.append(obj)
+                    is_cpp = src.suffix.lower() == ".cpp"
+                    cmd = [cxx_compiler if is_cpp else c_compiler]
+                    if use_wasi:
+                        cmd.extend([
+                            "--target=wasm32-wasip1",
+                            "-D_WASI_EMULATED_SIGNAL",
+                            "-D_WASI_EMULATED_PROCESS_CLOCKS",
+                            "-fwasm-exceptions",
+                            "-mllvm",
+                            "-wasm-enable-eh",
+                            "-mllvm",
+                            "-wasm-enable-sjlj",
+                            "-mllvm",
+                            "-wasm-use-legacy-eh=false",
+                        ])
+                    cmd.extend(["-O2", "-c", *inc_flags])
+                    if is_cpp:
+                        cmd.extend(["-std=c++17", "-fno-rtti"])
+                        if not use_wasi:
+                            cmd.append("-fno-exceptions")
+                    else:
+                        cmd.append("-std=gnu11")
+                        if group_name not in ("runner",):
+                            cmd.extend([
+                                "-Wno-incompatible-function-pointer-types",
+                                "-Wno-int-conversion",
+                                "-include",
+                                "stdint.h",
+                                "-include",
+                                "stddef.h",
+                            ])
+                    cmd.extend([str(src), "-o", str(obj)])
+                    compile_tasks.append((cmd, src))
 
-            # Persist compiled binary to build/host_cores_test/host_cores_runner.exe for HostBenchmarkSuite
-            if exe_path.exists():
-                persist_dir = REPO_ROOT / "build" / "host_cores_test"
-                persist_dir.mkdir(parents=True, exist_ok=True)
-                try:
-                    shutil.copy2(exe_path, persist_dir / "host_cores_runner.exe")
-                except OSError:
-                    pass
+            def _compile_one(task: tuple[list[str], Path]):
+                cmd, src = task
+                res = subprocess.run(cmd, capture_output=True, text=True, cwd=REPO_ROOT, timeout=60)
+                if res.returncode != 0:
+                    raise AssertionError(
+                        f"Compile failed for {src}:\nCMD: {' '.join(cmd)}\nSTDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
+                    )
+
+            with ThreadPoolExecutor(max_workers=min(8, os.cpu_count() or 4)) as pool:
+                list(pool.map(_compile_one, compile_tasks))
+
+            if use_wasi:
+                out_bin = tmp_path / "host_cores_runner.wasm"
+                link_cmd = [
+                    cxx_compiler,
+                    "--target=wasm32-wasip1",
+                    "-fno-rtti",
+                    "-fwasm-exceptions",
+                    "-Wl,-mllvm,-wasm-enable-eh",
+                    "-Wl,-mllvm,-wasm-enable-sjlj",
+                    "-Wl,-mllvm,-wasm-use-legacy-eh=false",
+                    "-Wl,-z,stack-size=1048576",
+                    "-Wl,--max-memory=134217728",
+                    *[str(o) for o in obj_paths],
+                    "-lwasi-emulated-signal",
+                    "-lwasi-emulated-process-clocks",
+                    "-lsetjmp",
+                    "-lunwind",
+                    "-o",
+                    str(out_bin),
+                ]
+                link_res = subprocess.run(link_cmd, capture_output=True, text=True, cwd=REPO_ROOT, timeout=60)
+                self.assertEqual(
+                    link_res.returncode,
+                    0,
+                    msg=f"WASI link failed:\nSTDOUT:\n{link_res.stdout}\nSTDERR:\n{link_res.stderr}",
+                )
+                node_runner = (
+                    "const fs=require('node:fs');"
+                    "const {WASI}=require('node:wasi');"
+                    "const wasi=new WASI({version:'preview1',args:[process.argv[1]],env:process.env,preopens:{}});"
+                    "WebAssembly.compile(fs.readFileSync(process.argv[1])).then(m=>"
+                    "wasi.start(new WebAssembly.Instance(m,{wasi_snapshot_preview1:wasi.wasiImport})))"
+                    ".catch(e=>{console.error(e);process.exit(1);});"
+                )
+                proc = subprocess.run(
+                    [node, "-e", node_runner, str(out_bin)],
+                    capture_output=True,
+                    text=True,
+                    cwd=REPO_ROOT,
+                    timeout=120,
+                )
+            else:
+                out_bin = tmp_path / "host_cores_runner"
+                link_cmd = [cxx_compiler, *[str(o) for o in obj_paths], "-lm", "-o", str(out_bin)]
+                subprocess.run(link_cmd, check=True, capture_output=True, text=True, cwd=REPO_ROOT, timeout=60)
+                proc = subprocess.run([str(out_bin)], capture_output=True, text=True, cwd=REPO_ROOT, timeout=120)
 
             self.assertEqual(proc.returncode, 0, msg=f"Host runner failed:\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}")
             self.assertIn("ALL 11 HOST EMULATOR CORES (INCLUDING NES AGNES + STATE DETERMINISM) PASSED!", proc.stdout)
@@ -205,7 +298,13 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
                 0xA9, 0x2E, 0x85, 0x08,
                 0xA9, 0x44, 0x85, 0x09,
                 0xA9, 0xAA, 0x85, 0x0E,
-                0x4C, 0x10, 0xF0
+                0xA9, 0x02, 0x85, 0x02,
+                0x85, 0x00, 0x85, 0x02,
+                0x85, 0x02, 0x85, 0x02,
+                0xA9, 0x00, 0x85, 0x00,
+                0x85, 0x01, 0xA2, 0xFA,
+                0x85, 0x02, 0xCA, 0xD0,
+                0xFB, 0x4C, 0x10, 0xF0
             ])
             atari_rom[:len(atari_program)] = atari_program
             colem_rom = bytearray(8192)

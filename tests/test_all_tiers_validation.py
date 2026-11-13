@@ -38,16 +38,19 @@ EXPECTED_TEARDOWNS = [
 ]
 
 VENDOR_FILES = [
-    ('smsplus', 'sms.h'), ('smsplus', 'sms.c'),
-    ('pce',     'pce.h'), ('pce',     'pce.c'),
-    ('stella',  'atari.h'), ('stella', 'atari.c'),
-    ('pico',    'pico.h'), ('pico',   'pico.c'),
-    ('genesis', 'genesis.h'), ('genesis', 'genesis.c'),
-    ('snes',    'snes.h'), ('snes',   'snes.c'),
-    ('wswan',   'wswan.h'), ('wswan', 'wswan.c'),
-    ('ngp',     'ngp.h'), ('ngp',    'ngp.c'),
-    ('lynx',    'lynx.h'), ('lynx',  'lynx.c'),
-    ('colem',   'colem.h'), ('colem', 'colem.c'),
+    ('peanut_gb',  'peanut_gb.h'),
+    ('walnut_cgb', 'walnut_cgb.h'),
+    ('agnes',      'agnes.h'), ('agnes', 'agnes.c'),
+    ('doom',       'src/doomgeneric.h'), ('doom', 'src/doomgeneric.c'),
+    ('smsplus',    'sms.h'), ('smsplus', 'sms.c'), ('smsplus', 'tms.c'), ('smsplus', 'smsplus_bmo.c'),
+    ('huexpress',  'pce.h'), ('huexpress', 'pce.c'),
+    ('stella2014', 'src/Console.h'), ('stella2014', 'src/Console.cpp'),
+    ('fake08',     'src/vm.h'), ('fake08', 'src/vm.cpp'),
+    ('gwenesis',   'bus/gwenesis_bus.h'), ('gwenesis', 'bus/gwenesis_bus.c'),
+    ('snes9x',     'snes9x.h'), ('snes9x', 'src/cpuexec.c'),
+    ('oswan',      'WS.h'), ('oswan', 'WS.c'),
+    ('race',       'tlcs900h.h'), ('race', 'tlcs900h.c'),
+    ('handy',      'handy.h'), ('handy', 'system.cpp'),
 ]
 
 EXPECTED_EXTENSIONS = [
@@ -95,30 +98,40 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
                 )
 
     # ------------------------------------------------------------------
-    # test_02: Vendor engine files exist and are non-empty
+    # test_02: Genuine third-party engine files exist and are non-empty
     # ------------------------------------------------------------------
     def test_02_all_vendor_engines_exist_and_nonempty(self):
-        """Verify all underlying vendor engine headers and sources exist and have content."""
+        """Verify all genuine third-party engine headers and sources exist and no legacy stub dir remains."""
+        self.assertFalse(
+            (FIRMWARE_DIR / 'src' / 'engines').exists(),
+            'Legacy stub directory src/engines must be deleted',
+        )
         for vdir, vfile in VENDOR_FILES:
-            f = FIRMWARE_DIR / 'src' / 'engines' / vdir / vfile
-            self.assertTrue(f.exists(), f'Missing vendor engine: {f.relative_to(WORKSPACE)}')
+            f = FIRMWARE_DIR / 'src' / 'third_party' / vdir / vfile
+            self.assertTrue(f.exists(), f'Missing third-party engine: {f.relative_to(WORKSPACE)}')
             self.assertGreater(
                 f.stat().st_size, 50,
-                f'{vfile} is too small — check vendor engine was correctly placed'
+                f'{vfile} is too small — check third-party engine was correctly placed'
             )
 
     # ------------------------------------------------------------------
-    # test_03: All 14 teardown calls are wired in the main .ino
+    # test_03: All 14 teardown calls are wired via CoreRegistry + BmoGameboy.ino
     # ------------------------------------------------------------------
     def test_03_teardown_compliance_all_14_emulators(self):
-        """Verify all 14 destroy() calls are registered in BmoGameboy.ino SELECT+UP handler."""
+        """Verify all 14 destroy symbols are registered in CoreRegistry and dispatched in BmoGameboy.ino."""
         ino = FIRMWARE_DIR / 'BmoGameboy.ino'
+        reg = FIRMWARE_DIR / 'src' / 'cores' / 'core_registry.h'
         self.assertTrue(ino.exists(), 'BmoGameboy.ino not found')
+        self.assertTrue(reg.exists(), 'core_registry.h not found')
         ino_content = ino.read_text(encoding='utf-8')
+        reg_content = reg.read_text(encoding='utf-8')
+        self.assertIn('CoreRegistry::findByIndex', ino_content)
+        self.assertIn('core->destroy()', ino_content)
         for td in EXPECTED_TEARDOWNS:
+            sym = td[:-2] if td.endswith('()') else td
             self.assertIn(
-                td, ino_content,
-                f'Teardown contract missing: {td} not found in BmoGameboy.ino'
+                sym, reg_content,
+                f'Teardown contract missing: {sym} not found in core_registry.h'
             )
 
     # ------------------------------------------------------------------
@@ -126,12 +139,10 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
     # ------------------------------------------------------------------
     def test_04_psram_allocation_in_wrapper_not_just_vendor(self):
         """
-        Verify MALLOC_CAP_SPIRAM is used in the C++ *wrapper* file itself,
-        not just anywhere in the combined wrapper+vendor text.
-        Wrappers that delegate allocation entirely to the vendor engine are
-        exempt only if the vendor file itself contains MALLOC_CAP_SPIRAM.
+        Verify dynamic framebuffers in C++ wrappers allocate via MALLOC_CAP_SPIRAM or bmo_psram_*.
         """
-        # These wrappers allocate their framebuffer in the wrapper file
+        psram_h = (FIRMWARE_DIR / 'src' / 'hal' / 'psram_alloc.h').read_text(encoding='utf-8')
+        self.assertIn('MALLOC_CAP_SPIRAM', psram_h)
         wrappers_that_own_psram = [
             'emu_genesis', 'emu_snes', 'emu_wswan', 'emu_ngp',
             'emu_lynx', 'emu_colem', 'emu_doom', 'emu_peanut', 'emu_walnut',
@@ -140,9 +151,14 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
             cpp = FIRMWARE_DIR / 'src' / 'cores' / (stem + '.cpp')
             if cpp.exists():
                 code = cpp.read_text(encoding='utf-8')
-                self.assertIn(
-                    'MALLOC_CAP_SPIRAM', code,
-                    f'{stem}.cpp allocates a framebuffer but does not use MALLOC_CAP_SPIRAM. '
+                uses_psram = (
+                    'MALLOC_CAP_SPIRAM' in code
+                    or 'bmo_psram_malloc' in code
+                    or 'bmo_psram_calloc' in code
+                )
+                self.assertTrue(
+                    uses_psram,
+                    f'{stem}.cpp allocates a framebuffer but does not use MALLOC_CAP_SPIRAM or bmo_psram_*. '
                     'All dynamic framebuffers must live in Octal PSRAM.'
                 )
 
@@ -179,30 +195,30 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
                          f'Found 0-byte corrupt files in games/: {zero_byte[:5]}')
 
     # ------------------------------------------------------------------
-    # test_08: All vendor engines are real production implementations
+    # test_08: All third-party engines are real production implementations
     # ------------------------------------------------------------------
     def test_08_stub_engines_carry_stub_sentinel(self):
         """
-        Verify no remaining vendor engine is a blank-screen stub, and that all
+        Verify no remaining third-party engine is a blank-screen stub, and that all
         13 cartridge-based emulator wrappers implement the full persistence contract
         (saveBatteryRam, loadBatteryRam, saveState, loadState).
         """
         vendor_map = {
-            'emu_sms':     ('smsplus', 'sms.c'),
-            'emu_pce':     ('pce',     'pce.c'),
-            'emu_atari':   ('stella',  'atari.c'),
-            'emu_pico':    ('pico',    'pico.c'),
-            'emu_genesis': ('genesis', 'genesis.c'),
-            'emu_snes':    ('snes',    'snes.c'),
-            'emu_wswan':   ('wswan',   'wswan.c'),
-            'emu_ngp':     ('ngp',     'ngp.c'),
-            'emu_lynx':    ('lynx',    'lynx.c'),
-            'emu_colem':   ('colem',   'colem.c'),
+            'emu_sms':     ('smsplus',    'sms.c'),
+            'emu_pce':     ('huexpress',  'pce.c'),
+            'emu_atari':   ('stella2014', 'src/Console.cpp'),
+            'emu_pico':    ('fake08',     'src/vm.cpp'),
+            'emu_genesis': ('gwenesis',   'bus/gwenesis_bus.c'),
+            'emu_snes':    ('snes9x',     'src/cpuexec.c'),
+            'emu_wswan':   ('oswan',      'WS.c'),
+            'emu_ngp':     ('race',       'tlcs900h.c'),
+            'emu_lynx':    ('handy',      'system.cpp'),
+            'emu_colem':   ('smsplus',    'tms.c'),
         }
         for stem, (vdir, vfile) in vendor_map.items():
-            vendor_path = FIRMWARE_DIR / 'src' / 'engines' / vdir / vfile
+            vendor_path = FIRMWARE_DIR / 'src' / 'third_party' / vdir / vfile
             self.assertTrue(vendor_path.exists(), f'Missing {vdir}/{vfile}')
-            text = vendor_path.read_text(encoding='utf-8')
+            text = vendor_path.read_text(encoding='utf-8', errors='ignore')
             self.assertNotIn('STUB_ENGINE', text, f'{vdir}/{vfile} still marked STUB_ENGINE')
             self.assertGreater(len(text.splitlines()), 150, f'{vdir}/{vfile} too short to be a real engine')
 

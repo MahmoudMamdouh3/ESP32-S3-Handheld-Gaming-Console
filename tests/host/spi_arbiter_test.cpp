@@ -55,5 +55,20 @@ int main(int argc, char** argv) {
   if (g_createCount != 1 || g_takeCount != 1 || !g_mutex.held) return 2;
   SpiArbiter::unlock();
   if (g_giveCount != 1 || g_mutex.held) return 3;
+
+  {
+    SpiArbiter::ScopedLock scoped;
+    if (g_takeCount != 2 || !g_mutex.held) return 4;
+  }
+  if (g_giveCount != 2 || g_mutex.held) return 5;
+
+  const auto earlyReturnWithScopedLock = []() -> int {
+    SpiArbiter::ScopedLock scoped;
+    if (!g_mutex.held) return 6;
+    return 0;
+  };
+  if (earlyReturnWithScopedLock() != 0 || g_takeCount != 3 || g_giveCount != 3 || g_mutex.held) {
+    return 7;
+  }
   return 0;
 }

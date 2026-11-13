@@ -4,6 +4,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INO = (REPO_ROOT / "firmware" / "BmoGameboy" / "BmoGameboy.ino").read_text(encoding="utf-8")
+CORE_REGISTRY = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "cores" / "core_registry.h").read_text(encoding="utf-8")
 COMPAT_DOC = (REPO_ROOT / "docs" / "compatibility.md").read_text(encoding="utf-8")
 SD_CPP = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage" / "sd_card.cpp").read_text(encoding="utf-8")
 DISPLAY_CPP = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "display_emu.cpp").read_text(encoding="utf-8")
@@ -54,29 +55,41 @@ class PlatformMappingTests(unittest.TestCase):
         self.assertEqual(consoles, ["ROM_FAVORITES"] + [row[0] for row in PLATFORMS])
         self.assertEqual((len(consoles), len(PLATFORMS)), (16, 15))
 
-        launch_body = INO.split("// Boot appropriate emulator core", 1)[1].split("if (!success)", 1)[0]
-        launch = {}
-        for rom_type, wrapper, index in re.findall(
-            r"selectedRom->type\s*==\s*(ROM_[A-Z0-9_]+)\s*\)\s*\{.*?"
-            r"success\s*=\s*([A-Za-z0-9]+)::(?:begin|init)\(.*?\);\s*"
-            r"selectedEmulatorIndex\s*=\s*(\d+)", launch_body, re.S
-        ):
-            launch[rom_type] = (wrapper, int(index))
-        self.assertEqual(len(launch), 15)
-
+        # Verify BmoGameboy.ino dispatches launch, frame stepping, palette cycling, and destroy through CoreRegistry.
+        self.assertIn("CoreRegistry::findByRomType(selectedRom->type)", INO)
+        self.assertIn("activeCore->start(selectedRom, romData, romSize)", INO)
         destroy_body = INO.split("static void destroyActiveEmulator()", 1)[1].split("if (currentRomBuffer)", 1)[0]
-        frame_body = INO.split("if (selectedEmulatorIndex == 3) {\n      DoomEmu::runFrame();", 1)[1].split("unsigned long elapsed = micros() - frameStart", 1)[0]
-        frame_body = "if (selectedEmulatorIndex == 3) { DoomEmu::runFrame(); }" + frame_body
-        destroy_map = dispatch_map(destroy_body, "destroy")
-        frame_map = dispatch_map(frame_body, "runFrame")
-        frame_map.update(dispatch_map(frame_body, "update"))
-        wrapper_to_file = {row[3]: row[4] for row in PLATFORMS}
+        self.assertIn("CoreRegistry::findByIndex(selectedEmulatorIndex)", destroy_body)
+        self.assertIn("core->destroy()", destroy_body)
+        self.assertIn("if (activeCore && activeCore->stepFrame)", INO)
+        self.assertIn("activeCore->stepFrame()", INO)
+        self.assertIn("activeCore->supportsDmgPalette", INO)
 
+        table_match = re.search(r"kCores\[\]\s*=\s*\{(.*?)\};", CORE_REGISTRY, re.S)
+        self.assertIsNotNone(table_match, "CoreRegistry::detail::kCores[] missing in core_registry.h")
+        registry = {}
+        for idx, rom_type, dmg, start_fn, step_fn, destroy_fn in re.findall(
+            r"\{\s*(\d+)\s*,\s*(ROM_[A-Z0-9_]+)\s*,\s*(true|false)\s*,\s*"
+            r"([A-Za-z0-9_:]+)\s*,\s*([A-Za-z0-9_:]+)\s*,\s*([A-Za-z0-9_:]+)\s*,",
+            table_match.group(1),
+        ):
+            registry[rom_type] = (int(idx), dmg == "true", start_fn, step_fn, destroy_fn)
+        self.assertEqual(len(registry), 15)
+
+        wrapper_to_file = {row[3]: row[4] for row in PLATFORMS}
         for row in PLATFORMS:
             rom_type, carousel_index, wrapper_index, wrapper, wrapper_file = row[:5]
-            self.assertEqual(launch[rom_type], (wrapper, wrapper_index))
-            self.assertEqual(destroy_map[wrapper_index], wrapper)
-            self.assertEqual(frame_map[wrapper_index], wrapper)
+            reg_idx, dmg_pal, start_fn, step_fn, destroy_fn = registry[rom_type]
+            self.assertEqual(reg_idx, wrapper_index)
+            self.assertEqual(destroy_fn, f"{wrapper}::destroy")
+            self.assertEqual(dmg_pal, rom_type in ("ROM_GB", "ROM_GBC"))
+            start_impl = re.search(rf"\b{re.escape(start_fn)}\s*\([^\{{]*\{{(.*?)\}}", CORE_REGISTRY, re.S)
+            self.assertIsNotNone(start_impl, f"Missing start helper {start_fn} in core_registry.h")
+            self.assertIn(f"{wrapper}::", start_impl.group(1))
+            if not step_fn.startswith(f"{wrapper}::"):
+                step_impl = re.search(rf"\b{re.escape(step_fn)}\s*\([^\{{]*\{{(.*?)\}}", CORE_REGISTRY, re.S)
+                self.assertIsNotNone(step_impl, f"Missing step helper {step_fn} in core_registry.h")
+                self.assertIn(f"{wrapper}::", step_impl.group(1))
             self.assertEqual(wrapper_to_file[wrapper], wrapper_file)
 
     def test_compatibility_table_viewports_pacing_and_extensions_match(self):

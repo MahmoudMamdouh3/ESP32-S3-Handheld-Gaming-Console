@@ -22,135 +22,142 @@ SRC_DIR      = FIRMWARE_DIR / "src"
 
 
 class TestAtari2600CoreEngine(unittest.TestCase):
-    """Verify Atari 2600 (stella/atari.c & atari.h) MOS 6507 + TIA + RIOT implementation."""
+    """Verify Atari 2600 (stella2014 + emu_atari.cpp) MOS 6502 + TIA + RIOT implementation."""
 
     def setUp(self):
-        self.h_text = (SRC_DIR / "engines" / "stella" / "atari.h").read_text(encoding="utf-8")
-        self.c_text = (SRC_DIR / "engines" / "stella" / "atari.c").read_text(encoding="utf-8")
+        self.stella_dir = SRC_DIR / "third_party" / "stella2014" / "src"
+        self.wrapper = (SRC_DIR / "cores" / "emu_atari.cpp").read_text(encoding="utf-8")
+        self.m6502 = (self.stella_dir / "M6502.cpp").read_text(encoding="utf-8", errors="ignore")
+        self.tia = (self.stella_dir / "TIA.cpp").read_text(encoding="utf-8", errors="ignore")
+        self.riot = (self.stella_dir / "M6532.cpp").read_text(encoding="utf-8", errors="ignore")
+        self.cart = (self.stella_dir / "Cart.cpp").read_text(encoding="utf-8", errors="ignore")
 
     def test_01_no_stub_sentinel_and_psram_alloc(self):
-        self.assertNotIn("STUB_ENGINE", self.c_text)
-        self.assertIn("MALLOC_CAP_SPIRAM", self.c_text)
+        self.assertNotIn("STUB_ENGINE", self.wrapper)
+        self.assertIn("bmo_psram_calloc", self.wrapper)
 
     def test_02_6507_cpu_and_address_mirroring(self):
-        # 13-bit address bus ($0000-$1FFF)
-        self.assertIn("addr & 0x1FFF", self.c_text)
-        # Key 6507 opcodes and helpers
-        for fn in ("atari_adc", "atari_sbc", "atari_cmp", "atari_cpu_step"):
-            self.assertIn(fn, self.c_text)
+        self.assertIn("execute", self.m6502)
+        self.assertIn("peek", self.m6502)
+        self.assertIn("poke", self.m6502)
 
     def test_03_tia_playfield_sprites_and_wsync(self):
-        self.assertIn("wsync_halt", self.c_text)
-        self.assertIn("atari_get_playfield_bit", self.c_text)
-        self.assertIn("atari_render_scanline", self.c_text)
-        self.assertIn("atari_hm_delta", self.c_text)
+        self.assertIn("WSYNC", self.tia)
+        self.assertIn("endFrame", self.tia)
+        self.assertIn("currentFrameBuffer", (self.stella_dir / "TIA.h").read_text(encoding="utf-8", errors="ignore"))
 
     def test_04_riot_6532_timer_and_bankswitching(self):
-        self.assertIn("atari_step_riot", self.c_text)
-        self.assertIn("atari_check_bankswitch", self.c_text)
-        self.assertIn("0x1FF8", self.c_text)  # F8 bankswitch hotspot
+        self.assertIn("peek", self.riot)
+        self.assertIn("poke", self.riot)
+        self.assertIn("Cartridge::create", self.cart)
+        self.assertIn("CartF8", self.cart)
 
 
 class TestColecoVisionCoreEngine(unittest.TestCase):
-    """Verify ColecoVision / SG-1000 (colem/colem.c & colem.h) Z80A + TMS9918A VDP engine."""
+    """Verify ColecoVision / SG-1000 (smsplus tms9918 + z80 + emu_colem.cpp) engine."""
 
     def setUp(self):
-        self.h_text = (SRC_DIR / "engines" / "colem" / "colem.h").read_text(encoding="utf-8")
-        self.c_text = (SRC_DIR / "engines" / "colem" / "colem.c").read_text(encoding="utf-8")
+        self.sms_dir = SRC_DIR / "third_party" / "smsplus"
+        self.wrapper = (SRC_DIR / "cores" / "emu_colem.cpp").read_text(encoding="utf-8")
+        self.tms_c = (self.sms_dir / "tms.c").read_text(encoding="utf-8", errors="ignore")
+        self.z80_c = (self.sms_dir / "z80.c").read_text(encoding="utf-8", errors="ignore")
+        self.bmo_c = (self.sms_dir / "smsplus_bmo.c").read_text(encoding="utf-8", errors="ignore")
 
     def test_01_tms9918a_vdp_and_palette(self):
-        self.assertNotIn("STUB_ENGINE", self.c_text)
-        self.assertIn("TMS9918_RGB", self.c_text)
-        self.assertIn("colem_render_scanline", self.c_text)
-        self.assertIn("vdp_regs", self.h_text)
+        self.assertNotIn("STUB_ENGINE", self.wrapper)
+        self.assertNotIn("STUB_ENGINE", self.tms_c)
+        self.assertIn("render_bg_m2", self.tms_c)
+        self.assertIn("parse_line", self.tms_c)
+        self.assertIn("BMO_SMS_CONSOLE_COLECO", self.bmo_c)
 
     def test_02_z80_io_ports_and_nmi(self):
-        self.assertIn("colem_io_read", self.c_text)
-        self.assertIn("colem_io_write", self.c_text)
-        self.assertIn("keypad_mode", self.c_text)
-        self.assertIn("0x0066", self.c_text)  # Z80 NMI vector
+        self.assertIn("z80_execute", self.z80_c)
+        self.assertIn("bmo_sms_init", self.bmo_c)
+        self.assertIn("BMO_SMS_CONSOLE_SG1000", self.wrapper)
 
 
 class TestAtariLynxCoreEngine(unittest.TestCase):
-    """Verify Atari Lynx (lynx/lynx.c & lynx.h) WDC 65SC02 + Mikey & Suzy engine."""
+    """Verify Atari Lynx (handy + emu_lynx.cpp) WDC 65SC02 + Mikey & Suzy engine."""
 
     def setUp(self):
-        self.h_text = (SRC_DIR / "engines" / "lynx" / "lynx.h").read_text(encoding="utf-8")
-        self.c_text = (SRC_DIR / "engines" / "lynx" / "lynx.c").read_text(encoding="utf-8")
+        self.handy_dir = SRC_DIR / "third_party" / "handy"
+        self.wrapper = (SRC_DIR / "cores" / "emu_lynx.cpp").read_text(encoding="utf-8")
+        self.susie = (self.handy_dir / "susie.cpp").read_text(encoding="utf-8", errors="ignore")
+        self.mikie_h = (self.handy_dir / "mikie.h").read_text(encoding="utf-8", errors="ignore")
 
     def test_01_mikey_rgb444_palette_and_suzy_scb_blitter(self):
-        self.assertNotIn("STUB_ENGINE", self.c_text)
-        self.assertIn("lynx_rgb444_to_bgr565", self.c_text)
-        self.assertIn("lynx_execute_scb", self.c_text)
-        self.assertIn("palette_cache", self.h_text)
+        self.assertNotIn("STUB_ENGINE", self.wrapper)
+        self.assertIn("bmo_psram_calloc", self.wrapper)
+        self.assertIn("MIKIE_PIXEL_FORMAT_16BPP_565", self.mikie_h)
+        self.assertIn("CSystem", self.wrapper)
 
     def test_02_suzy_hardware_multiply_and_65sc02_cmos_opcodes(self):
-        # Suzy hardware 16x16 multiply at $FC52-$FC63
-        self.assertIn("reg == 0x52", self.c_text)
-        self.assertIn("lynx_cpu_step", self.c_text)
-        # 65SC02 BRA (0x80) & STZ (0x64, 0x9C)
-        self.assertIn("case 0x80:", self.c_text)
-        self.assertIn("case 0x64:", self.c_text)
+        self.assertIn("DoMathMultiply", self.susie)
+        self.assertIn("SPRSYS", self.susie)
 
 
 class TestNeoGeoPocketCoreEngine(unittest.TestCase):
-    """Verify SNK Neo Geo Pocket Color (ngp/ngp.c & ngp.h) TLCS-900/H + K1GE/K2GE engine."""
+    """Verify SNK Neo Geo Pocket Color (race + emu_ngp.cpp) TLCS-900/H + K1GE/K2GE engine."""
 
     def setUp(self):
-        self.h_text = (SRC_DIR / "engines" / "ngp" / "ngp.h").read_text(encoding="utf-8")
-        self.c_text = (SRC_DIR / "engines" / "ngp" / "ngp.c").read_text(encoding="utf-8")
+        self.race_dir = SRC_DIR / "third_party" / "race"
+        self.wrapper = (SRC_DIR / "cores" / "emu_ngp.cpp").read_text(encoding="utf-8")
+        self.tlcs = (self.race_dir / "tlcs900h.c").read_text(encoding="utf-8", errors="ignore")
+        self.gfx = (self.race_dir / "graphics.c").read_text(encoding="utf-8", errors="ignore")
 
     def test_01_tlcs900h_cpu_and_24bit_bus(self):
-        self.assertNotIn("STUB_ENGINE", self.c_text)
-        self.assertIn("ngp_cpu_step", self.c_text)
-        self.assertIn("0x200000", self.c_text)  # Cartridge ROM base
-        self.assertIn("0x006F82", self.c_text)  # Joypad register
+        self.assertNotIn("STUB_ENGINE", self.wrapper)
+        self.assertIn("tlcs_execute", self.tlcs)
+        self.assertIn("tlcs_step", self.tlcs)
+        self.assertIn("ngp_mem_set_rom", self.wrapper)
 
     def test_02_k2ge_dual_planes_sprites_and_palette(self):
-        self.assertIn("ngp_render_plane", self.c_text)
-        self.assertIn("ngp_render_scanline", self.c_text)
-        self.assertIn("ngp_rgb444_to_bgr565", self.c_text)
-        self.assertIn("0x008200", self.c_text)  # K2GE Color Palette RAM
+        self.assertIn("graphics_init", self.wrapper)
+        self.assertIn("0x00008200", self.wrapper)
+        self.assertIn("bmo_psram_calloc", self.wrapper)
+        self.assertGreater(len(self.gfx.splitlines()), 100)
 
 
 class TestSNESCoreEngine(unittest.TestCase):
-    """Verify Super Nintendo (snes/snes.c & snes.h) WDC 65C816 + S-PPU + DMA engine."""
+    """Verify Super Nintendo (snes9x + emu_snes.cpp) WDC 65C816 + S-PPU + DMA engine."""
 
     def setUp(self):
-        self.h_text = (SRC_DIR / "engines" / "snes" / "snes.h").read_text(encoding="utf-8")
-        self.c_text = (SRC_DIR / "engines" / "snes" / "snes.c").read_text(encoding="utf-8")
+        self.snes_dir = SRC_DIR / "third_party" / "snes9x" / "src"
+        self.wrapper = (SRC_DIR / "cores" / "emu_snes.cpp").read_text(encoding="utf-8")
+        self.cpuexec = (self.snes_dir / "cpuexec.c").read_text(encoding="utf-8", errors="ignore")
+        self.dma = (self.snes_dir / "dma.c").read_text(encoding="utf-8", errors="ignore")
+        self.gfx = (self.snes_dir / "gfx.c").read_text(encoding="utf-8", errors="ignore")
 
     def test_01_65c816_cpu_modes_and_dma(self):
-        self.assertNotIn("STUB_ENGINE", self.c_text)
-        self.assertIn("snes_cpu_step", self.c_text)
-        self.assertIn("snes_run_dma", self.c_text)
-        self.assertIn("case 0xFB:", self.c_text)  # XCE
-        self.assertIn("case 0xC2:", self.c_text)  # REP
-        self.assertIn("case 0xE2:", self.c_text)  # SEP
+        self.assertNotIn("STUB_ENGINE", self.wrapper)
+        self.assertIn("S9xMainLoop", self.cpuexec)
+        self.assertIn("S9xDoDMA", self.dma)
 
     def test_02_sppu_cgram_bglayers_and_oam(self):
-        self.assertIn("snes_bgr555_to_bgr565_swapped", self.c_text)
-        self.assertIn("snes_render_bg_layer", self.c_text)
-        self.assertIn("snes_render_scanline", self.c_text)
-        self.assertIn("snes_destroy", self.c_text)
+        self.assertIn("S9xUpdateScreen", self.gfx)
+        self.assertIn("S9xSetLineCallback", self.wrapper)
+        self.assertIn("bmo_psram_calloc", self.wrapper)
 
 
 class TestPico8CoreEngine(unittest.TestCase):
-    """Verify PICO-8 Fantasy Console (pico/pico.c & pico.h) virtual hardware & graphics API."""
+    """Verify PICO-8 Fantasy Console (fake08 + emu_pico.cpp) virtual hardware & graphics API."""
 
     def setUp(self):
-        self.h_text = (SRC_DIR / "engines" / "pico" / "pico.h").read_text(encoding="utf-8")
-        self.c_text = (SRC_DIR / "engines" / "pico" / "pico.c").read_text(encoding="utf-8")
+        self.fake_dir = SRC_DIR / "third_party" / "fake08" / "src"
+        self.wrapper = (SRC_DIR / "cores" / "emu_pico.cpp").read_text(encoding="utf-8")
+        self.vm_cpp = (self.fake_dir / "vm.cpp").read_text(encoding="utf-8", errors="ignore")
+        self.gfx_cpp = (self.fake_dir / "graphics.cpp").read_text(encoding="utf-8", errors="ignore")
+        self.ram_h = (self.fake_dir / "PicoRam.h").read_text(encoding="utf-8", errors="ignore")
 
     def test_01_pico8_graphics_primitives_and_memory_map(self):
-        self.assertNotIn("STUB_ENGINE", self.c_text)
-        for prim in ("pico_cls", "pico_pset", "pico_pget", "pico_rectfill", "pico_circfill", "pico_spr", "pico_map"):
-            self.assertIn(prim, self.h_text)
-            self.assertIn(prim, self.c_text)
-        # Draw state ($5F00), Screen palette ($5F10), Screen buffer ($6000)
-        self.assertIn("0x5F00", self.c_text)
-        self.assertIn("0x5F10", self.c_text)
-        self.assertIn("0x6000", self.c_text)
+        self.assertNotIn("STUB_ENGINE", self.wrapper)
+        for prim in ("pset", "rectfill", "circfill"):
+            self.assertIn(prim, self.gfx_cpp)
+        self.assertIn("LoadCart", self.vm_cpp)
+        self.assertIn("vm_run", self.vm_cpp)
+        self.assertIn("0x5f00", self.ram_h)
+        self.assertIn("0x6000", self.ram_h)
+        self.assertIn("bmo_psram_calloc", self.wrapper)
 
 
 class TestQualityOfLifeAndUnifiedPersistence(unittest.TestCase):
@@ -180,17 +187,32 @@ class TestQualityOfLifeAndUnifiedPersistence(unittest.TestCase):
 
     def test_04_ino_wires_supported_battery_persistence_and_all_save_states(self):
         ino = (FIRMWARE_DIR / "BmoGameboy.ino").read_text(encoding="utf-8")
+        reg = (SRC_DIR / "cores" / "core_registry.h").read_text(encoding="utf-8")
         cores = ("WalnutEmu", "PeanutEmu", "NesEmu", "SmsEmu", "PceEmu", "AtariEmu",
                  "PicoEmu", "GenesisEmu", "SNESEmu", "WSwanEmu", "NGPEmu", "LynxEmu", "ColemEmu")
-        battery_cores = ("WalnutEmu", "PeanutEmu", "NesEmu", "PceEmu", "SNESEmu")
+        battery_wrappers = (
+            "emu_walnut.cpp", "emu_peanut.cpp", "emu_nes.cpp", "emu_sms.cpp",
+            "emu_pce.cpp", "emu_genesis.cpp", "emu_snes.cpp", "emu_wswan.cpp",
+            "emu_ngp.cpp", "emu_lynx.cpp",
+        )
         for cls in cores:
-            self.assertIn(f"{cls}::saveState", ino)
-            self.assertIn(f"{cls}::loadState", ino)
-        for cls in battery_cores:
-            self.assertIn(f"{cls}::saveBatteryRam", ino)
-            self.assertIn(f"{cls}::loadBatteryRam", ino)
-        for cls in set(cores) - set(battery_cores):
-            self.assertNotIn(f"{cls}::loadBatteryRam", ino)
+            self.assertIn(f"{cls}::saveState", reg)
+            self.assertIn(f"{cls}::loadState", reg)
+            self.assertIn(f"{cls}::saveBatteryRam", reg)
+            self.assertIn(f"{cls}::loadBatteryRam", reg)
+        for wrapper in battery_wrappers:
+            code = (SRC_DIR / "cores" / wrapper).read_text(encoding="utf-8")
+            self.assertIn("SaveManager::saveBatteryRam", code, f"{wrapper} missing battery save persistence")
+        for non_battery in ("ROM_WAD", "ROM_ATARI", "ROM_PICO8", "ROM_COLEM"):
+            self.assertRegex(reg, rf"\b{non_battery}\b.*?\bnoBattery\b")
+        self.assertIn("hasGbBattery", reg)
+        self.assertIn("hasNesBattery", reg)
+        self.assertIn("hasSnesBattery", reg)
+        self.assertIn("hasLynxBattery", reg)
+        self.assertIn("CoreRegistry::findByIndex", ino)
+        self.assertIn("autoSaveCurrentBatteryRam", ino)
+        self.assertIn("quickSaveState", ino)
+        self.assertIn("quickLoadState", ino)
         self.assertIn("kKonamiSeq", ino)
         self.assertIn("SDCard::recordRecentLaunch", ino)
 

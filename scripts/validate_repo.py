@@ -209,10 +209,15 @@ def _debug_only_definitions(text):
 def check_release_debug_macro_guardrails():
     issues = []
     ignored_dirs = {".git", ".tools", "build", "node_modules", "__pycache__", "games", "roms", "sdcard", "Book"}
+    third_party_dir = FIRMWARE_DIR / "src" / "third_party"
     for current_root, directory_names, file_names in os.walk(REPO_ROOT):
+        current_path = Path(current_root)
+        if current_path == third_party_dir or third_party_dir in current_path.parents:
+            directory_names[:] = []
+            continue
         directory_names[:] = [name for name in directory_names if name not in ignored_dirs]
         for file_name in file_names:
-            header = Path(current_root) / file_name
+            header = current_path / file_name
             if header.suffix.lower() not in {".h", ".hh", ".hpp", ".hxx"}:
                 continue
             relative = header.relative_to(REPO_ROOT)
@@ -257,11 +262,20 @@ def check_firmware_safety_guardrails():
     ino_path = FIRMWARE_DIR / "BmoGameboy.ino"
     if ino_path.exists():
         ino_text = ino_path.read_text(encoding="utf-8")
-        for td in EXPECTED_TEARDOWNS:
-            if td not in ino_text:
-                issues.append(f"BmoGameboy.ino: missing teardown call: {td}")
+        if "CoreRegistry::findByIndex" not in ino_text or "core->destroy()" not in ino_text:
+            issues.append("BmoGameboy.ino: missing CoreRegistry teardown dispatch in destroyActiveEmulator()")
     else:
         issues.append("BmoGameboy.ino not found")
+
+    registry_path = FIRMWARE_DIR / "src" / "cores" / "core_registry.h"
+    if registry_path.exists():
+        registry_text = registry_path.read_text(encoding="utf-8")
+        for td in EXPECTED_TEARDOWNS:
+            symbol = td[:-2] if td.endswith("()") else td
+            if symbol not in registry_text:
+                issues.append(f"core_registry.h: missing teardown registration: {symbol}")
+    else:
+        issues.append("src/cores/core_registry.h not found")
 
     emu_dir = FIRMWARE_DIR / "src" / "cores"
     if emu_dir.exists():
@@ -299,14 +313,24 @@ def check_firmware_safety_guardrails():
 
 def check_flash_budget_static():
     issues = []
-    engine_dirs = [FIRMWARE_DIR / "src" / "engines", FIRMWARE_DIR / "src" / "third_party"]
-    present_dirs = [d for d in engine_dirs if d.exists()]
-    if not present_dirs:
-        return ["No engine source directories (src/engines, src/third_party) found"]
-    total = sum(f.stat().st_size for d in present_dirs for f in d.rglob("*") if f.is_file())
-    print(f"  Engine source tree: {total / 1024:.1f} KB")
-    if total > 8 * 1024 * 1024:
-        issues.append(f"Engine source tree is {total / 1024:.0f} KB — check for large uncompressed blobs")
+    legacy_engines = FIRMWARE_DIR / "src" / "engines"
+    if legacy_engines.exists():
+        issues.append("Legacy stub directory src/engines must not exist (use src/third_party)")
+    third_party = FIRMWARE_DIR / "src" / "third_party"
+    if not third_party.exists():
+        return ["No engine source directory (src/third_party) found"]
+    total = 0
+    for f in third_party.rglob("*"):
+        if not f.is_file():
+            continue
+        sz = f.stat().st_size
+        total += sz
+        if sz >= 1024 * 1024:
+            rel = f.relative_to(FIRMWARE_DIR).as_posix()
+            issues.append(f"{rel}: single file {sz:,} bytes >= 1 MiB blob threshold")
+    print(f"  Third-party source tree: {total / 1024:.1f} KB")
+    if total > 16 * 1024 * 1024:
+        issues.append(f"Third-party source tree is {total / 1024:.0f} KB — check for large uncompressed blobs")
     return issues
 
 

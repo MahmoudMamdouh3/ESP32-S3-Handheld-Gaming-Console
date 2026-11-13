@@ -69,21 +69,20 @@ class ClangTidyRunner:
         return self.clang_tidy_bin is not None
 
     def default_targets(self) -> List[Path]:
-        engines = self.firmware_dir / "src" / "engines"
         third_party = self.firmware_dir / "src" / "third_party"
         targets = [
             self.repo_root / "tests" / "host" / "host_cores_runner.c",
             third_party / "agnes" / "agnes.c",
-            engines / "smsplus" / "sms.c",
-            engines / "pce" / "pce.c",
-            engines / "stella" / "atari.c",
-            engines / "pico" / "pico.c",
-            engines / "genesis" / "genesis.c",
-            engines / "snes" / "snes.c",
-            engines / "wswan" / "wswan.c",
-            engines / "ngp" / "ngp.c",
-            engines / "lynx" / "lynx.c",
-            engines / "colem" / "colem.c",
+            third_party / "smsplus" / "smsplus_bmo.c",
+            third_party / "huexpress" / "pce-go.c",
+            third_party / "stella2014" / "src" / "Thumbulator.c",
+            third_party / "fake08" / "src" / "vm.cpp",
+            third_party / "gwenesis" / "bus" / "gwenesis_bus.c",
+            third_party / "snes9x" / "src" / "apu.c",
+            third_party / "oswan" / "WS.c",
+            third_party / "race" / "cz80_support.c",
+            third_party / "handy" / "cart.cpp",
+            third_party / "doom" / "src" / "doomgeneric.c",
         ]
         return [t for t in targets if t.exists()]
 

@@ -102,7 +102,40 @@ class WasmPlaytestEngine {
         throw new Error("Open the simulator through run_simulator.py so the WebAssembly core can load.");
       }
     }
+    const writeU32 = (ptr, val) => {
+      if (!ptr || !this.exports || !this.exports.memory) return;
+      new DataView(this.exports.memory.buffer).setUint32(ptr, val >>> 0, true);
+    };
     const wasi = {
+      environ_sizes_get: (countPtr, bufSizePtr) => {
+        writeU32(countPtr, 0);
+        writeU32(bufSizePtr, 0);
+        return 0;
+      },
+      environ_get: () => 0,
+      fd_prestat_get: () => 8, // EBADF: no preopened directories
+      fd_prestat_dir_name: () => 8,
+      fd_close: () => 0,
+      fd_seek: (_fd, _offset, _whence, newoffsetPtr) => {
+        if (newoffsetPtr && this.exports && this.exports.memory) {
+          new DataView(this.exports.memory.buffer).setBigUint64(newoffsetPtr, 0n, true);
+        }
+        return 0;
+      },
+      fd_write: (_fd, iovsPtr, iovsLen, nwrittenPtr) => {
+        let total = 0;
+        if (iovsPtr && this.exports && this.exports.memory) {
+          const view = new DataView(this.exports.memory.buffer);
+          for (let i = 0; i < (iovsLen >>> 0); i++) {
+            total += view.getUint32((iovsPtr >>> 0) + i * 8 + 4, true);
+          }
+        }
+        writeU32(nwrittenPtr, total);
+        return 0;
+      },
+      proc_exit: (code) => {
+        throw new Error(`WASM core aborted with exit code ${code}`);
+      },
       random_get: (pointer, length) => {
         const memory = this.exports && this.exports.memory;
         if (!memory || !globalThis.crypto || !globalThis.crypto.getRandomValues) {

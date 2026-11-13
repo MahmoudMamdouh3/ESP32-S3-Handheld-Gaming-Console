@@ -112,14 +112,16 @@ class TestWSwanEmulatorCore(unittest.TestCase):
         self.assertLess(total_bytes, 200 * 1024, "Total core memory must stay under 200 KB in PSRAM")
 
     def test_08_c_core_source_invariants_and_banking(self):
-        """Verify actual wswan.c source implements bank_rom[2..3], bank_sram port 0xC1, and active-high port 0xB5."""
+        """Verify genuine Oswan WS.c source implements port 0xC1 SRAM banking, port 0xB5 keypad mux, and PSRAM buffers."""
         from pathlib import Path
         repo_root = Path(__file__).resolve().parents[1]
-        c_src = (repo_root / "firmware" / "BmoGameboy" / "src" / "engines" / "wswan" / "wswan.c").read_text(encoding="utf-8")
-        self.assertIn("emu->bank_rom[2]", c_src, "wswan_read8 must use bank_rom[2] for $20000-$2FFFF")
-        self.assertIn("emu->bank_rom[3]", c_src, "wswan_read8 must use bank_rom[3] for $30000-$3FFFF")
-        self.assertIn("if (port == 0xC1)", c_src, "Port 0xC1 must be checked before 0xC0..0xC3 range")
-        self.assertIn("sel & 0x20", c_src, "Port 0xB5 must multiplex X1-X4 cursor nibble on bit 5")
+        c_src = (repo_root / "firmware" / "BmoGameboy" / "src" / "third_party" / "oswan" / "WS.c").read_text(encoding="utf-8")
+        self.assertIn("WsAllocateBuffers", c_src)
+        self.assertIn("bmo_psram_malloc", c_src)
+        self.assertIn("case 0xC1:", c_src, "Port 0xC1 must map cartridge SRAM banks to Page[1]")
+        self.assertIn("Page[1] = RAMMap[V]", c_src)
+        self.assertIn("case 0xB5:", c_src, "Port 0xB5 must multiplex keypad nibbles")
+        self.assertIn("ButtonState >> 4", c_src)
 
 
 if __name__ == "__main__":

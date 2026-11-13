@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import base64
+from concurrent.futures import ThreadPoolExecutor
 import os
 import shutil
 import subprocess
@@ -15,9 +16,9 @@ WASM_OUT_PATH = REPO_ROOT / "simulator" / "bmo_playtest_cores.wasm"
 CORE_SOURCE = REPO_ROOT / "simulator" / "gameboy_wasm.cpp"
 NES_SOURCE = REPO_ROOT / "simulator" / "nes_wasm.cpp"
 AGNES_SOURCE = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "third_party" / "agnes" / "agnes.c"
-ATARI_SOURCE = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "engines" / "stella" / "atari.c"
+STELLA_SRC_DIR = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "third_party" / "stella2014" / "src"
 ATARI_WASM_SOURCE = REPO_ROOT / "simulator" / "atari_wasm.cpp"
-COLEM_SOURCE = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "engines" / "colem" / "colem.c"
+SMSPLUS_DIR = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "third_party" / "smsplus"
 COLEM_WASM_SOURCE = REPO_ROOT / "simulator" / "colem_wasm.cpp"
 BMO_FACE_FIRMWARE_SOURCE = REPO_ROOT / "simulator" / "bmo_face_firmware.cpp"
 BMO_FACE_WASM_SOURCE = REPO_ROOT / "simulator" / "bmo_face_wasm.cpp"
@@ -147,27 +148,61 @@ def build_wasm_module(output_path: Path | None = WASM_OUT_PATH) -> bytes:
     temp_root.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="bmo-wasm-", dir=str(temp_root)) as temp_dir:
         temp_output = Path(temp_dir) / "bmo_playtest_cores.wasm"
-        agnes_object = Path(temp_dir) / "agnes.o"
         c_compiler = _find_c_compiler()
-        c_objects = []
-        c_commands = []
-        for source in (AGNES_SOURCE, ATARI_SOURCE, COLEM_SOURCE):
-            output = Path(temp_dir) / f"{source.stem}.o"
-            c_objects.append(output)
-            c_commands.append([
+        c_sources = [
+            AGNES_SOURCE,
+            *sorted(SMSPLUS_DIR.glob("*.c")),
+            *sorted(STELLA_SRC_DIR.glob("*.c")),
+        ]
+        stella_cpp_sources = sorted(STELLA_SRC_DIR.glob("*.cpp"))
+        compile_commands: list[list[str]] = []
+        object_paths: list[Path] = []
+
+        for idx, source in enumerate(c_sources):
+            output = Path(temp_dir) / f"c_{idx}_{source.stem}.o"
+            object_paths.append(output)
+            compile_commands.append([
                 str(c_compiler),
                 "--target=wasm32-wasip1",
-                "-O3",
+                "-Os",
                 "-flto",
+                "-ffunction-sections",
+                "-fdata-sections",
+                "-I",
+                str(SMSPLUS_DIR),
+                "-I",
+                str(STELLA_SRC_DIR),
                 "-c",
                 str(source),
                 "-o",
                 str(output),
             ])
+
+        for idx, source in enumerate(stella_cpp_sources):
+            output = Path(temp_dir) / f"stella_{idx}_{source.stem}.o"
+            object_paths.append(output)
+            compile_commands.append([
+                str(compiler),
+                "--target=wasm32-wasip1",
+                "-Os",
+                "-flto",
+                "-ffunction-sections",
+                "-fdata-sections",
+                "-fno-exceptions",
+                "-fno-rtti",
+                "-std=c++17",
+                "-I",
+                str(STELLA_SRC_DIR),
+                "-c",
+                str(source),
+                "-o",
+                str(output),
+            ])
+
         command = [
             str(compiler),
             "--target=wasm32-wasip1",
-            "-O3",
+            "-Os",
             "-flto",
             "-fno-exceptions",
             "-fno-rtti",
@@ -175,6 +210,10 @@ def build_wasm_module(output_path: Path | None = WASM_OUT_PATH) -> bytes:
             str(BMO_COMPAT),
             "-I",
             str(WASM_HAL),
+            "-I",
+            str(STELLA_SRC_DIR),
+            "-I",
+            str(SMSPLUS_DIR),
             "-DLOG_LEVEL=0",
             "-nostartfiles",
             "-DPEANUT_GB_IS_LITTLE_ENDIAN=1",
@@ -186,19 +225,25 @@ def build_wasm_module(output_path: Path | None = WASM_OUT_PATH) -> bytes:
             str(COLEM_WASM_SOURCE),
             str(BMO_FACE_FIRMWARE_SOURCE),
             str(BMO_FACE_WASM_SOURCE),
-            *(str(obj) for obj in c_objects),
+            *(str(obj) for obj in object_paths),
             "-Wl,--no-entry",
+            "-Wl,--gc-sections",
+            "-Wl,--strip-all",
             "-Wl,--export-memory",
             "-Wl,--initial-memory=16777216",
-            "-Wl,--max-memory=33554432",
+            "-Wl,--max-memory=67108864",
             "-Wl,-z,stack-size=1048576",
             *(f"-Wl,--export={symbol}" for symbol in EXPORTS),
             "-o",
             str(temp_output),
         ]
+
+        def _compile_unit(cmd: list[str]) -> None:
+            subprocess.run(cmd, cwd=REPO_ROOT, check=True, capture_output=True, text=True)
+
         try:
-            for c_command in c_commands:
-                subprocess.run(c_command, cwd=REPO_ROOT, check=True, capture_output=True, text=True)
+            with ThreadPoolExecutor(max_workers=min(8, os.cpu_count() or 4)) as pool:
+                list(pool.map(_compile_unit, compile_commands))
             subprocess.run(command, cwd=REPO_ROOT, check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError as error:
             raise RuntimeError(

@@ -104,7 +104,7 @@ class TestGuardianEngine(unittest.TestCase):
         runner.cppcheck_bin = "cppcheck"
         output = (
             "src/example.c::0::information::branchCheck::scan note\n"
-            "src/engines/example.c::17::error::exampleCheck::detected issue\n"
+            "src/third_party/example.c::17::error::exampleCheck::detected issue\n"
         )
         with patch(
             "tools.guardian.core.cppcheck_runner.subprocess.run",

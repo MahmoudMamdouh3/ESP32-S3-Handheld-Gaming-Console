@@ -34,45 +34,52 @@ class TestTier1FirmwareValidation(unittest.TestCase):
             self.assertTrue(f.exists(), f"Missing required emulator source: {f}")
 
     def test_02_vendor_sources_exist(self):
-        """Verify all Tier 1 vendor engines exist."""
+        """Verify all Tier 1 genuine third-party engines exist."""
         required_vendor = [
-            FIRMWARE_DIR / "src" / "engines" / "smsplus" / "sms.h",
-            FIRMWARE_DIR / "src" / "engines" / "smsplus" / "sms.c",
-            FIRMWARE_DIR / "src" / "engines" / "pce" / "pce.h",
-            FIRMWARE_DIR / "src" / "engines" / "pce" / "pce.c",
-            FIRMWARE_DIR / "src" / "engines" / "stella" / "atari.h",
-            FIRMWARE_DIR / "src" / "engines" / "stella" / "atari.c",
-            FIRMWARE_DIR / "src" / "engines" / "pico" / "pico.h",
-            FIRMWARE_DIR / "src" / "engines" / "pico" / "pico.c",
+            FIRMWARE_DIR / "src" / "third_party" / "smsplus" / "sms.h",
+            FIRMWARE_DIR / "src" / "third_party" / "smsplus" / "sms.c",
+            FIRMWARE_DIR / "src" / "third_party" / "smsplus" / "smsplus_bmo.h",
+            FIRMWARE_DIR / "src" / "third_party" / "smsplus" / "smsplus_bmo.c",
+            FIRMWARE_DIR / "src" / "third_party" / "huexpress" / "pce.h",
+            FIRMWARE_DIR / "src" / "third_party" / "huexpress" / "pce.c",
+            FIRMWARE_DIR / "src" / "third_party" / "stella2014" / "src" / "Console.h",
+            FIRMWARE_DIR / "src" / "third_party" / "stella2014" / "src" / "Console.cpp",
+            FIRMWARE_DIR / "src" / "third_party" / "fake08" / "src" / "vm.h",
+            FIRMWARE_DIR / "src" / "third_party" / "fake08" / "src" / "vm.cpp",
         ]
         for f in required_vendor:
             self.assertTrue(f.exists(), f"Missing required vendor source: {f}")
 
     def test_03_teardown_contract_compliance(self):
-        """Verify that every emulator implements destroy() and that BmoGameboy.ino invokes destroy() on SELECT+UP."""
+        """Verify that every Tier 1 emulator destroy() is registered in CoreRegistry and dispatched by BmoGameboy.ino."""
         ino_content = (FIRMWARE_DIR / "BmoGameboy.ino").read_text(encoding="utf-8")
-        
-        # Check that teardown is invoked for each emulator
+        reg_content = (FIRMWARE_DIR / "src" / "cores" / "core_registry.h").read_text(encoding="utf-8")
+        self.assertIn("CoreRegistry::findByIndex", ino_content)
+        self.assertIn("core->destroy()", ino_content)
+
         required_destroys = [
-            "SmsEmu::destroy()",
-            "PceEmu::destroy()",
-            "AtariEmu::destroy()",
-            "PicoEmu::destroy()",
-            "WalnutEmu::destroy()",
-            "PeanutEmu::destroy()",
-            "NesEmu::destroy()",
-            "DoomEmu::destroy()",
+            "SmsEmu::destroy",
+            "PceEmu::destroy",
+            "AtariEmu::destroy",
+            "PicoEmu::destroy",
+            "WalnutEmu::destroy",
+            "PeanutEmu::destroy",
+            "NesEmu::destroy",
+            "DoomEmu::destroy",
         ]
         for d in required_destroys:
-            self.assertIn(d, ino_content, f"Teardown contract violation: {d} missing in BmoGameboy.ino")
+            self.assertIn(d, reg_content, f"Teardown contract violation: {d} missing in core_registry.h")
 
     def test_04_psram_allocation_safety(self):
-        """Verify all framebuffers and cartridge working RAM allocate via MALLOC_CAP_SPIRAM."""
+        """Verify all framebuffers and cartridge working RAM allocate via MALLOC_CAP_SPIRAM or bmo_psram_*."""
+        psram_h = (FIRMWARE_DIR / "src" / "hal" / "psram_alloc.h").read_text(encoding="utf-8")
+        self.assertIn("MALLOC_CAP_SPIRAM", psram_h)
         for emu_file in (FIRMWARE_DIR / "src" / "cores").glob("emu_*.cpp"):
             code = emu_file.read_text(encoding="utf-8")
-            # If malloc or heap_caps_malloc is used, verify it requests SPIRAM
             if "heap_caps_malloc" in code:
                 self.assertIn("MALLOC_CAP_SPIRAM", code, f"{emu_file.name} must allocate dynamic buffers in Octal PSRAM")
+            if "bmo_psram_malloc" in code or "bmo_psram_calloc" in code:
+                self.assertIn("psram_alloc.h", code, f"{emu_file.name} must include hal/psram_alloc.h")
 
     def test_05_display_streaming_methods(self):
         """Verify DisplayEmu implements atomic frame streaming for all Tier 1 resolutions."""

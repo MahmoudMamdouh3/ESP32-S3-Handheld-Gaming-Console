@@ -92,8 +92,6 @@ class FirmwareAstLinter:
                 cat = "FIRMWARE_CORE"
             elif rel_path.startswith("firmware/BmoGameboy/src/cores"):
                 cat = "EMULATOR_WRAPPERS"
-            elif rel_path.startswith("firmware/BmoGameboy/src/engines"):
-                cat = "FIRST_PARTY_ENGINES"
             elif rel_path.startswith("firmware/BmoGameboy/src/third_party"):
                 cat = "THIRD_PARTY_ENGINES"
             elif rel_path.startswith("firmware/BmoGameboy"):
@@ -454,7 +452,7 @@ class FirmwareAstLinter:
                         )
 
         # Rule 8: Check for raw unaligned 16/32-bit pointer casts in ROM reading paths
-        if "src/cores/" in rel_path_str or "src/third_party/" in rel_path_str or "src/engines/" in rel_path_str:
+        if "src/cores/" in rel_path_str or "src/third_party/" in rel_path_str:
             for idx, line in enumerate(lines, 1):
                 clean = line.strip()
                 if clean.startswith("//") or clean.startswith("/*"):
@@ -499,7 +497,7 @@ class FirmwareAstLinter:
             and rel_path_str.endswith(".cpp")
         ):
             has_sd_io = any(re.search(r"\bSD\.(open|mkdir|remove|exists)\s*\(", l) for l in lines if not l.strip().startswith("//"))
-            if has_sd_io and "SpiArbiter::lock()" not in content:
+            if has_sd_io and "SpiArbiter::lock()" not in content and "SpiArbiter::ScopedLock" not in content:
                 findings.append(
                     LintFinding(
                         rule_id="UNARBITRATED_SD_IO_IN_CORE",

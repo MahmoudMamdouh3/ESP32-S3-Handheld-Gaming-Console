@@ -40,9 +40,11 @@ class RomFileFilterTests(unittest.TestCase):
 
     def test_atari_7800_extension_is_not_mapped_to_atari_2600(self):
         scanner = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage" / "sd_card.cpp").read_text(encoding="utf-8")
-        atari = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "engines" / "stella" / "atari.c").read_text(encoding="utf-8")
+        display_h = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "display_emu.h").read_text(encoding="utf-8")
+        atari_cpp = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "cores" / "emu_atari.cpp").read_text(encoding="utf-8")
         self.assertNotIn(".a78", scanner.lower())
-        self.assertIn("Atari 2600 (VCS)", atari)
+        self.assertIn("Atari 2600", display_h)
+        self.assertIn("stella2014", atari_cpp)
         for script_rel in (
             "scripts/deploy_to_sd.py",
             "scripts/deploy_sd_complete.py",
