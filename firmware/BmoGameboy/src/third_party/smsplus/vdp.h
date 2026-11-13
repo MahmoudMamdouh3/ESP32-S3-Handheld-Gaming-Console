@@ -1,0 +1,58 @@
+
+#ifndef _VDP_H_
+#define _VDP_H_
+
+/* Display timing (NTSC) */
+#define MASTER_CLOCK        (3579545)
+#define LINES_PER_FRAME     (262)
+#define FRAMES_PER_SECOND   (60)
+#define CYCLES_PER_LINE     ((MASTER_CLOCK / FRAMES_PER_SECOND) / LINES_PER_FRAME)
+#define SMS_VDP_VRAM_SIZE 0x4000
+/* VDP context */
+typedef struct
+{
+    uint8 *vram;
+    uint8 cram[0x40]; 
+    uint8 reg[0x10];  
+    uint8 vscroll;
+    uint8 status;     
+    uint8 latch;      
+    uint8 pending;    
+    uint8 buffer;     
+    uint8 code;       
+    uint16 addr;       
+    int pn;
+    int ct;
+    int pg;
+    int sa;
+    int sg;
+    int ntab;        
+    int satb;
+    int line;
+    int left;
+    int lpf;
+    int height;
+    uint8 mode;
+    uint8 bd;
+    uint16 spr_col;
+    uint8 limit;
+}t_vdp;
+
+/* Global data */
+extern t_vdp vdp;
+
+/* Function prototypes */
+void vdp_init(void);
+void vdp_reset(void);
+void vdp_ctrl_w(int data);
+int vdp_ctrl_r(void);
+uint8 vdp_vcounter_r(void);
+uint8 vdp_hcounter_r(void);
+void vdp_data_w(int data);
+int vdp_data_r(void);
+void vdp_run(void);
+int vdp_init_vram(void);
+void vdp_shutdown_vram(void);
+
+#endif /* _VDP_H_ */
+

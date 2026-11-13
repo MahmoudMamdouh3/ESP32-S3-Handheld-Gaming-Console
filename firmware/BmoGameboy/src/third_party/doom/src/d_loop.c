@@ -57,7 +57,22 @@ typedef struct
 // from all players.
 //
 
-static ticcmd_set_t ticdata[BACKUPTICS];
+extern void* Doom_MallocPSRAM(size_t size);
+extern void Doom_FreePSRAM(void* ptr);
+static ticcmd_set_t *ticdata = NULL;
+
+static ticcmd_set_t* ensure_ticdata(void)
+{
+    if (!ticdata)
+    {
+        ticdata = (ticcmd_set_t *)Doom_MallocPSRAM(sizeof(ticcmd_set_t) * BACKUPTICS);
+        if (ticdata)
+        {
+            memset(ticdata, 0, sizeof(ticcmd_set_t) * BACKUPTICS);
+        }
+    }
+    return ticdata;
+}
 
 // The index of the next tic to be made (with a call to BuildTiccmd).
 
@@ -185,6 +200,7 @@ static boolean BuildNewTic(void)
     }
 
 #endif
+    if (!ensure_ticdata()) return false;
     ticdata[maketic % BACKUPTICS].cmds[localplayer] = cmd;
     ticdata[maketic % BACKUPTICS].ingame[localplayer] = true;
 
@@ -280,6 +296,7 @@ void D_ReceiveTic(ticcmd_t *ticcmds, boolean *players_mask)
         return;
     }
 
+    if (!ensure_ticdata()) return;
     for (i = 0; i < NET_MAXPLAYERS; ++i)
     {
         if (!drone && i == localplayer)
@@ -563,6 +580,11 @@ void D_QuitNetGame (void)
     NET_SV_Shutdown();
     NET_CL_Disconnect();
 #endif
+    if (ticdata)
+    {
+        Doom_FreePSRAM(ticdata);
+        ticdata = NULL;
+    }
 }
 
 static int GetLowTic(void)
@@ -794,6 +816,7 @@ void TryRunTics (void)
             return;
         }
 
+        if (!ensure_ticdata()) return;
         set = &ticdata[(gametic / ticdup) % BACKUPTICS];
 
         if (!net_client_connected)

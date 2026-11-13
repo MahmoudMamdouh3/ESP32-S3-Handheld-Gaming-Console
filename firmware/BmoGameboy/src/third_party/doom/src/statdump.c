@@ -54,7 +54,8 @@ static const char *player_colors[] =
 // Array of end-of-level statistics that have been captured.
 
 #define MAX_CAPTURES 32
-static wbstartstruct_t captured_stats[MAX_CAPTURES];
+extern void* Doom_MallocPSRAM(size_t size);
+static wbstartstruct_t *captured_stats = NULL;
 static int num_captured_stats = 0;
 
 #if ORIGCODE
@@ -334,6 +335,12 @@ void StatCopy(wbstartstruct_t *stats)
 {
     if (M_ParmExists("-statdump") && num_captured_stats < MAX_CAPTURES)
     {
+        if (!captured_stats)
+        {
+            captured_stats = (wbstartstruct_t *)Doom_MallocPSRAM(
+                MAX_CAPTURES * sizeof(wbstartstruct_t));
+            if (!captured_stats) return;
+        }
         memcpy(&captured_stats[num_captured_stats], stats,
                sizeof(wbstartstruct_t));
         ++num_captured_stats;
