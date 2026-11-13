@@ -68,7 +68,7 @@ jobs:
         run: |
           mkdir -p .tools
           curl -fsSL https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-x86_64-linux.tar.gz -o .tools/wasi-sdk.tar.gz
-          echo "b761e3a0400877cb3e2d3174d334c91fc3742d1a774b1bd22248120c13e7a436  .tools/wasi-sdk.tar.gz" | sha256sum -c -
+          echo "b761e3a0721dbae9c09a0059e5fdb2bf917d1b4a8a7b430fb3b5aafb0984b2c4  .tools/wasi-sdk.tar.gz" | sha256sum -c -
           tar -xzf .tools/wasi-sdk.tar.gz -C .tools
           rm -f .tools/wasi-sdk.tar.gz
 
