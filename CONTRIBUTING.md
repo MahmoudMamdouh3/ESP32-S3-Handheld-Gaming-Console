@@ -28,6 +28,6 @@ python scripts/validate_repo.py
 
 - **No commercial content:** Do not commit copyrighted ROMs, BIOS images, box-art scrapes, or downloader scripts.
 - **No large binary blobs:** Staged files must remain below 1 MiB (`.githooks/pre-commit` enforces `< 1,048,576` bytes and scans for credential patterns).
-- **Preserve physical pin & safety contracts:** Do not enable `FEATURE_BATTERY_MONITOR` or `FEATURE_AUDIO`, alter pin assignments in `firmware/BmoGameboy/src/core/config.h`, or use `FlashMode=opi`. See [`AGENTS.md`](AGENTS.md) and [`docs/hardware.md`](docs/hardware.md).
+- **Preserve physical pin & safety contracts:** Do not enable `FEATURE_BATTERY_MONITOR` or `FEATURE_AUDIO`, alter pin assignments in `firmware/BmoGameboy/src/hal/config.h`, or use `FlashMode=opi`. See [`AGENTS.md`](AGENTS.md) and [`docs/hardware.md`](docs/hardware.md).
 - **Evidence accuracy:** Report verification using `NOT_TESTED`, `HOST_TESTED`, `TARGET_COMPILED`, or `HARDWARE_TESTED`. Never present simulator or analytical numbers as physical hardware results.
-- **Licensing:** First-party code is MIT. Any PR affecting [`firmware/BmoGameboy/src/vendor/doom/`](firmware/BmoGameboy/src/core/config.h) (`BMO_ENABLE_DOOM`) or adding third-party code must update [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+- **Licensing:** First-party code is MIT. Any PR affecting [`firmware/BmoGameboy/src/third_party/doom/`](firmware/BmoGameboy/src/third_party/doom/PROVENANCE.md) (`BMO_ENABLE_DOOM`) or adding third-party code must update [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

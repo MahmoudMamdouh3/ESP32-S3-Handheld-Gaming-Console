@@ -21,14 +21,14 @@ class TestTier1FirmwareValidation(unittest.TestCase):
     def test_01_emulator_headers_exist(self):
         """Verify all Tier 1 emulator wrapper headers and sources exist."""
         required_files = [
-            FIRMWARE_DIR / "src" / "emulators" / "emu_sms.h",
-            FIRMWARE_DIR / "src" / "emulators" / "emu_sms.cpp",
-            FIRMWARE_DIR / "src" / "emulators" / "emu_pce.h",
-            FIRMWARE_DIR / "src" / "emulators" / "emu_pce.cpp",
-            FIRMWARE_DIR / "src" / "emulators" / "emu_atari.h",
-            FIRMWARE_DIR / "src" / "emulators" / "emu_atari.cpp",
-            FIRMWARE_DIR / "src" / "emulators" / "emu_pico.h",
-            FIRMWARE_DIR / "src" / "emulators" / "emu_pico.cpp",
+            FIRMWARE_DIR / "src" / "cores" / "emu_sms.h",
+            FIRMWARE_DIR / "src" / "cores" / "emu_sms.cpp",
+            FIRMWARE_DIR / "src" / "cores" / "emu_pce.h",
+            FIRMWARE_DIR / "src" / "cores" / "emu_pce.cpp",
+            FIRMWARE_DIR / "src" / "cores" / "emu_atari.h",
+            FIRMWARE_DIR / "src" / "cores" / "emu_atari.cpp",
+            FIRMWARE_DIR / "src" / "cores" / "emu_pico.h",
+            FIRMWARE_DIR / "src" / "cores" / "emu_pico.cpp",
         ]
         for f in required_files:
             self.assertTrue(f.exists(), f"Missing required emulator source: {f}")
@@ -36,14 +36,14 @@ class TestTier1FirmwareValidation(unittest.TestCase):
     def test_02_vendor_sources_exist(self):
         """Verify all Tier 1 vendor engines exist."""
         required_vendor = [
-            FIRMWARE_DIR / "src" / "vendor" / "smsplus" / "sms.h",
-            FIRMWARE_DIR / "src" / "vendor" / "smsplus" / "sms.c",
-            FIRMWARE_DIR / "src" / "vendor" / "pce" / "pce.h",
-            FIRMWARE_DIR / "src" / "vendor" / "pce" / "pce.c",
-            FIRMWARE_DIR / "src" / "vendor" / "stella" / "atari.h",
-            FIRMWARE_DIR / "src" / "vendor" / "stella" / "atari.c",
-            FIRMWARE_DIR / "src" / "vendor" / "pico" / "pico.h",
-            FIRMWARE_DIR / "src" / "vendor" / "pico" / "pico.c",
+            FIRMWARE_DIR / "src" / "engines" / "smsplus" / "sms.h",
+            FIRMWARE_DIR / "src" / "engines" / "smsplus" / "sms.c",
+            FIRMWARE_DIR / "src" / "engines" / "pce" / "pce.h",
+            FIRMWARE_DIR / "src" / "engines" / "pce" / "pce.c",
+            FIRMWARE_DIR / "src" / "engines" / "stella" / "atari.h",
+            FIRMWARE_DIR / "src" / "engines" / "stella" / "atari.c",
+            FIRMWARE_DIR / "src" / "engines" / "pico" / "pico.h",
+            FIRMWARE_DIR / "src" / "engines" / "pico" / "pico.c",
         ]
         for f in required_vendor:
             self.assertTrue(f.exists(), f"Missing required vendor source: {f}")
@@ -68,7 +68,7 @@ class TestTier1FirmwareValidation(unittest.TestCase):
 
     def test_04_psram_allocation_safety(self):
         """Verify all framebuffers and cartridge working RAM allocate via MALLOC_CAP_SPIRAM."""
-        for emu_file in (FIRMWARE_DIR / "src" / "emulators").glob("emu_*.cpp"):
+        for emu_file in (FIRMWARE_DIR / "src" / "cores").glob("emu_*.cpp"):
             code = emu_file.read_text(encoding="utf-8")
             # If malloc or heap_caps_malloc is used, verify it requests SPIRAM
             if "heap_caps_malloc" in code:
@@ -76,7 +76,7 @@ class TestTier1FirmwareValidation(unittest.TestCase):
 
     def test_05_display_streaming_methods(self):
         """Verify DisplayEmu implements atomic frame streaming for all Tier 1 resolutions."""
-        header = (FIRMWARE_DIR / "src" / "core" / "display_emu.h").read_text(encoding="utf-8")
+        header = (FIRMWARE_DIR / "src" / "ui" / "display_emu.h").read_text(encoding="utf-8")
         required_methods = [
             "streamSMSFrame",
             "streamPCEFrame",
@@ -88,7 +88,7 @@ class TestTier1FirmwareValidation(unittest.TestCase):
 
     def test_06_sd_card_rom_types_and_extensions(self):
         """Verify sd_card.cpp recognizes all Tier 1 extensions."""
-        sd_code = (FIRMWARE_DIR / "src" / "core" / "sd_card.cpp").read_text(encoding="utf-8")
+        sd_code = (FIRMWARE_DIR / "src" / "storage" / "sd_card.cpp").read_text(encoding="utf-8")
         required_exts = [".sms", ".gg", ".pce", ".a26", ".p8", ".gb", ".gbc", ".nes", ".wad"]
         for ext in required_exts:
             self.assertIn(ext, sd_code, f"Extension {ext} not handled in determineType in sd_card.cpp")

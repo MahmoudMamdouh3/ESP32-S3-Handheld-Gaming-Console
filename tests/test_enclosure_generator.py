@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import trimesh
 
-from tools.enclosure.generate_bmo_enclosure import CONFIG, build_parts, export_all, validate_mesh
+from hardware.enclosure.generate_bmo_enclosure import CONFIG, build_parts, export_all, validate_mesh
 
 
 EXPECTED_PARTS = {

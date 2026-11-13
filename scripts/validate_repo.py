@@ -246,9 +246,9 @@ def check_python_files():
 
 def check_firmware_safety_guardrails():
     issues = []
-    config_path = FIRMWARE_DIR / "src" / "core" / "config.h"
+    config_path = FIRMWARE_DIR / "src" / "hal" / "config.h"
     if not config_path.exists():
-        return ["config.h not found"]
+        return ["src/hal/config.h not found"]
     config_text = config_path.read_text(encoding="utf-8")
     for flag in ("FEATURE_BATTERY_MONITOR", "FEATURE_AUDIO"):
         if not re.search(rf"#define\s+{flag}\s+0\b", config_text):
@@ -263,13 +263,13 @@ def check_firmware_safety_guardrails():
     else:
         issues.append("BmoGameboy.ino not found")
 
-    emu_dir = FIRMWARE_DIR / "src" / "emulators"
+    emu_dir = FIRMWARE_DIR / "src" / "cores"
     if emu_dir.exists():
         for cpp in sorted(emu_dir.glob("*.cpp")):
             if re.search(r"\bSerial\.print", cpp.read_text(encoding="utf-8")):
                 issues.append(f"{cpp.name}: naked Serial.print in emulator wrapper — use LOG_ macros")
 
-    walnut_cpp = FIRMWARE_DIR / "src" / "emulators" / "emu_walnut.cpp"
+    walnut_cpp = FIRMWARE_DIR / "src" / "cores" / "emu_walnut.cpp"
     if walnut_cpp.exists():
         wt = walnut_cpp.read_text(encoding="utf-8")
         if "*(uint16_t*)&" in wt or "*(uint32_t*)&" in wt:
@@ -299,10 +299,11 @@ def check_firmware_safety_guardrails():
 
 def check_flash_budget_static():
     issues = []
-    vendor_dir = FIRMWARE_DIR / "src" / "vendor"
-    if not vendor_dir.exists():
-        return issues
-    total = sum(f.stat().st_size for f in vendor_dir.rglob("*") if f.is_file())
+    engine_dirs = [FIRMWARE_DIR / "src" / "engines", FIRMWARE_DIR / "src" / "third_party"]
+    present_dirs = [d for d in engine_dirs if d.exists()]
+    if not present_dirs:
+        return ["No engine source directories (src/engines, src/third_party) found"]
+    total = sum(f.stat().st_size for d in present_dirs for f in d.rglob("*") if f.is_file())
     print(f"  Engine source tree: {total / 1024:.1f} KB")
     if total > 8 * 1024 * 1024:
         issues.append(f"Engine source tree is {total / 1024:.0f} KB — check for large uncompressed blobs")
@@ -311,13 +312,13 @@ def check_flash_budget_static():
 
 def check_structural_soundness():
     issues = []
-    emu_dir = FIRMWARE_DIR / "src" / "emulators"
+    emu_dir = FIRMWARE_DIR / "src" / "cores"
     for stem in EXPECTED_EMULATORS:
         for ext in (".h", ".cpp"):
             if not (emu_dir / (stem + ext)).exists():
-                issues.append(f"Missing emulator wrapper: src/emulators/{stem}{ext}")
+                issues.append(f"Missing emulator wrapper: src/cores/{stem}{ext}")
 
-    sd_cpp = FIRMWARE_DIR / "src" / "core" / "sd_card.cpp"
+    sd_cpp = FIRMWARE_DIR / "src" / "storage" / "sd_card.cpp"
     if sd_cpp.exists():
         sd_text = sd_cpp.read_text(encoding="utf-8")
         for ext in EXPECTED_EXTENSIONS:
@@ -326,7 +327,7 @@ def check_structural_soundness():
     else:
         issues.append("sd_card.cpp not found")
 
-    display_h = FIRMWARE_DIR / "src" / "core" / "display_emu.h"
+    display_h = FIRMWARE_DIR / "src" / "ui" / "display_emu.h"
     if display_h.exists():
         header = display_h.read_text(encoding="utf-8")
         for m in REQUIRED_STREAM_METHODS:
@@ -340,11 +341,15 @@ def check_structural_soundness():
 def check_game_data():
     issues = []
     try:
-        from repo_tools import find_game_roots, validate_rom_header
+        from repo_tools import find_game_roots, get_data_dir, validate_rom_header
     except ImportError:
         return ["repo_tools.py not importable — cannot validate ROM archives"]
 
-    roots = find_game_roots(REPO_ROOT)
+    try:
+        data_dir = get_data_dir(REPO_ROOT)
+    except FileNotFoundError as exc:
+        return [str(exc)]
+    roots = find_game_roots(data_dir)
     if not roots:
         return issues
 

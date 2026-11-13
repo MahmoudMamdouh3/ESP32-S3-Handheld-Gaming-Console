@@ -13,8 +13,6 @@ from scripts.repo_tools import get_data_dir
 from scripts.rom_key import make_rom_key
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SRC_GAMES = get_data_dir(REPO_ROOT) / "games"
-SRC_BOXART = get_data_dir(REPO_ROOT) / "roms" / "boxart"
 ROM_EXTENSIONS = frozenset({
     ".gb", ".gbc", ".nes", ".wad", ".sms", ".gg", ".pce", ".a26",
     ".p8", ".gen", ".md", ".smd", ".sfc", ".smc", ".ws",

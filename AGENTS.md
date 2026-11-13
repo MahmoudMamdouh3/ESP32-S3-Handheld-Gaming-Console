@@ -1,11 +1,11 @@
 # Repository Agent Guide
 
-This repository contains ESP32-S3-N16R8 handheld firmware (`firmware/BmoGameboy/`), host unit tests (`tests/`), a WebAssembly browser simulator (`tools/bmo_simulator/`), a parametric CAD generator (`tools/enclosure/`), and static firmware analysis helpers (`tools/guardian/`).
+This repository contains ESP32-S3-N16R8 handheld firmware (`firmware/BmoGameboy/`), host unit tests (`tests/`), a WebAssembly browser simulator (`simulator/`), a parametric CAD generator and wiring files (`hardware/`), and static firmware analysis helpers (`tools/guardian/`).
 
 ## Hardware Hard Stops (Permanent Until Physical Board Changes)
 
-- `FEATURE_BATTERY_MONITOR` MUST stay `0` in `firmware/BmoGameboy/src/core/config.h` (no divider connected to GPIO 1).
-- `FEATURE_AUDIO` MUST stay `0` in `firmware/BmoGameboy/src/core/config.h` (no I2S DAC fitted on GPIO 38/39/40).
+- `FEATURE_BATTERY_MONITOR` MUST stay `0` in `firmware/BmoGameboy/src/hal/config.h` (no divider connected to GPIO 1).
+- `FEATURE_AUDIO` MUST stay `0` in `firmware/BmoGameboy/src/hal/config.h` (no I2S DAC fitted on GPIO 38/39/40).
 - Flash/PSRAM profile MUST stay `FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi` (`firmware/BmoGameboy/sketch.yaml`, `partitions.csv` `app0 = 8 MB`). Never use `FlashMode=opi`.
 - Pin map in `config.h` is fixed to the soldered board:
   - Shared FSPI (`SpiArbiter` required): `TFT_SCK=12`, `TFT_MOSI=11`, `SD_MISO=15`, `TFT_CS=10`, `TFT_DC=8`, `TFT_RST=9`, `SD_CS=13`.
@@ -26,10 +26,11 @@ Always classify claims using these exact four levels and never upgrade one witho
 Key commands (Windows PowerShell):
 
 ```powershell
-# Compile default MIT firmware (no baked commercial ROMs, no GPL DOOM engine)
+# Compile default MIT firmware (GB/GBC/NES; BMO_EXPERIMENTAL_CORES=0, BMO_ENABLE_DOOM=0)
 .\arduino-cli.exe compile --profile esp32s3 firmware/BmoGameboy
 
-# Compile with opt-in GPL DOOM engine (never set build.extra_flags; append to compiler.*.extra_flags)
+# Compile with gated cores (never set build.extra_flags; append to compiler.*.extra_flags)
+.\arduino-cli.exe compile --profile esp32s3 --build-property compiler.c.extra_flags=-DBMO_EXPERIMENTAL_CORES=1 --build-property compiler.cpp.extra_flags=-DBMO_EXPERIMENTAL_CORES=1 firmware/BmoGameboy
 .\arduino-cli.exe compile --profile esp32s3 --build-property compiler.c.extra_flags=-DBMO_ENABLE_DOOM=1 --build-property compiler.cpp.extra_flags=-DBMO_ENABLE_DOOM=1 firmware/BmoGameboy
 
 # Host tests, validator, link & token parity checks
@@ -42,7 +43,7 @@ python scripts/verify_color_tokens.py
 
 ## Coding & Data Policies
 
-- Keep firmware buildable in a clean clone with `BMO_ENABLE_BAKED_ROMS=0` and `BMO_ENABLE_DOOM=0`.
+- Keep firmware buildable in a clean clone with `BMO_ENABLE_BAKED_ROMS=0`, `BMO_EXPERIMENTAL_CORES=0`, and `BMO_ENABLE_DOOM=0` (`simulator/run_simulator.py` auto-builds `bmo_playtest_cores.wasm` on demand).
 - Do not add copyrighted ROM headers, artwork scrapes, downloader scripts, or binaries `>= 1 MiB` (`.githooks/pre-commit` rejects staged blobs `>= 1,048,576` bytes and secret tokens).
-- Keep UI colors synchronized across `firmware/BmoGameboy/src/core/theme.h`, `tools/bmo_simulator/simulator.css`, and `DESIGN.md` (`python scripts/verify_color_tokens.py`).
+- Keep UI colors synchronized across `firmware/BmoGameboy/src/ui/theme.h`, `simulator/simulator.css`, and `DESIGN.md` (`python scripts/verify_color_tokens.py`).
 - See [`firmware/AGENTS.md`](firmware/AGENTS.md) for C/C++ RTOS/PSRAM rules and [`docs/decisions/README.md`](docs/decisions/README.md) for ADRs.

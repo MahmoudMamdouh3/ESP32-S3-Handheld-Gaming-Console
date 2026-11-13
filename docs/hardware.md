@@ -2,7 +2,7 @@
 
 This document separates verified source configuration from physical assumptions and open electrical measurements. The physical board is a permanent perfboard build (`ESP32-S3-WROOM-1-N16R8`). **Evidence level: `TARGET_COMPILED` / `HOST_TESTED`; physical `HARDWARE_TESTED`: none recorded yet.**
 
-See [`firmware/BmoGameboy/src/core/config.h`](../firmware/BmoGameboy/src/core/config.h) as the authoritative code definition, [`docs/hardware_measurements.md`](hardware_measurements.md) for the bench test log procedure, and [`docs/decisions/README.md`](decisions/README.md) for ADRs.
+See [`firmware/BmoGameboy/src/hal/config.h`](../firmware/BmoGameboy/src/hal/config.h) as the authoritative code definition, [`docs/hardware_measurements.md`](hardware_measurements.md) for the bench test log procedure, and [`docs/decisions/README.md`](decisions/README.md) for ADRs.
 
 ## Board Configuration & Safety Hard Stops
 

@@ -11,8 +11,6 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 from repo_tools import get_data_dir
 
-GAMES_DIR = get_data_dir(REPO_ROOT) / "games"
-
 def validate_nes(data):
     if len(data) < 16:
         return False, "File too small (<16 bytes)"
@@ -141,7 +139,9 @@ VALIDATORS = {
     '.wad': validate_doom,
 }
 
-def scan_games(games_dir: Path = GAMES_DIR):
+def scan_games(games_dir: Path | None = None):
+    if games_dir is None:
+        games_dir = get_data_dir(REPO_ROOT) / "games"
     stats = defaultdict(lambda: {'total': 0, 'valid': 0, 'broken': 0, 'zero_byte': 0})
     broken_files = []
     if not games_dir.is_dir():

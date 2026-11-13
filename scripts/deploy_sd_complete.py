@@ -2,7 +2,7 @@
 scripts/deploy_sd_complete.py — Local BMO Handheld SD Card Deployer & Indexer
 Structures user-supplied games and converted box art onto a FAT32 SD card root,
 bypassing single-directory FAT32 limits by console partitioning, and writes a
-.bmo_index binary cache matching firmware/BmoGameboy/src/core/rom_index.h.
+.bmo_index binary cache matching firmware/BmoGameboy/src/storage/rom_index.h.
 """
 
 import argparse
@@ -22,14 +22,12 @@ from scripts.deploy_to_sd import copy_single_file as atomic_copy_single_file, va
 from scripts.repo_tools import get_data_dir
 from scripts.rom_key import make_rom_key
 
-SRC_GAMES = get_data_dir(REPO_ROOT) / "games"
-SRC_BOXART = get_data_dir(REPO_ROOT) / "roms" / "boxart"
 DEST_ROOT: Path | None = None
 DEST_BOXART: Path | None = None
 DEST_SAVES: Path | None = None
 DEST_SHOTS: Path | None = None
 
-# Matches firmware RomType enum values in firmware/BmoGameboy/src/core/sd_card.h.
+# Matches firmware RomType enum values in firmware/BmoGameboy/src/storage/sd_card.h.
 EXT_MAP = {
     '.gb': ('gb', 2),       # ROM_GB = 2
     '.gbc': ('gbc', 3),     # ROM_GBC = 3
@@ -64,7 +62,7 @@ def copy_single_file(args):
 
 
 def catalog_fingerprint(entry_count: int, total_bytes: int, root_stamp: int, entries_crc: int) -> int:
-    """Matches BmoIndex::catalogFingerprint in firmware/BmoGameboy/src/core/rom_index.h."""
+    """Matches BmoIndex::catalogFingerprint in firmware/BmoGameboy/src/storage/rom_index.h."""
     words = struct.pack(
         "<IIIII",
         entry_count & 0xFFFFFFFF,

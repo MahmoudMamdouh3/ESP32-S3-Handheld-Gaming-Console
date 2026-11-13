@@ -9,7 +9,12 @@ def get_data_dir(repo_root: Path | None = None) -> Path:
     """Return user-supplied ROM/cover data directory (`BMO_DATA_DIR` or repo root)."""
     raw = os.environ.get("BMO_DATA_DIR", "").strip()
     if raw:
-        return Path(raw).expanduser()
+        candidate = Path(raw).expanduser()
+        if not candidate.is_dir():
+            raise FileNotFoundError(
+                f"BMO_DATA_DIR does not exist or is not a directory: {candidate}"
+            )
+        return candidate
     return repo_root if repo_root is not None else Path(__file__).resolve().parents[1]
 
 

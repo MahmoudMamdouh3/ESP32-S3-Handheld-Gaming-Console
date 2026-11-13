@@ -2,10 +2,10 @@
 
 **Target Platforms:**
 1. **Embedded Physical Hardware:** 2.4" ST7789VW SPI TFT (Landscape 320×240, 16-bit BGR565 byte-swapped, Adafruit_GFX in Octal PSRAM).
-2. **Web Simulator & Playtest Harness:** HTML5 Canvas 2D + WebAssembly Playtest Core (`tools/bmo_simulator/`, 60 Hz 1:1 pixel rendering).
+2. **Web Simulator & Playtest Harness:** HTML5 Canvas 2D + WebAssembly Playtest Core (`simulator/`, 60 Hz 1:1 pixel rendering).
 
 **Status:** Canonical Design Standard  
-**Token Checks:** Verified against `firmware/BmoGameboy/src/core/theme.h` and `tools/bmo_simulator/simulator.css` by `python scripts/verify_color_tokens.py`.
+**Token Checks:** Verified against `firmware/BmoGameboy/src/ui/theme.h` and `simulator/simulator.css` by `python scripts/verify_color_tokens.py`.
 
 ---
 
@@ -17,7 +17,7 @@ The BMO Gameboy interface synthesizes two design disciplines:
 
 ### Design Principles
 - **Clarity Over Clutter:** Negative space and structural hierarchy replace nested containers. Information is grouped by spacing and typography rather than card-inside-card layering.
-- **Strict Color Token Discipline:** UI pixels derive from a named semantic token in [`firmware/BmoGameboy/src/core/theme.h`](firmware/BmoGameboy/src/core/theme.h) or `:root` in [`tools/bmo_simulator/simulator.css`](tools/bmo_simulator/simulator.css). The face renderer has a separate named palette registered and checked below. Zero inline hex values are permitted in UI view logic.
+- **Strict Color Token Discipline:** UI pixels derive from a named semantic token in [`firmware/BmoGameboy/src/ui/theme.h`](firmware/BmoGameboy/src/ui/theme.h) or `:root` in [`simulator/simulator.css`](simulator/simulator.css). The face renderer has a separate named palette registered and checked below. Zero inline hex values are permitted in UI view logic.
 - **Physical Motion Mechanics:** Interface motion adheres to second-order harmonic spring-damper equations ($\zeta \approx 0.72$, $\omega_n \approx 22.0\text{ rad/s}$). Transitions convey weight and mechanical tactile feedback without artificial delay.
 - **Accessibility & Contrast:** All text meets or exceeds WCAG 2.1 AA contrast requirements ($\ge 4.5:1$ for body text, $\ge 3:1$ for large text and interactive borders).
 
@@ -131,7 +131,7 @@ All spatial dimensions across both embedded C++ layouts and web stylesheets stri
   - `Theme::TEXT_SIZE_SMALL` (`1`): 6×8 px per glyph (up to 53 chars per 320px row).
   - `Theme::TEXT_SIZE_BODY`  (`1`): Standard list items and metadata.
   - `Theme::TEXT_SIZE_TITLE` (`2`): 12×16 px per glyph (up to 26 chars per 320px row).
-- **Banners, Card Titles & Warnings:** `FreeSans9pt7b` and `FreeSans12pt7b` vector fonts included from Adafruit GFX (`src/core/display_emu.cpp`).
+- **Banners, Card Titles & Warnings:** `FreeSans9pt7b` and `FreeSans12pt7b` vector fonts included from Adafruit GFX (`src/ui/display_emu.cpp`).
 
 ---
 

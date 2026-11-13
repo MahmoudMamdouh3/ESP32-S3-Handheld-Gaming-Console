@@ -1,13 +1,16 @@
+import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 # Ensure scripts directory is in sys.path
 SCRIPTS_DIR = Path(__file__).resolve().parents[1] / 'scripts'
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from repo_tools import find_game_roots, sanitize_identifier, validate_rom_header
+from repo_tools import find_game_roots, get_data_dir, sanitize_identifier, validate_rom_header
 from validate_repo import (
     check_python_files,
     check_firmware_safety_guardrails,
@@ -20,6 +23,18 @@ class RepoToolsTests(unittest.TestCase):
         repo_root = Path(__file__).resolve().parents[1]
         roots = find_game_roots(repo_root)
         self.assertIsInstance(roots, dict)
+
+    def test_get_data_dir_unset_and_override_behavior(self):
+        repo_root = Path(__file__).resolve().parents[1]
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(get_data_dir(repo_root), repo_root)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch.dict(os.environ, {"BMO_DATA_DIR": tmpdir}, clear=False):
+                self.assertEqual(get_data_dir(repo_root), Path(tmpdir))
+            missing = Path(tmpdir) / "does_not_exist"
+            with patch.dict(os.environ, {"BMO_DATA_DIR": str(missing)}, clear=False):
+                with self.assertRaises(FileNotFoundError):
+                    get_data_dir(repo_root)
 
     def test_sanitize_identifier_uses_stable_names(self):
         self.assertEqual(sanitize_identifier('Super Mario Land (World) (Rev 1)'), 'supermariolandworldrev1')

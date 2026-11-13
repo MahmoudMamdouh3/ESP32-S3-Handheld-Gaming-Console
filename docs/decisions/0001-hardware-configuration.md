@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-07
-- Source: `firmware/BmoGameboy/src/core/config.h`, `docs/hardware.md`
+- Source: `firmware/BmoGameboy/src/hal/config.h`, `docs/hardware.md`
 
 ## Context
 

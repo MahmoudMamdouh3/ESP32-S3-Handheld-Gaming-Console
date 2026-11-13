@@ -1,0 +1,149 @@
+#pragma GCC optimize ("O3,unroll-loops")
+#include "emu_colem.h"
+#include "../hal/config.h"
+#include "../ui/display_emu.h"
+#include "../ui/theme.h"
+#include <Arduino.h>
+
+#if BMO_EXPERIMENTAL_CORES
+#include "../engines/colem/colem.h"
+#include "../hal/buttons.h"
+#include "../storage/save_manager.h"
+#include <esp_heap_caps.h>
+#include <string.h>
+
+namespace {
+  colem_t colemState;
+  uint16_t* colemFb = nullptr;   // 256 x 192 in PSRAM
+  uint8_t* colemRam = nullptr;   // 8KB RAM in PSRAM
+  uint8_t* colemVram = nullptr;  // 16KB VRAM in PSRAM
+  bool running = false;
+}
+
+bool ColemEmu::init(uint8_t* romData, size_t romSize) {
+  destroy();
+  if (!romData || romSize < 512) return false;
+
+  colemFb = (uint16_t*)heap_caps_malloc(256 * 192 * sizeof(uint16_t), MALLOC_CAP_SPIRAM);
+  colemRam = (uint8_t*)heap_caps_malloc(8 * 1024, MALLOC_CAP_SPIRAM);
+  colemVram = (uint8_t*)heap_caps_malloc(16 * 1024, MALLOC_CAP_SPIRAM);
+
+  if (!colemFb || !colemRam || !colemVram) {
+    destroy();
+    return false;
+  }
+
+  colem_init(&colemState, romData, romSize, colemRam, colemVram, colemFb);
+  running = true;
+  return true;
+}
+
+void ColemEmu::update() {
+  if (!running || !colemFb) return;
+  uint16_t joy = 0;
+  if (Buttons::get(Buttons::UP).pressed)     joy |= 0x0001;
+  if (Buttons::get(Buttons::RIGHT).pressed)  joy |= 0x0002;
+  if (Buttons::get(Buttons::DOWN).pressed)   joy |= 0x0004;
+  if (Buttons::get(Buttons::LEFT).pressed)   joy |= 0x0008;
+  if (Buttons::get(Buttons::A).pressed)      joy |= 0x0010; // Left Fire
+  if (Buttons::get(Buttons::B).pressed)      joy |= 0x0020; // Right Fire
+  if (Buttons::get(Buttons::START).pressed)  joy |= 0x0040; // Keypad 1
+  colem_set_joystick(&colemState, joy);
+
+  colem_step_frame(&colemState);
+  DisplayEmu::streamColemFrame(colemFb, 256, 192);
+}
+
+void ColemEmu::destroy() {
+  running = false;
+  if (colemFb) {
+    heap_caps_free(colemFb);
+    colemFb = nullptr;
+  }
+  if (colemRam) {
+    heap_caps_free(colemRam);
+    colemRam = nullptr;
+  }
+  if (colemVram) {
+    heap_caps_free(colemVram);
+    colemVram = nullptr;
+  }
+  memset(&colemState, 0, sizeof(colemState));
+}
+
+bool ColemEmu::isRunning() {
+  return running;
+}
+
+bool ColemEmu::saveBatteryRam(const char* romFilename) {
+  (void)romFilename;
+  return false;
+}
+
+bool ColemEmu::loadBatteryRam(const char* romFilename) {
+  (void)romFilename;
+  return false;
+}
+
+bool ColemEmu::saveState(const char* romFilename, int slot) {
+  if (!running || !colemRam || !colemVram || !romFilename) return false;
+  const size_t totalRam = (8 + 16) * 1024;
+  uint8_t* combined = (uint8_t*)heap_caps_malloc(totalRam, MALLOC_CAP_SPIRAM);
+  if (!combined) return false;
+  memcpy(combined, colemRam, 8 * 1024);
+  memcpy(combined + 8 * 1024, colemVram, 16 * 1024);
+  bool ok = SaveManager::saveState(romFilename, slot, SaveManager::CORE_COLEM,
+                                   &colemState, sizeof(colem_t), combined, totalRam);
+  heap_caps_free(combined);
+  return ok;
+}
+
+bool ColemEmu::loadState(const char* romFilename, int slot) {
+  if (!running || !colemRam || !colemVram || !romFilename) return false;
+  const size_t totalRam = (8 + 16) * 1024;
+  uint8_t* combined = (uint8_t*)heap_caps_malloc(totalRam, MALLOC_CAP_SPIRAM);
+  if (!combined) return false;
+  colem_t tempState;
+  size_t stateSize = 0, ramSize = 0;
+  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_COLEM,
+                                   &tempState, sizeof(tempState), &stateSize,
+                                   combined, totalRam, &ramSize);
+  if (ok && stateSize == sizeof(colem_t) && ramSize == totalRam) {
+    memcpy(colemRam, combined, 8 * 1024);
+    memcpy(colemVram, combined + 8 * 1024, 16 * 1024);
+    uint8_t* rom = colemState.rom;
+    uint32_t rom_size = colemState.rom_size;
+    uint8_t* ram = colemState.ram;
+    uint8_t* vram = colemState.vram;
+    uint16_t* fb = colemState.framebuffer;
+    memcpy(&colemState, &tempState, sizeof(colem_t));
+    colemState.rom = rom;
+    colemState.rom_size = rom_size;
+    colemState.ram = ram;
+    colemState.vram = vram;
+    colemState.framebuffer = fb;
+    heap_caps_free(combined);
+    return true;
+  }
+  heap_caps_free(combined);
+  return false;
+}
+
+#else // BMO_EXPERIMENTAL_CORES == 0
+bool ColemEmu::init(uint8_t* romData, size_t romSize) {
+  (void)romData;
+  (void)romSize;
+  LOG_WARN_STR("[colem] Experimental core disabled (-DBMO_EXPERIMENTAL_CORES=1 to enable)");
+  DisplayEmu::showToast("EXPERIMENTAL CORE OFF", Theme::ACCENT_RED, 2200);
+  return false;
+}
+
+void ColemEmu::update() {}
+void ColemEmu::destroy() {}
+bool ColemEmu::isRunning() { return false; }
+bool ColemEmu::saveBatteryRam(const char* romFilename) { (void)romFilename; return false; }
+bool ColemEmu::loadBatteryRam(const char* romFilename) { (void)romFilename; return false; }
+bool ColemEmu::saveState(const char* romFilename, int slot) { (void)romFilename; (void)slot; return false; }
+bool ColemEmu::loadState(const char* romFilename, int slot) { (void)romFilename; (void)slot; return false; }
+
+#endif // BMO_EXPERIMENTAL_CORES

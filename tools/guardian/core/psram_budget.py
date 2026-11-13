@@ -94,8 +94,8 @@ class PsramBudgetAnalyzer:
         return 1
 
     def _extract_constants(self) -> Dict[str, int]:
-        sd_h = (self.fw_dir / "src" / "core" / "sd_card.h").read_text(encoding="utf-8", errors="ignore")
-        zone_h = (self.fw_dir / "src" / "emulators" / "psram_zone_budget.h").read_text(encoding="utf-8", errors="ignore")
+        sd_h = (self.fw_dir / "src" / "storage" / "sd_card.h").read_text(encoding="utf-8", errors="ignore")
+        zone_h = (self.fw_dir / "src" / "cores" / "psram_zone_budget.h").read_text(encoding="utf-8", errors="ignore")
         rom_file_sizeof = self._extract_rom_file_sizeof(sd_h)
 
         m_min = re.search(r"MIN_ROM_POOL\s*=\s*(\d+)", sd_h)
@@ -171,8 +171,8 @@ class PsramBudgetAnalyzer:
         sites: List[PsramAllocationSite] = [
             PsramAllocationSite(
                 symbol="SDCard::romList",
-                file_path="firmware/BmoGameboy/src/core/sd_card.cpp",
-                line_number=self._find_line("firmware/BmoGameboy/src/core/sd_card.cpp", r"heap_caps_malloc\(sizeof\(RomFile\)"),
+                file_path="firmware/BmoGameboy/src/storage/sd_card.cpp",
+                line_number=self._find_line("firmware/BmoGameboy/src/storage/sd_card.cpp", r"heap_caps_malloc\(sizeof\(RomFile\)"),
                 unit_bytes=rom_sz,
                 count_formula="ceil(catalog * 1.25), clamped to [256..36000]",
                 bytes_at_floor=min_pool * rom_sz,
@@ -204,8 +204,8 @@ class PsramBudgetAnalyzer:
             ),
             PsramAllocationSite(
                 symbol="s_asyncEmuBuf[0..1]",
-                file_path="firmware/BmoGameboy/src/core/display_emu.cpp",
-                line_number=self._find_line("firmware/BmoGameboy/src/core/display_emu.cpp", r"s_asyncEmuBuf\[0\]\s*="),
+                file_path="firmware/BmoGameboy/src/ui/display_emu.cpp",
+                line_number=self._find_line("firmware/BmoGameboy/src/ui/display_emu.cpp", r"s_asyncEmuBuf\[0\]\s*="),
                 unit_bytes=320 * 240 * 2,
                 count_formula="2 * (320 * 240 * 2)",
                 bytes_at_floor=2 * 320 * 240 * 2,
@@ -215,8 +215,8 @@ class PsramBudgetAnalyzer:
             ),
             PsramAllocationSite(
                 symbol="menuCanvasArr[0..1]",
-                file_path="firmware/BmoGameboy/src/core/display_emu.cpp",
-                line_number=self._find_line("firmware/BmoGameboy/src/core/display_emu.cpp", r"menuCanvasArr\[0\]\s*="),
+                file_path="firmware/BmoGameboy/src/ui/display_emu.cpp",
+                line_number=self._find_line("firmware/BmoGameboy/src/ui/display_emu.cpp", r"menuCanvasArr\[0\]\s*="),
                 unit_bytes=320 * 240 * 2,
                 count_formula="2 * (320 * 240 * 2)",
                 bytes_at_floor=2 * 320 * 240 * 2,
@@ -226,8 +226,8 @@ class PsramBudgetAnalyzer:
             ),
             PsramAllocationSite(
                 symbol="s_psramFaceBuf",
-                file_path="firmware/BmoGameboy/src/core/bmo_face.cpp",
-                line_number=self._find_line("firmware/BmoGameboy/src/core/bmo_face.cpp", r"s_psramFaceBuf\s*="),
+                file_path="firmware/BmoGameboy/src/ui/bmo_face.cpp",
+                line_number=self._find_line("firmware/BmoGameboy/src/ui/bmo_face.cpp", r"s_psramFaceBuf\s*="),
                 unit_bytes=320 * 240 * 2,
                 count_formula="1 * (320 * 240 * 2)",
                 bytes_at_floor=320 * 240 * 2,
@@ -237,8 +237,8 @@ class PsramBudgetAnalyzer:
             ),
             PsramAllocationSite(
                 symbol="s_boxArtBuf",
-                file_path="firmware/BmoGameboy/src/core/box_art.cpp",
-                line_number=self._find_line("firmware/BmoGameboy/src/core/box_art.cpp", r"s_boxArtBuf\s*="),
+                file_path="firmware/BmoGameboy/src/storage/box_art.cpp",
+                line_number=self._find_line("firmware/BmoGameboy/src/storage/box_art.cpp", r"s_boxArtBuf\s*="),
                 unit_bytes=64 * 64 * 2,
                 count_formula="1 * (64 * 64 * 2)",
                 bytes_at_floor=64 * 64 * 2,

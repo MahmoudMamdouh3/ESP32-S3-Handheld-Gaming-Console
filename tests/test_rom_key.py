@@ -43,7 +43,7 @@ class RomKeyTests(unittest.TestCase):
             self.skipTest("Node.js is required to run the WebAssembly ROM-key parity fixture")
 
         source = REPO_ROOT / "tests" / "host" / "rom_key_parity.cpp"
-        include = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "core"
+        include = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage"
         cases = [
             "folder-a/Long Game Name With Shared Prefix 001.gb",
             "/Games\\Zelda.GB",

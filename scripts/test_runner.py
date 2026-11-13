@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-ASSETS_DIR = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "assets"
+BAKED_ROM_HEADER = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage" / "local_baked_rom.h"
 
 
 def verify_c_rom_header(header_path: Path) -> Tuple[bool, int, int]:
@@ -30,12 +30,10 @@ def verify_c_rom_header(header_path: Path) -> Tuple[bool, int, int]:
 
 def verify_all_baked_roms() -> List[Tuple[str, bool, int, int]]:
     results: List[Tuple[str, bool, int, int]] = []
-    candidates = [ASSETS_DIR / "rom_data.h"] + sorted((ASSETS_DIR / "roms").glob("*.h"))
-    for path in candidates:
-        if not path.exists():
-            continue
-        ok, actual, expected = verify_c_rom_header(path)
-        results.append((path.name, ok, actual, expected))
+    if not BAKED_ROM_HEADER.exists():
+        return results
+    ok, actual, expected = verify_c_rom_header(BAKED_ROM_HEADER)
+    results.append((BAKED_ROM_HEADER.name, ok, actual, expected))
     return results
 
 

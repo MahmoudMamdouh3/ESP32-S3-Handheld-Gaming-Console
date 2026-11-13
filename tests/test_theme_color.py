@@ -11,7 +11,7 @@ class ThemeColorTests(unittest.TestCase):
     def test_firmware_theme_color_values_compile_as_host_contracts(self):
         compiler = find_wasi_cxx(REPO_ROOT)
         source = REPO_ROOT / "tests" / "host" / "theme_color_test.cpp"
-        include = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "core"
+        include = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui"
         require_compiler(self, compiler, "Pinned WASI C++ compiler")
         subprocess.run(
             [str(compiler), "--target=wasm32-wasip1", "-std=c++17", "-I", str(include),

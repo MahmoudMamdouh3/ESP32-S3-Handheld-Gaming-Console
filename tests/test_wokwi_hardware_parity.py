@@ -4,8 +4,8 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-CONFIG_PATH = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "core" / "config.h"
-DIAGRAM_PATH = REPO_ROOT / "diagram.json"
+CONFIG_PATH = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "hal" / "config.h"
+DIAGRAM_PATH = REPO_ROOT / "hardware" / "diagram.json"
 
 
 def load_config_pins():

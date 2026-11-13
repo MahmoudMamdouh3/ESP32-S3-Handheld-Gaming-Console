@@ -13,7 +13,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 class SpiArbiterTests(unittest.TestCase):
     def test_mutex_failures_never_continue_as_successful_locks(self):
         source = REPO_ROOT / "tests" / "host" / "spi_arbiter_test.cpp"
-        firmware_core = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "core"
+        firmware_core = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "hal"
         fake_headers = REPO_ROOT / "tests" / "host" / "fakes"
         arbiter_source = firmware_core / "spi_arbiter.cpp"
 

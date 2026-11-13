@@ -1,6 +1,6 @@
 # BMO Enclosure Model and 3D Printing
 
-This page describes the parametric enclosure design and its current verification scope. The numbers below are CAD design inputs, not measurements of the soldered handheld. `physical_fit_status` and `perfboard.survey_status` in [`generate_bmo_enclosure.py`](../tools/enclosure/generate_bmo_enclosure.py) remain `WAITING` until the board and modules are measured. See [Hardware Reference](hardware.md) and [`hardware_measurements.md`](hardware_measurements.md).
+This page describes the parametric enclosure design and its current verification scope. The numbers below are CAD design inputs, not measurements of the soldered handheld. `physical_fit_status` and `perfboard.survey_status` in [`generate_bmo_enclosure.py`](../hardware/enclosure/generate_bmo_enclosure.py) remain `WAITING` until the board and modules are measured. See [Hardware Reference](hardware.md) and [`hardware_measurements.md`](hardware_measurements.md).
 
 ## Model layout
 
@@ -18,7 +18,7 @@ The generator builds seven closed, separate printable meshes:
 | `bmo_buttons_start_select.stl` | Two pill caps with guide stems and retaining flanges |
 | `bmo_buttons_lr.stl` | Two top-edge actuators with broad caps, stems, and retaining flanges |
 
-The left and right sides use block `B`, `M`, and `O` cuts at 22 mm, 6 mm, and −10 mm from the body center. Each side has a seven-hole cluster centered 43 mm from the body center. These are matching design coordinates in the WebGL view (`tools/bmo_simulator/bmo_enclosure_meshes.js`) and the printable shell. The MicroSD opening sits on the left wall at `y = −34 mm` below the `BMO` lettering, and the USB-C opening sits on the bottom edge (`x = 0, y = −62 mm`) aligned with the vertical ESP32-S3-DevKitC-1 board envelope. The button coordinates and 2.4-inch display window also match the simulator's centimetre coordinates. Expansion buttons X, Y, L, and R are supported in firmware but are not soldered to the present board.
+The left and right sides use block `B`, `M`, and `O` cuts at 22 mm, 6 mm, and −10 mm from the body center. Each side has a seven-hole cluster centered 43 mm from the body center. These are matching design coordinates in the WebGL view (`simulator/bmo_enclosure_meshes.js`) and the printable shell. The MicroSD opening sits on the left wall at `y = −34 mm` below the `BMO` lettering, and the USB-C opening sits on the bottom edge (`x = 0, y = −62 mm`) aligned with the vertical ESP32-S3-DevKitC-1 board envelope. The button coordinates and 2.4-inch display window also match the simulator's centimetre coordinates. Expansion buttons X, Y, L, and R are supported in firmware but are not soldered to the present board.
 
 ### Display window and glass
 
@@ -31,12 +31,12 @@ The GLB includes a dark lens preview. It does not include an ST7789 module, PCB,
 Use Python with the pinned mesh dependencies:
 
 ```powershell
-python -m pip install -r tools/enclosure/requirements.txt
-python tools/enclosure/generate_bmo_enclosure.py
+python -m pip install -r hardware/enclosure/requirements.txt
+python hardware/enclosure/generate_bmo_enclosure.py
 python scripts/export_enclosure_web_meshes.py
 ```
 
-The CAD script writes seven STL files and `bmo_enclosure_assembly.glb` under `tools/enclosure/build/`. That directory is ignored by Git. STL coordinates and dimensions are millimetres. The GLB scene uses metres and names each printable part plus `bmo_display_lens_preview`; vertex colors are embedded for inspection in Blender and glTF-compatible Unity importers. The GLB is an assembled, static preview, while `scripts/export_enclosure_web_meshes.py` updates `tools/bmo_simulator/bmo_enclosure_meshes.js` so the interactive Three.js console and disassembly internals mode (`bmo_internals_3d.js`) render the same CSG shells in centimetres.
+The CAD script writes seven STL files and `bmo_enclosure_assembly.glb` under `hardware/enclosure/build/`. That directory is ignored by Git. STL coordinates and dimensions are millimetres. The GLB scene uses metres and names each printable part plus `bmo_display_lens_preview`; vertex colors are embedded for inspection in Blender and glTF-compatible Unity importers. The GLB is an assembled, static preview, while `scripts/export_enclosure_web_meshes.py` updates `simulator/bmo_enclosure_meshes.js` so the interactive Three.js console and disassembly internals mode (`bmo_internals_3d.js`) render the same CSG shells in centimetres.
 
 The generator's configuration block is the only place to change enclosure dimensions, mounting envelopes, clearances, and profiles. Regenerate both the CAD files and the simulator web-mesh bundle after any value changes. Do not edit generated STL, GLB, or `bmo_enclosure_meshes.js` files by hand.
 
@@ -78,7 +78,7 @@ Do not add heat-set inserts until the insert's barrel, length, installation temp
 
 The 26 mm depth provides a nominal 21.8 mm internal cavity. A 54 × 47 × 16 mm battery bay is reserved for the planned three-AA NiMH holder and 5 V boost converter. Those items are not installed: the handheld is USB-C powered, and no holder, converter, power-path circuit, or battery monitor is selected. The bay is only an envelope. It does not prove that the cell holder, board, display, wires, and connector can fit together.
 
-Seven side bores and five rear slots are open in the CAD shell to preserve the requested side appearance and provide possible air paths. The speaker is not installed and audio remains disabled. No airflow, case temperature, battery temperature, or component thermal test has been run. The openings do not establish cooling capacity. Keep `FEATURE_BATTERY_MONITOR=0` and `FEATURE_AUDIO=0` as recorded in [Hardware Reference](hardware.md) and `firmware/BmoGameboy/src/core/config.h`.
+Seven side bores and five rear slots are open in the CAD shell to preserve the requested side appearance and provide possible air paths. The speaker is not installed and audio remains disabled. No airflow, case temperature, battery temperature, or component thermal test has been run. The openings do not establish cooling capacity. Keep `FEATURE_BATTERY_MONITOR=0` and `FEATURE_AUDIO=0` as recorded in [Hardware Reference](hardware.md) and `firmware/BmoGameboy/src/hal/config.h`.
 
 ## Caliper survey checklist
 

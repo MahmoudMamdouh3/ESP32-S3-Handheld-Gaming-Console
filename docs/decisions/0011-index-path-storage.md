@@ -13,5 +13,5 @@
 
 - Cost basis: `python -m tools.guardian psram-budget` models 80 bytes per catalog slot today (72-byte entry plus 8 bytes of pointer/index arrays): 20,480 B at 256 slots, 200,000 B at 2,500 slots, and 2,880,000 B at 36,000 slots. A larger fixed name would add its per-slot delta at every capacity; string-pool cost depends on actual path lengths.
 - Consequences: No storage-format change is selected. The current limit can omit valid deeply nested or long-named ROMs; the scanner must count and report skips. A human must choose a migration after reviewing a measured path distribution.
-- Evidence: `firmware/BmoGameboy/src/core/rom_index.h`, `firmware/BmoGameboy/src/core/sd_card.cpp`, and the Guardian PSRAM budget.
+- Evidence: `firmware/BmoGameboy/src/storage/rom_index.h`, `firmware/BmoGameboy/src/storage/sd_card.cpp`, and the Guardian PSRAM budget.
 - Human input: Required before changing the persistent index format.

@@ -13,7 +13,7 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 from repo_tools import get_data_dir, sanitize_identifier
 
-ROM_DIR = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "assets" / "roms"
+STORAGE_DIR = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage"
 
 
 def bin_to_header(in_path: Path, out_path: Path, var_name: str) -> int:
@@ -45,24 +45,26 @@ def main() -> int:
         if not args.input.exists():
             print(f"Input file not found: {args.input}")
             return 1
-        out_path = args.output or (ROM_DIR / "local_baked_rom.h")
+        out_path = args.output or (STORAGE_DIR / "local_baked_rom.h")
         out_path.parent.mkdir(parents=True, exist_ok=True)
         var_name = args.var or f"rom_{sanitize_identifier(args.input.stem)}"
         sz = bin_to_header(args.input, out_path, var_name)
         print(f"Saved {out_path} ({sz:,} bytes)")
         return 0
 
-    src_dir = args.rom_dir or (get_data_dir(REPO_ROOT) / "roms")
+    data_dir = get_data_dir(REPO_ROOT)
+    src_dir = args.rom_dir or (data_dir / "roms")
     if not src_dir.is_dir():
         print(f"No ROM directory at {src_dir}; pass --input <path> or --rom-dir <dir>.")
         return 1
 
+    out_dir = data_dir / "roms" / "headers"
     converted = 0
     for rom_path in sorted(src_dir.iterdir()):
         if not rom_path.is_file() or rom_path.suffix.lower() not in {".gb", ".gbc"}:
             continue
         ident = sanitize_identifier(rom_path.stem)
-        out_path = ROM_DIR / f"rom_{ident}.h"
+        out_path = out_dir / f"rom_{ident}.h"
         out_path.parent.mkdir(parents=True, exist_ok=True)
         sz = bin_to_header(rom_path, out_path, f"rom_{ident}")
         print(f"Saved {out_path} ({sz:,} bytes)")

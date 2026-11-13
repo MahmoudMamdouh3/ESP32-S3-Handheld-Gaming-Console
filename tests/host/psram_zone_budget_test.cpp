@@ -1,5 +1,5 @@
-#include "../../firmware/BmoGameboy/src/emulators/psram_zone_budget.h"
-#include "../../firmware/BmoGameboy/src/core/sd_card.h"
+#include "../../firmware/BmoGameboy/src/cores/psram_zone_budget.h"
+#include "../../firmware/BmoGameboy/src/storage/sd_card.h"
 
 static_assert(sizeof(int) == 4, "ESP32-S3 int ABI changed");
 static_assert(sizeof(void*) == 4, "ESP32-S3 pointer ABI changed");

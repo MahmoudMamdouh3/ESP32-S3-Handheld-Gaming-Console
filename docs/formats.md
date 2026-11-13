@@ -2,7 +2,7 @@
 
 ## Binary ROM Catalog (`/.bmo_index` — `BMOIDX02`)
 
-Defined in [`firmware/BmoGameboy/src/core/rom_index.h`](../firmware/BmoGameboy/src/core/rom_index.h) with static size/offset assertions (`HOST_TESTED` parity in `tests/test_rom_index_layout.py` and `tests/test_sd_deploy.py`):
+Defined in [`firmware/BmoGameboy/src/storage/rom_index.h`](../firmware/BmoGameboy/src/storage/rom_index.h) with static size/offset assertions (`HOST_TESTED` parity in `tests/test_rom_index_layout.py` and `tests/test_sd_deploy.py`):
 
 - **Header (`36 bytes`):**
   - `magic[8]`: `"BMOIDX02"`

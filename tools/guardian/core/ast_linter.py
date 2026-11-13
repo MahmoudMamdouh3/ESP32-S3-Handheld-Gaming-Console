@@ -84,18 +84,24 @@ class FirmwareAstLinter:
             rel_path = str(path.relative_to(self.repo_root)).replace("\\", "/")
 
             cat = "OTHER"
-            if rel_path.startswith("firmware/BmoGameboy/src/core"):
+            if (
+                rel_path.startswith("firmware/BmoGameboy/src/hal")
+                or rel_path.startswith("firmware/BmoGameboy/src/storage")
+                or rel_path.startswith("firmware/BmoGameboy/src/ui")
+            ):
                 cat = "FIRMWARE_CORE"
-            elif rel_path.startswith("firmware/BmoGameboy/src/emulators"):
+            elif rel_path.startswith("firmware/BmoGameboy/src/cores"):
                 cat = "EMULATOR_WRAPPERS"
-            elif rel_path.startswith("firmware/BmoGameboy/src/engine"):
-                cat = "ENGINE_GBC"
-            elif rel_path.startswith("firmware/BmoGameboy/src/vendor"):
-                cat = "VENDOR_ENGINES"
-            elif rel_path.startswith("firmware/BmoGameboy/src/assets"):
-                cat = "BAKED_ROMS"
+            elif rel_path.startswith("firmware/BmoGameboy/src/engines"):
+                cat = "FIRST_PARTY_ENGINES"
+            elif rel_path.startswith("firmware/BmoGameboy/src/third_party"):
+                cat = "THIRD_PARTY_ENGINES"
             elif rel_path.startswith("firmware/BmoGameboy"):
                 cat = "FIRMWARE_TOP"
+            elif rel_path.startswith("simulator"):
+                cat = "SIMULATOR"
+            elif rel_path.startswith("hardware"):
+                cat = "HARDWARE"
             elif rel_path.startswith("tools/guardian"):
                 cat = "GUARDIAN_TOOLCHAIN"
             elif rel_path.startswith("tools"):
@@ -201,8 +207,8 @@ class FirmwareAstLinter:
             if suffix not in {".c", ".cpp", ".h", ".hpp", ".ino"}:
                 continue
             rel_str = str(path.relative_to(self.firmware_dir)).replace("\\", "/")
-            # Skip multi-megabyte baked ROM hex arrays during AST lint
-            if rel_str.startswith("src/assets/") and path.stat().st_size > 262144:
+            # Skip large optional local baked ROM headers during AST lint
+            if path.name == "local_baked_rom.h" and path.stat().st_size > 262144:
                 continue
             findings.extend(self.lint_file(path))
 
@@ -222,9 +228,10 @@ class FirmwareAstLinter:
             rel_path = path
         rel_path_str = str(rel_path).replace("\\", "/")
 
-        # Rule: forbid non-static local arrays larger than 1 KiB outside vendor code.
+        # Rule: forbid non-static local arrays larger than 1 KiB outside third-party engines.
         # This keeps large scratch buffers off the limited task stacks.
-        if "/src/vendor/" not in f"/{rel_path_str.strip('/')}" and "/vendor/" not in f"/{rel_path_str.strip('/')}" :
+        norm_rel = f"/{rel_path_str.strip('/')}"
+        if "/src/third_party/" not in norm_rel and "/third_party/" not in norm_rel:
             local_array_re = re.compile(
                 r"^\s*(?:(?:static|const|volatile|constexpr)\s+)*(?P<type>uint8_t|int8_t|char|bool|uint16_t|int16_t|short|uint32_t|int32_t|int|long|float|uint64_t|int64_t|double)\s+"
                 r"\w+\s*(?P<dims>(?:\[\s*\d+\s*\])+)")
@@ -268,7 +275,7 @@ class FirmwareAstLinter:
                 function_depths = [depth for depth in function_depths if depth <= brace_depth]
 
         # Rule 1: Check for naked Serial.print in emulator wrappers
-        if "src/emulators/" in rel_path_str:
+        if "src/cores/" in rel_path_str:
             for idx, line in enumerate(lines, 1):
                 clean = line.strip()
                 if clean.startswith("//") or clean.startswith("/*"):
@@ -287,7 +294,7 @@ class FirmwareAstLinter:
                     )
 
         # Rule 2: Check for missing #pragma GCC optimize in emulator wrappers
-        if "src/emulators/emu_" in rel_path_str and rel_path_str.endswith(".cpp"):
+        if "src/cores/emu_" in rel_path_str and rel_path_str.endswith(".cpp"):
             first_non_comment = ""
             for line in lines:
                 s = line.strip()
@@ -447,7 +454,7 @@ class FirmwareAstLinter:
                         )
 
         # Rule 8: Check for raw unaligned 16/32-bit pointer casts in ROM reading paths
-        if "src/emulators/" in rel_path_str or "src/engine/" in rel_path_str:
+        if "src/cores/" in rel_path_str or "src/third_party/" in rel_path_str or "src/engines/" in rel_path_str:
             for idx, line in enumerate(lines, 1):
                 clean = line.strip()
                 if clean.startswith("//") or clean.startswith("/*"):
@@ -486,8 +493,11 @@ class FirmwareAstLinter:
                             )
                         )
 
-        # Rule 10: Check that any src/core/*.cpp file calling SD.open / SD.mkdir / SD.remove uses SpiArbiter
-        if "src/core/" in rel_path_str and rel_path_str.endswith(".cpp"):
+        # Rule 10: Check that any HAL/storage/UI .cpp file calling SD.open / SD.mkdir / SD.remove uses SpiArbiter
+        if (
+            any(seg in rel_path_str for seg in ("src/hal/", "src/storage/", "src/ui/"))
+            and rel_path_str.endswith(".cpp")
+        ):
             has_sd_io = any(re.search(r"\bSD\.(open|mkdir|remove|exists)\s*\(", l) for l in lines if not l.strip().startswith("//"))
             if has_sd_io and "SpiArbiter::lock()" not in content:
                 findings.append(

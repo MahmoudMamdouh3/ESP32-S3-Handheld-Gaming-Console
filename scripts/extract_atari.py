@@ -13,8 +13,6 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 from repo_tools import get_data_dir
 
-CACHE_DIR = get_data_dir(REPO_ROOT) / ".rom_cache"
-GAMES_DIR = get_data_dir(REPO_ROOT) / "games"
 SEVEN_ZIP = shutil.which("7z") or os.environ.get("BMO_SEVEN_ZIP", r"C:\Program Files\7-Zip\7z.exe")
 
 def sanitize_rom_filename(filename: str, max_len: int = 58) -> str:
@@ -25,7 +23,11 @@ def sanitize_rom_filename(filename: str, max_len: int = 58) -> str:
         clean_base = clean_base[:max_len - len(ext)].strip()
     return clean_base + ext.lower()
 
-def extract_atari(cache_dir: Path = CACHE_DIR, games_dir: Path = GAMES_DIR, seven_zip: str = SEVEN_ZIP):
+def extract_atari(cache_dir: Path | None = None, games_dir: Path | None = None, seven_zip: str = SEVEN_ZIP):
+    if cache_dir is None or games_dir is None:
+        data_dir = get_data_dir(REPO_ROOT)
+        cache_dir = cache_dir or (data_dir / ".rom_cache")
+        games_dir = games_dir or (data_dir / "games")
     pack = cache_dir / "Atari - 2600.7z"
     stage_dir = cache_dir / "stage_atari"
     stage_dir.mkdir(parents=True, exist_ok=True)

@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-07
-- Source: `tools/bmo_simulator/`, `diagram.json`, `firmware/BmoGameboy/`
+- Source: `simulator/`, `hardware/diagram.json`, `hardware/wokwi.toml`, `firmware/BmoGameboy/`
 
 ## Context
 
@@ -10,7 +10,7 @@ The repository has browser JavaScript/WebGL, WebAssembly core adapters, Wokwi co
 
 ## Decision
 
-Document and test each environment separately. Browser routes execute browser code; Wokwi is a circuit model; native runners execute selected host-portable code; only target builds compile the firmware; only measurements on the soldered board establish hardware behavior. The local simulator server is loopback-only and its host-core endpoint is authenticated, rate-limited, and fixed-command.
+Document and test each environment separately. Browser routes execute browser code; Wokwi is a circuit model; native runners execute selected host-portable code; only target builds compile the firmware; only measurements on the soldered board establish hardware behavior. The local simulator server is loopback-only and static readonly (rejecting `POST` and `/api/*` routes; host-core execution routes were removed in Phase 1).
 
 ## Consequences
 

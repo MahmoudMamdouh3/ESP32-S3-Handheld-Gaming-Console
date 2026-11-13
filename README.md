@@ -36,8 +36,11 @@ Firmware, host test suite, browser WebAssembly simulator, and 3D-printable enclo
 Requires Arduino CLI with `esp32:esp32@3.3.11`, `Adafruit BusIO@1.17.4`, `Adafruit GFX Library@1.12.6`, and `Adafruit ST7735 and ST7789 Library@1.11.0`. Build profile enforces `FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi`.
 
 ```powershell
-# Default public MIT firmware build (no baked commercial ROMs, no GPL DOOM engine):
+# Default public MIT firmware build (GB, GBC, NES active; BMO_EXPERIMENTAL_CORES=0, BMO_ENABLE_DOOM=0):
 .\arduino-cli.exe compile --profile esp32s3 firmware/BmoGameboy
+
+# Enable the 10 experimental custom C cores alongside GB/GBC/NES:
+.\arduino-cli.exe compile --profile esp32s3 --build-property compiler.c.extra_flags=-DBMO_EXPERIMENTAL_CORES=1 --build-property compiler.cpp.extra_flags=-DBMO_EXPERIMENTAL_CORES=1 firmware/BmoGameboy
 
 # Optional local GPL-2.0-or-later build with DOOM enabled (distribute under GPL-2.0+ only):
 .\arduino-cli.exe compile --profile esp32s3 --build-property compiler.c.extra_flags=-DBMO_ENABLE_DOOM=1 --build-property compiler.cpp.extra_flags=-DBMO_ENABLE_DOOM=1 firmware/BmoGameboy
@@ -55,11 +58,12 @@ python scripts/verify_color_tokens.py
 
 ### 3. Browser Simulator & 3D Internals Teardown
 
-Build the WASM cores (`tools/bmo_simulator/bmo_playtest_cores.wasm` + `bmo_playtest_cores.b64.js`) and open `tools/bmo_simulator/index.html` directly or serve locally on `127.0.0.1:8080`:
+Serve locally on `127.0.0.1:8080` (automatically builds `simulator/bmo_playtest_cores.wasm` and `simulator/bmo_playtest_cores.b64.js` if missing, or run `scripts/build_wasm_cores.py` first before opening `simulator/index.html` over `file://`):
 
 ```powershell
+python simulator/run_simulator.py
+# Or generate WASM explicitly:
 python scripts/build_wasm_cores.py
-python tools/bmo_simulator/run_simulator.py
 ```
 
 Click **BMO Mode** (`?state=bmo`) for the interactive 18-expression mascot test bench or **Dissect / Internals** (`?state=dissect`) for the animated CAD shell disassembly and 22-wire jumper guide. Load your own legally obtained `.gb`, `.nes`, `.a26`, or `.col` ROMs in the browser.

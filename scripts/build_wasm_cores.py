@@ -11,18 +11,18 @@ import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-WASM_OUT_PATH = REPO_ROOT / "tools" / "bmo_simulator" / "bmo_playtest_cores.wasm"
-CORE_SOURCE = REPO_ROOT / "tools" / "bmo_simulator" / "gameboy_wasm.cpp"
-NES_SOURCE = REPO_ROOT / "tools" / "bmo_simulator" / "nes_wasm.cpp"
-AGNES_SOURCE = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "vendor" / "agnes" / "agnes.c"
-ATARI_SOURCE = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "vendor" / "stella" / "atari.c"
-ATARI_WASM_SOURCE = REPO_ROOT / "tools" / "bmo_simulator" / "atari_wasm.cpp"
-COLEM_SOURCE = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "vendor" / "colem" / "colem.c"
-COLEM_WASM_SOURCE = REPO_ROOT / "tools" / "bmo_simulator" / "colem_wasm.cpp"
-BMO_FACE_FIRMWARE_SOURCE = REPO_ROOT / "tools" / "bmo_simulator" / "bmo_face_firmware.cpp"
-BMO_FACE_WASM_SOURCE = REPO_ROOT / "tools" / "bmo_simulator" / "bmo_face_wasm.cpp"
-BMO_COMPAT = REPO_ROOT / "tools" / "bmo_simulator" / "bmo_face_compat"
-WASM_HAL = REPO_ROOT / "tools" / "bmo_simulator" / "hal"
+WASM_OUT_PATH = REPO_ROOT / "simulator" / "bmo_playtest_cores.wasm"
+CORE_SOURCE = REPO_ROOT / "simulator" / "gameboy_wasm.cpp"
+NES_SOURCE = REPO_ROOT / "simulator" / "nes_wasm.cpp"
+AGNES_SOURCE = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "third_party" / "agnes" / "agnes.c"
+ATARI_SOURCE = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "engines" / "stella" / "atari.c"
+ATARI_WASM_SOURCE = REPO_ROOT / "simulator" / "atari_wasm.cpp"
+COLEM_SOURCE = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "engines" / "colem" / "colem.c"
+COLEM_WASM_SOURCE = REPO_ROOT / "simulator" / "colem_wasm.cpp"
+BMO_FACE_FIRMWARE_SOURCE = REPO_ROOT / "simulator" / "bmo_face_firmware.cpp"
+BMO_FACE_WASM_SOURCE = REPO_ROOT / "simulator" / "bmo_face_wasm.cpp"
+BMO_COMPAT = REPO_ROOT / "simulator" / "bmo_face_compat"
+WASM_HAL = REPO_ROOT / "simulator" / "hal"
 LOCAL_WASI_SDK = REPO_ROOT / ".tools" / "wasi-sdk-34.0-x86_64-windows"
 EXPORTS = (
     "bmo_emu_rom_buffer",

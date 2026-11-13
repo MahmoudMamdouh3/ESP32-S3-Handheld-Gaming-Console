@@ -10,10 +10,16 @@
 *.lib
 *.exe
 build/
+build_check_*/
 scratch/
 cppcheck.txt
 sizes.txt
 test.bmp
+
+# Generated WebAssembly cores for the browser simulator (build locally via
+# python simulator/run_simulator.py or python scripts/build_wasm_cores.py)
+*.wasm
+*.b64.js
 
 # Local CLI binaries & archives
 arduino-cli.exe
@@ -63,19 +69,23 @@ __pycache__/
 roms/
 games/
 assets/
-firmware/*/src/assets/roms/
+firmware/*/src/**/local_baked_rom.h
 .rom_cache/
 rom_data*.h
 
 rom_*.h
-!firmware/BmoGameboy/src/core/rom_index.h
-!firmware/BmoGameboy/src/core/rom_file_filter.h
+!firmware/BmoGameboy/src/storage/rom_index.h
+!firmware/BmoGameboy/src/storage/rom_file_filter.h
 cover_*.h
 
 tools/zig/
 
 # Full-resolution box art downloaded by scripts/fetch_covers.py (regenerate locally)
-tools/bmo_simulator/covers/
+simulator/covers/
+
+# Generated 3D STL/GLB exports from hardware/enclosure/generate_bmo_enclosure.py
+hardware/enclosure/build/
+hardware/enclosure/output/
 
 # Local toolchains downloaded by scripts/build_sim_wasm.py
 .tools/

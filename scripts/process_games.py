@@ -12,7 +12,6 @@ except ImportError as exc:  # pragma: no cover - runtime dependency guard
     ) from exc
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-OUT_DIR = REPO_ROOT / 'firmware' / 'BmoGameboy' / 'src' / 'assets' / 'roms'
 
 
 def generate_gradient_cover(title, out_path, var_name):
@@ -72,9 +71,12 @@ def generate_gradient_cover(title, out_path, var_name):
 
 
 def main():
-    game_roots = find_game_roots(get_data_dir(REPO_ROOT))
+    data_dir = get_data_dir(REPO_ROOT)
+    out_dir = data_dir / 'roms' / 'headers'
+    out_dir.mkdir(parents=True, exist_ok=True)
+    game_roots = find_game_roots(data_dir)
     if not game_roots:
-        raise FileNotFoundError('No game directories found under the repo root.')
+        raise FileNotFoundError(f'No game directories found under {data_dir}.')
 
     games_dir = next(iter(game_roots.values()))
     generated_games = []
@@ -94,7 +96,7 @@ def main():
             rom_var = f'rom_{var_base}'
             cover_var = f'cover_{var_base}'
 
-            rom_out_path = OUT_DIR / f'rom_{var_base}.h'
+            rom_out_path = out_dir / f'rom_{var_base}.h'
             rom_out_path.write_text(
                 '#pragma once\n'
                 '#include <stdint.h>\n'
@@ -112,7 +114,7 @@ def main():
                 + '\n};\n'
             )
 
-            cover_out_path = OUT_DIR / f'cover_{var_base}.h'
+            cover_out_path = out_dir / f'cover_{var_base}.h'
             generate_gradient_cover(title, cover_out_path, cover_var)
 
             generated_games.append({

@@ -10,7 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 class FramePacingTests(unittest.TestCase):
     def test_header_periods_match_documented_source_rate_derivations(self):
-        header = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "core" / "frame_pacing.h").read_text(encoding="utf-8")
+        header = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "frame_pacing.h").read_text(encoding="utf-8")
         self.assertRegex(header, r"case\s+WALNUT_GBC:\s*case\s+PEANUT_GB:\s*return\s+16742U")
         self.assertRegex(header, r"case\s+DOOM:\s*return\s+28571U")
         self.assertRegex(header, r"case\s+PICO8:\s*return\s+33333U")
@@ -28,7 +28,7 @@ class FramePacingTests(unittest.TestCase):
     def test_nominal_per_core_budgets_compile(self):
         compiler = find_wasi_cxx(REPO_ROOT)
         source = REPO_ROOT / "tests" / "host" / "frame_pacing_test.cpp"
-        include = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "core"
+        include = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui"
         require_compiler(self, compiler, "Pinned WASI C++ compiler")
         subprocess.run(
             [str(compiler), "--target=wasm32-wasip1", "-std=c++17", "-I", str(include),

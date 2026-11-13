@@ -10,8 +10,6 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 from repo_tools import get_data_dir
 
-GAMES_DIR = get_data_dir(REPO_ROOT) / "games"
-
 def deinterleave_smd(payload):
     out = bytearray(len(payload))
     block_size = 16384
@@ -26,7 +24,9 @@ def deinterleave_smd(payload):
             out[b:b+len(block)] = block
     return bytes(out)
 
-def fix_smd_files(games_dir: Path = GAMES_DIR):
+def fix_smd_files(games_dir: Path | None = None):
+    if games_dir is None:
+        games_dir = get_data_dir(REPO_ROOT) / "games"
     fixed = 0
     skipped = 0
     for f in games_dir.glob("*.gen"):

@@ -1,7 +1,7 @@
 """
 scripts/fetch_covers.py — Local Box Art Resampler & Multi-Target BGR565 Converter
 Converts user-supplied PNG/JPG cover artwork via Lanczos resampling into 64x64 24-bit BMP (.bmp)
-and 8,192-byte pre-swapped BGR565 (.raw) files compatible with BoxArt::load() (src/core/box_art.cpp).
+and 8,192-byte pre-swapped BGR565 (.raw) files compatible with BoxArt::load() (src/storage/box_art.cpp).
 """
 
 import argparse

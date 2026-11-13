@@ -1,0 +1,8 @@
+# Default owner across repository paths
+* @MahmoudMamdouh3
+
+# Hardware pin map, safety flags, and partition layout
+/firmware/BmoGameboy/src/hal/config.h @MahmoudMamdouh3
+/firmware/BmoGameboy/partitions.csv @MahmoudMamdouh3
+/hardware/ @MahmoudMamdouh3
+/.github/ @MahmoudMamdouh3

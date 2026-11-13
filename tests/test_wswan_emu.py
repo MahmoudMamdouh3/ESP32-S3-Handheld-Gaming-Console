@@ -115,7 +115,7 @@ class TestWSwanEmulatorCore(unittest.TestCase):
         """Verify actual wswan.c source implements bank_rom[2..3], bank_sram port 0xC1, and active-high port 0xB5."""
         from pathlib import Path
         repo_root = Path(__file__).resolve().parents[1]
-        c_src = (repo_root / "firmware" / "BmoGameboy" / "src" / "vendor" / "wswan" / "wswan.c").read_text(encoding="utf-8")
+        c_src = (repo_root / "firmware" / "BmoGameboy" / "src" / "engines" / "wswan" / "wswan.c").read_text(encoding="utf-8")
         self.assertIn("emu->bank_rom[2]", c_src, "wswan_read8 must use bank_rom[2] for $20000-$2FFFF")
         self.assertIn("emu->bank_rom[3]", c_src, "wswan_read8 must use bank_rom[3] for $30000-$3FFFF")
         self.assertIn("if (port == 0xC1)", c_src, "Port 0xC1 must be checked before 0xC0..0xC3 range")

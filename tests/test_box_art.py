@@ -122,7 +122,7 @@ class TestBoxArtEngine(unittest.TestCase):
         require_compiler(self, compiler, "Pinned WASI C++ compiler")
         require_compiler(self, node, "Node.js WASI runner")
         source = REPO_ROOT / "tests" / "host" / "box_art_lookup_test.cpp"
-        include = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "core"
+        include = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage"
 
         with tempfile.TemporaryDirectory() as temp_dir:
             wasm = Path(temp_dir) / "box_art_lookup_test.wasm"

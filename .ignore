@@ -5,7 +5,7 @@ sdcard/
 Book/
 build/
 .tools/
-tools/enclosure/build/
+hardware/enclosure/build/
 __pycache__/
 *.bin
 *.elf

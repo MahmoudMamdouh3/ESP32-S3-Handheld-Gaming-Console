@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../../firmware/BmoGameboy/src/core/box_art_lookup.h"
+#include "../../firmware/BmoGameboy/src/storage/box_art_lookup.h"
 
 int main() {
   RomFile roms[5] = {};

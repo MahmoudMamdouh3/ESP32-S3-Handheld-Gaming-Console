@@ -42,9 +42,7 @@ def parse_theme_colors(theme_text: str) -> dict[str, tuple[str, int, int, int]]:
 
 def verify_token_parity(repo_root: Path, theme_colors: dict[str, tuple[str, int, int, int]]) -> list[str]:
     issues: list[str] = []
-    css_path = repo_root / "tools" / "bmo_simulator" / "simulator.css"
-    if not css_path.exists():
-        css_path = repo_root / "simulator" / "simulator.css"
+    css_path = repo_root / "simulator" / "simulator.css"
     if not css_path.exists():
         return [f"simulator.css not found under {repo_root}"]
 
@@ -113,9 +111,7 @@ def verify_token_parity(repo_root: Path, theme_colors: dict[str, tuple[str, int,
 
 
 def verify_face_palette(repo_root: Path) -> list[str]:
-    bmo_face = repo_root / "firmware" / "BmoGameboy" / "src" / "core" / "bmo_face.cpp"
-    if not bmo_face.exists():
-        bmo_face = repo_root / "firmware" / "BmoGameboy" / "src" / "ui" / "bmo_face.cpp"
+    bmo_face = repo_root / "firmware" / "BmoGameboy" / "src" / "ui" / "bmo_face.cpp"
     source = bmo_face.read_text(encoding="utf-8")
     design = (repo_root / "DESIGN.md").read_text(encoding="utf-8")
     source_colors = {}
@@ -175,9 +171,7 @@ def verify_recomputed_color_math(theme_colors: dict[str, tuple[str, int, int, in
 
 
 def main() -> int:
-    theme_h = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "core" / "theme.h"
-    if not theme_h.exists():
-        theme_h = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "theme.h"
+    theme_h = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "theme.h"
     theme_colors = parse_theme_colors(theme_h.read_text(encoding="utf-8"))
     for token in CORE_TOKENS:
         source_hex, canvas_word, direct_word, _ = theme_colors[token]

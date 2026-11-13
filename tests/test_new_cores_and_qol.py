@@ -25,8 +25,8 @@ class TestAtari2600CoreEngine(unittest.TestCase):
     """Verify Atari 2600 (stella/atari.c & atari.h) MOS 6507 + TIA + RIOT implementation."""
 
     def setUp(self):
-        self.h_text = (SRC_DIR / "vendor" / "stella" / "atari.h").read_text(encoding="utf-8")
-        self.c_text = (SRC_DIR / "vendor" / "stella" / "atari.c").read_text(encoding="utf-8")
+        self.h_text = (SRC_DIR / "engines" / "stella" / "atari.h").read_text(encoding="utf-8")
+        self.c_text = (SRC_DIR / "engines" / "stella" / "atari.c").read_text(encoding="utf-8")
 
     def test_01_no_stub_sentinel_and_psram_alloc(self):
         self.assertNotIn("STUB_ENGINE", self.c_text)
@@ -55,8 +55,8 @@ class TestColecoVisionCoreEngine(unittest.TestCase):
     """Verify ColecoVision / SG-1000 (colem/colem.c & colem.h) Z80A + TMS9918A VDP engine."""
 
     def setUp(self):
-        self.h_text = (SRC_DIR / "vendor" / "colem" / "colem.h").read_text(encoding="utf-8")
-        self.c_text = (SRC_DIR / "vendor" / "colem" / "colem.c").read_text(encoding="utf-8")
+        self.h_text = (SRC_DIR / "engines" / "colem" / "colem.h").read_text(encoding="utf-8")
+        self.c_text = (SRC_DIR / "engines" / "colem" / "colem.c").read_text(encoding="utf-8")
 
     def test_01_tms9918a_vdp_and_palette(self):
         self.assertNotIn("STUB_ENGINE", self.c_text)
@@ -75,8 +75,8 @@ class TestAtariLynxCoreEngine(unittest.TestCase):
     """Verify Atari Lynx (lynx/lynx.c & lynx.h) WDC 65SC02 + Mikey & Suzy engine."""
 
     def setUp(self):
-        self.h_text = (SRC_DIR / "vendor" / "lynx" / "lynx.h").read_text(encoding="utf-8")
-        self.c_text = (SRC_DIR / "vendor" / "lynx" / "lynx.c").read_text(encoding="utf-8")
+        self.h_text = (SRC_DIR / "engines" / "lynx" / "lynx.h").read_text(encoding="utf-8")
+        self.c_text = (SRC_DIR / "engines" / "lynx" / "lynx.c").read_text(encoding="utf-8")
 
     def test_01_mikey_rgb444_palette_and_suzy_scb_blitter(self):
         self.assertNotIn("STUB_ENGINE", self.c_text)
@@ -97,8 +97,8 @@ class TestNeoGeoPocketCoreEngine(unittest.TestCase):
     """Verify SNK Neo Geo Pocket Color (ngp/ngp.c & ngp.h) TLCS-900/H + K1GE/K2GE engine."""
 
     def setUp(self):
-        self.h_text = (SRC_DIR / "vendor" / "ngp" / "ngp.h").read_text(encoding="utf-8")
-        self.c_text = (SRC_DIR / "vendor" / "ngp" / "ngp.c").read_text(encoding="utf-8")
+        self.h_text = (SRC_DIR / "engines" / "ngp" / "ngp.h").read_text(encoding="utf-8")
+        self.c_text = (SRC_DIR / "engines" / "ngp" / "ngp.c").read_text(encoding="utf-8")
 
     def test_01_tlcs900h_cpu_and_24bit_bus(self):
         self.assertNotIn("STUB_ENGINE", self.c_text)
@@ -117,8 +117,8 @@ class TestSNESCoreEngine(unittest.TestCase):
     """Verify Super Nintendo (snes/snes.c & snes.h) WDC 65C816 + S-PPU + DMA engine."""
 
     def setUp(self):
-        self.h_text = (SRC_DIR / "vendor" / "snes" / "snes.h").read_text(encoding="utf-8")
-        self.c_text = (SRC_DIR / "vendor" / "snes" / "snes.c").read_text(encoding="utf-8")
+        self.h_text = (SRC_DIR / "engines" / "snes" / "snes.h").read_text(encoding="utf-8")
+        self.c_text = (SRC_DIR / "engines" / "snes" / "snes.c").read_text(encoding="utf-8")
 
     def test_01_65c816_cpu_modes_and_dma(self):
         self.assertNotIn("STUB_ENGINE", self.c_text)
@@ -139,8 +139,8 @@ class TestPico8CoreEngine(unittest.TestCase):
     """Verify PICO-8 Fantasy Console (pico/pico.c & pico.h) virtual hardware & graphics API."""
 
     def setUp(self):
-        self.h_text = (SRC_DIR / "vendor" / "pico" / "pico.h").read_text(encoding="utf-8")
-        self.c_text = (SRC_DIR / "vendor" / "pico" / "pico.c").read_text(encoding="utf-8")
+        self.h_text = (SRC_DIR / "engines" / "pico" / "pico.h").read_text(encoding="utf-8")
+        self.c_text = (SRC_DIR / "engines" / "pico" / "pico.c").read_text(encoding="utf-8")
 
     def test_01_pico8_graphics_primitives_and_memory_map(self):
         self.assertNotIn("STUB_ENGINE", self.c_text)
@@ -157,23 +157,23 @@ class TestQualityOfLifeAndUnifiedPersistence(unittest.TestCase):
     """Verify Phase B & Phase C QoL features across BmoGameboy.ino and core modules."""
 
     def test_01_buttons_remap_and_turbo_api(self):
-        btn_h = (SRC_DIR / "core" / "buttons.h").read_text(encoding="utf-8")
-        btn_cpp = (SRC_DIR / "core" / "buttons.cpp").read_text(encoding="utf-8")
+        btn_h = (SRC_DIR / "hal" / "buttons.h").read_text(encoding="utf-8")
+        btn_cpp = (SRC_DIR / "hal" / "buttons.cpp").read_text(encoding="utf-8")
         for sym in ("setGameplayMode", "setSwapAB", "isSwapAB", "toggleSwapAB", "setTurboEnabled", "isTurboEnabled", "toggleTurbo"):
             self.assertIn(sym, btn_h)
             self.assertIn(sym, btn_cpp)
 
     def test_02_sdcard_recent_history_api(self):
-        sd_h = (SRC_DIR / "core" / "sd_card.h").read_text(encoding="utf-8")
-        sd_cpp = (SRC_DIR / "core" / "sd_card.cpp").read_text(encoding="utf-8")
+        sd_h = (SRC_DIR / "storage" / "sd_card.h").read_text(encoding="utf-8")
+        sd_cpp = (SRC_DIR / "storage" / "sd_card.cpp").read_text(encoding="utf-8")
         for sym in ("recordRecentLaunch", "getRecentCount", "getRecentFilename", "loadRecentHistory", "saveRecentHistory"):
             self.assertIn(sym, sd_h)
             self.assertIn(sym, sd_cpp)
         self.assertIn("/history.txt", sd_cpp)
 
     def test_03_save_manager_screenshot_bmp_dump(self):
-        sm_h = (SRC_DIR / "core" / "save_manager.h").read_text(encoding="utf-8")
-        sm_cpp = (SRC_DIR / "core" / "save_manager.cpp").read_text(encoding="utf-8")
+        sm_h = (SRC_DIR / "storage" / "save_manager.h").read_text(encoding="utf-8")
+        sm_cpp = (SRC_DIR / "storage" / "save_manager.cpp").read_text(encoding="utf-8")
         self.assertIn("saveScreenshotBmp", sm_h)
         self.assertIn("saveScreenshotBmp", sm_cpp)
         self.assertIn("/screenshots", sm_cpp)

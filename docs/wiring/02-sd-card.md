@@ -1,6 +1,6 @@
 # Wiring — MicroSD and Shared SPI
 
-Board target: ESP32-S3-N16R8. The pin assignments and feature flags in [`config.h`](../../firmware/BmoGameboy/src/core/config.h) are authoritative. This page records configured signal routing; it does not claim measured electrical levels or device performance.
+Board target: ESP32-S3-N16R8. The pin assignments and feature flags in [`config.h`](../../firmware/BmoGameboy/src/hal/config.h) are authoritative. This page records configured signal routing; it does not claim measured electrical levels or device performance.
 
 ## Signal map
 

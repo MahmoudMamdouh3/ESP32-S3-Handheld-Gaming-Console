@@ -1,4 +1,0 @@
-[wokwi]
-version = 1
-firmware = "firmware/BmoGameboy/build/esp32.esp32.esp32s3/BmoGameboy.ino.bin"
-elf = "firmware/BmoGameboy/build/esp32.esp32.esp32s3/BmoGameboy.ino.elf"

@@ -104,7 +104,7 @@ class TestGuardianEngine(unittest.TestCase):
         runner.cppcheck_bin = "cppcheck"
         output = (
             "src/example.c::0::information::branchCheck::scan note\n"
-            "src/vendor/example.c::17::error::exampleCheck::detected issue\n"
+            "src/engines/example.c::17::error::exampleCheck::detected issue\n"
         )
         with patch(
             "tools.guardian.core.cppcheck_runner.subprocess.run",
@@ -151,7 +151,7 @@ class TestGuardianEngine(unittest.TestCase):
             findings = FirmwareAstLinter(firmware).lint_file(sketch)
             self.assertFalse(any(f.rule_id == "UNGUARDED_PER_FRAME_FILTER" for f in findings))
 
-            source = firmware / "src" / "core" / "probe.cpp"
+            source = firmware / "src" / "hal" / "probe.cpp"
             source.parent.mkdir(parents=True)
             source.write_text(
                 "void probe() {\n  uint8_t scratch[2048];\n  static uint8_t shared[4096];\n}\n",
@@ -162,7 +162,7 @@ class TestGuardianEngine(unittest.TestCase):
                 ["LARGE_LOCAL_STACK_ARRAY"],
             )
 
-            vendor = firmware / "src" / "vendor" / "probe.c"
+            vendor = firmware / "src" / "third_party" / "probe.c"
             vendor.parent.mkdir(parents=True)
             vendor.write_text("void probe() {\n  uint8_t scratch[4096];\n}\n", encoding="utf-8")
             self.assertEqual(FirmwareAstLinter(firmware).lint_file(vendor), [])
@@ -172,7 +172,7 @@ class TestGuardianEngine(unittest.TestCase):
         targets = runner.default_targets()
         self.assertGreaterEqual(len(targets), 12)
         runner.clang_tidy_bin = "clang-tidy"
-        fake_out = "tools/host_cores_runner.c:42:9: warning: Dereference of null pointer [clang-analyzer-core.NullDereference]\n"
+        fake_out = "tests/host/host_cores_runner.c:42:9: warning: Dereference of null pointer [clang-analyzer-core.NullDereference]\n"
         with patch(
             "tools.guardian.core.clang_tidy_runner.subprocess.run",
             return_value=subprocess.CompletedProcess([], 0, fake_out, ""),

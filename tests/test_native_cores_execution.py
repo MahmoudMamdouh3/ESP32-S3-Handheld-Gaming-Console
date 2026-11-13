@@ -1,6 +1,6 @@
 """
 tests/test_native_cores_execution.py — Native Host C Execution & 50-Frame Visual Regression Suite
-Compiles and executes tools/host_cores_runner.c against the actual C emulator sources
+Compiles and executes tests/host/host_cores_runner.c against the actual C emulator sources
 (atari.c, colem.c, lynx.c, ngp.c, snes.c, wswan.c, genesis.c, sms.c, pce.c, pico.c, agnes.c)
 and also tests Phase D QoL features (Recursive Folder Navigation, Console Bezels,
 Cover Art Converter, and Serial Telemetry Plotter).
@@ -42,18 +42,18 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
             require_compiler(self, None, "Native C compiler")
 
         c_sources = [
-            REPO_ROOT / "tools" / "host_cores_runner.c",
-            FIRMWARE_DIR / "src" / "vendor" / "stella" / "atari.c",
-            FIRMWARE_DIR / "src" / "vendor" / "colem" / "colem.c",
-            FIRMWARE_DIR / "src" / "vendor" / "lynx" / "lynx.c",
-            FIRMWARE_DIR / "src" / "vendor" / "ngp" / "ngp.c",
-            FIRMWARE_DIR / "src" / "vendor" / "snes" / "snes.c",
-            FIRMWARE_DIR / "src" / "vendor" / "wswan" / "wswan.c",
-            FIRMWARE_DIR / "src" / "vendor" / "genesis" / "genesis.c",
-            FIRMWARE_DIR / "src" / "vendor" / "smsplus" / "sms.c",
-            FIRMWARE_DIR / "src" / "vendor" / "pce" / "pce.c",
-            FIRMWARE_DIR / "src" / "vendor" / "pico" / "pico.c",
-            FIRMWARE_DIR / "src" / "vendor" / "agnes" / "agnes.c",
+            REPO_ROOT / "tests" / "host" / "host_cores_runner.c",
+            FIRMWARE_DIR / "src" / "engines" / "stella" / "atari.c",
+            FIRMWARE_DIR / "src" / "engines" / "colem" / "colem.c",
+            FIRMWARE_DIR / "src" / "engines" / "lynx" / "lynx.c",
+            FIRMWARE_DIR / "src" / "engines" / "ngp" / "ngp.c",
+            FIRMWARE_DIR / "src" / "engines" / "snes" / "snes.c",
+            FIRMWARE_DIR / "src" / "engines" / "wswan" / "wswan.c",
+            FIRMWARE_DIR / "src" / "engines" / "genesis" / "genesis.c",
+            FIRMWARE_DIR / "src" / "engines" / "smsplus" / "sms.c",
+            FIRMWARE_DIR / "src" / "engines" / "pce" / "pce.c",
+            FIRMWARE_DIR / "src" / "engines" / "pico" / "pico.c",
+            FIRMWARE_DIR / "src" / "third_party" / "agnes" / "agnes.c",
         ]
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -104,15 +104,15 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
                 self.assertNotIn("STATUS=FAIL", proc.stdout)
 
     def test_02_recursive_folder_hierarchy_navigation_in_sd_card(self):
-        sd_h = (FIRMWARE_DIR / "src" / "core" / "sd_card.h").read_text(encoding="utf-8")
-        sd_cpp = (FIRMWARE_DIR / "src" / "core" / "sd_card.cpp").read_text(encoding="utf-8")
+        sd_h = (FIRMWARE_DIR / "src" / "storage" / "sd_card.h").read_text(encoding="utf-8")
+        sd_cpp = (FIRMWARE_DIR / "src" / "storage" / "sd_card.cpp").read_text(encoding="utf-8")
         self.assertIn("scanDirectory", sd_h)
         self.assertIn("SDCard::scanDirectory", sd_cpp)
         self.assertIn("isIgnoredDirName", sd_cpp)
 
     def test_03_custom_console_bezels_and_pause_menu_qol_wiring(self):
-        disp_h = (FIRMWARE_DIR / "src" / "core" / "display_emu.h").read_text(encoding="utf-8")
-        disp_cpp = (FIRMWARE_DIR / "src" / "core" / "display_emu.cpp").read_text(encoding="utf-8")
+        disp_h = (FIRMWARE_DIR / "src" / "ui" / "display_emu.h").read_text(encoding="utf-8")
+        disp_cpp = (FIRMWARE_DIR / "src" / "ui" / "display_emu.cpp").read_text(encoding="utf-8")
         ino = (FIRMWARE_DIR / "BmoGameboy.ino").read_text(encoding="utf-8")
         for sym in ["setBezelEnabled", "isBezelEnabled", "toggleBezel", "drawConsoleBezel", "getLastFramebuffer"]:
             self.assertIn(sym, disp_h)
@@ -156,8 +156,8 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         self.assertIn("p95=6200us", plot)
 
     def test_06_web_simulator_webserial_sd_manager_and_rom_dropzone(self):
-        html = (REPO_ROOT / "tools" / "bmo_simulator" / "index.html").read_text(encoding="utf-8")
-        js = (REPO_ROOT / "tools" / "bmo_simulator" / "simulator.js").read_text(encoding="utf-8")
+        html = (REPO_ROOT / "simulator" / "index.html").read_text(encoding="utf-8")
+        js = (REPO_ROOT / "simulator" / "simulator.js").read_text(encoding="utf-8")
         self.assertIn("webserial-sd-manager", html)
         self.assertIn("connectWebSerial", js)
         self.assertIn("ingestUploadedRoms", js)
@@ -167,9 +167,6 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
 
         wasm_bytes = build_wasm_cores.build_wasm_module(output_path=None)
         self.assertEqual(wasm_bytes[:8], b"\x00asm\x01\x00\x00\x00")
-        checked_in_wasm = REPO_ROOT / "tools" / "bmo_simulator" / "bmo_playtest_cores.wasm"
-        self.assertTrue(checked_in_wasm.exists())
-        self.assertEqual(checked_in_wasm.read_bytes()[:8], b"\x00asm\x01\x00\x00\x00")
 
         node_bin = shutil.which("node")
         if node_bin:
@@ -237,11 +234,11 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
                     "const originalReadFileSync=fs.readFileSync.bind(fs);"
                     "fs.readFileSync=(file,...args)=>{"
                     "  const normalized=String(file).replace(/\\\\/g,'/');"
-                    "  return normalized.endsWith('/tools/bmo_simulator/bmo_playtest_cores.wasm')"
+                    "  return normalized.endsWith('/simulator/bmo_playtest_cores.wasm')"
                     "    ? originalReadFileSync(process.argv[5],...args)"
                     "    : originalReadFileSync(file,...args);"
                     "};"
-                    "const {WasmPlaytestEngine}=require('./tools/bmo_simulator/wasm_playtest_engine.js');"
+                    "const {WasmPlaytestEngine}=require('./simulator/wasm_playtest_engine.js');"
                     "(async()=>{"
                     "  const eng=new WasmPlaytestEngine();"
                     "  await eng.init();"
@@ -350,7 +347,7 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
                 self.assertIn("REAL_GB_NES_ATARI_COLECO_WASM_PASS", proc.stdout)
 
     def test_09_run_simulator_server_handler_endpoints(self):
-        from tools.bmo_simulator import run_simulator
+        from simulator import run_simulator
         self.assertTrue(hasattr(run_simulator, "Handler"))
         self.assertEqual(run_simulator.Handler.extensions_map.get(".wasm"), "application/wasm")
         self.assertTrue(hasattr(run_simulator.Handler, "do_POST"))
@@ -360,20 +357,20 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         self.assertFalse(run_simulator.valid_host_header("localhost:8080"))
         self.assertTrue(run_simulator.valid_origin_header("http://127.0.0.1:8080"))
         self.assertFalse(run_simulator.valid_origin_header("http://localhost:8080"))
-        html = (REPO_ROOT / "tools" / "bmo_simulator" / "index.html").read_text(encoding="utf-8")
+        html = (REPO_ROOT / "simulator" / "index.html").read_text(encoding="utf-8")
         self.assertIn("wasm-playtest-panel", html)
         self.assertIn("btn-wasm-save-state", html)
         self.assertNotIn("btn-verify-host-cores", html)
         self.assertIn('http-equiv="Content-Security-Policy"', html)
 
     def test_10_top_picks_curation_and_mbc7_rom_playability(self):
-        sd_h = (FIRMWARE_DIR / "src" / "core" / "sd_card.h").read_text(encoding="utf-8")
-        sd_cpp = (FIRMWARE_DIR / "src" / "core" / "sd_card.cpp").read_text(encoding="utf-8")
-        disp_h = (FIRMWARE_DIR / "src" / "core" / "display_emu.h").read_text(encoding="utf-8")
-        disp_cpp = (FIRMWARE_DIR / "src" / "core" / "display_emu.cpp").read_text(encoding="utf-8")
+        sd_h = (FIRMWARE_DIR / "src" / "storage" / "sd_card.h").read_text(encoding="utf-8")
+        sd_cpp = (FIRMWARE_DIR / "src" / "storage" / "sd_card.cpp").read_text(encoding="utf-8")
+        disp_h = (FIRMWARE_DIR / "src" / "ui" / "display_emu.h").read_text(encoding="utf-8")
+        disp_cpp = (FIRMWARE_DIR / "src" / "ui" / "display_emu.cpp").read_text(encoding="utf-8")
         ino_src = (FIRMWARE_DIR / "BmoGameboy.ino").read_text(encoding="utf-8")
-        walnut_h = (FIRMWARE_DIR / "src" / "engine" / "walnut_cgb" / "walnut_cgb.h").read_text(encoding="utf-8")
-        peanut_h = (FIRMWARE_DIR / "src" / "vendor" / "peanut_gb" / "peanut_gb.h").read_text(encoding="utf-8")
+        walnut_h = (FIRMWARE_DIR / "src" / "third_party" / "walnut_cgb" / "walnut_cgb.h").read_text(encoding="utf-8")
+        peanut_h = (FIRMWARE_DIR / "src" / "third_party" / "peanut_gb" / "peanut_gb.h").read_text(encoding="utf-8")
 
         self.assertIn("bool isPopularGame(const char* filename, RomType type);", sd_h)
         self.assertIn("int getPopularCountForType(RomType type);", sd_h)
@@ -385,9 +382,9 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         self.assertIn("0x22", peanut_h)
 
     def test_11_bmo_mode_simulator_controls_and_wasm_bridge(self):
-        html = (REPO_ROOT / "tools" / "bmo_simulator" / "index.html").read_text(encoding="utf-8")
-        js = (REPO_ROOT / "tools" / "bmo_simulator" / "simulator.js").read_text(encoding="utf-8")
-        css = (REPO_ROOT / "tools" / "bmo_simulator" / "simulator.css").read_text(encoding="utf-8")
+        html = (REPO_ROOT / "simulator" / "index.html").read_text(encoding="utf-8")
+        js = (REPO_ROOT / "simulator" / "simulator.js").read_text(encoding="utf-8")
+        css = (REPO_ROOT / "simulator" / "simulator.css").read_text(encoding="utf-8")
 
         for required_id in (
             "btn-bmo-mode",
@@ -431,77 +428,88 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         self.assertIn(".bmo-gaze-pad:focus-visible", css)
 
         import base64
-        b64_js_path = REPO_ROOT / "tools" / "bmo_simulator" / "bmo_playtest_cores.b64.js"
-        wasm_bin_path = REPO_ROOT / "tools" / "bmo_simulator" / "bmo_playtest_cores.wasm"
-        self.assertTrue(b64_js_path.exists())
-        b64_text = b64_js_path.read_text(encoding="utf-8")
-        prefix = 'window.BMO_PLAYTEST_WASM_B64 = "'
-        self.assertTrue(b64_text.startswith(prefix))
-        encoded_payload = b64_text[len(prefix):].rstrip(";\r\n\"")
-        self.assertEqual(base64.b64decode(encoded_payload), wasm_bin_path.read_bytes())
+        from scripts import build_wasm_cores
+        with tempfile.TemporaryDirectory() as tmp:
+            wasm_bin_path = Path(tmp) / "bmo_playtest_cores.wasm"
+            b64_js_path = wasm_bin_path.with_suffix(".b64.js")
+            wasm_bytes = build_wasm_cores.build_wasm_module(output_path=wasm_bin_path)
+            self.assertTrue(b64_js_path.exists())
+            b64_text = b64_js_path.read_text(encoding="utf-8")
+            prefix = 'window.BMO_PLAYTEST_WASM_B64 = "'
+            self.assertTrue(b64_text.startswith(prefix))
+            encoded_payload = b64_text[len(prefix):].rstrip(";\r\n\"")
+            self.assertEqual(base64.b64decode(encoded_payload), wasm_bytes)
 
-        node_bin = shutil.which("node")
-        if node_bin:
-            js_test = (
-                "const {WasmPlaytestEngine,BMO_EXPRESSION_NAMES,BMO_EXPRESSIONS}=require('./tools/bmo_simulator/wasm_playtest_engine.js');"
-                "(async()=>{"
-                "  if(BMO_EXPRESSION_NAMES.length!==18) throw new Error('expected 18 expressions');"
-                "  const eng=new WasmPlaytestEngine();"
-                "  await eng.init();"
-                "  let putImg=null;"
-                "  const mockCtx={createImageData:(w,h)=>({width:w,height:h,data:new Uint8ClampedArray(w*h*4)}),putImageData:(img)=>{putImg=img;}};"
-                "  eng.renderBmoFrame(mockCtx, 1000);"
-                "  const r=putImg.data[0], g=putImg.data[1], b=putImg.data[2], a=putImg.data[3];"
-                "  if(a!==255 || Math.abs(r-138)>6 || Math.abs(g-213)>6 || Math.abs(b-195)>6 || !(g>r && b>r))"
-                "    throw new Error('BGR565 unpack color mismatch rgb='+JSON.stringify([r,g,b,a]));"
-                "  for(let i=0;i<BMO_EXPRESSION_NAMES.length;i++){"
-                "    const name=BMO_EXPRESSION_NAMES[i];"
-                "    if(BMO_EXPRESSIONS[name]!==i) throw new Error('enum mismatch '+name);"
-                "    eng.setBmoExpression(name);"
-                "    if(eng.bmoExpression()!==i) throw new Error('failed to set expression '+name);"
-                "  }"
-                "  eng.tickleBmo(1.0);"
-                "  if(eng.bmoExpression()!==BMO_EXPRESSIONS.TICKLED) throw new Error('tickle did not set TICKLED');"
-                "  eng.startBmoDance(180);"
-                "  if(!eng.bmoIsDancing()) throw new Error('startBmoDance failed');"
-                "  eng.stopBmoDance();"
-                "  if(eng.bmoIsDancing()) throw new Error('stopBmoDance failed');"
-                "  const quotes=eng.bmoQuotes();"
-                "  if(quotes.length!==10 || quotes[0]!=='Who wants to play video games?!')"
-                "    throw new Error('quotes mismatch: '+JSON.stringify(quotes));"
-                "  eng.setBmoExpression('JOY');"
-                "  eng.sayBmoText('Hello BMO Mode!', 3500);"
-                "  if(!eng.bmoHasSpeech() || eng.bmoCurrentQuote()!=='Hello BMO Mode!')"
-                "    throw new Error('custom speech mismatch: '+eng.bmoCurrentQuote());"
-                "  for(let t=1000;t<=1800;t+=40) eng.renderBmoFrame(mockCtx, t);"
-                "  const px=(x,y)=>{const i=(y*320+x)*4; return [putImg.data[i],putImg.data[i+1],putImg.data[i+2]];};"
-                "  const isMint=(rgb)=>Math.abs(rgb[0]-140)<=8 && Math.abs(rgb[1]-215)<=8 && Math.abs(rgb[2]-197)<=8;"
-                "  const eyeCorner=px(147,99), mouthBL=px(116,178), mouthBR=px(203,178), mouthIn=px(160,145), bubbleIn=px(160,34);"
-                "  if(!isMint(eyeCorner) || !isMint(mouthBL) || !isMint(mouthBR))"
-                "    throw new Error('SDF corner inverted (expected mint): '+JSON.stringify({eyeCorner,mouthBL,mouthBR}));"
-                "  if(mouthIn[0]>=45 || mouthIn[1]>=45 || bubbleIn[0]<250 || bubbleIn[1]<250 || bubbleIn[2]<250)"
-                "    throw new Error('Expected dark JOY mouth & white speech bubble: '+JSON.stringify({mouthIn,bubbleIn}));"
-                "  eng.clearBmoSpeech();"
-                "  if(eng.bmoHasSpeech()) throw new Error('clearBmoSpeech failed');"
-                "  console.log('BMO_MODE_WASM_BRIDGE_PASS rgb='+r+','+g+','+b);"
-                "})().catch(err=>{console.error(err);process.exit(1);});"
-            )
-            proc = subprocess.run(
-                [node_bin, "-e", js_test],
-                cwd=str(REPO_ROOT),
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
-            self.assertEqual(proc.returncode, 0, msg=f"Node BMO Mode test failed: {proc.stderr}\n{proc.stdout}")
-            self.assertIn("BMO_MODE_WASM_BRIDGE_PASS", proc.stdout)
+            node_bin = shutil.which("node")
+            if node_bin:
+                js_test = (
+                    "const fs=require('fs');"
+                    "const originalReadFileSync=fs.readFileSync.bind(fs);"
+                    "fs.readFileSync=(file,...args)=>{"
+                    "  const normalized=String(file).replace(/\\\\/g,'/');"
+                    "  return normalized.endsWith('/simulator/bmo_playtest_cores.wasm')"
+                    "    ? originalReadFileSync(process.argv[1],...args)"
+                    "    : originalReadFileSync(file,...args);"
+                    "};"
+                    "const {WasmPlaytestEngine,BMO_EXPRESSION_NAMES,BMO_EXPRESSIONS}=require('./simulator/wasm_playtest_engine.js');"
+                    "(async()=>{"
+                    "  if(BMO_EXPRESSION_NAMES.length!==18) throw new Error('expected 18 expressions');"
+                    "  const eng=new WasmPlaytestEngine();"
+                    "  await eng.init();"
+                    "  let putImg=null;"
+                    "  const mockCtx={createImageData:(w,h)=>({width:w,height:h,data:new Uint8ClampedArray(w*h*4)}),putImageData:(img)=>{putImg=img;}};"
+                    "  eng.renderBmoFrame(mockCtx, 1000);"
+                    "  const r=putImg.data[0], g=putImg.data[1], b=putImg.data[2], a=putImg.data[3];"
+                    "  if(a!==255 || Math.abs(r-138)>6 || Math.abs(g-213)>6 || Math.abs(b-195)>6 || !(g>r && b>r))"
+                    "    throw new Error('BGR565 unpack color mismatch rgb='+JSON.stringify([r,g,b,a]));"
+                    "  for(let i=0;i<BMO_EXPRESSION_NAMES.length;i++){"
+                    "    const name=BMO_EXPRESSION_NAMES[i];"
+                    "    if(BMO_EXPRESSIONS[name]!==i) throw new Error('enum mismatch '+name);"
+                    "    eng.setBmoExpression(name);"
+                    "    if(eng.bmoExpression()!==i) throw new Error('failed to set expression '+name);"
+                    "  }"
+                    "  eng.tickleBmo(1.0);"
+                    "  if(eng.bmoExpression()!==BMO_EXPRESSIONS.TICKLED) throw new Error('tickle did not set TICKLED');"
+                    "  eng.startBmoDance(180);"
+                    "  if(!eng.bmoIsDancing()) throw new Error('startBmoDance failed');"
+                    "  eng.stopBmoDance();"
+                    "  if(eng.bmoIsDancing()) throw new Error('stopBmoDance failed');"
+                    "  const quotes=eng.bmoQuotes();"
+                    "  if(quotes.length!==10 || quotes[0]!=='Who wants to play video games?!')"
+                    "    throw new Error('quotes mismatch: '+JSON.stringify(quotes));"
+                    "  eng.setBmoExpression('JOY');"
+                    "  eng.sayBmoText('Hello BMO Mode!', 3500);"
+                    "  if(!eng.bmoHasSpeech() || eng.bmoCurrentQuote()!=='Hello BMO Mode!')"
+                    "    throw new Error('custom speech mismatch: '+eng.bmoCurrentQuote());"
+                    "  for(let t=1000;t<=1800;t+=40) eng.renderBmoFrame(mockCtx, t);"
+                    "  const px=(x,y)=>{const i=(y*320+x)*4; return [putImg.data[i],putImg.data[i+1],putImg.data[i+2]];};"
+                    "  const isMint=(rgb)=>Math.abs(rgb[0]-140)<=8 && Math.abs(rgb[1]-215)<=8 && Math.abs(rgb[2]-197)<=8;"
+                    "  const eyeCorner=px(147,99), mouthBL=px(116,178), mouthBR=px(203,178), mouthIn=px(160,145), bubbleIn=px(160,34);"
+                    "  if(!isMint(eyeCorner) || !isMint(mouthBL) || !isMint(mouthBR))"
+                    "    throw new Error('SDF corner inverted (expected mint): '+JSON.stringify({eyeCorner,mouthBL,mouthBR}));"
+                    "  if(mouthIn[0]>=45 || mouthIn[1]>=45 || bubbleIn[0]<250 || bubbleIn[1]<250 || bubbleIn[2]<250)"
+                    "    throw new Error('Expected dark JOY mouth & white speech bubble: '+JSON.stringify({mouthIn,bubbleIn}));"
+                    "  eng.clearBmoSpeech();"
+                    "  if(eng.bmoHasSpeech()) throw new Error('clearBmoSpeech failed');"
+                    "  console.log('BMO_MODE_WASM_BRIDGE_PASS rgb='+r+','+g+','+b);"
+                    "})().catch(err=>{console.error(err);process.exit(1);});"
+                )
+                proc = subprocess.run(
+                    [node_bin, "-e", js_test, str(wasm_bin_path)],
+                    cwd=str(REPO_ROOT),
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+                self.assertEqual(proc.returncode, 0, msg=f"Node BMO Mode test failed: {proc.stderr}\n{proc.stdout}")
+                self.assertIn("BMO_MODE_WASM_BRIDGE_PASS", proc.stdout)
 
     def test_12_3d_enclosure_meshes_and_internals_teardown_controls(self):
         """Ensure CAD WebGL meshes, 3D teardown steps, and pin wiring honor hardware rules."""
         node_bin = shutil.which("node")
         if not node_bin:
             self.skipTest("node is not installed on PATH")
-        index_html = (REPO_ROOT / "tools" / "bmo_simulator" / "index.html").read_text(encoding="utf-8")
+        index_html = (REPO_ROOT / "simulator" / "index.html").read_text(encoding="utf-8")
         for token in (
             "bmo_enclosure_meshes.js",
             "bmo_internals_3d.js",
@@ -516,8 +524,8 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         js_test = (
             "const fs=require('fs'), vm=require('vm');\n"
             "global.window = globalThis;\n"
-            "vm.runInThisContext(fs.readFileSync('tools/bmo_simulator/bmo_enclosure_meshes.js','utf8'));\n"
-            "vm.runInThisContext(fs.readFileSync('tools/bmo_simulator/bmo_internals_3d.js','utf8'));\n"
+            "vm.runInThisContext(fs.readFileSync('simulator/bmo_enclosure_meshes.js','utf8'));\n"
+            "vm.runInThisContext(fs.readFileSync('simulator/bmo_internals_3d.js','utf8'));\n"
             "const em = global.BMO_ENCLOSURE_MESHES;\n"
             "if(!em || em.units!=='cm') throw new Error('missing BMO_ENCLOSURE_MESHES cm payload');\n"
             "for(const k of ['bmo_front_shell','bmo_back_shell','bmo_battery_door']){\n"
@@ -577,13 +585,13 @@ class TestCoverArtPipeline(unittest.TestCase):
     def test_slug_rule_matches_simulator(self):
         self.assertEqual(fetch_covers.slugify_title("Tetris (World) (Rev A).gb"), "tetris")
         self.assertEqual(fetch_covers.slugify_title("Kirby - Tilt 'n' Tumble"), "kirby_tilt_n_tumble")
-        js = (REPO_ROOT / "tools" / "bmo_simulator" / "simulator.js").read_text(encoding="utf-8")
+        js = (REPO_ROOT / "simulator" / "simulator.js").read_text(encoding="utf-8")
         self.assertIn("slugifyTitle(title)", js)
         self.assertIn("covers/${slug}.png", js)
 
     def test_downloaded_covers_are_valid_images_when_present(self):
         from PIL import Image
-        cover_dir = REPO_ROOT / "tools" / "bmo_simulator" / "covers"
+        cover_dir = REPO_ROOT / "simulator" / "covers"
         if not cover_dir.is_dir():
             self.skipTest("covers not downloaded; run scripts/fetch_covers.py")
         for png in cover_dir.glob("*.png"):

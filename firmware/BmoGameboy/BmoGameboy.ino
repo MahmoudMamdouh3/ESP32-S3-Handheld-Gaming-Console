@@ -1,33 +1,33 @@
-#include "src/core/config.h"
-#include "src/emulators/emu_peanut.h"
-#include "src/emulators/emu_walnut.h"
-#include "src/emulators/emu_nes.h"
-#include "src/emulators/emu_doom.h"
-#include "src/emulators/emu_sms.h"
-#include "src/emulators/emu_pce.h"
-#include "src/emulators/emu_atari.h"
-#include "src/emulators/emu_pico.h"
-#include "src/emulators/emu_genesis.h"
-#include "src/emulators/emu_snes.h"
-#include "src/emulators/emu_wswan.h"
-#include "src/emulators/emu_ngp.h"
-#include "src/emulators/emu_lynx.h"
-#include "src/emulators/emu_colem.h"
+#include "src/hal/config.h"
+#include "src/cores/emu_peanut.h"
+#include "src/cores/emu_walnut.h"
+#include "src/cores/emu_nes.h"
+#include "src/cores/emu_doom.h"
+#include "src/cores/emu_sms.h"
+#include "src/cores/emu_pce.h"
+#include "src/cores/emu_atari.h"
+#include "src/cores/emu_pico.h"
+#include "src/cores/emu_genesis.h"
+#include "src/cores/emu_snes.h"
+#include "src/cores/emu_wswan.h"
+#include "src/cores/emu_ngp.h"
+#include "src/cores/emu_lynx.h"
+#include "src/cores/emu_colem.h"
 #include "src/tests/unit_tests.h"
-#include "src/core/buttons.h"
-#include "src/core/sd_card.h"
-#include "src/core/battery.h"
-#include "src/core/display_emu.h"
-#include "src/core/theme.h"
-#include "src/core/bmo_face.h"
-#include "src/core/spi_arbiter.h"
-#include "src/core/save_manager.h"
-#include "src/core/battery_save.h"
-#include "src/core/box_art.h"
-#include "src/core/rom_index.h"
-#include "src/core/pause_quit_policy.h"
-#include "src/core/frame_pacing.h"
-#include "src/core/frame_percentiles.h"
+#include "src/hal/buttons.h"
+#include "src/storage/sd_card.h"
+#include "src/hal/battery.h"
+#include "src/ui/display_emu.h"
+#include "src/ui/theme.h"
+#include "src/ui/bmo_face.h"
+#include "src/hal/spi_arbiter.h"
+#include "src/storage/save_manager.h"
+#include "src/storage/battery_save.h"
+#include "src/storage/box_art.h"
+#include "src/storage/rom_index.h"
+#include "src/ui/pause_quit_policy.h"
+#include "src/ui/frame_pacing.h"
+#include "src/ui/frame_percentiles.h"
 #include <SPI.h>
 #include <stdlib.h>
 #include <rom/ets_sys.h>      // N7: ets_delay_us for tight hardware-timer spin
@@ -305,18 +305,18 @@ static void resetFramePercentiles() {
 static bool visibleGamesDirty = true;
 static bool s_topPicksOnly = false;
 
-// PERF-M3: File-scope so STATE_GAME_MENU (toggleFavorite) can invalidate the
+// File-scope so STATE_GAME_MENU (toggleFavorite) can invalidate the
 //          Favorites-count badge rendered in STATE_CONSOLE_MENU.
 static int  s_cachedConsoleCounts[CONSOLE_COUNT];
 static bool s_consoleCountsDirty = true;
 
 static int countGamesForConsole(RomType type) {
-  // PERF-02: O(1) lookup via SDCard::getRomCountForType (eliminates 245K iterations per frame)
+  // O(1) lookup via SDCard::getRomCountForType (eliminates 245K iterations per frame)
   return SDCard::getRomCountForType(type);
 }
 
 static void rebuildVisibleGames() {
-  // PERF-03: Gate scan with dirty flag so idle frames do not perform O(N) linear scans
+  // Gate scan with dirty flag so idle frames do not perform O(N) linear scans
   if (!visibleGamesDirty) return;
   visibleGameCount = 0;
   const RomType selectedType = CONSOLES[selectedConsoleIndex];
@@ -347,7 +347,7 @@ static void rebuildVisibleGames() {
     }
   }
 
-  // PERF-C2: Rebuild pointer array here (dirty-flag guarded) so the game-menu
+  // Rebuild pointer array here (dirty-flag guarded) so the game-menu
   //          render path never repeats this work on idle frames.
   for (int i = 0; i < visibleGameCount; ++i) {
     visibleGames[i] = SDCard::getRomInfo(visibleRomIndexes[i]);
@@ -377,7 +377,7 @@ void setup() {
   Serial.setTxTimeoutMs(0);
   
   // Wait 3 seconds for Serial to connect (avoids hang on UART port).
-  // PERF-M5: In release builds skip the 3-second Serial wait — users see a black
+  // In release builds skip the 3-second Serial wait — users see a black
   //           screen for 3 s on every cold boot otherwise.
 #if defined(CORE_DEBUG_LEVEL) && CORE_DEBUG_LEVEL > 0
   delay(3000);
@@ -433,7 +433,7 @@ void setup() {
 void loop() {
   Battery::update();
   Buttons::setGameplayMode(currentState == STATE_EMULATOR);
-  // PERF-H5: Face is HIDDEN during emulation/pause and never drawn; skip update() overhead.
+  // Face is HIDDEN during emulation/pause and never drawn; skip update() overhead.
   if (currentState != STATE_EMULATOR && currentState != STATE_PAUSE_MENU) {
     BmoFace::update();
   }
@@ -489,7 +489,7 @@ void loop() {
     bool start  = btnStart.pressed  && btnStart.changed;
     
     if (canPress()) {
-      // PERF-M1: Cache millis() once per frame instead of calling it 5+ times per event.
+      // Cache millis() once per frame instead of calling it 5+ times per event.
       const unsigned long nowMs = millis();
       if (left || right || up || down || a || select || start) {
         lastInputActivityMs = nowMs;
@@ -546,7 +546,7 @@ void loop() {
       BmoFace::setExpression(BmoFace::SLEEPY);
     }
 
-    // PERF-M3: Use file-scope dirty flag so toggleFavorite() in STATE_GAME_MENU
+    // Use file-scope dirty flag so toggleFavorite() in STATE_GAME_MENU
     //          invalidates the Favorites-count badge in the carousel.
     if (s_consoleCountsDirty) {
       for (int i = 0; i < CONSOLE_COUNT; ++i)
@@ -846,7 +846,7 @@ void loop() {
       if (select && visibleGameCount > 0) {
         int romIdx = visibleRomIndexes[selectedGameIndex];
         SDCard::toggleFavorite(romIdx);
-        s_consoleCountsDirty = true;   // PERF-M3: Favorites badge in console menu needs refresh
+        s_consoleCountsDirty = true;   // Favorites badge in console menu needs refresh
         
         // Show BMO celebratory wink with sparkle burst when starring a game
         if (SDCard::isFavorite(romIdx)) {
@@ -955,6 +955,24 @@ void loop() {
 
         DisplayEmu::cleanupMenuUI();
         DisplayEmu::clearScreen();
+
+        if (selectedRom->type == ROM_WAD && !BMO_ENABLE_DOOM) {
+          LOG_WARN_STR("DOOM disabled in MIT default build (-DBMO_ENABLE_DOOM=1 to enable)");
+          DisplayEmu::showToast("DOOM DISABLED (MIT BUILD)", Theme::ACCENT_RED, 2000);
+          delay(1200);
+          if (selectedRom->hasBoxArt) BoxArt::load(selectedRom->filename);
+          currentState = STATE_GAME_MENU;
+          return;
+        }
+        if (selectedRom->type >= ROM_SMS && !BMO_EXPERIMENTAL_CORES) {
+          LOG_WARN_STR("Experimental core disabled (-DBMO_EXPERIMENTAL_CORES=1 to enable)");
+          DisplayEmu::showToast("EXPERIMENTAL CORE OFF", Theme::ACCENT_RED, 2000);
+          delay(1200);
+          if (selectedRom->hasBoxArt) BoxArt::load(selectedRom->filename);
+          currentState = STATE_GAME_MENU;
+          return;
+        }
+
         LOG_INFO("PSRAM launch state (%s): free=%u B, largest_block=%u B",
                  selectedRom->filename,
                  (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
@@ -1077,7 +1095,7 @@ void loop() {
       }
     }
     
-    // PERF-C2: visibleGames[] is rebuilt inside rebuildVisibleGames() (dirty-flag guarded).
+    // visibleGames[] is rebuilt inside rebuildVisibleGames() (dirty-flag guarded).
     //          No unconditional O(N) pointer-copy on every frame.
     DisplayEmu::drawGameSelectMenu(visibleGames, visibleGameCount, selectedGameIndex,
                                    CONSOLES[selectedConsoleIndex], SDCard::isMounted());
@@ -1197,7 +1215,7 @@ void loop() {
       if (elapsed < targetFrameUs) {
         unsigned long remaining = targetFrameUs - elapsed;
         if (remaining > 1000) {
-          // Sleep bulk margin with 800us spin-tail guard (PERF-09)
+          // Sleep bulk margin with 800us spin-tail guard
           delay((remaining - 800) / 1000);
         }
         // Re-measure after sleep, then use hardware-timer spin for the tail.

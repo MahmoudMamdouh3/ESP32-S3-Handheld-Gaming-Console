@@ -87,7 +87,7 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
         """Verify all 14 emulator .h and .cpp files exist and contain code (>= 100 bytes)."""
         for stem in EMULATOR_STEMS:
             for ext in ('.h', '.cpp'):
-                f = FIRMWARE_DIR / 'src' / 'emulators' / (stem + ext)
+                f = FIRMWARE_DIR / 'src' / 'cores' / (stem + ext)
                 self.assertTrue(f.exists(), f'Missing: {f.relative_to(WORKSPACE)}')
                 self.assertGreater(
                     f.stat().st_size, 100,
@@ -100,7 +100,7 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
     def test_02_all_vendor_engines_exist_and_nonempty(self):
         """Verify all underlying vendor engine headers and sources exist and have content."""
         for vdir, vfile in VENDOR_FILES:
-            f = FIRMWARE_DIR / 'src' / 'vendor' / vdir / vfile
+            f = FIRMWARE_DIR / 'src' / 'engines' / vdir / vfile
             self.assertTrue(f.exists(), f'Missing vendor engine: {f.relative_to(WORKSPACE)}')
             self.assertGreater(
                 f.stat().st_size, 50,
@@ -137,7 +137,7 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
             'emu_lynx', 'emu_colem', 'emu_doom', 'emu_peanut', 'emu_walnut',
         ]
         for stem in wrappers_that_own_psram:
-            cpp = FIRMWARE_DIR / 'src' / 'emulators' / (stem + '.cpp')
+            cpp = FIRMWARE_DIR / 'src' / 'cores' / (stem + '.cpp')
             if cpp.exists():
                 code = cpp.read_text(encoding='utf-8')
                 self.assertIn(
@@ -151,7 +151,7 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
     # ------------------------------------------------------------------
     def test_05_display_streaming_methods_all_consoles(self):
         """Verify DisplayEmu.h declares a dedicated streaming method for every console."""
-        header = (FIRMWARE_DIR / 'src' / 'core' / 'display_emu.h').read_text(encoding='utf-8')
+        header = (FIRMWARE_DIR / 'src' / 'ui' / 'display_emu.h').read_text(encoding='utf-8')
         for m in REQUIRED_STREAM_METHODS:
             self.assertIn(m, header, f'Missing display streaming method declaration: {m}')
 
@@ -160,7 +160,7 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
     # ------------------------------------------------------------------
     def test_06_sd_card_all_21_extensions_registered(self):
         """Verify sd_card.cpp detects and maps all 21 ROM file extensions."""
-        code = (FIRMWARE_DIR / 'src' / 'core' / 'sd_card.cpp').read_text(encoding='utf-8')
+        code = (FIRMWARE_DIR / 'src' / 'storage' / 'sd_card.cpp').read_text(encoding='utf-8')
         for ext in EXPECTED_EXTENSIONS:
             self.assertIn(ext, code, f'Extension "{ext}" not registered in sd_card.cpp')
 
@@ -200,7 +200,7 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
             'emu_colem':   ('colem',   'colem.c'),
         }
         for stem, (vdir, vfile) in vendor_map.items():
-            vendor_path = FIRMWARE_DIR / 'src' / 'vendor' / vdir / vfile
+            vendor_path = FIRMWARE_DIR / 'src' / 'engines' / vdir / vfile
             self.assertTrue(vendor_path.exists(), f'Missing {vdir}/{vfile}')
             text = vendor_path.read_text(encoding='utf-8')
             self.assertNotIn('STUB_ENGINE', text, f'{vdir}/{vfile} still marked STUB_ENGINE')
@@ -209,7 +209,7 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
         # Verify unified persistence contract across all 13 cartridge emulators
         cart_emulators = [s for s in EMULATOR_STEMS if s != 'emu_doom']
         for stem in cart_emulators:
-            h_text = (FIRMWARE_DIR / 'src' / 'emulators' / (stem + '.h')).read_text(encoding='utf-8')
+            h_text = (FIRMWARE_DIR / 'src' / 'cores' / (stem + '.h')).read_text(encoding='utf-8')
             for method in ('saveBatteryRam', 'loadBatteryRam', 'saveState', 'loadState'):
                 self.assertIn(method, h_text, f'{stem}.h missing persistence method {method}')
 
@@ -266,7 +266,7 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
     # ------------------------------------------------------------------
     def test_10_no_serial_print_in_emulator_wrappers(self):
         """Verify no emulator wrapper uses naked Serial.print (hot path ban)."""
-        emu_dir = FIRMWARE_DIR / 'src' / 'emulators'
+        emu_dir = FIRMWARE_DIR / 'src' / 'cores'
         offenders = []
         for cpp in sorted(emu_dir.glob('*.cpp')):
             text = cpp.read_text(encoding='utf-8')
@@ -284,7 +284,7 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
     def test_11_wrapper_count_and_compatibility_doc_match_filesystem(self):
         """Verify docs/compatibility.md lists every emu_*.cpp file on disk."""
         compat_text = (WORKSPACE / 'docs' / 'compatibility.md').read_text(encoding='utf-8')
-        emu_dir = FIRMWARE_DIR / 'src' / 'emulators'
+        emu_dir = FIRMWARE_DIR / 'src' / 'cores'
         fs_stems = sorted(f.stem for f in emu_dir.glob('emu_*.cpp'))
         self.assertEqual(sorted(EMULATOR_STEMS), fs_stems)
         missing = [stem for stem in fs_stems if f'{stem}.cpp' not in compat_text]
@@ -301,7 +301,7 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
         Verify FEATURE_BATTERY_MONITOR and FEATURE_AUDIO are exactly 0.
         Regex requires a word boundary after 0 to reject accidental '0x...' values.
         """
-        config = (FIRMWARE_DIR / 'src' / 'core' / 'config.h').read_text(encoding='utf-8')
+        config = (FIRMWARE_DIR / 'src' / 'hal' / 'config.h').read_text(encoding='utf-8')
         for flag in ('FEATURE_BATTERY_MONITOR', 'FEATURE_AUDIO'):
             self.assertRegex(
                 config,

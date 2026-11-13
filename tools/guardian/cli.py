@@ -198,7 +198,7 @@ def cmd_psram_budget(args) -> int:
 def cmd_doctor(args) -> int:
     """Preflight check for hardware hard stops, AST criticals, and available toolchains."""
     issues = 0
-    cfg_path = FIRMWARE_DIR / "src" / "core" / "config.h"
+    cfg_path = FIRMWARE_DIR / "src" / "hal" / "config.h"
     cfg = _parse_config_defines(cfg_path)
 
     print("[1/3] Hardware Hard Stops (config.h):")

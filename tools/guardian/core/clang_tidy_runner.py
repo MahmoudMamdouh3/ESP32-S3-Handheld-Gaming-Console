@@ -69,20 +69,21 @@ class ClangTidyRunner:
         return self.clang_tidy_bin is not None
 
     def default_targets(self) -> List[Path]:
-        vendor = self.firmware_dir / "src" / "vendor"
+        engines = self.firmware_dir / "src" / "engines"
+        third_party = self.firmware_dir / "src" / "third_party"
         targets = [
-            self.repo_root / "tools" / "host_cores_runner.c",
-            vendor / "agnes" / "agnes.c",
-            vendor / "smsplus" / "sms.c",
-            vendor / "pce" / "pce.c",
-            vendor / "stella" / "atari.c",
-            vendor / "pico" / "pico.c",
-            vendor / "genesis" / "genesis.c",
-            vendor / "snes" / "snes.c",
-            vendor / "wswan" / "wswan.c",
-            vendor / "ngp" / "ngp.c",
-            vendor / "lynx" / "lynx.c",
-            vendor / "colem" / "colem.c",
+            self.repo_root / "tests" / "host" / "host_cores_runner.c",
+            third_party / "agnes" / "agnes.c",
+            engines / "smsplus" / "sms.c",
+            engines / "pce" / "pce.c",
+            engines / "stella" / "atari.c",
+            engines / "pico" / "pico.c",
+            engines / "genesis" / "genesis.c",
+            engines / "snes" / "snes.c",
+            engines / "wswan" / "wswan.c",
+            engines / "ngp" / "ngp.c",
+            engines / "lynx" / "lynx.c",
+            engines / "colem" / "colem.c",
         ]
         return [t for t in targets if t.exists()]
 
@@ -102,8 +103,11 @@ class ClangTidyRunner:
             "--",
             "-D_CRT_SECURE_NO_WARNINGS",
             f"-I{self.firmware_dir / 'src'}",
-            f"-I{self.firmware_dir / 'src' / 'core'}",
-            f"-I{self.firmware_dir / 'src' / 'vendor'}",
+            f"-I{self.firmware_dir / 'src' / 'hal'}",
+            f"-I{self.firmware_dir / 'src' / 'storage'}",
+            f"-I{self.firmware_dir / 'src' / 'ui'}",
+            f"-I{self.firmware_dir / 'src' / 'engines'}",
+            f"-I{self.firmware_dir / 'src' / 'third_party'}",
         ]
 
         try:

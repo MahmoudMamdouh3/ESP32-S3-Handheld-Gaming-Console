@@ -6,10 +6,10 @@ import subprocess
 import unittest
 from pathlib import Path
 
-from tools.bmo_simulator import run_simulator
+from simulator import run_simulator
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SIM_DIR = REPO_ROOT / "tools" / "bmo_simulator"
+SIM_DIR = REPO_ROOT / "simulator"
 
 
 class _DummySocket:

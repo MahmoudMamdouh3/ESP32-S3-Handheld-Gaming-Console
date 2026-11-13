@@ -5,9 +5,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INO = (REPO_ROOT / "firmware" / "BmoGameboy" / "BmoGameboy.ino").read_text(encoding="utf-8")
 COMPAT_DOC = (REPO_ROOT / "docs" / "compatibility.md").read_text(encoding="utf-8")
-SD_CPP = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "core" / "sd_card.cpp").read_text(encoding="utf-8")
-DISPLAY_CPP = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "core" / "display_emu.cpp").read_text(encoding="utf-8")
-FRAME_PACING = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "core" / "frame_pacing.h").read_text(encoding="utf-8")
+SD_CPP = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage" / "sd_card.cpp").read_text(encoding="utf-8")
+DISPLAY_CPP = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "display_emu.cpp").read_text(encoding="utf-8")
+FRAME_PACING = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "frame_pacing.h").read_text(encoding="utf-8")
 
 
 PLATFORMS = [

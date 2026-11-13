@@ -1,7 +1,7 @@
 """Export manifold CAD enclosure shells to deterministic Three.js mesh data.
 
-Generates `tools/bmo_simulator/bmo_enclosure_meshes.js` directly from
-`tools/enclosure/generate_bmo_enclosure.py` so the browser 3D view renders
+Generates `simulator/bmo_enclosure_meshes.js` directly from
+`hardware/enclosure/generate_bmo_enclosure.py` so the browser 3D view renders
 exact through-punched speaker bores, split shells, port cutouts, and recessed
 BMO side glyphs under both `file://` and local HTTP serving.
 """
@@ -22,10 +22,10 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from tools.enclosure.generate_bmo_enclosure import CONFIG, build_parts  # noqa: E402
+from hardware.enclosure.generate_bmo_enclosure import CONFIG, build_parts  # noqa: E402
 
 
-DEFAULT_OUT_PATH = REPO_ROOT / "tools" / "bmo_simulator" / "bmo_enclosure_meshes.js"
+DEFAULT_OUT_PATH = REPO_ROOT / "simulator" / "bmo_enclosure_meshes.js"
 CREASE_ANGLE_DEG = 38.0
 CM_SCALE = 0.1  # CAD runs in millimetres; Three.js simulator uses centimetres.
 
@@ -219,7 +219,7 @@ def export_web_meshes(out_path: Path = DEFAULT_OUT_PATH) -> dict[str, dict[str, 
     serialized = json.dumps(payload, separators=(",", ":"), sort_keys=False)
 
     js_lines = [
-        "// Auto-generated from tools/enclosure/generate_bmo_enclosure.py by",
+        "// Auto-generated from hardware/enclosure/generate_bmo_enclosure.py by",
         "// scripts/export_enclosure_web_meshes.py. Do not edit manually.",
         "(function (globalScope) {",
         "  'use strict';",

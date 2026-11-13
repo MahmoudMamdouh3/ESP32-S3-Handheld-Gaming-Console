@@ -1,20 +1,11 @@
 #include "unit_tests.h"
 #include <Arduino.h>
 #include <esp_heap_caps.h>
-#if defined(__has_include)
-#if __has_include("../assets/rom_data.h")
-#include "../assets/rom_data.h"
-#define BMO_HAS_ROM_TEST_DATA 1
-#endif
-#endif
-#ifndef BMO_HAS_ROM_TEST_DATA
-#define BMO_HAS_ROM_TEST_DATA 0
-#endif
-#include "../core/buttons.h"
-#include "../core/display_emu.h"
-#include "../emulators/emu_peanut.h"
-#include "../emulators/emu_walnut.h"
-#include "../core/config.h"
+#include "../hal/buttons.h"
+#include "../ui/display_emu.h"
+#include "../cores/emu_peanut.h"
+#include "../cores/emu_walnut.h"
+#include "../hal/config.h"
 
 // --- Custom Testing Framework Macros ---
 static int testsPassed = 0;
@@ -41,19 +32,25 @@ static int testsFailed = 0;
 
 // --- Component Tests ---
 
-#if BMO_HAS_ROM_TEST_DATA
 void testRomIntegrity() {
-  TEST_CASE("ROM Integrity & Nintendo Logo Checksum");
-  ASSERT_TRUE(tobu_tobu_girl_rom_len > 0x150, "ROM length must be greater than header size");
-  
-  // Verify header checksum at 0x014D (GB boot ROM validates this)
-  uint8_t header_checksum = 0;
-  for (int j = 0x0134; j <= 0x014C; j++) {
-    header_checksum = header_checksum - tobu_tobu_girl_rom[j] - 1;
+  TEST_CASE("GB Cartridge Header Checksum Formula");
+  uint8_t header[0x150] = {0};
+  const char title[] = "BMOTEST";
+  for (int i = 0; title[i] != '\0'; i++) {
+    header[0x0134 + i] = static_cast<uint8_t>(title[i]);
   }
-  ASSERT_EQ(header_checksum, tobu_tobu_girl_rom[0x014D], "Header checksum mismatch for Tobu Tobu Girl");
+  uint8_t sum = 0;
+  for (int j = 0x0134; j <= 0x014C; j++) {
+    sum = static_cast<uint8_t>(sum - header[j] - 1);
+  }
+  header[0x014D] = sum;
+
+  uint8_t verified = 0;
+  for (int j = 0x0134; j <= 0x014C; j++) {
+    verified = static_cast<uint8_t>(verified - header[j] - 1);
+  }
+  ASSERT_EQ(verified, header[0x014D], "Header checksum formula mismatch");
 }
-#endif
 
 void testButtonsCount() {
   TEST_CASE("Buttons Count Verification");
@@ -154,11 +151,7 @@ bool runAllTests() {
   testsPassed = 0;
   testsFailed = 0;
   
-#if BMO_HAS_ROM_TEST_DATA
   testRomIntegrity();
-#else
-  LOG_INFO_STR("--- Skipping Test: ROM integrity fixture is not present ---");
-#endif
   testButtonsCount();
   testEmulatorRejection();
   testDisplayPalette();

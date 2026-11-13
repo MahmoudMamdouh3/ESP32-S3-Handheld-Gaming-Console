@@ -11,7 +11,7 @@ class RomIndexLayoutTests(unittest.TestCase):
     def test_v2_disk_layout_compile_time_contract(self):
         compiler = find_wasi_cxx(REPO_ROOT)
         source = REPO_ROOT / "tests" / "host" / "rom_index_layout_test.cpp"
-        include = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "core"
+        include = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage"
         require_compiler(self, compiler, "Pinned WASI C++ compiler")
         subprocess.run(
             [str(compiler), "--target=wasm32-wasip1", "-std=c++17", "-I", str(include),

@@ -16,7 +16,7 @@ class RomFileFilterTests(unittest.TestCase):
         require_compiler(self, compiler, "Pinned WASI C++ compiler")
         require_compiler(self, node, "Node.js WASI runner")
         source = REPO_ROOT / "tests" / "host" / "rom_file_filter_test.cpp"
-        include = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "core"
+        include = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage"
 
         with tempfile.TemporaryDirectory() as temp_dir:
             wasm = Path(temp_dir) / "rom_file_filter_test.wasm"
@@ -39,14 +39,14 @@ class RomFileFilterTests(unittest.TestCase):
                            check=True, capture_output=True, text=True)
 
     def test_atari_7800_extension_is_not_mapped_to_atari_2600(self):
-        scanner = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "core" / "sd_card.cpp").read_text(encoding="utf-8")
-        atari = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "vendor" / "stella" / "atari.c").read_text(encoding="utf-8")
+        scanner = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage" / "sd_card.cpp").read_text(encoding="utf-8")
+        atari = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "engines" / "stella" / "atari.c").read_text(encoding="utf-8")
         self.assertNotIn(".a78", scanner.lower())
         self.assertIn("Atari 2600 (VCS)", atari)
         for script_rel in (
             "scripts/deploy_to_sd.py",
             "scripts/deploy_sd_complete.py",
-            "tools/bmo_simulator/console_history_data.js",
+            "simulator/console_history_data.js",
         ):
             self.assertNotIn(".a78", (REPO_ROOT / script_rel).read_text(encoding="utf-8").lower())
 

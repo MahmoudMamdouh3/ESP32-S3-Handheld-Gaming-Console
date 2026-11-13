@@ -1,0 +1,161 @@
+#pragma GCC optimize ("O3,unroll-loops")
+#include "emu_snes.h"
+#include "../hal/config.h"
+#include "../ui/display_emu.h"
+#include "../ui/theme.h"
+#include <Arduino.h>
+
+#if BMO_EXPERIMENTAL_CORES
+#include "../engines/snes/snes.h"
+#include "../hal/buttons.h"
+#include "../storage/save_manager.h"
+#include "../storage/battery_save.h"
+#include <esp_heap_caps.h>
+#include <string.h>
+
+namespace {
+  snes_t snesState;
+  uint16_t* snesFb = nullptr;  // 256 x 224 in PSRAM
+  uint8_t* snesWram = nullptr; // 128KB WRAM in PSRAM
+  bool running = false;
+  size_t sramSaveSize = 0;
+}
+
+bool SNESEmu::init(uint8_t* romData, size_t romSize) {
+  destroy();
+  if (!romData || romSize < 0x8000) return false;
+
+  snesFb = (uint16_t*)heap_caps_malloc(256 * 224 * sizeof(uint16_t), MALLOC_CAP_SPIRAM);
+  snesWram = (uint8_t*)heap_caps_malloc(128 * 1024, MALLOC_CAP_SPIRAM);
+
+  if (!snesFb || !snesWram) {
+    destroy();
+    return false;
+  }
+
+  snes_init(&snesState, romData, romSize, snesWram, snesFb);
+  const size_t headerOffset = ((romSize & 0x7FFFU) == 512U) ? 512U : 0U;
+  const size_t sramSizeOffset = headerOffset + 0x7FD8U;
+  sramSaveSize = sramSizeOffset < romSize
+      ? BatterySave::snesLoRomBatteryBytes(romData[sramSizeOffset])
+      : 0;
+  running = true;
+  return true;
+}
+
+void SNESEmu::update() {
+  if (!running || !snesFb) return;
+  uint16_t pad = 0;
+  if (Buttons::get(Buttons::UP).pressed)     pad |= 0x01;
+  if (Buttons::get(Buttons::DOWN).pressed)   pad |= 0x02;
+  if (Buttons::get(Buttons::LEFT).pressed)   pad |= 0x04;
+  if (Buttons::get(Buttons::RIGHT).pressed)  pad |= 0x08;
+  if (Buttons::get(Buttons::B).pressed)      pad |= 0x10; // B
+  if (Buttons::get(Buttons::A).pressed)      pad |= 0x20; // A
+  if (Buttons::get(Buttons::START).pressed)  pad |= 0x40; // Start
+  if (Buttons::get(Buttons::SELECT).pressed) pad |= 0x80; // Select
+  if (Buttons::get(Buttons::X).pressed)      pad |= 0x100; // X
+  if (Buttons::get(Buttons::Y).pressed)      pad |= 0x200; // Y
+  if (Buttons::get(Buttons::L).pressed)      pad |= 0x400; // L shoulder
+  if (Buttons::get(Buttons::R).pressed)      pad |= 0x800; // R shoulder
+  snes_set_pad(&snesState, pad);
+
+  snes_step_frame(&snesState);
+  DisplayEmu::streamSNESFrame(snesFb, 256, 224);
+}
+
+void SNESEmu::destroy() {
+  running = false;
+  sramSaveSize = 0;
+  snes_destroy(&snesState);
+  if (snesFb) {
+    heap_caps_free(snesFb);
+    snesFb = nullptr;
+  }
+  if (snesWram) {
+    heap_caps_free(snesWram);
+    snesWram = nullptr;
+  }
+  memset(&snesState, 0, sizeof(snesState));
+}
+
+bool SNESEmu::isRunning() {
+  return running;
+}
+
+bool SNESEmu::saveBatteryRam(const char* romFilename) {
+  if (!running || !snesState.sram || !romFilename || sramSaveSize == 0) return false;
+  return SaveManager::saveBatteryRam(romFilename, snesState.sram, sramSaveSize);
+}
+
+bool SNESEmu::loadBatteryRam(const char* romFilename) {
+  if (!running || !snesState.sram || !romFilename || sramSaveSize == 0) return false;
+  return SaveManager::loadBatteryRam(romFilename, snesState.sram, sramSaveSize);
+}
+
+bool SNESEmu::saveState(const char* romFilename, int slot) {
+  if (!running || !snesWram || !snesState.vram || !snesState.sram || !romFilename) return false;
+  const size_t totalRam = (128 + 64 + 32) * 1024;
+  uint8_t* combined = (uint8_t*)heap_caps_malloc(totalRam, MALLOC_CAP_SPIRAM);
+  if (!combined) return false;
+  memcpy(combined, snesWram, 128 * 1024);
+  memcpy(combined + 128 * 1024, snesState.vram, 64 * 1024);
+  memcpy(combined + (128 + 64) * 1024, snesState.sram, 32 * 1024);
+  bool ok = SaveManager::saveState(romFilename, slot, SaveManager::CORE_SNES,
+                                   &snesState, sizeof(snes_t), combined, totalRam);
+  heap_caps_free(combined);
+  return ok;
+}
+
+bool SNESEmu::loadState(const char* romFilename, int slot) {
+  if (!running || !snesWram || !snesState.vram || !snesState.sram || !romFilename) return false;
+  const size_t totalRam = (128 + 64 + 32) * 1024;
+  uint8_t* combined = (uint8_t*)heap_caps_malloc(totalRam, MALLOC_CAP_SPIRAM);
+  if (!combined) return false;
+  snes_t tempState;
+  size_t stateSize = 0, ramSize = 0;
+  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_SNES,
+                                   &tempState, sizeof(tempState), &stateSize,
+                                   combined, totalRam, &ramSize);
+  if (ok && stateSize == sizeof(snes_t) && ramSize == totalRam) {
+    memcpy(snesWram, combined, 128 * 1024);
+    memcpy(snesState.vram, combined + 128 * 1024, 64 * 1024);
+    memcpy(snesState.sram, combined + (128 + 64) * 1024, 32 * 1024);
+    uint8_t* rom = snesState.rom;
+    uint32_t rom_size = snesState.rom_size;
+    uint8_t* wram = snesState.wram;
+    uint8_t* vram = snesState.vram;
+    uint8_t* sram = snesState.sram;
+    uint16_t* fb = snesState.framebuffer;
+    memcpy(&snesState, &tempState, sizeof(snes_t));
+    snesState.rom = rom;
+    snesState.rom_size = rom_size;
+    snesState.wram = wram;
+    snesState.vram = vram;
+    snesState.sram = sram;
+    snesState.framebuffer = fb;
+    heap_caps_free(combined);
+    return true;
+  }
+  heap_caps_free(combined);
+  return false;
+}
+
+#else // BMO_EXPERIMENTAL_CORES == 0
+bool SNESEmu::init(uint8_t* romData, size_t romSize) {
+  (void)romData;
+  (void)romSize;
+  LOG_WARN_STR("[snes] Experimental core disabled (-DBMO_EXPERIMENTAL_CORES=1 to enable)");
+  DisplayEmu::showToast("EXPERIMENTAL CORE OFF", Theme::ACCENT_RED, 2200);
+  return false;
+}
+
+void SNESEmu::update() {}
+void SNESEmu::destroy() {}
+bool SNESEmu::isRunning() { return false; }
+bool SNESEmu::saveBatteryRam(const char* romFilename) { (void)romFilename; return false; }
+bool SNESEmu::loadBatteryRam(const char* romFilename) { (void)romFilename; return false; }
+bool SNESEmu::saveState(const char* romFilename, int slot) { (void)romFilename; (void)slot; return false; }
+bool SNESEmu::loadState(const char* romFilename, int slot) { (void)romFilename; (void)slot; return false; }
+
+#endif // BMO_EXPERIMENTAL_CORES
