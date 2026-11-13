@@ -5,7 +5,7 @@
 All timing and memory figures in this repository distinguish:
 
 1. `NOT_TESTED` — analytical calculation or source-configured constant not executed on hardware.
-2. `HOST_TESTED` — measured or checked on x86_64/Windows/Linux CI runners (`tests/`, `host_cores_runner.c`). Does not predict ESP32-S3 speed.
+2. `HOST_TESTED` — measured or checked on host/CI runners (`tests/`, `tests/host/`, `tests/test_native_cores_execution.py`). Does not predict ESP32-S3 speed.
 3. `TARGET_COMPILED` — Flash and static SRAM numbers emitted by `xtensa-esp32s3` linking (`arduino-cli compile --profile esp32s3`).
 4. `HARDWARE_TESTED` — physical serial logs, frame windows, or oscilloscope measurements from the soldered ESP32-S3 board. **None are recorded as of 2026-11.**
 
@@ -16,8 +16,8 @@ All timing and memory figures in this repository distinguish:
 | Wrapper Index | Platform | Target Period | Source Rationale |
 | ---: | :--- | ---: | :--- |
 | `0, 1` | GBC (`WalnutEmu`), GB (`PeanutEmu`) | `16,742 us` | Game Boy master clock `4,194,304 / 70,224` Hz |
-| `3` | DOOM (`DoomEmu`, opt-in) | `28,571 us` | `TICRATE = 35` |
-| `8` | PICO-8-style runtime (`PicoEmu`) | `33,333 us` | `30 Hz` nominal host presentation cadence |
+| `3` | DOOM (`DoomEmu`, default enabled via `BMO_ENABLE_DOOM=1`) | `28,571 us` | `TICRATE = 35` |
+| `8` | PICO-8 (`PicoEmu` / `fake08`) | `33,333 us` | `30 Hz` nominal PICO-8 cart presentation cadence |
 | Other indices | All other cores | `16,667 us` | Nominal `60 Hz` NTSC-style default |
 
 - PAL region detection and absolute 64-bit deadlines are not yet implemented.

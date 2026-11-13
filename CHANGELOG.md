@@ -1,5 +1,13 @@
 # Changelog
 
+## [Tech-Lead Audit Remediation — Genuine Upstream Cores, Safeguards & Host WASI Tests] - 2026-11-13
+
+- Replaced all custom experimental C engines (`src/engines/`) with 13 genuine upstream open-source cores in [`firmware/BmoGameboy/src/third_party/`](THIRD_PARTY_NOTICES.md) covering all 15 console platforms, enabled by default (`BMO_EXPERIMENTAL_CORES=1`, `BMO_ENABLE_DOOM=1`, `BMO_ENABLE_BAKED_ROMS=0`).
+- Updated combined firmware distribution license to `GPL-2.0-or-later` ([`LICENSE`](LICENSE)) with complete pinned URLs, commit SHAs, and local modification notes in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) and per-core `PROVENANCE.md` files (keeping `-DBMO_EXPERIMENTAL_CORES=0 -DBMO_ENABLE_DOOM=0` as an opt-in permissive MIT subset build).
+- Implemented firmware safeguards: boot-button Safe Mode (`SELECT` or `B` held at power-on forces `40 MHz` fallback SPI clock in `BmoGameboy.ino`), RAII `SpiArbiter::ScopedLock` (`src/hal/spi_arbiter.h`), SNES HiROM/ExHiROM checksum-complement SRAM detection and PC Engine `"HUBM"` BRAM header gating (`battery_save.h`), and async PSRAM raw16 framebuffer streaming (`DisplayEmu::streamRawFrameAsync`).
+- Fixed WonderSwan (`oswan`) core initialization and host memory bugs: added missing `AllocateBuffers()` call in `WsInit()`, added `WsReset()` on cartridge init (`emu_wswan.cpp`), aligned `ws_graphics_paint()` stride to `SCREEN_WIDTH`, and guarded shared `MemDummy` (`&gDummyByte`) & aliased `RAMMap` cleanup in `WsRelease()`.
+- Fixed WASI/host portability across genuine upstream engines (`snes9x`, `gwenesis`, `race`, `fake08`, `oswan`) and verified real CPU/VM 50-frame execution across all 11 host-testable engines (`stella2014`, `smsplus` Coleco & SMS, `handy`, `race`, `snes9x`, `oswan`, `gwenesis`, `huexpress`, `fake08`, `agnes`) in `tests/test_native_cores_execution.py`.
+
 ## [Phase 3 Structural Refactor, Core Gating & Repo Hygiene] - 2026-11-13
 
 - Reorganized [`firmware/BmoGameboy/src/`](firmware/BmoGameboy/BmoGameboy.ino) into layered directories: `hal/`, `storage/`, `ui/`, `cores/`, `engines/`, and `third_party/` (with per-component `PROVENANCE.md` files for Peanut-GB, Walnut-CGB, Agnes, and optional DOOM).

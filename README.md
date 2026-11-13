@@ -36,14 +36,14 @@ Firmware, host test suite, browser WebAssembly simulator, and 3D-printable enclo
 Requires Arduino CLI with `esp32:esp32@3.3.11`, `Adafruit BusIO@1.17.4`, `Adafruit GFX Library@1.12.6`, and `Adafruit ST7735 and ST7789 Library@1.11.0`. Build profile enforces `FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi`.
 
 ```powershell
-# Default public MIT firmware build (GB, GBC, NES active; BMO_EXPERIMENTAL_CORES=0, BMO_ENABLE_DOOM=0):
+# Default firmware build (all 15 platforms active; BMO_EXPERIMENTAL_CORES=1, BMO_ENABLE_DOOM=1; GPL-2.0-or-later):
 .\arduino-cli.exe compile --profile esp32s3 firmware/BmoGameboy
 
-# Enable the 10 experimental custom C cores alongside GB/GBC/NES:
-.\arduino-cli.exe compile --profile esp32s3 --build-property compiler.c.extra_flags=-DBMO_EXPERIMENTAL_CORES=1 --build-property compiler.cpp.extra_flags=-DBMO_EXPERIMENTAL_CORES=1 firmware/BmoGameboy
+# Build without DOOM (all 14 other upstream third-party cores active):
+.\arduino-cli.exe compile --profile esp32s3 --build-property compiler.c.extra_flags=-DBMO_ENABLE_DOOM=0 --build-property compiler.cpp.extra_flags=-DBMO_ENABLE_DOOM=0 firmware/BmoGameboy
 
-# Optional local GPL-2.0-or-later build with DOOM enabled (distribute under GPL-2.0+ only):
-.\arduino-cli.exe compile --profile esp32s3 --build-property compiler.c.extra_flags=-DBMO_ENABLE_DOOM=1 --build-property compiler.cpp.extra_flags=-DBMO_ENABLE_DOOM=1 firmware/BmoGameboy
+# Build minimal permissive MIT core subset only (GB, GBC, NES active):
+.\arduino-cli.exe compile --profile esp32s3 --build-property "compiler.c.extra_flags=-DBMO_EXPERIMENTAL_CORES=0 -DBMO_ENABLE_DOOM=0" --build-property "compiler.cpp.extra_flags=-DBMO_EXPERIMENTAL_CORES=0 -DBMO_ENABLE_DOOM=0" firmware/BmoGameboy
 ```
 
 ### 2. Run Host Tests & Validator (`HOST_TESTED`)
@@ -70,6 +70,6 @@ Click **BMO Mode** (`?state=bmo`) for the interactive 18-expression mascot test 
 
 ## Licensing & ROM Policy
 
-- First-party code is licensed under the [MIT License](LICENSE).
-- No commercial ROMs, copyrighted box art, or ROM downloader scripts exist in this repository (`BMO_ENABLE_BAKED_ROMS=0` by default). Supply your own ROMs on a FAT32 MicroSD card via [`scripts/deploy_sd_complete.py`](scripts/deploy_sd_complete.py) and [`scripts/deploy_to_sd.py`](scripts/deploy_to_sd.py).
-- The optional DOOM core (`BMO_ENABLE_DOOM=1`) is licensed under GPL-2.0-or-later and disabled by default (`BMO_ENABLE_DOOM=0`). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+- Combined default firmware distributions (`BMO_EXPERIMENTAL_CORES=1`, `BMO_ENABLE_DOOM=1`) are licensed under [GNU GPL v2 or later](LICENSE) because they integrate upstream copyleft emulator cores in `firmware/BmoGameboy/src/third_party/`. First-party host/utility scripts and the `-DBMO_EXPERIMENTAL_CORES=0 -DBMO_ENABLE_DOOM=0` GB/GBC/NES core subset contain only permissive MIT-compatible code.
+- No commercial ROMs, copyrighted box art, or ROM downloader scripts exist in this repository (`BMO_ENABLE_BAKED_ROMS=0` by default). Supply your own legally obtained ROMs on a FAT32 MicroSD card via [`scripts/deploy_sd_complete.py`](scripts/deploy_sd_complete.py) and [`scripts/deploy_to_sd.py`](scripts/deploy_to_sd.py).
+- Full upstream repository URLs, pinned commit SHAs, licenses, and local modifications for all 13 bundled engines are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

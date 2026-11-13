@@ -1,18 +1,18 @@
 # Firmware Agent Guide (`firmware/BmoGameboy/`)
 
-Applies to all `.ino`, `.cpp`, `.c`, `.h`, and `.hpp` changes under `firmware/BmoGameboy/` (`src/hal/`, `src/storage/`, `src/ui/`, `src/cores/`, `src/engines/`, `src/third_party/`).
+Applies to all `.ino`, `.cpp`, `.c`, `.h`, and `.hpp` changes under `firmware/BmoGameboy/` (`src/hal/`, `src/storage/`, `src/ui/`, `src/cores/`, `src/third_party/`).
 
 ## Hard Stops
 
 - Do NOT modify `FEATURE_BATTERY_MONITOR` (`0`), `FEATURE_AUDIO` (`0`), `partitions.csv`, or `sketch.yaml` QIO/OPI settings.
 - Do NOT assign GPIO `0, 3, 33–37, 45, 46` or modify the soldered GPIO mapping in `src/hal/config.h`.
-- Never commit commercial ROM arrays (`BMO_ENABLE_BAKED_ROMS=0` by default). Note that compiling with `BMO_ENABLE_DOOM=1` includes `src/third_party/doom/` (GPL-2.0-or-later). Experimental engines under `src/engines/` default to disabled (`BMO_EXPERIMENTAL_CORES=0`).
+- Never commit commercial ROM arrays (`BMO_ENABLE_BAKED_ROMS=0` by default). By default `BMO_EXPERIMENTAL_CORES=1` and `BMO_ENABLE_DOOM=1` include all 13 third-party engines under `src/third_party/` (combined firmware binary licensed `GPL-2.0-or-later`; pass `-DBMO_EXPERIMENTAL_CORES=0 -DBMO_ENABLE_DOOM=0` to compile only the permissive MIT GB/GBC/NES subset).
 
 ## Shared SPI Bus & Dual-Core Rules
 
 - Core 0 runs the `BMO_Display` worker task (`src/ui/display_emu.cpp`) driving ST7789 over FSPI (`TFT_SCK=12`, `TFT_MOSI=11`, `TFT_CS=10`).
 - Core 1 runs Arduino `setup()`/`loop()` (`BmoGameboy.ino`), button polling, emulator stepping, and MicroSD I/O (`SD_CS=13`, `SD_MISO=15`).
-- **Every** display transfer and SD operation MUST hold `SpiArbiter::lock()` / `SpiArbiter::unlock()` (`src/hal/spi_arbiter.cpp`) and check every early return path. Never release or leak the mutex across returns.
+- **Every** display transfer and SD operation MUST hold `SpiArbiter::ScopedLock` (`src/hal/spi_arbiter.h`) or matching `SpiArbiter::lock()` / `SpiArbiter::unlock()` (`src/hal/spi_arbiter.cpp`) across every early return path. Never release or leak the mutex across returns.
 - Before tearing down an active emulator or freeing framebuffers in PSRAM, wait for `DisplayEmu` to finish any queued asynchronous frame.
 
 ## Memory, Stack, and Hot-Path Discipline
@@ -26,6 +26,6 @@ Applies to all `.ino`, `.cpp`, `.c`, `.h`, and `.hpp` changes under `firmware/Bm
 
 ## Verification Scope
 
-- Default compile builds GB/GBC/NES (`BMO_EXPERIMENTAL_CORES=0`, `BMO_ENABLE_DOOM=0`): `.\arduino-cli.exe compile --profile esp32s3 firmware/BmoGameboy` (`TARGET_COMPILED`). Pass `-DBMO_EXPERIMENTAL_CORES=1` or `-DBMO_ENABLE_DOOM=1` when modifying gated cores.
+- Default compile builds all 15 platforms (`BMO_EXPERIMENTAL_CORES=1`, `BMO_ENABLE_DOOM=1`): `.\arduino-cli.exe compile --profile esp32s3 firmware/BmoGameboy` (`TARGET_COMPILED`). Also verify opt-out builds `-DBMO_ENABLE_DOOM=0` and `-DBMO_EXPERIMENTAL_CORES=0 -DBMO_ENABLE_DOOM=0` when modifying gated core plumbing or `CoreRegistry`.
 - Run `python -m tools.guardian audit` / `python -m tools.guardian verify` and host C++ tests (`python -m unittest discover -s tests -v`).
 - Never report `HARDWARE_TESTED` unless observed directly on physical hardware and logged in [`docs/hardware_measurements.md`](../docs/hardware_measurements.md).

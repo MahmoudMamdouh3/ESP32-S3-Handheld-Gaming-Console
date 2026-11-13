@@ -12,7 +12,7 @@ A clear description of the bug and what you expected to happen.
 ## Environment
 
 - Commit / branch:
-- Build flags (default MIT / `-DBMO_EXPERIMENTAL_CORES=1` / `-DBMO_ENABLE_DOOM=1`):
+- Build flags (default all-15-platforms GPL-2.0-or-later / `-DBMO_ENABLE_DOOM=0` / `-DBMO_EXPERIMENTAL_CORES=0 -DBMO_ENABLE_DOOM=0` MIT subset):
 - Hardware revision or simulator (`python simulator/run_simulator.py`):
 
 ## Steps to Reproduce

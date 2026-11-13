@@ -26,12 +26,12 @@ Always classify claims using these exact four levels and never upgrade one witho
 Key commands (Windows PowerShell):
 
 ```powershell
-# Compile default MIT firmware (GB/GBC/NES; BMO_EXPERIMENTAL_CORES=0, BMO_ENABLE_DOOM=0)
+# Compile default firmware (all 15 platforms active; BMO_EXPERIMENTAL_CORES=1, BMO_ENABLE_DOOM=1; GPL-2.0-or-later combined binary)
 .\arduino-cli.exe compile --profile esp32s3 firmware/BmoGameboy
 
-# Compile with gated cores (never set build.extra_flags; append to compiler.*.extra_flags)
-.\arduino-cli.exe compile --profile esp32s3 --build-property compiler.c.extra_flags=-DBMO_EXPERIMENTAL_CORES=1 --build-property compiler.cpp.extra_flags=-DBMO_EXPERIMENTAL_CORES=1 firmware/BmoGameboy
-.\arduino-cli.exe compile --profile esp32s3 --build-property compiler.c.extra_flags=-DBMO_ENABLE_DOOM=1 --build-property compiler.cpp.extra_flags=-DBMO_ENABLE_DOOM=1 firmware/BmoGameboy
+# Compile with cores opted out (never set build.extra_flags; append to compiler.*.extra_flags)
+.\arduino-cli.exe compile --profile esp32s3 --build-property compiler.c.extra_flags=-DBMO_ENABLE_DOOM=0 --build-property compiler.cpp.extra_flags=-DBMO_ENABLE_DOOM=0 firmware/BmoGameboy
+.\arduino-cli.exe compile --profile esp32s3 --build-property "compiler.c.extra_flags=-DBMO_EXPERIMENTAL_CORES=0 -DBMO_ENABLE_DOOM=0" --build-property "compiler.cpp.extra_flags=-DBMO_EXPERIMENTAL_CORES=0 -DBMO_ENABLE_DOOM=0" firmware/BmoGameboy
 
 # Host tests, validator, link & token parity checks
 python -m unittest discover -s tests -v
@@ -43,7 +43,7 @@ python scripts/verify_color_tokens.py
 
 ## Coding & Data Policies
 
-- Keep firmware buildable in a clean clone with `BMO_ENABLE_BAKED_ROMS=0`, `BMO_EXPERIMENTAL_CORES=0`, and `BMO_ENABLE_DOOM=0` (`simulator/run_simulator.py` auto-builds `bmo_playtest_cores.wasm` on demand).
+- Keep firmware buildable in a clean clone with `BMO_ENABLE_BAKED_ROMS=0` across default (`BMO_EXPERIMENTAL_CORES=1`, `BMO_ENABLE_DOOM=1`), `-DBMO_ENABLE_DOOM=0`, and minimal MIT (`-DBMO_EXPERIMENTAL_CORES=0 -DBMO_ENABLE_DOOM=0`) configurations (`simulator/run_simulator.py` auto-builds `bmo_playtest_cores.wasm` on demand).
 - Do not add copyrighted ROM headers, artwork scrapes, downloader scripts, or binaries `>= 1 MiB` (`.githooks/pre-commit` rejects staged blobs `>= 1,048,576` bytes and secret tokens).
 - Keep UI colors synchronized across `firmware/BmoGameboy/src/ui/theme.h`, `simulator/simulator.css`, and `DESIGN.md` (`python scripts/verify_color_tokens.py`).
 - See [`firmware/AGENTS.md`](firmware/AGENTS.md) for C/C++ RTOS/PSRAM rules and [`docs/decisions/README.md`](docs/decisions/README.md) for ADRs.

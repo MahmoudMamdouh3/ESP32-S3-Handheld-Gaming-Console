@@ -11,7 +11,7 @@ These records explain decisions that affect hardware, firmware behavior, storage
 | [0005](0005-psram-and-doom-budget.md) | Accepted | Size catalog and DOOM allocations from measured free/largest PSRAM at runtime with fixed bounds. |
 | [0006](0006-portable-power.md) | Proposed | Plan for 3×AA NiMH cells and a boost converter; exact electrical design is unselected. |
 | [0007](0007-fram-wiring.md) | Proposed | Keep GPIO43/44 as FRAM proposal; no physical wiring or persistence claim. |
-| [0008](0008-rom-policy-and-licensing.md) | Open | Await the user's separate ROM policy/license direction. |
+| [0008](0008-rom-policy-and-licensing.md) | Accepted | No tracked commercial ROMs or downloaders (`BMO_ENABLE_BAKED_ROMS=0`); combined default firmware is `GPL-2.0-or-later` (`THIRD_PARTY_NOTICES.md`) with opt-out MIT core subset. |
 | [0009](0009-emulator-exit-confirmation.md) | Accepted | `SELECT+UP` opens the quit action; two deliberate A presses are needed to exit. |
 | [0010](0010-simulator-boundary.md) | Accepted | Browser/Wokwi simulation and firmware behavior are separate execution environments. |
 | [0011](0011-index-path-storage.md) | Proposed | Compare larger fixed paths, string-pool offsets, and hashed identities before changing the catalog format. |
