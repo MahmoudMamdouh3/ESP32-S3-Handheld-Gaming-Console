@@ -65,6 +65,13 @@ class EnclosureGeneratorTests(unittest.TestCase):
         np.testing.assert_allclose(back.bounds, [[-41, -62, -13], [41, 62, 0]], atol=1e-5)
         self.assertAlmostEqual(front.bounds[1, 2] - back.bounds[0, 2], 26.0)
 
+    def test_ports_and_perfboard_match_core_hardware_layout(self):
+        self.assertEqual(CONFIG["ports"]["usb_c_center_x"], 0.0)
+        self.assertEqual(CONFIG["ports"]["microsd_center_y"], -34.0)
+        self.assertEqual(CONFIG["perfboard"]["design_envelope"], (50.0, 70.0, 1.6))
+        self.assertEqual(CONFIG["perfboard"]["mount_hole_spacing"], (43.0, 56.0))
+        self.assertEqual(CONFIG["perfboard"]["mount_center_y"], -24.0)
+
     def test_exports_are_repeatable_and_importable(self):
         with tempfile.TemporaryDirectory() as first_dir, tempfile.TemporaryDirectory() as second_dir:
             first = export_all(Path(first_dir))

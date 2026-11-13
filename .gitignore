@@ -63,3 +63,6 @@ tools/bmo_simulator/covers/
 # Virtual SD card content & large external audio files
 sdcard/
 resources/audio/
+
+# Local consolidated agent reference book (user-requested, not committed)
+Book/

@@ -18,7 +18,7 @@ The generator builds seven closed, separate printable meshes:
 | `bmo_buttons_start_select.stl` | Two pill caps with guide stems and retaining flanges |
 | `bmo_buttons_lr.stl` | Two top-edge actuators with broad caps, stems, and retaining flanges |
 
-The left and right sides use block `B`, `M`, and `O` cuts at 22 mm, 6 mm, and −10 mm from the body center. Each side has a seven-hole cluster centered 43 mm from the body center. These are matching design coordinates in the WebGL view and the printable shell. The button coordinates and 2.4-inch display window also match the simulator's centimetre coordinates. Expansion buttons X, Y, L, and R are supported in firmware but are not soldered to the present board.
+The left and right sides use block `B`, `M`, and `O` cuts at 22 mm, 6 mm, and −10 mm from the body center. Each side has a seven-hole cluster centered 43 mm from the body center. These are matching design coordinates in the WebGL view (`tools/bmo_simulator/bmo_enclosure_meshes.js`) and the printable shell. The MicroSD opening sits on the left wall at `y = −34 mm` below the `BMO` lettering, and the USB-C opening sits on the bottom edge (`x = 0, y = −62 mm`) aligned with the vertical ESP32-S3-DevKitC-1 board envelope. The button coordinates and 2.4-inch display window also match the simulator's centimetre coordinates. Expansion buttons X, Y, L, and R are supported in firmware but are not soldered to the present board.
 
 ### Display window and glass
 
@@ -33,11 +33,12 @@ Use Python with the pinned mesh dependencies:
 ```powershell
 python -m pip install -r tools/enclosure/requirements.txt
 python tools/enclosure/generate_bmo_enclosure.py
+python scripts/export_enclosure_web_meshes.py
 ```
 
-The command writes seven STL files and `bmo_enclosure_assembly.glb` under `tools/enclosure/build/`. That directory is ignored by Git. STL coordinates and dimensions are millimetres. The GLB scene uses metres and names each printable part plus `bmo_display_lens_preview`; vertex colors are embedded for inspection in Blender and glTF-compatible Unity importers. The GLB is an assembled, static preview, not a rigged control model. The Three.js simulator remains interactive in the browser.
+The CAD script writes seven STL files and `bmo_enclosure_assembly.glb` under `tools/enclosure/build/`. That directory is ignored by Git. STL coordinates and dimensions are millimetres. The GLB scene uses metres and names each printable part plus `bmo_display_lens_preview`; vertex colors are embedded for inspection in Blender and glTF-compatible Unity importers. The GLB is an assembled, static preview, while `scripts/export_enclosure_web_meshes.py` updates `tools/bmo_simulator/bmo_enclosure_meshes.js` so the interactive Three.js console and disassembly internals mode (`bmo_internals_3d.js`) render the same CSG shells in centimetres.
 
-The generator's configuration block is the only place to change enclosure dimensions, mounting envelopes, clearances, and profiles. Regenerate after any value changes. Do not edit generated STL or GLB files by hand.
+The generator's configuration block is the only place to change enclosure dimensions, mounting envelopes, clearances, and profiles. Regenerate both the CAD files and the simulator web-mesh bundle after any value changes. Do not edit generated STL, GLB, or `bmo_enclosure_meshes.js` files by hand.
 
 ## Geometry checks
 
@@ -67,7 +68,7 @@ The side `BMO` marks are recessed 0.5 mm into the shell. A multicolor printer ca
 | :--- | :--- | :--- |
 | Front/rear shell | Four 2.2 mm rear clearance passages, 1.6 mm front pilot bores, 6.2 mm bosses | Confirm screw type, length, engagement, and printed-pilot fit; M2 self-tapping screws are a starting option |
 | Battery door | Four 2.2 mm cover holes, recessed tabs, and 1.6 mm internal pilot bores | Confirm screw length, head shape, tab clearance, and repeated-open wear |
-| Perfboard | Four 6 mm posts with 2.2 mm holes and 44 × 48 mm nominal spacing | Measure board holes, solder peaks, module heights, and fastener heads first |
+| Perfboard | 50 × 70 mm (5×7 cm) envelope; four front posts + upper rear mounts at 43 × 56 mm spacing (`y = −24 mm`) clear of battery bay | Measure board holes, solder peaks, module heights, and fastener heads first |
 | Buttons | Captive flanges; radial running gap is configured around the action caps | Measure the actual switch body, plunger height, actuator travel, and clearance to solder joints |
 | Display | 1 mm lens, 0.18 mm adhesive value, and 0.2 mm rebate fit gap | Choose glass, gasket or adhesive and verify its compressed thickness and temperature range |
 

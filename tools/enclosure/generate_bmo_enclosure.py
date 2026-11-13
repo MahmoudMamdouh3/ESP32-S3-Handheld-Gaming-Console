@@ -42,11 +42,12 @@ CONFIG = {
         "shoulder_button_width": 18.0,
     },
     "ports": {
-        "usb_c_width": 9.0,
-        "usb_c_height": 3.5,
+        "usb_c_width": 9.5,
+        "usb_c_height": 3.8,
+        "usb_c_center_x": 0.0,
         "microsd_length": 14.0,
-        "microsd_height": 2.2,
-        "microsd_center_y": 20.0,
+        "microsd_height": 2.6,
+        "microsd_center_y": -34.0,
     },
     "battery": {
         "chemistry_plan": "3 x AA NiMH plus 5 V boost converter (not installed)",
@@ -67,9 +68,9 @@ CONFIG = {
     },
     "perfboard": {
         "survey_status": "WAITING",
-        "design_envelope": (50.0, 58.0, 8.0),
-        "mount_hole_spacing": (44.0, 48.0),
-        "mount_center_y": 22.0,
+        "design_envelope": (50.0, 70.0, 1.6),
+        "mount_hole_spacing": (43.0, 56.0),
+        "mount_center_y": -24.0,
         "standoff_height": 7.0,
         "standoff_outer_diameter": 6.0,
         "screw_clearance_diameter": 2.2,
@@ -204,8 +205,9 @@ def _glyph_strokes(letter: str, y_center: float, side: int) -> list[trimesh.Trim
     elif letter == "M":
         bar(0, -letter_w / 2 + stroke / 2, letter_h, stroke)
         bar(0, letter_w / 2 - stroke / 2, letter_h, stroke)
-        bar(0, 0, letter_h, stroke, 24)
-        bar(0, 0, letter_h, stroke, -24)
+        bar(2.5, 0, 6.4, stroke, -28)
+        bar(2.5, 0, 6.4, stroke, 28)
+        bar(-0.2, 0, 2.2, stroke)
     elif letter == "O":
         for yy in (-letter_h / 2 + stroke / 2, letter_h / 2 - stroke / 2):
             bar(yy, 0, stroke, letter_w)
@@ -231,8 +233,6 @@ def _side_features_cuts() -> list[trimesh.Trimesh]:
             cutters.append(_cylinder(hole_r, 4.0, (outer_x, y, z), axis="x", sections=32))
         for letter, y in (("B", 22.0), ("M", 6.0), ("O", -10.0)):
             cutters.extend(_glyph_strokes(letter, y, side))
-        # Shallow circular arm socket centered inside the O counter.
-        cutters.append(_cylinder(3.0, 1.1, (side * (HALF_W - 0.48), -10.0, 0.0), axis="x", sections=48))
     return cutters
 
 
@@ -281,8 +281,9 @@ def _front_shell() -> trimesh.Trimesh:
         cutters.append(_rounded_prism_xz(CONFIG["control"]["shoulder_button_width"] - 1.0,
                                          1.5, 6.0, 1.5, (sx, 61.25, 7.5)))
         cutters.append(_rounded_prism_xz(8.5, 2.2, 3.5, 1.0, (sx + 0.4, 60.9, 7.5)))
-    # Top USB-C and left microSD openings cross the shell split and are cut in both halves.
-    cutters.append(_box((CONFIG["ports"]["usb_c_width"], 8.0, CONFIG["ports"]["usb_c_height"]), (0, HALF_H - 1.0, 0)))
+    # Bottom USB-C (aligned to DevKitC-1) and lower-left microSD openings cross the shell split and are cut in both halves.
+    cutters.append(_box((CONFIG["ports"]["usb_c_width"], 8.0, CONFIG["ports"]["usb_c_height"]),
+                        (CONFIG["ports"]["usb_c_center_x"], -HALF_H + 1.0, 0)))
     cutters.append(_box((8.0, CONFIG["ports"]["microsd_length"], CONFIG["ports"]["microsd_height"]),
                         (-HALF_W + 1.0, CONFIG["ports"]["microsd_center_y"], 0)))
     cutters.extend(_side_features_cuts())
@@ -352,9 +353,9 @@ def _back_shell() -> trimesh.Trimesh:
                                       CONFIG["features"]["rear_vent_length"], 4.0,
                                       CONFIG["features"]["rear_vent_width"] / 2,
                                       (x, vent_y, REAR_FACE_Z + 1.0)))
-    # Port access is cut through the top edge and left side wall.
+    # Port access is cut through the bottom edge (USB-C) and lower-left side wall (microSD, below BMO glyphs).
     cutters.append(_box((CONFIG["ports"]["usb_c_width"], 8.0, CONFIG["ports"]["usb_c_height"]),
-                        (0, HALF_H - 1.0, 0)))
+                        (CONFIG["ports"]["usb_c_center_x"], -HALF_H + 1.0, 0)))
     cutters.append(_box((8.0, CONFIG["ports"]["microsd_length"], CONFIG["ports"]["microsd_height"]),
                         (-HALF_W + 1.0, CONFIG["ports"]["microsd_center_y"], 0)))
     # Case screw bosses pass through the rear wall and align with front receivers.
@@ -380,12 +381,14 @@ def _back_shell() -> trimesh.Trimesh:
                                      door_pilot_height,
                                      (sx, sy, REAR_FACE_Z + WALL + CONFIG["battery"]["door_post_height"] / 2),
                                      sections=32))
-    # Raised board mounts are design placeholders until the board survey is complete.
+    # Raised board mounts on rear half sit clear of the battery bay opening.
     spacing_x, spacing_y = CONFIG["perfboard"]["mount_hole_spacing"]
     board_y = CONFIG["perfboard"]["mount_center_y"]
     standoffs = []
     for sx in (-spacing_x / 2, spacing_x / 2):
         for sy in (board_y - spacing_y / 2, board_y + spacing_y / 2):
+            if sy < 0.0:
+                continue
             post = _cylinder(CONFIG["perfboard"]["standoff_outer_diameter"] / 2,
                              CONFIG["perfboard"]["standoff_height"],
                              (sx, sy, -BODY_D / 2 + WALL + CONFIG["perfboard"]["standoff_height"] / 2), sections=48)

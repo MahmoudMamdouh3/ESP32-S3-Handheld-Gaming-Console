@@ -1,5 +1,12 @@
 # Changelog
 
+## [Interactive 3D Internals Teardown, CAD WebGL Fixes & Wiring Blueprint] - 2026-11-13
+
+- Replaced primitive procedural WebGL box geometry in [`tools/bmo_simulator/bmo_3d_console.js`](tools/bmo_simulator/bmo_3d_console.js) with crease-split manifold CAD shell meshes exported by [`scripts/export_enclosure_web_meshes.py`](scripts/export_enclosure_web_meshes.py) to [`tools/bmo_simulator/bmo_enclosure_meshes.js`](tools/bmo_simulator/bmo_enclosure_meshes.js).
+- Eliminated speaker-grille Z-fighting flicker using true through-punched shell bores (`matIdx = 1`) and recessed internal acoustic baffles, removed the stray top seam rectangle, relocated the MicroSD slot to `y = -34.0 mm` (below `"O"`, clearing `"B"`), moved the Dual USB-C cutout to the bottom edge (`x = 0.0`, `y = -62.0 mm`), and removed the stray counter ring inside `"O"` plus corrected `"M"` strokes in [`tools/enclosure/generate_bmo_enclosure.py`](tools/enclosure/generate_bmo_enclosure.py).
+- Added [`tools/bmo_simulator/bmo_internals_3d.js`](tools/bmo_simulator/bmo_internals_3d.js) and UI controls in [`tools/bmo_simulator/index.html`](tools/bmo_simulator/index.html), [`tools/bmo_simulator/simulator.css`](tools/bmo_simulator/simulator.css), and [`tools/bmo_simulator/simulator.js`](tools/bmo_simulator/simulator.js): `Dissect / Internals` mode, `Bottom (USB-C)` / `Core PCB` presets, layer visibility checkboxes, `0-100%` explosion slider with animated M2 unscrewing and auto-play disassembly, 22 color-coded 3D jumper wires matching `firmware/BmoGameboy/src/core/config.h`, raycast Inspector, 7-step soldering sequence, and toggleable Planned Expansion overlay showing the `-9.3 mm` 3xAA rear Z conflict (`FEATURE_AUDIO=0`, `FEATURE_BATTERY_MONITOR=0`).
+- Updated [`docs/enclosure-3d-printing.md`](docs/enclosure-3d-printing.md), [`docs/readme/details-01.md`](docs/readme/details-01.md), and regression tests in [`tests/test_enclosure_generator.py`](tests/test_enclosure_generator.py) and [`tests/test_native_cores_execution.py`](tests/test_native_cores_execution.py).
+
 ## [BMO Mode Mascot Test Bench in Browser Simulator] - 2026-11-13
 
 ### Added
@@ -10,11 +17,14 @@
   - Added `test_11_bmo_mode_simulator_controls_and_wasm_bridge` in `tests/test_native_cores_execution.py` verifying `#bmo-mode-panel`, all 18 expression controls, BGR565 seafoam mint `#8AD5C3` unpacking, custom speech, tickle, and dance BPM execution in Node against `bmo_playtest_cores.wasm`.
 
 ### Fixed
+- Fixed browser WASM loading stall ("LOADING FIRMWARE BMO..." / "Loading" forever) when `tools/bmo_simulator/index.html` is opened directly over `file://` by emitting `tools/bmo_simulator/bmo_playtest_cores.b64.js` from `scripts/build_wasm_cores.py` and falling back to `decodeEmbeddedWasm()` in `wasm_playtest_engine.js`.
+- Fixed signed-distance polarity in 12 `smoothstepf(aaBand, 0.0f, ...)` calls in `firmware/BmoGameboy/src/core/bmo_face.cpp` (speech bubble, eyes, glints, mouth cavity/tongue/strokes, and particle borders) where `-d` inverted alpha inside SDF cull boxes, then rebuilt `bmo_playtest_cores.wasm` and `bmo_playtest_cores.b64.js`.
+- Fixed silent WASM failure masking in `simulator.js` (`engineLoadError`, `requireBmoEngine()`, `#bmo-mode-status` `"WASM Error"`, and TFT `BMO WASM CORE FAILED TO LOAD` notice), added explicit `.wasm`/`.js` MIME mappings in `tools/bmo_simulator/run_simulator.py`, and fixed `.bmo-bpm-row .slider-label` spacing in `simulator.css`.
 - Fixed byte-swapped BGR565 pixel unpacking in `WasmPlaytestEngine.renderBmoFrame()` (`wasm_playtest_engine.js`) so the firmware `BmoFace` background renders in seafoam mint (`#8AD5C3`) instead of swapped red/blue channels.
 - Fixed speech-bubble text positioning and 2-line wrapping in `BmoSimulator.renderIdleMascotScreen()` (`simulator.js`) to fit inside the firmware SDF speech bubble (`px 95..225`, `py 25..45`).
 
 ### Verification
-- Verified with Node WASM tests, host unit tests, Guardian UI-audit / verify / diff-audit, and full `scripts/validate_repo.py` after final edits (firmware C++ sources untouched; physical hardware unverified).
+- Verified with Node WASM tests (including SDF corner pixel polarity assertions), Chromium headless rendering over `file://` and HTTP, host unit tests, Guardian UI-audit / verify / diff-audit, and full `scripts/validate_repo.py` including ESP32-S3 target compile (physical hardware remains unverified).
 
 ## [Repository bug/performance fixes and documentation reconciliation] - 2026-11-12
 

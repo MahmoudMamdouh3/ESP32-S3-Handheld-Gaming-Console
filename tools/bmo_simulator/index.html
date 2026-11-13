@@ -62,12 +62,15 @@
           <button class="control-pill cam-preset-btn active" data-cam="front">Front</button>
           <button class="control-pill cam-preset-btn" data-cam="iso">3D Iso</button>
           <button class="control-pill cam-preset-btn" data-cam="top">Top (L/R)</button>
-          <button class="control-pill cam-preset-btn" data-cam="left">Left (SD)</button>
-          <button class="control-pill cam-preset-btn" data-cam="right">Right (Pwr)</button>
-          <button class="control-pill cam-preset-btn" data-cam="back">Back (4×AA)</button>
+          <button class="control-pill cam-preset-btn" data-cam="bottom">Bottom (USB-C)</button>
+          <button class="control-pill cam-preset-btn" data-cam="left">Left (BMO/SD)</button>
+          <button class="control-pill cam-preset-btn" data-cam="right">Right (BMO)</button>
+          <button class="control-pill cam-preset-btn" data-cam="back">Back</button>
+          <button class="control-pill cam-preset-btn" data-cam="core">Core PCB</button>
           <button class="control-pill cam-preset-btn" data-cam="reset">Reset</button>
         </div>
         <div class="stage-toolbar-group">
+          <button class="control-pill" id="btn-internals-mode" aria-pressed="false" aria-label="Open hardware internals teardown and beginner soldering guide">Dissect / Internals</button>
           <button class="control-pill" id="btn-bmo-mode" aria-pressed="false" aria-label="Toggle BMO Mascot testing mode">BMO Mode</button>
           <button class="control-pill" id="btn-toggle-viewmode" aria-label="Switch between 3D console model and flat layout">2D Flat View</button>
         </div>
@@ -161,6 +164,104 @@
 
     <!-- Sidebar: Console Museum, Specs & Telemetry -->
     <aside class="sidebar-panel">
+
+      <!-- Hardware Internals Disassembly & Beginner Soldering Guide Card -->
+      <div class="panel-card" id="internals-panel">
+        <div class="card-header">
+          <div class="card-title">Hardware Internals &amp; Solder Blueprint</div>
+          <div class="badge-counter" id="internals-status-badge">Assembled</div>
+        </div>
+
+        <div class="internals-action-row">
+          <button class="control-pill internals-play-btn" id="btn-internals-play">Play Disassembly</button>
+          <button class="control-pill" id="btn-internals-assemble">Assemble Shell</button>
+          <button class="control-pill" id="btn-internals-allwires">Show All Wires</button>
+        </div>
+
+        <div class="internals-slider-row">
+          <label for="slider-explode" class="internals-slider-label">
+            <span>Explode Z-Stack</span>
+            <span id="val-explode">0%</span>
+          </label>
+          <input type="range" id="slider-explode" min="0" max="100" value="0" step="1" aria-label="Explosion separation percentage">
+        </div>
+
+        <div class="internals-section-label">VIEW PRESETS (CLICK TO INSPECT LAYER)</div>
+        <div class="internals-preset-grid" id="internals-preset-grid">
+          <button class="control-pill internals-preset-btn active" data-preset="assembled">Assembled</button>
+          <button class="control-pill internals-preset-btn" data-preset="unscrew">Unscrew M2</button>
+          <button class="control-pill internals-preset-btn" data-preset="display">2.4&quot; Display</button>
+          <button class="control-pill internals-preset-btn" data-preset="core">Core PCB + MCU</button>
+          <button class="control-pill internals-preset-btn" data-preset="wiring">Wires Only</button>
+          <button class="control-pill internals-preset-btn" data-preset="exploded">Full Stack</button>
+        </div>
+
+        <div class="internals-section-label">LAYER VISIBILITY &amp; PLANNED EXPANSION</div>
+        <div class="internals-layer-grid">
+          <label class="internals-check-item"><input type="checkbox" class="internals-layer-chk" data-layer="frontShell" checked> Front Shell</label>
+          <label class="internals-check-item"><input type="checkbox" class="internals-layer-chk" data-layer="backShell" checked> Back + Door</label>
+          <label class="internals-check-item"><input type="checkbox" class="internals-layer-chk" data-layer="buttons" checked> Caps (D-Pad/AB)</label>
+          <label class="internals-check-item"><input type="checkbox" class="internals-layer-chk" data-layer="screws" checked> 8× M2 Screws</label>
+          <label class="internals-check-item"><input type="checkbox" class="internals-layer-chk" data-layer="display" checked> 2.4&quot; ST7789</label>
+          <label class="internals-check-item"><input type="checkbox" class="internals-layer-chk" data-layer="switches" checked> 8 Tactile Sw</label>
+          <label class="internals-check-item"><input type="checkbox" class="internals-layer-chk" data-layer="perfboard" checked> 5×7 Perfboard</label>
+          <label class="internals-check-item"><input type="checkbox" class="internals-layer-chk" data-layer="esp32" checked> DevKitC-1 N16R8</label>
+          <label class="internals-check-item"><input type="checkbox" class="internals-layer-chk" data-layer="microsd" checked> 6-Pin MicroSD</label>
+          <label class="internals-check-item"><input type="checkbox" class="internals-layer-chk" data-layer="wires" checked> 3D Jumper Wires</label>
+          <label class="internals-check-item internals-expansion-chk"><input type="checkbox" class="internals-layer-chk" id="chk-internals-expansion" data-layer="expansion"> Planned Expansion (Disabled in config.h)</label>
+        </div>
+
+        <div class="internals-section-label">HIGHLIGHT CIRCUIT BUS (CLICK 3D PART OR FILTER)</div>
+        <div class="internals-filter-grid">
+          <button class="control-pill internals-filter-btn active" data-highlight="all">All</button>
+          <button class="control-pill internals-filter-btn" data-highlight="power">3V3 / 5V / GND</button>
+          <button class="control-pill internals-filter-btn" data-highlight="display">Display SPI</button>
+          <button class="control-pill internals-filter-btn" data-highlight="microsd">SD SPI (Shared)</button>
+          <button class="control-pill internals-filter-btn" data-highlight="buttons">8 Buttons</button>
+          <button class="control-pill internals-filter-btn internals-danger-btn" data-highlight="forbidden">Forbidden Pins</button>
+        </div>
+
+        <div class="internals-inspector-box" id="internals-inspector">
+          <div class="internals-inspector-title">Selected Component / Wire Inspector</div>
+          <div class="internals-inspector-meta" id="internals-inspector-meta">Click any PCB, M2 screw, or color wire in 3D view.</div>
+        </div>
+
+        <div class="internals-section-label">BEGINNER SOLDER GUIDE (FROM ZERO EXPERIENCE)</div>
+        <div class="internals-step-tabs" id="internals-step-tabs">
+          <button class="control-pill internals-step-btn active" data-step="0">1</button>
+          <button class="control-pill internals-step-btn" data-step="1">2</button>
+          <button class="control-pill internals-step-btn" data-step="2">3</button>
+          <button class="control-pill internals-step-btn" data-step="3">4</button>
+          <button class="control-pill internals-step-btn" data-step="4">5</button>
+          <button class="control-pill internals-step-btn" data-step="5">6</button>
+          <button class="control-pill internals-step-btn" data-step="6">7</button>
+          <button class="control-pill" id="btn-internals-next-step">Next Step →</button>
+        </div>
+        <div class="internals-guide-card" id="internals-guide-card">
+          <div class="internals-guide-heading" id="internals-guide-heading">1. Prep Perfboard &amp; Headers</div>
+          <div class="internals-guide-body" id="internals-guide-body">Mount the 5x7 cm double-sided perfboard (50x70 mm, 18x24 hole grid) behind the switch plane. Leave a 14 mm left corridor for the MicroSD board.</div>
+          <div class="internals-guide-tip" id="internals-guide-tip">Tip: Tin your iron tip cleanly first; never bridge adjacent 2.54 mm pads unless intentionally making a shared SPI or GND bus.</div>
+        </div>
+
+        <div class="internals-clearance-grid">
+          <div class="telemetry-box">
+            <div class="telemetry-label">Shell Cavity</div>
+            <div class="telemetry-value">77.8×119.8×21.8 mm</div>
+          </div>
+          <div class="telemetry-box">
+            <div class="telemetry-label">Active Rear Z</div>
+            <div class="telemetry-value">+6.7 mm free (USB)</div>
+          </div>
+          <div class="telemetry-box" id="internals-expansion-warning" data-state="inactive">
+            <div class="telemetry-label">Expansion Z Check</div>
+            <div class="telemetry-value" id="internals-expansion-status">Disabled in config.h (Stage 1 USB)</div>
+          </div>
+          <div class="telemetry-box">
+            <div class="telemetry-label">Keep-Out GPIOs</div>
+            <div class="telemetry-value">0, 3, 35–37, 45, 46</div>
+          </div>
+        </div>
+      </div>
 
       <!-- BMO Mode Interactive Mascot Tester Card -->
       <div class="panel-card" id="bmo-mode-panel">
@@ -487,8 +588,11 @@
 
   <script src="three.min.js"></script>
   <script src="OrbitControls.js"></script>
+  <script src="bmo_enclosure_meshes.js"></script>
+  <script src="bmo_internals_3d.js"></script>
   <script src="bmo_3d_console.js"></script>
   <script src="console_history_data.js"></script>
+  <script src="bmo_playtest_cores.b64.js"></script>
   <script src="wasm_playtest_engine.js"></script>
   <script src="simulator.js"></script>
 </body>

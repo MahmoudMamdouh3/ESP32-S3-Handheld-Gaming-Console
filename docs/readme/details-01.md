@@ -70,17 +70,23 @@ In the sidebar test bench, all 18 `BmoExpression` states (`IDLE` through `CELEBR
 
 The browser supplies a small Arduino timing/randomness shim and draws the face at the firmware's 320×240 resolution. It does not execute the ESP32 state machine, ST7789/SPI transfer, SD-card code, or physical button electrical behavior; the surrounding browser menus remain a port rather than firmware output. Battery and audio remain disabled to match the soldered hardware.
 
+## Interactive 3D Enclosure & Internals Teardown
+
+The 3D console view (`tools/bmo_simulator/bmo_3d_console.js`, `bmo_enclosure_meshes.js`, and `bmo_internals_3d.js`) renders the hollow CSG-punched shell halves from `tools/enclosure/generate_bmo_enclosure.py`, including true through-bored seven-hole side speaker grilles, dark-ink recessed `BMO` side glyphs (`B=+22 mm`, `M=+6 mm`, `O=−10 mm`), lower-left MicroSD opening (`y = −34 mm`), and bottom USB-C opening (`x = 0, y = −62 mm`).
+
+Click **Dissect / Internals** (`?state=internals` / `?state=dissect`) or **Core PCB** to unthread the eight M2 fasteners, separate the front/back shells, and inspect the 1:1 centimetre hardware stack: 2.4" ST7789 SPI display carrier (`67 × 43 mm`), eight wired tactile switches, 5×7 cm (`50 × 70 mm`) double-sided perfboard, ESP32-S3-DevKitC-1 N16R8 (`25.40 × 62.74 mm` with official 44-pin J1/J3 header labels), 6-pin MicroSD breakout (`24 × 42 mm`), and color-coded 3D jumper harnesses matching `config.h`. A seven-step beginner solder guide, wire/part click inspector, and toggleable planned-expansion overlay (`X/Y/L/R`, MAX98357A audio, I2C FRAM, and the 3×AA battery Z-conflict envelope) remain synchronized with `config.h`.
+
 ## Playable Browser Game Boy, NES, Atari 2600, and ColecoVision
 
 The browser simulator runs the firmware's vendored Peanut-GB, Agnes, Stella, and ColecoVision sources compiled to WebAssembly. It executes uploaded Game Boy (`.gb`), NES (`.nes`), Atari 2600 (`.a26`), and ColecoVision (`.col`) ROMs with their firmware button mappings and framebuffer sizes. ColecoVision uses its centered 256×192 viewport. Atari uses the firmware's centered 160×192 framebuffer and pre-swapped TIA palette; supported image sizes are 2, 4, 8, 16, and 32 KiB. NES gameplay uses its firmware palette and centered 256×240 viewport; Agnes supports iNES mappers 0, 1, 2, and 4, not mapper 3 or NES 2.0. This does **not** run the ESP32 firmware: menus remain canvas-rendered, and the other 10 console cores remain firmware-only. Unsupported systems are reported instead of drawing a synthetic game.
 
-1. Build the WebAssembly cores (the repository's local WASI SDK is used when present; otherwise set `WASI_SDK_PATH`):
+1. Build the WebAssembly cores and embedded `file://` script bundle (`tools/bmo_simulator/bmo_playtest_cores.b64.js`; the repository's local WASI SDK is used when present, otherwise set `WASI_SDK_PATH`):
 
    ```powershell
    python scripts\build_wasm_cores.py
    ```
 
-2. Start the local server:
+2. Open `tools/bmo_simulator/index.html` directly in a browser (uses the embedded `bmo_playtest_cores.b64.js` bundle), or start the local HTTP server (`http://127.0.0.1:8080`):
 
    ```powershell
    python tools\bmo_simulator\run_simulator.py

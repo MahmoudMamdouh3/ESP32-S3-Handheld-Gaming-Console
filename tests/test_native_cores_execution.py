@@ -357,6 +357,7 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
     def test_09_run_simulator_server_handler_endpoints(self):
         from tools.bmo_simulator import run_simulator
         self.assertTrue(hasattr(run_simulator, "Handler"))
+        self.assertEqual(run_simulator.Handler.extensions_map.get(".wasm"), "application/wasm")
         self.assertTrue(hasattr(run_simulator.Handler, "do_POST"))
         self.assertEqual(run_simulator.HOST, "127.0.0.1")
         self.assertTrue(run_simulator.valid_host_header("127.0.0.1:8080"))
@@ -428,7 +429,19 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         self.assertIn("setupBmoModeControls()", js)
         self.assertIn("wrapSpeechLines(", js)
         self.assertIn("isEditableTarget", js)
+        self.assertIn("WASM CORE FAILED TO LOAD", js)
+        self.assertIn("bmo_playtest_cores.b64.js", html)
         self.assertIn(".bmo-gaze-pad:focus-visible", css)
+
+        import base64
+        b64_js_path = REPO_ROOT / "tools" / "bmo_simulator" / "bmo_playtest_cores.b64.js"
+        wasm_bin_path = REPO_ROOT / "tools" / "bmo_simulator" / "bmo_playtest_cores.wasm"
+        self.assertTrue(b64_js_path.exists())
+        b64_text = b64_js_path.read_text(encoding="utf-8")
+        prefix = 'window.BMO_PLAYTEST_WASM_B64 = "'
+        self.assertTrue(b64_text.startswith(prefix))
+        encoded_payload = b64_text[len(prefix):].rstrip(";\r\n\"")
+        self.assertEqual(base64.b64decode(encoded_payload), wasm_bin_path.read_bytes())
 
         node_bin = shutil.which("node")
         if node_bin:
@@ -459,9 +472,18 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
                 "  const quotes=eng.bmoQuotes();"
                 "  if(quotes.length!==10 || quotes[0]!=='Who wants to play video games?!')"
                 "    throw new Error('quotes mismatch: '+JSON.stringify(quotes));"
+                "  eng.setBmoExpression('JOY');"
                 "  eng.sayBmoText('Hello BMO Mode!', 3500);"
                 "  if(!eng.bmoHasSpeech() || eng.bmoCurrentQuote()!=='Hello BMO Mode!')"
                 "    throw new Error('custom speech mismatch: '+eng.bmoCurrentQuote());"
+                "  for(let t=1000;t<=1800;t+=40) eng.renderBmoFrame(mockCtx, t);"
+                "  const px=(x,y)=>{const i=(y*320+x)*4; return [putImg.data[i],putImg.data[i+1],putImg.data[i+2]];};"
+                "  const isMint=(rgb)=>Math.abs(rgb[0]-140)<=8 && Math.abs(rgb[1]-215)<=8 && Math.abs(rgb[2]-197)<=8;"
+                "  const eyeCorner=px(147,99), mouthBL=px(116,178), mouthBR=px(203,178), mouthIn=px(160,145), bubbleIn=px(160,34);"
+                "  if(!isMint(eyeCorner) || !isMint(mouthBL) || !isMint(mouthBR))"
+                "    throw new Error('SDF corner inverted (expected mint): '+JSON.stringify({eyeCorner,mouthBL,mouthBR}));"
+                "  if(mouthIn[0]>=45 || mouthIn[1]>=45 || bubbleIn[0]<250 || bubbleIn[1]<250 || bubbleIn[2]<250)"
+                "    throw new Error('Expected dark JOY mouth & white speech bubble: '+JSON.stringify({mouthIn,bubbleIn}));"
                 "  eng.clearBmoSpeech();"
                 "  if(eng.bmoHasSpeech()) throw new Error('clearBmoSpeech failed');"
                 "  console.log('BMO_MODE_WASM_BRIDGE_PASS rgb='+r+','+g+','+b);"
@@ -476,6 +498,62 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
             )
             self.assertEqual(proc.returncode, 0, msg=f"Node BMO Mode test failed: {proc.stderr}\n{proc.stdout}")
             self.assertIn("BMO_MODE_WASM_BRIDGE_PASS", proc.stdout)
+
+    def test_12_3d_enclosure_meshes_and_internals_teardown_controls(self):
+        """Ensure CAD WebGL meshes, 3D teardown steps, and pin wiring honor hardware rules."""
+        node_bin = shutil.which("node")
+        if not node_bin:
+            self.skipTest("node is not installed on PATH")
+        index_html = (REPO_ROOT / "tools" / "bmo_simulator" / "index.html").read_text(encoding="utf-8")
+        for token in (
+            "bmo_enclosure_meshes.js",
+            "bmo_internals_3d.js",
+            "id=\"btn-internals-mode\"",
+            "id=\"internals-panel\"",
+            "id=\"slider-explode\"",
+            "data-cam=\"bottom\"",
+            "data-cam=\"core\"",
+        ):
+            self.assertIn(token, index_html)
+
+        js_test = (
+            "const fs=require('fs'), vm=require('vm');\n"
+            "global.window = globalThis;\n"
+            "vm.runInThisContext(fs.readFileSync('tools/bmo_simulator/bmo_enclosure_meshes.js','utf8'));\n"
+            "vm.runInThisContext(fs.readFileSync('tools/bmo_simulator/bmo_internals_3d.js','utf8'));\n"
+            "const em = global.BMO_ENCLOSURE_MESHES;\n"
+            "if(!em || em.units!=='cm') throw new Error('missing BMO_ENCLOSURE_MESHES cm payload');\n"
+            "for(const k of ['bmo_front_shell','bmo_back_shell','bmo_battery_door']){\n"
+            "  const p = em.parts && em.parts[k];\n"
+            "  if(!p || !p.posB64 || !p.normI16B64 || !p.idxB64) throw new Error('incomplete mesh '+k);\n"
+            "  if(k!=='bmo_battery_door' && (!p.groups || p.groups.length<2)) throw new Error('missing dark face material group '+k);\n"
+            "}\n"
+            "const steps = global.BmoInternals3D.BUILD_GUIDE_STEPS;\n"
+            "const wires = global.BmoInternals3D.WIRE_DEFINITIONS;\n"
+            "if(!Array.isArray(steps) || steps.length!==7) throw new Error('expected 7 guide steps, got '+(steps&&steps.length));\n"
+            "if(!Array.isArray(wires) || wires.length!==22) throw new Error('expected 22 active wires, got '+(wires&&wires.length));\n"
+            "const forbidden = new Set(['GPIO 0','GPIO 3','GPIO 33','GPIO 34','GPIO 35','GPIO 36','GPIO 37','GPIO 45','GPIO 46']);\n"
+            "const allowedGpio = new Set(['GPIO 4','GPIO 5','GPIO 6','GPIO 7','GPIO 8','GPIO 9','GPIO 10','GPIO 11','GPIO 12','GPIO 13','GPIO 15','GPIO 16','GPIO 17','GPIO 18','GPIO 21']);\n"
+            "for(const w of wires){\n"
+            "  const pFrom = w.from[1];\n"
+            "  if(forbidden.has(pFrom)) throw new Error('forbidden GPIO wired: '+w.id+' -> '+pFrom);\n"
+            "  if(pFrom.startsWith('GPIO ') && !allowedGpio.has(pFrom)) throw new Error('unexpected GPIO wired: '+w.id+' -> '+pFrom);\n"
+            "}\n"
+            "const stats = global.BmoInternals3D.prototype.getStaticStats.call({});\n"
+            "if(stats.shellOuterMm!=='82 x 124 x 26' || !stats.perfboardMm.startsWith('50 x 70 x 1.6')){\n"
+            "  throw new Error('stats mismatch: '+JSON.stringify(stats));\n"
+            "}\n"
+            "console.log('INTERNALS_3D_CONTRACT_PASS wires='+wires.length+' steps='+steps.length);\n"
+        )
+        proc = subprocess.run(
+            [node_bin, "-e", js_test],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        self.assertEqual(proc.returncode, 0, msg=f"Node 3D internals contract failed: {proc.stderr}\n{proc.stdout}")
+        self.assertIn("INTERNALS_3D_CONTRACT_PASS wires=22 steps=7", proc.stdout)
 
 
 class TestCoverArtPipeline(unittest.TestCase):

@@ -1082,6 +1082,11 @@ kbd.key-cap {
   margin-top: 4px;
 }
 
+.bmo-bpm-row .slider-label {
+  gap: 8px;
+  white-space: nowrap;
+}
+
 .bmo-bpm-row input[type="range"] {
   flex: 1;
   accent-color: var(--accent-bmo);
@@ -1214,4 +1219,170 @@ kbd.key-cap {
   outline: 2px solid var(--accent-gold);
   outline-offset: 2px;
   border-color: var(--accent-bmo);
+}
+
+/* ==========================================================================
+   HARDWARE INTERNALS DISSECTION & BEGINNER SOLDERING BLUEPRINT
+   ========================================================================== */
+#internals-panel.is-active {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 18px rgba(0, 210, 211, 0.16);
+}
+
+.internals-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.internals-slider-row {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.internals-slider-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.internals-slider-row input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent-cyan);
+  cursor: pointer;
+}
+
+.internals-slider-row input[type="range"]:focus-visible,
+.internals-check-item input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 2px;
+}
+
+.internals-section-label {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--accent-cyan);
+}
+
+.internals-preset-grid,
+.internals-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.internals-preset-btn,
+.internals-filter-btn,
+.internals-step-btn {
+  justify-content: center;
+  padding: 6px 8px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+.internals-danger-btn {
+  border-color: rgba(255, 89, 94, 0.45);
+  color: #ff99a2;
+}
+
+.internals-danger-btn.active {
+  background: rgba(255, 89, 94, 0.2);
+  border-color: #ff595e;
+  color: #ffffff;
+}
+
+.internals-layer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 8px;
+  margin-top: 8px;
+}
+
+.internals-check-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.internals-check-item input[type="checkbox"] {
+  accent-color: var(--accent-cyan);
+  cursor: pointer;
+}
+
+.internals-expansion-chk {
+  grid-column: 1 / -1;
+  color: var(--accent-gold);
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.internals-inspector-box,
+.internals-guide-card {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--bezel-lens);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.internals-inspector-title,
+.internals-guide-heading {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.internals-inspector-meta,
+.internals-guide-body {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+.internals-guide-tip {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  color: var(--accent-bmo);
+}
+
+.internals-step-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.internals-clearance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+#internals-expansion-warning[data-state="conflict"] {
+  border-color: rgba(255, 89, 94, 0.65);
+  background: rgba(255, 89, 94, 0.12);
+}
+
+#internals-expansion-warning[data-state="conflict"] .telemetry-value {
+  color: #ff99a2;
 }

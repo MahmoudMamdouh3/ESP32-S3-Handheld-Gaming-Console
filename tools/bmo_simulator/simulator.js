@@ -87,6 +87,13 @@ class BmoSimulator {
     this.bmoGazeY = 0;
     this.bmoLastUiSyncMs = 0;
 
+    // Hardware Internals Dissection State
+    this.internalsModeActive = false;
+    this.internalsPreset = "assembled";
+    this.internalsHighlight = "all";
+    this.internalsStepIndex = 0;
+    this.pendingInternalsPreset = null;
+
     // DMG Runtime Palettes
     this.palettes = {
       classic: ["#9bbc0f", "#8bac0f", "#306230", "#0f380f"],
@@ -107,14 +114,19 @@ class BmoSimulator {
       ? new window.WasmPlaytestEngine()
       : null;
     this.engineLoadFailed = false;
+    this.engineLoadError = "";
     this.engineReady = this.wasmEngine
       ? this.wasmEngine.init().then(() => {
+        this.engineLoadFailed = false;
+        this.engineLoadError = "";
         this.populateBmoQuotes();
         this.syncBmoModeUI();
         return true;
       }).catch((error) => {
         this.engineLoadFailed = true;
-        this.showSimulatorMessage(error.message, true);
+        this.engineLoadError = (error && error.message) ? error.message : "Failed to initialize WebAssembly BMO core.";
+        this.showSimulatorMessage(this.engineLoadError, true);
+        this.syncBmoModeUI();
         return false;
       })
       : Promise.resolve(false);
@@ -137,6 +149,11 @@ class BmoSimulator {
             (key) => this.handleExternalButtonPress(key),
             (key) => this.handleExternalButtonRelease(key)
           );
+          this.bmo3D.setOnInternalSelect((meta) => this.handleInternalPartSelected(meta));
+          this.bmo3D.onExplosionChange = (t) => this.syncExplosionReadout(t);
+          if (this.pendingInternalsPreset) {
+            this.applyInternalsPresetUI(this.pendingInternalsPreset);
+          }
         } catch (err) {
           console.warn("Failed to initialize 3D console view:", err);
           this.switchTo2DView();
@@ -181,6 +198,10 @@ class BmoSimulator {
       this.currentState = STATE.BOOT_SPLASH;
     } else if (stateParam === "bmo") {
       this.enterBmoMode();
+    } else if (stateParam === "internals" || stateParam === "dissect") {
+      this.pendingInternalsPreset = "exploded";
+    } else if (stateParam === "core" || stateParam === "unscrew" || stateParam === "wiring" || stateParam === "display") {
+      this.pendingInternalsPreset = stateParam;
     } else if (stateParam === "mascot") {
       this.enterBmoCompanion(true, false);
     } else if (stateParam === "carousel") {
@@ -473,12 +494,19 @@ class BmoSimulator {
     this.syncBmoModeUI();
   }
 
-  runBmoAction(callback, stopCycle = false) {
+  requireBmoEngine() {
     const engine = this.wasmEngine;
-    if (!engine || !engine.bmoReady) {
-      this.showSimulatorMessage("The firmware BMO companion is still loading.", false);
-      return false;
-    }
+    if (engine && engine.bmoReady) return engine;
+    const message = this.engineLoadFailed
+      ? (this.engineLoadError || "The firmware BMO WebAssembly core failed to load.")
+      : "The firmware BMO companion is still loading.";
+    this.showSimulatorMessage(message, this.engineLoadFailed);
+    return null;
+  }
+
+  runBmoAction(callback, stopCycle = false) {
+    const engine = this.requireBmoEngine();
+    if (!engine) return false;
     this.ensureBmoModeActive();
     if (stopCycle) {
       this.bmoAutoCycle = false;
@@ -559,7 +587,9 @@ class BmoSimulator {
 
     const statusBadge = document.getElementById("bmo-mode-status");
     if (statusBadge) {
-      statusBadge.textContent = !ready ? "Loading" : isInMascot ? `Active · ${exprName}` : "Standby";
+      statusBadge.textContent = this.engineLoadFailed
+        ? "WASM Error"
+        : !ready ? "Loading" : isInMascot ? `Active · ${exprName}` : "Standby";
     }
     const statExpr = document.getElementById("bmo-stat-expr");
     if (statExpr) statExpr.textContent = `${exprName} (${exprId})`;
@@ -591,11 +621,8 @@ class BmoSimulator {
 
   handleBmoButtonPress(key) {
     const now = performance.now();
-    const engine = this.wasmEngine;
-    if (!engine || !engine.bmoReady) {
-      this.showSimulatorMessage("The firmware BMO companion is still loading.", false);
-      return;
-    }
+    const engine = this.requireBmoEngine();
+    if (!engine) return;
 
     if (key === "START") {
       this.exitBmoCompanion();
@@ -821,8 +848,21 @@ class BmoSimulator {
         document.querySelectorAll(".cam-preset-btn").forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
         const cam = btn.getAttribute("data-cam");
+        if (!this.is3DView) {
+          this.is3DView = true;
+          this.updateViewMode();
+        }
+        if (cam === "core") {
+          this.applyInternalsPresetUI("core");
+          return;
+        }
+        if (cam === "reset") {
+          this.applyInternalsPresetUI("assembled");
+          if (this.bmo3D) this.bmo3D.setCameraPreset("front");
+          return;
+        }
         if (this.bmo3D) {
-          this.bmo3D.setCameraPreset(cam === "reset" ? "front" : cam);
+          this.bmo3D.setCameraPreset(cam);
         }
       });
     });
@@ -992,7 +1032,241 @@ class BmoSimulator {
     }
 
     this.setupBmoModeControls();
+    this.setupInternalsControls();
     this.updateSidebarMuseumView();
+  }
+
+  setupInternalsControls() {
+    const bindClick = (id, handler) => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener("click", handler);
+      return el;
+    };
+
+    bindClick("btn-internals-mode", () => {
+      if (this.internalsModeActive) {
+        this.applyInternalsPresetUI("assembled");
+        if (this.bmo3D) this.bmo3D.setCameraPreset("front");
+      } else {
+        if (!this.is3DView) {
+          this.is3DView = true;
+          this.updateViewMode();
+        }
+        this.applyInternalsPresetUI("core");
+        if (this.bmo3D) this.bmo3D.playDisassemblySequence(true);
+        const panel = document.getElementById("internals-panel");
+        if (panel && typeof panel.scrollIntoView === "function") {
+          panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+      }
+    });
+
+    bindClick("btn-internals-play", () => {
+      if (!this.is3DView) {
+        this.is3DView = true;
+        this.updateViewMode();
+      }
+      this.internalsModeActive = true;
+      this.syncInternalsBadge();
+      if (this.bmo3D) {
+        this.bmo3D.setLayerVisible("shells", true);
+        this.bmo3D.setLayerVisible("buttons", true);
+        this.syncLayerCheckboxes();
+        this.bmo3D.playDisassemblySequence(true);
+      }
+    });
+
+    bindClick("btn-internals-assemble", () => {
+      this.applyInternalsPresetUI("assembled");
+      if (this.bmo3D) this.bmo3D.setCameraPreset("iso");
+    });
+
+    bindClick("btn-internals-allwires", () => {
+      this.setInternalsHighlightUI("all");
+    });
+
+    const sliderExplode = document.getElementById("slider-explode");
+    if (sliderExplode) {
+      sliderExplode.addEventListener("input", () => {
+        const pct = parseInt(sliderExplode.value, 10) || 0;
+        if (!this.is3DView) {
+          this.is3DView = true;
+          this.updateViewMode();
+        }
+        this.internalsModeActive = pct > 2;
+        if (this.bmo3D) {
+          this.bmo3D.setExplode(pct / 100);
+        }
+        this.syncExplosionReadout(pct / 100);
+        this.syncInternalsBadge();
+      });
+    }
+
+    document.querySelectorAll(".internals-preset-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const preset = btn.getAttribute("data-preset") || "assembled";
+        if (!this.is3DView) {
+          this.is3DView = true;
+          this.updateViewMode();
+        }
+        this.applyInternalsPresetUI(preset);
+      });
+    });
+
+    document.querySelectorAll(".internals-layer-chk").forEach((chk) => {
+      chk.addEventListener("change", () => {
+        const layer = chk.getAttribute("data-layer");
+        if (this.bmo3D && layer) {
+          this.bmo3D.setLayerVisible(layer, chk.checked);
+          if (layer === "expansion") {
+            const warnCard = document.getElementById("internals-expansion-warning");
+            const warnStatus = document.getElementById("internals-expansion-status");
+            if (warnCard && warnStatus) {
+              warnCard.dataset.state = chk.checked ? "conflict" : "inactive";
+              warnStatus.textContent = chk.checked
+                ? "-9.3 mm Z clash w/ 3xAA bay (use <=6 mm LiPo)"
+                : "Disabled in config.h (Stage 1 USB)";
+            }
+            if (chk.checked && this.bmo3D.explodeCurrent < 0.25) {
+              this.applyInternalsPresetUI("core");
+            }
+          }
+        }
+      });
+    });
+
+    document.querySelectorAll(".internals-filter-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const hl = btn.getAttribute("data-highlight") || "all";
+        this.setInternalsHighlightUI(hl);
+      });
+    });
+
+    document.querySelectorAll(".internals-step-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.getAttribute("data-step"), 10) || 0;
+        this.selectBeginnerGuideStep(idx, true);
+      });
+    });
+
+    bindClick("btn-internals-next-step", () => {
+      const steps = (window.BmoInternals3D && window.BmoInternals3D.BUILD_GUIDE_STEPS) || [];
+      const count = steps.length || 7;
+      this.selectBeginnerGuideStep((this.internalsStepIndex + 1) % count, true);
+    });
+
+    this.selectBeginnerGuideStep(0, false);
+    this.syncInternalsBadge();
+  }
+
+  applyInternalsPresetUI(presetName) {
+    this.internalsPreset = presetName;
+    this.internalsModeActive = presetName !== "assembled";
+    document.querySelectorAll(".internals-preset-btn").forEach((b) => {
+      b.classList.toggle("active", b.getAttribute("data-preset") === presetName);
+    });
+    if (this.bmo3D) {
+      this.bmo3D.applyInternalsPreset(presetName);
+      this.syncExplosionReadout(this.bmo3D.explodeTarget);
+      this.syncLayerCheckboxes();
+    }
+    this.syncInternalsBadge();
+  }
+
+  setInternalsHighlightUI(tag) {
+    this.internalsHighlight = tag || "all";
+    document.querySelectorAll(".internals-filter-btn").forEach((b) => {
+      b.classList.toggle("active", b.getAttribute("data-highlight") === this.internalsHighlight);
+    });
+    if (this.bmo3D) {
+      this.bmo3D.setInternalHighlight(this.internalsHighlight);
+    }
+  }
+
+  selectBeginnerGuideStep(stepIdx, applyTo3D = true) {
+    const steps = (window.BmoInternals3D && window.BmoInternals3D.BUILD_GUIDE_STEPS) || [];
+    if (!steps.length) return;
+    const clamped = ((stepIdx % steps.length) + steps.length) % steps.length;
+    this.internalsStepIndex = clamped;
+    const step = steps[clamped];
+
+    document.querySelectorAll(".internals-step-btn").forEach((b) => {
+      b.classList.toggle("active", parseInt(b.getAttribute("data-step"), 10) === clamped);
+    });
+    const heading = document.getElementById("internals-guide-heading");
+    const body = document.getElementById("internals-guide-body");
+    const tip = document.getElementById("internals-guide-tip");
+    if (heading) heading.textContent = step.title;
+    if (body) body.textContent = step.summary;
+    if (tip) tip.textContent = `Tip: ${step.tip}`;
+
+    if (applyTo3D) {
+      if (!this.is3DView) {
+        this.is3DView = true;
+        this.updateViewMode();
+      }
+      this.applyInternalsPresetUI(step.preset);
+      this.setInternalsHighlightUI(step.highlight);
+      if (step.id === "step_7") {
+        const expChk = document.getElementById("chk-internals-expansion");
+        if (expChk && !expChk.checked) {
+          expChk.checked = true;
+          expChk.dispatchEvent(new Event("change"));
+        }
+      }
+    }
+  }
+
+  handleInternalPartSelected(meta) {
+    const inspector = document.getElementById("internals-inspector");
+    const metaEl = document.getElementById("internals-inspector-meta");
+    if (!inspector || !metaEl || !meta) return;
+    const titleEl = inspector.querySelector(".internals-inspector-title");
+    if (titleEl) titleEl.textContent = `${meta.name} (${meta.role || "Component"})`;
+    metaEl.textContent = meta.detail || "Inspecting selected assembly.";
+  }
+
+  syncExplosionReadout(t) {
+    const pct = Math.round(Math.max(0, Math.min(1, Number(t) || 0)) * 100);
+    const valEl = document.getElementById("val-explode");
+    const sliderEl = document.getElementById("slider-explode");
+    if (valEl) valEl.textContent = `${pct}%`;
+    if (sliderEl && Math.abs(parseInt(sliderEl.value, 10) - pct) >= 1) {
+      sliderEl.value = String(pct);
+    }
+  }
+
+  syncLayerCheckboxes() {
+    if (!this.bmo3D) return;
+    const internalsVis = this.bmo3D.internals ? this.bmo3D.internals.layerVisibility : {};
+    document.querySelectorAll(".internals-layer-chk").forEach((chk) => {
+      const layer = chk.getAttribute("data-layer");
+      if (!layer) return;
+      if (layer in this.bmo3D.layerVis) chk.checked = Boolean(this.bmo3D.layerVis[layer]);
+      else if (layer in internalsVis) chk.checked = Boolean(internalsVis[layer]);
+    });
+  }
+
+  syncInternalsBadge() {
+    const toolbarBtn = document.getElementById("btn-internals-mode");
+    const panel = document.getElementById("internals-panel");
+    const badge = document.getElementById("internals-status-badge");
+    if (toolbarBtn) {
+      toolbarBtn.classList.toggle("active", this.internalsModeActive);
+      toolbarBtn.setAttribute("aria-pressed", String(this.internalsModeActive));
+    }
+    if (panel) panel.classList.toggle("is-active", this.internalsModeActive);
+    if (badge) {
+      const labels = {
+        assembled: "Assembled",
+        unscrew: "Unscrewing M2",
+        display: "Display Stack",
+        core: "Core PCB Open",
+        wiring: "Harness View",
+        exploded: "Full Stack",
+      };
+      badge.textContent = labels[this.internalsPreset] || (this.internalsModeActive ? "Open" : "Assembled");
+    }
   }
 
   setupBmoModeControls() {
@@ -1877,9 +2151,21 @@ class BmoSimulator {
       this.ctx.fillStyle = "#8AD5C3";
       this.ctx.fillRect(0, 0, 320, 240);
       this.ctx.fillStyle = "#0F2620";
-      this.ctx.font = "bold 10px monospace";
       this.ctx.textAlign = "center";
-      this.ctx.fillText("LOADING FIRMWARE BMO...", 160, 120);
+      if (this.engineLoadFailed) {
+        this.ctx.font = "bold 11px monospace";
+        this.ctx.fillText("BMO WASM CORE FAILED TO LOAD", 160, 102);
+        this.ctx.font = "9px monospace";
+        const errLines = this.wrapSpeechLines(
+          this.engineLoadError || "Run: python tools/bmo_simulator/run_simulator.py",
+          280,
+          3
+        );
+        errLines.forEach((line, idx) => this.ctx.fillText(line, 160, 122 + idx * 14));
+      } else {
+        this.ctx.font = "bold 10px monospace";
+        this.ctx.fillText("LOADING FIRMWARE BMO...", 160, 120);
+      }
       return;
     }
 
