@@ -1,6 +1,6 @@
 # BMO Enclosure Model and 3D Printing
 
-This page describes the parametric enclosure design and its current verification scope. The numbers below are CAD design inputs, not measurements of the soldered handheld. `physical_fit_status` and `perfboard.survey_status` in [`generate_bmo_enclosure.py`](../tools/enclosure/generate_bmo_enclosure.py) remain `WAITING` until the board and modules are measured.
+This page describes the parametric enclosure design and its current verification scope. The numbers below are CAD design inputs, not measurements of the soldered handheld. `physical_fit_status` and `perfboard.survey_status` in [`generate_bmo_enclosure.py`](../tools/enclosure/generate_bmo_enclosure.py) remain `WAITING` until the board and modules are measured. See [Hardware Reference](hardware.md) and [`hardware_measurements.md`](hardware_measurements.md).
 
 ## Model layout
 
@@ -78,7 +78,7 @@ Do not add heat-set inserts until the insert's barrel, length, installation temp
 
 The 26 mm depth provides a nominal 21.8 mm internal cavity. A 54 × 47 × 16 mm battery bay is reserved for the planned three-AA NiMH holder and 5 V boost converter. Those items are not installed: the handheld is USB-C powered, and no holder, converter, power-path circuit, or battery monitor is selected. The bay is only an envelope. It does not prove that the cell holder, board, display, wires, and connector can fit together.
 
-Seven side bores and five rear slots are open in the CAD shell to preserve the requested side appearance and provide possible air paths. The speaker is not installed and audio remains disabled. No airflow, case temperature, battery temperature, or component thermal test has been run. The openings do not establish cooling capacity. Keep `FEATURE_BATTERY_MONITOR=0` and `FEATURE_AUDIO=0` as recorded in [hardware notes](hardware-notes.md) and [Rule 01](../.agents/rules/01_hardware.md).
+Seven side bores and five rear slots are open in the CAD shell to preserve the requested side appearance and provide possible air paths. The speaker is not installed and audio remains disabled. No airflow, case temperature, battery temperature, or component thermal test has been run. The openings do not establish cooling capacity. Keep `FEATURE_BATTERY_MONITOR=0` and `FEATURE_AUDIO=0` as recorded in [Hardware Reference](hardware.md) and `firmware/BmoGameboy/src/core/config.h`.
 
 ## Caliper survey checklist
 

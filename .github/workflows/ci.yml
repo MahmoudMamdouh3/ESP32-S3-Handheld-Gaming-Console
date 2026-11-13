@@ -67,30 +67,14 @@ jobs:
       - name: Run host tests
         run: python -m unittest discover -s tests -v
 
+      - name: Run Guardian tests
+        run: python -m unittest discover -s tools/guardian/tests -v
+
       - name: Run strict repository validator
         run: python scripts/validate_repo.py --require-target-compile
-
-      - name: Run Guardian verification
-        run: python -m tools.guardian verify
 
       - name: Check Markdown links
         run: python scripts/check_markdown_links.py
 
       - name: Verify color tokens
         run: python scripts/verify_color_tokens.py
-
-      - name: Run Guardian UI audit
-        run: python -m tools.guardian ui-audit
-
-      - name: Check generated artifact drift
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m tools.guardian symbols
-          python scripts/bundle_rules.py
-          python -m tools.guardian index
-          if [[ -n "$(git status --porcelain)" ]]; then
-            git status --short
-            echo "Generated artifacts differ from committed files."
-            exit 1
-          fi

@@ -16,7 +16,7 @@ Board target: ESP32-S3-N16R8. The pin assignments and feature flags in [`config.
 
 The configured display clocks are 80 MHz by default and 40 MHz in the Diagnostics comparison. The configured SD clock is 25 MHz. Both devices share FSPI and must be protected by `SpiArbiter`; do not use a separate SPI object or bypass the arbiter.
 
-The physical SD breakout model, VCC rail, level shifter, and MISO high level are not recorded. A boot failure with the breakout powered from 5 V was reported, but its cause has not been measured. See [`hardware-notes.md`](../hardware-notes.md) for the measurement procedure. Do not assume that GPIO15 sees 5 V, and do not change the permanent wiring based only on that hypothesis.
+The physical SD breakout model, VCC rail, level shifter, and MISO high level are not recorded. A boot failure with the breakout powered from 5 V was reported, but its cause has not been measured. See [`hardware.md`](../hardware.md) for the measurement procedure. Do not assume that GPIO15 sees 5 V, and do not change the permanent wiring based only on that hypothesis.
 
 ## Firmware initialization
 

@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-07
-- Source: `firmware/BmoGameboy/src/core/config.h`, `.agents/rules/00_hard_stops.md`, `.agents/rules/01_hardware.md`
+- Source: `firmware/BmoGameboy/src/core/config.h`, `docs/hardware.md`
 
 ## Context
 

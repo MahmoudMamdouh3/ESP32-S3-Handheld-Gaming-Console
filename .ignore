@@ -1,0 +1,12 @@
+games/
+roms/
+sdcard/
+.rom_cache/
+Book/
+build/
+.tools/
+tools/enclosure/build/
+__pycache__/
+*.bin
+*.elf
+*.uf2

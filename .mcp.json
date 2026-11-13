@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "bmo-guardian": {
-      "command": "python",
-      "args": ["-m", "tools.guardian", "mcp"],
-      "description": "BMO Gameboy Ground-Truth Knowledge Graph, Hardware Pin Verifier, AST Linter & 11-Core Native C Test Harness"
-    }
-  }
-}

@@ -265,10 +265,7 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
     # test_10: No naked Serial.print in emulator wrappers
     # ------------------------------------------------------------------
     def test_10_no_serial_print_in_emulator_wrappers(self):
-        """
-        Verify no emulator wrapper uses naked Serial.print (hot path ban).
-        All debug output must go through LOG_ macros per 15_performance_budgets.md.
-        """
+        """Verify no emulator wrapper uses naked Serial.print (hot path ban)."""
         emu_dir = FIRMWARE_DIR / 'src' / 'emulators'
         offenders = []
         for cpp in sorted(emu_dir.glob('*.cpp')):
@@ -282,33 +279,18 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
         )
 
     # ------------------------------------------------------------------
-    # test_11: AGENT_MANIFEST emulator count matches filesystem
+    # test_11: All wrappers on disk match EMULATOR_STEMS and docs/compatibility.md
     # ------------------------------------------------------------------
-    def test_11_manifest_emulator_count_matches_filesystem(self):
-        """
-        Verify AGENT_MANIFEST.json registers every emu_*.cpp file.
-        Prevents the mistake of adding a new emulator without updating the manifest.
-        """
-        import json
-        manifest_path = WORKSPACE / 'AGENT_MANIFEST.json'
-        self.assertTrue(manifest_path.exists(), 'AGENT_MANIFEST.json not found')
-
-        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
-        manifest_wrappers = {e.get('wrapper', '') for e in manifest.get('emulators', [])}
-
+    def test_11_wrapper_count_and_compatibility_doc_match_filesystem(self):
+        """Verify docs/compatibility.md lists every emu_*.cpp file on disk."""
+        compat_text = (WORKSPACE / 'docs' / 'compatibility.md').read_text(encoding='utf-8')
         emu_dir = FIRMWARE_DIR / 'src' / 'emulators'
-        fs_stems = {f.stem for f in emu_dir.glob('emu_*.cpp')}
-
-        unregistered = []
-        for stem in fs_stems:
-            key = f'src/emulators/{stem}.cpp'
-            if not any(key in w for w in manifest_wrappers):
-                unregistered.append(stem)
-
+        fs_stems = sorted(f.stem for f in emu_dir.glob('emu_*.cpp'))
+        self.assertEqual(sorted(EMULATOR_STEMS), fs_stems)
+        missing = [stem for stem in fs_stems if f'{stem}.cpp' not in compat_text]
         self.assertEqual(
-            unregistered, [],
-            f'Emulators present on disk but not in AGENT_MANIFEST.json: {unregistered}. '
-            'Update AGENT_MANIFEST.json emulators array.'
+            missing, [],
+            f'Emulators on disk missing from docs/compatibility.md: {missing}',
         )
 
     # ------------------------------------------------------------------

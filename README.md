@@ -9,40 +9,63 @@
 
 </div>
 
-This repository contains Arduino-ESP32 firmware, fourteen emulator wrappers for fifteen platform selections, host checks, a browser simulator, and CAD/hardware documentation for a custom ESP32-S3-WROOM-1 N16R8 handheld console ("BMO Handheld"). Eight physical buttons are recorded as wired. X, Y, L, and R are firmware inputs that are not soldered on the current perfboard build.
+Firmware, host test suite, browser WebAssembly simulator, and 3D-printable enclosure CAD for an ESP32-S3-N16R8 handheld console ("BMO Handheld"). Eight physical buttons are wired; `X`, `Y`, `L`, and `R` are configured in firmware but not soldered on the current perfboard build.
 
-The browser simulator, Wokwi model, host C runners, and target firmware are separate execution environments. Their evidence does not establish hardware behavior for the permanent perfboard.
+> **Evidence boundary:** Firmware targets are `TARGET_COMPILED` via `arduino-cli` and core helpers are `HOST_TESTED`. No physical device tests (`HARDWARE_TESTED`) have been recorded yet. Browser/Wokwi simulators do not verify physical SPI signal integrity, thermal limits, or soldered wiring.
 
-> **Disclaimer:** BMO Handheld is an unofficial, non-commercial DIY fan hardware and software project. "BMO" / *Adventure Time* is a trademark of Cartoon Network / Turner Broadcasting System; "Game Boy" and related platform names referenced for file compatibility are trademarks of their respective owners. This repository is unaffiliated with and not endorsed by any console manufacturer or rights holder.
+> **Disclaimer:** Unofficial, non-commercial DIY fan project. "BMO" / *Adventure Time* is a trademark of Cartoon Network / Turner Broadcasting System; console names are trademarks of their respective owners.
 
-## Start here
+## Documentation
 
-- [Software Design Document](docs/software-design-document.md): system model, source ownership, hardware facts, storage, validation, and open limits.
-- [Hardware notes](docs/hardware-notes.md): recorded assembly and measurement procedure.
-- [Part 1: Simulator and hardware model](docs/readme/details-01.md)
-- [Part 2: Systems, controls, build, and checks](docs/readme/details-02.md)
-- [Third-party notices and licensing](THIRD_PARTY_NOTICES.md): upstream components, Three.js bundle provenance, and `BMO_ENABLE_DOOM` GPL-2.0-or-later notice.
-- [Decision records](docs/decisions/README.md)
+| Topic | Document |
+| :--- | :--- |
+| Hardware pins, hard stops & SPI clock risks | [docs/hardware.md](docs/hardware.md) |
+| System architecture & memory layout | [docs/architecture.md](docs/architecture.md) |
+| Supported consoles, status & controls | [docs/compatibility.md](docs/compatibility.md) |
+| Performance budgets & device measurements | [docs/performance.md](docs/performance.md) & [docs/hardware_measurements.md](docs/hardware_measurements.md) |
+| Binary formats (`BMOIDX02`, `BSS1`, SD deployment) | [docs/formats.md](docs/formats.md) |
+| 3D-printable enclosure & wiring guides | [docs/enclosure-3d-printing.md](docs/enclosure-3d-printing.md), [wiring/](docs/wiring/01-display-and-buttons.md) |
+| Visual tokens & UI standards | [DESIGN.md](DESIGN.md) |
+| Decision records (ADRs) & project roadmap | [docs/decisions/README.md](docs/decisions/README.md), [ROADMAP.md](ROADMAP.md) |
+| Contributing, security & notices | [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) |
 
-## Build and check
+## Quick Start
 
-The target profile uses `FlashMode=qio`, `FlashSize=16M`, the custom partition table, and `PSRAM=opi`. Install Arduino CLI, the Espressif ESP32 core version listed in the CI workflow, Adafruit GFX, and the Adafruit ST7735/ST7789 library before compiling.
+### 1. Build Firmware (`TARGET_COMPILED`)
+
+Requires Arduino CLI with `esp32:esp32@3.3.11`, `Adafruit BusIO@1.17.4`, `Adafruit GFX Library@1.12.6`, and `Adafruit ST7735 and ST7789 Library@1.11.0`. Build profile enforces `FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi`.
 
 ```powershell
-# Default public MIT firmware build (no baked ROMs, no DOOM GPL engine):
-.\arduino-cli.exe compile --profile esp32s3 firmware\BmoGameboy
+# Default public MIT firmware build (no baked commercial ROMs, no GPL DOOM engine):
+.\arduino-cli.exe compile --profile esp32s3 firmware/BmoGameboy
 
-# Optional local GPL-2.0-or-later DOOM-enabled build (only distribute binaries under GPL-2.0+):
-.\arduino-cli.exe compile --profile esp32s3 --build-property compiler.c.extra_flags=-DBMO_ENABLE_DOOM=1 --build-property compiler.cpp.extra_flags=-DBMO_ENABLE_DOOM=1 firmware\BmoGameboy
-
-python scripts/validate_repo.py
-python -m unittest discover -s tests -v
+# Optional local GPL-2.0-or-later build with DOOM enabled (distribute under GPL-2.0+ only):
+.\arduino-cli.exe compile --profile esp32s3 --build-property compiler.c.extra_flags=-DBMO_ENABLE_DOOM=1 --build-property compiler.cpp.extra_flags=-DBMO_ENABLE_DOOM=1 firmware/BmoGameboy
 ```
 
-A passing host suite does not replace a successful Arduino target compile. Neither test type proves physical electrical behavior.
+### 2. Run Host Tests & Validator (`HOST_TESTED`)
 
-## ROMs and licensing
+```powershell
+python -m unittest discover -s tests -v
+python -m unittest discover -s tools/guardian/tests -v
+python scripts/validate_repo.py
+python scripts/check_markdown_links.py
+python scripts/verify_color_tokens.py
+```
 
-- First-party source code in this repository is licensed under the [MIT License](LICENSE).
-- No commercial ROMs, copyrighted artwork packs, or pre-installed game payloads are shipped in this repository. Users supply their own legally obtained ROM files on a FAT32 MicroSD card (`BMO_ENABLE_BAKED_ROMS` defaults to `0`).
-- The optional DOOM engine (`src/vendor/doom/`) is licensed under GPL-2.0-or-later and is disabled by default (`BMO_ENABLE_DOOM=0`). Any firmware binary compiled with `BMO_ENABLE_DOOM=1` is governed as a whole by GPL-2.0-or-later. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+### 3. Browser Simulator & 3D Internals Teardown
+
+Build the WASM cores (`tools/bmo_simulator/bmo_playtest_cores.wasm` + `bmo_playtest_cores.b64.js`) and open `tools/bmo_simulator/index.html` directly or serve locally on `127.0.0.1:8080`:
+
+```powershell
+python scripts/build_wasm_cores.py
+python tools/bmo_simulator/run_simulator.py
+```
+
+Click **BMO Mode** (`?state=bmo`) for the interactive 18-expression mascot test bench or **Dissect / Internals** (`?state=dissect`) for the animated CAD shell disassembly and 22-wire jumper guide. Load your own legally obtained `.gb`, `.nes`, `.a26`, or `.col` ROMs in the browser.
+
+## Licensing & ROM Policy
+
+- First-party code is licensed under the [MIT License](LICENSE).
+- No commercial ROMs, copyrighted box art, or ROM downloader scripts exist in this repository (`BMO_ENABLE_BAKED_ROMS=0` by default). Supply your own ROMs on a FAT32 MicroSD card via [`scripts/deploy_sd_complete.py`](scripts/deploy_sd_complete.py) and [`scripts/deploy_to_sd.py`](scripts/deploy_to_sd.py).
+- The optional DOOM core (`BMO_ENABLE_DOOM=1`) is licensed under GPL-2.0-or-later and disabled by default (`BMO_ENABLE_DOOM=0`). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

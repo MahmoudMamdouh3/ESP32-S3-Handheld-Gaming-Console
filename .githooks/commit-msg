@@ -1,0 +1,14 @@
+#!/bin/sh
+# Minimal commit-msg check: reject empty commit messages after stripping comments.
+
+MSG_FILE="$1"
+python - "$MSG_FILE" <<'PYEOF'
+import pathlib
+import sys
+
+lines = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8", errors="ignore").splitlines()
+meaningful = [line.strip() for line in lines if line.strip() and not line.lstrip().startswith("#")]
+if not meaningful:
+    print("[commit-msg] ERROR: empty commit message.")
+    sys.exit(1)
+PYEOF

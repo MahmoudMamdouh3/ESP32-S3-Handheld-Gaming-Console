@@ -5,7 +5,7 @@
 - Replaced primitive procedural WebGL box geometry in [`tools/bmo_simulator/bmo_3d_console.js`](tools/bmo_simulator/bmo_3d_console.js) with crease-split manifold CAD shell meshes exported by [`scripts/export_enclosure_web_meshes.py`](scripts/export_enclosure_web_meshes.py) to [`tools/bmo_simulator/bmo_enclosure_meshes.js`](tools/bmo_simulator/bmo_enclosure_meshes.js).
 - Eliminated speaker-grille Z-fighting flicker using true through-punched shell bores (`matIdx = 1`) and recessed internal acoustic baffles, removed the stray top seam rectangle, relocated the MicroSD slot to `y = -34.0 mm` (below `"O"`, clearing `"B"`), moved the Dual USB-C cutout to the bottom edge (`x = 0.0`, `y = -62.0 mm`), and removed the stray counter ring inside `"O"` plus corrected `"M"` strokes in [`tools/enclosure/generate_bmo_enclosure.py`](tools/enclosure/generate_bmo_enclosure.py).
 - Added [`tools/bmo_simulator/bmo_internals_3d.js`](tools/bmo_simulator/bmo_internals_3d.js) and UI controls in [`tools/bmo_simulator/index.html`](tools/bmo_simulator/index.html), [`tools/bmo_simulator/simulator.css`](tools/bmo_simulator/simulator.css), and [`tools/bmo_simulator/simulator.js`](tools/bmo_simulator/simulator.js): `Dissect / Internals` mode, `Bottom (USB-C)` / `Core PCB` presets, layer visibility checkboxes, `0-100%` explosion slider with animated M2 unscrewing and auto-play disassembly, 22 color-coded 3D jumper wires matching `firmware/BmoGameboy/src/core/config.h`, raycast Inspector, 7-step soldering sequence, and toggleable Planned Expansion overlay showing the `-9.3 mm` 3xAA rear Z conflict (`FEATURE_AUDIO=0`, `FEATURE_BATTERY_MONITOR=0`).
-- Updated [`docs/enclosure-3d-printing.md`](docs/enclosure-3d-printing.md), [`docs/readme/details-01.md`](docs/readme/details-01.md), and regression tests in [`tests/test_enclosure_generator.py`](tests/test_enclosure_generator.py) and [`tests/test_native_cores_execution.py`](tests/test_native_cores_execution.py).
+- Updated [`docs/enclosure-3d-printing.md`](docs/enclosure-3d-printing.md), [`docs/hardware.md`](docs/hardware.md), and regression tests in [`tests/test_enclosure_generator.py`](tests/test_enclosure_generator.py) and [`tests/test_native_cores_execution.py`](tests/test_native_cores_execution.py).
 
 ## [BMO Mode Mascot Test Bench in Browser Simulator] - 2026-11-13
 
@@ -55,7 +55,7 @@
 - Corrected stale hard-coded memory health values and stopped presenting estimated ROM capacity as measured dynamic PSRAM usage.
 
 ### Documented
-- Recorded Guardian baseline, confirmed findings, unresolved cold-scan limitation, and verification boundaries in [the audit handoff](docs/handoffs/2026-11-12-logical-performance-audit.md).
+- Recorded Guardian baseline, confirmed findings, unresolved cold-scan limitation, and verification boundaries in `docs/handoffs/2026-11-12-logical-performance-audit.md` (removed in Phase 2 documentation consolidation).
 
 ### Verification
 - Native SPI arbiter regression, focused bus-model tests, Guardian verification (191 tests), Cppcheck (0 findings), and diff-audit passed. `python scripts/validate_repo.py` passed all nine phases and target compile (5,774,672 B app0, 253,728 B SRAM). No physical hardware test was run.
@@ -84,7 +84,7 @@
 ## [Production-readiness assessment and workstream handoff] - 2026-11-12
 
 ### Added
-- Documented the 2026-11-12 production-readiness review, recorded design decisions (40 MHz in-spec display clock default with NVS 80 MHz opt-in and boot-button revert; isolated `fix/production-readiness` CI branch), and full specifications for workstreams `WS1`–`WS4` in [the production-readiness handoff](docs/handoffs/2026-11-12-production-readiness.md).
+- Documented the 2026-11-12 production-readiness review, recorded design decisions (40 MHz in-spec display clock default with NVS 80 MHz opt-in and boot-button revert; isolated `fix/production-readiness` CI branch), and full specifications in historical `docs/handoffs/2026-11-12-production-readiness.md`.
 - Added native C++17 AddressSanitizer/UBSan test runner `build_and_run_native_cxx()` (`find_vcvars64()`, `find_native_cxx()`) in `tests/host_test_support.py` and verified ASan detection in `tests/test_host_test_support.py`.
 - Added `scripts/generate_code_visualizations.py` and HTML/JSON/Mermaid views under `visualizations/`.
 
@@ -92,7 +92,7 @@
 - `python -m unittest tests.test_host_test_support -v` passed (1 test, ASan out-of-bounds detection confirmed). Full branch validation is recorded in the handoff and commit message.
 - `python -m unittest discover -s tests` passed (`Ran 163 tests in 69.689s`, `OK`), including 5 enclosure geometry checks (`tests.test_enclosure_generator`) and 1 ASan native runner check (`tests.test_host_test_support`).
 - `python -m tools.guardian verify` passed (`Ran 187 tests in 76.429s`, `OK`), `python scripts/check_markdown_links.py` passed (`0 issues`), and `python -m tools.guardian diff-audit` passed (`0` AST/drift issues).
-- Full `python scripts/validate_repo.py` validation and target compile results are recorded in the commit verification notes and [the production-readiness handoff](docs/handoffs/2026-11-12-production-readiness.md). Physical fit, printing, thermal, and hardware tests remain unverified.
+- Full `python scripts/validate_repo.py` validation and target compile results are recorded in the commit verification notes. Physical fit, printing, thermal, and hardware tests remain unverified.
 
 ## [3D simulator and enclosure] - 2026-11-07
 
@@ -119,8 +119,8 @@
 - Made the generated knowledge graph reproducible by excluding generation timestamps, self-indexed output files, and live host microbenchmark samples; current host measurements remain available through `python -m tools.guardian bench-host`.
 
 ### Verification
-- Python and host-compiled check results, repository validator output, and compile status are recorded in [the remediation handoff](docs/handoffs/2026-11-07-remediation.md).
+- Python and host-compiled check results, repository validator output, and compile status are recorded in historical audit notes.
 - Fresh pinned ESP32-S3 builds passed at the configured 80 MHz and the 40 MHz comparison clock. The 80 MHz app image is 5,774,784 bytes and leaves 2,613,824 bytes in app0; global data is 253,728 bytes (77.4% of SRAM).
 - `python scripts/validate_repo.py --require-target-compile` passed all nine phases; `python -m unittest discover -s tests -v` passed all 157 tests; Guardian diff-audit/UI audit, color-token verification, and Markdown-link verification passed.
 - The local CI workflow is defined, but no remote CI run or physical board test is claimed. The handoff lists remaining hardware and runtime work.
-- Earlier entries are preserved in [the changelog archive](docs/archive/changelog-history.md).
+- Earlier historical changelog entries remain in git history before the Phase 2 cleanup (`tag: pre-audit-2026-11`).

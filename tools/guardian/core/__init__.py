@@ -1,13 +1,11 @@
-"""
-tools.guardian.core — Core analytical and benchmarking engines for BMO Gameboy.
-"""
+"""Core hardware, memory, and static analyzers for BMO Handheld firmware."""
 
 from .ast_linter import FirmwareAstLinter, LintFinding
 from .bus_model import BusMetrics, HardwareBusModel, SUPPORTED_RESOLUTIONS
+from .clang_tidy_runner import ClangTidyFinding, ClangTidyRunner
 from .cppcheck_runner import CppcheckFinding, CppcheckRunner
 from .elf_analyzer import ElfAnalysisResult, ElfAnalyzer, SymbolEntry
-from .host_bench import BenchmarkMetric, HostBenchmarkSuite
-from .report_gen import ReportGenerator
+from .psram_budget import PsramBudgetAnalyzer, PsramBudgetReport
 
 __all__ = [
     "FirmwareAstLinter",
@@ -15,12 +13,13 @@ __all__ = [
     "HardwareBusModel",
     "BusMetrics",
     "SUPPORTED_RESOLUTIONS",
+    "ClangTidyRunner",
+    "ClangTidyFinding",
     "CppcheckRunner",
     "CppcheckFinding",
     "ElfAnalyzer",
     "ElfAnalysisResult",
     "SymbolEntry",
-    "HostBenchmarkSuite",
-    "BenchmarkMetric",
-    "ReportGenerator",
+    "PsramBudgetAnalyzer",
+    "PsramBudgetReport",
 ]

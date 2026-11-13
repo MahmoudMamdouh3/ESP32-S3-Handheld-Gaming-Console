@@ -1,0 +1,93 @@
+#!/bin/sh
+# Fast pre-commit check:
+# - Compiles staged Python files (syntax only)
+# - Rejects staged blobs >= 1 MB (1,048,576 bytes)
+# - Scans staged text for credential/private-key patterns
+# - Enforces hardware hard-stop defines (FEATURE_BATTERY_MONITOR=0, FEATURE_AUDIO=0)
+
+python - <<'PYEOF'
+import os
+import py_compile
+import re
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+MAX_STAGED_BYTES = 1048576  # 1 MiB
+
+raw = subprocess.check_output(
+    ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM", "-z"]
+)
+paths = [p.decode("utf-8", errors="replace") for p in raw.split(b"\0") if p]
+
+secret_patterns = [
+    ("private key header", re.compile("-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE " + "KEY-----")),
+    ("AWS access key", re.compile("AK" + "IA[0-9A-Z]{16}")),
+    ("GitHub token", re.compile("gh[pousr]_" + "[A-Za-z0-9_]{20,}")),
+    ("Google API key", re.compile("AI" + "za[0-9A-Za-z\\-_]{35}")),
+]
+
+errors = []
+
+for rel in paths:
+    try:
+        size = int(subprocess.check_output(["git", "cat-file", "-s", f":{rel}"]).strip())
+    except Exception as exc:
+        errors.append(f"{rel}: failed to inspect staged blob ({exc})")
+        continue
+
+    if size >= MAX_STAGED_BYTES:
+        errors.append(
+            f"{rel}: staged size {size:,} bytes >= {MAX_STAGED_BYTES:,} byte limit (1 MiB)."
+        )
+
+    data = subprocess.check_output(["git", "cat-file", "-p", f":{rel}"])
+
+    if rel.endswith(".py"):
+        with tempfile.NamedTemporaryFile(suffix=".py", delete=False) as tf:
+            tf.write(data)
+            tmp_path = tf.name
+        try:
+            py_compile.compile(tmp_path, doraise=True)
+        except py_compile.PyCompileError as exc:
+            errors.append(f"{rel}: Python syntax error: {exc.msg}")
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
+    if b"\x00" not in data[:8192]:
+        text = data.decode("utf-8", errors="ignore")
+        for label, rx in secret_patterns:
+            if rx.search(text):
+                errors.append(f"{rel}: possible {label} detected in staged content")
+
+cfg_candidates = [
+    p for p in Path("firmware/BmoGameboy").rglob("config.h")
+    if "/vendor/" not in f"/{p.as_posix()}" and "/third_party/" not in f"/{p.as_posix()}"
+]
+if not cfg_candidates:
+    errors.append("firmware/BmoGameboy/**/config.h missing")
+for cfg in cfg_candidates:
+    cfg_rel = cfg.as_posix()
+    if cfg_rel in paths:
+        cfg_text = subprocess.check_output(["git", "cat-file", "-p", f":{cfg_rel}"]).decode(
+            "utf-8", errors="ignore"
+        )
+    else:
+        cfg_text = cfg.read_text(encoding="utf-8", errors="ignore")
+    for macro in ("FEATURE_BATTERY_MONITOR", "FEATURE_AUDIO"):
+        m = re.search(rf"^\s*#define\s+{macro}\s+(\S+)", cfg_text, re.MULTILINE)
+        if not m or m.group(1) != "0":
+            errors.append(f"{cfg_rel}: hard stop violated ({macro} must be 0)")
+
+if errors:
+    print("[pre-commit] FAILED:")
+    for err in errors:
+        print(f"  - {err}")
+    sys.exit(1)
+
+print(f"[pre-commit] OK ({len(paths)} staged file(s) checked).")
+PYEOF

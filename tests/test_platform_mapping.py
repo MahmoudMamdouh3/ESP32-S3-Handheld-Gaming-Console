@@ -1,14 +1,13 @@
-import json
 import re
 import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INO = (REPO_ROOT / "firmware" / "BmoGameboy" / "BmoGameboy.ino").read_text(encoding="utf-8")
-SDD9 = (REPO_ROOT / "docs" / "software-design-document" / "section-09-part-01.md").read_text(encoding="utf-8")
-SDD7 = (REPO_ROOT / "docs" / "software-design-document" / "section-07.md").read_text(encoding="utf-8")
+COMPAT_DOC = (REPO_ROOT / "docs" / "compatibility.md").read_text(encoding="utf-8")
+SD_CPP = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "core" / "sd_card.cpp").read_text(encoding="utf-8")
+DISPLAY_CPP = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "core" / "display_emu.cpp").read_text(encoding="utf-8")
 FRAME_PACING = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "core" / "frame_pacing.h").read_text(encoding="utf-8")
-MANIFEST = json.loads((REPO_ROOT / "AGENT_MANIFEST.json").read_text(encoding="utf-8"))
 
 
 PLATFORMS = [
@@ -80,27 +79,19 @@ class PlatformMappingTests(unittest.TestCase):
             self.assertEqual(frame_map[wrapper_index], wrapper)
             self.assertEqual(wrapper_to_file[wrapper], wrapper_file)
 
-    def test_manifest_viewports_pacing_and_sdd_mapping_match(self):
-        viewport_rows = re.findall(
-            r"^\|\s*(\d+)\s*\|[^|]*\|\s*(\d+)×(\d+)\s*\|\s*(\d+),(\d+)\s*\|",
-            SDD7.split("## 7.3 Configured frame viewports", 1)[1].split("## 7.4", 1)[0], re.M
-        )
-        viewports = {int(index): ((int(w), int(h)), (int(x), int(y))) for index, w, h, x, y in viewport_rows}
-        manifest_platforms = MANIFEST["platforms"]
-        sdd_rows = [line for line in SDD9.splitlines() if line.startswith("| `ROM_")]
-        self.assertEqual(len(sdd_rows), 15)
-        self.assertEqual(len(MANIFEST["emulators"]), 14)
-        self.assertEqual(len({entry["wrapper"] for entry in MANIFEST["emulators"]}), 14)
+    def test_compatibility_table_viewports_pacing_and_extensions_match(self):
+        doc_rows = [line for line in COMPAT_DOC.splitlines() if line.startswith("| `ROM_")]
+        self.assertEqual(len(doc_rows), 15)
 
-        for row, sdd_line in zip(PLATFORMS, sdd_rows):
+        for row, doc_line in zip(PLATFORMS, doc_rows):
             rom_type, carousel_index, wrapper_index, wrapper, wrapper_file, extensions, viewport, offset, period, key = row
-            self.assertEqual(viewports[wrapper_index], (viewport, offset))
-            self.assertEqual(manifest_platforms[key]["ext"], extensions)
-            self.assertIn(f"| `{rom_type}` | {carousel_index} | {wrapper_index} |", sdd_line)
-            self.assertIn(wrapper_file, sdd_line)
-            self.assertIn(", ".join(f"`{ext}`" for ext in extensions), sdd_line)
-            self.assertIn(f"{viewport[0]}×{viewport[1]} @({offset[0]},{offset[1]})", sdd_line)
-            self.assertIn(f"{period:,} µs", sdd_line)
+            self.assertIn(f"| `{rom_type}` | {carousel_index} | {wrapper_index} |", doc_line)
+            self.assertIn(wrapper_file, doc_line)
+            self.assertIn(", ".join(f"`{ext}`" for ext in extensions), doc_line)
+            self.assertIn(f"{viewport[0]}×{viewport[1]} @({offset[0]},{offset[1]})", doc_line)
+            self.assertIn(f"{period:,} µs", doc_line)
+            for ext in extensions:
+                self.assertIn(f'"{ext}"', SD_CPP)
             if key in ("gb", "gbc"):
                 self.assertIn("16742U", FRAME_PACING)
             elif key == "doom":

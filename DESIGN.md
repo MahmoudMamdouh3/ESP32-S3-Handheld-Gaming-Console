@@ -4,8 +4,8 @@
 1. **Embedded Physical Hardware:** 2.4" ST7789VW SPI TFT (Landscape 320×240, 16-bit BGR565 byte-swapped, Adafruit_GFX in Octal PSRAM).
 2. **Web Simulator & Playtest Harness:** HTML5 Canvas 2D + WebAssembly Playtest Core (`tools/bmo_simulator/`, 60 Hz 1:1 pixel rendering).
 
-**Status:** Canonical Single-File Design Standard  
-**Governance:** Governed by Rule 08 ([`.agents/rules/08_ui_style_guide.md`](.agents/rules/08_ui_style_guide.md)), Rule 43 ([`.agents/rules/43_no_ai_jargon_and_buzzwords.md`](.agents/rules/43_no_ai_jargon_and_buzzwords.md)), and Rule 44 ([`.agents/rules/44_anti_ai_ui_design_standards.md`](.agents/rules/44_anti_ai_ui_design_standards.md)).
+**Status:** Canonical Design Standard  
+**Token Checks:** Verified against `firmware/BmoGameboy/src/core/theme.h` and `tools/bmo_simulator/simulator.css` by `python scripts/verify_color_tokens.py`.
 
 ---
 
@@ -138,7 +138,7 @@ All spatial dimensions across both embedded C++ layouts and web stylesheets stri
 ## 5. Component Specifications & Interaction States
 
 ### A. Selection Indicator (Embedded Menus & Lists)
-- **Invariant (Rule 08):** Menu selection states should use outline rectangles (`drawRoundRect`) rather than large solid fills for list cursors.
+- **Invariant:** Menu selection states should use outline rectangles (`drawRoundRect`) rather than large solid fills for list cursors.
 - **Architectural Rationale:** Avoids unnecessary pixel fills on selection highlights and separates item borders cleanly (`UI_YELLOW` / `UI_TEAL`).
 - **Visual Spec:** Radius 4px, border color `Theme::BMO_DPAD_YELLOW` or `Theme::BMO_BODY_TEAL`, line thickness 1px or 2px.
 
@@ -190,7 +190,6 @@ This repository strictly forbids the visual clichés characteristic of untuned A
 
 ## 8. Verification & Tooling
 
-Compliance with this design system is automatically validated by the repository tooling:
-- **CLI Auditor:** `python -m tools.guardian ui-audit`
-- **CI Validation:** `python scripts/validate_repo.py`
-- **AST & Doc Checker:** `python -m tools.guardian patch-check`
+Color parity, contrast calculations, and registered face-palette checks run via:
+- `python scripts/verify_color_tokens.py`
+- `python scripts/validate_repo.py`

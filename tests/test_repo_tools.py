@@ -11,7 +11,7 @@ from repo_tools import find_game_roots, sanitize_identifier, validate_rom_header
 from validate_repo import (
     check_python_files,
     check_firmware_safety_guardrails,
-    check_rules_and_manifest_integrity,
+    check_structural_soundness,
 )
 
 
@@ -62,9 +62,9 @@ class RepoToolsTests(unittest.TestCase):
         issues = check_firmware_safety_guardrails()
         self.assertEqual(issues, [], f"Firmware safety guardrails failed: {issues}")
 
-    def test_check_rules_and_manifest_integrity_passes(self):
-        issues = check_rules_and_manifest_integrity()
-        self.assertEqual(issues, [], f"Rules/Manifest integrity check failed: {issues}")
+    def test_check_structural_soundness_passes(self):
+        issues = check_structural_soundness()
+        self.assertEqual(issues, [], f"Structural soundness check failed: {issues}")
 
 
 if __name__ == '__main__':

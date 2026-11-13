@@ -1,4 +1,3 @@
-// PERF-FIX: O3,unroll-loops applied to all hot-path compute files (rule 39_performance_and_benchmark_framework.md §2.4)
 #pragma GCC optimize("O3,unroll-loops")
 // -----------------------------------------------------------------------
 // bmo_face.cpp  –  BMO 2D SDF Mascot Face Renderer.

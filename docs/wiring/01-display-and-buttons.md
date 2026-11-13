@@ -13,7 +13,7 @@ Board target: ESP32-S3-N16R8. Pin assignments below reproduce `config.h`; they a
 | Reset | GPIO9 / `TFT_RST` | Firmware assignment |
 | VCC, GND, backlight | Not fully recorded | Identify the exact TFT module before changing power wiring |
 
-The firmware configures an 80 MHz display clock and Diagnostics offers 40 MHz for comparison. The ST7789VW datasheet timing lists a 16 ns serial write cycle (62.5 MHz equivalent), so the configured 80 MHz exceeds that published value. No physical display test has been recorded. See [hardware notes](../hardware-notes.md) and [measurement steps](../hardware_measurements.md).
+The firmware configures an 80 MHz display clock and Diagnostics offers 40 MHz for comparison. The ST7789VW datasheet timing lists a 16 ns serial write cycle (62.5 MHz equivalent), so the configured 80 MHz exceeds that published value. No physical display test has been recorded. See [hardware reference](../hardware.md) and [measurement steps](../hardware_measurements.md).
 
 ## Button assignments
 

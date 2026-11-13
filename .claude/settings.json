@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m unittest *)",
+      "Bash(python scripts/validate_repo.py *)",
+      "Bash(python scripts/check_markdown_links.py)",
+      "Bash(python scripts/verify_color_tokens.py)",
+      "Bash(python -m tools.guardian *)",
+      "Bash(arduino-cli compile *)",
+      "Bash(./arduino-cli.exe compile *)"
+    ],
+    "deny": [
+      "Bash(arduino-cli upload *)",
+      "Bash(./arduino-cli.exe upload *)"
+    ]
+  }
+}

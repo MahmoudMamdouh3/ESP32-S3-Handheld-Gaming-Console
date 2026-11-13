@@ -310,27 +310,5 @@ class PsramBudgetAnalyzer:
         )
         return "\n".join(lines)
 
-    def update_rule_file(self) -> None:
-        rule_path = self.repo_root / ".agents" / "rules" / "15_performance_budgets.md"
-        text = rule_path.read_text(encoding="utf-8")
-        begin = "<!-- GENERATED:BEGIN psram-budget -->"
-        end = "<!-- GENERATED:END psram-budget -->"
-        generated = self.format_markdown()
-        if begin in text and end in text:
-            before, remainder = text.split(begin, 1)
-            _, after = remainder.split(end, 1)
-            updated = before + generated + after
-        else:
-            marker = "### PSRAM Allocation Ledger (8MB Total Octal PSRAM)"
-            if marker not in text:
-                raise ValueError(f"Could not locate PSRAM ledger heading in {rule_path}")
-            before, after = text.split(marker, 1)
-            next_section = "\n- **DRAM budget:**"
-            if next_section not in after:
-                raise ValueError(f"Could not locate the section following the PSRAM ledger in {rule_path}")
-            _, tail = after.split(next_section, 1)
-            updated = before + marker + "\n" + generated + next_section + tail
-        rule_path.write_text(updated, encoding="utf-8", newline="\n")
-
     def to_dict(self) -> dict:
         return asdict(self.analyze())

@@ -1,57 +1,47 @@
-"""
-test_guardian.py — Unit Tests for the Guardian Ground-Truth Engine
-"""
+"""Unit tests for Guardian hardware, bus, AST, static analysis, link, and color checks."""
 
-import json
 import io
+import json
 import runpy
 import subprocess
-import tempfile
 import sys
+import tempfile
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
-from tools.guardian.core.ast_linter import FirmwareAstLinter, LintFinding
-from tools.guardian.core.bus_model import HardwareBusModel, SUPPORTED_RESOLUTIONS
-from tools.guardian.core.clang_tidy_runner import ClangTidyFinding, ClangTidyRunner
+from scripts.check_markdown_links import find_markdown_link_issues
+from scripts.verify_color_tokens import main as verify_color_tokens_main
+from tools.guardian.cli import cmd_doctor, cmd_psram_budget
+from tools.guardian.core.ast_linter import FirmwareAstLinter
+from tools.guardian.core.bus_model import HardwareBusModel
+from tools.guardian.core.clang_tidy_runner import ClangTidyRunner
 from tools.guardian.core.cppcheck_runner import CppcheckFinding, CppcheckRunner
-from tools.guardian.core.doc_verifier import DocTruthVerifier
-from tools.guardian.core.elf_analyzer import ElfAnalyzer
-from tools.guardian.core.host_bench import HostBenchmarkSuite
-from tools.guardian.core.report_gen import ReportGenerator
-from tools.guardian.core.ui_auditor import UiAuditor
-from tools.guardian.mcp_server import handle_rpc_request, MCP_TOOLS_SCHEMA
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 FIRMWARE_DIR = REPO_ROOT / "firmware" / "BmoGameboy"
 
 
 class TestGuardianEngine(unittest.TestCase):
-    """Verifies that the Guardian framework operates reliably."""
+    """Verify Guardian hardware analyzers and static checks."""
 
     def test_01_bus_model_mathematical_precision(self):
-        """Verify that bus model calculates transfer times accurately."""
         bus_model = HardwareBusModel(spi_clock_hz=80_000_000, cpu_clock_hz=240_000_000)
-        
-        # Test 320x240 (153,600 bytes)
+
         metrics = bus_model.calculate_metrics("MENU_FULLSCREEN")
         self.assertEqual(metrics.resolution.frame_bytes, 153600)
-        # At 80MHz (10MB/s), 153,600 bytes is ~15.36 ms + 1.2us overhead
         self.assertAlmostEqual(metrics.spi_transfer_ms, 15.3612, places=2)
         self.assertGreater(metrics.spi_bus_utilization_percent, 90.0)
         self.assertEqual(metrics.status, "LOW_SEQUENTIAL_HEADROOM")
         self.assertAlmostEqual(metrics.ideal_overlap_cpu_budget_ms, metrics.frame_period_ms)
         self.assertEqual(metrics.ideal_overlap_cpu_budget_percent, 100.0)
 
-        # Test Game Boy 240x216 (103,680 bytes)
         gb_metrics = bus_model.calculate_metrics("GAMEBOY_DMG_SCALED")
         self.assertEqual(gb_metrics.resolution.frame_bytes, 103680)
         self.assertAlmostEqual(gb_metrics.spi_transfer_ms, 10.3692, places=2)
 
     def test_bus_model_does_not_infer_dma_or_frame_drops(self):
-        """Bus-only estimates classify transfer limits without claiming implementation behavior."""
         fast_bus = HardwareBusModel(spi_clock_hz=1_000_000)
         saturated = fast_bus.calculate_metrics("MENU_FULLSCREEN")
         self.assertEqual(saturated.status, "BUS_SATURATED")
@@ -62,105 +52,30 @@ class TestGuardianEngine(unittest.TestCase):
         self.assertEqual(low_headroom.status, "LOW_SEQUENTIAL_HEADROOM")
 
     def test_02_all_supported_resolutions_registered(self):
-        """Verify that all 15 console resolutions are present in the model."""
-        bus_model = HardwareBusModel()
-        all_metrics = bus_model.calculate_all()
+        all_metrics = HardwareBusModel().calculate_all()
         self.assertGreaterEqual(len(all_metrics), 15)
         keys = [m.resolution_key for m in all_metrics]
-        self.assertIn("GAMEBOY_DMG_SCALED", keys)
-        self.assertIn("NES_NATIVE", keys)
-        self.assertIn("DOOM_NATIVE", keys)
-        self.assertIn("SMS_NATIVE", keys)
-        self.assertIn("PCE_NATIVE", keys)
-        self.assertIn("GENESIS_NATIVE", keys)
-        self.assertIn("SNES_NATIVE", keys)
+        for expected in (
+            "GAMEBOY_DMG_SCALED",
+            "NES_NATIVE",
+            "DOOM_NATIVE",
+            "SMS_NATIVE",
+            "PCE_NATIVE",
+            "GENESIS_NATIVE",
+            "SNES_NATIVE",
+        ):
+            self.assertIn(expected, keys)
 
     def test_03_ast_linter_detects_real_firmware_state(self):
-        """Verify that AST linter executes cleanly across firmware files."""
-        linter = FirmwareAstLinter(FIRMWARE_DIR)
-        findings = linter.lint_all()
+        findings = FirmwareAstLinter(FIRMWARE_DIR).lint_all()
         self.assertIsInstance(findings, list)
-        # Verify finding structure
         for f in findings:
             self.assertIn(f.severity, {"CRITICAL", "WARNING", "ADVISORY"})
             self.assertTrue(f.rule_id)
             self.assertTrue(f.message)
+        self.assertEqual([f for f in findings if f.severity == "CRITICAL"], [])
 
-    def test_04_host_benchmarks_execute_and_produce_metrics(self):
-        """Verify host microbenchmarks run and produce valid quantitative numbers."""
-        suite = HostBenchmarkSuite()
-        metrics = suite.run_all()
-        self.assertGreaterEqual(len(metrics), 7)
-        for m in metrics:
-            self.assertGreater(m.iterations, 0)
-            self.assertGreater(m.total_time_ms, 0.0)
-            self.assertGreater(m.throughput_mops, 0.0)
-            self.assertTrue(m.name)
-
-    def test_05_report_generator_markdown_and_json(self):
-        """Verify report generator produces valid Markdown and parseable JSON."""
-        bus_model = HardwareBusModel()
-        bus_metrics = bus_model.calculate_all()
-        linter = FirmwareAstLinter(FIRMWARE_DIR)
-        ast_findings = linter.lint_all()
-        file_stats = linter.get_repo_line_stats()
-        elf_analyzer = ElfAnalyzer(REPO_ROOT)
-        elf_res = elf_analyzer.analyze()
-        suite = HostBenchmarkSuite()
-        bench_metrics = suite.run_all()
-        cppcheck_findings = None
-
-        # Markdown
-        md = ReportGenerator.generate_markdown(
-            elf_res, bus_metrics, ast_findings, cppcheck_findings, bench_metrics, file_stats
-        )
-        self.assertIn("BMO Handheld Console — Complete Line-by-Line Benchmark", md)
-        self.assertIn("Hardware Bus & Frame Transmission Physics Model", md)
-        self.assertIn("Comprehensive Line-by-Line Repository Codebase Audit", md)
-        self.assertIn("Cppcheck was not run for this report.", md)
-        expected_sram_health = (
-            f"TIGHT ({elf_res.dram_used_bytes / elf_res.dram_total_bytes * 100:.1f}%)"
-            if elf_res.dram_total_bytes and elf_res.dram_used_bytes / elf_res.dram_total_bytes * 100 > 70
-            else "✅ OK"
-        )
-        self.assertIn(expected_sram_health, md)
-        flash_pct = elf_res.flash_used_bytes / elf_res.flash_total_bytes * 100
-        self.assertIn(f"Chip headroom {100 - flash_pct:.1f}%", md)
-        self.assertIn("Dynamic PSRAM Runtime** | Not measured", md)
-        self.assertNotIn("TIGHT (74.6%)", md)
-        self.assertNotIn("Chip headroom 70.2%", md)
-
-        # JSON
-        json_str = ReportGenerator.generate_json(
-            elf_res, bus_metrics, ast_findings, cppcheck_findings, bench_metrics, file_stats
-        )
-        data = json.loads(json_str)
-        self.assertIn("timestamp", data)
-        self.assertIn("bus_metrics", data)
-        self.assertIn("microbenchmarks", data)
-        self.assertIn("file_stats", data)
-        self.assertGreater(len(data["file_stats"]), 50)
-        self.assertEqual(data["cppcheck_status"], "not_run")
-        self.assertIsNone(data["cppcheck_findings"])
-
-        one_finding = CppcheckFinding(
-            str(REPO_ROOT / "firmware" / "example.c"), 7, "warning", "test-id", "test finding"
-        )
-        md_with_cppcheck = ReportGenerator.generate_markdown(
-            elf_res, bus_metrics, ast_findings, [one_finding], bench_metrics, file_stats
-        )
-        self.assertIn("1 findings; 0 errors.", md_with_cppcheck)
-        self.assertIn("`test-id`", md_with_cppcheck)
-        self.assertIn("`firmware/example.c:7`", md_with_cppcheck)
-        self.assertNotIn(str(REPO_ROOT), md_with_cppcheck)
-
-        findings_json = json.loads(ReportGenerator.generate_json(
-            elf_res, bus_metrics, ast_findings, [one_finding], bench_metrics, file_stats
-        ))
-        self.assertEqual(findings_json["cppcheck_status"], "findings")
-        self.assertEqual(findings_json["cppcheck_findings"][0]["file"], "firmware/example.c")
-
-    def test_06_cppcheck_scans_all_firmware_sources(self):
+    def test_04_cppcheck_scans_all_firmware_sources(self):
         runner = CppcheckRunner(REPO_ROOT)
         runner.cppcheck_bin = "cppcheck"
         with patch(
@@ -174,7 +89,7 @@ class TestGuardianEngine(unittest.TestCase):
         self.assertEqual(run.call_args.kwargs["timeout"], 600)
         self.assertIn("--error-exitcode=1", command)
 
-    def test_07_cppcheck_timeout_is_reported(self):
+    def test_05_cppcheck_timeout_is_reported(self):
         runner = CppcheckRunner(REPO_ROOT)
         runner.cppcheck_bin = "cppcheck"
         with patch(
@@ -184,7 +99,7 @@ class TestGuardianEngine(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "timed out"):
                 runner.run()
 
-    def test_08_cppcheck_findings_are_returned(self):
+    def test_06_cppcheck_findings_and_branch_notes(self):
         runner = CppcheckRunner(REPO_ROOT)
         runner.cppcheck_bin = "cppcheck"
         output = (
@@ -201,9 +116,6 @@ class TestGuardianEngine(unittest.TestCase):
         self.assertEqual(findings[0].severity, "error")
         self.assertEqual(findings[0].line, 17)
 
-    def test_cppcheck_accepts_branch_limit_information_without_findings(self):
-        runner = CppcheckRunner(REPO_ROOT)
-        runner.cppcheck_bin = "cppcheck"
         information = (
             "src/example.cpp::0::information::normalCheckLevelMaxBranches::"
             "Limiting analysis of branches."
@@ -214,10 +126,8 @@ class TestGuardianEngine(unittest.TestCase):
         ):
             self.assertEqual(runner.run(), [])
 
-    def test_09_guardian_module_propagates_cppcheck_failure(self):
-        finding = CppcheckFinding(
-            "src/example.c", 17, "error", "exampleCheck", "detected issue"
-        )
+    def test_07_guardian_module_propagates_cppcheck_failure(self):
+        finding = CppcheckFinding("src/example.c", 17, "error", "exampleCheck", "detected issue")
         with (
             patch.object(sys, "argv", ["tools.guardian", "cppcheck"]),
             patch.object(CppcheckRunner, "is_available", return_value=True),
@@ -226,155 +136,38 @@ class TestGuardianEngine(unittest.TestCase):
         ):
             with self.assertRaises(SystemExit) as result:
                 runpy.run_module("tools.guardian", run_name="__main__")
-
         self.assertEqual(result.exception.code, 1)
 
-    def test_10_ast_linter_ignores_per_frame_filter_comments(self):
+    def test_08_ast_linter_ignores_comments_and_handles_local_arrays(self):
         with tempfile.TemporaryDirectory() as tmp:
-            sketch = Path(tmp) / "BmoGameboy.ino"
+            root = Path(tmp)
+            firmware = root / "firmware" / "BmoGameboy"
+            sketch = firmware / "BmoGameboy.ino"
+            sketch.parent.mkdir(parents=True)
             sketch.write_text(
-                "void loop() {\n"
-                "    // rebuildVisibleGames() is called only when dirty.\n"
-                "}\n",
+                "void loop() {\n  // rebuildVisibleGames() is called only when dirty.\n}\n",
                 encoding="utf-8",
             )
-            findings = FirmwareAstLinter(Path(tmp)).lint_all()
+            findings = FirmwareAstLinter(firmware).lint_file(sketch)
+            self.assertFalse(any(f.rule_id == "UNGUARDED_PER_FRAME_FILTER" for f in findings))
 
-        self.assertFalse(
-            any(f.rule_id == "UNGUARDED_PER_FRAME_FILTER" for f in findings)
-        )
-
-    def test_11_doc_truth_verifier_zero_drift(self):
-        """Verify zero documentation/rule pin or architecture drift against config.h."""
-        verifier = DocTruthVerifier(REPO_ROOT)
-        issues = verifier.verify_all()
-        self.assertEqual(issues, [], f"DocTruthVerifier found drift: {issues}")
-
-    def test_12_prompt_pack_generates_context_packet(self):
-        """Verify prompt-pack generates a complete task context packet with live C++ signatures."""
-        from tools.guardian.cli import cmd_prompt_pack
-
-        class DummyArgs:
-            query = ["fix", "st7789", "display", "spi"]
-
-        buf = io.StringIO()
-        with redirect_stdout(buf):
-            rc = cmd_prompt_pack(DummyArgs())
-        out = buf.getvalue()
-        self.assertEqual(rc, 0)
-        self.assertIn("MATCHED INTENT: modify_display_rendering_or_spi", out)
-        self.assertIn("TFT_CS=10", out)
-        self.assertIn("display_emu.h", out)
-
-    def test_13_benchmark_ai_passes_100_percent(self):
-        """Verify 5-dimension AI workflow benchmark achieves 100.0% pass."""
-        from tools.guardian.cli import cmd_benchmark_ai
-
-        buf = io.StringIO()
-        with redirect_stdout(buf):
-            rc = cmd_benchmark_ai(None)
-        self.assertEqual(rc, 0, buf.getvalue())
-
-    def test_14_doc_truth_verifier_rejects_buzzwords(self):
-        """Verify DocTruthVerifier catches banned AI buzzwords (Rule 43)."""
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            (root / "README.md").write_text(
-                "# Project\nThis uses a state-of-the-art buttery-smooth renderer.\n",
+            source = firmware / "src" / "core" / "probe.cpp"
+            source.parent.mkdir(parents=True)
+            source.write_text(
+                "void probe() {\n  uint8_t scratch[2048];\n  static uint8_t shared[4096];\n}\n",
                 encoding="utf-8",
             )
-            verifier = DocTruthVerifier(root)
-            issues = verifier.verify_no_buzzwords()
-            self.assertEqual(len(issues), 2)
-            self.assertEqual(issues[0].category, "BUZZWORD_VIOLATION")
-
-    def test_15_patch_check_catches_unbalanced_braces_and_buzzwords(self):
-        from tools.guardian.cli import cmd_patch_check
-
-        with tempfile.TemporaryDirectory() as tmp:
-            p = Path(tmp) / "bad_syntax.c"
-            p.write_text("void broken() { int x = 1;\n", encoding="utf-8")
-
-            class DummyArgs:
-                files = [str(p)]
-                strict = False
-
-            buf = io.StringIO()
-            with redirect_stdout(buf):
-                rc = cmd_patch_check(DummyArgs())
-            self.assertEqual(rc, 1)
-            self.assertIn("Unbalanced curly braces", buf.getvalue())
-
-    def test_16_export_harness_scaffolds_portable_rules(self):
-        from tools.guardian.cli import cmd_export_harness
-
-        with tempfile.TemporaryDirectory() as tmp:
-            class DummyArgs:
-                destination = tmp
-                project_name = "ExportTest"
-
-            buf = io.StringIO()
-            with redirect_stdout(buf):
-                rc = cmd_export_harness(DummyArgs())
-            self.assertEqual(rc, 0)
-            dest_path = Path(tmp)
-            self.assertTrue((dest_path / "AGENTS.md").exists())
-            self.assertTrue((dest_path / ".agents" / "rules" / "00_hard_stops.md").exists())
-            self.assertTrue((dest_path / ".agents" / "rules" / "43_no_ai_jargon_and_buzzwords.md").exists())
-            self.assertTrue((dest_path / "tools" / "guardian" / "cli.py").exists())
-            self.assertTrue((dest_path / "scripts" / "install_git_hooks.py").exists())
-
-    def test_17_ui_auditor_clean_baseline(self):
-        """Verify repository UI assets satisfy DESIGN.md & Rule 44 standards cleanly."""
-        auditor = UiAuditor(REPO_ROOT)
-        report = auditor.run_all_checks()
-        self.assertTrue(report.is_clean, f"UI Auditor failed with issues: {report.issues}")
-        self.assertEqual(len(report.issues), 0)
-        self.assertGreaterEqual(report.total_checks, 10)
-
-    def test_18_ui_auditor_catches_violations(self):
-        """Verify UiAuditor catches hardcoded hexes, missing focus, and token drift."""
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            fw_core = root / "firmware" / "BmoGameboy" / "src" / "core"
-            fw_core.mkdir(parents=True)
-            sim_dir = root / "tools" / "bmo_simulator"
-            sim_dir.mkdir(parents=True)
-
-            # 1. Missing focus & nested cards in simulator.css
-            bad_css = (
-                ":root {\n"
-                "  --screen-mint: #wronghex;\n"
-                "}\n"
-                ".panel-card .panel-card { margin: 13px; }\n"
-                ".control-pill { padding: 4px; }\n"
+            self.assertEqual(
+                [item.rule_id for item in FirmwareAstLinter(firmware).lint_file(source)],
+                ["LARGE_LOCAL_STACK_ARRAY"],
             )
-            (sim_dir / "simulator.css").write_text(bad_css, encoding="utf-8")
 
-            # 2. Hardcoded hex in firmware display code
-            bad_cpp = (
-                "#include <stdint.h>\n"
-                "void drawTest() {\n"
-                "  tft.fillRect(0, 0, 10, 10, 0xFFE0);\n"
-                "}\n"
-            )
-            (fw_core / "display_emu.cpp").write_text(bad_cpp, encoding="utf-8")
+            vendor = firmware / "src" / "vendor" / "probe.c"
+            vendor.parent.mkdir(parents=True)
+            vendor.write_text("void probe() {\n  uint8_t scratch[4096];\n}\n", encoding="utf-8")
+            self.assertEqual(FirmwareAstLinter(firmware).lint_file(vendor), [])
 
-            # 3. theme.h with standard token
-            (fw_core / "theme.h").write_text("constexpr uint16_t BMO_SCREEN_MINT = 0x7EF9;\n", encoding="utf-8")
-
-            auditor = UiAuditor(root)
-            report = auditor.run_all_checks()
-            self.assertFalse(report.is_clean)
-            cats = {i.category for i in report.issues}
-            self.assertIn("HARDCODED_COLOR", cats)
-            self.assertIn("CARD_NESTING", cats)
-            self.assertIn("MISSING_FOCUS", cats)
-            self.assertIn("TOKEN_PARITY", cats)
-            self.assertIn("OFF_GRID_SPACING", cats)
-
-    def test_19_clang_tidy_runner_executes_and_parses_diagnostics(self):
-        """Verify ClangTidyRunner locates default C targets and parses clang-tidy diagnostic format."""
+    def test_09_clang_tidy_runner_executes_and_parses_diagnostics(self):
         runner = ClangTidyRunner(REPO_ROOT)
         targets = runner.default_targets()
         self.assertGreaterEqual(len(targets), 12)
@@ -389,111 +182,35 @@ class TestGuardianEngine(unittest.TestCase):
         self.assertEqual(findings[0].check_name, "clang-analyzer-core.NullDereference")
         self.assertEqual(findings[0].line, 42)
 
-    def test_20_mcp_server_protocol_and_tools(self):
-        """Verify Guardian MCP server handles initialize, tools/list, and tools/call over JSON-RPC 2.0."""
-        init_resp = handle_rpc_request({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2024-11-05"}})
-        self.assertEqual(init_resp["result"]["serverInfo"]["name"], "bmo-guardian-mcp")
-
-        list_resp = handle_rpc_request({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
-        tool_names = {t["name"] for t in list_resp["result"]["tools"]}
-        self.assertIn("bmo_prompt_pack", tool_names)
-        self.assertIn("bmo_lookup", tool_names)
-        self.assertIn("bmo_doctor", tool_names)
-        self.assertIn("bmo_run_host_cores", tool_names)
-
-        call_resp = handle_rpc_request({
-            "jsonrpc": "2.0",
-            "id": 3,
-            "method": "tools/call",
-            "params": {"name": "bmo_lookup", "arguments": {"symbol": "TFT_CS"}},
-        })
-        self.assertFalse(call_resp["result"]["isError"])
-        self.assertIn("GPIO 10", call_resp["result"]["content"][0]["text"])
-
-    def test_21_doc_truth_verifier_catches_flashmode_opi_and_stale_symbols(self):
-        """Verify DocTruthVerifier rejects unguarded FlashMode=opi and obsolete symbol names in rules."""
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            cfg_dir = root / "firmware" / "BmoGameboy" / "src" / "core"
-            cfg_dir.mkdir(parents=True)
-            (cfg_dir / "config.h").write_text("#define TFT_CS 10\n", encoding="utf-8")
-            rules_dir = root / ".agents" / "rules"
-            rules_dir.mkdir(parents=True)
-            (rules_dir / "06_verification_standards.md").write_text(
-                "arduino-cli compile --fqbn esp32:esp32:esp32s3:FlashMode=opi,PSRAM=opi\n"
-                "Call teardownCurrentEmulator() and DisplayEmu::submitFrameAsync()\n",
-                encoding="utf-8",
-            )
-            verifier = DocTruthVerifier(root)
-            issues = verifier.verify_all()
-            messages = " | ".join(i.message for i in issues)
-            self.assertIn("FlashMode=opi", messages)
-            self.assertIn("teardownCurrentEmulator", messages)
-            self.assertIn("submitFrameAsync", messages)
-
-    def test_22_rule_size_limit_and_banned_union(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            rules = root / ".agents" / "rules"
-            rules.mkdir(parents=True)
-            (rules / "too_large.md").write_text("x" * 12_001, encoding="utf-8")
-            issues = DocTruthVerifier(root).verify_rule_file_sizes()
-            self.assertEqual(len(issues), 1)
-            self.assertEqual(issues[0].category, "RULE_FILE_TOO_LARGE")
-            self.assertIn("12,001", issues[0].message)
-
-        for term in ("masterclass", "overkill", "insane", "perfection", "miracle", "bulletproof", "unprecedented", "amazing", "ultra-optimized", "seamless", "flawless"):
-            with self.subTest(term=term):
-                self.assertIsNotNone(DocTruthVerifier.BANNED_BUZZWORDS_REGEX.search(term))
-
-    def test_23_markdown_link_audit_rejects_file_uris_and_missing_targets(self):
+    def test_10_markdown_link_audit_rejects_file_uris_and_respects_nested_fences(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "docs").mkdir()
             (root / "docs" / "index.md").write_text(
+                "`````\n"
+                "[ignored inside fence](missing.md)\n"
+                "`````\n"
                 "[local](../ok.md) [missing](gone.md) [legacy](file:///C:/old.md)\n",
                 encoding="utf-8",
             )
             (root / "ok.md").write_text("# okay\n", encoding="utf-8")
-            issues = DocTruthVerifier(root).verify_markdown_links()
-            self.assertEqual([issue.category for issue in issues], ["UNRESOLVED_LINK", "FILE_URI_LINK"])
+            issues = find_markdown_link_issues(root)
+            self.assertEqual([item[2] for item in issues], ["UNRESOLVED_LINK", "FILE_URI_LINK"])
+            self.assertEqual(issues[0][1], 4)
 
-    def test_24_large_local_stack_array_rule_and_vendor_exemption(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            firmware = root / "firmware" / "BmoGameboy"
-            source = firmware / "src" / "core" / "probe.cpp"
-            source.parent.mkdir(parents=True)
-            source.write_text(
-                "void probe() {\n  uint8_t scratch[2048];\n  static uint8_t shared[4096];\n}\n",
-                encoding="utf-8",
-            )
-            linter = FirmwareAstLinter(firmware)
-            findings = linter.lint_file(source)
-            self.assertEqual([item.rule_id for item in findings], ["LARGE_LOCAL_STACK_ARRAY"])
+    def test_11_doctor_psram_budget_and_color_tokens(self):
+        class Args:
+            json = True
 
-            vendor = firmware / "src" / "vendor" / "probe.c"
-            vendor.parent.mkdir(parents=True)
-            vendor.write_text("void probe() {\n  uint8_t scratch[4096];\n}\n", encoding="utf-8")
-            self.assertEqual(FirmwareAstLinter(firmware).lint_file(vendor), [])
-
-    def test_25_markdown_link_audit_respects_nested_fences(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            (root / "bundle.md").write_text(
-                "`````markdown\n"
-                "```\n"
-                "[ignored inside nested fence](nonexistent.md)\n"
-                "```\n"
-                "still inside outer five-backtick fence [also ignored](gone.md)\n"
-                "`````\n"
-                "[real broken link](missing.md)\n",
-                encoding="utf-8",
-            )
-            issues = DocTruthVerifier(root).verify_markdown_links()
-            self.assertEqual(len(issues), 1)
-            self.assertEqual(issues[0].line_number, 7)
-            self.assertEqual(issues[0].category, "UNRESOLVED_LINK")
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.assertEqual(cmd_doctor(None), 0)
+            psram_buf = io.StringIO()
+            with redirect_stdout(psram_buf):
+                self.assertEqual(cmd_psram_budget(Args()), 0)
+            payload = json.loads(psram_buf.getvalue())
+            self.assertEqual(payload["rom_file_sizeof"], 72)
+            self.assertEqual(verify_color_tokens_main(), 0)
 
 
 if __name__ == "__main__":

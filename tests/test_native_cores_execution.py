@@ -162,12 +162,6 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         self.assertIn("connectWebSerial", js)
         self.assertIn("ingestUploadedRoms", js)
 
-    def test_07_guardian_ai_workflow_benchmark_100_percent(self):
-        from tools.guardian.cli import cmd_benchmark_ai
-        import argparse
-        rc = cmd_benchmark_ai(argparse.Namespace())
-        self.assertEqual(rc, 0)
-
     def test_08_wasm_playtest_cores_binary_and_engine_execution(self):
         from scripts import build_wasm_cores
 

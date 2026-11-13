@@ -104,8 +104,6 @@ class FirmwareAstLinter:
                 cat = "SCRIPTS"
             elif rel_path.startswith("tests"):
                 cat = "TESTS"
-            elif rel_path.startswith(".agents/rules"):
-                cat = "AGENT_RULES"
             elif rel_path.startswith("docs"):
                 cat = "DOCUMENTATION"
 
@@ -484,7 +482,7 @@ class FirmwareAstLinter:
                                 line_number=idx,
                                 line_content=clean,
                                 message=f"{pin_macro} assigned to reserved strapping/PSRAM GPIO {pin_num}.",
-                                suggested_fix="Assign to a safe GPIO per .agents/rules/01_hardware.md.",
+                                suggested_fix="Assign to a safe GPIO per docs/hardware.md and AGENTS.md.",
                             )
                         )
 

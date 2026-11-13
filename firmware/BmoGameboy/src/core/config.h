@@ -15,7 +15,7 @@
 // -----------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
-// HARDWARE FEATURE FLAGS (See .agents/rules/01_hardware.md)
+// HARDWARE FEATURE FLAGS (Hard stops — see docs/hardware.md)
 // -----------------------------------------------------------------------------
 #define FEATURE_SD_CARD 1
 #define FEATURE_AUDIO 0
@@ -89,7 +89,7 @@
 #define I2C_SCL    44
 
 // -----------------------------------------------------------------------------
-// LOGGING & DIAGNOSTICS (See .agents/rules/16_logging_and_diagnostics.md)
+// LOGGING & DIAGNOSTICS
 // -----------------------------------------------------------------------------
 #define LOG_LEVEL_NONE  0
 #define LOG_LEVEL_ERROR 1
