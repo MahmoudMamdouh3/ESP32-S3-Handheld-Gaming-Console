@@ -116,6 +116,18 @@ class PlatformMappingTests(unittest.TestCase):
             else:
                 self.assertRegex(FRAME_PACING, r"default:\s+return\s+16667U")
 
+    def test_simulator_console_list_and_museum_match_firmware_catalog(self):
+        constants_js = (REPO_ROOT / "simulator" / "js" / "constants.js").read_text(encoding="utf-8")
+        museum_js = (REPO_ROOT / "simulator" / "console_history_data.js").read_text(encoding="utf-8")
+        console_body = re.search(r"inline constexpr RomType CONSOLES\[\]\s*=\s*\{(.*?)\};", CONSOLE_CATALOG, re.S).group(1)
+        firmware_ids = set(re.findall(r"ROM_[A-Z0-9_]+", console_body))
+
+        sim_list_ids = set(re.findall(r'id:\s*"(ROM_[A-Z0-9_]+)"', constants_js))
+        self.assertEqual(sim_list_ids, firmware_ids)
+
+        museum_db_ids = set(re.findall(r"^\s*(ROM_[A-Z0-9_]+):\s*\{", museum_js, re.M))
+        self.assertEqual(museum_db_ids, firmware_ids - {"ROM_FAVORITES"})
+
 
 if __name__ == "__main__":
     unittest.main()

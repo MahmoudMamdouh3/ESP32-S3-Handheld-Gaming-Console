@@ -28,13 +28,13 @@ CSP_POLICY = (
 )
 
 
-def valid_host_header(value: str | None) -> bool:
+def valid_host_header(value: str | None, port: int = PORT) -> bool:
     """Reject DNS-rebinding hostnames; this server is bound to one loopback host."""
-    return value == f"{HOST}:{PORT}"
+    return value == f"{HOST}:{port}"
 
 
-def valid_origin_header(value: str | None) -> bool:
-    return value == ORIGIN
+def valid_origin_header(value: str | None, port: int = PORT) -> bool:
+    return value == f"http://{HOST}:{port}"
 
 
 def resolve_static_path(url_path: str) -> Path | None:
@@ -77,7 +77,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def _host_is_allowed(self) -> bool:
-        if valid_host_header(self.headers.get("Host")):
+        bound_addr = getattr(getattr(self, "server", None), "server_address", None)
+        port = bound_addr[1] if isinstance(bound_addr, tuple) and len(bound_addr) >= 2 else PORT
+        if valid_host_header(self.headers.get("Host"), port=port):
             return True
         self._write_json(403, {"status": "error", "message": "Invalid Host header"})
         return False
@@ -138,20 +140,22 @@ def ensure_wasm_artifacts() -> None:
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Run the BMO Handheld loopback browser simulator.")
     parser.add_argument("--no-open", action="store_true", help="Start HTTP server without opening a browser tab.")
+    parser.add_argument("--port", type=int, default=PORT, help="Loopback TCP port (default: 8080).")
     args = parser.parse_args(argv)
 
     ensure_wasm_artifacts()
+    serve_origin = f"http://{HOST}:{args.port}"
     print("==================================================================")
     print(" BMO HANDHELD CONSOLE SIMULATOR")
     print("==================================================================")
-    print(f"[*] Serving simulator at {ORIGIN}")
+    print(f"[*] Serving simulator at {serve_origin}")
     print("    Run native C core tests from a terminal with unittest.")
     print("    Press Ctrl+C to stop the local simulator server.")
     print("==================================================================")
 
-    with LoopbackThreadingServer((HOST, PORT), Handler) as httpd:
+    with LoopbackThreadingServer((HOST, args.port), Handler) as httpd:
         if not args.no_open:
-            webbrowser.open(ORIGIN)
+            webbrowser.open(serve_origin)
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:

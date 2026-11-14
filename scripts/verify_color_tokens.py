@@ -1,5 +1,6 @@
 """Verify firmware, simulator CSS, DESIGN.md, and face-renderer color tokens."""
 
+import json
 from pathlib import Path
 import re
 
@@ -170,6 +171,45 @@ def verify_recomputed_color_math(theme_colors: dict[str, tuple[str, int, int, in
     return issues
 
 
+def verify_design_tokens_json(
+    repo_root: Path, theme_colors: dict[str, tuple[str, int, int, int]]
+) -> list[str]:
+    tokens_path = repo_root / "design" / "tokens.json"
+    if not tokens_path.is_file():
+        return [f"design/tokens.json not found under {repo_root}"]
+
+    data = json.loads(tokens_path.read_text(encoding="utf-8"))
+    issues: list[str] = []
+
+    core = data.get("core_tokens", {})
+    for token_name, (css_var, expected_hex) in CORE_TOKENS.items():
+        entry = core.get(token_name)
+        if not isinstance(entry, dict):
+            issues.append(f"design/tokens.json: missing core_tokens.{token_name}")
+            continue
+        if entry.get("css_var") != css_var:
+            issues.append(f"design/tokens.json: {token_name}.css_var expected {css_var}, found {entry.get('css_var')}")
+        if str(entry.get("hex", "")).lower() != expected_hex.lower():
+            issues.append(f"design/tokens.json: {token_name}.hex expected {expected_hex}, found {entry.get('hex')}")
+        parsed = theme_colors.get(token_name)
+        if parsed is not None:
+            _, ui_word, direct_word, _ = parsed
+            if str(entry.get("canvas_bgr565_swapped", "")).lower() != f"0x{ui_word:04x}":
+                issues.append(f"design/tokens.json: {token_name}.canvas_bgr565_swapped mismatch")
+            if str(entry.get("direct_bgr565", "")).lower() != f"0x{direct_word:04x}":
+                issues.append(f"design/tokens.json: {token_name}.direct_bgr565 mismatch")
+
+    bmo_face_src = (repo_root / "firmware" / "BmoGameboy" / "src" / "ui" / "bmo_face.cpp").read_text(encoding="utf-8")
+    face_json = data.get("face_palette", {})
+    for name, red, green, blue, _ in FACE_COLOR.findall(bmo_face_src):
+        expected_hex = "#%02X%02X%02X" % (int(red), int(green), int(blue))
+        entry = face_json.get(name)
+        if not isinstance(entry, dict) or str(entry.get("hex", "")).upper() != expected_hex:
+            issues.append(f"design/tokens.json: face_palette.{name} expected {expected_hex}, found {entry}")
+
+    return issues
+
+
 def main() -> int:
     theme_h = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "theme.h"
     theme_colors = parse_theme_colors(theme_h.read_text(encoding="utf-8"))
@@ -180,6 +220,7 @@ def main() -> int:
     issues = verify_token_parity(REPO_ROOT, theme_colors)
     issues.extend(verify_face_palette(REPO_ROOT))
     issues.extend(verify_recomputed_color_math(theme_colors))
+    issues.extend(verify_design_tokens_json(REPO_ROOT, theme_colors))
     if issues:
         for issue in issues:
             print(f"[FAIL] {issue}")

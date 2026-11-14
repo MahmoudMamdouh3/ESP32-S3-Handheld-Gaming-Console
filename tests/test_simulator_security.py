@@ -1,8 +1,10 @@
 import ast
+import http.client
 import io
 import re
 import shutil
 import subprocess
+import threading
 import unittest
 from pathlib import Path
 
@@ -105,9 +107,9 @@ class SimulatorSecurityTests(unittest.TestCase):
         self.assertNotIn("btn-verify-host-cores", html)
 
         sink_pattern = re.compile(r"\b(innerHTML|outerHTML|insertAdjacentHTML|document\.write)\b")
-        for asset in sorted(SIM_DIR.glob("*.js")) + sorted(SIM_DIR.glob("*.html")):
+        for asset in sorted(SIM_DIR.rglob("*.js")) + sorted(SIM_DIR.glob("*.html")):
             matches = sink_pattern.findall(asset.read_text(encoding="utf-8"))
-            self.assertEqual(matches, [], f"Unsafe DOM sink in {asset.name}: {matches}")
+            self.assertEqual(matches, [], f"Unsafe DOM sink in {asset.relative_to(SIM_DIR)}: {matches}")
 
     def test_hostile_filenames_and_metadata_do_not_inject_dom_markup(self):
         node_bin = shutil.which("node")
@@ -206,8 +208,18 @@ sandbox.CONSOLE_HISTORY_DATABASE = {
   },
 };
 
-const simSource = fs.readFileSync(path.join(simDir, "simulator.js"), "utf8");
-vm.runInNewContext(simSource + "\nwindow.__BmoSimulatorClass = BmoSimulator;", sandbox);
+const moduleFiles = [
+  "js/constants.js",
+  "js/bmo_mode.js",
+  "js/internals.js",
+  "js/museum.js",
+  "js/webserial.js",
+  "simulator.js",
+];
+const combinedSimSource = moduleFiles
+  .map((rel) => fs.readFileSync(path.join(simDir, rel), "utf8"))
+  .join("\n");
+vm.runInNewContext(combinedSimSource + "\nwindow.__BmoSimulatorClass = BmoSimulator;", sandbox);
 
 const proto = sandbox.window.__BmoSimulatorClass.prototype;
 const fakeSim = {
@@ -252,6 +264,69 @@ for (const tag of createdTags) {
         )
         self.assertEqual(proc.returncode, 0, msg=f"{proc.stderr}\n{proc.stdout}")
         self.assertIn("SIMULATOR_XSS_DEFENSE_PASS", proc.stdout)
+
+    def test_live_loopback_server_ephemeral_port_http_contracts(self):
+        httpd = run_simulator.LoopbackThreadingServer(("127.0.0.1", 0), run_simulator.Handler)
+        port = httpd.server_address[1]
+        thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+        thread.start()
+        try:
+            conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+            conn.putrequest("GET", "/index.html", skip_host=True)
+            conn.putheader("Host", f"127.0.0.1:{port}")
+            conn.endheaders()
+            resp = conn.getresponse()
+            body = resp.read()
+            self.assertEqual(resp.status, 200)
+            self.assertIn(b"BMO Handheld", body)
+            self.assertEqual(resp.getheader("Content-Security-Policy"), run_simulator.CSP_POLICY)
+            self.assertEqual(resp.getheader("X-Content-Type-Options"), "nosniff")
+            conn.close()
+
+            conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+            conn.putrequest("GET", "/js/constants.js", skip_host=True)
+            conn.putheader("Host", f"127.0.0.1:{port}")
+            conn.endheaders()
+            js_resp = conn.getresponse()
+            js_body = js_resp.read()
+            self.assertEqual(js_resp.status, 200)
+            self.assertIn("application/javascript", js_resp.getheader("Content-Type", ""))
+            self.assertIn(b"CONSOLES_LIST", js_body)
+            conn.close()
+
+            for blocked_path in ("/%2e%2e/README.md", "/../../AGENTS.md"):
+                conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+                conn.putrequest("GET", blocked_path, skip_host=True)
+                conn.putheader("Host", f"127.0.0.1:{port}")
+                conn.endheaders()
+                trav_resp = conn.getresponse()
+                trav_resp.read()
+                self.assertEqual(trav_resp.status, 404, msg=blocked_path)
+                conn.close()
+
+            for bad_host in (f"attacker.example:{port}", f"localhost:{port}"):
+                conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+                conn.putrequest("GET", "/index.html", skip_host=True)
+                conn.putheader("Host", bad_host)
+                conn.endheaders()
+                host_resp = conn.getresponse()
+                host_resp.read()
+                self.assertEqual(host_resp.status, 403, msg=bad_host)
+                conn.close()
+
+            conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+            conn.putrequest("POST", "/index.html", skip_host=True)
+            conn.putheader("Host", f"127.0.0.1:{port}")
+            conn.putheader("Content-Length", "0")
+            conn.endheaders()
+            post_resp = conn.getresponse()
+            post_resp.read()
+            self.assertEqual(post_resp.status, 405)
+            conn.close()
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+            thread.join(timeout=2)
 
 
 if __name__ == "__main__":

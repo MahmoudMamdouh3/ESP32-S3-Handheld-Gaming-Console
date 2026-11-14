@@ -23,6 +23,13 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 FIRMWARE_DIR = REPO_ROOT / "firmware" / "BmoGameboy"
 
 
+def _read_simulator_js() -> str:
+    sim_dir = REPO_ROOT / "simulator"
+    parts = [p.read_text(encoding="utf-8") for p in sorted((sim_dir / "js").glob("*.js"))]
+    parts.append((sim_dir / "simulator.js").read_text(encoding="utf-8"))
+    return "\n".join(parts)
+
+
 class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
     """Executes all 11 genuine upstream emulator engines on host CPU and verifies Phase D tools."""
 
@@ -250,7 +257,7 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
 
     def test_06_web_simulator_webserial_sd_manager_and_rom_dropzone(self):
         html = (REPO_ROOT / "simulator" / "index.html").read_text(encoding="utf-8")
-        js = (REPO_ROOT / "simulator" / "simulator.js").read_text(encoding="utf-8")
+        js = _read_simulator_js()
         self.assertIn("webserial-sd-manager", html)
         self.assertIn("connectWebSerial", js)
         self.assertIn("ingestUploadedRoms", js)
@@ -482,7 +489,7 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
 
     def test_11_bmo_mode_simulator_controls_and_wasm_bridge(self):
         html = (REPO_ROOT / "simulator" / "index.html").read_text(encoding="utf-8")
-        js = (REPO_ROOT / "simulator" / "simulator.js").read_text(encoding="utf-8")
+        js = _read_simulator_js()
         css = (REPO_ROOT / "simulator" / "simulator.css").read_text(encoding="utf-8")
 
         for required_id in (
@@ -684,7 +691,7 @@ class TestCoverArtPipeline(unittest.TestCase):
     def test_slug_rule_matches_simulator(self):
         self.assertEqual(fetch_covers.slugify_title("Tetris (World) (Rev A).gb"), "tetris")
         self.assertEqual(fetch_covers.slugify_title("Kirby - Tilt 'n' Tumble"), "kirby_tilt_n_tumble")
-        js = (REPO_ROOT / "simulator" / "simulator.js").read_text(encoding="utf-8")
+        js = _read_simulator_js()
         self.assertIn("slugifyTitle(title)", js)
         self.assertIn("covers/${slug}.png", js)
 

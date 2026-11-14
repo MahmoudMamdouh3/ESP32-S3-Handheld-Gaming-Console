@@ -11,6 +11,7 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from repo_tools import find_game_roots, get_data_dir, sanitize_identifier, validate_rom_header
+from tools import bmo_tools
 from validate_repo import (
     check_python_files,
     check_firmware_safety_guardrails,
@@ -80,6 +81,17 @@ class RepoToolsTests(unittest.TestCase):
     def test_check_structural_soundness_passes(self):
         issues = check_structural_soundness()
         self.assertEqual(issues, [], f"Structural soundness check failed: {issues}")
+
+    def test_bmo_tools_package_exports_shared_helpers(self):
+        from scripts.rom_key import make_rom_key
+
+        self.assertEqual(bmo_tools.sanitize_identifier("Test ROM!"), sanitize_identifier("Test ROM!"))
+        self.assertEqual(bmo_tools.make_rom_key("gb/Tetris.gb"), make_rom_key("gb/Tetris.gb"))
+        self.assertEqual(bmo_tools.to_bgr565_swapped(255, 255, 255), 0xFFFF)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self.assertEqual(bmo_tools.require_dir(Path(tmpdir)), Path(tmpdir))
+            with self.assertRaises(FileNotFoundError):
+                bmo_tools.require_dir(Path(tmpdir) / "missing")
 
 
 if __name__ == '__main__':
