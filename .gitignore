@@ -76,6 +76,7 @@ rom_data*.h
 rom_*.h
 !firmware/BmoGameboy/src/storage/rom_index.h
 !firmware/BmoGameboy/src/storage/rom_file_filter.h
+!firmware/BmoGameboy/src/storage/rom_path_match.h
 cover_*.h
 
 tools/zig/
