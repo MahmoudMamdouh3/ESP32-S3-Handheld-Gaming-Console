@@ -22,9 +22,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: "pip"
@@ -43,9 +43,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: "pip"
@@ -58,7 +58,7 @@ jobs:
 
       - name: Cache WASI SDK 34
         id: wasi-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .tools/wasi-sdk-34.0-x86_64-linux
           key: wasi-sdk-34.0-x86_64-linux-b761e3a0
@@ -94,9 +94,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: "pip"
@@ -112,7 +112,7 @@ jobs:
           version: 1.6.0
 
       - name: Cache Arduino cores, libraries, and compiler cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.arduino15
@@ -140,7 +140,7 @@ jobs:
           python tasks.py build --profile profiler-compile-only --warnings strict --fail-on-warnings
 
       - name: Upload compiled firmware artifacts (default profile)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: esp32s3-firmware-default
           retention-days: 14
