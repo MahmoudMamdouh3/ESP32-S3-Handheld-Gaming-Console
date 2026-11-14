@@ -24,6 +24,7 @@ Firmware, host test suite, browser WebAssembly simulator, and 3D-printable enclo
 | Supported consoles, status & controls | [docs/compatibility.md](docs/compatibility.md) |
 | Performance budgets & device measurements | [docs/performance.md](docs/performance.md) & [docs/hardware_measurements.md](docs/hardware_measurements.md) |
 | Build system, tasks CLI & CI architecture | [docs/build-and-ci.md](docs/build-and-ci.md), [tasks.py](tasks.py) |
+| Hardware bench checklist & audit report | [docs/hardware-validation-kit.md](docs/hardware-validation-kit.md), [docs/audit-remediation-report.md](docs/audit-remediation-report.md) |
 | Binary formats (`BMOIDX02`, `BSS1`, SD deployment) | [docs/formats.md](docs/formats.md) |
 | 3D-printable enclosure & wiring guides | [docs/enclosure-3d-printing.md](docs/enclosure-3d-printing.md), [wiring/](docs/wiring/01-display-and-buttons.md) |
 | Visual tokens & UI standards | [DESIGN.md](DESIGN.md) |

@@ -1,0 +1,106 @@
+name: Release firmware builds
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  release-firmware:
+    name: Build release firmware bundles
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: |
+            requirements.txt
+
+      - name: Install Python verification tools
+        run: python -m pip install --disable-pip-version-check -r requirements.txt
+
+      - name: Run static checks and link verification
+        run: python tasks.py check --no-tests
+
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v2.0.0
+        with:
+          version: 1.6.0
+
+      - name: Cache Arduino cores, libraries, and compiler cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.arduino15
+            ~/Arduino/libraries
+            build
+          key: ${{ runner.os }}-arduino-rel-${{ hashFiles('firmware/BmoGameboy/sketch.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-arduino-rel-
+            ${{ runner.os }}-arduino-
+
+      - name: Install pinned ESP32 core and libraries from sketch.yaml
+        run: python tasks.py setup --no-hooks --no-pip
+
+      - name: Compile release profiles (strict warnings & size check)
+        run: |
+          python tasks.py build --profile default --warnings strict --fail-on-warnings
+          python tasks.py size --elf build/target-compile/BmoGameboy.ino.elf --check-budgets
+          python tasks.py build --profile no-doom --warnings strict --fail-on-warnings
+          python tasks.py build --profile mit --warnings strict --fail-on-warnings
+
+      - name: Package binaries, partition table, notices, and SHA-256 checksums
+        run: |
+          mkdir -p dist
+          for entry in \
+            "default:build/target-compile" \
+            "no-doom:build/profile-no-doom" \
+            "mit:build/profile-mit"; do
+            name="${entry%%:*}"
+            dir="${entry#*:}"
+            out="dist/bmo-handheld-esp32s3-${name}"
+            mkdir -p "${out}"
+            cp "${dir}/BmoGameboy.ino.bin" "${out}/"
+            cp "${dir}/BmoGameboy.ino.bootloader.bin" "${out}/"
+            cp "${dir}/BmoGameboy.ino.partitions.bin" "${out}/"
+            cp "${dir}/BmoGameboy.ino.elf" "${out}/"
+            cp "${dir}/BmoGameboy.ino.map" "${out}/"
+            cp "firmware/BmoGameboy/partitions.csv" "${out}/"
+            cp LICENSE THIRD_PARTY_NOTICES.md "${out}/"
+            tar -czf "dist/bmo-handheld-esp32s3-${name}.tar.gz" -C dist "bmo-handheld-esp32s3-${name}"
+            rm -rf "${out}"
+          done
+          cp LICENSE THIRD_PARTY_NOTICES.md dist/
+          (cd dist && sha256sum bmo-handheld-esp32s3-*.tar.gz LICENSE THIRD_PARTY_NOTICES.md > SHA256SUMS.txt)
+          cat dist/SHA256SUMS.txt
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bmo-handheld-release-bundles
+          retention-days: 30
+          path: dist/
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/bmo-handheld-esp32s3-default.tar.gz
+            dist/bmo-handheld-esp32s3-no-doom.tar.gz
+            dist/bmo-handheld-esp32s3-mit.tar.gz
+            dist/LICENSE
+            dist/THIRD_PARTY_NOTICES.md
+            dist/SHA256SUMS.txt

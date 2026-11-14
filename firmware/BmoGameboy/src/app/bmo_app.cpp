@@ -1,5 +1,6 @@
 #include "bmo_app.h"
 #include "boot_safe_mode.h"
+#include "version.h"
 
 #include "../cores/core_registry.h"
 #include "../hal/battery.h"
@@ -1061,6 +1062,7 @@ void BmoApp::setup() {
 #endif
 
   LOG_INFO_STR("\n\n--- BOOTING ---");
+  LOG_INFO("BMO Handheld v%s (%s)", BMO_VERSION_STRING, BMO_GIT_SHA);
   LOG_INFO_STR("Milestone 4: Game Selection UI");
   LOG_INFO("Features: SD=%d, Audio=%d, Battery=%d", FEATURE_SD_CARD, FEATURE_AUDIO, FEATURE_BATTERY_MONITOR);
 

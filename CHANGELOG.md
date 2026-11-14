@@ -1,5 +1,13 @@
 # Changelog
 
+## [Audit Remediation Phases 5B–14 — Host Test Suite, Hardening, Modular Simulator, Validation Kit] - 2026-11-14
+
+- **Build, CI & Host CTest Suite (`555d823`, `64c1197`, `813087e`, `ae4058e`, `b1e5d3e`):** Added unified CLI task runner [`tasks.py`](tasks.py) covering 7 ESP32-S3 build profiles, C++17 host CTest targets (`CMakeLists.txt`), CI ASan/UBSan checks, and ELF size-budget verification.
+- **Storage, PSRAM & Profiler Hardening (`cbea31c`, `687be20`, `04e2c7f`):** Hardened atomic `BMOIDX03` ROM index writes (`rom_index.h`), `BSS2` PSRAM save states, SNES/PCE battery gating, `BmoProfiler` (`FRAME_WINDOW`), Core 0 GB/GBC ping-pong display streaming, `fuzz_storage_test`, `peanut_opcode_test`, and 10/10 host+Python mutation sanity killing (`scripts/run_mutation_sanity.py`).
+- **Core Helper Deduplication & Walnut-CGB Hardening (`5195a13`):** Added `CoreHelpers` (`core_helpers.h`) across 10 console wrappers, eliminated unaligned pointer casts via `memcpy` in `walnut_cgb.h`, fixed `WRAM` Bank 0 vs Bank 2 (`0xC` vs `0xD`) write isolation verified by `walnut_opcode_test`, and reconciled `THIRD_PARTY_NOTICES.md` and `PROVENANCE.md` files.
+- **Modular Simulator, Design Tokens & Shared Python Package (`4e3d3f7`):** Split browser simulator logic into `simulator/js/{constants.js,bmo_mode.js,internals.js,museum.js,webserial.js}`, added live loopback HTTP server security contract tests on ephemeral ports (`tests/test_simulator_security.py`), added `design/tokens.json` cross-checked by `scripts/verify_color_tokens.py`, verified catalog parity between `console_catalog.h` and the simulator, and exposed `tools/bmo_tools/`.
+- **Versioning, Release Packaging & Owner Bench Validation Kit:** Added `firmware/BmoGameboy/src/app/version.h` (`0.9.0-dev`) wired into the `BmoApp::setup()` serial boot banner, tagged release automation in [`.github/workflows/release.yml`](.github/workflows/release.yml), [`docs/hardware-validation-kit.md`](docs/hardware-validation-kit.md), and [`docs/audit-remediation-report.md`](docs/audit-remediation-report.md). All firmware targets are `TARGET_COMPILED` and core/storage modules are `HOST_TESTED`; `HARDWARE_TESTED` remains unrecorded pending physical bench execution.
+
 ## [Tech-Lead Audit Remediation — Genuine Upstream Cores, Safeguards & Host WASI Tests] - 2026-11-13
 
 - Replaced all custom experimental C engines (`src/engines/`) with 13 genuine upstream open-source cores in [`firmware/BmoGameboy/src/third_party/`](THIRD_PARTY_NOTICES.md) covering all 15 console platforms, enabled by default (`BMO_EXPERIMENTAL_CORES=1`, `BMO_ENABLE_DOOM=1`, `BMO_ENABLE_BAKED_ROMS=0`).
