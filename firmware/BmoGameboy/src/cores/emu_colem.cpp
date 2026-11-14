@@ -10,6 +10,7 @@
 #include "../hal/psram_alloc.h"
 #include "../hal/spi_arbiter.h"
 #include "../storage/save_manager.h"
+#include "core_helpers.h"
 #include "../storage/sd_card.h"
 #include "../third_party/smsplus/smsplus_bmo.h"
 #if FEATURE_SD_CARD
@@ -84,13 +85,11 @@ bool ColemEmu::init(uint8_t* romData, size_t romSize, bool isSg1000) {
 void ColemEmu::update() {
   if (!s_running || !s_panelFb || !bmo_sms_is_running()) return;
 
-  int pad = 0;
-  if (Buttons::get(Buttons::UP).pressed) pad |= BMO_SMS_INPUT_UP;
-  if (Buttons::get(Buttons::DOWN).pressed) pad |= BMO_SMS_INPUT_DOWN;
-  if (Buttons::get(Buttons::LEFT).pressed) pad |= BMO_SMS_INPUT_LEFT;
-  if (Buttons::get(Buttons::RIGHT).pressed) pad |= BMO_SMS_INPUT_RIGHT;
-  if (Buttons::get(Buttons::A).pressed) pad |= BMO_SMS_INPUT_BUTTON1;
-  if (Buttons::get(Buttons::B).pressed) pad |= BMO_SMS_INPUT_BUTTON2;
+  static constexpr CoreHelpers::ButtonBit kPadMap[] = {
+      {Buttons::UP, BMO_SMS_INPUT_UP},       {Buttons::DOWN, BMO_SMS_INPUT_DOWN}, {Buttons::LEFT, BMO_SMS_INPUT_LEFT},
+      {Buttons::RIGHT, BMO_SMS_INPUT_RIGHT}, {Buttons::A, BMO_SMS_INPUT_BUTTON1}, {Buttons::B, BMO_SMS_INPUT_BUTTON2},
+  };
+  int pad = static_cast<int>(CoreHelpers::readButtonMask(kPadMap));
 
   int sys = 0;
   if (s_isSg1000) {
@@ -142,30 +141,16 @@ bool ColemEmu::loadBatteryRam(const char* romFilename) {
 
 bool ColemEmu::saveState(const char* romFilename, int slot) {
   if (!s_running || !romFilename) return false;
-  const size_t cap = bmo_sms_state_size();
-  if (cap == 0) return false;
-  uint8_t* blob = static_cast<uint8_t*>(bmo_psram_malloc(cap));
-  if (!blob) return false;
-
-  size_t actualSize = 0;
-  bool ok = bmo_sms_save_state(blob, cap, &actualSize) &&
-            SaveManager::saveState(romFilename, slot, SaveManager::CORE_COLEM, blob, actualSize);
-  bmo_psram_free(blob);
-  return ok;
+  return CoreHelpers::savePsramState(
+      romFilename, slot, SaveManager::CORE_COLEM, bmo_sms_state_size(),
+      [](uint8_t* blob, size_t cap, size_t* actualSize) { return bmo_sms_save_state(blob, cap, actualSize); });
 }
 
 bool ColemEmu::loadState(const char* romFilename, int slot) {
   if (!s_running || !romFilename) return false;
-  const size_t cap = bmo_sms_state_size();
-  if (cap == 0) return false;
-  uint8_t* blob = static_cast<uint8_t*>(bmo_psram_malloc(cap));
-  if (!blob) return false;
-
-  size_t loadedSize = 0;
-  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_COLEM, blob, cap, &loadedSize) &&
-            bmo_sms_load_state(blob, loadedSize);
-  bmo_psram_free(blob);
-  return ok;
+  return CoreHelpers::loadPsramState(
+      romFilename, slot, SaveManager::CORE_COLEM, bmo_sms_state_size(),
+      [](uint8_t* blob, size_t loadedSize) { return bmo_sms_load_state(blob, loadedSize); });
 }
 
 #else // BMO_EXPERIMENTAL_CORES == 0

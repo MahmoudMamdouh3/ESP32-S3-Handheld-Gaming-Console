@@ -10,6 +10,7 @@
 #include "../hal/panel_color.h"
 #include "../hal/psram_alloc.h"
 #include "../storage/save_manager.h"
+#include "core_helpers.h"
 #include <string.h>
 
 extern "C" {
@@ -118,13 +119,11 @@ void mapVdpTables() {
 }
 
 void pollInput() {
-  uint8_t state = 0;
-  if (Buttons::get(Buttons::UP).pressed) state |= (1U << 0);
-  if (Buttons::get(Buttons::DOWN).pressed) state |= (1U << 1);
-  if (Buttons::get(Buttons::LEFT).pressed) state |= (1U << 2);
-  if (Buttons::get(Buttons::RIGHT).pressed) state |= (1U << 3);
-  if (Buttons::get(Buttons::A).pressed) state |= (1U << 4);
-  if (Buttons::get(Buttons::B).pressed) state |= (1U << 5);
+  static constexpr CoreHelpers::ButtonBit kPadMap[] = {
+      {Buttons::UP, 1U << 0},    {Buttons::DOWN, 1U << 1}, {Buttons::LEFT, 1U << 2},
+      {Buttons::RIGHT, 1U << 3}, {Buttons::A, 1U << 4},    {Buttons::B, 1U << 5},
+  };
+  uint8_t state = static_cast<uint8_t>(CoreHelpers::readButtonMask(kPadMap));
   if (Buttons::get(Buttons::START).pressed || Buttons::get(Buttons::SELECT).pressed) {
     state |= (1U << 6); // OPTION
   }
@@ -266,37 +265,29 @@ bool NGPEmu::loadBatteryRam(const char* romFilename) {
 
 bool NGPEmu::saveState(const char* romFilename, int slot) {
   if (!s_running || !romFilename) return false;
-  const size_t cap = static_cast<size_t>(state_get_size());
-  uint8_t* buf = static_cast<uint8_t*>(bmo_psram_malloc(cap));
-  if (!buf) return false;
-
-  bool ok = (state_store_mem(buf) != 0);
-  if (ok) {
-    const size_t flashSz = (ngpSaveBuf && ngpSaveBufActive) ? flashGetSaveSize() : 0;
-    ok = SaveManager::saveState(romFilename, slot, SaveManager::CORE_NGP, buf, cap,
-                                (flashSz > 0) ? ngpSaveBuf : nullptr, flashSz);
-  }
-  bmo_psram_free(buf);
-  return ok;
+  const size_t flashSz = (ngpSaveBuf && ngpSaveBufActive) ? flashGetSaveSize() : 0;
+  return CoreHelpers::savePsramState(
+      romFilename, slot, SaveManager::CORE_NGP, static_cast<size_t>(state_get_size()),
+      [](uint8_t* buf, size_t cap, size_t* outSize) {
+        if (state_store_mem(buf) == 0) return false;
+        *outSize = cap;
+        return true;
+      },
+      (flashSz > 0) ? ngpSaveBuf : nullptr, flashSz);
 }
 
 bool NGPEmu::loadState(const char* romFilename, int slot) {
   if (!s_running || !romFilename) return false;
-  const size_t cap = static_cast<size_t>(state_get_size());
-  uint8_t* buf = static_cast<uint8_t*>(bmo_psram_malloc(cap));
-  if (!buf) return false;
-
-  size_t outState = 0;
-  size_t outRam = 0;
   const size_t flashSz = (ngpSaveBuf && ngpSaveBufActive) ? flashGetSaveSize() : 0;
-  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_NGP, buf, cap, &outState,
-                                   (flashSz > 0) ? ngpSaveBuf : nullptr, flashSz, &outRam);
-  if (ok) {
-    ok = (state_restore_mem(buf) != 0);
-    mapVdpTables();
-  }
-  bmo_psram_free(buf);
-  return ok;
+  return CoreHelpers::loadPsramState(
+      romFilename, slot, SaveManager::CORE_NGP, static_cast<size_t>(state_get_size()),
+      [](uint8_t* buf, size_t loaded) {
+        (void)loaded;
+        if (state_restore_mem(buf) == 0) return false;
+        mapVdpTables();
+        return true;
+      },
+      (flashSz > 0) ? ngpSaveBuf : nullptr, flashSz);
 }
 
 #else // BMO_EXPERIMENTAL_CORES == 0

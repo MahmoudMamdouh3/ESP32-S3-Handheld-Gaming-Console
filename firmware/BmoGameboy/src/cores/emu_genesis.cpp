@@ -10,6 +10,7 @@
 #include "../hal/panel_color.h"
 #include "../hal/psram_alloc.h"
 #include "../storage/save_manager.h"
+#include "core_helpers.h"
 #include <string.h>
 
 extern "C" {
@@ -212,36 +213,23 @@ bool GenesisEmu::loadBatteryRam(const char* romFilename) {
 
 bool GenesisEmu::saveState(const char* romFilename, int slot) {
   if (!s_running || !romFilename) return false;
-  uint8_t* buf = static_cast<uint8_t*>(bmo_psram_malloc(kGenMaxArchiveBytes));
-  if (!buf) return false;
-
-  size_t outBytes = 0;
-  bool ok = saveGwenesisStateSaveToBuffer(buf, kGenMaxArchiveBytes, &outBytes);
-  if (ok) {
-    const size_t sramSz = genesisSramBytes();
-    ok = SaveManager::saveState(romFilename, slot, SaveManager::CORE_GENESIS, buf, outBytes,
-                                (sramSz > 0) ? SRAM : nullptr, sramSz);
-  }
+  const size_t sramSz = genesisSramBytes();
+  bool ok = CoreHelpers::savePsramState(
+      romFilename, slot, SaveManager::CORE_GENESIS, kGenMaxArchiveBytes,
+      [](uint8_t* buf, size_t cap, size_t* outBytes) { return saveGwenesisStateSaveToBuffer(buf, cap, outBytes); },
+      (sramSz > 0) ? SRAM : nullptr, sramSz);
   saveGwenesisStateResetArchive();
-  bmo_psram_free(buf);
   return ok;
 }
 
 bool GenesisEmu::loadState(const char* romFilename, int slot) {
   if (!s_running || !romFilename) return false;
-  uint8_t* buf = static_cast<uint8_t*>(bmo_psram_malloc(kGenMaxArchiveBytes));
-  if (!buf) return false;
-
-  size_t outState = 0;
-  size_t outRam = 0;
   const size_t sramSz = genesisSramBytes();
-  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_GENESIS, buf, kGenMaxArchiveBytes, &outState,
-                                   (sramSz > 0) ? SRAM : nullptr, sramSz, &outRam);
-  if (ok) {
-    ok = saveGwenesisStateLoadFromBuffer(buf, outState);
-  }
+  bool ok = CoreHelpers::loadPsramState(
+      romFilename, slot, SaveManager::CORE_GENESIS, kGenMaxArchiveBytes,
+      [](uint8_t* buf, size_t outState) { return saveGwenesisStateLoadFromBuffer(buf, outState); },
+      (sramSz > 0) ? SRAM : nullptr, sramSz);
   saveGwenesisStateResetArchive();
-  bmo_psram_free(buf);
   return ok;
 }
 

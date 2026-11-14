@@ -12,6 +12,7 @@
 #include "../hal/psram_alloc.h"
 #include "../hal/panel_color.h"
 #include "../storage/save_manager.h"
+#include "core_helpers.h"
 #include "../ui/display_emu.h"
 
 #include "../third_party/stella2014/src/bspf.h"
@@ -246,22 +247,15 @@ bool AtariEmu::saveState(const char* romFilename, int slot) {
 
 bool AtariEmu::loadState(const char* romFilename, int slot) {
   if (!s_running || !s_stateMgr || !romFilename) return false;
-  uint8_t* stateBuf = (uint8_t*)bmo_psram_malloc(ATARI_STATE_BUF_MAX);
-  if (!stateBuf) return false;
-
-  size_t outSize = 0;
-  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_ATARI, stateBuf, ATARI_STATE_BUF_MAX, &outSize,
-                                   nullptr, 0, nullptr);
-  if (ok && outSize > 0) {
-    Serializer ser;
-    ok = ser.loadFromBuffer(stateBuf, outSize) && s_stateMgr->loadState(ser);
-    if (ok) refreshPaletteLut();
-  } else {
-    ok = false;
-  }
-
-  bmo_psram_free(stateBuf);
-  return ok;
+  return CoreHelpers::loadPsramState(romFilename, slot, SaveManager::CORE_ATARI, ATARI_STATE_BUF_MAX,
+                                     [](uint8_t* stateBuf, size_t outSize) {
+                                       Serializer ser;
+                                       if (!ser.loadFromBuffer(stateBuf, outSize) || !s_stateMgr->loadState(ser)) {
+                                         return false;
+                                       }
+                                       refreshPaletteLut();
+                                       return true;
+                                     });
 }
 
 #else // BMO_EXPERIMENTAL_CORES == 0

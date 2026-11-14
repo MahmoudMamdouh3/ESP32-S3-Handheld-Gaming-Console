@@ -15,6 +15,7 @@
 #include "../hal/psram_alloc.h"
 #include "../hal/panel_color.h"
 #include "../storage/save_manager.h"
+#include "core_helpers.h"
 #include "../ui/display_emu.h"
 
 #include "../third_party/fake08/src/Audio.h"
@@ -335,14 +336,12 @@ bool PicoEmu::init(const uint8_t* romData, size_t romSize) {
 
 void PicoEmu::update() {
   if (!s_running || !s_vm) return;
-  uint8_t held = 0;
-  if (Buttons::get(Buttons::LEFT).pressed) held |= P8_KEY_LEFT;
-  if (Buttons::get(Buttons::RIGHT).pressed) held |= P8_KEY_RIGHT;
-  if (Buttons::get(Buttons::UP).pressed) held |= P8_KEY_UP;
-  if (Buttons::get(Buttons::DOWN).pressed) held |= P8_KEY_DOWN;
-  if (Buttons::get(Buttons::B).pressed) held |= P8_KEY_O;
-  if (Buttons::get(Buttons::A).pressed) held |= P8_KEY_X;
-  if (Buttons::get(Buttons::START).pressed) held |= P8_KEY_PAUSE;
+  static constexpr CoreHelpers::ButtonBit kPadMap[] = {
+      {Buttons::LEFT, P8_KEY_LEFT},   {Buttons::RIGHT, P8_KEY_RIGHT}, {Buttons::UP, P8_KEY_UP},
+      {Buttons::DOWN, P8_KEY_DOWN},   {Buttons::B, P8_KEY_O},         {Buttons::A, P8_KEY_X},
+      {Buttons::START, P8_KEY_PAUSE},
+  };
+  const uint8_t held = static_cast<uint8_t>(CoreHelpers::readButtonMask(kPadMap));
 
   s_currDown = held & (uint8_t)(~s_prevHeld);
   s_currHeld = held;
@@ -457,51 +456,31 @@ bool PicoEmu::saveState(const char* romFilename, int slot) {
 
 bool PicoEmu::loadState(const char* romFilename, int slot) {
   if (!s_running || !s_vm || !s_memory || !s_audio || !romFilename) return false;
+  return CoreHelpers::loadPsramState(
+      romFilename, slot, SaveManager::CORE_PICO8, PICO_SAVE_STATE_MAX, [](uint8_t* stateBuf, size_t outSize) {
+        if (outSize < 4U + sizeof(size_t) || stateBuf[0] != 'f' || stateBuf[1] != '8') return false;
+        size_t off = 4U;
+        size_t luaLen = 0;
+        memcpy(&luaLen, stateBuf + off, sizeof(size_t));
+        off += sizeof(size_t);
+        if (luaLen == 0 || luaLen > PICO_LUA_STATE_MAX || off + luaLen + sizeof(size_t) > outSize) return false;
+        s_vm->deserializeLuaState(reinterpret_cast<const char*>(stateBuf + off), luaLen);
+        off += luaLen;
 
-  uint8_t* stateBuf = (uint8_t*)bmo_psram_malloc(PICO_SAVE_STATE_MAX);
-  if (!stateBuf) return false;
-
-  size_t outSize = 0;
-  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_PICO8, stateBuf, PICO_SAVE_STATE_MAX, &outSize,
-                                   nullptr, 0, nullptr);
-  if (ok && outSize >= 4U + sizeof(size_t) && stateBuf[0] == 'f' && stateBuf[1] == '8') {
-    size_t off = 4U;
-    size_t luaLen = 0;
-    memcpy(&luaLen, stateBuf + off, sizeof(size_t));
-    off += sizeof(size_t);
-
-    if (luaLen > 0 && luaLen <= PICO_LUA_STATE_MAX && off + luaLen + sizeof(size_t) <= outSize) {
-      s_vm->deserializeLuaState(reinterpret_cast<const char*>(stateBuf + off), luaLen);
-      off += luaLen;
-
-      size_t picoRamSize = 0;
-      memcpy(&picoRamSize, stateBuf + off, sizeof(size_t));
-      off += sizeof(size_t);
-      if (picoRamSize == sizeof(PicoRam) && off + picoRamSize + sizeof(size_t) <= outSize) {
+        size_t picoRamSize = 0;
+        memcpy(&picoRamSize, stateBuf + off, sizeof(size_t));
+        off += sizeof(size_t);
+        if (picoRamSize != sizeof(PicoRam) || off + picoRamSize + sizeof(size_t) > outSize) return false;
         memcpy(s_memory->data, stateBuf + off, picoRamSize);
         off += picoRamSize;
 
         size_t musicSize = 0;
         memcpy(&musicSize, stateBuf + off, sizeof(size_t));
         off += sizeof(size_t);
-        if (musicSize == sizeof(musicChannel) && off + musicSize <= outSize) {
-          memcpy(&s_audio->getAudioState()->_musicChannel, stateBuf + off, musicSize);
-          ok = true;
-        } else {
-          ok = false;
-        }
-      } else {
-        ok = false;
-      }
-    } else {
-      ok = false;
-    }
-  } else {
-    ok = false;
-  }
-
-  bmo_psram_free(stateBuf);
-  return ok;
+        if (musicSize != sizeof(musicChannel) || off + musicSize > outSize) return false;
+        memcpy(&s_audio->getAudioState()->_musicChannel, stateBuf + off, musicSize);
+        return true;
+      });
 }
 
 #else // BMO_EXPERIMENTAL_CORES == 0

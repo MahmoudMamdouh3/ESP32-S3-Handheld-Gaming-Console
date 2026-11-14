@@ -342,3 +342,9 @@ bool WalnutEmu::loadState(const char* romFilename, int slot) {
   heap_caps_free(tempGb);
   return false;
 }
+
+static_assert(ENABLE_SOUND == 1, "Walnut-CGB expects sound registers active before audio stub mixing.");
+static_assert(WALNUT_FULL_GBC_SUPPORT == 1, "Walnut-CGB must keep full GBC banking/palette support enabled.");
+static_assert(WALNUT_GB_RGB565_BIGENDIAN == 1, "Walnut-CGB color LUT must emit byte-swapped ST7789 wire BGR565.");
+static_assert(sizeof(struct gb_s) > 0 && sizeof(struct gb_s) < 262144U,
+              "struct gb_s size sanity bound failed; update Walnut state buffer limits.");

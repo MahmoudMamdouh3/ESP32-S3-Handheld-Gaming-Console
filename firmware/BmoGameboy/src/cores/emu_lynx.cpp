@@ -10,6 +10,7 @@
 #include "../hal/panel_color.h"
 #include "../hal/psram_alloc.h"
 #include "../storage/save_manager.h"
+#include "core_helpers.h"
 #include "../third_party/handy/handy.h"
 
 namespace {
@@ -49,16 +50,12 @@ bool LynxEmu::init(uint8_t* romData, size_t romSize) {
 void LynxEmu::update() {
   if (!s_running || !s_lynx || !s_rawFb || !s_panelFb) return;
 
-  ULONG pad = 0;
-  if (Buttons::get(Buttons::UP).pressed) pad |= BUTTON_UP;
-  if (Buttons::get(Buttons::DOWN).pressed) pad |= BUTTON_DOWN;
-  if (Buttons::get(Buttons::LEFT).pressed) pad |= BUTTON_LEFT;
-  if (Buttons::get(Buttons::RIGHT).pressed) pad |= BUTTON_RIGHT;
-  if (Buttons::get(Buttons::A).pressed) pad |= BUTTON_A;
-  if (Buttons::get(Buttons::B).pressed) pad |= BUTTON_B;
-  if (Buttons::get(Buttons::START).pressed) pad |= BUTTON_PAUSE;
-  if (Buttons::get(Buttons::SELECT).pressed) pad |= BUTTON_OPT1;
-  if (Buttons::get(Buttons::X).pressed) pad |= BUTTON_OPT2;
+  static constexpr CoreHelpers::ButtonBit kPadMap[] = {
+      {Buttons::UP, BUTTON_UP},       {Buttons::DOWN, BUTTON_DOWN},   {Buttons::LEFT, BUTTON_LEFT},
+      {Buttons::RIGHT, BUTTON_RIGHT}, {Buttons::A, BUTTON_A},         {Buttons::B, BUTTON_B},
+      {Buttons::START, BUTTON_PAUSE}, {Buttons::SELECT, BUTTON_OPT1}, {Buttons::X, BUTTON_OPT2},
+  };
+  const ULONG pad = static_cast<ULONG>(CoreHelpers::readButtonMask(kPadMap));
 
   s_lynx->SetButtonData(pad);
   s_lynx->UpdateFrame(true);
@@ -116,29 +113,22 @@ bool LynxEmu::loadBatteryRam(const char* romFilename) {
 
 bool LynxEmu::saveState(const char* romFilename, int slot) {
   if (!s_running || !s_lynx || !romFilename) return false;
-  uint8_t* buf = static_cast<uint8_t*>(bmo_psram_malloc(kLynxStateCap));
-  if (!buf) return false;
-
-  LSS_FILE lss = {buf, 0, static_cast<ULONG>(kLynxStateCap)};
-  bool ok = s_lynx->ContextSave(&lss) && lss.index > 0 &&
-            SaveManager::saveState(romFilename, slot, SaveManager::CORE_LYNX, buf, static_cast<size_t>(lss.index));
-  bmo_psram_free(buf);
-  return ok;
+  return CoreHelpers::savePsramState(romFilename, slot, SaveManager::CORE_LYNX, kLynxStateCap,
+                                     [](uint8_t* buf, size_t cap, size_t* outSize) {
+                                       LSS_FILE lss = {buf, 0, static_cast<ULONG>(cap)};
+                                       if (!s_lynx->ContextSave(&lss) || lss.index == 0) return false;
+                                       *outSize = static_cast<size_t>(lss.index);
+                                       return true;
+                                     });
 }
 
 bool LynxEmu::loadState(const char* romFilename, int slot) {
   if (!s_running || !s_lynx || !romFilename) return false;
-  uint8_t* buf = static_cast<uint8_t*>(bmo_psram_malloc(kLynxStateCap));
-  if (!buf) return false;
-
-  size_t loaded = 0;
-  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_LYNX, buf, kLynxStateCap, &loaded);
-  if (ok && loaded > 0) {
-    LSS_FILE lss = {buf, 0, static_cast<ULONG>(loaded)};
-    ok = s_lynx->ContextLoad(&lss);
-  }
-  bmo_psram_free(buf);
-  return ok;
+  return CoreHelpers::loadPsramState(romFilename, slot, SaveManager::CORE_LYNX, kLynxStateCap,
+                                     [](uint8_t* buf, size_t loaded) {
+                                       LSS_FILE lss = {buf, 0, static_cast<ULONG>(loaded)};
+                                       return s_lynx->ContextLoad(&lss);
+                                     });
 }
 
 #else // BMO_EXPERIMENTAL_CORES == 0

@@ -10,6 +10,7 @@
 #include "../hal/panel_color.h"
 #include "../hal/psram_alloc.h"
 #include "../storage/save_manager.h"
+#include "core_helpers.h"
 #include <string.h>
 
 extern "C" {
@@ -76,10 +77,13 @@ extern "C" int ws_input_poll(int mode) {
     if (l) state |= WS_Y4;
   }
 
-  if (Buttons::get(Buttons::A).pressed) state |= WS_A;
-  if (Buttons::get(Buttons::B).pressed) state |= WS_B;
-  if (Buttons::get(Buttons::START).pressed) state |= WS_START;
-  if (Buttons::get(Buttons::SELECT).pressed) state |= WS_OPTION;
+  static constexpr CoreHelpers::ButtonBit kBtnMap[] = {
+      {Buttons::A, WS_A},
+      {Buttons::B, WS_B},
+      {Buttons::START, WS_START},
+      {Buttons::SELECT, WS_OPTION},
+  };
+  state |= static_cast<int>(CoreHelpers::readButtonMask(kBtnMap));
   return state;
 }
 
@@ -175,32 +179,16 @@ bool WSwanEmu::loadBatteryRam(const char* romFilename) {
 
 bool WSwanEmu::saveState(const char* romFilename, int slot) {
   if (!s_running || !romFilename) return false;
-  const size_t cap = WsStateGetSize();
-  uint8_t* buf = static_cast<uint8_t*>(bmo_psram_malloc(cap));
-  if (!buf) return false;
-
-  size_t outBytes = 0;
-  bool ok = (WsSaveStateToMem(buf, cap, &outBytes) != 0);
-  if (ok) {
-    ok = SaveManager::saveState(romFilename, slot, SaveManager::CORE_WSWAN, buf, outBytes);
-  }
-  bmo_psram_free(buf);
-  return ok;
+  return CoreHelpers::savePsramState(
+      romFilename, slot, SaveManager::CORE_WSWAN, WsStateGetSize(),
+      [](uint8_t* buf, size_t cap, size_t* outBytes) { return WsSaveStateToMem(buf, cap, outBytes) != 0; });
 }
 
 bool WSwanEmu::loadState(const char* romFilename, int slot) {
   if (!s_running || !romFilename) return false;
-  const size_t cap = WsStateGetSize();
-  uint8_t* buf = static_cast<uint8_t*>(bmo_psram_malloc(cap));
-  if (!buf) return false;
-
-  size_t outState = 0;
-  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_WSWAN, buf, cap, &outState);
-  if (ok) {
-    ok = (WsLoadStateFromMem(buf, outState) != 0);
-  }
-  bmo_psram_free(buf);
-  return ok;
+  return CoreHelpers::loadPsramState(
+      romFilename, slot, SaveManager::CORE_WSWAN, WsStateGetSize(),
+      [](uint8_t* buf, size_t outState) { return WsLoadStateFromMem(buf, outState) != 0; });
 }
 
 #else // BMO_EXPERIMENTAL_CORES == 0

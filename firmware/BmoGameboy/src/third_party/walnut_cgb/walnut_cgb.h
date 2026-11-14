@@ -51,7 +51,32 @@
 #include <stdlib.h>	/* Required for abort */
 #include <stdbool.h>	/* Required for bool types */
 #include <stdint.h>	/* Required for int types */
-#include <string.h>	/* Required for memset */
+#include <string.h>	/* Required for memset/memcpy */
+
+/* Portable strict-aliasing-safe unaligned little-endian memory helpers. */
+static inline uint16_t walnut_load_u16(const uint8_t *p)
+{
+	uint16_t v;
+	memcpy(&v, p, sizeof(v));
+	return v;
+}
+
+static inline uint32_t walnut_load_u32(const uint8_t *p)
+{
+	uint32_t v;
+	memcpy(&v, p, sizeof(v));
+	return v;
+}
+
+static inline void walnut_store_u16(uint8_t *p, uint16_t v)
+{
+	memcpy(p, &v, sizeof(v));
+}
+
+static inline void walnut_store_u32(uint8_t *p, uint32_t v)
+{
+	memcpy(p, &v, sizeof(v));
+}
 #include <time.h>	/* Required for tm struct */
 
 /**
@@ -961,10 +986,7 @@ uint16_t __gb_read16(struct gb_s *gb, uint16_t addr)
 #endif
             if (addr + 1 < 0xA000)
             {
-                if (((uintptr_t)vram_base & 1) == 0)
-                    return *(uint16_t *)vram_base;
-                else
-                    return (uint16_t)vram_base[0] | ((uint16_t)vram_base[1] << 8);
+                return walnut_load_u16(vram_base);
             }
             return vram_base[0]; // last byte fallback
         }
@@ -1002,20 +1024,14 @@ uint16_t __gb_read16(struct gb_s *gb, uint16_t addr)
 #else
                 &gb->wram[addr - WRAM_0_ADDR];
 #endif
-            if (((uintptr_t)wram_ptr & 1) == 0)
-                return *(uint16_t *)wram_ptr;
-            else
-                return (uint16_t)wram_ptr[0] | ((uint16_t)wram_ptr[1] << 8);
+            return walnut_load_u16(wram_ptr);
         }
 
         // --- Echo RAM (0xE000–0xFDFF)
         case 0xE:
         {
             uint8_t *echo_ptr = &gb->wram[addr - ECHO_ADDR];
-            if (((uintptr_t)echo_ptr & 1) == 0)
-                return *(uint16_t *)echo_ptr;
-            else
-                return (uint16_t)echo_ptr[0] | ((uint16_t)echo_ptr[1] << 8);
+            return walnut_load_u16(echo_ptr);
         }
 
         // --- OAM / HRAM / IO (0xFE00–0xFFFF)
@@ -1023,10 +1039,7 @@ uint16_t __gb_read16(struct gb_s *gb, uint16_t addr)
             if (addr < 0xFEA0)
             {
                 uint8_t *oam_ptr = &gb->oam[addr - OAM_ADDR];
-                if (((uintptr_t)oam_ptr & 1) == 0)
-                    return *(uint16_t *)oam_ptr;
-                else
-                    return (uint16_t)oam_ptr[0] | ((uint16_t)oam_ptr[1] << 8);
+                return walnut_load_u16(oam_ptr);
             }
             else if (addr >= IO_ADDR)
             {
@@ -1085,12 +1098,12 @@ uint16_t __gb_read16(struct gb_s *gb, uint16_t addr)
         case 0x9:
 #if WALNUT_FULL_GBC_SUPPORT
             if (addr + 1 < 0xA000)
-                return *(uint16_t *)&gb->vram[addr - gb->cgb.vramBankOffset];
+                return walnut_load_u16(&gb->vram[addr - gb->cgb.vramBankOffset]);
             else
                 return gb->vram[addr - gb->cgb.vramBankOffset]; // last byte fallback
 #else
             if (addr + 1 < 0xA000)
-                return *(uint16_t *)&gb->vram[addr - VRAM_ADDR];
+                return walnut_load_u16(&gb->vram[addr - VRAM_ADDR]);
             else
                 return gb->vram[addr - VRAM_ADDR];
 #endif
@@ -1129,18 +1142,18 @@ uint16_t __gb_read16(struct gb_s *gb, uint16_t addr)
         case 0xD:
 #if WALNUT_FULL_GBC_SUPPORT
             if(gb->cgb.cgbMode && addr >= WRAM_1_ADDR)
-                return *(uint16_t *)&gb->wram[addr - gb->cgb.wramBankOffset];
+                return walnut_load_u16(&gb->wram[addr - gb->cgb.wramBankOffset]);
 #endif
-            return *(uint16_t *)&gb->wram[addr - WRAM_0_ADDR];
+            return walnut_load_u16(&gb->wram[addr - WRAM_0_ADDR]);
 
         // --- Echo RAM (0xE000–0xFDFF)
         case 0xE:
-            return *(uint16_t *)&gb->wram[addr - ECHO_ADDR];
+            return walnut_load_u16(&gb->wram[addr - ECHO_ADDR]);
 
         // --- OAM (0xFE00–0xFE9F)
         case 0xF:
             if (addr < 0xFEA0)
-                return *(uint16_t *)&gb->oam[addr - OAM_ADDR];
+                return walnut_load_u16(&gb->oam[addr - OAM_ADDR]);
             // --- HRAM / IO (0xFF00–0xFFFF)
             else if (addr >= IO_ADDR)
             {
@@ -1177,10 +1190,10 @@ uint16_t __gb_read16(struct gb_s *gb, uint16_t addr)
                     case 0x70:
                         return gb->cgb.wramBank | 0x00; // upper byte not used
                     default:
-                        return *(uint16_t *)&gb->hram_io[addr - IO_ADDR];
+                        return walnut_load_u16(&gb->hram_io[addr - IO_ADDR]);
                 }
 #else
-                return *(uint16_t *)&gb->hram_io[addr - IO_ADDR];
+                return walnut_load_u16(&gb->hram_io[addr - IO_ADDR]);
 #endif
             }
             else
@@ -1241,8 +1254,8 @@ uint32_t __gb_read32(struct gb_s *gb, uint16_t addr)
 #else
             uint8_t *p = &gb->vram[addr - VRAM_ADDR];
 #endif
-            if (addr + 3 < 0xA000 && (((uintptr_t)p & 3) == 0))
-                return *(uint32_t *)p;
+            if (addr + 3 < 0xA000)
+                return walnut_load_u32(p);
 
             return (uint32_t)p[0]
                  | ((uint32_t)p[1] << 8)
@@ -1295,47 +1308,23 @@ uint32_t __gb_read32(struct gb_s *gb, uint16_t addr)
 #if WALNUT_FULL_GBC_SUPPORT
             if (gb->cgb.cgbMode && addr >= WRAM_1_ADDR)
             {
-                uint8_t *p = &gb->wram[addr - gb->cgb.wramBankOffset];
-                if (((uintptr_t)p & 3) == 0)
-                    return *(uint32_t *)p;
-                return (uint32_t)p[0]
-                     | ((uint32_t)p[1] << 8)
-                     | ((uint32_t)p[2] << 16)
-                     | ((uint32_t)p[3] << 24);
+                return walnut_load_u32(&gb->wram[addr - gb->cgb.wramBankOffset]);
             }
 #endif
-            uint8_t *p = &gb->wram[addr - WRAM_0_ADDR];
-            if (((uintptr_t)p & 3) == 0)
-                return *(uint32_t *)p;
-            return (uint32_t)p[0]
-                 | ((uint32_t)p[1] << 8)
-                 | ((uint32_t)p[2] << 16)
-                 | ((uint32_t)p[3] << 24);
+            return walnut_load_u32(&gb->wram[addr - WRAM_0_ADDR]);
         }
 
         // --- Echo RAM
         case 0xE:
         {
-            uint8_t *p = &gb->wram[addr - ECHO_ADDR];
-            if (((uintptr_t)p & 3) == 0)
-                return *(uint32_t *)p;
-            return (uint32_t)p[0]
-                 | ((uint32_t)p[1] << 8)
-                 | ((uint32_t)p[2] << 16)
-                 | ((uint32_t)p[3] << 24);
+            return walnut_load_u32(&gb->wram[addr - ECHO_ADDR]);
         }
 
         // --- OAM / HRAM / IO
         case 0xF:
             if (addr < 0xFEA0)
             {
-                uint8_t *p = &gb->oam[addr - OAM_ADDR];
-                if (((uintptr_t)p & 3) == 0)
-                    return *(uint32_t *)p;
-                return (uint32_t)p[0]
-                     | ((uint32_t)p[1] << 8)
-                     | ((uint32_t)p[2] << 16)
-                     | ((uint32_t)p[3] << 24);
+                return walnut_load_u32(&gb->oam[addr - OAM_ADDR]);
             }
             else if (addr >= IO_ADDR)
             {
@@ -1348,13 +1337,7 @@ uint32_t __gb_read32(struct gb_s *gb, uint16_t addr)
                     return v;
                 }
 #endif
-                uint8_t *p = &gb->hram_io[addr - IO_ADDR];
-                if (((uintptr_t)p & 3) == 0)
-                    return *(uint32_t *)p;
-                return (uint32_t)p[0]
-                     | ((uint32_t)p[1] << 8)
-                     | ((uint32_t)p[2] << 16)
-                     | ((uint32_t)p[3] << 24);
+                return walnut_load_u32(&gb->hram_io[addr - IO_ADDR]);
             }
             return 0xFFFFFFFF;
     }
@@ -1403,14 +1386,14 @@ uint32_t __gb_read32(struct gb_s *gb, uint16_t addr)
         case 0x9:
 #if WALNUT_FULL_GBC_SUPPORT
             if (addr + 3 < 0xA000)
-                return *(uint32_t *)&gb->vram[addr - gb->cgb.vramBankOffset];
+                return walnut_load_u32(&gb->vram[addr - gb->cgb.vramBankOffset]);
             else
-                return *(uint16_t *)&gb->vram[addr - gb->cgb.vramBankOffset]; // fallback
+                return walnut_load_u16(&gb->vram[addr - gb->cgb.vramBankOffset]); // fallback
 #else
             if (addr + 3 < 0xA000)
-                return *(uint32_t *)&gb->vram[addr - VRAM_ADDR];
+                return walnut_load_u32(&gb->vram[addr - VRAM_ADDR]);
             else
-                return *(uint16_t *)&gb->vram[addr - VRAM_ADDR];
+                return walnut_load_u16(&gb->vram[addr - VRAM_ADDR]);
 #endif
 
         // --- External RAM / RTC (0xA000–0xBFFF)
@@ -1454,18 +1437,18 @@ uint32_t __gb_read32(struct gb_s *gb, uint16_t addr)
         case 0xD:
 #if WALNUT_FULL_GBC_SUPPORT
             if (gb->cgb.cgbMode && addr >= WRAM_1_ADDR)
-                return *(uint32_t *)&gb->wram[addr - gb->cgb.wramBankOffset];
+                return walnut_load_u32(&gb->wram[addr - gb->cgb.wramBankOffset]);
 #endif
-            return *(uint32_t *)&gb->wram[addr - WRAM_0_ADDR];
+            return walnut_load_u32(&gb->wram[addr - WRAM_0_ADDR]);
 
         // --- Echo RAM (0xE000–0xFDFF)
         case 0xE:
-            return *(uint32_t *)&gb->wram[addr - ECHO_ADDR];
+            return walnut_load_u32(&gb->wram[addr - ECHO_ADDR]);
 
         // --- OAM / HRAM / IO
         case 0xF:
             if (addr < 0xFEA0)
-                return *(uint32_t *)&gb->oam[addr - OAM_ADDR];
+                return walnut_load_u32(&gb->oam[addr - OAM_ADDR]);
             else if (addr >= IO_ADDR)
             {
 #if ENABLE_SOUND
@@ -1488,12 +1471,12 @@ uint32_t __gb_read32(struct gb_s *gb, uint16_t addr)
                     case 0x51: case 0x52: case 0x53: case 0x54: case 0x55:
                     case 0x56: case 0x68: case 0x69: case 0x6A: case 0x6B:
                     case 0x70:
-                        return *(uint32_t *)&gb->hram_io[addr - IO_ADDR];
+                        return walnut_load_u32(&gb->hram_io[addr - IO_ADDR]);
                     default:
-                        return *(uint32_t *)&gb->hram_io[addr - IO_ADDR];
+                        return walnut_load_u32(&gb->hram_io[addr - IO_ADDR]);
                 }
 #else
-                return *(uint32_t *)&gb->hram_io[addr - IO_ADDR];
+                return walnut_load_u32(&gb->hram_io[addr - IO_ADDR]);
 #endif
             }
             return 0xFFFFFFFF;
@@ -2063,14 +2046,14 @@ void __gb_write(struct gb_s *gb, uint_fast16_t addr, uint8_t val)
 			for (i = 0; i < OAM_SIZE; i += 4)
 			{
 					uint32_t v = __gb_read32(gb, dma_addr + i);
-					*(uint32_t *)(oam + i) = v;
+					walnut_store_u32(oam + i, v);
 			}
 #else
     /* 32-bit read path: fetch four bytes at a time */
     for (i = 0; i < OAM_SIZE; i += 4)
     {
         uint32_t v = __gb_read32(gb, dma_addr + i);
-				*((uint32_t *)(gb->oam + i)) = v;
+				walnut_store_u32(gb->oam + i, v);
     }
 #endif
 #elif WALNUT_GB_16BIT_DMA
@@ -2314,9 +2297,13 @@ void __gb_write32(struct gb_s *gb, uint16_t addr, uint32_t val) {
             break;
 
         case 0xC: // WRAM bank 0
+            dst = &gb->wram[addr - WRAM_0_ADDR];
+            break;
+
         case 0xD:
 #if WALNUT_FULL_GBC_SUPPORT
-            dst = &gb->wram[addr - gb->cgb.wramBankOffset];
+            dst = (gb->cgb.cgbMode) ? &gb->wram[addr - gb->cgb.wramBankOffset]
+                                    : &gb->wram[addr - WRAM_0_ADDR];
 #else
             dst = &gb->wram[addr - WRAM_1_ADDR + WRAM_BANK_SIZE];
 #endif
@@ -2329,7 +2316,8 @@ void __gb_write32(struct gb_s *gb, uint16_t addr, uint32_t val) {
         case 0xF: // HRAM / OAM
             if (addr < OAM_ADDR) {
 #if WALNUT_FULL_GBC_SUPPORT
-                dst = &gb->wram[(addr - 0x2000) - gb->cgb.wramBankOffset];
+                dst = (gb->cgb.cgbMode) ? &gb->wram[(addr - 0x2000) - gb->cgb.wramBankOffset]
+                                        : &gb->wram[addr - ECHO_ADDR];
 #else
                 dst = &gb->wram[addr - ECHO_ADDR];
 #endif
@@ -2343,16 +2331,7 @@ void __gb_write32(struct gb_s *gb, uint16_t addr, uint32_t val) {
     }
 
     if (dst) {
-        if (((uintptr_t)dst & 3) == 0) {
-            /* Aligned 32-bit store */
-            *(uint32_t *)dst = val;
-        } else {
-            /* Fallback: byte-wise store */
-            dst[0] = (uint8_t)(val);
-            dst[1] = (uint8_t)(val >> 8);
-            dst[2] = (uint8_t)(val >> 16);
-            dst[3] = (uint8_t)(val >> 24);
-        }
+        walnut_store_u32(dst, val);
         return;
     }
 
@@ -2368,36 +2347,43 @@ void __gb_write32(struct gb_s *gb, uint16_t addr, uint32_t val) {
         case 0x8: // VRAM
         case 0x9:
 #if WALNUT_FULL_GBC_SUPPORT
-            *(uint32_t*)&gb->vram[addr - gb->cgb.vramBankOffset] = val;
+            walnut_store_u32(&gb->vram[addr - gb->cgb.vramBankOffset], val);
 #else
-            *(uint32_t*)&gb->vram[addr - VRAM_ADDR] = val;
+            walnut_store_u32(&gb->vram[addr - VRAM_ADDR], val);
 #endif
             return;
 
         case 0xC: // WRAM bank 0
+            walnut_store_u32(&gb->wram[addr - WRAM_0_ADDR], val);
+            return;
+
         case 0xD:
 #if WALNUT_FULL_GBC_SUPPORT
-            *(uint32_t*)&gb->wram[addr - gb->cgb.wramBankOffset] = val;
+            walnut_store_u32(gb->cgb.cgbMode ? &gb->wram[addr - gb->cgb.wramBankOffset]
+                                             : &gb->wram[addr - WRAM_0_ADDR],
+                             val);
 #else
-            *(uint32_t*)&gb->wram[addr - WRAM_1_ADDR + WRAM_BANK_SIZE] = val;
+            walnut_store_u32(&gb->wram[addr - WRAM_1_ADDR + WRAM_BANK_SIZE], val);
 #endif
             return;
 
         case 0xE: // Echo RAM
-            *(uint32_t*)&gb->wram[addr - ECHO_ADDR] = val;
+            walnut_store_u32(&gb->wram[addr - ECHO_ADDR], val);
             return;
 
         case 0xF: // HRAM / OAM
             if(addr < OAM_ADDR) {
 #if WALNUT_FULL_GBC_SUPPORT
-                *(uint32_t*)&gb->wram[(addr - 0x2000) - gb->cgb.wramBankOffset] = val;
+                walnut_store_u32(gb->cgb.cgbMode ? &gb->wram[(addr - 0x2000) - gb->cgb.wramBankOffset]
+                                                 : &gb->wram[addr - ECHO_ADDR],
+                                 val);
 #else
-                *(uint32_t*)&gb->wram[addr - ECHO_ADDR] = val;
+                walnut_store_u32(&gb->wram[addr - ECHO_ADDR], val);
 #endif
                 return;
             }
             if(addr < UNUSED_ADDR) {
-                *(uint32_t*)&gb->oam[addr - OAM_ADDR] = val;
+                walnut_store_u32(&gb->oam[addr - OAM_ADDR], val);
                 return;
             }
             break;
@@ -2422,9 +2408,9 @@ void __gb_write16(struct gb_s *gb, uint_fast16_t addr, uint16_t val)
         case 0x8: // VRAM
         case 0x9:
 #if WALNUT_FULL_GBC_SUPPORT
-            *((uint16_t *)(gb->vram + (addr - gb->cgb.vramBankOffset))) = val;
+            walnut_store_u16(gb->vram + (addr - gb->cgb.vramBankOffset), val);
 #else
-            *((uint16_t *)(gb->vram + (addr - VRAM_ADDR))) = val;
+            walnut_store_u16(gb->vram + (addr - VRAM_ADDR), val);
 #endif
             return;
 
@@ -2444,26 +2430,33 @@ void __gb_write16(struct gb_s *gb, uint_fast16_t addr, uint16_t val)
             return;
 
         case 0xC: // WRAM bank 0
+            walnut_store_u16(gb->wram + (addr - WRAM_0_ADDR), val);
+            return;
+
 #if WALNUT_FULL_GBC_SUPPORT
         case 0xD: // WRAM bank 1..N
-            *((uint16_t *)(gb->wram + (addr - gb->cgb.wramBankOffset))) = val;
+            walnut_store_u16(gb->cgb.cgbMode ? (gb->wram + (addr - gb->cgb.wramBankOffset))
+                                             : (gb->wram + (addr - WRAM_0_ADDR)),
+                             val);
 #else
         case 0xD:
-            *((uint16_t *)(gb->wram + (addr - WRAM_1_ADDR + WRAM_BANK_SIZE))) = val;
+            walnut_store_u16(gb->wram + (addr - WRAM_1_ADDR + WRAM_BANK_SIZE), val);
 #endif
             return;
 
         case 0xE: // Echo RAM
-            *((uint16_t *)(gb->wram + (addr - ECHO_ADDR))) = val;
+            walnut_store_u16(gb->wram + (addr - ECHO_ADDR), val);
             return;
 
         case 0xF:
             if(addr < OAM_ADDR) // Echo / WRAM mirrored
             {
 #if WALNUT_FULL_GBC_SUPPORT
-                *((uint16_t *)(gb->wram + (addr - 0x2000 - gb->cgb.wramBankOffset))) = val;
+                walnut_store_u16(gb->cgb.cgbMode ? (gb->wram + (addr - 0x2000 - gb->cgb.wramBankOffset))
+                                                 : (gb->wram + (addr - ECHO_ADDR)),
+                                 val);
 #else
-                *((uint16_t *)(gb->wram + (addr - ECHO_ADDR))) = val;
+                walnut_store_u16(gb->wram + (addr - ECHO_ADDR), val);
 #endif
             }
             else if(addr < UNUSED_ADDR || (addr >= HRAM_ADDR && addr < INTR_EN_ADDR))

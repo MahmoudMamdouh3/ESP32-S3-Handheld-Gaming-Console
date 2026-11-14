@@ -11,6 +11,7 @@
 #include "../hal/psram_alloc.h"
 #include "../storage/battery_save.h"
 #include "../storage/save_manager.h"
+#include "core_helpers.h"
 #include <string.h>
 
 extern "C" {
@@ -37,16 +38,13 @@ extern "C" uint8_t* osd_gfx_framebuffer(int width, int height) {
 }
 
 extern "C" void osd_input_read(uint8_t joypads[8]) {
-  uint8_t pad = 0;
-  if (Buttons::get(Buttons::B).pressed) pad |= JOY_A; // Button I
-  if (Buttons::get(Buttons::A).pressed) pad |= JOY_B; // Button II
-  if (Buttons::get(Buttons::SELECT).pressed) pad |= JOY_SELECT;
-  if (Buttons::get(Buttons::START).pressed) pad |= JOY_RUN;
-  if (Buttons::get(Buttons::UP).pressed) pad |= JOY_UP;
-  if (Buttons::get(Buttons::RIGHT).pressed) pad |= JOY_RIGHT;
-  if (Buttons::get(Buttons::DOWN).pressed) pad |= JOY_DOWN;
-  if (Buttons::get(Buttons::LEFT).pressed) pad |= JOY_LEFT;
-  joypads[0] = pad;
+  static constexpr CoreHelpers::ButtonBit kJoyMap[] = {
+      {Buttons::B, JOY_A}, // Button I
+      {Buttons::A, JOY_B}, // Button II
+      {Buttons::SELECT, JOY_SELECT}, {Buttons::START, JOY_RUN}, {Buttons::UP, JOY_UP},
+      {Buttons::RIGHT, JOY_RIGHT},   {Buttons::DOWN, JOY_DOWN}, {Buttons::LEFT, JOY_LEFT},
+  };
+  joypads[0] = static_cast<uint8_t>(CoreHelpers::readButtonMask(kJoyMap));
   memset(&joypads[1], 0, 7);
 }
 
@@ -178,30 +176,16 @@ bool PceEmu::loadBatteryRam(const char* romFilename) {
 
 bool PceEmu::saveState(const char* romFilename, int slot) {
   if (!s_running || !romFilename) return false;
-  const size_t cap = PceGetSaveStateSize();
-  if (cap == 0) return false;
-  uint8_t* buf = static_cast<uint8_t*>(bmo_psram_malloc(cap));
-  if (!buf) return false;
-
-  size_t actualLen = 0;
-  bool ok = (PceSaveStateMem(buf, cap, &actualLen) == 0) &&
-            SaveManager::saveState(romFilename, slot, SaveManager::CORE_PCE, buf, actualLen);
-  bmo_psram_free(buf);
-  return ok;
+  return CoreHelpers::savePsramState(
+      romFilename, slot, SaveManager::CORE_PCE, PceGetSaveStateSize(),
+      [](uint8_t* buf, size_t cap, size_t* actualLen) { return PceSaveStateMem(buf, cap, actualLen) == 0; });
 }
 
 bool PceEmu::loadState(const char* romFilename, int slot) {
   if (!s_running || !romFilename) return false;
-  const size_t cap = PceGetSaveStateSize();
-  if (cap == 0) return false;
-  uint8_t* buf = static_cast<uint8_t*>(bmo_psram_malloc(cap));
-  if (!buf) return false;
-
-  size_t loadedLen = 0;
-  bool ok = SaveManager::loadState(romFilename, slot, SaveManager::CORE_PCE, buf, cap, &loadedLen) &&
-            (PceLoadStateMem(buf, loadedLen) == 0);
-  bmo_psram_free(buf);
-  return ok;
+  return CoreHelpers::loadPsramState(
+      romFilename, slot, SaveManager::CORE_PCE, PceGetSaveStateSize(),
+      [](uint8_t* buf, size_t loadedLen) { return PceLoadStateMem(buf, loadedLen) == 0; });
 }
 
 #else // BMO_EXPERIMENTAL_CORES == 0

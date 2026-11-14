@@ -25,7 +25,7 @@ No commercial game ROMs or copyrighted artwork packs are shipped in this reposit
 | **Oswan** | WonderSwan / Color (`ROM_WSWAN`) | `firmware/BmoGameboy/src/third_party/oswan/` | Oswan (`3e4d7bb8271ad390c1d5623179fb19e2cca1acb32`) via `Cardputer-Emulators` (`74b47763c3f2ccbaed6505b83ef0ef37c2deac82`) | GNU GPL v2 (`LICENSE`) |
 | **RACE** | Neo Geo Pocket / Color (`ROM_NGP`) | `firmware/BmoGameboy/src/third_party/race/` | `libretro/RACE` (`c7810dd7f172827bfa2004813bc000b13786636b`) / `Cardputer-Emulators` (`74b47763c3f2ccbaed6505b83ef0ef37c2deac82`) | GNU GPL v2 (`LICENSE` / `license.txt`) |
 | **Stella 2014** | Atari 2600 (`ROM_ATARI`) | `firmware/BmoGameboy/src/third_party/stella2014/` | `https://github.com/libretro/stella2014-libretro` (`7d1361e407e63f29e52892655069e5fb4096e691`) | GPL-2.0-or-later (`license.txt`) |
-| **FAKE-08 + z8lua** | PICO-8 (`ROM_PICO`) | `firmware/BmoGameboy/src/third_party/fake08/` | `https://github.com/jtothebell/fake-08` (`814991a2571ad3970e3b6cef48f3b148aa1c27b9`, `MIT`); `z8lua` (`e6928578d46b61fd5ea30cfcf547e855a30a0553`, `MIT`); Eris persistence (`MIT`); Zepto-8 charmap (`WTFPL2`); LodePNG (`zlib`) | MIT / zlib / WTFPL2 (`LICENSE.MD`) |
+| **FAKE-08 + z8lua** | PICO-8 (`ROM_PICO8`) | `firmware/BmoGameboy/src/third_party/fake08/` | `https://github.com/jtothebell/fake-08` (`814991a2571ad3970e3b6cef48f3b148aa1c27b9`, `MIT`); `z8lua` (`e6928578d46b61fd5ea30cfcf547e855a30a0553`, `MIT`); Eris persistence (`MIT`); Zepto-8 charmap (`WTFPL2`); LodePNG (`zlib`) | MIT / zlib / WTFPL2 (`LICENSE.MD`) |
 
 Per-core adaptation notes and pinned commit SHAs are also maintained in each engine directory's `PROVENANCE.md` file alongside upstream license texts.
 

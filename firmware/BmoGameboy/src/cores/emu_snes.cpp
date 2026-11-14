@@ -11,6 +11,7 @@
 #include "../hal/psram_alloc.h"
 #include "../storage/battery_save.h"
 #include "../storage/save_manager.h"
+#include "core_helpers.h"
 #include <string.h>
 
 extern "C" {
@@ -83,20 +84,13 @@ bool S9xIsSourceLineNeeded(uint32_t srcY) {
 
 uint32_t S9xReadJoypad(int32_t port) {
   if (port != 0) return 0;
-  uint32_t pad = 0;
-  if (Buttons::get(Buttons::UP).pressed) pad |= SNES_UP_MASK;
-  if (Buttons::get(Buttons::DOWN).pressed) pad |= SNES_DOWN_MASK;
-  if (Buttons::get(Buttons::LEFT).pressed) pad |= SNES_LEFT_MASK;
-  if (Buttons::get(Buttons::RIGHT).pressed) pad |= SNES_RIGHT_MASK;
-  if (Buttons::get(Buttons::A).pressed) pad |= SNES_A_MASK;
-  if (Buttons::get(Buttons::B).pressed) pad |= SNES_B_MASK;
-  if (Buttons::get(Buttons::X).pressed) pad |= SNES_X_MASK;
-  if (Buttons::get(Buttons::Y).pressed) pad |= SNES_Y_MASK;
-  if (Buttons::get(Buttons::L).pressed) pad |= SNES_TL_MASK;
-  if (Buttons::get(Buttons::R).pressed) pad |= SNES_TR_MASK;
-  if (Buttons::get(Buttons::START).pressed) pad |= SNES_START_MASK;
-  if (Buttons::get(Buttons::SELECT).pressed) pad |= SNES_SELECT_MASK;
-  return pad;
+  static constexpr CoreHelpers::ButtonBit kJoyMap[] = {
+      {Buttons::UP, SNES_UP_MASK},       {Buttons::DOWN, SNES_DOWN_MASK},   {Buttons::LEFT, SNES_LEFT_MASK},
+      {Buttons::RIGHT, SNES_RIGHT_MASK}, {Buttons::A, SNES_A_MASK},         {Buttons::B, SNES_B_MASK},
+      {Buttons::X, SNES_X_MASK},         {Buttons::Y, SNES_Y_MASK},         {Buttons::L, SNES_TL_MASK},
+      {Buttons::R, SNES_TR_MASK},        {Buttons::START, SNES_START_MASK}, {Buttons::SELECT, SNES_SELECT_MASK},
+  };
+  return CoreHelpers::readButtonMask(kJoyMap);
 }
 
 bool S9xReadMousePosition(int32_t which1, int32_t* x, int32_t* y, uint32_t* buttons) {
@@ -247,36 +241,18 @@ bool SNESEmu::loadBatteryRam(const char* romFilename) {
 
 bool SNESEmu::saveState(const char* romFilename, int slot) {
   if (!s_running || !romFilename) return false;
-  const size_t cap = S9xBmoSerializeSize();
-  uint8_t* buf = static_cast<uint8_t*>(bmo_psram_malloc(cap));
-  if (!buf) return false;
-
-  size_t outBytes = 0;
-  bool ok = S9xBmoSerialize(buf, cap, &outBytes);
-  if (ok) {
-    ok = SaveManager::saveState(romFilename, slot, SaveManager::CORE_SNES, buf, outBytes,
-                                (s_sramSaveSize > 0 && Memory.SRAM) ? Memory.SRAM : nullptr, s_sramSaveSize);
-  }
-  bmo_psram_free(buf);
-  return ok;
+  return CoreHelpers::savePsramState(
+      romFilename, slot, SaveManager::CORE_SNES, S9xBmoSerializeSize(),
+      [](uint8_t* buf, size_t cap, size_t* outBytes) { return S9xBmoSerialize(buf, cap, outBytes); },
+      (s_sramSaveSize > 0 && Memory.SRAM) ? Memory.SRAM : nullptr, s_sramSaveSize);
 }
 
 bool SNESEmu::loadState(const char* romFilename, int slot) {
   if (!s_running || !romFilename) return false;
-  const size_t cap = S9xBmoSerializeSize();
-  uint8_t* buf = static_cast<uint8_t*>(bmo_psram_malloc(cap));
-  if (!buf) return false;
-
-  size_t outState = 0;
-  size_t outRam = 0;
-  bool ok =
-      SaveManager::loadState(romFilename, slot, SaveManager::CORE_SNES, buf, cap, &outState,
-                             (s_sramSaveSize > 0 && Memory.SRAM) ? Memory.SRAM : nullptr, s_sramSaveSize, &outRam);
-  if (ok) {
-    ok = S9xBmoUnserialize(buf, outState);
-  }
-  bmo_psram_free(buf);
-  return ok;
+  return CoreHelpers::loadPsramState(
+      romFilename, slot, SaveManager::CORE_SNES, S9xBmoSerializeSize(),
+      [](uint8_t* buf, size_t outState) { return S9xBmoUnserialize(buf, outState); },
+      (s_sramSaveSize > 0 && Memory.SRAM) ? Memory.SRAM : nullptr, s_sramSaveSize);
 }
 
 #else // BMO_EXPERIMENTAL_CORES == 0
