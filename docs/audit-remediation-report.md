@@ -1,6 +1,8 @@
 # Tech-Lead Audit & Remediation Report (Phases 1–14)
 
-**Branch:** `audit/tech-lead`  
+> **Historical Snapshot (`audit/tech-lead` @ `d8d4b5e`):** Superseded by the current `techlead/audit-2` audit ([`docs/audits/findings-register.md`](audits/findings-register.md), [`docs/owner-decisions.md`](owner-decisions.md), and [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md)). In particular, only the `mit` firmware profile (`GB`, `GBC`, `NES`) is license-clean for public binary distribution (`default` and `no-doom` link GPL-3.0 + non-commercial cores and are personal-use local builds only).
+
+**Branch:** `audit/tech-lead` (superseded by `techlead/audit-2`)  
 **Classification Vocabulary:** `NOT_TESTED` | `HOST_TESTED` | `TARGET_COMPILED` | `HARDWARE_TESTED`  
 **Physical Hardware Status (`HARDWARE_TESTED`):** None recorded as of `2026-11-14`. Execute [`docs/hardware-validation-kit.md`](hardware-validation-kit.md) on the soldered ESP32-S3 perfboard to promote runtime hardware claims.
 

@@ -40,4 +40,13 @@ Or pass `-DBMO_PROFILE=1` explicitly during compile/upload:
 python tools/telemetry_plotter.py --input capture.txt --output report.txt --json-out summary.json
 ```
 
-5. Record verified rows in a dated copy of [`template.csv`](template.csv) alongside [`../hardware_measurements.md`](../hardware_measurements.md). Never pass `--input`-less `telemetry_plotter.py` output (`SYNTHETIC`) as hardware telemetry.
+5. Record verified rows in a dated copy of [`template.csv`](template.csv) alongside [`../hardware_measurements.md`](../hardware_measurements.md), including `heap_min_b`, `psram_free_b`, `psram_largest_block_b`, `loop_stack_hwm_words`, and `display_stack_hwm_words` from serial logs and the Diagnostics screen. Never pass `--input`-less `telemetry_plotter.py` output (`SYNTHETIC`) as hardware telemetry.
+
+## 4. Platform Promotion Criteria (`Experimental` -> `Supported`)
+
+A platform in [`docs/compatibility.md`](../compatibility.md) may move from `Experimental` to `Supported` **only** after a logged `HARDWARE_TESTED` capture satisfies all four checks:
+
+1. **Sample Size:** At least `n >= 600` consecutive gameplay frames recorded after launch at the target SPI clock.
+2. **Frame Budget Compliance:** **`>= 99%`** of captured frames complete within `target_us` **and** `p99_us <= target_us` (`16,742 us` for GB/GBC, `28,571 us` for DOOM, `33,333 us` for PICO-8, `16,667 us` for all other 60 Hz cores).
+3. **Stability & Stack Headroom:** Zero watchdog resets, panics, or visual SPI glitches; stack high-water mark stays `>= 512` words free on both tasks (`loop_stack_hwm_words`, `display_stack_hwm_words`).
+4. **PSRAM Headroom:** Zero continuous free-PSRAM leak across launch -> exit cycles (`psram_largest_block_b >= 262,144 B`).

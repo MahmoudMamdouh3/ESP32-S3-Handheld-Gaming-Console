@@ -12,12 +12,16 @@ Store completed records under `docs/hardware-measurements/` using `YYYY-MM-DD-sh
 
 1. Record the unpowered wiring and module labels. Do not move pins or attach a battery pack while this is incomplete.
 2. Confirm the ESP32-S3 module label and board power input limits from its exact manufacturer documentation.
-3. Use a current-limited bench supply for first power checks. The chosen portable direction is 3×AA NiMH cells plus a boost converter, but the converter, output rail, wiring, charging method, fuse, and runtime have not been selected or validated. Do not connect cells directly to the board's 5 V or 3.3 V rail.
+3. Use a current-limited bench supply for first power checks. The proposed portable direction (`docs/owner-decisions.md` Decision 1 / `docs/decisions/0006-portable-power.md`) is `2×AA` (recommended) or `3×AA` NiMH cells, and the boost converter, output rail, wiring, charging method, fuse, and runtime have not been selected or validated. Do not connect cells directly to the board's 5 V or 3.3 V rail.
 4. Measure shared SPI signals with both chip-selects observed. Begin with the diagnostics 40 MHz display comparison and the configured 25 MHz SD clock; leave the configured 80 MHz display setting unchanged until the physical signal and panel behavior are recorded.
 5. Capture at least 600 consecutive emulator frames per selected core and keep the serial output. The firmware prints per-second FPS / execution summaries and a 600-sample p50/p95/p99 execution window.
 6. Record the reported free PSRAM and largest free PSRAM block before launching a memory-heavy title and after exiting it. Record diagnostics stack high-water values with their units (words).
 7. Probe SD MISO at the ESP32 input under idle, selected, and transfer states using a high-impedance instrument. The current module model and its output-voltage mechanism are unknown. Do not add a resistor, divider, or level shifter until the measured circuit and the module specification support that choice.
 8. FRAM is not installed. GPIO43/44 remain the proposal in `config.h`; no FRAM probe or persistence claim is valid until the exact part, voltage, address, and wiring are recorded.
+9. Measure potential flash-cache and Octal-PSRAM latency effects for relocated lookup/state tables (`NOT_TESTED` performance risk):
+   - **Atari 2600 (`Stella2014`) `M6502::ourInstructionCycleTable[256]` (`1,024 B`):** moved from DRAM `.data` to flash `.flash.rodata` (`const`) to save internal DRAM. Verify Atari 2600 600-frame `p95`/`p99` stays inside the `16,667 us` budget after flash-cache cold misses.
+   - **Moved/constant palettes & DOOM palette rebuild:** verify `DisplayEmu::NES_PALETTE[64]` (in `.flash.rodata`) during NES 600-frame capture and unconditional 256-entry `s_doomPalette` conversion (`Ui::rebuildDoomPalette`, replacing cached `s_lastColors[256]`) during DOOM capture; confirm no frame-time regression relative to budget.
+   - **Recent-history buffer (`s_recentHistory`, `2,560 B`):** moved to Octal PSRAM (`MALLOC_CAP_SPIRAM`) with DRAM fallback; confirm menu launch and catalog load latency on cold boot.
 
 ## Firmware telemetry
 

@@ -23,8 +23,8 @@ Compact structural map for AI agents and contributors. Regenerate via `python sc
 | :--- | ---: | :--- |
 | [`firmware/BmoGameboy/BmoGameboy.ino`](../../firmware/BmoGameboy/BmoGameboy.ino) | `12` | Arduino entry sketch delegating setup() and loop() to BmoApp |
 | [`firmware/bringup/bringup.ino`](../../firmware/bringup/bringup.ino) | `229` | Standalone first-power-on hardware bring-up sketch (PSRAM, 40 MHz TFT, SD, 8 buttons) |
-| [`firmware/BmoGameboy/src/app/bmo_app.cpp`](../../firmware/BmoGameboy/src/app/bmo_app.cpp) | `1197` | Top-level state machine, ROM launcher, frame pacing, and crash breadcrumb logger |
-| [`firmware/BmoGameboy/src/app/boot_safe_mode.h`](../../firmware/BmoGameboy/src/app/boot_safe_mode.h) | `86` | 40 MHz SPI Safe Mode decision helper and esp_reset_reason_t classifier |
+| [`firmware/BmoGameboy/src/app/bmo_app.cpp`](../../firmware/BmoGameboy/src/app/bmo_app.cpp) | `1192` | Top-level state machine, ROM launcher, frame pacing, and crash breadcrumb logger |
+| [`firmware/BmoGameboy/src/app/boot_safe_mode.h`](../../firmware/BmoGameboy/src/app/boot_safe_mode.h) | `131` | 40 MHz SPI Safe Mode decision helper and esp_reset_reason_t classifier |
 | [`firmware/BmoGameboy/src/hal/config.h`](../../firmware/BmoGameboy/src/hal/config.h) | `168` | Authoritative pin definitions, feature hard-stops, and gated LOG_* macros |
 | [`firmware/BmoGameboy/src/hal/pins_check.h`](../../firmware/BmoGameboy/src/hal/pins_check.h) | `68` | Compile-time static_assert checks for GPIO uniqueness and reserved pins |
 | [`firmware/BmoGameboy/src/hal/spi_arbiter.cpp`](../../firmware/BmoGameboy/src/hal/spi_arbiter.cpp) | `26` | FreeRTOS recursive mutex serializing shared FSPI (ST7789 + MicroSD) |
@@ -41,7 +41,7 @@ Compact structural map for AI agents and contributors. Regenerate via `python sc
 | [`firmware/BmoGameboy/src/storage/rom_index.h`](../../firmware/BmoGameboy/src/storage/rom_index.h) | `106` | BMOIDX03 44-byte header and 20-byte entry binary catalog schema |
 | [`firmware/BmoGameboy/src/storage/path_key.h`](../../firmware/BmoGameboy/src/storage/path_key.h) | `83` | Deterministic <stem>_<8hex_crc32> sidecar key generator |
 | [`firmware/BmoGameboy/src/storage/atomic_fs.h`](../../firmware/BmoGameboy/src/storage/atomic_fs.h) | `147` | Write-temp-verify-rename atomic SD file transaction engine |
-| [`firmware/BmoGameboy/src/ui/display_worker.cpp`](../../firmware/BmoGameboy/src/ui/display_worker.cpp) | `768` | CPU Core 0 FreeRTOS display streaming task and viewport blitters |
+| [`firmware/BmoGameboy/src/ui/display_worker.cpp`](../../firmware/BmoGameboy/src/ui/display_worker.cpp) | `761` | CPU Core 0 FreeRTOS display streaming task and viewport blitters |
 | [`firmware/BmoGameboy/src/ui/bmo_face.cpp`](../../firmware/BmoGameboy/src/ui/bmo_face.cpp) | `1145` | Procedural SDF BMO mascot face renderer with harmonic spring physics |
 | [`firmware/BmoGameboy/src/ui/theme.h`](../../firmware/BmoGameboy/src/ui/theme.h) | `129` | Canonical BGR565 wire-swapped color tokens and spacing constants |
 | [`firmware/BmoGameboy/src/ui/console_catalog.h`](../../firmware/BmoGameboy/src/ui/console_catalog.h) | `167` | 15-platform metadata catalog, file extensions, and badge themes |
@@ -77,6 +77,7 @@ Compact structural map for AI agents and contributors. Regenerate via `python sc
 | [`scripts/deploy_sd_complete.py`](../../scripts/deploy_sd_complete.py) | `296` | scripts/deploy_sd_complete.py — Local BMO Handheld SD Card Deployer & Indexer |
 | [`scripts/deploy_to_sd.py`](../../scripts/deploy_to_sd.py) | `308` | Safely synchronize supported local games and firmware box art to an SD card. |
 | [`scripts/export_enclosure_web_meshes.py`](../../scripts/export_enclosure_web_meshes.py) | `251` | Export manifold CAD enclosure shells to deterministic Three.js mesh data. |
+| [`scripts/extract_claims.py`](../../scripts/extract_claims.py) | `390` | Scripted claims extractor and verifier for BMO Handheld documentation and code comments. |
 | [`scripts/fetch_covers.py`](../../scripts/fetch_covers.py) | `36` | scripts/fetch_covers.py — Backward-compatible alias for scripts/convert_covers.py. |
 | [`scripts/generate_codemap.py`](../../scripts/generate_codemap.py) | `149` | Generate docs/ai/CODEMAP.md (<= 200 lines) summarizing first-party modules and entrypoints |
 | [`scripts/generate_hardware_layout_artifacts.py`](../../scripts/generate_hardware_layout_artifacts.py) | `760` | Generate hardware layout SVGs, 31x46 perfboard placement guide, and wire list CSV from har |

@@ -25,7 +25,7 @@ Two architectural questions recurred across earlier design discussions:
 | Criterion | Current Custom UI (`GFXcanvas16` + `HarmonicSpring`) | `LVGL 8/9` | `Tactility` (LVGL + ESP-IDF Shell) |
 | :--- | :--- | :--- | :--- |
 | **Flash Footprint** | `~45 KiB` compiled code (`display_emu.cpp` + `bmo_face.cpp`) | `+350 KiB to +650 KiB` Flash | `+800 KiB+` Flash (requires pure ESP-IDF build) |
-| **Internal SRAM / DRAM Impact** | **0 B** framebuffer in internal DRAM (`320×240×2 = 153.6 KiB` canvas lives in Octal PSRAM) | Requires internal SRAM draw buffers (`30–64 KiB`) + object heap overhead; reduces headroom needed by DOOM/SNES | Incompatible with `192 KiB` static DRAM footprint of 14 statically linked cores |
+| **Internal SRAM / DRAM Impact** | **0 B** framebuffer in internal DRAM (`320×240×2 = 153.6 KiB` canvas lives in Octal PSRAM) | Requires internal SRAM draw buffers (`30–64 KiB`) + object heap overhead; reduces headroom needed by DOOM/SNES | Incompatible with `185,272 B` (`~180.9 KiB`) static DRAM footprint of 15 statically linked platforms |
 | **BMO Mascot SDF & Harmonic Springs** | Native per-pixel SDF eye/mouth renderer + 60 Hz spring-damper physics (`DESIGN.md` token-checked) | Still requires custom canvas drawing; LVGL widgets add no value to full-screen emulator viewports | Same; adds OS chrome unsuitable for a dedicated 8-button character handheld |
 
 ## Decision

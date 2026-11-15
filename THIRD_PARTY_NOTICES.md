@@ -1,6 +1,6 @@
 # Third-Party Notices, Provenance, and License Compatibility Matrix
 
-- **Last Verified Commit:** `d8d4b5e` (`2026-11-15`)
+- **Last Verified Commit:** `techlead/audit-2` (`2026-11-15`)
 
 > **Disclaimer:** This document is an engineering inventory of upstream license texts in the repository, not legal advice. BMO Handheld is an unofficial, non-commercial DIY fan hardware and software project and is unaffiliated with Cartoon Network / Warner Bros. Discovery, Nintendo, Sega, Atari, NEC, Coleco, SNK, Bandai, or id Software. No commercial game ROMs, BIOS files, or copyrighted artwork packs are shipped in this repository.
 
@@ -8,13 +8,13 @@
 
 ## 1. Build Profile License Summary & Redistribution Rules
 
-First-party code written originally for BMO Handheld (`firmware/BmoGameboy/src/{app,hal,storage,ui,cores,tests}/`, `simulator/`, `hardware/`, `tools/`, `scripts/`, `tests/`) is dual-licensed under **`MIT OR GPL-2.0-or-later`**.
+Root [`LICENSE`](LICENSE) in this repository is GNU GPL v2 (`GPL-2.0`). A prior commit (`addcc07`) added `MIT OR GPL-2.0-or-later` SPDX headers without explicit owner approval, including on core wrappers coupled to GPL/Non-Commercial upstream code. Selecting the first-party license for purely original code (`firmware/BmoGameboy/src/{app,hal,storage,tests}/`, `ui/` excluding `display_worker.cpp`, `simulator/`, `hardware/`, `tools/`, `scripts/`, `tests/`) is **pending Owner Decision 9** in [`docs/owner-decisions.md`](docs/owner-decisions.md); `19` core-coupled files (`18` wrappers `emu_{atari,colem,doom,genesis,ngp,pce,sms,snes,wswan}.{cpp,h}` + `ui/display_worker.cpp`) must respect their coupled upstream GPL/non-commercial licenses and cannot carry a permissive `MIT` identifier (`emu_lynx.{cpp,h}` wraps `Zlib` `Handy`).
 
 However, the 13 vendored third-party emulator engines under `firmware/BmoGameboy/src/third_party/` carry differing licenses — including **GNU GPL v2**, **GNU GPL v3**, and **three non-commercial-only clauses** (`snes9x`, `smsplus/z80.c`, and Musashi `m68k.h` inside `gwenesis`). Under GNU GPL v2 Section 6 and GNU GPL v3 Section 7, non-commercial restrictions are "further restrictions" that cannot be combined with GPL code in a redistributed binary.
 
 | Build Profile (`python tasks.py build --profile <name>`) | Active Emulator Cores | Binary Redistribution Status | Reason |
 | :--- | :--- | :--- | :--- |
-| **`mit`** (`-DBMO_EXPERIMENTAL_CORES=0 -DBMO_ENABLE_DOOM=0`) | `Peanut-GB` (GB), `Walnut-CGB` (GBC), `agnes` (NES) | **REDISTRIBUTABLE (`MIT` / `Apache-2.0` / `BSD`)** | Links only permissive MIT emulator cores + Espressif/Adafruit libraries. Published by CI / GitHub Releases. |
+| **`mit`** (`-DBMO_EXPERIMENTAL_CORES=0 -DBMO_ENABLE_DOOM=0`) | `Peanut-GB` (GB), `Walnut-CGB` (GBC), `agnes` (NES) | **REDISTRIBUTABLE (`MIT` cores + Espressif/Adafruit; first-party license pending Decision 9)** | Links only permissive MIT emulator cores + Espressif/Adafruit libraries (no Non-Commercial clauses). Published by CI / GitHub Releases. |
 | **`default`** (`BMO_EXPERIMENTAL_CORES=1, BMO_ENABLE_DOOM=1`) | All 15 platforms (13 upstream engines) | **PERSONAL-USE LOCAL BUILD ONLY (Do Not Redistribute Binary)** | Links `GPL-2.0` (`oswan`, `race`, `doom`, `stella2014`, `smsplus`, `huexpress`) + `GPL-3.0` (`gwenesis`) + Non-Commercial (`snes9x`, MAME `z80.c`, Musashi v3.32 `m68k.h`). |
 | **`no-doom`** (`BMO_EXPERIMENTAL_CORES=1, BMO_ENABLE_DOOM=0`) | 14 platforms (excludes DOOM) | **PERSONAL-USE LOCAL BUILD ONLY (Do Not Redistribute Binary)** | Still links `GPL-2.0` + `GPL-3.0` + Non-Commercial cores. |
 
@@ -24,7 +24,8 @@ However, the 13 vendored third-party emulator engines under `firmware/BmoGameboy
 
 | Component | Platform(s) | Path in Repo | Primary Upstream & Adaptation Source | SPDX / License Read from Files | Non-Commercial Clause? | Compatible with Combined GPL-2.0 Binary? | Evidence File |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **BMO First-Party Firmware & Tools** | Launcher, HAL, UI, Storage, Sim, CAD | `firmware/BmoGameboy/src/{app,hal,storage,ui,cores}/`, `tools/`, `scripts/` | Original to repository | `MIT OR GPL-2.0-or-later` | No | Yes | `LICENSE`, file headers |
+| **BMO First-Party Firmware & Tools (Pure Original)** | Launcher, HAL, Storage, Sim, CAD | `firmware/BmoGameboy/src/{app,hal,storage,tests}/`, `ui/` (excl. `display_worker.cpp`), `tools/`, `scripts/` | Original to repository | **Pending Owner Decision 9** (`LICENSE` = `GPL-2.0`; unmerged proposal `MIT OR GPL-2.0-or-later`) | No | Yes | `LICENSE`, `docs/owner-decisions.md` |
+| **BMO Core-Coupled Wrappers & Palette Bridge** | Core glue (`emu_*`) + `display_worker.cpp` | `firmware/BmoGameboy/src/cores/emu_*.{h,cpp}`, `ui/display_worker.cpp` | Adapts upstream APIs/globals/palettes | **Follows coupled upstream license** (`MIT` / `Zlib` / `GPL-2.0` / `GPL-3.0` / Non-Commercial per core) | Per core | Per core (`mit` only for `Peanut`/`Walnut`/`agnes`) | `docs/owner-decisions.md` (Decision 9) |
 | **Peanut-GB** | Game Boy (`ROM_GB`) | `src/third_party/peanut_gb/` | Mahyar Koshkouei (`deltabeard/Peanut-GB`, portions from SameBoy / Lior Halphon) | `MIT` | No | Yes (and `mit` profile) | `peanut_gb/peanut_gb.h:1-27`, `PROVENANCE.md` |
 | **Walnut-CGB** | Game Boy Color (`ROM_GBC`) | `src/third_party/walnut_cgb/` | Mr. Paul (`Mr-PauI/Walnut-CGB`, derived from Peanut-GB / SameBoy) | `MIT` | No | Yes (and `mit` profile) | `walnut_cgb/walnut_cgb.h:1-30`, `PROVENANCE.md` |
 | **agnes** | NES (`ROM_NES`) | `src/third_party/agnes/` | Krzysztof Gabis (`kgabis/agnes`) | `MIT` | No | Yes (and `mit` profile) | `agnes/agnes.h:1-24`, `PROVENANCE.md` |

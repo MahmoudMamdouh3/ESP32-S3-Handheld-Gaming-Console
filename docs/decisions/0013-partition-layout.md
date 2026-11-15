@@ -12,7 +12,7 @@
 | :--- | :--- | :--- | ---: | ---: | :--- |
 | `nvs` | `data` | `nvs` | `0x009000` | `20 KiB` (`0x005000`) | Active (`bmo_boot` safe-mode counter, `bmo_disp` SPI Hz, `bmo_ui` theme) |
 | `otadata` | `data` | `ota` | `0x00E000` | `8 KiB` (`0x002000`) | Required by ESP-IDF bootloader for `ota_0` boot selection, though no `app1` OTA slot exists |
-| `app0` | `app` | `ota_0` | `0x010000` | `8,192 KiB` (`0x800000`) | Active firmware image (`3,291,744 B` / `39.2%` used in default 15-platform build) |
+| `app0` | `app` | `ota_0` | `0x010000` | `8,192 KiB` (`0x800000`) | Active firmware image (`3,293,225 B` / `39.3%` used in default 15-platform build) |
 | `ffat` | `data` | `fat` | `0x810000` | `8,064 KiB` (`0x7E0000`) | **Unused** (zero `FFat` mount or file calls in firmware; all ROMs/saves reside on MicroSD) |
 | *(unallocated tail)* | — | — | `0xFF0000` | `64 KiB` (`0x010000`) | Unpartitioned tail at end of 16 MiB flash |
 

@@ -109,7 +109,7 @@ All 11 experimental cores (`SMS`, `GG`, `PCE`, `Atari`, `PICO-8`, `Genesis`, `SN
 | Fault Condition | Implemented Response | Location |
 | :--- | :--- | :--- |
 | Shared SPI mutex creation or recursive take/give failure | Fail-fast `abort()` rather than corrupting SPI transfers | `src/hal/spi_arbiter.cpp:14-25` |
-| Core 0 display queue saturated or DMA worker hung (`> 1,000 ms`) | Logs `LOG_WARN` with timeout counter (`s_displayQueueTimeouts` / `waitForDisplay`), skips stall cleanly without infinite spin | `src/ui/display_worker.cpp:91-97, 651-658` |
+| Core 0 display queue saturated or display worker hung (`> 1,000 ms`) | Logs `LOG_WARN` with timeout counter (`s_displayQueueTimeouts` / `waitForDisplay`), skips stall cleanly without infinite spin | `src/ui/display_worker.cpp:91-97, 651-658` |
 | Breadboard / long-wire ST7789 instability at `80 MHz` | Hold `SELECT` or `B` during boot to force `40 MHz` fallback (`TFT_SPI_FALLBACK_HZ`), persisted in NVS with yellow HUD toast | `src/app/bmo_app.cpp:1121-1132`, `boot_safe_mode.h` |
 | Abnormal reset (brownout, task/interrupt WDT, panic) | Logs `esp_reset_reason()` + `s_bootBreadcrumb` prior state/emulator on serial and shows coral toast for `3.5 s` | `src/app/bmo_app.cpp:1096-1135` |
 | Missing or unreadable ROM at launch / SD card swapped | Shows toast (`SD READ FAILED` / `SD CHANGED: RESCANNING...`), triggers `SDCard::rebuildIndex()`, restores `STATE_GAME_MENU` cleanly | `src/app/bmo_app.cpp:640-664` |

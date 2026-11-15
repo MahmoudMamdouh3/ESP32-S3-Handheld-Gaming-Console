@@ -18,7 +18,7 @@
 1. `FEATURE_BATTERY_MONITOR=0` and `FEATURE_AUDIO=0` in `firmware/BmoGameboy/src/hal/config.h`.
 2. `FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi` in `sketch.yaml` and `partitions.csv`.
 3. Current GPIO mapping in `config.h` / `pins_check.h` (never assign strapping `0, 3, 45, 46` or flash/PSRAM `26–37`).
-4. Licensing split: Only the `mit` profile (`GB`, `GBC`, `NES`) is redistributable as a binary; `default` and `no-doom` link non-commercial cores (`Snes9x`, `SMS Plus`, `Gwenesis`) and are personal-use local builds only ([`THIRD_PARTY_NOTICES.md`](../../THIRD_PARTY_NOTICES.md)).
+4. Licensing split: Only the `mit` profile (`GB`, `GBC`, `NES`) is redistributable as a binary; `default` and `no-doom` link non-commercial cores and are personal-use local builds only ([`THIRD_PARTY_NOTICES.md`](../../THIRD_PARTY_NOTICES.md)). First-party SPDX split awaits **Decision 9** (staged unmerged on `license/spdx-review`).
 
 ## Next Actions & Open Owner Decisions
 
