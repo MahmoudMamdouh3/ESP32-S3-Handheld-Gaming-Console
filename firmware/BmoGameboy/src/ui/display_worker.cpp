@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
-// Hot Core 0 DMA pixel conversion and scanline streaming path; Arduino ESP32 builds at -Os.
+// Hot Core 0 SPI pixel conversion and scanline streaming worker; Arduino ESP32 builds at -Os.
 #pragma GCC optimize("O3,unroll-loops")
 
 #include "display_internal.h"
+#include "doom_palette.h"
 #include "../hal/config.h"
 #include "../hal/profiler.h"
 #include "../hal/spi_arbiter.h"
@@ -138,11 +139,7 @@ void displayWorkerTask(void* pvParameters) {
         tft.endWrite();
 #if BMO_ENABLE_DOOM
       } else if (cmd.type == CMD_STREAM_DOOM && cmd.buffer) {
-        for (int i = 0; i < 256; ++i) {
-          const struct color c = colors[i];
-          const uint16_t p = ((c.b & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.r >> 3);
-          s_doomPalette[i] = (uint16_t)((p >> 8) | (p << 8));
-        }
+        Ui::rebuildDoomPalette(colors, s_doomPalette, 256U);
         SpiArbiter::ScopedLock spiLock;
         tft.startWrite();
         tft.setAddrWindow(0, 20, 320, 200);
@@ -452,11 +449,7 @@ void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
   tft.startWrite();
   tft.setAddrWindow(0, 20, 320, 200);
 
-  for (int i = 0; i < 256; ++i) {
-    const struct color c = colors[i];
-    const uint16_t p = ((c.b & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.r >> 3);
-    s_doomPalette[i] = (uint16_t)((p >> 8) | (p << 8));
-  }
+  Ui::rebuildDoomPalette(colors, s_doomPalette, 256U);
 
   uint32_t* out32 = (uint32_t*)s_doomLineBuf;
   for (int y = 0; y < 200; y++) {

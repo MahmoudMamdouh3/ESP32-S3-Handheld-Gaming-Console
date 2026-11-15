@@ -82,20 +82,11 @@ int s_frameTimeCount = 0;
 unsigned long* s_framePercentileSamples = nullptr;
 size_t s_framePercentileCount = 0;
 
-struct BootBreadcrumb {
-  uint32_t magic;
-  uint8_t state;
-  int8_t emulatorIndex;
-  uint16_t reserved;
-};
-constexpr uint32_t kBreadcrumbMagic = 0x424D4F42U; // "BMOB"
-RTC_NOINIT_ATTR BootBreadcrumb s_bootBreadcrumb;
+RTC_NOINIT_ATTR BmoApp::BootBreadcrumb s_bootBreadcrumb;
 
 void updateBootBreadcrumb() {
-  s_bootBreadcrumb.magic = kBreadcrumbMagic;
-  s_bootBreadcrumb.state = static_cast<uint8_t>(s_currentState);
-  s_bootBreadcrumb.emulatorIndex = static_cast<int8_t>(s_selectedEmulatorIndex);
-  s_bootBreadcrumb.reserved = 0U;
+  s_bootBreadcrumb =
+      BmoApp::makeBootBreadcrumb(static_cast<uint8_t>(s_currentState), static_cast<int8_t>(s_selectedEmulatorIndex));
 }
 
 unsigned long s_lastFpsLogMs = 0;
@@ -1095,11 +1086,15 @@ void BmoApp::setup() {
   LOG_INFO("BMO Handheld v%s (%s)", BMO_VERSION_STRING, BMO_GIT_SHA);
   const int resetReason = static_cast<int>(esp_reset_reason());
   const bool abnormalReset = BmoApp::isAbnormalResetReason(resetReason);
-  const BootBreadcrumb prevBreadcrumb = s_bootBreadcrumb;
+  const BmoApp::BootBreadcrumb prevBreadcrumb = s_bootBreadcrumb;
   LOG_INFO("Reset reason: %s (%d)", BmoApp::resetReasonName(resetReason), resetReason);
-  if (abnormalReset && prevBreadcrumb.magic == kBreadcrumbMagic) {
+  if (abnormalReset &&
+      BmoApp::isValidBootBreadcrumb(prevBreadcrumb, BmoApp::kBreadcrumbMaxStateCount, static_cast<int8_t>(15))) {
     LOG_WARN("Crash/brownout recovery breadcrumb: prev_state=%u prev_emu=%d",
              static_cast<unsigned>(prevBreadcrumb.state), static_cast<int>(prevBreadcrumb.emulatorIndex));
+  } else if (abnormalReset) {
+    LOG_WARN("Abnormal reset with invalid/cold-boot RTC breadcrumb (magic=0x%08lX)",
+             static_cast<unsigned long>(prevBreadcrumb.magic));
   }
   updateBootBreadcrumb();
   LOG_INFO_STR("Milestone 4: Game Selection UI");

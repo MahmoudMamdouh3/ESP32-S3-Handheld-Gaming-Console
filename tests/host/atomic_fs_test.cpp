@@ -7,9 +7,21 @@
 
 struct MemVfs {
   std::map<std::string, std::vector<uint8_t>> files;
+  bool cardRemoved = false;
+  int failAfterOps = -1;
   bool failRenameToFinal = false;
   bool failBackupCleanup = false;
   int corruptFinalAfterRename = 0;
+
+  bool checkCardAlive() {
+    if (cardRemoved) return false;
+    if (failAfterOps == 0) {
+      cardRemoved = true;
+      return false;
+    }
+    if (failAfterOps > 0) --failAfterOps;
+    return true;
+  }
 };
 
 struct MemReader {
@@ -19,11 +31,13 @@ struct MemReader {
 
 static bool memExists(void* ctx, const char* path) {
   auto* fs = static_cast<MemVfs*>(ctx);
+  if (fs->cardRemoved) return false;
   return fs->files.find(path) != fs->files.end();
 }
 
 static bool memRemove(void* ctx, const char* path) {
   auto* fs = static_cast<MemVfs*>(ctx);
+  if (!fs->checkCardAlive()) return false;
   if (fs->failBackupCleanup && std::string(path).find(".bak") != std::string::npos) {
     return false;
   }
@@ -32,6 +46,7 @@ static bool memRemove(void* ctx, const char* path) {
 
 static bool memRename(void* ctx, const char* src, const char* dst) {
   auto* fs = static_cast<MemVfs*>(ctx);
+  if (!fs->checkCardAlive()) return false;
   if (fs->failRenameToFinal && std::string(src).find(".tmp") != std::string::npos) {
     return false;
   }
@@ -125,5 +140,18 @@ int main() {
   BMO_CHECK(vfs.files["/saves/game.sav"] == oldData);
   BMO_CHECK(!memExists(&vfs, "/saves/game.sav.bak"));
   BMO_CHECK(!memExists(&vfs, "/saves/game.sav.tmp"));
+
+  // Mid-commit SD card removal fault injection: fails cleanly without losing backup recovery path.
+  vfs.files["/saves/game.sav"] = oldData;
+  vfs.files["/saves/game.sav.tmp"] = newData;
+  vfs.failAfterOps = 1; // Backup rename succeeds, temp->final promotion hits card removal.
+  BMO_CHECK(!AtomicFs::commitTransaction(ops, "/saves/game.sav.tmp", "/saves/game.sav", newData.size(), 0,
+                                         newData.size(), computeFullCrc(newData)));
+  BMO_CHECK(vfs.cardRemoved);
+  // Once card is reinserted, recoverTransaction restores intact pre-removal save data.
+  vfs.cardRemoved = false;
+  vfs.failAfterOps = -1;
+  BMO_CHECK(AtomicFs::recoverTransaction(ops, "/saves/game.sav"));
+  BMO_CHECK(vfs.files["/saves/game.sav"] == oldData);
   return 0;
 }

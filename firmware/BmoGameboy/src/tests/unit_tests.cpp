@@ -86,14 +86,14 @@ void testDisplayPalette() {
 
 // ---------------------------------------------------------------------------
 // BM2: IRAM usage diagnostic
-// Reports heap_caps free size in IRAM region. Expected: > 200KB with current
-// IRAM_ATTR functions (estimated ~10–15KB used from the 400KB budget).
+// Reports heap_caps free size in IRAM region. Expected: > 200 KiB free
+// (87,040 B static .iram0 IRAM used in default build).
 // ---------------------------------------------------------------------------
 void testIRAMPlacement() {
   TEST_CASE("IRAM Placement Budget");
   size_t iram_free = heap_caps_get_free_size(MALLOC_CAP_IRAM_8BIT);
   LOG_INFO("  IRAM free: %u bytes", iram_free);
-  // Verify at least 200KB is free (IRAM_ATTR functions should use << 100KB).
+  // Verify at least 200 KiB is free so IRAM allocations remain well inside budget.
   ASSERT_TRUE(iram_free > 200 * 1024, "IRAM overcommitted — check IRAM_ATTR usage");
 }
 

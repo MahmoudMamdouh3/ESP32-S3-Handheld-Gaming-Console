@@ -130,7 +130,7 @@ IRAM_ATTR void lcd_draw_line(struct gb_s* gbCtx, const uint8_t pixels[160], cons
   }
 
   // N3: Scale into inactive PSRAM ping-pong framebuffer so Core 0 DisplayWorker
-  // can DMA-stream this frame concurrently while Core 1 starts the next frame.
+  // can stream this frame over SPI (SPI.writeBytes) concurrently while Core 1 starts the next frame.
   // Exact 3:2 nearest-neighbour scale (A B C D -> A A B C C D), duplicating even source rows.
   const int rows_to_draw = (line & 1u) ? 1 : 2;
   const int y0 = (static_cast<int>(line >> 1) * 3) + ((line & 1u) ? 2 : 0);

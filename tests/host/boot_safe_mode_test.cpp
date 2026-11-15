@@ -46,5 +46,56 @@ int main() {
     BMO_CHECK(BmoApp::isAbnormalResetReason(6));
     BMO_CHECK(BmoApp::isAbnormalResetReason(9));
   }
+  // Boot breadcrumb: valid magic + CRC passes; cold-boot garbage and bit flips fail.
+  {
+    const auto validMenu = BmoApp::makeBootBreadcrumb(static_cast<uint8_t>(BmoApp::STATE_CONSOLE_MENU), -1);
+    BMO_CHECK(BmoApp::isValidBootBreadcrumb(validMenu));
+
+    const auto validEmu = BmoApp::makeBootBreadcrumb(static_cast<uint8_t>(BmoApp::STATE_EMULATOR), 14);
+    BMO_CHECK(BmoApp::isValidBootBreadcrumb(validEmu));
+
+    // Uninitialized RTC_NOINIT patterns on cold power-on.
+    BmoApp::BootBreadcrumb zeroed{};
+    memset(&zeroed, 0x00, sizeof(zeroed));
+    BMO_CHECK(!BmoApp::isValidBootBreadcrumb(zeroed));
+
+    BmoApp::BootBreadcrumb ones{};
+    memset(&ones, 0xFF, sizeof(ones));
+    BMO_CHECK(!BmoApp::isValidBootBreadcrumb(ones));
+
+    BmoApp::BootBreadcrumb pattern{};
+    memset(&pattern, 0xA5, sizeof(pattern));
+    BMO_CHECK(!BmoApp::isValidBootBreadcrumb(pattern));
+
+    // Deterministic pseudo-random cold-boot SRAM garbage with valid magic but random tail.
+    uint32_t lfsr = 0x13579BDFU;
+    for (int trial = 0; trial < 256; ++trial) {
+      BmoApp::BootBreadcrumb garbage{};
+      uint8_t* raw = reinterpret_cast<uint8_t*>(&garbage);
+      for (size_t i = 0; i < sizeof(garbage); ++i) {
+        lfsr = lfsr * 1664525U + 1013904223U;
+        raw[i] = static_cast<uint8_t>(lfsr >> 24);
+      }
+      if (trial % 4 == 0) {
+        garbage.magic = BmoApp::kBreadcrumbMagic; // Even matching magic must fail CRC/bounds check.
+      }
+      BMO_CHECK(!BmoApp::isValidBootBreadcrumb(garbage));
+    }
+
+    // Single-bit flip in CRC or payload fails validation.
+    BmoApp::BootBreadcrumb badCrc = validEmu;
+    badCrc.crc32 ^= 0x00010000U;
+    BMO_CHECK(!BmoApp::isValidBootBreadcrumb(badCrc));
+
+    BmoApp::BootBreadcrumb badPayload = validEmu;
+    badPayload.emulatorIndex = 13;
+    BMO_CHECK(!BmoApp::isValidBootBreadcrumb(badPayload));
+
+    // Out-of-bounds state or emulator index fails even with a matching CRC.
+    const auto outOfRangeState = BmoApp::makeBootBreadcrumb(BmoApp::kBreadcrumbMaxStateCount, 0);
+    BMO_CHECK(!BmoApp::isValidBootBreadcrumb(outOfRangeState));
+    const auto outOfRangeEmu = BmoApp::makeBootBreadcrumb(static_cast<uint8_t>(BmoApp::STATE_EMULATOR), -2);
+    BMO_CHECK(!BmoApp::isValidBootBreadcrumb(outOfRangeEmu));
+  }
   return 0;
 }

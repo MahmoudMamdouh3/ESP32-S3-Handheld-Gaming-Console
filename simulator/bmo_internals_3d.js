@@ -319,7 +319,7 @@
       this.rootGroup.name = "BMO_Internals_Root";
       this.parentRoot.add(this.rootGroup);
 
-      // Layer groups arranged front-to-back along Z for clean Apple-style teardown motion
+      // Layer groups arranged front-to-back along Z for clean exploded teardown motion
       this.layers = {
         fastenersFront: new THREE.Group(), // Case & battery-door M2 screws
         display: new THREE.Group(),        // 2.4" ST7789 SPI TFT carrier + shield + flex

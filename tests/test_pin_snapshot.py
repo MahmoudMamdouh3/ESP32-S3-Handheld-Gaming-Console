@@ -13,7 +13,12 @@ CONFIG_H = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "hal" / "config.h"
 PINS_CHECK_H = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "hal" / "pins_check.h"
 BRINGUP_INO = REPO_ROOT / "firmware" / "bringup" / "bringup.ino"
 LAYOUT_JSON = REPO_ROOT / "hardware" / "layout.json"
+DIAGRAM_JSON = REPO_ROOT / "hardware" / "diagram.json"
 HARDWARE_MD = REPO_ROOT / "docs" / "hardware.md"
+WIRING_DISPLAY_MD = REPO_ROOT / "docs" / "wiring" / "01-display-and-buttons.md"
+WIRING_SD_MD = REPO_ROOT / "docs" / "wiring" / "02-sd-card.md"
+AGENTS_MD = REPO_ROOT / "AGENTS.md"
+FW_AGENTS_MD = REPO_ROOT / "firmware" / "AGENTS.md"
 
 EXPECTED_ACTIVE_AND_EXPANSION_PINS = {
     "TFT_MOSI": 11,
@@ -112,6 +117,57 @@ class PinSnapshotTests(unittest.TestCase):
         hw_doc = HARDWARE_MD.read_text(encoding="utf-8")
         for token in ("TFT_SCK", "TFT_MOSI", "TFT_CS", "TFT_DC", "TFT_RST", "SD_CS", "SD_MISO"):
             self.assertIn(token, hw_doc)
+
+    def test_wokwi_diagram_agents_and_wiring_docs_match_config_h(self) -> None:
+        diagram = json.loads(DIAGRAM_JSON.read_text(encoding="utf-8"))
+        pin_to_target = {}
+        for src, dst, *_ in diagram["connections"]:
+            if src.startswith("esp:") and src[4:].isdigit():
+                pin_to_target[dst] = int(src[4:])
+        expected_diagram = {
+            "tft:CS": EXPECTED_ACTIVE_AND_EXPANSION_PINS["TFT_CS"],
+            "tft:D/C": EXPECTED_ACTIVE_AND_EXPANSION_PINS["TFT_DC"],
+            "tft:RST": EXPECTED_ACTIVE_AND_EXPANSION_PINS["TFT_RST"],
+            "tft:MOSI": EXPECTED_ACTIVE_AND_EXPANSION_PINS["TFT_MOSI"],
+            "tft:SCK": EXPECTED_ACTIVE_AND_EXPANSION_PINS["TFT_SCK"],
+            "sd:CS": EXPECTED_ACTIVE_AND_EXPANSION_PINS["SD_CS"],
+            "sd:DO": EXPECTED_ACTIVE_AND_EXPANSION_PINS["SD_MISO"],
+            "btn_up:1.l": EXPECTED_ACTIVE_AND_EXPANSION_PINS["BTN_UP"],
+            "btn_down:1.l": EXPECTED_ACTIVE_AND_EXPANSION_PINS["BTN_DOWN"],
+            "btn_left:1.l": EXPECTED_ACTIVE_AND_EXPANSION_PINS["BTN_LEFT"],
+            "btn_right:1.l": EXPECTED_ACTIVE_AND_EXPANSION_PINS["BTN_RIGHT"],
+            "btn_a:1.l": EXPECTED_ACTIVE_AND_EXPANSION_PINS["BTN_A"],
+            "btn_b:1.l": EXPECTED_ACTIVE_AND_EXPANSION_PINS["BTN_B"],
+            "btn_start:1.l": EXPECTED_ACTIVE_AND_EXPANSION_PINS["BTN_START"],
+            "btn_select:1.l": EXPECTED_ACTIVE_AND_EXPANSION_PINS["BTN_SELECT"],
+            "btn_x:1.l": EXPECTED_ACTIVE_AND_EXPANSION_PINS["BTN_X"],
+            "btn_y:1.l": EXPECTED_ACTIVE_AND_EXPANSION_PINS["BTN_Y"],
+            "btn_l:1.l": EXPECTED_ACTIVE_AND_EXPANSION_PINS["BTN_L"],
+            "btn_r:1.l": EXPECTED_ACTIVE_AND_EXPANSION_PINS["BTN_R"],
+        }
+        for net, gpio in expected_diagram.items():
+            self.assertEqual(pin_to_target.get(net), gpio, f"diagram.json {net} GPIO mismatch")
+
+        agents_txt = AGENTS_MD.read_text(encoding="utf-8")
+        for key, gpio in EXPECTED_ACTIVE_AND_EXPANSION_PINS.items():
+            short = key.replace("BTN_", "")
+            self.assertIn(f"{short}={gpio}", agents_txt, f"AGENTS.md missing {short}={gpio}")
+
+        fw_agents_txt = FW_AGENTS_MD.read_text(encoding="utf-8")
+        self.assertIn("0, 3, 26–37, 45, 46", fw_agents_txt)
+
+        disp_txt = WIRING_DISPLAY_MD.read_text(encoding="utf-8")
+        for key, gpio in EXPECTED_ACTIVE_AND_EXPANSION_PINS.items():
+            if key.startswith("BTN_"):
+                self.assertIn(f"`{key}` | {gpio}", disp_txt)
+            elif key.startswith("TFT_"):
+                self.assertIn(f"GPIO{gpio} / `{key}`", disp_txt)
+        self.assertIn(f"MISO GPIO{EXPECTED_ACTIVE_AND_EXPANSION_PINS['SD_MISO']}", disp_txt)
+        self.assertIn(f"CS GPIO{EXPECTED_ACTIVE_AND_EXPANSION_PINS['SD_CS']}", disp_txt)
+
+        sd_txt = WIRING_SD_MD.read_text(encoding="utf-8")
+        for key in ("TFT_SCK", "TFT_MOSI", "SD_MISO", "TFT_CS", "TFT_DC", "TFT_RST", "SD_CS"):
+            self.assertIn(f"`GPIO {EXPECTED_ACTIVE_AND_EXPANSION_PINS[key]}` | `{key}`", sd_txt)
 
 
 if __name__ == "__main__":

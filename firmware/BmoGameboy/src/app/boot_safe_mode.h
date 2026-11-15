@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include "../storage/atomic_fs.h"
+
 namespace BmoApp {
 
 enum SystemState : uint8_t {
@@ -81,6 +83,49 @@ constexpr const char* resetReasonName(int reasonCode) {
 constexpr bool isAbnormalResetReason(int reasonCode) {
   return reasonCode == 4 || reasonCode == 5 || reasonCode == 6 || reasonCode == 7 || reasonCode == 9 ||
          reasonCode == 14 || reasonCode == 15;
+}
+
+struct BootBreadcrumb {
+  uint32_t magic;
+  uint8_t state;
+  int8_t emulatorIndex;
+  uint16_t flags;
+  uint32_t crc32;
+};
+
+constexpr uint32_t kBreadcrumbMagic = 0x424D4F42U; // "BMOB"
+constexpr uint16_t kBreadcrumbFormatVersion = 1U;
+constexpr uint8_t kBreadcrumbMaxStateCount = 8U;
+
+inline constexpr uint32_t computeBootBreadcrumbCrc(uint32_t magic, uint8_t state, int8_t emulatorIndex,
+                                                   uint16_t flags) {
+  const uint8_t raw[8] = {
+      static_cast<uint8_t>(magic & 0xFFU),
+      static_cast<uint8_t>((magic >> 8) & 0xFFU),
+      static_cast<uint8_t>((magic >> 16) & 0xFFU),
+      static_cast<uint8_t>((magic >> 24) & 0xFFU),
+      state,
+      static_cast<uint8_t>(emulatorIndex),
+      static_cast<uint8_t>(flags & 0xFFU),
+      static_cast<uint8_t>((flags >> 8) & 0xFFU),
+  };
+  return AtomicFs::crc32Update(raw, sizeof(raw), 0xFFFFFFFFU) ^ 0xFFFFFFFFU;
+}
+
+inline constexpr BootBreadcrumb makeBootBreadcrumb(uint8_t state, int8_t emulatorIndex,
+                                                   uint16_t flags = kBreadcrumbFormatVersion) {
+  return BootBreadcrumb{kBreadcrumbMagic, state, emulatorIndex, flags,
+                        computeBootBreadcrumbCrc(kBreadcrumbMagic, state, emulatorIndex, flags)};
+}
+
+inline constexpr bool isValidBootBreadcrumb(const BootBreadcrumb& breadcrumb,
+                                            uint8_t maxStateCount = kBreadcrumbMaxStateCount,
+                                            int8_t maxEmulatorCount = 32) {
+  return breadcrumb.magic == kBreadcrumbMagic && breadcrumb.flags == kBreadcrumbFormatVersion &&
+         breadcrumb.state < maxStateCount && breadcrumb.emulatorIndex >= -1 &&
+         breadcrumb.emulatorIndex < maxEmulatorCount &&
+         breadcrumb.crc32 ==
+             computeBootBreadcrumbCrc(breadcrumb.magic, breadcrumb.state, breadcrumb.emulatorIndex, breadcrumb.flags);
 }
 
 } // namespace BmoApp
