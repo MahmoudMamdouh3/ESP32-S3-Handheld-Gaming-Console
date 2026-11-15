@@ -294,8 +294,8 @@
       title: "7. Forbidden Pins & Planned Expansion",
       preset: "exploded",
       highlight: "forbidden",
-      summary: "DO NOT solder to GPIO 0, 3, 45, 46 (boot strapping) or GPIO 35-37 (Octal PSRAM). Leave X/Y/L/R, I2S audio (38-40), I2C (43-44), and ADC (1) unwired in Stage 1.",
-      tip: "Enabling the Planned Expansion Layer previews where 3xAA cells (16 mm) would clash in Z unless swapped for a slim LiPo.",
+      summary: "DO NOT solder to GPIO 0, 3, 45, 46 (boot strapping), GPIO 26-32 (SPI Flash), or GPIO 33-37 (Octal PSRAM). Leave X/Y/L/R, I2S audio (38-40), I2C (43-44), and ADC (1) unwired in Stage 1.",
+      tip: "Enabling the Planned Expansion Layer previews where 3xAA NiMH cells (16 mm) would clash in Z unless split to 2xAA in the lower bay or housed in a deeper back shell.",
     },
   ];
 
@@ -704,7 +704,7 @@
       this.registerInteractive(pcb, {
         name: "ESP32-S3-DevKitC-1 N16R8",
         role: "Core MCU (25.4 x 62.74 mm)",
-        detail: "2x22 headers (44 pins). Native USB OTG + UART CP2102N sit at bottom y=-59.5 mm. Avoid GPIO 0,3,35-37,45,46.",
+        detail: "2x22 headers (44 pins). Native USB OTG + UART CP2102N sit at bottom y=-59.5 mm. Avoid GPIO 0, 3, 26-37, 45, 46.",
         groupTag: "esp32",
       });
 
@@ -986,7 +986,7 @@
       this.registerInteractive(aaEnvelope, {
         name: "3xAA NiMH Bay Envelope (54x47x16 mm) — CONFLICT",
         role: "FEATURE_BATTERY_MONITOR = 0 (CLASH WARNING)",
-        detail: "16 mm cell pack collides (-9.3 mm Z) with stacked DevKitC-1 + perfboard. Use flat LiPo (<= 6 mm) or deeper back shell.",
+        detail: "16 mm cell pack collides (-9.3 mm Z) with stacked DevKitC-1 + perfboard. Place 2xAA cells in lower Zone C or use a deeper back shell.",
         groupTag: "expansion",
       });
       g.add(aaEnvelope, wireFrame);

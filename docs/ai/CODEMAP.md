@@ -81,7 +81,7 @@ Compact structural map for AI agents and contributors. Regenerate via `python sc
 | [`scripts/generate_codemap.py`](../../scripts/generate_codemap.py) | `149` | Generate docs/ai/CODEMAP.md (<= 200 lines) summarizing first-party modules and entrypoints |
 | [`scripts/generate_hardware_layout_artifacts.py`](../../scripts/generate_hardware_layout_artifacts.py) | `760` | Generate hardware layout SVGs, 31x46 perfboard placement guide, and wire list CSV from har |
 | [`scripts/install_git_hooks.py`](../../scripts/install_git_hooks.py) | `26` | Configure git to use the tracked .githooks directory. |
-| [`scripts/repo_tools.py`](../../scripts/repo_tools.py) | `46` | from __future__ import annotations |
+| [`scripts/repo_tools.py`](../../scripts/repo_tools.py) | `48` | Local ROM path discovery and Game Boy header checksum helpers. |
 | [`scripts/rom_key.py`](../../scripts/rom_key.py) | `39` | Path-key helpers shared by firmware deployment and cover generation. |
 | [`scripts/run_mutation_sanity.py`](../../scripts/run_mutation_sanity.py) | `254` | Verify that host C++17 and Python test suites catch 10 isolated single-line mutations. |
 | [`scripts/validate_repo.py`](../../scripts/validate_repo.py) | `465` | Repository validator covering compile, syntax, safety guardrails, layout, and local ROM ar |

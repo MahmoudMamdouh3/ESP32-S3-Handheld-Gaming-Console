@@ -374,8 +374,8 @@ main.simulator-workspace {
    PHYSICAL BMO GAME BOY CHASSIS (1:1 Proportions)
    ========================================================================== */
 .bmo-gameboy-chassis {
-  width: calc(380px * var(--scale-multiplier));
-  height: calc(640px * var(--scale-multiplier));
+  width: calc(456px * var(--scale-multiplier));
+  height: calc(584px * var(--scale-multiplier));
   background: var(--chassis-color);
   border-radius: calc(24px * var(--scale-multiplier)) calc(24px * var(--scale-multiplier)) calc(48px * var(--scale-multiplier)) calc(24px * var(--scale-multiplier));
   box-shadow: 
@@ -387,7 +387,7 @@ main.simulator-workspace {
   align-items: center;
   position: relative;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  padding-top: calc(28px * var(--scale-multiplier));
+  padding-top: calc(24px * var(--scale-multiplier));
 }
 
 /* Top Ridge & Vent Lines (Removed for authentic Adventure Time BMO character accuracy) */
@@ -395,10 +395,10 @@ main.simulator-workspace {
   display: none;
 }
 
-/* Screen Bezel Housing (ST7789 2.4" 320x240) */
+/* Screen Bezel Housing (ST7789 2.4" 320x240 scaled proportionally to 8.80 cm chassis width) */
 .screen-bezel-housing {
-  width: calc(336px * var(--scale-multiplier));
-  height: calc(260px * var(--scale-multiplier));
+  width: calc(296px * var(--scale-multiplier));
+  height: calc(240px * var(--scale-multiplier));
   background: var(--bezel-color);
   border-radius: calc(12px * var(--scale-multiplier)) calc(12px * var(--scale-multiplier)) calc(36px * var(--scale-multiplier)) calc(12px * var(--scale-multiplier));
   box-shadow: 
@@ -436,10 +436,10 @@ main.simulator-workspace {
   color: #8cd7c2;
 }
 
-/* Display Canvas Viewport (Exact 320x240 native) */
+/* Display Canvas Viewport (4:3 320x240 canvas scaled to ~56% chassis width to match 4.90 / 8.80 cm) */
 .display-viewport-frame {
-  width: calc(320px * var(--scale-multiplier));
-  height: calc(240px * var(--scale-multiplier));
+  width: calc(256px * var(--scale-multiplier));
+  height: calc(192px * var(--scale-multiplier));
   background: #000000;
   position: relative;
   overflow: hidden;
@@ -525,11 +525,11 @@ canvas#tft-display {
    PHYSICAL CONTROLS & BUTTONS
    ========================================================================== */
 .controls-section {
-  width: calc(336px * var(--scale-multiplier));
+  width: calc(376px * var(--scale-multiplier));
   display: grid;
   grid-template-columns: 1fr 1fr;
-  padding: calc(24px * var(--scale-multiplier)) calc(12px * var(--scale-multiplier)) 0;
-  gap: calc(20px * var(--scale-multiplier));
+  padding: calc(32px * var(--scale-multiplier)) calc(12px * var(--scale-multiplier)) 0;
+  gap: calc(24px * var(--scale-multiplier));
   align-items: center;
 }
 
@@ -624,13 +624,12 @@ canvas#tft-display {
   left: calc(9px * var(--scale-multiplier));
 }
 
-/* ACTION BUTTONS (Standard Handheld Diamond: X top, Y left, B bottom, A right) */
+/* ACTION BUTTONS (Axis-aligned Perfboard Diamond: X top, Y left, B bottom, A right) */
 .action-buttons-cluster {
   position: relative;
   width: calc(112px * var(--scale-multiplier));
   height: calc(112px * var(--scale-multiplier));
   margin: 0 auto;
-  transform: rotate(-12deg);
 }
 
 .round-btn {
@@ -650,8 +649,6 @@ canvas#tft-display {
   align-items: center;
   justify-content: center;
   transition: all 0.08s ease;
-  /* Counter-rotate so button letters remain perfectly level and upright */
-  transform: rotate(12deg);
 }
 
 .btn-x {
@@ -687,7 +684,7 @@ body[data-theme="dmg-gray"] .btn-b {
 }
 
 .round-btn:active, .round-btn.pressed {
-  transform: rotate(12deg) translateY(calc(2px * var(--scale-multiplier)));
+  transform: translateY(calc(2px * var(--scale-multiplier)));
   box-shadow: 
     inset 0 calc(3px * var(--scale-multiplier)) calc(6px * var(--scale-multiplier)) rgba(0, 0, 0, 0.8),
     0 calc(1px * var(--scale-multiplier)) calc(2px * var(--scale-multiplier)) rgba(0, 0, 0, 0.4);
@@ -700,7 +697,7 @@ body[data-theme="dmg-gray"] .btn-b {
 
 /* L / R SHOULDER TRIGGERS (top edge of the chassis) */
 .shoulder-buttons-row {
-  width: calc(336px * var(--scale-multiplier));
+  width: calc(376px * var(--scale-multiplier));
   display: flex;
   justify-content: space-between;
   margin-bottom: calc(8px * var(--scale-multiplier));
@@ -750,7 +747,7 @@ body[data-theme="dmg-gray"] .btn-b {
   width: calc(180px * var(--scale-multiplier));
   display: flex;
   justify-content: space-between;
-  margin-top: calc(36px * var(--scale-multiplier));
+  margin-top: calc(30px * var(--scale-multiplier));
 }
 
 .pill-btn-wrapper {
@@ -788,7 +785,7 @@ body[data-theme="dmg-gray"] .btn-b {
 .pill-label {
   font-family: 'Press Start 2P', monospace;
   font-size: calc(7px * var(--scale-multiplier));
-  color: var(--chassis-shadow);
+  color: var(--bezel-lens);
   font-weight: 700;
 }
 

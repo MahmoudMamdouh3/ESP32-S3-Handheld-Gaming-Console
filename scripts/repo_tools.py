@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: MIT OR GPL-2.0-or-later
+"""Local ROM path discovery and Game Boy header checksum helpers."""
+
 from __future__ import annotations
 
 import os

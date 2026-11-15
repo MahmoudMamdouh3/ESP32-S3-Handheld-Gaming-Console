@@ -96,7 +96,7 @@
               if (warnCard && warnStatus) {
                 warnCard.dataset.state = chk.checked ? "conflict" : "inactive";
                 warnStatus.textContent = chk.checked
-                  ? "-9.3 mm Z clash w/ 3xAA bay (use <=6 mm LiPo)"
+                  ? "-9.3 mm Z clash w/ 3xAA bay (use 2xAA lower zone or deeper shell)"
                   : "Disabled in config.h (Stage 1 USB)";
               }
               if (chk.checked && this.bmo3D.explodeCurrent < 0.25) {
