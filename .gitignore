@@ -81,14 +81,14 @@ cover_*.h
 
 tools/zig/
 
-# Full-resolution box art downloaded by scripts/fetch_covers.py (regenerate locally)
+# Local simulator cover previews converted by scripts/convert_covers.py
 simulator/covers/
 
 # Generated 3D STL/GLB exports from hardware/enclosure/generate_bmo_enclosure.py
 hardware/enclosure/build/
 hardware/enclosure/output/
 
-# Local toolchains downloaded by scripts/build_sim_wasm.py
+# Local toolchains downloaded by tasks.py setup or scripts/build_wasm_cores.py
 .tools/
 
 # Virtual SD card content & large external audio files

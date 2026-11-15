@@ -9,7 +9,7 @@
 - **Digital multimeter** (DC Volts mode + continuity/resistance mode)
 - **USB-C data cable** plugged into a powered USB hub or current-limited bench supply (avoid plugging straight into a motherboard port on the very first boot)
 - **Blank or FAT32-formatted MicroSD card** (with at least 1 test `.gb`, `.gbc`, or `.nes` ROM in `/gb/`, `/gbc/`, or `/nes/`)
-- **Terminal on this PC** at the repository root (`e:\BMO Gameboy`)
+- **Terminal on your PC** opened at the repository root directory
 
 ---
 

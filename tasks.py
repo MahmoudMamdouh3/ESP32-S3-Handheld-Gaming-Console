@@ -640,10 +640,17 @@ def cmd_size(args: argparse.Namespace) -> int:
     dram_pct = (elf_res.dram_used_bytes / dram_total * 100.0) if dram_total else 0.0
     psram = PsramBudgetAnalyzer(REPO_ROOT).to_dict()
 
+    rel_elf = ""
+    if elf_res.elf_path:
+        try:
+            rel_elf = elf_res.elf_path.resolve().relative_to(REPO_ROOT.resolve()).as_posix()
+        except ValueError:
+            rel_elf = elf_res.elf_path.name
+
     lines = [
         "### ESP32-S3 Memory Footprint Report (`TARGET_COMPILED`)",
         "",
-        f"- **ELF:** `{elf_res.elf_path}`" if elf_res.elf_path else "- **ELF:** not found (run `python tasks.py build`)",
+        f"- **ELF:** `{rel_elf}`" if rel_elf else "- **ELF:** not found (run `python tasks.py build`)",
         f"- **App Image vs `app0` ({app0_size:,} B):** `{flash_bytes:,}` B (**{flash_pct:.1f}%**, `{app0_size - flash_bytes:,}` B headroom)",
         f"- **Static DRAM vs {dram_total:,} B:** `{elf_res.dram_used_bytes:,}` B (**{dram_pct:.1f}%**)",
         f"- **IRAM Used:** `{elf_res.iram_used_bytes:,}` B",
