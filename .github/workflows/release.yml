@@ -19,9 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.12"
           cache: "pip"
@@ -35,12 +35,12 @@ jobs:
         run: python tasks.py check --no-tests
 
       - name: Setup Arduino CLI
-        uses: arduino/setup-arduino-cli@v2.0.0
+        uses: arduino/setup-arduino-cli@b82ff2bde1fb8fbbe4abfd3a041cd2ff675dc0dc # v2.0.0
         with:
           version: 1.6.0
 
       - name: Cache Arduino cores, libraries, and compiler cache
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: |
             ~/.arduino15
@@ -54,40 +54,33 @@ jobs:
       - name: Install pinned ESP32 core and libraries from sketch.yaml
         run: python tasks.py setup --no-hooks --no-pip
 
-      - name: Compile release profiles (strict warnings & size check)
+      - name: Compile profiles (verify default/no-doom build health; package redistributable MIT bundle)
         run: |
           python tasks.py build --profile default --warnings strict --fail-on-warnings
           python tasks.py size --elf build/target-compile/BmoGameboy.ino.elf --check-budgets
           python tasks.py build --profile no-doom --warnings strict --fail-on-warnings
           python tasks.py build --profile mit --warnings strict --fail-on-warnings
 
-      - name: Package binaries, partition table, notices, and SHA-256 checksums
+      - name: Package redistributable MIT binary, partition table, notices, and SHA-256 checksums
         run: |
           mkdir -p dist
-          for entry in \
-            "default:build/target-compile" \
-            "no-doom:build/profile-no-doom" \
-            "mit:build/profile-mit"; do
-            name="${entry%%:*}"
-            dir="${entry#*:}"
-            out="dist/bmo-handheld-esp32s3-${name}"
-            mkdir -p "${out}"
-            cp "${dir}/BmoGameboy.ino.bin" "${out}/"
-            cp "${dir}/BmoGameboy.ino.bootloader.bin" "${out}/"
-            cp "${dir}/BmoGameboy.ino.partitions.bin" "${out}/"
-            cp "${dir}/BmoGameboy.ino.elf" "${out}/"
-            cp "${dir}/BmoGameboy.ino.map" "${out}/"
-            cp "firmware/BmoGameboy/partitions.csv" "${out}/"
-            cp LICENSE THIRD_PARTY_NOTICES.md "${out}/"
-            tar -czf "dist/bmo-handheld-esp32s3-${name}.tar.gz" -C dist "bmo-handheld-esp32s3-${name}"
-            rm -rf "${out}"
-          done
+          out="dist/bmo-handheld-esp32s3-mit"
+          mkdir -p "${out}"
+          cp "build/profile-mit/BmoGameboy.ino.bin" "${out}/"
+          cp "build/profile-mit/BmoGameboy.ino.bootloader.bin" "${out}/"
+          cp "build/profile-mit/BmoGameboy.ino.partitions.bin" "${out}/"
+          cp "build/profile-mit/BmoGameboy.ino.elf" "${out}/"
+          cp "build/profile-mit/BmoGameboy.ino.map" "${out}/"
+          cp "firmware/BmoGameboy/partitions.csv" "${out}/"
+          cp LICENSE THIRD_PARTY_NOTICES.md "${out}/"
+          tar -czf "dist/bmo-handheld-esp32s3-mit.tar.gz" -C dist "bmo-handheld-esp32s3-mit"
+          rm -rf "${out}"
           cp LICENSE THIRD_PARTY_NOTICES.md dist/
-          (cd dist && sha256sum bmo-handheld-esp32s3-*.tar.gz LICENSE THIRD_PARTY_NOTICES.md > SHA256SUMS.txt)
+          (cd dist && sha256sum bmo-handheld-esp32s3-mit.tar.gz LICENSE THIRD_PARTY_NOTICES.md > SHA256SUMS.txt)
           cat dist/SHA256SUMS.txt
 
       - name: Upload release artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: bmo-handheld-release-bundles
           retention-days: 30
@@ -95,11 +88,9 @@ jobs:
 
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
         with:
           files: |
-            dist/bmo-handheld-esp32s3-default.tar.gz
-            dist/bmo-handheld-esp32s3-no-doom.tar.gz
             dist/bmo-handheld-esp32s3-mit.tar.gz
             dist/LICENSE
             dist/THIRD_PARTY_NOTICES.md
