@@ -4,14 +4,15 @@ This document summarizes how the ESP32-S3 firmware, host test runners, and brows
 
 ## Firmware Execution & Dual-Core Split
 
-- **Core 1 (`loop()` in `firmware/BmoGameboy/BmoGameboy.ino`):**
+- **CPU Core 1 (`loop()` in `firmware/BmoGameboy/BmoGameboy.ino` / `src/app/bmo_app.cpp`):**
+  - Logs `esp_reset_reason()` at boot and maintains an `RTC_NOINIT_ATTR` crash/brownout breadcrumb (`s_bootBreadcrumb`) recording the active state and emulator index.
   - Polls active-low button inputs via `Buttons::update()` (`src/hal/buttons.cpp`), handling `GPIO_IN_REG` (GPIO `0–31`) and `GPIO_IN1_REG` (GPIO `42, 47, 48`).
   - Owns the system state machine (`STATE_BOOT_SPLASH`, `STATE_CONSOLE_MENU`, `STATE_CONSOLE_MUSEUM`, `STATE_GAME_MENU`, `STATE_EMULATOR`, `STATE_PAUSE_MENU`, `STATE_DIAGNOSTICS`, `STATE_IDLE_MASCOT`).
-  - Executes the selected emulator core, processes `SELECT`-chord hotkeys, mounts MicroSD / loads ROMs, and persists save files (`SaveManager` in `src/storage/`).
-- **Core 0 (`BMO_Display` task in `firmware/BmoGameboy/src/ui/display_emu.cpp`):**
-  - Receives asynchronous display frame jobs via a single-slot FreeRTOS command queue.
-  - Converts indexed 8-bit buffers (NES/DOOM) to wire BGR565 and drives the ST7789 panel over FSPI (`320x240` landscape).
-  - Game Boy / Game Boy Color scanlines stream synchronously on the calling task while holding `SpiArbiter`; other cores submit full/partial framebuffers via PSRAM staging buffers or synchronous fallback.
+  - Executes the selected emulator core, processes `SELECT`-chord hotkeys ([`docs/reference/controls.md`](reference/controls.md)), mounts MicroSD / loads ROMs, and persists save files (`SaveManager` in `src/storage/`).
+- **CPU Core 0 (`BMO_Display` task in `firmware/BmoGameboy/src/ui/display_worker.cpp`):**
+  - Receives asynchronous display frame jobs via a single-slot FreeRTOS command queue ([ADR 0015](decisions/0015-display-driver-and-ui-framework.md)).
+  - Streams 16-bit RGB565 frames (`GB`, `GBC`, and menu canvases) and converts indexed 8-bit buffers (`NES`, `DOOM`) to wire BGR565 over FSPI (`320×240` landscape).
+  - Experimental cores (`SMS`, `GG`, `PCE`, `Atari`, `PICO-8`, `Genesis`, `SNES`, `WonderSwan`, `NGP`, `Lynx`, `Coleco`) submit scanlines or full frames synchronously under `SpiArbiter::ScopedLock`.
 
 ## Shared SPI Bus Arbitration
 
