@@ -2,9 +2,9 @@
 
 ## Summary
 
-This pull request executes a full-scope principal engineering and tech-lead audit of the BMO Handheld repository across Phases 0–10 on branch `techlead/audit-2`. Every seed hypothesis and newly discovered issue was audited against `HEAD`, Espressif ESP32-S3 datasheets, and upstream license files, and logged with evidence in [`docs/audits/findings-register.md`](findings-register.md).
+This pull request executes a full-scope principal engineering and tech-lead audit of the BMO Handheld repository across Phases 0–10 on branch `techlead/audit-2`. Every seed hypothesis (`63` individual rows, zero batched rows) and newly discovered issue was audited against `HEAD`, Espressif ESP32-S3 datasheets, and upstream license files, and logged with evidence in [`docs/audits/findings-register.md`](findings-register.md).
 
-All changes within autonomous authority (`DO WITHOUT ASKING`) were implemented in atomic Conventional Commits with strict verification gates. All `8` architectural, hardware, licensing, naming, and YAGNI scoping choices requiring owner sign-off (`ASK`) are documented in plain English in [`docs/owner-decisions.md`](../owner-decisions.md) without altering any Hardware Hard Stops.
+All changes within autonomous authority (`DO WITHOUT ASKING`) were implemented in atomic Conventional Commits with strict verification gates. All `9` architectural, hardware, licensing, naming, and YAGNI scoping choices requiring owner sign-off (`ASK`) are documented in plain English in [`docs/owner-decisions.md`](../owner-decisions.md) without altering any Hardware Hard Stops.
 
 ---
 
@@ -14,15 +14,15 @@ All changes within autonomous authority (`DO WITHOUT ASKING`) were implemented i
    - Recorded full git object, blob, directory, and LOC inventories (`0` blobs `>= 1 MiB` across all refs; `0` secrets across full history).
    - Created [`docs/audits/audit-plan.md`](audit-plan.md), [`docs/audits/findings-register.md`](findings-register.md), and [`docs/audits/progress.md`](progress.md).
 
-2. **Phase 1 — Truth Reconciliation (`3b206d9`, `949df12`, `35ebb41`):**
-   - Built [`docs/audits/claims-inventory.md`](claims-inventory.md) auditing `14` factual claims (`1` `TRUE`, `1` `TRUE/STALE`, `7` `STALE`, `4` `FALSE`/`FALSE+STALE`, `1` `UNVERIFIABLE`).
+2. **Phase 1 — Scripted Truth Reconciliation (`3b206d9`, `949df12`, `35ebb41`, `2520f13`):**
+   - Built [`scripts/extract_claims.py`](../../scripts/extract_claims.py) generating [`docs/audits/claims-inventory.md`](claims-inventory.md) across `643` extracted factual/numeric claims (`575` doc lines + `68` code comments -> `TRUE=601`, `UNVERIFIABLE=42`, `STALE=0`, `FALSE=0`).
    - Reconciled [`ROADMAP.md`](../../ROADMAP.md) (`15` platforms), [ADR 0003](../decisions/0003-rom-keys-and-index-v2.md) / [ADR 0011](../decisions/0011-index-path-storage.md) (`BMOIDX03`), [ADR 0012](../decisions/0012-save-state-schema.md) (`BSS2`), and [ADR 0013](../decisions/0013-partition-layout.md) (`app0 = 8 MiB` + `ffat = 7.875 MiB` `0x7E0000`).
    - Consolidated performance docs into [`docs/performance.md`](../performance.md), wired `TFT_RST=9` in [`hardware/diagram.json`](../../hardware/diagram.json), distinguished `ESP32-S3-DevKitC-1-N16R8` carrier board vs `ESP32-S3-WROOM-1-N16R8` module in [`docs/hardware.md`](../hardware.md), added [`scripts/convert_covers.py`](../../scripts/convert_covers.py), and removed local paths.
 
-3. **Phase 2 — Licensing & Supply-Chain Security (`284b36e`, `b253b9b`, `addcc07`):**
+3. **Phase 2 — Licensing, SPDX Forensic Audit & Supply-Chain Security (`284b36e`, `b253b9b`, `addcc07`, `2520f13`):**
    - Added a complete 16-component license compatibility matrix in [`THIRD_PARTY_NOTICES.md`](../../THIRD_PARTY_NOTICES.md) and [ADR 0008](../decisions/0008-rom-policy-and-licensing.md).
-   - Restricted [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) and [`.github/workflows/release.yml`](../../.github/workflows/release.yml) binary uploads to the license-clean `mit` profile while keeping 3-profile strict compilation and size checks active; pinned all GitHub Actions to 40-char commit SHAs.
-   - Added `SPDX-License-Identifier` headers across `131` first-party files (`addcc07`, listed in [`.git-blame-ignore-revs`](../../.git-blame-ignore-revs)).
+   - Restricted [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) and [`.github/workflows/release.yml`](../../.github/workflows/release.yml) binary uploads to the license-clean `mit` profile while keeping strict multi-profile compilation and size checks active; pinned all GitHub Actions to 40-char commit SHAs.
+   - Added **Decision 9** in [`docs/owner-decisions.md`](../owner-decisions.md), identified `19` GPL/Non-Commercial core-coupled files among `125` SPDX-stamped first-party files, and prepared **unmerged** branch `license/spdx-review` containing (`b6b195e`) a clean revert of `addcc07` plus (`3fd5c05`, `d2a9d43`) the corrected SPDX split.
 
 4. **Phase 3 — Hardware, Power, Pins, Enclosure, Layout & Simulator Hygiene (`f564f96`, `76a968f`, `174733d`, `41339aa`):**
    - Added standalone [`firmware/bringup/bringup.ino`](../../firmware/bringup/bringup.ino) (`TARGET_COMPILED`: `390,724 B` flash, `24,600 B` RAM) and guides [`docs/guides/bringup.md`](../guides/bringup.md), [`docs/guides/safety.md`](../guides/safety.md), and [`docs/bom.md`](../bom.md).
@@ -35,23 +35,23 @@ All changes within autonomous authority (`DO WITHOUT ASKING`) were implemented i
    - Added [`docs/conventions.md`](../conventions.md), [`.editorconfig`](../../.editorconfig), [`.gitattributes`](../../.gitattributes), [`.github/CODEOWNERS`](../../.github/CODEOWNERS), [`.github/dependabot.yml`](../../.github/dependabot.yml), and Conventional Commit hook [`.githooks/commit-msg`](../../.githooks/commit-msg).
    - Removed `11` unused upstream build files (`941509c`) and `8` unreferenced one-off scripts (`0b22efc`), and gated dormant `fram_save.cpp` (`FEATURE_FRAM`) and `unit_tests.cpp` (`ENABLE_UNIT_TESTS`).
 
-6. **Phase 5 — Firmware Architecture & Memory Optimization (`8748508`, `445300b`, `6bc4a30`, `2065c54`):**
-   - Freed **`7,008 B` (`6.84 KiB`) of internal static DRAM** in `default` (`192,280 B` -> `185,272 B`, `56.5%`), extracted [`popular_games_table.h`](../../firmware/BmoGameboy/src/storage/popular_games_table.h) (bringing `sd_catalog.cpp` from `1,004` to `919` lines; `bmo_app.cpp` @ `1,197` and `bmo_face.cpp` @ `1,145` remain deferred safely until post-bring-up).
-   - Added `esp_reset_reason()` and `RTC_NOINIT_ATTR` crash breadcrumb logging (`bmo_app.cpp`, `boot_safe_mode.h`, `boot_safe_mode_test.cpp`).
+6. **Phase 5 — Firmware Architecture, Memory & Safety Hardening (`8748508`, `445300b`, `6bc4a30`, `2065c54`, `97fe3d1`):**
+   - Freed **`7,008 B` (`6.84 KiB`) of internal static DRAM** in `default` (`192,280 B` -> `185,272 B`, `56.5%`) and proven zero WiFi/BT linkage (`0` of `20,277` ELF symbols), extracted [`popular_games_table.h`](../../firmware/BmoGameboy/src/storage/popular_games_table.h) (`sd_catalog.cpp` `919` lines; `bmo_app.cpp` `1,197` & `bmo_face.cpp` `1,145` deferred post-bring-up), extracted [`doom_palette.h`](../../firmware/BmoGameboy/src/ui/doom_palette.h) with equivalence verified by [`doom_palette_test.cpp`](../../tests/host/doom_palette_test.cpp), and recorded `M6502` / palette moves as `NOT_TESTED` risks in [`hardware_measurements.md`](../hardware_measurements.md) Step `9`.
+   - Hardened `esp_reset_reason()` and `RTC_NOINIT_ATTR` crash breadcrumb with magic + CRC32 validation (`boot_safe_mode.h`, `boot_safe_mode_test.cpp` incl. cold-boot garbage tests) and added mid-commit SD removal fault-injection in [`atomic_fs_test.cpp`](../../tests/host/atomic_fs_test.cpp).
    - Rewrote [`docs/architecture.md`](../architecture.md) and [`docs/reference/controls.md`](../reference/controls.md) verified directly from source.
 
-7. **Phase 6–10 — Performance, Tooling, AI Review & Handoff (`47d125b`, `17c7e28`, `342655b`, `591f8d3`, `4828e44` + final):**
-   - Updated [`docs/compatibility.md`](../compatibility.md) with `Primary` vs `Experimental` tiers + [ADR 0015](../decisions/0015-display-driver-and-ui-framework.md) and [ADR 0016](../decisions/0016-build-system-evaluation.md).
-   - Added `tasks.py doctor`, `tasks.py check --fast` (`22.64 s`), `.devcontainer`, `.vscode`, `.clangd`, `docs/ai/STATE.md` (`26` lines), `scripts/generate_codemap.py` -> [`docs/ai/CODEMAP.md`](../ai/CODEMAP.md) (`88` lines).
-   - Authored [`docs/guides/owner-guide.md`](../guides/owner-guide.md), [`docs/owner-decisions.md`](../owner-decisions.md) (`8` decisions), [`docs/audits/ai-and-tooling-review.md`](ai-and-tooling-review.md), and [`docs/audits/health-scorecard.md`](health-scorecard.md).
+7. **Phase 6–10 — Performance, Tooling, AI Review & Handoff (`47d125b`, `17c7e28`, `342655b`, `591f8d3`, `4828e44`, `97fe3d1`, `2520f13` + final):**
+   - Updated [`docs/compatibility.md`](../compatibility.md) with `Primary` vs `Experimental` tiers + [ADR 0015](../decisions/0015-display-driver-and-ui-framework.md) and [ADR 0016](../decisions/0016-build-system-evaluation.md), and added boot/catalog/input latency models and adaptive-frameskip / dirty-rect / power evaluations in [`docs/performance.md`](../performance.md).
+   - Added `tasks.py doctor`, `tasks.py check --fast` (`29.31 s`), `.devcontainer`, `.vscode`, `.clangd`, `docs/ai/STATE.md` (`26` lines), `scripts/generate_codemap.py` -> [`docs/ai/CODEMAP.md`](../ai/CODEMAP.md) (`89` lines), and cross-file pin parity checks (`tests/test_pin_snapshot.py`).
+   - Authored [`docs/guides/owner-guide.md`](../guides/owner-guide.md), [`docs/owner-decisions.md`](../owner-decisions.md) (`9` decisions), [`docs/audits/ai-and-tooling-review.md`](ai-and-tooling-review.md), `63`-row individual [`findings-register.md`](findings-register.md), and explicit `1–5` rubric [`docs/audits/health-scorecard.md`](health-scorecard.md).
 
 ---
 
 ## Verification Evidence
 
 - **`HOST_TESTED`:**
-  - `python tasks.py doctor` (`0.60 s`), `python tasks.py format --check` (`0.81 s`, `126` files), `python tasks.py check --fast` (`22.64 s`: `12` Guardian + `89` fast host tests), `python tasks.py check` (`84.45 s`: `12` Guardian + `164` Python tests + `25` native C++17 `CTest` targets, `100%` passed).
-  - `python tasks.py test` (`540.17 s`: `185` Python/WASI tests + `12` Guardian + `25` `CTest` + full `validate_repo`; `10/10` mutations killed).
-  - Fresh-clone checks via `git clone --no-hardlinks` to temp dirs with and without spaces (`27.32–30.64 s`, `rc=0`, `skipped=10` tests requiring external `.tools/` binaries).
-- **`TARGET_COMPILED`:** `python tasks.py build --profile all --warnings strict --fail-on-warnings` (`543.20 s`, `0` first-party warnings across all `7` build configs), `python tasks.py size --check-budgets`, and standalone `firmware/bringup/bringup.ino` (`390,724 B` flash / `24,600 B` RAM).
+  - `python tasks.py doctor`, `python tasks.py format --check` (`0.91 s`, `128` files), `python tasks.py check --fast` (`29.31 s`: `12` Guardian + `90` fast host tests), `python tasks.py check` (`74.69 s`: `12` Guardian + `165` Python tests + `26` native C++17 `CTest` targets, `100%` passed).
+  - `python scripts/extract_claims.py --fail-on-false` (`0.16 s`, `643` claims: `TRUE=601`, `UNVERIFIABLE=42`, `STALE=0`, `FALSE=0`), `python scripts/check_markdown_links.py` (`0.54 s`, `0` issues).
+  - Earlier Phase 10 full `python tasks.py test` (`185` Python/WASI tests; `10/10` mutations killed) and fresh-clone checks (`git clone --no-hardlinks`, `rc=0`, `skipped=10` requiring local `.tools/`) ran before follow-up remediation; `tasks.py check` (incl. all `26` CTest + `165` Py + `12` Guardian + `10/10` mutations), `tasks.py check --fast`, `format --check`, `extract_claims`, `check_markdown_links`, and all 7-profile strict firmware builds ran after code edits (`format`/`check`/`claims`/`links` re-verified after final audit-doc polish).
+- **`TARGET_COMPILED`:** `python tasks.py build --profile all --warnings strict --fail-on-warnings` (`0` first-party warnings across all `7` build configs), `python tasks.py size --check-budgets` (`default` `3,293,225 B` Flash / `185,272 B` DRAM), and standalone `firmware/bringup/bringup.ino` (`390,724 B` flash / `24,600 B` RAM).
 - **`HARDWARE_TESTED`:** `0` records (requires physical assembly and bring-up by the owner per [`docs/guides/bringup.md`](../guides/bringup.md)).
