@@ -55,10 +55,13 @@ Every emulator core supports the following chord combinations during active game
 
 | Button Chord | Action | Notes |
 | :--- | :--- | :--- |
-| **`START + SELECT`** | **Open Pause Menu** | Works on all 8-button boards (`Resume`, `Save State`, `Load State`, `Screenshot`, `Quit`) |
-| **`SELECT + A`** | **Quick Save State (`BSS2`)** | Saves current emulator state (`500 ms` hotkey cooldown) |
-| **`SELECT + B`** | **Quick Load State (`BSS2`)** | Restores saved emulator state (`500 ms` hotkey cooldown) |
-| **`SELECT + START` ( inside Pause -> Quit )** | **Return to Console Carousel** | Cleanly calls `core->destroy()` and frees PSRAM buffers |
+| **`SELECT + START`** | **Open Pause Menu** | Works on all 8-button boards (`Resume`, `Save State`, `Load State`, `Slot`, `Screenshot`, `Quit`) |
+| **`SELECT + UP`** | **Quick Quit Prompt** | Opens Pause Menu pre-selected on `Quit` (press `A` twice within `3 s` to confirm; flushes `.sav` before teardown) |
+| **`SELECT + A`** | **Quick Save State (`BSS2`)** | Saves current emulator state to active slot `1..5` (`250 ms` hotkey cooldown) |
+| **`SELECT + B`** | **Quick Load State (`BSS2`)** | Restores saved emulator state from active slot `1..5` (`250 ms` hotkey cooldown) |
+| **`SELECT + DOWN`** | **Cycle DMG 4-Shade Palette** | Cycles the 5 hardware palettes on Game Boy / Game Boy Color |
+| **`SELECT + LEFT`** | **Toggle A/B Turbo** | Toggles rapid-fire on `A` and `B` buttons |
+| **`SELECT + RIGHT` (Hold)** | **Fast-Forward** | Skips the outer `FramePacing::targetFrameUs()` delay while held |
 
 ---
 

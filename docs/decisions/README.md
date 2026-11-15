@@ -18,5 +18,6 @@ These records explain decisions that affect hardware, firmware behavior, storage
 | [0012](0012-save-state-schema.md) | Accepted | Store save states in `BSS2` (`72`-byte `SaveStateFormat::HeaderV2` with `coreId`, `pathKeyHash`, `romSize`, and payload CRC32) with legacy `BSS1` read support. |
 | [0013](0013-partition-layout.md) | Proposed | Preserve `partitions.csv` hard stop; propose allocating the unpartitioned `64 KiB` flash tail (`0xFF0000`) to `coredump`. |
 | [0014](0014-display-spi-clock.md) | Proposed | Analyze `80 MHz` vs `40 MHz` ST7789 SPI wire time, perfboard series termination, and Safe Mode fallback pending bench measurements. |
+| [0015](0015-display-driver-and-ui-framework.md) | Accepted | Retain `Adafruit_ST7789` + CPU Core 0 `display_worker` for bring-up and reject `LVGL`/`Tactility` to preserve internal DRAM headroom. |
 
 New records must state the status, context, decision, alternatives, consequences, evidence level, and any owner approval required.

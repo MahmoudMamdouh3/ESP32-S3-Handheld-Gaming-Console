@@ -1,38 +1,46 @@
-# Platform Compatibility & Core Status
+# Platform Compatibility, SPI Bus Budget & Core Status
 
-The launcher defines `CONSOLES[]` with Favorites (`ROM_FAVORITES`, index `0`) plus fifteen platform entries mapping to fourteen C++ wrappers (`SmsEmu` handles both Master System and Game Gear).
+The launcher defines `CONSOLES[]` with Favorites (`ROM_FAVORITES`, index `0`) plus fifteen platform entries mapping to fourteen C++ emulator wrappers (`SmsEmu` handles both Sega Master System and Game Gear).
 
-**Status labels:**
-- `third_party`: Genuine upstream open-source emulator core in [`firmware/BmoGameboy/src/third_party/`](../THIRD_PARTY_NOTICES.md), compiled cleanly into firmware by default (`BMO_EXPERIMENTAL_CORES=1`, `BMO_ENABLE_DOOM=1`; opt-out via `-DBMO_EXPERIMENTAL_CORES=0` or `-DBMO_ENABLE_DOOM=0`).
-- `active`: Enabled in the default `arduino-cli` firmware profile.
+## 1. Evidence & Maturity Tiers
 
-**Evidence levels:** All targets below are `TARGET_COMPILED` across default and opt-out profiles, and `HOST_TESTED` via native WASI 50-frame harnesses (`tests/host/`) or WASM simulator builds where noted; physical hardware remains `NOT_TESTED` / zero `HARDWARE_TESTED` records.
+- **Evidence Levels:** Every platform wrapper below is `TARGET_COMPILED` across all applicable build profiles (`default`, `no-doom`, `mit`) and `HOST_TESTED` via native C/C++ or WASI/WASM harnesses (`tests/`). **Physical device records (`HARDWARE_TESTED`): `0` recorded yet (`docs/hardware_measurements.md`).**
+- **Tier Classification:**
+  - **Primary (`MIT` / Permissive, Core 0 Async Display Streaming):** Game Boy (`Peanut-GB`), Game Boy Color (`Walnut-CGB`), and NES (`agnes`). Included in all build profiles (`default`, `no-doom`, and redistributable `mit`).
+  - **Experimental (`BMO_EXPERIMENTAL_CORES=1` or `BMO_ENABLE_DOOM=1`, `NOT_TESTED` on physical hardware):** Included in personal local builds (`default` / `no-doom`). Several 16-bit and handheld emulators (`SNES`, `Genesis`, `PC Engine`, `WonderSwan`, `Neo Geo Pocket`, `Atari Lynx`) push synchronous full-frame updates over SPI and have not yet been benchmarked on the physical ESP32-S3 perfboard.
 
-## Master Platform Table
+---
 
-| `RomType` | Carousel | Wrapper | Source | Status | Extensions | Viewport | Target Period | Battery Save Gate | Evidence |
-| :--- | ---: | ---: | :--- | :--- | :--- | ---: | ---: | :--- | :--- |
-| `ROM_GB` | 1 | 1 | `src/cores/emu_peanut.cpp` | `active` (`peanut_gb`) | `.gb` | 240×216 @(40,12) | 16,742 µs | Cartridge type + RAM header | `TARGET_COMPILED` + `HOST_TESTED` (WASM) |
-| `ROM_GBC` | 2 | 0 | `src/cores/emu_walnut.cpp` | `active` (`walnut_cgb`) | `.gbc` | 240×216 @(40,12) | 16,742 µs | Cartridge type + RAM header | `TARGET_COMPILED` |
-| `ROM_NES` | 3 | 2 | `src/cores/emu_nes.cpp` | `active` (`agnes`) | `.nes` | 256×240 @(32,0) | 16,667 µs | iNES byte 6 battery bit (`0x02`) | `TARGET_COMPILED` + `HOST_TESTED` (WASI/WASM) |
-| `ROM_WAD` | 4 | 3 | `src/cores/emu_doom.cpp` | `active` (`doomgeneric`, `BMO_ENABLE_DOOM=1`) | `.wad` | 320×200 @(0,20) | 28,571 µs | Save disabled in DOOM wrapper | `TARGET_COMPILED` |
-| `ROM_SMS` | 5 | 4 | `src/cores/emu_sms.cpp` | `active` (`smsplus`, `BMO_EXPERIMENTAL_CORES=1`) | `.sms` | 256×192 @(32,24) | 16,667 µs | Cartridge SRAM (`.sav`) + states `.s01–.s05` | `TARGET_COMPILED` + `HOST_TESTED` (WASI) |
-| `ROM_GG` | 6 | 5 | `src/cores/emu_sms.cpp` | `active` (`smsplus`, `BMO_EXPERIMENTAL_CORES=1`) | `.gg` | 160×144 @(80,48) | 16,667 µs | Cartridge SRAM (`.sav`) + states `.s01–.s05` | `TARGET_COMPILED` + `HOST_TESTED` (WASI) |
-| `ROM_PCE` | 7 | 6 | `src/cores/emu_pce.cpp` | `active` (`huexpress`, `BMO_EXPERIMENTAL_CORES=1`) | `.pce` | 256×240 @(32,0) | 16,667 µs | PCE BRAM gated on `"HUBM"` header | `TARGET_COMPILED` + `HOST_TESTED` (WASI) |
-| `ROM_ATARI` | 8 | 7 | `src/cores/emu_atari.cpp` | `active` (`stella2014`, `BMO_EXPERIMENTAL_CORES=1`) | `.a26` | 160×192 @(80,24) | 16,667 µs | Save states `.s01–.s05`; no `.sav` | `TARGET_COMPILED` + `HOST_TESTED` (WASI/WASM) |
-| `ROM_PICO8` | 9 | 8 | `src/cores/emu_pico.cpp` | `active` (`fake08` + `z8lua`, `BMO_EXPERIMENTAL_CORES=1`) | `.p8` | 128×128 @(96,56) | 33,333 µs | Cartdata 256 B (`.sav`) + states `.s01–.s05` | `TARGET_COMPILED` + `HOST_TESTED` (WASI Lua VM) |
-| `ROM_GENESIS` | 10 | 9 | `src/cores/emu_genesis.cpp` | `active` (`gwenesis`, `BMO_EXPERIMENTAL_CORES=1`) | `.gen`, `.md`, `.smd` | 320×224 @(0,8) | 16,667 µs | Cartridge SRAM (`.sav`) + states `.s01–.s05` | `TARGET_COMPILED` + `HOST_TESTED` (WASI) |
-| `ROM_SNES` | 11 | 10 | `src/cores/emu_snes.cpp` | `active` (`snes9x`, `BMO_EXPERIMENTAL_CORES=1`) | `.sfc`, `.smc` | 256×224 @(32,8) | 16,667 µs | LoROM/HiROM/ExHiROM checksum header | `TARGET_COMPILED` + `HOST_TESTED` (WASI) |
-| `ROM_WSWAN` | 12 | 11 | `src/cores/emu_wswan.cpp` | `active` (`oswan`, `BMO_EXPERIMENTAL_CORES=1`) | `.ws`, `.wsc` | 224×144 @(48,48) | 16,667 µs | Cartridge SRAM (`.sav`) + states `.s01–.s05` | `TARGET_COMPILED` + `HOST_TESTED` (WASI) |
-| `ROM_NGP` | 13 | 12 | `src/cores/emu_ngp.cpp` | `active` (`race`, `BMO_EXPERIMENTAL_CORES=1`) | `.ngp`, `.ngc` | 160×152 @(80,44) | 16,667 µs | Cartridge Flash (`.sav`) + states `.s01–.s05` | `TARGET_COMPILED` + `HOST_TESTED` (WASI) |
-| `ROM_LYNX` | 14 | 13 | `src/cores/emu_lynx.cpp` | `active` (`handy`, `BMO_EXPERIMENTAL_CORES=1`) | `.lnx` | 160×102 @(80,69) | 16,667 µs | Cartridge EEPROM (`.sav`) + states `.s01–.s05` | `TARGET_COMPILED` + `HOST_TESTED` (WASI) |
-| `ROM_COLEM` | 15 | 14 | `src/cores/emu_colem.cpp` | `active` (`smsplus`, `BMO_EXPERIMENTAL_CORES=1`) | `.col`, `.sg` | 256×192 @(32,24) | 16,667 µs | Save states `.s01–.s05`; no `.sav` | `TARGET_COMPILED` + `HOST_TESTED` (WASI/WASM) |
+## 2. Master Platform Compatibility & Bus Budget Table
 
-## Controls Inside Emulators
+Pure SPI wire transfer times (`Wire @ 80 MHz` and `Wire @ 40 MHz`) are computed by `python -m tools.guardian bus-calc` (`t = bits / f_SPI`). Compare against each platform's `Target Period`: when `Wire @ 40 MHz` exceeds or approaches the target frame period, full-rate 60 FPS requires either `80 MHz` SPI, Core 0 async overlap, or frame-skipping ([ADR 0014](decisions/0014-display-spi-clock.md)).
 
-- `SELECT + START`: pause menu
-- `SELECT + UP`: exit confirmation (press `A` twice within 3 seconds to confirm; supported battery RAM saves before teardown)
-- `SELECT + A` / `SELECT + B`: quick-save / quick-load active slot (`1..5`)
-- `SELECT + DOWN`: cycle DMG 4-shade palette (GB / GBC)
-- `SELECT + LEFT`: toggle A/B turbo
-- `SELECT + RIGHT` (hold): fast-forward (skips outer `FramePacing::targetFrameUs()` delay)
+| `RomType` | Wrapper (`Source`) | Upstream Core & License | Maturity Tier | Viewport (`W×H`) | Target Period | Wire @ `80 MHz` / `40 MHz` | Transfer Mode | Evidence Level |
+| :--- | :--- | :--- | :--- | :--- | ---: | ---: | :--- | :--- |
+| `ROM_GB` | `emu_peanut.cpp` | `Peanut-GB` (`MIT`) | **Primary** (`mit` profile) | `240×216` @(40,12) | `16,742 µs` (`59.7 Hz`) | `10.37 ms` / `20.74 ms` | Core 0 async queue | `TARGET_COMPILED` + `HOST_TESTED` |
+| `ROM_GBC` | `emu_walnut.cpp` | `Walnut-CGB` (`MIT`) | **Primary** (`mit` profile) | `240×216` @(40,12) | `16,742 µs` (`59.7 Hz`) | `10.37 ms` / `20.74 ms` | Core 0 async queue | `TARGET_COMPILED` + `HOST_TESTED` |
+| `ROM_NES` | `emu_nes.cpp` | `agnes` (`MIT`) | **Primary** (`mit` profile) | `256×240` @(32,0) | `16,667 µs` (`60.0 Hz`) | `12.29 ms` / `24.58 ms` | Core 0 async 8-bit | `TARGET_COMPILED` + `HOST_TESTED` |
+| `ROM_WAD` | `emu_doom.cpp` | `doomgeneric` (`GPL-2.0`) | **Experimental** (`default`) | `320×200` @(0,20) | `28,571 µs` (`35.0 Hz`) | `12.80 ms` / `25.60 ms` | Core 0 async 8-bit | `TARGET_COMPILED` (`NOT_TESTED` on HW) |
+| `ROM_SMS` | `emu_sms.cpp` | `SMS Plus` (`GPL-2.0` + Non-Comm Z80) | **Experimental** | `256×192` @(32,24) | `16,667 µs` (`60.0 Hz`) | `9.83 ms` / `19.66 ms` | Sync scanline SPI | `TARGET_COMPILED` + `HOST_TESTED` |
+| `ROM_GG` | `emu_sms.cpp` | `SMS Plus` (`GPL-2.0` + Non-Comm Z80) | **Experimental** | `160×144` @(80,48) | `16,667 µs` (`60.0 Hz`) | `4.61 ms` / `9.22 ms` | Sync scanline SPI | `TARGET_COMPILED` + `HOST_TESTED` |
+| `ROM_PCE` | `emu_pce.cpp` | `HuExpress` (`GPL-2.0`) | **Experimental** | `256×240` @(32,0) | `16,667 µs` (`60.0 Hz`) | `12.29 ms` / `24.58 ms` | Sync frame SPI | `TARGET_COMPILED` + `HOST_TESTED` |
+| `ROM_ATARI` | `emu_atari.cpp` | `Stella 2014` (`GPL-2.0`) | **Experimental** | `160×192` @(80,24) | `16,667 µs` (`60.0 Hz`) | `6.14 ms` / `12.29 ms` | Sync frame SPI | `TARGET_COMPILED` + `HOST_TESTED` |
+| `ROM_PICO8` | `emu_pico.cpp` | `Tac08` + `z8lua` (`MIT`) | **Experimental** | `128×128` @(96,56) | `33,333 µs` (`30.0 Hz`) | `3.28 ms` / `6.55 ms` | Sync frame SPI | `TARGET_COMPILED` + `HOST_TESTED` |
+| `ROM_GENESIS` | `emu_genesis.cpp` | `Gwenesis` (`GPL-3.0` + Non-Comm M68K) | **Experimental** (`NOT_TESTED` on HW) | `320×224` @(0,8) | `16,667 µs` (`60.0 Hz`) | `14.34 ms` / `28.67 ms` | Sync frame SPI | `TARGET_COMPILED` + `HOST_TESTED` |
+| `ROM_SNES` | `emu_snes.cpp` | `Snes9x 2005` (Non-Commercial) | **Experimental** (`NOT_TESTED` on HW) | `256×224` @(32,8) | `16,667 µs` (`60.0 Hz`) | `11.47 ms` / `22.94 ms` | Sync frame SPI | `TARGET_COMPILED` + `HOST_TESTED` |
+| `ROM_WSWAN` | `emu_wswan.cpp` | `Oswan` (`GPL-2.0` only) | **Experimental** (`NOT_TESTED` on HW) | `224×144` @(48,48) | `16,667 µs` (`60.0 Hz`) | `6.45 ms` / `12.90 ms` | Sync frame SPI | `TARGET_COMPILED` + `HOST_TESTED` |
+| `ROM_NGP` | `emu_ngp.cpp` | `RACE` (`GPL-2.0` only) | **Experimental** (`NOT_TESTED` on HW) | `160×152` @(80,44) | `16,667 µs` (`60.0 Hz`) | `4.86 ms` / `9.73 ms` | Sync frame SPI | `TARGET_COMPILED` + `HOST_TESTED` |
+| `ROM_LYNX` | `emu_lynx.cpp` | `Handy` (`Zlib`) | **Experimental** (`NOT_TESTED` on HW) | `160×102` @(80,69) | `16,667 µs` (`60.0 Hz`) | `3.26 ms` / `6.53 ms` | Sync frame SPI | `TARGET_COMPILED` + `HOST_TESTED` |
+| `ROM_COLEM` | `emu_colem.cpp` | `ColEm` (`GPL-2.0` + Non-Comm Z80) | **Experimental** | `256×192` @(32,24) | `16,667 µs` (`60.0 Hz`) | `9.83 ms` / `19.66 ms` | Sync scanline SPI | `TARGET_COMPILED` + `HOST_TESTED` |
+
+---
+
+## 3. Controls Inside Emulators
+
+See [`docs/reference/controls.md`](reference/controls.md) for the complete system and per-console button matrix:
+- `SELECT + START`: Open Pause Menu
+- `SELECT + UP`: Quick Quit confirmation (press `A` twice within 3 seconds to confirm; flushes battery `.sav` before teardown)
+- `SELECT + A` / `SELECT + B`: Quick-save / quick-load active slot (`1..5`)
+- `SELECT + DOWN`: Cycle DMG 4-shade palette (GB / GBC)
+- `SELECT + LEFT`: Toggle A/B turbo
+- `SELECT + RIGHT` (Hold): Fast-forward (skips outer `FramePacing::targetFrameUs()` delay)
