@@ -164,3 +164,5 @@
   do {                                                                                                                 \
   } while (0)
 #endif
+
+#include "pins_check.h"
