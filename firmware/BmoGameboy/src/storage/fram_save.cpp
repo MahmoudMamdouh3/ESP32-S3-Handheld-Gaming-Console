@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
-#include "fram_save.h"
 #include "../hal/config.h"
+
+#if defined(FEATURE_FRAM) && FEATURE_FRAM
+
+#include "fram_save.h"
 #include <Arduino.h>
 #include <Wire.h>
 
@@ -73,3 +76,5 @@ bool writeSaveData(uint16_t offset, const uint8_t* buffer, size_t length) {
 }
 
 } // namespace FramSave
+
+#endif // defined(FEATURE_FRAM) && FEATURE_FRAM

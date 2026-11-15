@@ -14,7 +14,9 @@
 #include "../storage/rom_index.h"
 #include "../storage/save_manager.h"
 #include "../storage/sd_card.h"
+#ifdef ENABLE_UNIT_TESTS
 #include "../tests/unit_tests.h"
+#endif
 #include "../ui/bmo_face.h"
 #include "../ui/console_catalog.h"
 #include "../ui/display_emu.h"

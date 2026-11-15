@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
+#ifdef ENABLE_UNIT_TESTS
+
 #include "unit_tests.h"
 #include <Arduino.h>
 #include <esp_heap_caps.h>
@@ -221,3 +223,5 @@ bool runAllTests() {
 
   return (testsFailed == 0);
 }
+
+#endif // ENABLE_UNIT_TESTS

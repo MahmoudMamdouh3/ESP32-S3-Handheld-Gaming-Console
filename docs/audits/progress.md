@@ -1,6 +1,6 @@
 # Audit & Remediation Progress Tracker (`techlead/audit-2`)
 
-- **Current Phase:** Phase 4 — Repo Structure, Naming & Hygiene (Phases 0–3 complete)
+- **Current Phase:** Phase 5 — Firmware Architecture & Code Quality (Phases 0–4 complete)
 - **Baseline Commit:** `d8d4b5ef5cb314072652992805fff600961b2920`
 
 ## Completed Phases
@@ -23,9 +23,13 @@
   - Rewrote [ADR 0006](../decisions/0006-portable-power.md) (2×AA vs 3×AA NiMH power & protection), [ADR 0007](../decisions/0007-fram-wiring.md) (`GPIO 43/44` UART0 collision), [ADR 0014](../decisions/0014-display-spi-clock.md) (`80 MHz` vs `40 MHz` SPI wire budget & perfboard signal integrity), [`docs/wiring/02-sd-card.md`](../wiring/02-sd-card.md) (`10 kΩ` CS pull-ups & `GPIO 15` 3.3V check), and [`docs/bom.md`](../bom.md).
   - Created [`hardware/layout.json`](../../hardware/layout.json), [`scripts/generate_hardware_layout_artifacts.py`](../../scripts/generate_hardware_layout_artifacts.py), [`docs/assets/layout_top_view.svg`](../assets/layout_top_view.svg), [`docs/assets/layout_side_section.svg`](../assets/layout_side_section.svg), [`docs/wiring/perfboard-layout.md`](../wiring/perfboard-layout.md), [`docs/wiring/wire_list.csv`](../wiring/wire_list.csv), and [`tests/test_hardware_layout.py`](../../tests/test_hardware_layout.py).
 
+- [x] **Phase 4 — Repo Structure, Naming & Hygiene (`S1–S8`) (`HOST_TESTED`):**
+  - Added [`docs/conventions.md`](../conventions.md), [`.editorconfig`](../../.editorconfig), [`.gitattributes`](../../.gitattributes), [`.git-blame-ignore-revs`](../../.git-blame-ignore-revs), [`.github/CODEOWNERS`](../../.github/CODEOWNERS), [`.github/dependabot.yml`](../../.github/dependabot.yml), and Conventional Commit validation in [`.githooks/commit-msg`](../../.githooks/commit-msg).
+  - Removed 11 unused upstream build files (`Makefile*`, `.vcxproj*`, `.m4`) in `941509c` and 8 unreferenced one-off migration/purge scripts in `0b22efc`.
+  - Gated dormant [`fram_save.cpp`](../../firmware/BmoGameboy/src/storage/fram_save.cpp) (`FEATURE_FRAM`) and [`unit_tests.cpp`](../../firmware/BmoGameboy/src/tests/unit_tests.cpp) (`ENABLE_UNIT_TESTS`) out of default production compilation.
+
 ## Upcoming Phases
 
-- [ ] **Phase 4 — Repo Structure, Naming & Hygiene (`S1–S8`)**
 - [ ] **Phase 5 — Firmware Architecture & Code Quality (`F1–F15`)**
 - [ ] **Phase 6 — Performance & Analytical Honesty (`P1–P5`)**
 - [ ] **Phase 7 — Tests, CI & Dev Environment (`T1–T6`)**
