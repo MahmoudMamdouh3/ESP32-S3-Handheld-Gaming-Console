@@ -330,7 +330,7 @@ class M6502 : public Serializable
       Table of instruction processor cycle times.  In some cases additional 
       cycles will be added during the execution of an instruction.
     */
-    static uint32_t ourInstructionCycleTable[256];
+    static const uint32_t ourInstructionCycleTable[256];
 };
 
 #endif

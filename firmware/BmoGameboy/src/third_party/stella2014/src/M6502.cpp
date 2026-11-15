@@ -315,7 +315,7 @@ bool M6502::load(Serializer& in)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-uint32_t M6502::ourInstructionCycleTable[256] = {
+const uint32_t M6502::ourInstructionCycleTable[256] = {
 //  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
     7, 6, 2, 8, 3, 3, 5, 5, 3, 2, 2, 2, 4, 4, 6, 6,  // 0
     2, 5, 2, 8, 4, 4, 6, 6, 2, 4, 2, 7, 4, 4, 7, 7,  // 1

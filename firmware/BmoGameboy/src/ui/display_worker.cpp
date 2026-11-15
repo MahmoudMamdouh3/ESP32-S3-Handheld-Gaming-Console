@@ -45,7 +45,6 @@ extern "C" struct color colors[256];
 
 static uint16_t __attribute__((aligned(4))) s_doomLineBuf[320];
 static uint16_t s_doomPalette[256];
-static struct color s_lastColors[256];
 #endif
 
 enum LastFrameFormat { FRAME_FMT_NONE = 0, FRAME_FMT_RAW16, FRAME_FMT_NES8, FRAME_FMT_DOOM8 };
@@ -139,13 +138,10 @@ void displayWorkerTask(void* pvParameters) {
         tft.endWrite();
 #if BMO_ENABLE_DOOM
       } else if (cmd.type == CMD_STREAM_DOOM && cmd.buffer) {
-        if (memcmp(s_lastColors, colors, sizeof(s_lastColors)) != 0) {
-          memcpy(s_lastColors, colors, sizeof(s_lastColors));
-          for (int i = 0; i < 256; ++i) {
-            const struct color c = colors[i];
-            const uint16_t p = ((c.b & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.r >> 3);
-            s_doomPalette[i] = (uint16_t)((p >> 8) | (p << 8));
-          }
+        for (int i = 0; i < 256; ++i) {
+          const struct color c = colors[i];
+          const uint16_t p = ((c.b & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.r >> 3);
+          s_doomPalette[i] = (uint16_t)((p >> 8) | (p << 8));
         }
         SpiArbiter::ScopedLock spiLock;
         tft.startWrite();
@@ -456,13 +452,10 @@ void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
   tft.startWrite();
   tft.setAddrWindow(0, 20, 320, 200);
 
-  if (memcmp(s_lastColors, colors, sizeof(s_lastColors)) != 0) {
-    memcpy(s_lastColors, colors, sizeof(s_lastColors));
-    for (int i = 0; i < 256; ++i) {
-      const struct color c = colors[i];
-      const uint16_t p = ((c.b & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.r >> 3);
-      s_doomPalette[i] = (uint16_t)((p >> 8) | (p << 8));
-    }
+  for (int i = 0; i < 256; ++i) {
+    const struct color c = colors[i];
+    const uint16_t p = ((c.b & 0xF8) << 8) | ((c.g & 0xFC) << 3) | (c.r >> 3);
+    s_doomPalette[i] = (uint16_t)((p >> 8) | (p << 8));
   }
 
   uint32_t* out32 = (uint32_t*)s_doomLineBuf;

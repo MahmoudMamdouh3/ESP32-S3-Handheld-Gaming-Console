@@ -15,8 +15,20 @@
 namespace {
 
 constexpr int MAX_RECENT_HISTORY = 10;
-char s_recentHistory[MAX_RECENT_HISTORY][SDCard::MAX_ROM_PATH_LEN + 1U];
+constexpr size_t kRecentEntryBytes = SDCard::MAX_ROM_PATH_LEN + 1U;
+using RecentEntry = char[kRecentEntryBytes];
+RecentEntry* s_recentHistory = nullptr;
 int s_recentCount = 0;
+
+bool ensureRecentHistoryPool() {
+  if (s_recentHistory) return true;
+  s_recentHistory = static_cast<RecentEntry*>(
+      heap_caps_calloc(MAX_RECENT_HISTORY, sizeof(RecentEntry), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+  if (!s_recentHistory) {
+    s_recentHistory = static_cast<RecentEntry*>(calloc(MAX_RECENT_HISTORY, sizeof(RecentEntry)));
+  }
+  return s_recentHistory != nullptr;
+}
 
 #if FEATURE_SD_CARD
 bool writeMetadataLine(File& file, const char* line, size_t& byteCount, uint32_t& crc) {
@@ -73,6 +85,7 @@ void SDCard::recordRecentLaunch(const char* filename) {
   if (!filename || filename[0] == '\0') return;
   const char* normalized = RomPathMatch::normalizeRelative(filename);
   if (!normalized[0] || strlen(normalized) > MAX_ROM_PATH_LEN) return;
+  if (!ensureRecentHistoryPool()) return;
 
   int existing = -1;
   for (int i = 0; i < s_recentCount; ++i) {
@@ -84,10 +97,10 @@ void SDCard::recordRecentLaunch(const char* filename) {
   const int limit =
       (existing >= 0) ? existing : ((s_recentCount < MAX_RECENT_HISTORY) ? s_recentCount++ : (MAX_RECENT_HISTORY - 1));
   for (int i = limit; i > 0; --i) {
-    memcpy(s_recentHistory[i], s_recentHistory[i - 1], sizeof(s_recentHistory[0]));
+    memcpy(s_recentHistory[i], s_recentHistory[i - 1], kRecentEntryBytes);
   }
-  strncpy(s_recentHistory[0], normalized, sizeof(s_recentHistory[0]) - 1U);
-  s_recentHistory[0][sizeof(s_recentHistory[0]) - 1U] = '\0';
+  strncpy(s_recentHistory[0], normalized, kRecentEntryBytes - 1U);
+  s_recentHistory[0][kRecentEntryBytes - 1U] = '\0';
   saveRecentHistory();
 }
 
@@ -96,7 +109,7 @@ int SDCard::getRecentCount() {
 }
 
 const char* SDCard::getRecentFilename(int index) {
-  if (index < 0 || index >= s_recentCount) return nullptr;
+  if (!s_recentHistory || index < 0 || index >= s_recentCount) return nullptr;
   return s_recentHistory[index];
 }
 
@@ -141,6 +154,7 @@ void SDCard::loadRecentHistory() {
 #if FEATURE_SD_CARD
   using namespace BmoSdInternal;
   if (!mounted) return;
+  if (!ensureRecentHistoryPool()) return;
   bool migratedLegacy = false;
   {
     SpiArbiter::ScopedLock spiLock;
@@ -174,8 +188,8 @@ void SDCard::loadRecentHistory() {
         }
       }
       if (resolved[0] != '\0') {
-        strncpy(s_recentHistory[s_recentCount], resolved, sizeof(s_recentHistory[0]) - 1U);
-        s_recentHistory[s_recentCount][sizeof(s_recentHistory[0]) - 1U] = '\0';
+        strncpy(s_recentHistory[s_recentCount], resolved, kRecentEntryBytes - 1U);
+        s_recentHistory[s_recentCount][kRecentEntryBytes - 1U] = '\0';
         s_recentCount++;
       }
     }
