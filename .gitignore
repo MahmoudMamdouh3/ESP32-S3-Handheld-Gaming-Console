@@ -27,8 +27,11 @@ arduino-cli.zip
 arduino-cli-bin/
 zig.zip
 
-# Editor & Virtual Environments
-.vscode/
+# Editor & Virtual Environments (keep shared workspace configs tracked)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/extensions.json
 *.code-workspace
 .venv/
 venv/
@@ -68,7 +71,8 @@ __pycache__/
 *.7z
 roms/
 games/
-assets/
+/assets/
+!docs/assets/
 firmware/*/src/**/local_baked_rom.h
 .rom_cache/
 rom_data*.h

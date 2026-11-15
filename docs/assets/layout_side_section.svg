@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 812 390" width="812" height="390" font-family="monospace">
+  <!-- GENERATED FROM hardware/layout.json - DO NOT EDIT BY HAND -->
+  <rect x="0" y="0" width="812" height="390" fill="#0F2620"/>
+  <text x="70.0" y="26" fill="#F8FDFA" font-size="14" font-weight="bold">BMO Handheld Side-Section Z-Stackup (Total = 3.20 cm across Y = 0.00..12.40 cm)</text>
+  <text x="70.0" y="44" fill="#CEF5E4" font-size="11">Upper Y Zone (DevKitC-1: 1.35 cm) and Lower Y Zone (2xAA Holder: 1.65 cm) do NOT overlap in Z</text>
+  <rect x="70.0" y="65.0" width="682.0" height="15.0" fill="#5FB49C" fill-opacity="0.22" stroke="#5FB49C" stroke-width="1.2"/>
+  <text x="8" y="75.5" fill="#F8FDFA" font-size="9.5">z=0.00..0.20cm</text>
+  <rect x="70.0" y="80.0" width="682.0" height="52.5" fill="#52A6BA" fill-opacity="0.22" stroke="#52A6BA" stroke-width="1.2"/>
+  <text x="8" y="109.25" fill="#F8FDFA" font-size="9.5">z=0.20..0.90cm</text>
+  <rect x="70.0" y="132.5" width="682.0" height="12.0" fill="#FFE033" fill-opacity="0.22" stroke="#FFE033" stroke-width="1.2"/>
+  <text x="8" y="141.5" fill="#F8FDFA" font-size="9.5">z=0.90..1.06cm</text>
+  <rect x="70.0" y="144.5" width="682.0" height="15.0" fill="#FF91A5" fill-opacity="0.22" stroke="#FF91A5" stroke-width="1.2"/>
+  <text x="8" y="155.0" fill="#F8FDFA" font-size="9.5">z=1.06..1.26cm</text>
+  <rect x="70.0" y="159.5" width="682.0" height="130.5" fill="#1A4B42" fill-opacity="0.22" stroke="#1A4B42" stroke-width="1.2"/>
+  <text x="8" y="227.75" fill="#F8FDFA" font-size="9.5">z=1.26..3.00cm</text>
+  <rect x="70.0" y="290.0" width="682.0" height="15.0" fill="#5FB49C" fill-opacity="0.22" stroke="#5FB49C" stroke-width="1.2"/>
+  <text x="8" y="300.5" fill="#F8FDFA" font-size="9.5">z=3.00..3.20cm</text>
+  <rect x="138.75" y="159.5" width="348.15" height="101.25" fill="#52A6BA" fill-opacity="0.55" stroke="#F8FDFA" stroke-width="1.5"/>
+  <text x="149.75" y="207.5" fill="#F8FDFA" font-size="10" font-weight="bold">Upper Y (1.25..7.58 cm): ESP32-S3-DevKitC-1 (1.35 cm deep -> 0.39 cm spare)</text>
+  <rect x="515.5" y="159.5" width="176.0" height="123.75" fill="#FFE033" fill-opacity="0.45" stroke="#FFE033" stroke-width="1.5"/>
+  <text x="521.0" y="222.5" fill="#F8FDFA" font-size="10" font-weight="bold">Lower Y (8.10..11.30 cm): 2xAA (1.65 cm -> 0.09 cm spare)</text>
+  <text x="70.0" y="358" fill="#CEF5E4" font-size="10.5">Layer stack: Front wall (0.20 cm) + Switches/Display (0.70 cm) + Perfboard (0.16 cm) + Solder/Wire (0.20 cm) + Rear Bay (1.74 cm) + Back wall (0.20 cm) = 3.20 cm</text>
+  <text x="70.0" y="376" fill="#FF91A5" font-size="10.5" font-weight="bold">COLLISION RULE: Never stack the AA holder over the DevKitC-1 in Z (would require 4.46 cm vs 3.20 cm budget).</text>
+</svg>
