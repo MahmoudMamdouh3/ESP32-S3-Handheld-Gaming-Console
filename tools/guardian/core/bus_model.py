@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """
 tools.guardian.core.bus_model — Mathematical Hardware Bus & Frame Budget Physics Model
 Provides theoretical calculations and hardware boundaries for the ESP32-S3 FSPI bus,

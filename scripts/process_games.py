@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 import re
 import zipfile
 from pathlib import Path

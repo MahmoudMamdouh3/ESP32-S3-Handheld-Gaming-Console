@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """Cross-platform task runner for BMO Handheld firmware, tests, lint, formatting, and CI."""
 
 from __future__ import annotations

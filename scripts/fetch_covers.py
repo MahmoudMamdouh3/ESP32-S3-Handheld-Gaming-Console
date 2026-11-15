@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """
 scripts/fetch_covers.py — Backward-compatible alias for scripts/convert_covers.py.
 This tool converts local user-supplied PNG/JPG images (or procedural fallbacks) into

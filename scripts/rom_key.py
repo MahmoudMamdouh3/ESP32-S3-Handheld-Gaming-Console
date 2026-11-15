@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """Path-key helpers shared by firmware deployment and cover generation."""
 
 from __future__ import annotations

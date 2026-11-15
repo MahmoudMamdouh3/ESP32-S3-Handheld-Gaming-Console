@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 #include "unit_tests.h"
 #include <Arduino.h>
 #include <esp_heap_caps.h>

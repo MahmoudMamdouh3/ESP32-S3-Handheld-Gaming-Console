@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """
 scripts/color_calc.py — RGB888 <-> Byte-Swapped BGR565 ST7789 Wire Format Calculator
 """

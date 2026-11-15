@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 #include "box_art.h"
 #include "bmp_header.h"
 #include "box_art_lookup.h"

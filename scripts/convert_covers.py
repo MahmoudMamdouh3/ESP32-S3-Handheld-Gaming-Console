@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """
 scripts/convert_covers.py — Local Box Art Resampler & Multi-Target BGR565 Converter
 Converts user-supplied local PNG/JPG cover artwork via Lanczos resampling into 64x64 24-bit BMP (.bmp)

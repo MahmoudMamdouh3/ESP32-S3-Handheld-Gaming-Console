@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 #include "bmo_app.h"
 #include "boot_safe_mode.h"
 #include "version.h"

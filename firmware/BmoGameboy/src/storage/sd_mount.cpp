@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 #include "sd_internal.h"
 #include "../hal/config.h"
 #include "../hal/spi_arbiter.h"

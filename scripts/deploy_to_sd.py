@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """Safely synchronize supported local games and firmware box art to an SD card."""
 
 import argparse

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """Shared helper package re-exporting canonical repository, key, and color utilities."""
 
 from __future__ import annotations

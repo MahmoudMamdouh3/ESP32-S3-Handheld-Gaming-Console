@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """Repository validator covering compile, syntax, safety guardrails, layout, and local ROM archives.
 
 Phases:

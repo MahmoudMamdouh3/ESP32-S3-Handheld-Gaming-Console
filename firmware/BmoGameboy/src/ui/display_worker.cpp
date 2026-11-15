@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 // Hot Core 0 DMA pixel conversion and scanline streaming path; Arduino ESP32 builds at -Os.
 #pragma GCC optimize("O3,unroll-loops")
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 #include "buttons.h"
 #include "config.h"
 #include "soc/gpio_reg.h"

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 #include "fram_save.h"
 #include "../hal/config.h"
 #include <Arduino.h>

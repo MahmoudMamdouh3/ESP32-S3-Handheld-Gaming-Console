@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """
 tools.guardian.core.ast_linter — Embedded Firmware Static AST & Pattern Linter
 Analyzes C, C++, and INO firmware files to detect memory leaks, unaligned access,

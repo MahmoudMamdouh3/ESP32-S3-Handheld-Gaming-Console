@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 #include "src/app/bmo_app.h"
 #include <Preferences.h>
 #include <SPI.h>

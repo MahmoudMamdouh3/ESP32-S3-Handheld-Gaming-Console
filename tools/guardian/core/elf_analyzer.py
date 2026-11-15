@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """
 tools.guardian.core.elf_analyzer — Xtensa ESP32-S3 ELF Binary Symbol & Section Introspection
 Parses compiled firmware ELF binaries to extract symbol sizes, memory section breakdowns,

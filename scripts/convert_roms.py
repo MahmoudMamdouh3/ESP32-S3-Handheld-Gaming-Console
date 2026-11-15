@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """
 scripts/convert_roms.py — Convert user-supplied binary ROM files into 4-byte aligned C .rodata headers.
 """

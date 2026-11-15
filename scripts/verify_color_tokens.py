@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """Verify firmware, simulator CSS, DESIGN.md, and face-renderer color tokens."""
 
 import json

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """
 tools.guardian.core.cppcheck_runner — Static Analysis Wrapper for Cppcheck
 Executes cppcheck with embedded profiles tailored for Xtensa/ESP32 architectures,

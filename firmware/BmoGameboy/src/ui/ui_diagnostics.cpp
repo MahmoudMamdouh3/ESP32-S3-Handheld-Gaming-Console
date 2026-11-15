@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 #include "display_internal.h"
 #include "../hal/battery.h"
 #include "../hal/config.h"

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """Core hardware, memory, and static analyzers for BMO Handheld firmware."""
 
 from .ast_linter import FirmwareAstLinter, LintFinding

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 #pragma once
 
 // Call this from setup() to execute the entire test suite.

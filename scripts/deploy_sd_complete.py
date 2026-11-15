@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """
 scripts/deploy_sd_complete.py — Local BMO Handheld SD Card Deployer & Indexer
 Structures user-supplied games and converted box art onto a FAT32 SD card root,

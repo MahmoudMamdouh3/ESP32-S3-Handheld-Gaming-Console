@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """
 tools.guardian.core.clang_tidy_runner — LLVM Clang-Tidy Deep Static Analyzer Wrapper
 Runs clang-tidy with high-signal embedded defect checks (null dereference, use-after-free,

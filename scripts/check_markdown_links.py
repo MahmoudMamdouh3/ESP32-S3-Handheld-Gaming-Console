@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """Verify local Markdown links and reject file:// URIs."""
 
 import re

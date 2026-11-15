@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """Command-line interface for static firmware, bus, ELF, and PSRAM analyzers.
 
 Usage:

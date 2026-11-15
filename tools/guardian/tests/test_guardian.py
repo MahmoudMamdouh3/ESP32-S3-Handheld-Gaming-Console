@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """Unit tests for Guardian hardware, bus, AST, static analysis, link, and color checks."""
 
 import io

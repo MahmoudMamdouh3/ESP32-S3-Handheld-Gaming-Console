@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """
 scripts/test_runner.py — Fast Baked ROM Header Integrity & Checksum Verifier
 """

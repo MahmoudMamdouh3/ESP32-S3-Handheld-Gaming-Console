@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 #include "battery.h"
 #include "config.h"
 #include "../ui/bmo_face.h"

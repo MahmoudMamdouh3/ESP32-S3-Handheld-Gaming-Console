@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 #pragma GCC optimize("O3,unroll-loops")
 #include "emu_ngp.h"
 #include "../hal/config.h"

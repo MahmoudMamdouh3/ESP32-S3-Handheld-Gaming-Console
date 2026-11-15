@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """Compile firmware emulator sources used by browser gameplay to WebAssembly."""
 
 from __future__ import annotations

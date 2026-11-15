@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """
 tools/telemetry_plotter.py — BMO Handheld serial telemetry parser and report renderer.
 """

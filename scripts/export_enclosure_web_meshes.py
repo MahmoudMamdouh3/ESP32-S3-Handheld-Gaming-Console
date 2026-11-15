@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """Export manifold CAD enclosure shells to deterministic Three.js mesh data.
 
 Generates `simulator/bmo_enclosure_meshes.js` directly from

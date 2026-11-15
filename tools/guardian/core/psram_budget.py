@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """
 tools.guardian.core.psram_budget — Source-Derived PSRAM Allocation & DOOM Zone Budget Analyzer
 Extracts persistent and transient PSRAM allocations directly from firmware C/C++ source files

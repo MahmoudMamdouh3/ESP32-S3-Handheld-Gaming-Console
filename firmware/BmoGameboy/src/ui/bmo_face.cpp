@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 #pragma GCC optimize("O3,unroll-loops") // Arduino ESP32 builds at -Os; hot pixel SDF loop needs -O3.
 // -----------------------------------------------------------------------
 // bmo_face.cpp  –  BMO 2D SDF Mascot Face Renderer.
