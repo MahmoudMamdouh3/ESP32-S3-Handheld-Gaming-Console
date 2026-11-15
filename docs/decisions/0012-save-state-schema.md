@@ -1,9 +1,23 @@
-# ADR 0012: Save-State Schema and ROM Identity
+# ADR 0012: Save-State Schema v2 (`BSS2`) and ROM Identity Verification
 
-- Status: Proposed
-- Context: BSS1 uses a 60-byte `SaveStateHeader`: magic, version, `millis()` timestamp, core ID, state size, RAM size, payload CRC32, and a 32-byte ROM title. It has no per-core schema identifier or ROM-content CRC. CRC32 protects payload integrity, not compatibility or authenticity.
-- Decision: Do not change the BSS1 layout in this remediation. Propose BSS2 with an explicit core-state schema ID and a ROM identity field derived from the loaded image. A future loader must reject BSS1 or require a clear user warning before restoring it.
-- Alternatives: Continue with BSS1's core ID, payload lengths, title, and CRC checks; reject all existing states on firmware update; implement an additive BSS2 version with explicit legacy policy.
-- Consequences: BSS1 may accept a state from a different ROM revision at the same path or a state whose struct layout changed without changing size. Current timestamp is `millis()` since boot, not wall-clock time; the UI does not display it as calendar time.
-- Evidence: `firmware/BmoGameboy/src/storage/save_manager.h` and `save_manager.cpp`. State bytes are staged and integrity-checked before copying into the live emulator buffer; schema and ROM identity remain absent.
-- Human input: Required before selecting BSS1 legacy handling and the BSS2 migration policy.
+- Status: Accepted (Implemented in `save_state_format.h` and `save_manager.cpp`)
+- Date: 2026-11-13 (Updated: 2026-11-15, verified at `d8d4b5e`)
+- Source: `firmware/BmoGameboy/src/storage/save_state_format.h`, `save_manager.h`, `save_manager.cpp`
+
+## Context
+
+The legacy `BSS1` save-state header (`60` bytes, `MAGIC_V1 = 0x31535342`) stored `magic`, `version`, `timestamp`, `coreId`, `stateSize`, `ramSize`, `crc32`, and `romTitle[32]`, but lacked an explicit `headerSize`, full relative-path hash (`pathKeyHash`), and `romSize` check.
+
+## Decision
+
+Implement `SaveStateFormat::HeaderV2` (`BSS2`, `72` bytes, `MAGIC_V2 = 0x32535342`, `VERSION_V2 = 2U`) in `firmware/BmoGameboy/src/storage/save_state_format.h`:
+
+1. **`HeaderV2` Layout (`72` bytes):**
+   - `magic` (`"BSS2"`), `version` (`2`), `headerSize` (`72`), `timestamp` (`millis()`), `coreId`, `pathKeyHash` (`RomKey::crc32RelativePath(romPath)`), `romSize`, `stateSize`, `ramSize`, `crc32` (IEEE CRC32 over state + RAM payload), and `romTitle[32]`.
+2. **Validation Before Restore:** `SaveStateFormat::decodeHeader()` verifies magic, version, header size, `coreId`, `pathKeyHash` (when non-zero), `romSize` (when non-zero), `stateSize <= maxStateSize`, `ramSize <= maxRamSize`, and exact total file byte length before `SaveManager::loadState()` verifies the payload CRC32 in a temporary PSRAM staging buffer.
+3. **Legacy `BSS1` Read Support:** `decodeHeader()` still accepts valid `60`-byte `BSS1` headers (`isLegacyV1 = true`) when `coreId`, bounds, file length, and payload CRC32 match, while all new save states are written in `BSS2` format.
+
+## Consequences
+
+- Prevents restoring a save state created for a different ROM path or ROM file size (`HOST_TESTED` in `tests/host/test_storage_formats.cpp` and `tests/test_save_roundtrip.py`; `TARGET_COMPILED`).
+- Physical SD card power-loss durability during atomic `.tmp` -> `.bak` -> `.s0N` rotation remains `NOT_TESTED` on hardware.
