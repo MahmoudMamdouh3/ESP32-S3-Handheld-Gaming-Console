@@ -1,0 +1,13 @@
+CompileFlags:
+  CompilationDatabase: build
+  Remove:
+    - -mlongcalls
+    - -fno-tree-switch-conversion
+    - -fstrict-volatile-bitfields
+Diagnostics:
+  UnusedIncludes: None
+---
+If:
+  PathMatch: firmware/BmoGameboy/src/third_party/.*
+Diagnostics:
+  Suppress: "*"

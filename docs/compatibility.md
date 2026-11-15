@@ -13,25 +13,25 @@ The launcher defines `CONSOLES[]` with Favorites (`ROM_FAVORITES`, index `0`) pl
 
 ## 2. Master Platform Compatibility & Bus Budget Table
 
-Pure SPI wire transfer times (`Wire @ 80 MHz` and `Wire @ 40 MHz`) are computed by `python -m tools.guardian bus-calc` (`t = bits / f_SPI`). Compare against each platform's `Target Period`: when `Wire @ 40 MHz` exceeds or approaches the target frame period, full-rate 60 FPS requires either `80 MHz` SPI, Core 0 async overlap, or frame-skipping ([ADR 0014](decisions/0014-display-spi-clock.md)).
+Pure SPI wire transfer times (`Wire @ 80 / 40 MHz`) are computed by `python -m tools.guardian bus-calc` (`t = bits / f_SPI`). Compare against each platform's `Target Period`: when `Wire @ 40 MHz` exceeds or approaches the target frame period, full-rate 60 FPS requires either `80 MHz` SPI, Core 0 async overlap, or frame-skipping ([ADR 0014](decisions/0014-display-spi-clock.md)).
 
-| `RomType` | Wrapper (`Source`) | Upstream Core & License | Maturity Tier | Viewport (`W×H`) | Target Period | Wire @ `80 MHz` / `40 MHz` | Transfer Mode | Evidence Level |
-| :--- | :--- | :--- | :--- | :--- | ---: | ---: | :--- | :--- |
-| `ROM_GB` | `emu_peanut.cpp` | `Peanut-GB` (`MIT`) | **Primary** (`mit` profile) | `240×216` @(40,12) | `16,742 µs` (`59.7 Hz`) | `10.37 ms` / `20.74 ms` | Core 0 async queue | `TARGET_COMPILED` + `HOST_TESTED` |
-| `ROM_GBC` | `emu_walnut.cpp` | `Walnut-CGB` (`MIT`) | **Primary** (`mit` profile) | `240×216` @(40,12) | `16,742 µs` (`59.7 Hz`) | `10.37 ms` / `20.74 ms` | Core 0 async queue | `TARGET_COMPILED` + `HOST_TESTED` |
-| `ROM_NES` | `emu_nes.cpp` | `agnes` (`MIT`) | **Primary** (`mit` profile) | `256×240` @(32,0) | `16,667 µs` (`60.0 Hz`) | `12.29 ms` / `24.58 ms` | Core 0 async 8-bit | `TARGET_COMPILED` + `HOST_TESTED` |
-| `ROM_WAD` | `emu_doom.cpp` | `doomgeneric` (`GPL-2.0`) | **Experimental** (`default`) | `320×200` @(0,20) | `28,571 µs` (`35.0 Hz`) | `12.80 ms` / `25.60 ms` | Core 0 async 8-bit | `TARGET_COMPILED` (`NOT_TESTED` on HW) |
-| `ROM_SMS` | `emu_sms.cpp` | `SMS Plus` (`GPL-2.0` + Non-Comm Z80) | **Experimental** | `256×192` @(32,24) | `16,667 µs` (`60.0 Hz`) | `9.83 ms` / `19.66 ms` | Sync scanline SPI | `TARGET_COMPILED` + `HOST_TESTED` |
-| `ROM_GG` | `emu_sms.cpp` | `SMS Plus` (`GPL-2.0` + Non-Comm Z80) | **Experimental** | `160×144` @(80,48) | `16,667 µs` (`60.0 Hz`) | `4.61 ms` / `9.22 ms` | Sync scanline SPI | `TARGET_COMPILED` + `HOST_TESTED` |
-| `ROM_PCE` | `emu_pce.cpp` | `HuExpress` (`GPL-2.0`) | **Experimental** | `256×240` @(32,0) | `16,667 µs` (`60.0 Hz`) | `12.29 ms` / `24.58 ms` | Sync frame SPI | `TARGET_COMPILED` + `HOST_TESTED` |
-| `ROM_ATARI` | `emu_atari.cpp` | `Stella 2014` (`GPL-2.0`) | **Experimental** | `160×192` @(80,24) | `16,667 µs` (`60.0 Hz`) | `6.14 ms` / `12.29 ms` | Sync frame SPI | `TARGET_COMPILED` + `HOST_TESTED` |
-| `ROM_PICO8` | `emu_pico.cpp` | `Tac08` + `z8lua` (`MIT`) | **Experimental** | `128×128` @(96,56) | `33,333 µs` (`30.0 Hz`) | `3.28 ms` / `6.55 ms` | Sync frame SPI | `TARGET_COMPILED` + `HOST_TESTED` |
-| `ROM_GENESIS` | `emu_genesis.cpp` | `Gwenesis` (`GPL-3.0` + Non-Comm M68K) | **Experimental** (`NOT_TESTED` on HW) | `320×224` @(0,8) | `16,667 µs` (`60.0 Hz`) | `14.34 ms` / `28.67 ms` | Sync frame SPI | `TARGET_COMPILED` + `HOST_TESTED` |
-| `ROM_SNES` | `emu_snes.cpp` | `Snes9x 2005` (Non-Commercial) | **Experimental** (`NOT_TESTED` on HW) | `256×224` @(32,8) | `16,667 µs` (`60.0 Hz`) | `11.47 ms` / `22.94 ms` | Sync frame SPI | `TARGET_COMPILED` + `HOST_TESTED` |
-| `ROM_WSWAN` | `emu_wswan.cpp` | `Oswan` (`GPL-2.0` only) | **Experimental** (`NOT_TESTED` on HW) | `224×144` @(48,48) | `16,667 µs` (`60.0 Hz`) | `6.45 ms` / `12.90 ms` | Sync frame SPI | `TARGET_COMPILED` + `HOST_TESTED` |
-| `ROM_NGP` | `emu_ngp.cpp` | `RACE` (`GPL-2.0` only) | **Experimental** (`NOT_TESTED` on HW) | `160×152` @(80,44) | `16,667 µs` (`60.0 Hz`) | `4.86 ms` / `9.73 ms` | Sync frame SPI | `TARGET_COMPILED` + `HOST_TESTED` |
-| `ROM_LYNX` | `emu_lynx.cpp` | `Handy` (`Zlib`) | **Experimental** (`NOT_TESTED` on HW) | `160×102` @(80,69) | `16,667 µs` (`60.0 Hz`) | `3.26 ms` / `6.53 ms` | Sync frame SPI | `TARGET_COMPILED` + `HOST_TESTED` |
-| `ROM_COLEM` | `emu_colem.cpp` | `ColEm` (`GPL-2.0` + Non-Comm Z80) | **Experimental** | `256×192` @(32,24) | `16,667 µs` (`60.0 Hz`) | `9.83 ms` / `19.66 ms` | Sync scanline SPI | `TARGET_COMPILED` + `HOST_TESTED` |
+| `RomType` | Carousel | Wrapper | Source | Tier & License | Extensions | Viewport | Target Period | Wire @ `80 / 40 MHz` | Battery Save Gate | Evidence |
+| :--- | ---: | ---: | :--- | :--- | :--- | :--- | ---: | :--- | :--- | :--- |
+| `ROM_GB` | 1 | 1 | `src/cores/emu_peanut.cpp` | **Primary** (`peanut_gb`, `MIT`) | `.gb` | 240×216 @(40,12) | 16,742 µs | `10.37 / 20.74 ms` (Core 0 async) | Cartridge type + RAM header | `TARGET_COMPILED` + `HOST_TESTED` (WASM) |
+| `ROM_GBC` | 2 | 0 | `src/cores/emu_walnut.cpp` | **Primary** (`walnut_cgb`, `MIT`) | `.gbc` | 240×216 @(40,12) | 16,742 µs | `10.37 / 20.74 ms` (Core 0 async) | Cartridge type + RAM header | `TARGET_COMPILED` + `HOST_TESTED` |
+| `ROM_NES` | 3 | 2 | `src/cores/emu_nes.cpp` | **Primary** (`agnes`, `MIT`) | `.nes` | 256×240 @(32,0) | 16,667 µs | `12.29 / 24.58 ms` (Core 0 async) | iNES byte 6 battery bit (`0x02`) | `TARGET_COMPILED` + `HOST_TESTED` (WASI/WASM) |
+| `ROM_WAD` | 4 | 3 | `src/cores/emu_doom.cpp` | **Experimental** (`doomgeneric`, `GPL-2.0`) | `.wad` | 320×200 @(0,20) | 28,571 µs | `12.80 / 25.60 ms` (Core 0 async) | Save disabled in DOOM wrapper | `TARGET_COMPILED` (`NOT_TESTED` on HW) |
+| `ROM_SMS` | 5 | 4 | `src/cores/emu_sms.cpp` | **Experimental** (`smsplus`, `GPL-2.0` + Non-Comm Z80) | `.sms` | 256×192 @(32,24) | 16,667 µs | `9.83 / 19.66 ms` (Sync scanline) | Cartridge SRAM (`.sav`) + states `.s01–.s05` | `TARGET_COMPILED` + `HOST_TESTED` (WASI) |
+| `ROM_GG` | 6 | 5 | `src/cores/emu_sms.cpp` | **Experimental** (`smsplus`, `GPL-2.0` + Non-Comm Z80) | `.gg` | 160×144 @(80,48) | 16,667 µs | `4.61 / 9.22 ms` (Sync scanline) | Cartridge SRAM (`.sav`) + states `.s01–.s05` | `TARGET_COMPILED` + `HOST_TESTED` (WASI) |
+| `ROM_PCE` | 7 | 6 | `src/cores/emu_pce.cpp` | **Experimental** (`huexpress`, `GPL-2.0`, `NOT_TESTED` on HW) | `.pce` | 256×240 @(32,0) | 16,667 µs | `12.29 / 24.58 ms` (Sync frame) | PCE BRAM gated on `"HUBM"` header | `TARGET_COMPILED` + `HOST_TESTED` (WASI) |
+| `ROM_ATARI` | 8 | 7 | `src/cores/emu_atari.cpp` | **Experimental** (`stella2014`, `GPL-2.0`) | `.a26` | 160×192 @(80,24) | 16,667 µs | `6.14 / 12.29 ms` (Sync frame) | Save states `.s01–.s05`; no `.sav` | `TARGET_COMPILED` + `HOST_TESTED` (WASI/WASM) |
+| `ROM_PICO8` | 9 | 8 | `src/cores/emu_pico.cpp` | **Experimental** (`fake08` + `z8lua`, `MIT`) | `.p8` | 128×128 @(96,56) | 33,333 µs | `3.28 / 6.55 ms` (Sync frame) | Cartdata 256 B (`.sav`) + states `.s01–.s05` | `TARGET_COMPILED` + `HOST_TESTED` (WASI Lua VM) |
+| `ROM_GENESIS` | 10 | 9 | `src/cores/emu_genesis.cpp` | **Experimental** (`gwenesis`, `GPL-3.0` + Non-Comm M68K, `NOT_TESTED` on HW) | `.gen`, `.md`, `.smd` | 320×224 @(0,8) | 16,667 µs | `14.34 / 28.67 ms` (Sync frame) | Cartridge SRAM (`.sav`) + states `.s01–.s05` | `TARGET_COMPILED` + `HOST_TESTED` (WASI) |
+| `ROM_SNES` | 11 | 10 | `src/cores/emu_snes.cpp` | **Experimental** (`snes9x`, Non-Commercial, `NOT_TESTED` on HW) | `.sfc`, `.smc` | 256×224 @(32,8) | 16,667 µs | `11.47 / 22.94 ms` (Sync frame) | LoROM/HiROM/ExHiROM checksum header | `TARGET_COMPILED` + `HOST_TESTED` (WASI) |
+| `ROM_WSWAN` | 12 | 11 | `src/cores/emu_wswan.cpp` | **Experimental** (`oswan`, `GPL-2.0` only, `NOT_TESTED` on HW) | `.ws`, `.wsc` | 224×144 @(48,48) | 16,667 µs | `6.45 / 12.90 ms` (Sync frame) | Cartridge SRAM (`.sav`) + states `.s01–.s05` | `TARGET_COMPILED` + `HOST_TESTED` (WASI) |
+| `ROM_NGP` | 13 | 12 | `src/cores/emu_ngp.cpp` | **Experimental** (`race`, `GPL-2.0` only, `NOT_TESTED` on HW) | `.ngp`, `.ngc` | 160×152 @(80,44) | 16,667 µs | `4.86 / 9.73 ms` (Sync frame) | Cartridge Flash (`.sav`) + states `.s01–.s05` | `TARGET_COMPILED` + `HOST_TESTED` (WASI) |
+| `ROM_LYNX` | 14 | 13 | `src/cores/emu_lynx.cpp` | **Experimental** (`handy`, `Zlib`, `NOT_TESTED` on HW) | `.lnx` | 160×102 @(80,69) | 16,667 µs | `3.26 / 6.53 ms` (Sync frame) | Cartridge EEPROM (`.sav`) + states `.s01–.s05` | `TARGET_COMPILED` + `HOST_TESTED` (WASI) |
+| `ROM_COLEM` | 15 | 14 | `src/cores/emu_colem.cpp` | **Experimental** (`smsplus`, `GPL-2.0` + Non-Comm Z80) | `.col`, `.sg` | 256×192 @(32,24) | 16,667 µs | `9.83 / 19.66 ms` (Sync scanline) | Save states `.s01–.s05`; no `.sav` | `TARGET_COMPILED` + `HOST_TESTED` (WASI/WASM) |
 
 ---
 

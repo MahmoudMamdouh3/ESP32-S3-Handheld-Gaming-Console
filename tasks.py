@@ -389,16 +389,34 @@ def cmd_check(args: argparse.Namespace) -> int:
                 f"{REPO_ROOT}{os.pathsep}{REPO_ROOT / 'tests'}"
                 + (f"{os.pathsep}{existing_pp}" if existing_pp else "")
             )
+            slow_or_compiler_modules = {"test_native_cores_execution.py", "test_enclosure_generator.py"}
+            if getattr(args, "fast", False):
+                slow_or_compiler_modules.update(
+                    {
+                        "test_all_tiers_validation.py",
+                        "test_tier1_validation.py",
+                        "test_tier2_validation.py",
+                        "test_bmo_face_spring.py",
+                        "test_bmo_mascot_engine.py",
+                        "test_genesis_emu.py",
+                        "test_pce_emu.py",
+                        "test_wswan_emu.py",
+                        "test_new_cores_and_qol.py",
+                        "test_mutation_sanity.py",
+                        "test_validate_repo_strict_mode.py",
+                    }
+                )
             fast_modules = sorted(
                 f"tests.{p.stem}"
                 for p in (REPO_ROOT / "tests").glob("test_*.py")
-                if p.name not in {"test_native_cores_execution.py", "test_enclosure_generator.py"}
+                if p.name not in slow_or_compiler_modules
             )
             if _run_checked([sys.executable, "-m", "unittest", *fast_modules], env=test_env).returncode != 0:
                 failures.append("fast host tests failed")
-        ctest_err = _run_host_ctest(use_sanitizers=getattr(args, "sanitizers", False))
-        if ctest_err:
-            failures.append(ctest_err)
+        if not getattr(args, "fast", False):
+            ctest_err = _run_host_ctest(use_sanitizers=getattr(args, "sanitizers", False))
+            if ctest_err:
+                failures.append(ctest_err)
     elif getattr(args, "sanitizers", False):
         ctest_err = _run_host_ctest(use_sanitizers=True)
         if ctest_err:
@@ -455,11 +473,15 @@ def _run_host_ctest(use_sanitizers: bool = False) -> Optional[str]:
         ]
     else:
         build_dir = REPO_ROOT / "build" / "host-ctest"
-        cmds = [
-            [cmake_bin, "-S", str(REPO_ROOT), "-B", str(build_dir)],
-            [cmake_bin, "--build", str(build_dir), "--config", "Release"],
-            [ctest_bin, "--test-dir", str(build_dir), "-C", "Release", "--output-on-failure"],
-        ]
+        cmds = []
+        if not (build_dir / "CMakeCache.txt").is_file():
+            cmds.append([cmake_bin, "-S", str(REPO_ROOT), "-B", str(build_dir)])
+        cmds.extend(
+            [
+                [cmake_bin, "--build", str(build_dir), "--config", "Release"],
+                [ctest_bin, "--test-dir", str(build_dir), "-C", "Release", "--output-on-failure"],
+            ]
+        )
     for cmd in cmds:
         if _run_checked(cmd).returncode != 0:
             return f"host CTest step failed: {' '.join(cmd)}"
@@ -755,6 +777,53 @@ def cmd_sim(args: argparse.Namespace) -> int:
     return _run_checked(cmd).returncode
 
 
+def cmd_doctor(args: argparse.Namespace) -> int:
+    """Diagnose local developer environment, toolchains, git hooks, and Python dependencies."""
+    del args
+    print("BMO Handheld — Environment Doctor")
+    print("=" * 56)
+    required_failures = 0
+
+    py_ok = sys.version_info >= (3, 10)
+    print(f"  [{'OK' if py_ok else 'FAIL'}] Python: {sys.version.split()[0]} (requires >= 3.10)")
+    if not py_ok:
+        required_failures += 1
+
+    for mod, pkg in (("PIL", "Pillow"), ("numpy", "numpy"), ("trimesh", "trimesh"), ("manifold3d", "manifold3d")):
+        try:
+            __import__(mod)
+            print(f"  [OK]   Python package: {pkg}")
+        except ImportError:
+            print(f"  [WARN] Python package missing: {pkg} (run `python -m pip install -r requirements-dev.txt`)")
+
+    hooks_proc = subprocess.run(
+        ["git", "config", "--get", "core.hooksPath"],
+        cwd=str(REPO_ROOT),
+        capture_output=True,
+        text=True,
+    )
+    hooks_val = (hooks_proc.stdout or "").strip()
+    hooks_ok = hooks_val in {".githooks", ".githooks/"}
+    print(f"  [{'OK' if hooks_ok else 'WARN'}] Git core.hooksPath: {hooks_val or '<unset>'} (expected .githooks)")
+
+    cli = find_arduino_cli()
+    print(f"  [{'OK' if cli else 'WARN'}] arduino-cli: {cli or 'not found (run `python tasks.py setup --install-arduino-cli`)'}")
+
+    cf = find_clang_format()
+    print(f"  [{'OK' if cf else 'WARN'}] clang-format: {cf or 'not found'}")
+
+    for tool_name in ("cmake", "ctest", "ruff", "cppcheck"):
+        found = shutil.which(tool_name)
+        print(f"  [{'OK' if found else 'INFO'}] {tool_name}: {found or 'not found in PATH'}")
+
+    print("=" * 56)
+    if required_failures:
+        print(f"DOCTOR FAILED ({required_failures} critical issue(s)).")
+        return 1
+    print("DOCTOR PASSED.")
+    return 0
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         prog="tasks.py",
@@ -769,12 +838,16 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_setup.set_defaults(func=cmd_setup)
 
     p_check = sub.add_parser("check", help="Fast verification (< 1 min, no firmware compile).")
+    p_check.add_argument("--fast", action="store_true", help="Ultra-fast pre-commit check (< 15 s, skips compiler/CTest tests).")
     p_check.add_argument("--cppcheck", action="store_true", help="Include cppcheck static analysis.")
     p_check.add_argument("--no-tests", action="store_true", help="Skip Python unit tests.")
     p_check.add_argument("--with-all-tests", action="store_true", help="Include slower WASI execution and CAD mesh tests.")
     p_check.add_argument("--sanitizers", action="store_true", help="Run host C++17 CTest suite with ASan+UBSan.")
     p_check.add_argument("--strict-lint", action="store_true", help="Fail if ruff is unavailable.")
     p_check.set_defaults(func=cmd_check)
+
+    p_doc = sub.add_parser("doctor", help="Inspect Python, git hooks, arduino-cli, and host C/C++ toolchain status.")
+    p_doc.set_defaults(func=cmd_doctor)
 
     p_test = sub.add_parser("test", help="Run full unittest suite and repository validator.")
     p_test.add_argument("--strict", action="store_true", help="Require target compile inside validate_repo.py.")

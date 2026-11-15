@@ -68,6 +68,10 @@ class BuildAndTasksTests(unittest.TestCase):
         tasks_text = (REPO_ROOT / "tasks.py").read_text(encoding="utf-8")
         self.assertIn("BMO_ENABLE_ASAN_UBSAN=ON", tasks_text)
 
+    def test_doctor_command_runs_cleanly(self):
+        rc = tasks.main(["doctor"])
+        self.assertEqual(rc, 0)
+
 
 if __name__ == "__main__":
     unittest.main()
