@@ -41,7 +41,7 @@ This document collects every decision from the tech-lead audit (`techlead/audit-
 
 ---
 
-## Decision 4:Emulator Core Licensing & Binary Distribution — [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md) & [ADR 0008](decisions/0008-rom-policy-and-licensing.md)
+## Decision 4: Emulator Core Licensing & Binary Distribution — [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md) & [ADR 0008](decisions/0008-rom-policy-and-licensing.md)
 
 - **Why you need to decide:** Three vendored emulator cores in `firmware/BmoGameboy/src/third_party/` contain explicit **Non-Commercial** clauses (`Snes9x`, MAME `z80.c` inside `SMS Plus`/`ColEm`, and `Musashi v3.32` inside `GPL-3.0` `Gwenesis`). Under GPL v2 Section 6 and GPL v3 Section 7, you cannot legally distribute a combined binary that links GPL code with non-commercial-restricted code. (We already fixed GitHub Actions so CI/Releases only upload the clean `mit` binary bundle.)
 - **Options:**
@@ -79,3 +79,13 @@ This document collects every decision from the tech-lead audit (`techlead/audit-
 - **Options:**
   - [ ] **(Recommended) Option 7A — Keep `firmware/BmoGameboy/BmoGameboy.ino` for now so no build scripts or paths break, and keep the clear non-commercial fan-project disclaimer in `README.md`.**
   - [ ] **Option 7B — Rename the sketch folder and `.ino` file to `firmware/BmoHandheld/BmoHandheld.ino` across the repository.**
+
+---
+
+## Decision 8: Sidecar Tools, Weak Tests & Feature-Freeze Priorities ([AI & Tooling Review](audits/ai-and-tooling-review.md))
+
+- **Why you need to decide:** This repository holds several large optional tools built before the first physical board powered on (a browser simulator, 3D teardown viewer, custom static analyzer `tools/guardian/`, `63` Python string-matching/toy core checks, on-device `unit_tests.cpp`, and the Console Museum info screen). Keeping things lean reduces future confusion and AI maintenance cost.
+- **Options:**
+  - [ ] **(Recommended) Option 8A — Freeze the browser simulator / 3D teardown as read-only preview tools right now, prioritize physical bring-up, and after your board boots cleanly, remove `unit_tests.cpp` + the `7` low-signal source-regex Python test files while keeping real C++/WASI tests (`CTest` + `test_native_cores_execution.py`).**
+  - [ ] **Option 8B — Remove optional sidecar tooling (`simulator/bmo_internals_3d.js`, `unit_tests.cpp`, and the `7` low-signal Python test files) immediately.**
+  - [ ] **Option 8C — Keep everything as-is.**
