@@ -1,8 +1,10 @@
-# Default owner across repository paths
-* @MahmoudMamdouh3
+# Repository Owner & Review Rules
+# Hardware hard-stop files, pin maps, partition tables, and CI workflows require explicit owner sign-off.
 
-# Hardware pin map, safety flags, and partition layout
-/firmware/BmoGameboy/src/hal/config.h @MahmoudMamdouh3
-/firmware/BmoGameboy/partitions.csv @MahmoudMamdouh3
-/hardware/ @MahmoudMamdouh3
-/.github/ @MahmoudMamdouh3
+* @Mahmoud-Emad23
+/firmware/BmoGameboy/src/hal/config.h @Mahmoud-Emad23
+/firmware/BmoGameboy/src/hal/pins_check.h @Mahmoud-Emad23
+/firmware/BmoGameboy/partitions.csv @Mahmoud-Emad23
+/firmware/BmoGameboy/sketch.yaml @Mahmoud-Emad23
+/.github/workflows/ @Mahmoud-Emad23
+/THIRD_PARTY_NOTICES.md @Mahmoud-Emad23

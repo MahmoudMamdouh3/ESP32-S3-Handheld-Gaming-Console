@@ -1,3 +1,4 @@
+# EditorConfig is awesome: https://EditorConfig.org
 root = true
 
 [*]
@@ -9,11 +10,11 @@ indent_style = space
 indent_size = 2
 
 [*.py]
+indent_style = space
 indent_size = 4
-max_line_length = 120
-
-[*.{c,cpp,h,hpp,ino}]
-indent_size = 2
 
 [*.md]
 trim_trailing_whitespace = false
+
+[Makefile*]
+indent_style = tab

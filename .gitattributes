@@ -1,30 +1,43 @@
+# Enforce consistent LF line endings across Windows, macOS, and Linux
 * text=auto eol=lf
 
-*.sh text eol=lf
-*.py text eol=lf
+# Source code and configuration files
 *.c text eol=lf
 *.cpp text eol=lf
 *.h text eol=lf
 *.hpp text eol=lf
 *.ino text eol=lf
+*.py text eol=lf
 *.js text eol=lf
-*.html text eol=lf
 *.css text eol=lf
+*.html text eol=lf
 *.json text eol=lf
-*.yml text eol=lf
 *.yaml text eol=lf
+*.yml text eol=lf
 *.md text eol=lf
-*.toml text eol=lf
 *.csv text eol=lf
+*.svg text eol=lf
+*.scad text eol=lf
+*.sh text eol=lf
 
+# Generated files hidden from diffs and language stats
+simulator/bmo_enclosure_meshes.js linguist-generated=true
+docs/assets/layout_top_view.svg linguist-generated=true
+docs/assets/layout_side_section.svg linguist-generated=true
+docs/wiring/perfboard-layout.md linguist-generated=true
+docs/wiring/wire_list.csv linguist-generated=true
+
+# Binary assets
 *.png binary
 *.jpg binary
+*.jpeg binary
 *.gif binary
 *.ico binary
+*.aseprite binary
 *.wasm binary
+*.bin binary
+*.elf binary
 *.stl binary
 *.glb binary
-*.aseprite binary
-*.gb binary
-*.gbc binary
-*.nes binary
+*.zip binary
+*.7z binary

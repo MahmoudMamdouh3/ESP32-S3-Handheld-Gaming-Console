@@ -1,0 +1,5 @@
+# Mechanical formatting / SPDX license header commits to ignore in git blame
+# Usage: git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# chore(spdx): add SPDX-License-Identifier headers to first-party sources
+addcc07635da1d4827361e93307365c7786a7fb9
