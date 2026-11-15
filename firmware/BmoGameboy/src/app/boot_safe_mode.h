@@ -35,4 +35,52 @@ constexpr BootSpiDecision resolveBootDisplaySpiClock(bool selectPressed, bool bP
   return BootSpiDecision{resolved, false};
 }
 
+/**
+ * Translate ESP-IDF esp_reset_reason_t numeric value into a human-readable label.
+ */
+constexpr const char* resetReasonName(int reasonCode) {
+  switch (reasonCode) {
+  case 1:
+    return "ESP_RST_POWERON";
+  case 2:
+    return "ESP_RST_EXT";
+  case 3:
+    return "ESP_RST_SW";
+  case 4:
+    return "ESP_RST_PANIC";
+  case 5:
+    return "ESP_RST_INT_WDT";
+  case 6:
+    return "ESP_RST_TASK_WDT";
+  case 7:
+    return "ESP_RST_WDT";
+  case 8:
+    return "ESP_RST_DEEPSLEEP";
+  case 9:
+    return "ESP_RST_BROWNOUT";
+  case 10:
+    return "ESP_RST_SDIO";
+  case 11:
+    return "ESP_RST_USB";
+  case 12:
+    return "ESP_RST_JTAG";
+  case 13:
+    return "ESP_RST_EFUSE";
+  case 14:
+    return "ESP_RST_PWR_GLITCH";
+  case 15:
+    return "ESP_RST_CPU_LOCKUP";
+  default:
+    return "ESP_RST_UNKNOWN";
+  }
+}
+
+/**
+ * Return true when the reset reason indicates a crash, watchdog timeout, or brownout.
+ */
+constexpr bool isAbnormalResetReason(int reasonCode) {
+  return reasonCode == 4 || reasonCode == 5 || reasonCode == 6 || reasonCode == 7 || reasonCode == 9 ||
+         reasonCode == 14 || reasonCode == 15;
+}
+
 } // namespace BmoApp

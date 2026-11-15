@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <string.h>
 
 #include "src/app/boot_safe_mode.h"
 #include "test_check.h"
@@ -32,6 +33,18 @@ int main() {
     const auto d2 = BmoApp::resolveBootDisplaySpiClock(false, true, DEFAULT_HZ, DEFAULT_HZ, FALLBACK_HZ);
     BMO_CHECK(d2.safeModeForced);
     BMO_CHECK(d2.spiHz == FALLBACK_HZ);
+  }
+  // Reset reason classification and human-readable names.
+  {
+    BMO_CHECK(strcmp(BmoApp::resetReasonName(1), "ESP_RST_POWERON") == 0);
+    BMO_CHECK(strcmp(BmoApp::resetReasonName(4), "ESP_RST_PANIC") == 0);
+    BMO_CHECK(strcmp(BmoApp::resetReasonName(9), "ESP_RST_BROWNOUT") == 0);
+    BMO_CHECK(strcmp(BmoApp::resetReasonName(999), "ESP_RST_UNKNOWN") == 0);
+    BMO_CHECK(!BmoApp::isAbnormalResetReason(1));
+    BMO_CHECK(!BmoApp::isAbnormalResetReason(3));
+    BMO_CHECK(BmoApp::isAbnormalResetReason(4));
+    BMO_CHECK(BmoApp::isAbnormalResetReason(6));
+    BMO_CHECK(BmoApp::isAbnormalResetReason(9));
   }
   return 0;
 }

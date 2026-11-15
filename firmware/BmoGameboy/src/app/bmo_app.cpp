@@ -28,7 +28,9 @@
 #include <Preferences.h>
 #include <SPI.h>
 #include <ctype.h>
+#include <esp_attr.h>
 #include <esp_heap_caps.h>
+#include <esp_system.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <limits.h>
@@ -77,8 +79,24 @@ unsigned long s_frameTimeMin = ULONG_MAX;
 unsigned long s_frameTimeMax = 0;
 unsigned long s_frameTimeSum = 0;
 int s_frameTimeCount = 0;
-unsigned long s_framePercentileSamples[FramePercentiles::WINDOW_SIZE];
+unsigned long* s_framePercentileSamples = nullptr;
 size_t s_framePercentileCount = 0;
+
+struct BootBreadcrumb {
+  uint32_t magic;
+  uint8_t state;
+  int8_t emulatorIndex;
+  uint16_t reserved;
+};
+constexpr uint32_t kBreadcrumbMagic = 0x424D4F42U; // "BMOB"
+RTC_NOINIT_ATTR BootBreadcrumb s_bootBreadcrumb;
+
+void updateBootBreadcrumb() {
+  s_bootBreadcrumb.magic = kBreadcrumbMagic;
+  s_bootBreadcrumb.state = static_cast<uint8_t>(s_currentState);
+  s_bootBreadcrumb.emulatorIndex = static_cast<int8_t>(s_selectedEmulatorIndex);
+  s_bootBreadcrumb.reserved = 0U;
+}
 
 unsigned long s_lastFpsLogMs = 0;
 int s_frames = 0;
@@ -172,6 +190,15 @@ inline void recordFrameTime(unsigned long us, int emulatorIndex) {
   if (us > s_frameTimeMax) s_frameTimeMax = us;
   s_frameTimeSum += us;
   s_frameTimeCount++;
+  if (!s_framePercentileSamples) {
+    s_framePercentileSamples = static_cast<unsigned long*>(
+        heap_caps_calloc(FramePercentiles::WINDOW_SIZE, sizeof(unsigned long), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+    if (!s_framePercentileSamples) {
+      s_framePercentileSamples =
+          static_cast<unsigned long*>(calloc(FramePercentiles::WINDOW_SIZE, sizeof(unsigned long)));
+    }
+  }
+  if (!s_framePercentileSamples) return;
   s_framePercentileSamples[s_framePercentileCount++] = us;
   if (s_framePercentileCount == FramePercentiles::WINDOW_SIZE) {
     FramePercentiles::Summary percentiles;
@@ -1066,6 +1093,15 @@ void BmoApp::setup() {
 
   LOG_INFO_STR("\n\n--- BOOTING ---");
   LOG_INFO("BMO Handheld v%s (%s)", BMO_VERSION_STRING, BMO_GIT_SHA);
+  const int resetReason = static_cast<int>(esp_reset_reason());
+  const bool abnormalReset = BmoApp::isAbnormalResetReason(resetReason);
+  const BootBreadcrumb prevBreadcrumb = s_bootBreadcrumb;
+  LOG_INFO("Reset reason: %s (%d)", BmoApp::resetReasonName(resetReason), resetReason);
+  if (abnormalReset && prevBreadcrumb.magic == kBreadcrumbMagic) {
+    LOG_WARN("Crash/brownout recovery breadcrumb: prev_state=%u prev_emu=%d",
+             static_cast<unsigned>(prevBreadcrumb.state), static_cast<int>(prevBreadcrumb.emulatorIndex));
+  }
+  updateBootBreadcrumb();
   LOG_INFO_STR("Milestone 4: Game Selection UI");
   LOG_INFO("Features: SD=%d, Audio=%d, Battery=%d", FEATURE_SD_CARD, FEATURE_AUDIO, FEATURE_BATTERY_MONITOR);
 
@@ -1094,6 +1130,8 @@ void BmoApp::setup() {
   DisplayEmu::begin(spiDecision.spiHz);
   if (spiDecision.safeModeForced) {
     DisplayEmu::showToast("SAFE MODE: 40 MHz SPI", Theme::BMO_DPAD_YELLOW, 3500);
+  } else if (abnormalReset) {
+    DisplayEmu::showToast(BmoApp::resetReasonName(resetReason), Theme::BMO_CORAL_RED, 3500);
   }
   BMO_PROFILE_BEGIN();
   Battery::begin();
@@ -1121,6 +1159,7 @@ void BmoApp::setup() {
 }
 
 void BmoApp::loop() {
+  updateBootBreadcrumb();
   Battery::update();
   Buttons::setGameplayMode(s_currentState == BmoApp::STATE_EMULATOR);
   if (s_currentState != BmoApp::STATE_EMULATOR && s_currentState != BmoApp::STATE_PAUSE_MENU) {
