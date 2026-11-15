@@ -8,8 +8,12 @@
 #error "FEATURE_BATTERY_MONITOR=1 requires -DBMO_HARDWARE_CONFIRMED_BATTERY=1 confirming physical ADC divider hardware"
 #endif
 
-// Calibration values for the voltage divider (to be finalized on real hardware)
-// Assumes a 100k / 100k divider on the 3.7V-4.2V LiPo connecting to 3.3V ADC.
+// NOTE (ADR 0006): FEATURE_BATTERY_MONITOR is a permanent hard stop (= 0) until
+// physical battery monitoring hardware is wired and measured.
+// The calibration constants below are legacy placeholders from an early 3.7V-4.2V
+// single-cell source assumption and MUST NOT be used with rechargeable AA NiMH
+// cells (2xAA = 2.0V-2.8V or 3xAA = 3.0V-4.2V) without updating the resistor
+// divider ratio and discharge curve per docs/decisions/0006-portable-power.md.
 #define BATTERY_R1 100000.0f
 #define BATTERY_R2 100000.0f
 #define ADC_MAX 4095.0f

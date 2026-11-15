@@ -120,6 +120,7 @@
     [ "esp:GND.1", "tft:GND", "black", [] ],
     [ "esp:10", "tft:CS", "orange", [] ],
     [ "esp:8", "tft:D/C", "yellow", [] ],
+    [ "esp:9", "tft:RST", "white", [] ],
     [ "esp:11", "tft:MOSI", "blue", [] ],
     [ "esp:12", "tft:SCK", "green", [] ],
 
