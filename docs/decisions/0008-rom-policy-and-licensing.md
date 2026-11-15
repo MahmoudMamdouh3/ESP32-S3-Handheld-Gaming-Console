@@ -1,19 +1,25 @@
-# ADR 0008: ROM Policy and Repository Licensing
+# ADR 0008: ROM Policy, Provenance, and Build Profile Licensing
 
 - Status: Accepted
-- Date: 2026-11-13
+- Date: 2026-11-13 (Updated: 2026-11-15, verified at `d8d4b5e`)
 - Decision owner: User
 
 ## Context
 
-The repository originally held tracked commercial ROM header arrays, Archive.org / box-art downloader scripts, and custom C core stubs. The owner directed removing all copyrighted ROMs and scrapers (`BMO_ENABLE_BAKED_ROMS=0` by default), replacing all custom stubs with genuine upstream open-source emulators across all 15 console platforms (`BMO_EXPERIMENTAL_CORES=1`, `BMO_ENABLE_DOOM=1`), and aligning the combined distribution license with the bundled upstream copyleft cores.
+1. The repository originally held tracked commercial ROM header arrays and remote artwork scraper scripts, which were removed (`BMO_ENABLE_BAKED_ROMS=0` by default) and purged from git history (`0` blobs `>= 1 MiB` across all refs).
+2. All 15 console platforms are backed by 13 genuine upstream emulators under `firmware/BmoGameboy/src/third_party/`.
+3. A legal audit of the 13 vendored upstream engines (`THIRD_PARTY_NOTICES.md`) established that while `Peanut-GB`, `Walnut-CGB`, and `agnes` are `MIT` and `FAKE-08`/`Handy` are permissive (`MIT`/`Zlib`/`WTFPL`), the experimental core set combines `GPL-2.0-only` (`oswan`), `GPL-2.0-or-later` (`doom`, `race`, `stella2014`, `huexpress`, `smsplus`), `GPL-3.0` (`gwenesis`), and **three non-commercial clauses** (`snes9x/LICENSE`, MAME Z80 v2.7 in `smsplus/z80.c`, and Musashi v3.32 in `gwenesis/cpus/M68K/m68k.h`).
+4. Under GNU GPL v2 Section 6 and GPL v3 Section 7, a static binary combining GPL code with non-commercial-only code cannot be publicly redistributed as a precompiled binary, although users may compile it locally from source for personal use.
 
 ## Decision
 
-1. Track zero copyrighted ROM headers, scraped artwork, or remote ROM/art downloader scripts; keep `BMO_ENABLE_BAKED_ROMS=0` by default and remove legacy commercial blobs from active history upon owner sign-off (`scripts/purge_history_paths.txt`).
-2. Keep genuine third-party engines (`firmware/BmoGameboy/src/third_party/`) enabled by default (`BMO_EXPERIMENTAL_CORES=1`, `BMO_ENABLE_DOOM=1`) and distribute combined firmware builds under `GPL-2.0-or-later` (`LICENSE`), backed by pinned URLs, commit SHAs, and modification logs in `THIRD_PARTY_NOTICES.md` and per-core `PROVENANCE.md` files.
-3. Preserve permissive opt-out compilation flags (`-DBMO_EXPERIMENTAL_CORES=0 -DBMO_ENABLE_DOOM=0`) for an MIT-compatible GB/GBC/NES-only firmware build; standalone first-party utilities remain permissive MIT.
+1. **Zero Commercial ROMs or Scrapers:** Track zero copyrighted ROM headers, BIOS images, scraped artwork, or remote downloader scripts (`BMO_ENABLE_BAKED_ROMS=0` enforced by `config.h`, `.githooks/pre-commit`, and `validate_repo.py`).
+2. **First-Party Dual License:** License original first-party firmware (`src/{app,hal,storage,ui,cores,tests}/`), simulator, CAD, and Python tooling under `MIT OR GPL-2.0-or-later`.
+3. **Separate Personal-Use vs Redistributable Build Profiles:**
+   - **`mit` profile (`-DBMO_EXPERIMENTAL_CORES=0 -DBMO_ENABLE_DOOM=0`):** Compiles only `MIT`-licensed cores (`Peanut-GB`, `Walnut-CGB`, `agnes`) plus Espressif/Adafruit libraries. This is the **only** profile whose compiled binary is uploaded or published in CI / GitHub Releases (`.github/workflows/ci.yml`, `.github/workflows/release.yml`).
+   - **`default` and `no-doom` profiles (`BMO_EXPERIMENTAL_CORES=1`):** Compiled in CI strictly to verify `TARGET_COMPILED` build health and memory budgets, and built locally by the device owner for personal use on their own hardware, but **never** published as precompiled release binaries unless incompatible cores are replaced or relicensed (see `docs/owner-decisions.md`).
 
 ## Consequences
 
-Clean clones compile without external secrets or copyrighted ROM blobs, and binary distributors have an explicit, accurate license and third-party provenance inventory.
+- Clean clones compile all profiles without copyrighted ROMs or secrets.
+- CI and GitHub Releases never distribute binaries that violate GPL/non-commercial license compatibility.
