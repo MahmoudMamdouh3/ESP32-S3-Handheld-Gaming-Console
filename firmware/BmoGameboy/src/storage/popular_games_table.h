@@ -7,7 +7,7 @@
 
 namespace PopularGamesTable {
 
-inline bool matchesPopularKeyword(const char* filename, SDCard::RomType type) {
+inline bool matchesPopularKeyword(const char* filename, RomType type) {
   if (!filename || !filename[0]) return false;
   const char* base = strrchr(filename, '/');
   if (!base) base = strrchr(filename, '\\');
@@ -77,34 +77,34 @@ inline bool matchesPopularKeyword(const char* filename, SDCard::RomType type) {
   static const char* const kDoomTop[] = {"doom", "freedoom", "plutonia", "tnt", "heretic", "chex"};
 
   switch (type) {
-  case SDCard::ROM_GB:
+  case ROM_GB:
     return matchAny(kGbTop, sizeof(kGbTop) / sizeof(kGbTop[0]));
-  case SDCard::ROM_GBC:
+  case ROM_GBC:
     return matchAny(kGbcTop, sizeof(kGbcTop) / sizeof(kGbcTop[0]));
-  case SDCard::ROM_NES:
+  case ROM_NES:
     return matchAny(kNesTop, sizeof(kNesTop) / sizeof(kNesTop[0]));
-  case SDCard::ROM_SNES:
+  case ROM_SNES:
     return matchAny(kSnesTop, sizeof(kSnesTop) / sizeof(kSnesTop[0]));
-  case SDCard::ROM_GENESIS:
+  case ROM_GENESIS:
     return matchAny(kGenesisTop, sizeof(kGenesisTop) / sizeof(kGenesisTop[0]));
-  case SDCard::ROM_SMS:
-  case SDCard::ROM_GG:
+  case ROM_SMS:
+  case ROM_GG:
     return matchAny(kSmsGgTop, sizeof(kSmsGgTop) / sizeof(kSmsGgTop[0]));
-  case SDCard::ROM_PCE:
+  case ROM_PCE:
     return matchAny(kPceTop, sizeof(kPceTop) / sizeof(kPceTop[0]));
-  case SDCard::ROM_ATARI:
+  case ROM_ATARI:
     return matchAny(kAtariTop, sizeof(kAtariTop) / sizeof(kAtariTop[0]));
-  case SDCard::ROM_COLEM:
+  case ROM_COLEM:
     return matchAny(kColemTop, sizeof(kColemTop) / sizeof(kColemTop[0]));
-  case SDCard::ROM_NGP:
+  case ROM_NGP:
     return matchAny(kNgpTop, sizeof(kNgpTop) / sizeof(kNgpTop[0]));
-  case SDCard::ROM_LYNX:
+  case ROM_LYNX:
     return matchAny(kLynxTop, sizeof(kLynxTop) / sizeof(kLynxTop[0]));
-  case SDCard::ROM_WSWAN:
+  case ROM_WSWAN:
     return matchAny(kWSwanTop, sizeof(kWSwanTop) / sizeof(kWSwanTop[0]));
-  case SDCard::ROM_PICO8:
+  case ROM_PICO8:
     return matchAny(kPicoTop, sizeof(kPicoTop) / sizeof(kPicoTop[0]));
-  case SDCard::ROM_WAD:
+  case ROM_WAD:
     return matchAny(kDoomTop, sizeof(kDoomTop) / sizeof(kDoomTop[0]));
   default:
     return false;

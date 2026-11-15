@@ -872,7 +872,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_size = sub.add_parser("size", help="Report compiled Flash/DRAM/IRAM and PSRAM budget.")
     p_size.add_argument("--elf", default="", help="Path to compiled .elf (auto-discovered if omitted).")
     p_size.add_argument("--markdown-summary", default="", help="Append Markdown report to file.")
-    p_size.add_argument("--check-budgets", action="store_true", help="Fail if Flash > 85% app0 or DRAM > 85%.")
+    p_size.add_argument("--check-budgets", action="store_true", help="Fail if Flash > 85%% app0 or DRAM > 85%%.")
     p_size.set_defaults(func=cmd_size)
 
     p_flash = sub.add_parser("flash", help="Safety-check and flash firmware to connected ESP32-S3.")

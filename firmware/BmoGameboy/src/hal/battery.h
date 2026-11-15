@@ -17,6 +17,6 @@ int getPercentage();
 // Main processing loop: updates sliding average and triggers sleep if too low
 void update();
 
-// Forces ESP32 into deep sleep immediately to protect the LiPo
+// Forces ESP32 into deep sleep immediately to protect the battery pack
 void safeShutdown();
 } // namespace Battery
