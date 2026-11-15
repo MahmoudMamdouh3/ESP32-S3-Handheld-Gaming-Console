@@ -77,10 +77,10 @@ Compact structural map for AI agents and contributors. Regenerate via `python sc
 | [`scripts/deploy_sd_complete.py`](../../scripts/deploy_sd_complete.py) | `296` | scripts/deploy_sd_complete.py — Local BMO Handheld SD Card Deployer & Indexer |
 | [`scripts/deploy_to_sd.py`](../../scripts/deploy_to_sd.py) | `308` | Safely synchronize supported local games and firmware box art to an SD card. |
 | [`scripts/export_enclosure_web_meshes.py`](../../scripts/export_enclosure_web_meshes.py) | `251` | Export manifold CAD enclosure shells to deterministic Three.js mesh data. |
-| [`scripts/extract_claims.py`](../../scripts/extract_claims.py) | `390` | Scripted claims extractor and verifier for BMO Handheld documentation and code comments. |
+| [`scripts/extract_claims.py`](../../scripts/extract_claims.py) | `562` | scripts/extract_claims.py — Extract and verify numeric & factual claims across the reposit |
 | [`scripts/fetch_covers.py`](../../scripts/fetch_covers.py) | `36` | scripts/fetch_covers.py — Backward-compatible alias for scripts/convert_covers.py. |
 | [`scripts/generate_codemap.py`](../../scripts/generate_codemap.py) | `149` | Generate docs/ai/CODEMAP.md (<= 200 lines) summarizing first-party modules and entrypoints |
-| [`scripts/generate_hardware_layout_artifacts.py`](../../scripts/generate_hardware_layout_artifacts.py) | `760` | Generate hardware layout SVGs, 31x46 perfboard placement guide, and wire list CSV from har |
+| [`scripts/generate_hardware_layout_artifacts.py`](../../scripts/generate_hardware_layout_artifacts.py) | `927` | Generate hardware layout SVGs, 31x46 perfboard placement guide, and wire list CSV from har |
 | [`scripts/install_git_hooks.py`](../../scripts/install_git_hooks.py) | `26` | Configure git to use the tracked .githooks directory. |
 | [`scripts/repo_tools.py`](../../scripts/repo_tools.py) | `48` | Local ROM path discovery and Game Boy header checksum helpers. |
 | [`scripts/rom_key.py`](../../scripts/rom_key.py) | `39` | Path-key helpers shared by firmware deployment and cover generation. |

@@ -4,8 +4,10 @@
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
+import math
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -16,8 +18,137 @@ PERFBOARD_DOC_PATH = REPO_ROOT / "docs" / "wiring" / "perfboard-layout.md"
 WIRE_CSV_PATH = REPO_ROOT / "docs" / "wiring" / "wire_list.csv"
 
 
-def load_layout() -> dict:
-    return json.loads(LAYOUT_PATH.read_text(encoding="utf-8"))
+def load_layout(path: Path = LAYOUT_PATH) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _rect_circle_overlaps(x0: float, x1: float, y0: float, y1: float, cx: float, cy: float, radius: float) -> bool:
+    closest_x = min(max(cx, x0), x1)
+    closest_y = min(max(cy, y0), y1)
+    return math.hypot(cx - closest_x, cy - closest_y) < radius - 1e-6
+
+
+def check_layout_collisions(layout: dict) -> dict:
+    """Validate enclosure inner bounds, zone separation, rear (X, Y, Z) clearances, and standoff keep-outs."""
+    owner_ref = layout["enclosure"]["owner_reference_cm"]
+    side_wall = float(owner_ref.get("side_wall_cm", 0.21))
+    inner_x_min = side_wall
+    inner_x_max = float(owner_ref["width_cm"]) - side_wall
+    inner_y_min = side_wall
+    inner_y_max = float(owner_ref["height_cm"]) - side_wall
+
+    z_stack = layout["z_stackup"]
+    rear_zones = z_stack["rear_zones"]
+    upper = rear_zones["upper_zone"]
+    lower = rear_zones["lower_zone"]
+    collisions: list[dict] = []
+
+    uy0, uy1 = float(upper["y_range_cm"][0]), float(upper["y_range_cm"][1])
+    ly0, ly1 = float(lower["y_range_cm"][0]), float(lower["y_range_cm"][1])
+    if uy1 > ly0 + 1e-6:
+        collisions.append(
+            {
+                "kind": "zone_y_overlap",
+                "upper_y_range_cm": [uy0, uy1],
+                "lower_y_range_cm": [ly0, ly1],
+                "overlap_cm": round(uy1 - ly0, 3),
+                "message": f"Upper Y zone (ends {uy1:.3f} cm) overlaps lower Y zone (starts {ly0:.3f} cm) by {uy1 - ly0:.3f} cm",
+            }
+        )
+
+    standoffs = layout.get("perfboard", {}).get("mounting_holes", [])
+    standoff_r = float(layout.get("perfboard", {}).get("standoff_outer_radius_cm", 0.30))
+
+    flat_components: list[tuple[str, float, dict]] = []
+    for zone_name, zone in (("upper_zone", upper), ("lower_zone", lower)):
+        avail_depth = float(zone["available_depth_cm"])
+        for comp in zone["components"]:
+            flat_components.append((zone_name, avail_depth, comp))
+            x0, x1 = float(comp["x_range_cm"][0]), float(comp["x_range_cm"][1])
+            y0, y1 = float(comp["y_range_cm"][0]), float(comp["y_range_cm"][1])
+            depth = float(comp["depth_cm"])
+            if x0 < inner_x_min - 1e-6 or x1 > inner_x_max + 1e-6:
+                collisions.append(
+                    {
+                        "kind": "inner_wall_x_bounds",
+                        "component": comp["name"],
+                        "x_range_cm": [x0, x1],
+                        "inner_x_bounds_cm": [round(inner_x_min, 3), round(inner_x_max, 3)],
+                        "message": f"{comp['name']} X range [{x0:.3f}, {x1:.3f}] exceeds inner wall [{inner_x_min:.3f}, {inner_x_max:.3f}]",
+                    }
+                )
+            if y0 < inner_y_min - 1e-6 or y1 > inner_y_max + 1e-6:
+                collisions.append(
+                    {
+                        "kind": "inner_wall_y_bounds",
+                        "component": comp["name"],
+                        "y_range_cm": [y0, y1],
+                        "inner_y_bounds_cm": [round(inner_y_min, 3), round(inner_y_max, 3)],
+                        "message": f"{comp['name']} Y range [{y0:.3f}, {y1:.3f}] exceeds inner wall [{inner_y_min:.3f}, {inner_y_max:.3f}]",
+                    }
+                )
+            if depth > avail_depth + 1e-6:
+                collisions.append(
+                    {
+                        "kind": "z_depth_exceeded",
+                        "component": comp["name"],
+                        "depth_cm": depth,
+                        "available_depth_cm": avail_depth,
+                        "message": f"{comp['name']} depth {depth:.2f} cm exceeds cavity {avail_depth:.2f} cm",
+                    }
+                )
+            for hole in standoffs:
+                cx, cy = float(hole["x_cm"]), float(hole["y_cm"])
+                if _rect_circle_overlaps(x0, x1, y0, y1, cx, cy, standoff_r):
+                    collisions.append(
+                        {
+                            "kind": "standoff_collision",
+                            "component": comp["name"],
+                            "standoff": hole["id"],
+                            "message": f"{comp['name']} overlaps standoff {hole['id']} at ({cx:.3f}, {cy:.3f}) r={standoff_r:.2f} cm",
+                        }
+                    )
+
+    for idx, (zone_a, avail_a, comp_a) in enumerate(flat_components):
+        ax0, ax1 = float(comp_a["x_range_cm"][0]), float(comp_a["x_range_cm"][1])
+        ay0, ay1 = float(comp_a["y_range_cm"][0]), float(comp_a["y_range_cm"][1])
+        for zone_b, avail_b, comp_b in flat_components[idx + 1 :]:
+            bx0, bx1 = float(comp_b["x_range_cm"][0]), float(comp_b["x_range_cm"][1])
+            by0, by1 = float(comp_b["y_range_cm"][0]), float(comp_b["y_range_cm"][1])
+            x_overlap = min(ax1, bx1) - max(ax0, bx0)
+            y_overlap = min(ay1, by1) - max(ay0, by0)
+            if x_overlap > 1e-6 and y_overlap > 1e-6:
+                combined_z = float(comp_a["depth_cm"]) + float(comp_b["depth_cm"])
+                avail = min(avail_a, avail_b)
+                z_excess = max(0.0, combined_z - avail)
+                collisions.append(
+                    {
+                        "kind": "component_xyz_collision",
+                        "component_a": comp_a["name"],
+                        "component_b": comp_b["name"],
+                        "x_overlap_cm": round(x_overlap, 3),
+                        "y_overlap_cm": round(y_overlap, 3),
+                        "combined_depth_cm": round(combined_z, 3),
+                        "available_depth_cm": round(avail, 3),
+                        "z_excess_cm": round(z_excess, 3),
+                        "message": (
+                            f"{comp_a['name']} ({zone_a}) collides with {comp_b['name']} ({zone_b}): "
+                            f"X overlap {x_overlap:.3f} cm, Y overlap {y_overlap:.3f} cm, "
+                            f"Z combined {combined_z:.2f} cm vs {avail:.2f} cm (excess {z_excess:.2f} cm)"
+                        ),
+                    }
+                )
+
+    upper_max_y = max(float(c["y_range_cm"][1]) for c in upper["components"])
+    available_lower_y_cm = round(inner_y_max - upper_max_y, 3)
+    return {
+        "ok": len(collisions) == 0,
+        "collision_count": len(collisions),
+        "upper_max_y_cm": round(upper_max_y, 3),
+        "inner_y_max_cm": round(inner_y_max, 3),
+        "available_lower_y_cm": available_lower_y_cm,
+        "collisions": collisions,
+    }
 
 
 def generate_top_view_svg(layout: dict) -> str:
@@ -321,6 +452,9 @@ $$d = \\sqrt{{1.00^2 + 1.00^2}} = 1.414\\text{{ cm}}$$
 | :--- | :--- | :--- | :--- | :--- |
 {chr(10).join(upper_md)}
 | **Lower Y (`7.80..11.80 cm`)** | {aa['name']} | Chassis bay (`x = 1.50..7.30 cm`, `y = 8.10..11.30 cm`) | `{aa['width_cm']:.2f} × {aa['height_cm']:.2f} × {aa['depth_cm']:.2f} cm` | `{aa['clearance_cm']:.2f} cm` |
+
+> [!WARNING]
+> **Power Component Revision (See [ADR 0006](../decisions/0006-portable-power.md) and [BOM](../bom.md)):** `hardware/layout.json` preserves the frozen baseline slot labels (`U3V40F5 / S7V7F5` and `2xAA (Recommended)`) for coordinate stability. `Pololu S7V7F5` (`~0.5 A`, `2.7 V` min) and `Pololu U3V40F5` (`2.7 V` startup) are **withdrawn** for `2×AA`: use **`Adafruit PowerBoost 1000 Basic (#2030)`** or **`TI TPS61022`** for `2×AA` (`2.0–2.9 V`), or **`Pololu U3V70F5 (#2891)`** / **`Pololu U3V40F5 (#4012)`** for `3×AA` (`3.0–4.35 V`). Testing `3×AA` (`5.80 × 4.80 × 1.65 cm`) in [`hardware/layout_3xaa_variant.json`](../../hardware/layout_3xaa_variant.json) proves it collides in this `8.80 × 12.40 × 3.20 cm` shell (`4.613 cm` clear below `DevKitC-1` -> `0.277 cm` Y overlap and `1.26 cm` Z clash) and requires a `~0.60–1.00 cm` taller enclosure.
 """
 
 
@@ -720,7 +854,40 @@ def generate_wire_list_rows(layout: dict) -> list[dict]:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Generate hardware layout artifacts or check a layout variant for collisions.")
+    parser.add_argument(
+        "--check-variant",
+        type=Path,
+        default=None,
+        help="Path to an alternate layout JSON file (e.g. hardware/layout_3xaa_variant.json) to check without overwriting default artifacts.",
+    )
+    parser.add_argument(
+        "--fail-on-collision",
+        action="store_true",
+        help="Exit non-zero if collisions are detected when checking a layout or variant.",
+    )
+    args = parser.parse_args()
+
+    if args.check_variant is not None:
+        variant_path = args.check_variant if args.check_variant.is_absolute() else (REPO_ROOT / args.check_variant)
+        variant = load_layout(variant_path)
+        report = check_layout_collisions(variant)
+        status = "PASS" if report["ok"] else "COLLISION_DETECTED"
+        print(f"Variant Collision Check ({variant_path.relative_to(REPO_ROOT)}): {status}")
+        print(f"Available clear Y height below upper zone: {report['available_lower_y_cm']:.3f} cm")
+        for col in report["collisions"]:
+            print(f"- [{col['kind']}] {col['message']}")
+        if args.fail_on_collision and not report["ok"]:
+            return 1
+        return 0
+
     layout = load_layout()
+    baseline_report = check_layout_collisions(layout)
+    if not baseline_report["ok"]:
+        for col in baseline_report["collisions"]:
+            print(f"ERROR [{col['kind']}]: {col['message']}")
+        return 1
+
     TOP_SVG_PATH.parent.mkdir(parents=True, exist_ok=True)
     PERFBOARD_DOC_PATH.parent.mkdir(parents=True, exist_ok=True)
 

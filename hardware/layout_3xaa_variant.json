@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "title": "BMO Handheld 3xAA Holder Fit Variant (Collision Check Only — Do Not Alter layout.json Defaults)",
+  "evidence_level": "NOT_TESTED",
+  "units": "cm",
+  "reference_shell_source": "hardware/layout.json",
+  "enclosure": {
+    "owner_reference_cm": {
+      "width_cm": 8.80,
+      "height_cm": 12.40,
+      "thickness_cm": 3.20,
+      "corner_radius_cm": 0.90,
+      "front_wall_cm": 0.20,
+      "back_wall_cm": 0.20,
+      "side_wall_cm": 0.21
+    }
+  },
+  "perfboard": {
+    "mounting_holes": [
+      {"id": "MH_TL", "col": 2, "row": 2, "x_cm": 0.844, "y_cm": 0.739},
+      {"id": "MH_TR", "col": 30, "row": 2, "x_cm": 7.956, "y_cm": 0.739},
+      {"id": "MH_BL", "col": 2, "row": 45, "x_cm": 0.844, "y_cm": 11.661},
+      {"id": "MH_BR", "col": 30, "row": 45, "x_cm": 7.956, "y_cm": 11.661}
+    ],
+    "standoff_outer_radius_cm": 0.30
+  },
+  "z_stackup": {
+    "total_thickness_cm": 3.20,
+    "rear_zones": {
+      "upper_zone": {
+        "y_range_cm": [1.00, 7.60],
+        "available_depth_cm": 1.74,
+        "components": [
+          {
+            "name": "ESP32-S3-DevKitC-1-N16R8 (44-pin carrier)",
+            "x_range_cm": [1.098, 3.638],
+            "y_range_cm": [1.247, 7.577],
+            "width_cm": 2.54,
+            "height_cm": 6.33,
+            "depth_cm": 1.35,
+            "clearance_cm": 0.39
+          },
+          {
+            "name": "MicroSD Breakout Module (3.3V SPI)",
+            "x_range_cm": [4.40, 6.80],
+            "y_range_cm": [1.50, 5.70],
+            "width_cm": 2.40,
+            "height_cm": 4.20,
+            "depth_cm": 0.40,
+            "clearance_cm": 1.34
+          },
+          {
+            "name": "3xAA Boost Converter Envelope (Pololu U3V40F5 / U3V70F5)",
+            "x_range_cm": [4.90, 7.44],
+            "y_range_cm": [5.95, 7.47],
+            "width_cm": 2.54,
+            "height_cm": 1.52,
+            "depth_cm": 0.70,
+            "clearance_cm": 1.04
+          }
+        ]
+      },
+      "lower_zone": {
+        "y_range_cm": [7.30, 12.10],
+        "available_depth_cm": 1.74,
+        "components": [
+          {
+            "name": "3xAA NiMH Holder (Keystone 2475 / 5.80 x 4.80 x 1.65 cm)",
+            "x_range_cm": [1.50, 7.30],
+            "y_range_cm": [7.30, 12.10],
+            "width_cm": 5.80,
+            "height_cm": 4.80,
+            "depth_cm": 1.65,
+            "clearance_cm": 0.09,
+            "note": "Variant test: 4.80 cm tall holder inside unchanged 8.80 x 12.40 x 3.20 cm shell overlaps DevKitC-1 bottom (y_max=7.577 cm) by 0.277 cm in Y (1.26 cm Z collision); available clear Y height below DevKitC-1 is 4.613 cm (< 4.80 cm)."
+          }
+        ]
+      }
+    }
+  }
+}

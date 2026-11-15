@@ -1,101 +1,116 @@
 # First-Time Hardware Bring-Up Guide (Step-by-Step)
 
-- **Target Hardware:** `ESP32-S3-DevKitC-1-N16R8` (`2.54 cm × 6.33 cm` carrier board with `ESP32-S3-WROOM-1-N16R8` module) soldered on a `0.254 cm` (`2.54 mm`) pitch perfboard, driving a `2.4"` (`6.10 cm` diagonal) `240×320` ST7789 SPI display, MicroSD breakout, and 8 tactile pushbuttons.
-- **Evidence Status:** Firmware and the bring-up sketch are `TARGET_COMPILED`. Physical board verification is `NOT_TESTED` until you complete these 5 steps in order and record your readings in [`docs/hardware_measurements.md`](../hardware_measurements.md).
-- **Safety First:** Read [`docs/guides/safety.md`](safety.md) before applying power.
+This guide is written for your very first power-on of the hand-soldered ESP32-S3 perfboard. Do **not** skip ahead, do **not** solder AA batteries yet, and follow Steps 1 through 6 **strictly in order** so a wiring mistake or a misbehaving MicroSD module cannot damage your ESP32-S3.
+
+Read [`docs/guides/safety.md`](safety.md) first if you have any doubt about electrical safety.
 
 ---
 
-## Step 1: Unpowered Continuity Checks (No USB, No Batteries)
+## Step 1: Unpowered Continuity Checks (Disconnect SD `MISO` First)
 
-Disconnect all USB cables and remove any batteries. Set your digital multimeter to **Continuity (beep mode) / Resistance ($\Omega$)**:
+Keep USB-C and all batteries completely **unplugged**:
 
-1. **Check `3V3` to `GND`:** Place the black probe on any `GND` pin and the red probe on the `3V3` pin of the ESP32-S3 board.
-   - **PASS:** Resistance is **above `100 Ω`** (no continuous beep).
-   - **FAIL:** Continuous beep or `< 10 Ω` -> **STOP.** You have a solder bridge between `3.3 V` and `GND`. Inspect the underside of the perfboard under a bright light before plugging in USB.
-2. **Check `5V` (`VBUS`) to `GND`:** Place the black probe on `GND` and the red probe on `5V` / `VBUS`.
-   - **PASS:** Resistance is **above `100 Ω`** (no continuous beep).
-   - **FAIL:** Continuous beep or `< 10 Ω` -> **STOP.** Fix the `5V`-to-`GND` short before applying power.
-3. **Check `3V3` to `5V`:** Place one probe on `3V3` and the other on `5V`.
-   - **PASS:** Resistance is **above `100 Ω`** (the `3.3 V` and `5 V` rails must never be shorted together).
-   - **FAIL:** `< 10 Ω` -> **STOP.** Separate the `3.3 V` and `5 V` traces immediately; `5 V` on the `3.3 V` rail will destroy the ESP32-S3 and ST7789 display.
-4. **Check `GPIO 15` (`SD_MISO`) to `GND` and `5V`:**
-   - **PASS:** `> 100 Ω` to both `GND` and `5V`.
-   - **FAIL:** `< 10 Ω` -> **STOP.** Clear the solder bridge on `GPIO 15`.
-5. **Check Unpressed Buttons:** Touch `GND` with the black probe and touch each of the 8 button pins (`GPIO 4, 5, 6, 7, 16, 17, 18, 21`) with the red probe while **not** pressing any button, then while pressing that button.
-   - **PASS:** Open circuit (`OL` / `> 10 kΩ`) when released; `< 5 Ω` (beeps) only while that specific button is held down.
-   - **FAIL:** Beeps while released -> **STOP.** The tactile switch is rotated 90 degrees (its internal always-connected legs are bridging `GPIO` to `GND`) or has a solder bridge.
+1. Set your multimeter to **Continuity** mode (the speaker/beep symbol) and touch both probes together to verify the beep.
+2. **Disconnect the MicroSD module's `MISO` wire from ESP32 `GPIO 15`** before applying power for the first time. Leaving `MISO` disconnected guarantees an unknown SD breakout cannot push `5.0 V` onto `GPIO 15`.
+3. Touch black probe to ESP32 `GND` and red probe to `3V3`:
+   - **PASS:** Meter shows resistance (`> 100 Ω`) and **does NOT beep continuously** (a brief sub-second chirp as capacitors charge is normal).
+   - **FAIL:** Continuous beep or `< 5 Ω`. Do **NOT** plug in USB — inspect the underside of the perfboard for solder bridges between `3V3` and `GND`.
+4. Touch black probe to `GND` and red probe to `5V` (`VBUS`):
+   - **PASS:** No continuous beep.
+   - **FAIL:** Continuous beep -> fix solder short before powering on.
+5. Switch multimeter to **Resistance (`Ω`)** mode and measure from `GPIO 10` (`TFT_CS`) to `3V3` and from `GPIO 13` (`SD_CS`) to `3V3`:
+   - **PASS:** Both read approximately **`10 kΩ`** (confirming both SPI chip-select pull-up resistors in [`docs/wiring/02-sd-card.md`](../wiring/02-sd-card.md) are installed).
+6. Check button continuity (`UP=4`, `DOWN=5`, `LEFT=6`, `RIGHT=7`, `A=16`, `B=17`, `START=18`, `SELECT=21`):
+   - **PASS:** High resistance (`> 1 kΩ` / open) to `GND` while unpressed; near `0 Ω` + beep while held down.
 
 ---
 
-## Step 2: First Power-Up on Current-Limited USB (No SD Card Inserted Yet)
+## Step 2: Power-On With SD `MISO` Disconnected & Standalone SD `MISO` Voltage Check (`<= 3.35 V`)
 
-1. Remove the MicroSD card from its slot for the very first power-up.
-2. Plug a USB-C data cable into a **powered USB hub** or inline **USB power meter** (if available), then into the **`UART` / `COM` USB-C port** on the ESP32-S3 board. Keep one hand on the USB plug for the first 10 seconds and lightly touch the ESP32-S3 metal shield and LDO regulator (`U2`).
-   - **PASS:** Nothing gets hot (stays cool or barely warm to the touch) and USB current draw is between **`40 mA` and `180 mA`** at `5.0 V`.
-   - **FAIL:** Regulator or chip gets hot within seconds, or USB hub trips over-current (`> 400 mA`) -> **UNPLUG IMMEDIATELY.** Re-check Step 1 polarity on the display `VCC`/`GND` and MicroSD `VCC`/`GND` pins.
+**Critical Rule:** The MicroSD `MISO` wire must STILL be **disconnected from ESP32 `GPIO 15`** when you plug USB-C in for the first time.
 
----
-
-## Step 3: Measure `3V3`, `5V`, and `GPIO 15` (`SD_MISO`) Idle Voltages
-
-Set your multimeter to **DC Volts (`20 V` range)**. Keep the black probe on `GND`:
-
-1. **Measure `5V` (`VBUS`) pin:**
-   - **PASS:** Between **`4.75 V` and `5.25 V`**.
-   - **FAIL:** `< 4.50 V` -> Bad USB cable, overloaded port, or partial short.
-2. **Measure `3V3` pin:**
-   - **PASS:** Between **`3.20 V` and `3.40 V`**.
-   - **FAIL:** `< 3.00 V` or `> 3.50 V` -> **UNPLUG IMMEDIATELY.** Onboard 3.3 V regulator is overloaded or damaged.
-3. **Measure `GPIO 15` (`SD_MISO`) with the MicroSD card inserted:**
-   - **PASS:** Between **`0.00 V` and `3.35 V`** at all times.
-   - **FAIL:** **Above `3.60 V`** -> **UNPLUG IMMEDIATELY.** Your MicroSD breakout is pulling `MISO` up to `5 V`, which can damage the `3.3 V`-only ESP32-S3 pin. See [`docs/wiring/02-sd-card.md`](../wiring/02-sd-card.md) to power the breakout safely from `3.3 V` or use a 3.3 V-native socket.
-4. Log all three readings in [`docs/hardware_measurements.md`](../hardware_measurements.md).
+1. Make sure **no MicroSD card** is inserted and plug a USB-C data cable into the ESP32-S3 **`UART/COM`** port (preferably through a USB current meter or hub).
+2. **5-Second Heat & Current Check:**
+   - **PASS:** Neither the ESP32-S3 module nor its voltage regulator gets hot (cool or barely warm), and USB idle draw is around **`40–180 mA @ 5.0 V`**.
+   - **FAIL:** Chip/regulator heats rapidly or USB draw spikes `> 400 mA` -> **UNPLUG IMMEDIATELY** and re-check Step 1.
+3. Set your multimeter to **DC Volts (`20 V` range)** with black probe on `GND` and verify rails:
+   - ESP32 **`3V3` pin**: **`3.20 V` to `3.40 V`**
+   - ESP32 **`5V` / `VBUS` pin**: **`4.75 V` to `5.25 V`**
+   - **MicroSD module standalone `MISO` output** (wire still disconnected from ESP32 `GPIO 15`, module powered from `3V3` — measure both with **no card** and with a **FAT32 card inserted**):
+     - **PASS:** **`<= 3.35 V`** (`3.30 V` nominal) at idle and while card is inserted.
+     - **FAIL:** **Above `3.35 V`** (especially `~4.5–5.0 V`) -> **STOP AND UNPLUG.** That breakout is pulling `MISO` toward `5 V` or uses an incompatible level shifter/regulator that can destroy ESP32 `GPIO 15`. Replace it with a true `3.3 V`-native breakout ([Adafruit #4682](https://www.adafruit.com/product/4682), datasheet accessed `2026-11-15`) or verify [`docs/wiring/02-sd-card.md`](../wiring/02-sd-card.md).
+4. **Only after standalone SD `MISO` passes `<= 3.35 V`:** Unplug USB-C, solder/connect SD `MISO` to `GPIO 15`, plug USB-C back in, and verify `GPIO 15` still measures `<= 3.35 V` with black probe on `GND` (`CS`/`SCK`/`MOSI` also `<= 3.35 V`). Record the readings in [`docs/hardware_measurements.md`](../hardware_measurements.md).
 
 ---
 
-## Step 4: Flash the Minimal Bring-Up Sketch (`firmware/bringup/bringup.ino`)
+## Step 3: Read-Only `esptool v5.3.1` Chip & Flash Verification (Before Flashing Anything)
 
-Before flashing the full 3.29 MB multi-console firmware, flash the small, self-contained bring-up test sketch (`firmware/bringup/bringup.ino`). It runs the display at a conservative `40 MHz` SPI clock and tests one subsystem at a time:
+Before compiling or flashing any sketch, interrogate your physical chip in read-only mode so you know the real flash manufacturer/size and chip configuration ([Espressif `esptool` Basic Commands](https://docs.espressif.com/projects/esptool/en/latest/esp32s3/advanced-topics/basic-commands.html#read-spi-flash-id-flash-id), accessed `2026-11-15`). Note that `esptool v5.3.1` uses **hyphenated** subcommands (`flash-id`, `chip-id`, `read-mac`):
 
-1. Compile the bring-up sketch from the repository root:
-   ```powershell
-   .\arduino-cli.exe compile --profile esp32s3 --build-path build/bringup firmware/bringup
-   ```
-2. Flash it to your connected ESP32-S3 (`replace COM3 with your port from python tasks.py doctor`):
-   ```powershell
-   .\arduino-cli.exe upload --profile esp32s3 --port COM3 --input-dir build/bringup firmware/bringup
-   ```
-3. Open the serial monitor at `115200` baud:
-   ```powershell
-   python tasks.py monitor --port COM3
-   ```
-4. Check the 4 bring-up indicators on the screen and Serial monitor:
-   - **4a. Octal PSRAM (`8 MiB`):**
-     - **PASS:** Serial prints `[PSRAM] total=8388608 B ... 1MiB_memtest=PASS` and screen shows `PSRAM 8MB : PASS`.
-     - **FAIL:** `total=0 B` or `FAIL` -> Verify `PSRAM=opi` and `FlashMode=qio` in `sketch.yaml` and ensure nothing is soldered to `GPIO 33–37`.
-   - **4b. Display Color Bars (`ST7789` at `40 MHz`):**
-     - **PASS:** Top of screen shows 8 crisp vertical bars (Red, Green, Blue, Yellow, Cyan, Magenta, White, Teal) and legible white text on a black background.
-     - **FAIL:** White screen only -> Check `TFT_CS` (`GPIO 10`), `TFT_DC` (`GPIO 8`), `TFT_RST` (`GPIO 9`), `TFT_SCK` (`GPIO 12`), and `TFT_MOSI` (`GPIO 11`). Add a `10 kΩ` pull-up resistor from `TFT_CS` (`GPIO 10`) to `3V3`.
-   - **4c. MicroSD Mount (`GPIO 13` CS, `25 MHz`):**
-     - **PASS:** With a FAT32 MicroSD card inserted, screen shows `MicroSD : PASS (<size> MB)`.
-     - **FAIL:** `NOT MOUNTED` -> Format the card as FAT32 (not exFAT), check `SD_CS` (`GPIO 13`) and `SD_MISO` (`GPIO 15`), and add a `10 kΩ` pull-up resistor from `SD_CS` (`GPIO 13`) to `3V3`.
-   - **4d. 8 Wired Buttons (`UP=4, DOWN=5, LEFT=6, RIGHT=7, A=16, B=17, START=18, SELECT=21`):**
-     - **PASS:** All 8 boxes on screen are dark when untouched, and each box turns bright green (and prints `[BTN]` on Serial) when pressed.
-     - **FAIL:** A box stays green without being pressed -> Check that pin for a short to `GND`.
+```powershell
+$ESPTOOL = "$env:LOCALAPPDATA\Arduino15\packages\esp32\tools\esptool_py\5.3.1\esptool.exe"
+& $ESPTOOL --chip esp32s3 --port COM3 flash-id
+& $ESPTOOL --chip esp32s3 --port COM3 chip-id
+& $ESPTOOL --chip esp32s3 --port COM3 read-mac
+```
+
+*(If `esptool` reports unable to connect, hold `BOOT`, tap `RST`, release `RST`, then release `BOOT` and re-run.)* Save the output in [`docs/hardware_measurements.md`](../hardware_measurements.md).
 
 ---
 
-## Step 5: Flash Full Firmware & Compare `40 MHz` vs `80 MHz` SPI
+## Boot-Loop Fallback
 
-Once Steps 1–4 pass and are recorded in [`docs/hardware_measurements.md`](../hardware_measurements.md):
+> [!IMPORTANT]
+> **`OWNER-OBSERVED` `FlashMode=qio` Conflict:** According to Espressif's *ESP32-S3-WROOM-1 Datasheet* (`v1.4` Table 1, [`espressif.com`](https://www.espressif.com/documentation/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf), accessed `2026-11-15`), `ESP32-S3-WROOM-1-N16R8` integrates `16 MB` **Quad SPI** flash (`FlashMode=qio`) and `8 MB` **Octal SPI** PSRAM (`PSRAM=opi`). **However**, the owner observed this specific physical board reboot-looping under `FlashMode=qio` in an earlier session.
+> Do **not** blindly modify [`firmware/BmoGameboy/sketch.yaml`](../../firmware/BmoGameboy/sketch.yaml) (`qio/opi` is a locked Hard Stop pending an ADR).
 
-1. Build and flash the full firmware:
+If flashing causes continuous `rst:0x...` reboots in Serial Monitor (`115200` baud):
+
+1. Check power first: plug straight into a direct PC motherboard USB port (weak hubs trigger `ESP_RST_BROWNOUT`) and verify Step 3 `flash-id` output.
+2. Run a **temporary non-persistent diagnostic compile** of `bringup.ino` in Dual I/O flash mode (`FlashMode=dio` — one of the four modes supported by `.\arduino-cli.exe board details -b esp32:esp32:esp32s3`: `qio`, `qio120`, `dio`, `opi`):
+
+```powershell
+.\arduino-cli.exe compile --fqbn esp32:esp32:esp32s3:FlashMode=dio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi firmware/bringup
+.\arduino-cli.exe upload --fqbn esp32:esp32:esp32s3:FlashMode=dio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi --port COM3 firmware/bringup
+```
+
+3. If `dio` boots cleanly while `qio` loops, capture both the Step 3 `flash-id` output and the serial boot log, open an ADR in [`docs/decisions/`](../decisions/README.md), and approve the hard-stop change before touching `sketch.yaml`.
+
+---
+
+## Step 4: Flash Minimal Bring-Up Sketch FIRST (`firmware/bringup/bringup.ino`)
+
+Never jump straight to the full emulator firmware on untested hardware. Flash [`firmware/bringup/bringup.ino`](../../firmware/bringup/bringup.ino) (`TARGET_COMPILED`: `390,880 B` Flash, `24,600 B` DRAM, `73,472 B` IRAM) first:
+
+```powershell
+.\arduino-cli.exe compile --profile esp32s3 firmware/bringup
+.\arduino-cli.exe upload --profile esp32s3 --port COM3 firmware/bringup
+.\arduino-cli.exe monitor -p COM3 -c baudrate=115200
+```
+
+Verify all 4 checks on the screen and Serial Monitor:
+- `[MEM]` / `[PSRAM]`: `8 MB` Octal PSRAM detected and `1MiB_memtest=PASS`
+- `[TFT]`: Crisp Red / Green / Blue / White / Black test bars (`320×240` at `40 MHz` SPI) with no snow or washed-out lines
+- `[SD]`: FAT32 MicroSD mounts cleanly at `25 MHz` (`cardSize=... MB`)
+- `[BTN]`: Every wired button (`UP=4`, `DOWN=5`, `LEFT=6`, `RIGHT=7`, `A=16`, `B=17`, `START=18`, `SELECT=21`) prints when pressed and shows `(all released)` otherwise (no stuck pins)
+
+---
+
+## Step 5: Flash Full `BmoGameboy` Firmware & Compare `40 MHz` vs `80 MHz` SPI
+
+Only after Steps 1–4 all pass:
+
+1. Compile and flash the full handheld firmware (`default` profile for personal use, or `mit` for strictly permissive cores):
    ```powershell
    python tasks.py build --profile default --warnings strict --fail-on-warnings
-   python tasks.py flash --port COM3
+   .\arduino-cli.exe upload --profile esp32s3 --port COM3 firmware/BmoGameboy
+   .\arduino-cli.exe monitor -p COM3 -c baudrate=115200
    ```
-2. Hold **`SELECT` (`GPIO 21`)** while pressing **`RST`** on the first boot so the handheld starts in **`40 MHz` Safe Mode** (`[SAFE_MODE]`).
-3. Open **Diagnostics** on-screen and compare **`40 MHz`** vs **`80 MHz`** SPI clock stability (`ADR 0014`).
-   - **PASS:** Both `40 MHz` and `80 MHz` render cleanly, or `40 MHz` is saved in NVS if `80 MHz` shows pixel noise on your perfboard wires.
-   - **FAIL:** Reboot loop or garbled screen at `80 MHz` -> Hold `SELECT` at boot to lock `40 MHz`, and add `22–33 Ω` series resistors on `GPIO 11` (`MOSI`) and `GPIO 12` (`SCK`) at the ESP32-S3 pins.
+2. Observe BMO's boot screen at default **`80 MHz`** display SPI ([ADR 0014](../decisions/0014-display-spi-clock.md)).
+3. Hold **`SELECT`** or **`B`** during boot to trigger Safe Mode **`40 MHz`** (`[SAFE_MODE] SELECT/B held at boot; forced display SPI clock to 40 MHz`) and compare visual crispness, snow/glitches, and SD card reliability. Record `40 MHz` vs `80 MHz` findings in [`docs/hardware_measurements.md`](../hardware_measurements.md).
+
+---
+
+## Step 6: Before Adding AA Batteries
+
+Do **not** solder AA cells until USB bring-up passes AND you select `2×AA` (`Adafruit #2030` or `TI TPS61022` + `MF-R300`) or `3×AA` (`Pololu U3V70F5` or `Pololu U3V40F5` + `MF-R250`, requiring a taller shell) in [`docs/owner-decisions.md`](../owner-decisions.md) Decision 1 and [`docs/decisions/0006-portable-power.md`](../decisions/0006-portable-power.md).

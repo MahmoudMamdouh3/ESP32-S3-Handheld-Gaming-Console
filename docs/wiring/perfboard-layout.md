@@ -81,3 +81,6 @@ $$d = \sqrt{1.00^2 + 1.00^2} = 1.414\text{ cm}$$
 | MicroSD Breakout Module (3.3V SPI) | `C16..C25`, `R05..R21` | `2.40 × 4.20 × 0.40 cm` | `1.34 cm` |
 | Pololu 5V Step-Up Boost Module (U3V40F5 / S7V7F5) | `C18..C26`, `R22..R28` | `2.03 × 1.52 × 0.50 cm` | `1.24 cm` |
 | **Lower Y (`7.80..11.80 cm`)** | 2xAA NiMH Holder (Recommended) or 3xAA Holder | Chassis bay (`x = 1.50..7.30 cm`, `y = 8.10..11.30 cm`) | `5.80 × 3.20 × 1.65 cm` | `0.09 cm` |
+
+> [!WARNING]
+> **Power Component Revision (See [ADR 0006](../decisions/0006-portable-power.md) and [BOM](../bom.md)):** `hardware/layout.json` preserves the frozen baseline slot labels (`U3V40F5 / S7V7F5` and `2xAA (Recommended)`) for coordinate stability. `Pololu S7V7F5` (`~0.5 A`, `2.7 V` min) and `Pololu U3V40F5` (`2.7 V` startup) are **withdrawn** for `2×AA`: use **`Adafruit PowerBoost 1000 Basic (#2030)`** or **`TI TPS61022`** for `2×AA` (`2.0–2.9 V`), or **`Pololu U3V70F5 (#2891)`** / **`Pololu U3V40F5 (#4012)`** for `3×AA` (`3.0–4.35 V`). Testing `3×AA` (`5.80 × 4.80 × 1.65 cm`) in [`hardware/layout_3xaa_variant.json`](../../hardware/layout_3xaa_variant.json) proves it collides in this `8.80 × 12.40 × 3.20 cm` shell (`4.613 cm` clear below `DevKitC-1` -> `0.277 cm` Y overlap and `1.26 cm` Z clash) and requires a `~0.60–1.00 cm` taller enclosure.

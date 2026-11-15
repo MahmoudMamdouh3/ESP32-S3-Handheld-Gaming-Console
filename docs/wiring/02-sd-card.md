@@ -1,6 +1,6 @@
 # Wiring — MicroSD Breakout, `GPIO 15` (`SD_MISO`) Safety, and Shared SPI Bus
 
-- **Last Verified Commit:** `d8d4b5e` (`2026-11-15`)
+- **Updated:** `2026-11-15` (`NOT_TESTED` pending physical bench multimeter verification)
 - **Board Target:** `ESP32-S3-DevKitC-1-N16R8` (`ESP32-S3-WROOM-1-N16R8` module). Pin assignments in [`firmware/BmoGameboy/src/hal/config.h`](../../firmware/BmoGameboy/src/hal/config.h) are authoritative.
 
 ---
@@ -35,7 +35,7 @@ Hobbyist MicroSD breakouts come in two common styles. Inspect your module before
 - **How it works (and two known hardware traps):**
   1. **Dropout Voltage Trap:** The onboard `AMS1117-3.3` LDO requires `>= 4.5 V` on `VCC` to regulate `3.3 V`. If you wire `VCC` of a Type B board to `3V3`, the SD card only receives `~2.2 V` and fails to mount or browns out during reads.
   2. **Shared-Bus / `5 V` Pull-Up Trap:** Well-built Type B clones power the `74LVC125A` buffer from the `3.3 V` LDO output and gate the `MISO` tri-state output (`OE#`) with `SD_CS`. However, cheap clones sometimes wire `10 kΩ` pull-up resistors on `MISO` to `VCC` (`5 V`) or hardwire `MISO` `OE#` to `GND` (so the buffer drives `GPIO 15` continuously even when `SD_CS` is `HIGH`).
-- **Mandatory Multimeter Check Before Soldering Permanently:**
-  1. Power the board over USB-C and measure `GPIO 15` (`SD_MISO`) to `GND` with a multimeter in DC Volts mode ([`docs/guides/bringup.md`](../guides/bringup.md) Step 3).
-  2. **PASS:** `GPIO 15` reads **`<= 3.35 V`**.
-  3. **FAIL (`> 3.60 V`):** Unplug immediately and switch to a `3.3 V`-native MicroSD breakout (or the SD slot on the back of the `2.4"` ST7789 display PCB).
+- **Mandatory Multimeter Check Before Connecting `GPIO 15`:**
+  1. Leave the SD module's `MISO` wire **disconnected** from ESP32 `GPIO 15`, power the board over USB-C, and measure the standalone SD module's `MISO` output to `GND` in DC Volts mode ([`docs/guides/bringup.md`](../guides/bringup.md) Step 2).
+  2. **PASS:** Standalone `MISO` reads **`<= 3.35 V`** (`3.30 V` nominal) with no card and with a FAT32 card inserted — only now connect `MISO` to `GPIO 15`.
+  3. **FAIL (`> 3.35 V`):** Unplug immediately, do not connect to `GPIO 15`, and switch to a `3.3 V`-native MicroSD breakout ([Adafruit #4682](https://www.adafruit.com/product/4682), accessed `2026-11-15`, or the SD slot on the back of the `2.4"` ST7789 display PCB).

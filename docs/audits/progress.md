@@ -1,43 +1,43 @@
 # Audit & Remediation Progress Tracker (`techlead/audit-2`)
 
-- **Current Phase:** Phase 10 — Final Verification, Health Scorecard & Handoff (Complete)
+- **Current Phase:** Phase 10 — Owner Sign-Off & Physical Bring-Up (Open — DO NOT MERGE until `Decision 9`, `Decision 1`, `C1`/`esptool`, and `SD_MISO` checks resolve)
 - **Baseline Commit:** `d8d4b5ef5cb314072652992805fff600961b2920`
 
-## Completed Phases
+## Phase Status
 
-- [x] **Phase 0 — Baseline and Inventory (`HOST_TESTED` / `TARGET_COMPILED`):**
+- [x] **Phase 0 — Baseline and Inventory (`HOST_TESTED` / `TARGET_COMPILED`):** Complete.
   - Created branch `techlead/audit-2`.
   - Recorded git object counts (`382` loose / `3,215` packed, `0` blobs `>= 1 MiB` across all refs), secret scan (`0` secrets), and baseline timings (`check` `82.56 s`, `test` `631.71 s`).
   - Authored [docs/audits/audit-plan.md](audit-plan.md) and [docs/audits/findings-register.md](findings-register.md).
-- [x] **Phase 1 — Truth Reconciliation (`C1–C11`) (`HOST_TESTED`):**
-  - Authored [docs/audits/claims-inventory.md](claims-inventory.md) via [`scripts/extract_claims.py`](../../scripts/extract_claims.py) auditing `643` extracted factual/numeric claims (`TRUE=601`, `UNVERIFIABLE=42`, `STALE=0`, `FALSE=0`).
-  - Reconciled [ROADMAP.md](../../ROADMAP.md), ADRs [`0003`](../decisions/0003-rom-keys-and-index-v2.md), [`0011`](../decisions/0011-index-path-storage.md), [`0012`](../decisions/0012-save-state-schema.md), [`0013`](../decisions/0013-partition-layout.md), [docs/performance.md](../performance.md), [docs/hardware.md](../hardware.md), [hardware/diagram.json](../../hardware/diagram.json), and [scripts/convert_covers.py](../../scripts/convert_covers.py).
-- [x] **Phase 2 — Licensing and Legal Hygiene (`L1–L5`) (`HOST_TESTED`):**
+- [x] **Phase 1 — Truth Reconciliation (`C1–C11`) (`HOST_TESTED`):** Complete with `2` deferrals (`1 DEFERRED` [`C1` `OWNER-OBSERVED` `qio` conflict], `1 OWNER_DECISION` [`C9`]).
+  - Authored [docs/audits/claims-inventory.md](claims-inventory.md) via [`scripts/extract_claims.py`](../../scripts/extract_claims.py) (`deep-verified` vs `pattern-checked` tiers, `0` `FALSE` / `0` `STALE`).
+  - Reconciled [ROADMAP.md](../../ROADMAP.md), ADRs [`0003`](../decisions/0003-rom-keys-and-index-v2.md), [`0011`](../decisions/0011-index-path-storage.md), [`0012`](../decisions/0012-save-state-schema.md), [`0013`](../decisions/0013-partition-layout.md), `C1` conflict note, [docs/performance.md](../performance.md), [docs/hardware.md](../hardware.md), [hardware/diagram.json](../../hardware/diagram.json), and [scripts/convert_covers.py](../../scripts/convert_covers.py).
+- [x] **Phase 2 — Licensing and Legal Hygiene (`L1–L5`) (`HOST_TESTED`):** Complete with `3` deferrals (`OWNER_DECISION`: `L1`, `L3`, `L4`).
   - Built the 16-component license compatibility matrix in [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) and [ADR 0008](../decisions/0008-rom-policy-and-licensing.md).
   - Restricted CI/Release binary publishing to the license-clean `mit` profile; pinned GitHub Actions to 40-char commit SHAs.
   - Audited `125` first-party SPDX-tagged files, identified `19` GPL/Non-Commercial core-coupled files needing non-permissive SPDX headers, added **Decision 9** (`docs/owner-decisions.md`), and staged unmerged branch `license/spdx-review` (`b6b195e` revert of `addcc07` + `3fd5c05`/`d2a9d43` corrected SPDX split).
-- [x] **Phase 3 — Hardware, Power, Pins, Enclosure, Layout & Simulator Hygiene (`H1–H6`) (`TARGET_COMPILED` / `HOST_TESTED`):**
-  - Added [`firmware/bringup/bringup.ino`](../../firmware/bringup/bringup.ino) (`TARGET_COMPILED`: `390,724 B` flash, `24,600 B` RAM), [`docs/guides/bringup.md`](../guides/bringup.md), [`docs/guides/safety.md`](../guides/safety.md), [`docs/bom.md`](../bom.md), and [`pins_check.h`](../../firmware/BmoGameboy/src/hal/pins_check.h).
-  - Expanded ADRs [`0006`](../decisions/0006-portable-power.md), [`0007`](../decisions/0007-fram-wiring.md), [`0014`](../decisions/0014-display-spi-clock.md), and [`docs/wiring/02-sd-card.md`](../wiring/02-sd-card.md).
-  - Created [`hardware/layout.json`](../../hardware/layout.json) -> SVG top/side views, `31×46` perfboard map, `wire_list.csv`, and fixed 2D/3D simulator layout contrast, ABXY alignment, and NiMH/PSRAM text (`41339aa`, `6bc4a30`).
-- [x] **Phase 4 — Repo Structure, Naming & Hygiene (`S1–S8`) (`HOST_TESTED`):**
+- [x] **Phase 3 — Hardware, Power, Pins, Enclosure, Layout & Simulator Hygiene (`H1–H6`) (`TARGET_COMPILED` / `HOST_TESTED`):** Complete with `4` deferrals (`OWNER_DECISION`: `H2`, `H4`, `H5`, `H6`).
+  - Added [`firmware/bringup/bringup.ino`](../../firmware/bringup/bringup.ino) (`TARGET_COMPILED`: `390,880 B` flash, `24,600 B` RAM, `73,472 B` IRAM), ordered bring-up guides (continuity -> disconnected `MISO <= 3.35 V` -> read-only `esptool` -> `bringup.ino` -> full firmware), [`docs/guides/safety.md`](../guides/safety.md), datasheet-validated [`docs/bom.md`](../bom.md) (`tests/test_bom_ratings.py`), and [`pins_check.h`](../../firmware/BmoGameboy/src/hal/pins_check.h).
+  - Rewrote [ADR 0006](../decisions/0006-portable-power.md) and Decision 1 (withdrawing `S7V7F5` / `U3V40F5`-for-`2×AA` / `OS102011MA1QN1` / `IRF9540N` / `FQP27P06` / `MF-R150`), and expanded ADRs [`0007`](../decisions/0007-fram-wiring.md), [`0014`](../decisions/0014-display-spi-clock.md), and [`docs/wiring/02-sd-card.md`](../wiring/02-sd-card.md).
+  - Created [`hardware/layout.json`](../../hardware/layout.json) (`0` collisions), [`hardware/layout_3xaa_variant.json`](../../hardware/layout_3xaa_variant.json) (automating `3×AA` Y/Z collision check), SVG top/side views, `31×46` perfboard map, `wire_list.csv`, and fixed 2D/3D simulator layout contrast, ABXY alignment, and NiMH/PSRAM text (`41339aa`, `6bc4a30`).
+- [x] **Phase 4 — Repo Structure, Naming & Hygiene (`S1–S8`) (`HOST_TESTED`):** Complete with `7` deferrals (`4 DEFERRED`: `S2, S4, S6, S7`; `3 OWNER_DECISION`: `S1, S3, S5`).
   - Added [`docs/conventions.md`](../conventions.md), [`.editorconfig`](../../.editorconfig), [`.gitattributes`](../../.gitattributes), [`.github/CODEOWNERS`](../../.github/CODEOWNERS), and Conventional Commit hook [`.githooks/commit-msg`](../../.githooks/commit-msg).
-  - Removed `19` dead files (`941509c`, `0b22efc`) and gated dormant `fram_save.cpp` and `unit_tests.cpp`.
-- [x] **Phase 5 — Firmware Architecture & Code Quality (`F1–F15`) (`HOST_TESTED` / `TARGET_COMPILED`):**
-  - Freed `7,008 B` static DRAM (`192,280 B` -> `185,272 B`, `56.5%`), moved `M6502::ourInstructionCycleTable` to flash and extracted [`doom_palette.h`](../../firmware/BmoGameboy/src/ui/doom_palette.h) (equivalence proven in `doom_palette_test.cpp`; flash/PSRAM timing logged as `NOT_TESTED` risk in [`hardware_measurements.md`](../hardware_measurements.md) Step `9`), and extracted [`popular_games_table.h`](../../firmware/BmoGameboy/src/storage/popular_games_table.h) (`sd_catalog.cpp` `919` lines; `bmo_app.cpp` `1,197` & `bmo_face.cpp` `1,145` deferred post-bring-up).
+  - Removed `19` dead files (`941509c`, `0b22efc`), removed stale `d8d4b5e` verification stamps, and gated dormant `fram_save.cpp` and `unit_tests.cpp`.
+- [x] **Phase 5 — Firmware Architecture & Code Quality (`F1–F15`) (`HOST_TESTED` / `TARGET_COMPILED`):** Complete with `14` deferrals (`13 DEFERRED`: `F1–F6, F9–F15`; `1 OWNER_DECISION`: `F8`).
+  - Freed `7,008 B` static DRAM (`192,280 B` -> `185,272 B`, `56.5%`), moved `M6502::ourInstructionCycleTable` to flash and extracted [`doom_palette.h`](../../firmware/BmoGameboy/src/ui/doom_palette.h) (equivalence proven in `doom_palette_test.cpp`; flash/PSRAM timing logged as `NOT_TESTED` risk in [`hardware_measurements.md`](../hardware_measurements.md) Step `9`), and extracted [`popular_games_table.h`](../../firmware/BmoGameboy/src/storage/popular_games_table.h) (`sd_catalog.cpp` `919` lines; `bmo_app.cpp` `1,192` & `bmo_face.cpp` `1,145` deferred post-bring-up).
   - Hardened `RTC_NOINIT_ATTR BootBreadcrumb` with `kBootBreadcrumbMagic` + CRC32 (`boot_safe_mode.h`, `boot_safe_mode_test.cpp` incl. cold-boot garbage tests), added mid-commit SD removal fault-injection (`atomic_fs_test.cpp`), [`docs/reference/controls.md`](../reference/controls.md), and complete [`docs/architecture.md`](../architecture.md) (`2065c54`).
-- [x] **Phase 6 — Performance & Analytical Honesty (`P1–P5`) (`HOST_TESTED`):**
+- [x] **Phase 6 — Performance & Analytical Honesty (`P1–P5`) (`HOST_TESTED`):** Complete with `2` deferrals (`1 DEFERRED`: `P3`; `1 OWNER_DECISION`: `P5`).
   - Updated [`docs/compatibility.md`](../compatibility.md) with `Primary` vs `Experimental (NOT_TESTED on HW)` tiers and [ADR 0015](../decisions/0015-display-driver-and-ui-framework.md); added boot/catalog/input latency models and adaptive-frameskip / dirty-rect / power evaluations in [`docs/performance.md`](../performance.md).
-- [x] **Phase 7 — Tests, CI & Dev Environment (`T1–T6`) (`HOST_TESTED`):**
-  - Added `tasks.py doctor`, `tasks.py check --fast` (`29.31 s`), `.devcontainer`, `.vscode`, `.clangd`, and [ADR 0016](../decisions/0016-build-system-evaluation.md).
-- [x] **Phase 8 — AI Engineering & Tooling Environment (`A1–A7`) (`HOST_TESTED`):**
-  - Updated [`AGENTS.md`](../../AGENTS.md) and [`firmware/AGENTS.md`](../../firmware/AGENTS.md), added [`docs/ai/STATE.md`](../ai/STATE.md) (`26` lines), `generate_codemap.py` -> [`docs/ai/CODEMAP.md`](../ai/CODEMAP.md) (`89` lines), cross-file pin parity tests (`tests/test_pin_snapshot.py`), and [`docs/audits/ai-and-tooling-review.md`](ai-and-tooling-review.md) (`4828e44`).
-- [x] **Phase 9 — Owner Documentation (`HOST_TESTED`):**
-  - Authored [`docs/guides/owner-guide.md`](../guides/owner-guide.md) and [`docs/owner-decisions.md`](../owner-decisions.md) (`9` decisions), updated [`README.md`](../../README.md).
-- [x] **Phase 10 — Final Verification, Health Scorecard & Handoff (`HOST_TESTED` / `TARGET_COMPILED`):**
-  - Split [`docs/audits/findings-register.md`](findings-register.md) into all `63` individual seed rows (`C1..C11`, `L1..L5`, `H1..H6`, `F1..F15`, `S1..S8`, `P1..P5`, `T1..T6`, `A1..A7`) with zero batched rows, and completed [`docs/audits/health-scorecard.md`](health-scorecard.md) (explicit `1–5` rubric across all `11` areas, zero unearned `5/5`, equal-scope table) and [`docs/audits/pr-description.md`](pr-description.md).
-  - Verified `tasks.py format --check` (`0.91 s`, `128` files), `tasks.py check --fast` (`29.31 s`), `tasks.py check` (`74.69 s`, `26` CTest + `165` Py + `12` Guardian, `100%` pass), `extract_claims.py --fail-on-false` (`0.16 s`, `643` claims / `0` `FALSE` / `0` `STALE`), `check_markdown_links.py` (`0.54 s`, `0` issues), `tasks.py build --profile all --warnings strict --fail-on-warnings` (`0` warnings across all `7` configs), and `tasks.py size --check-budgets`.
+- [x] **Phase 7 — Tests, CI & Dev Environment (`T1–T6`) (`HOST_TESTED`):** Complete with `6` deferrals (`1 OWNER_DECISION`: `T1`; `5 DEFERRED`: `T2–T6`).
+  - Added `tasks.py doctor`, `tasks.py check --fast` (`~30 s`), `tests/test_bom_ratings.py`, layout collision checks in `tests/test_hardware_layout.py`, `.devcontainer`, `.vscode`, `.clangd`, and [ADR 0016](../decisions/0016-build-system-evaluation.md).
+- [x] **Phase 8 — AI Engineering & Tooling Environment (`A1–A7`) (`HOST_TESTED`):** Complete with `1` deferral (`OWNER_DECISION`: `A7`).
+  - Updated [`AGENTS.md`](../../AGENTS.md) and [`firmware/AGENTS.md`](../../firmware/AGENTS.md), added [`docs/ai/STATE.md`](../ai/STATE.md) (`26` lines), `generate_codemap.py` -> [`docs/ai/CODEMAP.md`](../ai/CODEMAP.md), cross-file pin parity tests (`tests/test_pin_snapshot.py`), and [`docs/audits/ai-and-tooling-review.md`](ai-and-tooling-review.md) (`4828e44`).
+- [x] **Phase 9 — Owner Documentation (`HOST_TESTED`):** Complete (`0` deferrals).
+  - Authored [`docs/guides/owner-guide.md`](../guides/owner-guide.md), [`docs/guides/bringup.md`](../guides/bringup.md), [`docs/hardware-validation-kit.md`](../hardware-validation-kit.md), [`docs/bom.md`](../bom.md), and [`docs/owner-decisions.md`](../owner-decisions.md) (`9` decisions), updated [`README.md`](../../README.md).
+- [ ] **Phase 10 — Owner Sign-Off, Bench Bring-Up & Merge (`HOST_TESTED` / `TARGET_COMPILED`):** Open — awaiting owner approval and first hardware checks.
+  - Split [`docs/audits/findings-register.md`](findings-register.md) into all `63` individual seed rows (`C1..C11`, `L1..L5`, `H1..H6`, `F1..F15`, `S1..S8`, `P1..P5`, `T1..T6`, `A1..A7`), honestly re-rated [`docs/audits/health-scorecard.md`](health-scorecard.md) (`3/5` Documentation Truthfulness), and updated [`docs/audits/pr-description.md`](pr-description.md).
+  - Final host verification (`format --check`, `check --fast`, `check`, `extract_claims.py --fail-on-false`, `check_markdown_links.py`) running on final revision.
 
 ## Blockers / Owner Decisions Queued
 
-- Zero blocking technical issues. All `9` items requiring human sign-off (`1–9`, including `Decision 9` and unmerged `license/spdx-review`) are documented in plain English in [`docs/owner-decisions.md`](../owner-decisions.md).
+- **DO NOT MERGE `techlead/audit-2` into `main` yet:** Owner must first (1) resolve **`Decision 9`** (first-party SPDX/license review & `license/spdx-review` branch) and open `P0/P1` choices in [`docs/owner-decisions.md`](../owner-decisions.md) (`Decisions 1–6`), (2) run read-only `esptool flash-id` / `chip-id` on the physical board to resolve **`C1`** (`OWNER-OBSERVED` `qio` boot-loop conflict), and (3) complete standalone `SD_MISO <= 3.35 V` multimeter checks per [`docs/guides/bringup.md`](../guides/bringup.md).

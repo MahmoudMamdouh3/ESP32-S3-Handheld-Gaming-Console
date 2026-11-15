@@ -1,6 +1,6 @@
 # Hardware Reference
 
-- **Last Verified Commit:** `d8d4b5e` (`2026-11-15`)
+- **Updated:** `2026-11-15` (Authoritative source: `config.h`, `pins_check.h`, and manufacturer datasheets accessed `2026-11-15`)
 
 This document separates verified source configuration (`TARGET_COMPILED` / `HOST_TESTED`) from physical assumptions and open electrical measurements (`NOT_TESTED`). **Physical `HARDWARE_TESTED` records: none recorded yet.**
 
@@ -12,16 +12,16 @@ The soldered unit uses a **44-pin `ESP32-S3-DevKitC-1-N16R8` development carrier
 
 | Setting | Configured Value | Status / Constraint |
 | :--- | :--- | :--- |
-| Carrier Board | `ESP32-S3-DevKitC-1-N16R8` (44-pin) | `2.54 cm × 6.33 cm`, dual USB-C (`UART/COM` via USB-serial bridge on `GPIO 43/44`; `USB/OTG` on `GPIO 19/20`), soldered to `0.254 cm` pitch perfboard |
-| SMD Radio/Memory Module | `ESP32-S3-WROOM-1-N16R8` | Dual-core Xtensa LX7 @ 240 MHz, 16 MB **Quad SPI** Flash, 8 MB **Octal SPI** PSRAM |
-| Arduino Profile / FQBN | `FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi` | **Hard Stop:** Never use `FlashMode=opi` (the N16R8 flash is Quad SPI; `FlashMode=opi` causes a boot loop) |
+| Carrier Board | `ESP32-S3-DevKitC-1-N16R8` (44-pin) | `2.54 cm × 6.33 cm`, dual USB-C (`UART/COM` via USB-serial bridge on `GPIO 43/44`; `USB/OTG` on `GPIO 19/20`), soldered to `0.254 cm` pitch perfboard ([Espressif DevKitC-1 Guide](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/user_guide-s3-devkitc-1.html), accessed `2026-11-15`) |
+| SMD Radio/Memory Module | `ESP32-S3-WROOM-1-N16R8` | Dual-core Xtensa LX7 @ 240 MHz, 16 MB **Quad SPI** Flash, 8 MB **Octal SPI** PSRAM ([WROOM-1 Datasheet](https://www.espressif.com/documentation/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf), accessed `2026-11-15`) |
+| Arduino Profile / FQBN | `FlashMode=qio,FlashSize=16M,PartitionScheme=custom,PSRAM=opi` | **Hard Stop (`OWNER-OBSERVED` conflict):** Datasheet lists Quad SPI Flash (`qio`) + Octal PSRAM (`opi`); **owner noted `qio` previously boot-looped on this physical board**. Keep `sketch.yaml` unchanged until read-only `esptool flash-id` runs ([`bringup.md`](guides/bringup.md)) |
 | Partitions (`partitions.csv`) | `app0 = 8 MiB` (`0x800000`), `ffat = ~7.9 MiB` (`0x7E0000`), `64 KiB` unallocated tail at `0xFF0000` | **Hard Stop:** Leave unchanged until owner approves [ADR 0013](decisions/0013-partition-layout.md) |
 | `FEATURE_SD_CARD` | `1` | Shared FSPI bus with ST7789 via `SpiArbiter::ScopedLock` |
 | `FEATURE_BATTERY_MONITOR` | `0` (Hard Stop) | No voltage divider soldered on `BATTERY_ADC_PIN` (`GPIO 1`); do not read |
 | `FEATURE_AUDIO` | `0` (Hard Stop) | No I2S DAC soldered (`GPIO 38/39/40`); do not enable |
 | `TFT_SPI_HZ` / Fallback | `80 MHz` default / `40 MHz` Safe Mode & Diagnostics fallback | Sitronix ST7789VW datasheet specifies `62.5 MHz` max write cycle (`16 ns`); `80 MHz` is unmeasured on physical perfboard ([ADR 0014](decisions/0014-display-spi-clock.md)) |
 | `SD_SPI_HZ` | `25 MHz` | Configured nominal SD mount rate |
-| Power Input | USB-C (`5 V`) only on current board | Planned rechargeable AA NiMH (2×AA or 3×AA) + 5 V boost converter is not yet wired or measured ([ADR 0006](decisions/0006-portable-power.md)) |
+| Power Input | USB-C (`5 V`) only on current board | Planned `2×AA` (`2.0–2.9 V`, start `<= 1.8 V`: [Adafruit #2030](https://www.adafruit.com/product/2030) / [TI TPS61022](https://www.ti.com/lit/ds/symlink/tps61022.pdf)) or `3×AA` (`3.0–4.35 V`: [Pololu U3V40F5](https://www.pololu.com/product/4012) / [Pololu U3V70F5](https://www.pololu.com/product/2891)), sized `>= 1.0 A @ 5 V` (datasheets accessed `2026-11-15`; [ADR 0006](decisions/0006-portable-power.md)) |
 
 ## 2. Pin Assignments (`config.h`) & ESP32-S3 GPIO Budget
 

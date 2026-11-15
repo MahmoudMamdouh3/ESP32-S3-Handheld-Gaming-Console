@@ -25,9 +25,12 @@ Do not skip ahead to 3D printing the case or loading hundreds of games until Ste
    - Unplug USB-C and remove AA batteries before soldering or probing continuity.
 2. **Do the 5-Minute Power-Off Multimeter Check ([`docs/guides/bringup.md` Stage 1](bringup.md)):**
    - Put your multimeter in Continuity (beep) mode and make sure `3V3` and `GND` do **not** beep (no short circuit).
-3. **Check Your MicroSD Breakout Voltage ([`docs/guides/bringup.md` Stage 2](bringup.md)):**
-   - Make sure the `MISO` pin (`GPIO 15`) never exceeds `3.30 V`. Add the two `10 kΩ` pull-up resistors from `TFT_CS` (`GPIO 10`) and `SD_CS` (`GPIO 13`) to `3V3` ([`docs/wiring/02-sd-card.md`](../wiring/02-sd-card.md)).
-4. **Flash the Minimal Bring-Up Sketch First ([`firmware/bringup/bringup.ino`](../../firmware/bringup/bringup.ino)):**
+   - **Disconnect** the SD module's `MISO` wire from ESP32 `GPIO 15` before turning power on for the first time.
+3. **Check Your Standalone MicroSD Module `MISO` Voltage BEFORE Connecting `GPIO 15` ([`docs/guides/bringup.md` Stage 2](bringup.md)):**
+   - Power on via USB with the SD module's `MISO` wire disconnected, and measure the standalone SD module's `MISO` output. Connect it to `GPIO 15` **only** after it measures `<= 3.35 V` (`3.30 V` nominal), and add the two `10 kΩ` pull-up resistors from `TFT_CS` (`GPIO 10`) and `SD_CS` (`GPIO 13`) to `3V3` ([`docs/wiring/02-sd-card.md`](../wiring/02-sd-card.md)).
+4. **Run the Read-Only Chip Check, Then Flash `bringup.ino` First ([`firmware/bringup/bringup.ino`](../../firmware/bringup/bringup.ino)):**
+   - Run the read-only `esptool flash-id` / `chip-id` check first (`docs/guides/bringup.md` Stage 3) so you know the exact flash and PSRAM wiring on your physical board before uploading any code.
+   - Start with `bringup.ino` to verify buttons, SD, and LCD, and follow [`docs/decisions/0006-portable-power.md`](../decisions/0006-portable-power.md) before adding a `2×AA` or `3×AA` NiMH boost pack (`Adafruit #2030`/`TPS61022` for `2×AA`, or `Pololu U3V70F5`/`U3V40F5` for `3×AA` in a taller shell; old `S7V7F5` advice is withdrawn).
    - Before flashing the huge 3.3 MB emulator firmware, flash the small bring-up test sketch (instructions in Section 4 below). It checks your 8 MB memory (`PSRAM`), draws color bars on the `2.4"` screen at a safe `40 MHz` speed, checks the SD card, and lights up each of your 8 buttons on screen as you press them.
 5. **Prepare Your MicroSD Card (Section 3 below):**
    - Format a MicroSD card (`<= 32 GB`) as **FAT32** and create the ROM folders.
@@ -71,14 +74,19 @@ Do not skip ahead to 3D printing the case or loading hundreds of games until Ste
 
 1. Plug your USB-C data cable into the port labeled **`UART` / `COM`** on your `ESP32-S3-DevKitC-1-N16R8` board.
 2. Open PowerShell in `E:\BMO Gameboy`.
-3. **Step A — Flash the First-Power-On Bring-Up Sketch first:**
+3. **First Run Read-Only `esptool v5.3.1` Check Before Flashing ([`docs/guides/bringup.md` Stage 3](bringup.md)):**
+   ```powershell
+   & "$env:LOCALAPPDATA\Arduino15\packages\esp32\tools\esptool_py\5.3.1\esptool.exe" --chip esp32s3 --port COM3 flash-id
+   & "$env:LOCALAPPDATA\Arduino15\packages\esp32\tools\esptool_py\5.3.1\esptool.exe" --chip esp32s3 --port COM3 chip-id
+   ```
+4. **Step A — Flash the First-Power-On Bring-Up Sketch first:**
    ```powershell
    .\arduino-cli.exe compile --profile esp32s3 firmware/bringup
    .\arduino-cli.exe upload --profile esp32s3 --port COM3 firmware/bringup
    python tasks.py monitor --port COM3
    ```
    *(Replace `COM3` with the COM port shown by `.\arduino-cli.exe board list`.)*
-4. **Step B — After Bring-Up Passes, Flash the Full BMO Handheld Firmware:**
+5. **Step B — After Bring-Up Passes, Flash the Full BMO Handheld Firmware:**
    ```powershell
    python tasks.py build
    python tasks.py flash --port COM3
@@ -96,7 +104,7 @@ Do not skip ahead to 3D printing the case or loading hundreds of games until Ste
 | **Screen is completely dark (no backlight)** | `BLK` or `VCC` pin on display is not receiving `3.3 V` | Check with multimeter that display `VCC` and `BLK` pins measure `3.30 V` relative to `GND` |
 | **"SD READ FAILED" or `0` games shown** | SD card formatted as `exFAT`, `SD_CS` (`GPIO 13`) / `SD_MISO` (`GPIO 15`) loose, or missing `10 kΩ` pull-ups | Format SD card as `FAT32`; solder `10 kΩ` pull-up resistors from `GPIO 10` and `GPIO 13` to `3V3` ([`docs/wiring/02-sd-card.md`](../wiring/02-sd-card.md)) |
 | **A button acts like it is held down continuously** | Button wired to `3V3` instead of `GND`, or wrong pair of legs on a 4-leg switch | Wire one leg of the switch to its `GPIO` pin and a diagonal leg to `GND` |
-| **Board reboots endlessly (`rst:0x...` loop in serial monitor)** | Wrong flash mode (`FlashMode=opi` used instead of `qio`) or weak USB port (`ESP_RST_BROWNOUT`) | Always build via `python tasks.py build` (`FlashMode=qio,PSRAM=opi`); plug into a direct motherboard USB port |
+| **Board reboots endlessly (`rst:0x...` loop in serial monitor)** | Flash-mode mismatch (`qio` `OWNER-OBSERVED` conflict or accidental `opi` flash setting) or weak USB port (`ESP_RST_BROWNOUT`) | Run read-only `esptool flash-id` / `chip-id`, use a direct motherboard USB port, and follow the [`docs/guides/bringup.md`](bringup.md#boot-loop-fallback) fallback (diagnostic `FlashMode=dio` test without editing `sketch.yaml` permanently) |
 
 ---
 

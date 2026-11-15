@@ -114,6 +114,6 @@ All physical fields below are `WAITING`. Record measurements in centimetres (`cm
 | Button switch body (`0.60 cm` vs `1.20 cm`), plunger height, actuation travel, and soldered hole coordinates | `WAITING` | Include the fitted caps and underside solder joints |
 | USB-C receptacle shell and mating cable overmold clearance | `WAITING` | Measure the installed connector, including shell and board edge |
 | MicroSD breakout (`~2.40 × 4.20 × 0.40 cm`), card insertion depth, and finger clearance | `WAITING` | Include the card at full insertion and removal positions |
-| 2×AA (`~5.80 × 3.20 × 1.65 cm`) or 3×AA (`~5.80 × 4.80 × 1.65 cm`) holder envelope and wire exit | `WAITING` | Measure the exact holder with loaded Eneloop cells (disconnected) |
-| Pololu 5 V boost converter (`~2.03 × 1.52 × 0.50 cm`), slide switch, polyfuse, and wire bend radius | `WAITING` | Confirm Upper Y Zone placement beside DevKitC-1 |
+| `2×AA` (`~5.80 × 3.20 × 1.65 cm`) fits the current Lower Y zone; **`3×AA` (`~5.80 × 4.80 × 1.65 cm`) collides (`-0.19 cm` Y overlap / `1.26 cm` Z crash in [`hardware/layout_3xaa_variant.json`](../hardware/layout_3xaa_variant.json)) and needs a `~0.60–1.00 cm` taller shell** | `WAITING` | Measure your chosen holder with loaded Eneloop cells (disconnected) |
+| Boost converter (`~2.90 × 2.30 × 0.75 cm` `Adafruit #2030` or `~2.03 × 1.52 × 0.50 cm` `Pololu U3V70F5`/`U3V40F5`), `>= 2 A` switch, `MF-R300`/`MF-R250` polyfuse, and wire bend radius | `WAITING` | Confirm Upper Y Zone placement beside DevKitC-1 |
 | Screw heads, thread type (`M2`), usable engagement, and printed boss fit | `WAITING` | Run a material-specific coupon before final assembly |

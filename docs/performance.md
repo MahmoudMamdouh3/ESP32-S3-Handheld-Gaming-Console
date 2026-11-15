@@ -1,6 +1,6 @@
 # Performance, Analytical Budgets, and Benchmarking Guide
 
-- **Last Verified Commit:** `d8d4b5e` (`2026-11-15`)
+- **Updated:** `2026-11-15` (`HOST_TESTED` / `TARGET_COMPILED` analytical model; physical capture pending)
 
 ## 1. Evidence Classification
 

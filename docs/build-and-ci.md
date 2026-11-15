@@ -7,8 +7,10 @@ All firmware builds, host checks, formatting, ELF size audits, and simulator lau
 ```powershell
 # 1. One-time workstation bootstrap (installs Git hooks, downloads verified arduino-cli, syncs core + libs from sketch.yaml)
 python tasks.py setup --install-arduino-cli
+python tasks.py doctor                      # verify toolchain, sketch.yaml, hooks, and host compilers
 
-# 2. Fast local gate (< 1 min, no firmware compile): syntax, safety hard stops, #include case check, links, color tokens, Guardian audit
+# 2. Pre-push gates (~30 s fast vs ~75 s full check, no firmware compile): syntax, hard stops, case-sensitive #include, links, BOM/layout/color tokens, Guardian audit
+python tasks.py check --fast
 python tasks.py check
 
 # 3. Full host unit test suite (C/C++ helpers, 11 WASI cores, Guardian, repo validators)

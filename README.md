@@ -57,10 +57,14 @@ python tasks.py build --profile no-doom
 python tasks.py build --profile mit
 ```
 
-### 2. Run Fast Checks & Host Tests (`HOST_TESTED`)
+### 2. Run Environment & Fast Checks (`HOST_TESTED`)
 
 ```powershell
-# Fast pre-push checks (< 1 min, no firmware compile):
+# Verify toolchain, sketch.yaml pins, and hooks:
+python tasks.py doctor
+
+# Fast pre-push checks (~30 s) and full host validation gate (~75 s, no firmware compile):
+python tasks.py check --fast
 python tasks.py check
 
 # Full host test suites & repository validator:

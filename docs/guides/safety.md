@@ -24,10 +24,10 @@ This handheld is designed to use **2 or 3 AA-size Nickel-Metal Hydride (`NiMH`) 
    - Do not mix NiMH (`1.2 V`) with non-rechargeable Alkaline (`1.5 V`) or Lithium (`1.5 V`) AA cells. Always insert a matched set of fully charged NiMH cells of the same model.
 4. **ALWAYS wire a fuse and power switch on the positive (`+`) battery wire.**
    - Even AA NiMH cells can deliver `> 5 A` into a dead short, which will melt thin `28–30 AWG` wires and burn your fingers or melt the 3D-printed PLA/PETG shell.
-   - Solder a **`1.5 A` resettable polyfuse (`PTC`)** inline with the positive (`+`) wire right at the battery holder terminal, before the power slide switch.
+   - Solder a properly sized [Bourns MF-R](https://www.bourns.com/docs/Product-Datasheets/mfr.pdf) resettable polyfuse (`MF-R300` `3.0 A` hold for `2×AA`, or `MF-R250` `2.5 A` hold for `3×AA`; datasheet accessed `2026-11-15`) inline with the positive (`+`) wire right at the battery holder terminal, before a high-current power switch (`>= 2.0 A DC @ >= 5 V` such as [C&K 1101M2S3CQE2](https://www.littelfuse.com/media/graphics/reshare/datasheets/ck-slides-1000.pdf), or `>= 3.0 A DC` for `2×AA`; see [ADR 0006](../decisions/0006-portable-power.md)).
 5. **NEVER connect the battery boost converter output (`5 V`) directly to USB `5 V` (`VBUS`) without diode isolation.**
    - If you plug in a USB-C cable to flash firmware while the battery switch is ON and there is no blocking diode, the USB port and the boost converter will fight each other (back-feeding `5 V` into the battery boost module or into your PC's USB port).
-   - Until a Schottky diode (`1N5819`) or ideal-diode OR-ing circuit ([ADR 0006](../decisions/0006-portable-power.md)) is soldered and tested, **always turn the battery switch OFF and remove one AA cell before plugging in USB-C**.
+   - Until a [TI LM66100](https://www.ti.com/lit/ds/symlink/lm66100.pdf) (`1.5 A`) ideal-diode OR-ing pair or [1N5822](https://www.st.com/resource/en/datasheet/1n582x.pdf) (`3.0 A`) Schottky OR-ing circuit (datasheets accessed `2026-11-15`; [ADR 0006](../decisions/0006-portable-power.md)) is soldered and tested, **always turn the battery switch OFF and remove one AA cell before plugging in USB-C**.
 
 ---
 

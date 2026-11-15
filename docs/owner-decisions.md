@@ -1,19 +1,30 @@
 # Owner Decisions Register (`docs/owner-decisions.md`)
 
+> [!CAUTION]
+> **DO NOT MERGE `techlead/audit-2` INTO `main`** until you (the project owner) resolve **Decision 9 (first-party SPDX/licensing)** and the open **`P0` / `P1` owner decisions** below (**Decisions 1, 2, 3, 4, 5, 6**), and complete the initial read-only `esptool` chip check + isolated `SD_MISO` voltage test on your board ([`docs/guides/bringup.md`](guides/bringup.md)).
+
 This document collects every decision from the tech-lead audit (`techlead/audit-2`) that requires your approval as project owner. **None of these changes have been forced on your hardware configuration yet** — all Hardware Hard Stops in `config.h`, `partitions.csv`, and `sketch.yaml` remain untouched until you check a box below and tell the agent to apply it.
 
 ---
 
 ## Decision 1: Rechargeable AA Battery Architecture (`2×AA` vs `3×AA` NiMH) — [ADR 0006](decisions/0006-portable-power.md)
 
-- **Why you need to decide:** Rechargeable NiMH AA cells (`1.2 V` nominal, `1.0 V` empty, `1.42 V` full) need a step-up ("boost") regulator to provide `5.0 V` to the `ESP32-S3-DevKitC-1` `5V`/`VIN` pin.
-- **Options:**
-  - [ ] **(Recommended) Option 1A — `2×AA NiMH` (`2.4 V` nominal) + Pololu `5 V` Step-Up (`U3V40F5` or `S7V7F5`) + `1.5 A` Polyfuse + Slide Switch:**
-    - *Pros:* Lighter (`~52 g` vs `~78 g`), narrower (`5.80 × 3.20 × 1.65 cm`), fits easily in the Lower Y Zone (`y = 8.10..11.30 cm`) behind the buttons with `0.09 cm` Z-clearance inside the `3.20 cm` shell, ~2.8 hours runtime on 2000 mAh Eneloop cells.
-    - *Cons:* Draws higher current from the batteries (`~0.88 A` when nearly empty), so the boost converter must be rated for `>= 1.5 A` switch current (do not use cheap `MT3608` boards, which need `>= 2.0 V` just to start).
-  - [ ] **Option 1B — `3×AA NiMH` (`3.6 V` nominal) + Pololu `5 V` Step-Up (`U3V40F5`):**
-    - *Pros:* ~4.4 hours runtime (`6.6 Wh`), lower battery current (`~0.59 A` max).
-    - *Cons:* `50%` heavier and wider (`5.80 × 4.80 × 1.65 cm`), tighter fit around the D-pad/ABXY solder pins.
+> [!WARNING]
+> **Prior Recommendation WITHDRAWN (2026-11-15):** The previous `Decision 1` recommendation (`Pololu S7V7F5` or `U3V40F5` with `2×AA`, `1.5 A` polyfuse, `OS102011MA1QN1` switch, `IRF9540N`/`FQP27P06`) contained wrong part ratings and is **withdrawn**:
+> - `Pololu S7V7F5` only accepts `2.7–11.8 V` and delivers `~0.5 A` in boost mode ([Pololu #2119](https://www.pololu.com/product/2119), accessed `2026-11-15`), **not** `2.0–5.5 V` / `>= 2 A`.
+> - `Pololu U3V40F5` needs **`2.7 V` just to turn on** ([Pololu #4012](https://www.pololu.com/product/4012), accessed `2026-11-15`), so it fails to start on `2×AA` (`2.4 V` normal).
+> - Until we measure your real board's current draw, the converter must output **at least `1.0 A` at `5.0 V`** down to `1.0 V/cell` (`2.0 V` for `2×AA`, `3.0 V` for `3×AA`), requiring **`2.94 A` (`2×AA`) or `1.96 A` (`3×AA`)** from the batteries (`Bourns MF-R300`/`MF-R250` fuse, `>= 2–3 A` switch or `EN`-pin switch, and `DMP2035U` reverse-polarity P-MOSFET).
+
+- **Why you need to decide:** Rechargeable AA NiMH batteries ([Eneloop BK-3MCCF](https://eneloop101.com/download/datasheets/BK-3MCCF.pdf), accessed `2026-11-15`) start around `1.45 V` fresh, sit near `1.20 V` while playing, and reach empty cutoff at `1.00 V/cell`. A `2×AA` pack fits the current `8.80 × 12.40 × 3.20 cm` shell cleanly but pulls heavier current (`~3 A`), whereas a `3×AA` pack uses easier-to-buy Pololu boost boards and runs longer, **but does not fit the current case without making the shell `~0.6–1.0 cm` taller** (`hardware/layout_3xaa_variant.json` collision check).
+- **Corrected Options (Pick One):**
+  - [ ] **Option 1A — `2×AA NiMH` (`2.0–2.9 V`, fits current `8.80 × 12.40 × 3.20 cm` case):**
+    - *Vetted boost boards (`<= 1.8 V` start-up, `>= 1.0 A` @ `5.0 V` down to `2.0 V`):* Choose **[Adafruit PowerBoost 1000 Basic (#2030, TI TPS61030)](https://www.adafruit.com/product/2030)** or a pre-built **[TI TPS61022](https://www.ti.com/lit/ds/symlink/tps61022.pdf)** module (`TPS61022EVM-034`), protected by a **[Bourns MF-R300](https://www.bourns.com/docs/Product-Datasheets/mfr.pdf)** (`3.0 A` hold) polyfuse, a **`DMP2035U`** reverse-polarity MOSFET ([datasheet](https://www.diodes.com/assets/Datasheets/DMP2035U.pdf)), and a `>= 3 A` switch (or `EN`-pin switch).
+    - *Pros:* Fits the `5.80 × 3.20 × 1.65 cm` battery bay already planned inside the `8.80 × 12.40 × 3.20 cm` case with zero collisions; lighter (`~62 g` cells + holder).
+    - *Cons:* Shorter runtime (`~2.2–3.1 hours`, `NOT_TESTED`); draws nearly `3 A` from the cells when nearly empty, so switch/fuse/MOSFET wiring must handle `>= 3 A`; PowerBoost `#2030` runs slightly warm at `2.0 V` (`1.0 A`).
+  - [ ] **Option 1B — `3×AA NiMH` (`3.0–4.35 V`, requires resizing case height to `~13.0–13.4 cm`):**
+    - *Vetted boost boards (`< 3.0 V` start-up, `>= 1.0 A` @ `5.0 V` down to `3.0 V`):* Choose **[Pololu U3V70F5 (#2891)](https://www.pololu.com/product/2891)** (includes **built-in reverse-battery protection**, `EN` pin, `>= 3 A @ 5 V` out) or **[Pololu U3V40F5 (#4012)](https://www.pololu.com/product/4012)** + external `DMP2035U`/`AO3401A` MOSFET, protected by a **[Bourns MF-R250](https://www.bourns.com/docs/Product-Datasheets/mfr.pdf)** (`2.5 A` hold) polyfuse and **`C&K 1101M2S3CQE2`** (`6 A`, [datasheet](https://www.littelfuse.com/media/graphics/reshare/datasheets/ck-slides-1000.pdf)) switch (or `EN`-pin switch).
+    - *Pros:* Longer runtime (`~3.3–4.6 hours`, `NOT_TESTED`), lower battery current (`~1.96 A` max vs `2.94 A`), and `Pololu U3V70F5` builds reverse-polarity protection right onto the regulator board.
+    - *Cons:* A `3×AA` holder (`~4.80 × 5.80 × 1.65 cm`) **collides inside the current `8.80 × 12.40 × 3.20 cm` enclosure** (`4.613 cm` clear height below the ESP32-S3 board -> `0.277 cm` XY / `1.26 cm` Z overlap, verified by `layout_3xaa_variant.json`), so choosing `3×AA` requires growing the case height by `~0.6–1.0 cm`.
 
 ---
 

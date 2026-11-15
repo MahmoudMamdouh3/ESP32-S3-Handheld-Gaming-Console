@@ -123,6 +123,28 @@ class HardwareLayoutTests(unittest.TestCase):
             rows = list(csv.DictReader(fh))
         self.assertEqual(rows, gen.generate_wire_list_rows(self.layout))
 
+    def test_layout_collisions_and_3xaa_variant(self) -> None:
+        gen = _load_generator_module()
+        baseline_report = gen.check_layout_collisions(self.layout)
+        self.assertTrue(baseline_report["ok"], msg=f"Default layout collisions: {baseline_report['collisions']}")
+        self.assertEqual(baseline_report["collision_count"], 0)
+        self.assertGreaterEqual(baseline_report["available_lower_y_cm"], 3.20)
+
+        variant_path = REPO_ROOT / "hardware" / "layout_3xaa_variant.json"
+        variant = gen.load_layout(variant_path)
+        variant_report = gen.check_layout_collisions(variant)
+        self.assertFalse(variant_report["ok"])
+        kinds = {c["kind"] for c in variant_report["collisions"]}
+        self.assertIn("zone_y_overlap", kinds)
+        self.assertIn("component_xyz_collision", kinds)
+        self.assertLess(variant_report["available_lower_y_cm"], 4.80)
+        xyz_hits = [c for c in variant_report["collisions"] if c["kind"] == "component_xyz_collision"]
+        self.assertEqual(len(xyz_hits), 2)
+        devkit_hits = [c for c in xyz_hits if "DevKitC-1" in c["component_a"]]
+        self.assertEqual(len(devkit_hits), 1)
+        self.assertAlmostEqual(devkit_hits[0]["y_overlap_cm"], 0.277, places=3)
+        self.assertAlmostEqual(devkit_hits[0]["z_excess_cm"], 1.26, places=2)
+
 
 if __name__ == "__main__":
     unittest.main()
