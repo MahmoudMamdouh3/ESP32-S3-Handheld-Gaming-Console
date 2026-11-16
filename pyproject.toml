@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "Pillow==12.2.0",
-    "manifold3d==3.0.1",
+    "manifold3d==3.5.5",
     "numpy==2.2.6",
     "trimesh==4.6.8",
 ]
