@@ -5,7 +5,6 @@ Exhaustive automated validation for Tier 2 emulator implementations,
 memory invariants, display streaming contracts, and extension routing.
 """
 
-import os
 import unittest
 from pathlib import Path
 

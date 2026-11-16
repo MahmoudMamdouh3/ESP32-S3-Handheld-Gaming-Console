@@ -25,7 +25,6 @@ if str(REPO_ROOT) not in sys.path:
 
 from hardware.enclosure.generate_bmo_enclosure import CONFIG, build_parts  # noqa: E402
 
-
 DEFAULT_OUT_PATH = REPO_ROOT / "simulator" / "bmo_enclosure_meshes.js"
 CREASE_ANGLE_DEG = 38.0
 CM_SCALE = 0.1  # CAD runs in millimetres; Three.js simulator uses centimetres.

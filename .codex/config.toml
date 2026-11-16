@@ -1,1 +1,8 @@
-# Codex workspace settings — all hardware constraints and verification commands live in AGENTS.md.
+# Codex workspace settings — canonical rules, hard stops, and anti-regression guards live in AGENTS.md and firmware/AGENTS.md.
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+project_doc_fallback_filenames = ["AGENTS.md", "CLAUDE.md"]
+
+[profiles.safe_verify]
+approval_policy = "never"
+sandbox_mode = "workspace-write"

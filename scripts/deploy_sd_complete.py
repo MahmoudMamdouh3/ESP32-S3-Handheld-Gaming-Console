@@ -8,18 +8,19 @@ bypassing single-directory FAT32 limits by console partitioning, and writes a
 
 import argparse
 import os
+import struct
 import sys
 import time
 import zlib
-import struct
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from scripts.deploy_to_sd import copy_single_file as atomic_copy_single_file, validate_target_collisions
+from scripts.deploy_to_sd import copy_single_file as atomic_copy_single_file
+from scripts.deploy_to_sd import validate_target_collisions
 from scripts.repo_tools import get_data_dir
 from scripts.rom_key import make_rom_key
 

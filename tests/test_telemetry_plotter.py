@@ -12,7 +12,6 @@ from tools.telemetry_plotter import (
     parse_frame_percentile_windows,
     parse_profile_csv,
     parse_telemetry_stream,
-    render_ascii_plot,
 )
 
 

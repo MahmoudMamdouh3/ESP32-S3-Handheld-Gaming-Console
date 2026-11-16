@@ -59,6 +59,26 @@ class ElfAnalyzerTests(unittest.TestCase):
 
             self.assertEqual(analyzer.toolchain_bin, bin_dir)
 
+    def test_analyze_raises_explicitly_when_elf_or_toolchain_missing(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            env = {
+                "ARDUINO_DIRECTORIES_DATA": str(root / "missing-arduino"),
+                "LOCALAPPDATA": "",
+                "USERPROFILE": "",
+                "PATH": "",
+            }
+            with patch.dict(os.environ, env, clear=False):
+                analyzer = ElfAnalyzer(root)
+                with self.assertRaises(FileNotFoundError):
+                    analyzer.analyze()
+
+                fake_elf = root / "build" / "BmoGameboy.ino.elf"
+                fake_elf.parent.mkdir(parents=True)
+                fake_elf.write_bytes(b"\x7fELF")
+                with self.assertRaises(RuntimeError):
+                    analyzer.analyze(fake_elf)
+
 
 if __name__ == "__main__":
     unittest.main()

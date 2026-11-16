@@ -1,0 +1,39 @@
+{
+  "timestamp_utc": "2026-11-16T08:26:44.152293+00:00",
+  "evidence_level": "HOST_TESTED",
+  "os": "nt",
+  "firmware_host": {
+    "bmo_face_sdf_snapshot_320x240_us": 1349.39,
+    "bmo_face_full_pipeline_320x240_us": 162.75,
+    "metadata_resolve_100_on_10k_us": 1085.82,
+    "catalog_find_500_on_10k_us": 7776.68,
+    "boxart_legacy_unique_1k_us": 34173.3,
+    "rom_index_v3_verify_10k_us": 6606.18,
+    "nes_8bit_to_565_60frames_us": 766.31,
+    "pico_128x128_nibble_60frames_us": 1242.54,
+    "profiler_summarize_600_us": 17.33,
+    "screenshot_encode_320x240_us": 92.05,
+    "sink": 14493
+  },
+  "simulator": {
+    "wasm_init_ms": 23.53,
+    "bmo_face_600_frames_ms": 411.32,
+    "bmo_face_600_frames_imagedata_bytes": 184320000,
+    "bmo_face_600_frames_imagedata_calls": 600,
+    "bmo_face_heap_delta_bytes": 155656,
+    "gb_render_600_frames_ms": 228.89,
+    "gb_render_600_frames_imagedata_bytes": 124416000,
+    "gb_render_600_frames_imagedata_calls": 600,
+    "gb_heap_delta_bytes": 755736,
+    "sync_startup_script_bytes": 3374844,
+    "sync_startup_script_count": 14
+  },
+  "scripts": {
+    "fixture_count": 40,
+    "convert_covers_ms": 470.58,
+    "deploy_sd_cold_ms": 2411.75,
+    "deploy_sd_incremental_ms": 371.69,
+    "deploy_tasks": 120,
+    "wasm_full_build_ms": 25612.21
+  }
+}

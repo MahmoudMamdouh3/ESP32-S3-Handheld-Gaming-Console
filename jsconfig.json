@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "allowJs": true,
+    "checkJs": true,
+    "strict": true,
+    "noImplicitAny": false,
+    "noEmit": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+  },
+  "include": [
+    "simulator/*.js",
+    "simulator/js/**/*.js",
+    "benchmarks/*.mjs"
+  ],
+  "exclude": [
+    "simulator/three.min.js",
+    "simulator/OrbitControls.js",
+    "simulator/bmo_enclosure_meshes.js",
+    "simulator/bmo_playtest_cores.b64.js",
+    "build",
+    ".tools",
+    "node_modules"
+  ]
+}

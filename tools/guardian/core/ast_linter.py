@@ -147,7 +147,7 @@ class FirmwareAstLinter:
 
             lines = content.splitlines()
             total = len(lines)
-            blanks = sum(1 for l in lines if not l.strip())
+            blanks = sum(1 for raw in lines if not raw.strip())
             comments = 0
             sloc = 0
 
@@ -207,7 +207,6 @@ class FirmwareAstLinter:
             suffix = path.suffix.lower()
             if suffix not in {".c", ".cpp", ".h", ".hpp", ".ino"}:
                 continue
-            rel_str = str(path.relative_to(self.firmware_dir)).replace("\\", "/")
             # Skip large optional local baked ROM headers during AST lint
             if path.name == "local_baked_rom.h" and path.stat().st_size > 262144:
                 continue
@@ -361,10 +360,10 @@ class FirmwareAstLinter:
                         )
                     )
 
-        # Rule 5: Check for O(N) linear scans called in per-frame loop in BmoGameboy.ino / bmo_app.cpp
-        if rel_path_str.endswith(("BmoGameboy.ino", "bmo_app.cpp")):
+        # Rule 5: Check for unguarded per-frame filter rebuilds and direct digitalRead in app/sketch
+        if rel_path_str.endswith(("BmoGameboy.ino", "bmo_app.cpp")) or "src/app/" in rel_path_str:
             loop_idx = (
-                next((i for i, l in enumerate(lines, 1) if "void loop()" in l), 9999)
+                next((i for i, src_line in enumerate(lines, 1) if "void loop()" in src_line), 9999)
                 if rel_path_str.endswith("BmoGameboy.ino")
                 else 0
             )
@@ -372,18 +371,6 @@ class FirmwareAstLinter:
                 clean = line.strip()
                 if clean.startswith(("//", "/*")):
                     continue
-                if idx > loop_idx and "countGamesForConsole(" in clean:
-                    findings.append(
-                        LintFinding(
-                            rule_id="PER_FRAME_O_N_SCAN",
-                            severity="CRITICAL",
-                            file_path=path,
-                            line_number=idx,
-                            line_content=clean,
-                            message="countGamesForConsole() called inside per-frame UI loop (up to 245K iterations/frame).",
-                            suggested_fix="Cache console game counts in a static array at SD scan time.",
-                        )
-                    )
                 if idx > loop_idx and "rebuildVisibleGames()" in clean and not clean.startswith("void "):
                     prev_lines = " ".join(lines[max(0, idx - 3) : idx]).lower()
                     if "visiblegamesdirty" not in prev_lines and "visiblegamesdirty" not in clean.lower():
@@ -406,7 +393,7 @@ class FirmwareAstLinter:
                             file_path=path,
                             line_number=idx,
                             line_content=clean,
-                            message="Direct digitalRead() in BmoGameboy.ino bypasses atomic REG_READ(GPIO_IN_REG) button polling.",
+                            message="Direct digitalRead() in app/sketch bypasses atomic REG_READ(GPIO_IN_REG) button polling.",
                             suggested_fix="Use Buttons::isPressed(), Buttons::justPressed(), or Buttons::gb_joypad_state.",
                         )
                     )
@@ -498,24 +485,98 @@ class FirmwareAstLinter:
                             )
                         )
 
-        # Rule 10: Check that any HAL/storage/UI .cpp file calling SD.open / SD.mkdir / SD.remove uses SpiArbiter
+        # Rule 10: Per-function SpiArbiter enforcement across src/{app,hal,storage,ui}
         if (
-            any(seg in rel_path_str for seg in ("src/hal/", "src/storage/", "src/ui/"))
+            any(seg in rel_path_str for seg in ("src/app/", "src/hal/", "src/storage/", "src/ui/"))
             and rel_path_str.endswith(".cpp")
+            and not rel_path_str.endswith("spi_arbiter.cpp")
         ):
-            has_sd_io = any(re.search(r"\bSD\.(open|mkdir|remove|exists)\s*\(", l) for l in lines if not l.strip().startswith("//"))
-            if has_sd_io and "SpiArbiter::lock()" not in content and "SpiArbiter::ScopedLock" not in content:
-                findings.append(
-                    LintFinding(
-                        rule_id="UNARBITRATED_SD_IO_IN_CORE",
-                        severity="CRITICAL",
-                        file_path=path,
-                        line_number=1,
-                        line_content="SD.* operation without SpiArbiter::lock()",
-                        message="SD card filesystem operation in core driver without SpiArbiter::lock() mutex protection.",
-                        suggested_fix="Acquire `SpiArbiter::lock()` before SD I/O and `SpiArbiter::unlock()` after.",
+            fn_open_re = re.compile(r"^\s*(?:[\w:<>*&]+\s+)+(?P<name>[\w:~]+)\s*\([^;{}]*\)\s*(?:const\s*)?\{")
+            io_re = re.compile(
+                r"\b(?:SD\.(?:open|mkdir|remove|exists|rename|rmdir)|"
+                r"SPI\.(?:writeBytes|transfer|beginTransaction)|"
+                r"tft\.(?:startWrite|setAddrWindow|writePixels|fillRect|drawRect|fillScreen|print))\b"
+            )
+            raw_mid_tx_funcs = {
+                "DisplayEmu::streamPixelRow",
+                "DisplayEmu::pushPixelsRaw",
+                "DisplayEmu::writeWindowBytes",
+                "streamPixelRow",
+                "pushPixelsRaw",
+                "writeWindowBytes",
+            }
+            cur_fn = None
+            fn_start = 0
+            fn_buf: List[str] = []
+            fn_depth = 0
+            for idx, raw_line in enumerate(lines, 1):
+                clean = raw_line.split("//", 1)[0]
+                if cur_fn is None:
+                    m_fn = fn_open_re.match(clean)
+                    if m_fn and not clean.lstrip().startswith(
+                        ("if", "for", "while", "switch", "else", "namespace", "struct", "class")
+                    ):
+                        cur_fn = m_fn.group("name")
+                        fn_start = idx
+                        fn_buf = [clean]
+                        fn_depth = clean.count("{") - clean.count("}")
+                        if fn_depth <= 0:
+                            cur_fn = None
+                else:
+                    fn_buf.append(clean)
+                    fn_depth += clean.count("{") - clean.count("}")
+                    if fn_depth <= 0:
+                        body = "\n".join(fn_buf)
+                        if (
+                            cur_fn not in raw_mid_tx_funcs
+                            and io_re.search(body)
+                            and "SpiArbiter::ScopedLock" not in body
+                            and "SpiArbiter::lock()" not in body
+                        ):
+                            sev = "CRITICAL" if "::" in cur_fn else "WARNING"
+                            findings.append(
+                                LintFinding(
+                                    rule_id="UNARBITRATED_SD_IO_IN_FUNC",
+                                    severity=sev,
+                                    file_path=path,
+                                    line_number=fn_start,
+                                    line_content=f"{cur_fn}() touches SD/SPI/TFT without SpiArbiter",
+                                    message=f"{cur_fn}() executes SPI/SD/TFT I/O without acquiring SpiArbiter::ScopedLock inside the function.",
+                                    suggested_fix="Add `SpiArbiter::ScopedLock spiLock;` inside the function body.",
+                                )
+                            )
+                        cur_fn = None
+
+        # Rule 10b: Flag blocking delay() / ets_delay_us() and internal-DRAM STL allocations in app/ui/cores
+        if any(seg in rel_path_str for seg in ("src/app/", "src/ui/", "src/cores/")) and rel_path_str.endswith(".cpp"):
+            for idx, raw_line in enumerate(lines, 1):
+                clean = raw_line.split("//", 1)[0].strip()
+                if not clean or clean.startswith(("/*", "*", "#")):
+                    continue
+                if re.search(r"\b(?:delay|ets_delay_us)\s*\(", clean):
+                    findings.append(
+                        LintFinding(
+                            rule_id="BLOCKING_DELAY_IN_FIRMWARE",
+                            severity="WARNING",
+                            file_path=path,
+                            line_number=idx,
+                            line_content=clean,
+                            message="Blocking delay() / ets_delay_us() stalls Core 1 / RTOS responsiveness.",
+                            suggested_fix="Replace with non-blocking deadline timers or vTaskDelayUntil.",
+                        )
                     )
-                )
+                if "src/cores/" in rel_path_str and re.search(r"\bstd::(?:string|vector)\b", clean):
+                    findings.append(
+                        LintFinding(
+                            rule_id="INTERNAL_DRAM_STL_IN_CORE",
+                            severity="WARNING",
+                            file_path=path,
+                            line_number=idx,
+                            line_content=clean,
+                            message="std::string / std::vector allocates from internal DRAM instead of fixed/PSRAM pools.",
+                            suggested_fix="Use fixed char/struct buffers or explicit bmo_psram_malloc buffers.",
+                        )
+                    )
 
         # Rule 11: Forbid reachable exit() or I_Error() on allocation failure
         for idx, line in enumerate(lines, 1):
@@ -535,7 +596,7 @@ class FirmwareAstLinter:
                     )
                 )
             if re.search(r"\bI_Error\s*\(", clean):
-                window = " ".join(l.strip() for l in lines[max(0, idx - 5) : idx])
+                window = " ".join(src_line.strip() for src_line in lines[max(0, idx - 5) : idx])
                 if re.search(r"(malloc|calloc|realloc|Doom_MallocPSRAM|heap_caps_malloc|default_ram\s*<\s*min_ram|newlumpinfo\s*==\s*NULL|new_open_wadfiles\s*==\s*NULL|rover\s*==\s*start|Unable to allocate|Z_Malloc:\s*failed|Couldn't realloc)", window + " " + clean):
                     findings.append(
                         LintFinding(

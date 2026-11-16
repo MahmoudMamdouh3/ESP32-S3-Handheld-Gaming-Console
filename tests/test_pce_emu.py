@@ -6,8 +6,9 @@ Verifies memory banking, MPR registers, VDC auto-increment, VCE palette conversi
 resolution budgeting, and save state serialization.
 """
 
-import unittest
 import struct
+import unittest
+
 
 class TestPceEmulatorCore(unittest.TestCase):
     """Test suite for PC Engine hardware architecture and emulation logic."""
@@ -33,13 +34,13 @@ class TestPceEmulatorCore(unittest.TestCase):
         # Window 0: 0x0000 - 0x1FFF -> MPR[0]
         # Window 7: 0xE000 - 0xFFFF -> MPR[7]
         mpr = [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0xF8]
-        
+
         # Test RAM mapping at MPR[7] = 0xF8 (Work RAM)
         cpu_addr = 0xE123
         page = (cpu_addr >> 13) & 7
         offset = cpu_addr & 0x1FFF
         bank = mpr[page]
-        
+
         self.assertEqual(page, 7)
         self.assertEqual(offset, 0x0123)
         self.assertEqual(bank, 0xF8, "Page 7 should map to Work RAM bank 0xF8 by default")
@@ -100,7 +101,7 @@ class TestPceEmulatorCore(unittest.TestCase):
         ram = bytes([0x5A] * 8192)
         bram = bytes([0xA5] * 2048)
         header = struct.pack("<HHHHBBBBB", 0xE000, 0x01FF, 0x0000, 0x0000, 0x12, 0x34, 0x56, 0xFD, 0x20)
-        
+
         self.assertEqual(len(ram), 8192)
         self.assertEqual(len(bram), 2048)
         self.assertEqual(len(header), 13)

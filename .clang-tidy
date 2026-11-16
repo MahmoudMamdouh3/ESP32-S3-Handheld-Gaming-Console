@@ -1,0 +1,20 @@
+---
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  -bugprone-branch-clone,
+  -bugprone-implicit-widening-of-multiplication-result,
+  clang-analyzer-core.*,
+  clang-analyzer-cplusplus.NewDelete,
+  clang-analyzer-cplusplus.NewDeleteLeaks,
+  clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  clang-analyzer-unix.Malloc,
+  performance-*,
+  -performance-avoid-endl,
+  readability-redundant-control-flow,
+  readability-simplify-boolean-expr
+WarningsAsErrors: ""
+HeaderFilterRegex: "firmware/BmoGameboy/src/(app|hal|storage|ui|cores)/.*"
+FormatStyle: file

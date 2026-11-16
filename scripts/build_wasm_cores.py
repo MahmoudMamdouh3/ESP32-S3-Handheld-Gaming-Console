@@ -5,11 +5,11 @@
 from __future__ import annotations
 
 import base64
-from concurrent.futures import ThreadPoolExecutor
 import os
 import shutil
 import subprocess
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]

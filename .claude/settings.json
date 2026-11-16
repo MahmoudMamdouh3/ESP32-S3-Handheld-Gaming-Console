@@ -1,17 +1,44 @@
 {
   "permissions": {
     "allow": [
+      "Bash(python tasks.py doctor)",
+      "Bash(python tasks.py format *)",
+      "Bash(python tasks.py check *)",
+      "Bash(python tasks.py test *)",
+      "Bash(python tasks.py build *)",
+      "Bash(python tasks.py size *)",
+      "Bash(python tasks.py bench *)",
       "Bash(python -m unittest *)",
       "Bash(python scripts/validate_repo.py *)",
       "Bash(python scripts/check_markdown_links.py)",
       "Bash(python scripts/verify_color_tokens.py)",
+      "Bash(python scripts/sync_ai_codemap.py *)",
       "Bash(python -m tools.guardian *)",
       "Bash(arduino-cli compile *)",
-      "Bash(./arduino-cli.exe compile *)"
+      "Bash(./arduino-cli.exe compile *)",
+      "Bash(ruff *)",
+      "Bash(mypy *)",
+      "Bash(ctest *)",
+      "Bash(node benchmarks/*)"
     ],
     "deny": [
       "Bash(arduino-cli upload *)",
-      "Bash(./arduino-cli.exe upload *)"
+      "Bash(./arduino-cli.exe upload *)",
+      "Bash(esptool*)",
+      "Bash(python tasks.py flash*)",
+      "Bash(python tasks.py monitor*)",
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)",
+      "Edit(games/**)",
+      "Edit(roms/**)",
+      "Edit(sdcard/**)",
+      "Edit(.rom_cache/**)",
+      "Edit(Book/**)",
+      "Write(games/**)",
+      "Write(roms/**)",
+      "Write(sdcard/**)",
+      "Write(.rom_cache/**)",
+      "Write(Book/**)"
     ]
   }
 }

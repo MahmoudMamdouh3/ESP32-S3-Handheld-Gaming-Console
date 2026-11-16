@@ -1,4 +1,6 @@
 # Arduino & Host C/C++ build artifacts
+# Build & benchmark ephemeral outputs
+benchmarks/latest_results.json
 *.hex
 *.elf
 *.bin

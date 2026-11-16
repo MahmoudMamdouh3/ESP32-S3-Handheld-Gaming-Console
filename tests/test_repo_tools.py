@@ -11,12 +11,13 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from repo_tools import find_game_roots, get_data_dir, sanitize_identifier, validate_rom_header
-from tools import bmo_tools
 from validate_repo import (
-    check_python_files,
     check_firmware_safety_guardrails,
+    check_python_files,
     check_structural_soundness,
 )
+
+from tools import bmo_tools
 
 
 class RepoToolsTests(unittest.TestCase):
@@ -57,12 +58,12 @@ class RepoToolsTests(unittest.TestCase):
             rom[i] = i & 0xFF
             checksum = (checksum - rom[i] - 1) & 0xFF
         rom[0x014D] = checksum  # Set correct checksum
-        
+
         ok, actual, expected = validate_rom_header(bytes(rom))
         self.assertTrue(ok)
         self.assertEqual(actual, expected)
         self.assertEqual(actual, checksum)
-        
+
         # Test invalid checksum
         rom[0x014D] = (checksum + 1) & 0xFF
         ok, actual, expected = validate_rom_header(bytes(rom))

@@ -35,7 +35,7 @@ class CppcheckRunner:
         which_bin = shutil.which("cppcheck")
         if which_bin:
             return which_bin
-        
+
         # Check python scripts path and standard Windows install locations dynamically
         import sys
         candidates = [

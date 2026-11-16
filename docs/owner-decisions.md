@@ -49,6 +49,7 @@ This document collects every decision from the tech-lead audit (`techlead/audit-
     - *Pros:* Fits a real `5.80 cm` AA battery holder, a full `31 × 46` hole perfboard (`7.87 × 11.68 cm`), and leaves `0.814 cm` between ABXY switches for easy hand soldering.
     - *Cons:* Shell is `0.60 cm` wider (`8.80 cm` vs `8.20 cm`) and `0.60 cm` thicker (`3.20 cm` vs `2.60 cm`).
   - [ ] **Option 3B — Wait until you measure your soldered board with calipers (`docs/hardware_measurements.md`) before regenerating the 3D printable STL files.**
+- **Remediation Audit Note (`refactor/principal-overhaul`, `2026-11-16`):** Simulator and CAD loaders are being aligned to read dimensions from [`hardware/layout.json`](../hardware/layout.json) (`8.80 × 12.40 × 3.20 cm`, `31 × 46` holes) as single source of truth; physical STL regeneration for final printing remains gated on your caliper check (`Option 3A` vs `3B`).
 
 ---
 
@@ -81,6 +82,7 @@ This document collects every decision from the tech-lead audit (`techlead/audit-
 - **Options:**
   - [ ] **(Recommended) Option 6A — Remove the unused `I2C_SDA`/`I2C_SCL` (`43/44`) defines and `fram_save.*`, and reserve free `GPIO 2` (or `GPIO 41`) for optional transistor-driven PWM backlight dimming in a future revision.**
   - [ ] **Option 6B — Leave `config.h` pin defines unchanged (`FEATURE_FRAM=0` already prevents `fram_save.cpp` from compiling).**
+- **Remediation Audit Note (`refactor/principal-overhaul`, `2026-11-16`):** Confirmed `fram_save.{h,cpp}` has `0` call sites anywhere in firmware or tests and remains compiled out via `FEATURE_FRAM=0`; `I2C_SDA=43` / `I2C_SCL=44` stay untouched in `hal/pin_map.h` (`hal/config.h`) per Hardware Hard Stop until you approve `Option 6A` (`GPIO 2` PWM).
 
 ---
 
@@ -115,3 +117,4 @@ This document collects every decision from the tech-lead audit (`techlead/audit-
   - [ ] **Option 9B — Keep everything strictly under `GPL-2.0` (`LICENSE`) and merge only the revert of `addcc07` from `license/spdx-review` (zero `MIT` tags until you later decide to share pure modules separately).**
   - [ ] **Option 9C — Wait to publish/share binaries (`mit` profile builds cleanly as MIT if `core_registry.h` / wrappers keep clean boundaries) and choose `9A` vs `9B` after physical bring-up.**
 - **Staged Work (NOT Merged into `techlead/audit-2`):** Unmerged branch `license/spdx-review` contains (`b6b195e`) a clean revert of `addcc07` plus (`3fd5c05`, `d2a9d43`) the corrected SPDX split separating purely original first-party files from the `19` GPL/Non-Commercial coupled files (`+2` `Zlib`, `+2` `MIT AND Zlib AND WTFPL`, `+6` `MIT` wrappers), waiting for your approval to merge.
+- **Remediation Audit Note (`refactor/principal-overhaul`, `2026-11-16`):** Verified `license/spdx-review` (`b6b195e`, `3fd5c05`, `d2a9d43`) remains cleanly unmerged on `techlead/audit-2` and `refactor/principal-overhaul`; any newly extracted pure modules preserve matching SPDX headers without overwriting `19` upstream-coupled license decisions prior to your sign-off.

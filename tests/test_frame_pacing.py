@@ -1,9 +1,8 @@
 import subprocess
 import unittest
 from pathlib import Path
-import re
-from host_test_support import find_wasi_cxx, require_compiler
 
+from host_test_support import find_wasi_cxx, require_compiler
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 

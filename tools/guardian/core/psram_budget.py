@@ -6,10 +6,9 @@ and verifies that DOOM zone sizing fits within the 8 MiB Octal PSRAM ceiling acr
 """
 
 import re
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Dict, List
-
 
 PSRAM_TOTAL_BYTES = 8 * 1024 * 1024  # 8,388,608 B (ESP32-S3-WROOM-1-N16R8 Octal PSRAM)
 
@@ -94,6 +93,21 @@ class PsramBudgetAnalyzer:
                 return idx
         return 1
 
+    def _locate_symbol_site(self, pattern: str, fallback_rel: str) -> tuple[str, int]:
+        """Dynamically locate an allocation symbol across first-party firmware sources."""
+        src_root = self.fw_dir / "src"
+        compiled = re.compile(pattern)
+        for sub in ("storage", "app", "ui", "hal", "cores"):
+            sub_dir = src_root / sub
+            if not sub_dir.is_dir():
+                continue
+            for candidate in sorted(sub_dir.glob("*.cpp")) + sorted(sub_dir.glob("*.h")):
+                lines = candidate.read_text(encoding="utf-8", errors="ignore").splitlines()
+                for idx, line in enumerate(lines, 1):
+                    if compiled.search(line):
+                        return candidate.relative_to(self.repo_root).as_posix(), idx
+        return fallback_rel, 1
+
     def _extract_constants(self) -> Dict[str, int]:
         sd_h = (self.fw_dir / "src" / "storage" / "sd_card.h").read_text(encoding="utf-8", errors="ignore")
         zone_h = (self.fw_dir / "src" / "cores" / "psram_zone_budget.h").read_text(encoding="utf-8", errors="ignore")
@@ -176,11 +190,36 @@ class PsramBudgetAnalyzer:
         pool_2k = self.compute_pool_capacity(2000, min_pool, max_pool)
         rom_sz = consts["rom_file_sizeof"]
 
+        rom_list_path, rom_list_line = self._locate_symbol_site(
+            r"heap_caps_malloc\(sizeof\(RomFile\)", "firmware/BmoGameboy/src/storage/sd_mount.cpp"
+        )
+        arena_path, arena_line = self._locate_symbol_site(
+            r"s_pathArena\s*=\s*static_cast", "firmware/BmoGameboy/src/storage/sd_mount.cpp"
+        )
+        vis_idx_path, vis_idx_line = self._locate_symbol_site(
+            r"psramIndexes\s*=", "firmware/BmoGameboy/src/app/bmo_app.cpp"
+        )
+        vis_games_path, vis_games_line = self._locate_symbol_site(
+            r"psramGames\s*=", "firmware/BmoGameboy/src/app/bmo_app.cpp"
+        )
+        emu_buf_path, emu_buf_line = self._locate_symbol_site(
+            r"s_asyncEmuBuf\[0\]\s*=", "firmware/BmoGameboy/src/ui/display_worker.cpp"
+        )
+        menu_canvas_path, menu_canvas_line = self._locate_symbol_site(
+            r"s_menuCanvasArr\[0\]\s*=", "firmware/BmoGameboy/src/ui/display_worker.cpp"
+        )
+        face_buf_path, face_buf_line = self._locate_symbol_site(
+            r"s_psramFaceBuf\s*=", "firmware/BmoGameboy/src/ui/bmo_face.cpp"
+        )
+        box_art_path, box_art_line = self._locate_symbol_site(
+            r"s_boxArtBuf\s*=", "firmware/BmoGameboy/src/storage/box_art.cpp"
+        )
+
         sites: List[PsramAllocationSite] = [
             PsramAllocationSite(
                 symbol="SDCard::romList",
-                file_path="firmware/BmoGameboy/src/storage/sd_mount.cpp",
-                line_number=self._find_line("firmware/BmoGameboy/src/storage/sd_mount.cpp", r"heap_caps_malloc\(sizeof\(RomFile\)"),
+                file_path=rom_list_path,
+                line_number=rom_list_line,
                 unit_bytes=rom_sz,
                 count_formula="ceil(catalog * 1.25), clamped to [256..36000]",
                 bytes_at_floor=min_pool * rom_sz,
@@ -190,8 +229,8 @@ class PsramBudgetAnalyzer:
             ),
             PsramAllocationSite(
                 symbol="SDCard::s_pathArena",
-                file_path="firmware/BmoGameboy/src/storage/sd_mount.cpp",
-                line_number=self._find_line("firmware/BmoGameboy/src/storage/sd_mount.cpp", r"s_pathArena\s*=\s*static_cast"),
+                file_path=arena_path,
+                line_number=arena_line,
                 unit_bytes=1,
                 count_formula="Pow2 path arena (16 KiB..4 MiB) or exact stringTableBytes",
                 bytes_at_floor=16384,
@@ -201,8 +240,8 @@ class PsramBudgetAnalyzer:
             ),
             PsramAllocationSite(
                 symbol="s_visibleRomIndexes",
-                file_path="firmware/BmoGameboy/src/app/bmo_app.cpp",
-                line_number=self._find_line("firmware/BmoGameboy/src/app/bmo_app.cpp", r"psramIndexes\s*="),
+                file_path=vis_idx_path,
+                line_number=vis_idx_line,
                 unit_bytes=4,
                 count_formula="poolCap * sizeof(int) (ESP32-S3: 4 B)",
                 bytes_at_floor=min_pool * 4,
@@ -212,8 +251,8 @@ class PsramBudgetAnalyzer:
             ),
             PsramAllocationSite(
                 symbol="s_visibleGames",
-                file_path="firmware/BmoGameboy/src/app/bmo_app.cpp",
-                line_number=self._find_line("firmware/BmoGameboy/src/app/bmo_app.cpp", r"psramGames\s*="),
+                file_path=vis_games_path,
+                line_number=vis_games_line,
                 unit_bytes=4,
                 count_formula="poolCap * sizeof(RomFile*) (ESP32-S3: 4 B)",
                 bytes_at_floor=min_pool * 4,
@@ -223,8 +262,8 @@ class PsramBudgetAnalyzer:
             ),
             PsramAllocationSite(
                 symbol="s_asyncEmuBuf[0..1]",
-                file_path="firmware/BmoGameboy/src/ui/display_worker.cpp",
-                line_number=self._find_line("firmware/BmoGameboy/src/ui/display_worker.cpp", r"s_asyncEmuBuf\[0\]\s*="),
+                file_path=emu_buf_path,
+                line_number=emu_buf_line,
                 unit_bytes=320 * 240 * 2,
                 count_formula="2 * (320 * 240 * 2)",
                 bytes_at_floor=2 * 320 * 240 * 2,
@@ -234,8 +273,8 @@ class PsramBudgetAnalyzer:
             ),
             PsramAllocationSite(
                 symbol="s_menuCanvasArr[0..1]",
-                file_path="firmware/BmoGameboy/src/ui/display_worker.cpp",
-                line_number=self._find_line("firmware/BmoGameboy/src/ui/display_worker.cpp", r"s_menuCanvasArr\[0\]\s*="),
+                file_path=menu_canvas_path,
+                line_number=menu_canvas_line,
                 unit_bytes=320 * 240 * 2,
                 count_formula="2 * (320 * 240 * 2)",
                 bytes_at_floor=2 * 320 * 240 * 2,
@@ -245,8 +284,8 @@ class PsramBudgetAnalyzer:
             ),
             PsramAllocationSite(
                 symbol="s_psramFaceBuf",
-                file_path="firmware/BmoGameboy/src/ui/bmo_face.cpp",
-                line_number=self._find_line("firmware/BmoGameboy/src/ui/bmo_face.cpp", r"s_psramFaceBuf\s*="),
+                file_path=face_buf_path,
+                line_number=face_buf_line,
                 unit_bytes=320 * 240 * 2,
                 count_formula="1 * (320 * 240 * 2)",
                 bytes_at_floor=320 * 240 * 2,
@@ -256,8 +295,8 @@ class PsramBudgetAnalyzer:
             ),
             PsramAllocationSite(
                 symbol="s_boxArtBuf",
-                file_path="firmware/BmoGameboy/src/storage/box_art.cpp",
-                line_number=self._find_line("firmware/BmoGameboy/src/storage/box_art.cpp", r"s_boxArtBuf\s*="),
+                file_path=box_art_path,
+                line_number=box_art_line,
                 unit_bytes=64 * 64 * 2,
                 count_formula="1 * (64 * 64 * 2)",
                 bytes_at_floor=64 * 64 * 2,

@@ -17,7 +17,7 @@ import tarfile
 import urllib.request
 import zipfile
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parent
 FIRMWARE_DIR = REPO_ROOT / "firmware" / "BmoGameboy"
@@ -368,12 +368,21 @@ def cmd_check(args: argparse.Namespace) -> int:
     ruff_bin = shutil.which("ruff")
     if ruff_bin:
         print("[5b] Running ruff check...")
-        if _run_checked([ruff_bin, "check", "."]).returncode != 0:
+        ruff_cmd = (
+            [ruff_bin, "check", "."]
+            if args.strict_lint
+            else [ruff_bin, "check", "--select", "E,F,W,I", "--ignore", "E501,E402", "."]
+        )
+        if _run_checked(ruff_cmd).returncode != 0:
             failures.append("ruff check failed")
     elif args.strict_lint:
         failures.append("ruff not installed (--strict-lint)")
     else:
         print("  INFO: ruff not installed; skipping Python lint check.")
+
+    print("[5c] AI codemap & state sync check...")
+    if _run_checked([sys.executable, str(REPO_ROOT / "scripts" / "sync_ai_codemap.py"), "--check"]).returncode != 0:
+        failures.append("scripts/sync_ai_codemap.py --check failed (run --write)")
 
     if not args.no_tests:
         print("[6/6] Running fast host unit tests (guardian + non-WASM core logic)...")
@@ -647,7 +656,13 @@ def cmd_size(args: argparse.Namespace) -> int:
 
     analyzer = ElfAnalyzer(REPO_ROOT)
     elf_path = Path(args.elf) if args.elf else analyzer.find_latest_elf()
-    elf_res = analyzer.analyze(elf_path)
+    try:
+        elf_res = analyzer.analyze(elf_path)
+    except (FileNotFoundError, RuntimeError) as exc:
+        print(f"ELF size inspection unavailable: {exc}")
+        if args.check_budgets or args.elf:
+            return 1
+        return 0
     parts = validate_repo._parse_partitions_csv(PARTITIONS_CSV)
     app0_size = parts.get("app0", {}).get("size", 8 * 1024 * 1024)
 
@@ -777,6 +792,18 @@ def cmd_sim(args: argparse.Namespace) -> int:
     return _run_checked(cmd).returncode
 
 
+def cmd_bench(args: argparse.Namespace) -> int:
+    """Run firmware host, simulator JS/WASM, and script benchmarks."""
+    cmd = [sys.executable, str(REPO_ROOT / "benchmarks" / "run_benchmarks.py")]
+    if args.save_baseline:
+        cmd.append("--save-baseline")
+    if args.check:
+        cmd.append("--check")
+    if args.with_wasm_build:
+        cmd.append("--with-wasm-build")
+    return _run_checked(cmd).returncode
+
+
 def cmd_doctor(args: argparse.Namespace) -> int:
     """Diagnose local developer environment, toolchains, git hooks, and Python dependencies."""
     del args
@@ -887,6 +914,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_sim = sub.add_parser("sim", help="Launch local browser simulator.")
     p_sim.add_argument("--no-open", action="store_true")
     p_sim.set_defaults(func=cmd_sim)
+
+    p_bench = sub.add_parser("bench", help="Run host firmware, simulator, and script benchmarks.")
+    p_bench.add_argument("--save-baseline", action="store_true", help="Record benchmarks/baseline_before.json.")
+    p_bench.add_argument("--check", action="store_true", help="Fail if any budget or baseline regression occurs.")
+    p_bench.add_argument("--with-wasm-build", action="store_true", help="Include full WASM build timing.")
+    p_bench.set_defaults(func=cmd_bench)
 
     parsed = parser.parse_args(argv)
     return int(parsed.func(parsed))

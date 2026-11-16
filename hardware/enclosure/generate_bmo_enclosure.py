@@ -13,7 +13,6 @@ from typing import Iterable
 import numpy as np
 import trimesh
 
-
 # All dimensions in this block are millimetres. Update measured hardware here.
 CONFIG = {
     "physical_fit_status": "WAITING",

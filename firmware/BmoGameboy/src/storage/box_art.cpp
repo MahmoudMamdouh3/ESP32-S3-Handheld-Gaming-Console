@@ -265,6 +265,7 @@ bool BoxArt::load(const char* romFilename) {
 
 bool BoxArt::loadRaw(const char* path) {
 #if FEATURE_SD_CARD
+  SpiArbiter::ScopedLock spiLock;
   if (!SD.exists(path)) return false;
   File f = SD.open(path, FILE_READ);
   if (!f) return false;
@@ -284,6 +285,7 @@ bool BoxArt::loadRaw(const char* path) {
 
 bool BoxArt::loadBmp(const char* path) {
 #if FEATURE_SD_CARD
+  SpiArbiter::ScopedLock spiLock;
   if (!SD.exists(path)) return false;
   File f = SD.open(path, FILE_READ);
   if (!f) return false;

@@ -7,17 +7,18 @@ and also tests Phase D QoL features (Recursive Folder Navigation, Console Bezels
 Cover Art Converter, and Serial Telemetry Plotter).
 """
 
-from concurrent.futures import ThreadPoolExecutor
 import os
 import shutil
 import subprocess
 import tempfile
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+
+from host_test_support import find_wasi_cxx, require_compiler
 
 from scripts import fetch_covers
 from tools import telemetry_plotter
-from host_test_support import find_wasi_cxx, require_compiler
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FIRMWARE_DIR = REPO_ROOT / "firmware" / "BmoGameboy"
@@ -534,6 +535,7 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         self.assertIn(".bmo-gaze-pad:focus-visible", css)
 
         import base64
+
         from scripts import build_wasm_cores
         with tempfile.TemporaryDirectory() as tmp:
             wasm_bin_path = Path(tmp) / "bmo_playtest_cores.wasm"

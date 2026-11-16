@@ -9,7 +9,7 @@ Unit tests for Apple & Nintendo UI/UX ergonomics engine:
 """
 
 import unittest
-import math
+
 
 class TestAppleNintendoUiEngine(unittest.TestCase):
     """Test suite for ergonomic UI components and kinetic spring equations."""

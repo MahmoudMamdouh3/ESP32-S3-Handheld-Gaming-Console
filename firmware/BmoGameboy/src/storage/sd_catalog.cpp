@@ -235,6 +235,7 @@ void SDCard::sortRoms() {
 bool SDCard::loadIndex() {
 #if FEATURE_SD_CARD
   using namespace BmoSdInternal;
+  SpiArbiter::ScopedLock spiLock;
   if (!SD.exists(BMO_INDEX_PATH)) return false;
 
   File f = SD.open(BMO_INDEX_PATH, FILE_READ);
@@ -379,6 +380,7 @@ bool SDCard::loadIndex() {
 bool SDCard::saveIndex() {
 #if FEATURE_SD_CARD
   using namespace BmoSdInternal;
+  SpiArbiter::ScopedLock spiLock;
   const int bakedCount = bakedRomCount();
   if (numRoms <= bakedCount) return false;
 

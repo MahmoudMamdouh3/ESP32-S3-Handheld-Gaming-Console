@@ -9,7 +9,7 @@ import math
 import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 DEFAULT_FRAME_BUDGET_US = 16667
 

@@ -2,9 +2,9 @@ import subprocess
 import unittest
 from pathlib import Path
 
-from tools.guardian.core.psram_budget import PsramBudgetAnalyzer
 from host_test_support import find_wasi_cxx, require_compiler
 
+from tools.guardian.core.psram_budget import PsramBudgetAnalyzer
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 

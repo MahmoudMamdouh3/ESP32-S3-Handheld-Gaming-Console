@@ -7,7 +7,7 @@ I/O port registers, keypad input multiplexing, and PSRAM memory budget.
 """
 
 import unittest
-import struct
+
 
 class TestWSwanEmulatorCore(unittest.TestCase):
     """Test suite for WonderSwan hardware architecture and core logic."""

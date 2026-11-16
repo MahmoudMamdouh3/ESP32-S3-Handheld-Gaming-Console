@@ -12,7 +12,6 @@ import trimesh
 
 from hardware.enclosure.generate_bmo_enclosure import CONFIG, build_parts, export_all, validate_mesh
 
-
 EXPECTED_PARTS = {
     "bmo_front_shell",
     "bmo_back_shell",

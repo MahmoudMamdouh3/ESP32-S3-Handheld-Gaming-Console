@@ -15,6 +15,8 @@ dependencies = [
 dev = [
     "clang-tidy==22.1.8",
     "cppcheck==1.5.1",
+    "lizard>=1.17.13,<2.0.0",
+    "mypy>=1.14.0,<3.0.0",
     "ruff>=0.8.0,<1.0.0",
 ]
 
@@ -33,5 +35,42 @@ extend-exclude = [
 ]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I"]
-ignore = ["E501"]
+select = ["E", "F", "W", "I", "B", "UP", "C90", "PERF", "SIM", "RUF"]
+ignore = ["E501", "RUF001"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+explicit_package_bases = true
+ignore_missing_imports = true
+warn_unused_configs = true
+exclude = [
+    "Book/",
+    "build/",
+    "games/",
+    "roms/",
+    "sdcard/",
+    "firmware/BmoGameboy/src/third_party/",
+]
+
+# Legacy pre-Phase-3 typing exemptions; Phase 3 deletes this override block cleanly.
+[[tool.mypy.overrides]]
+module = [
+    "tasks",
+    "scripts.build_wasm_cores",
+    "scripts.convert_covers",
+    "scripts.deploy_sd_complete",
+    "scripts.deploy_to_sd",
+    "scripts.export_enclosure_web_meshes",
+    "scripts.generate_codemap",
+    "scripts.install_git_hooks",
+    "scripts.validate_repo",
+    "scripts.verify_color_tokens",
+    "hardware.enclosure.generate_bmo_enclosure",
+    "tools.guardian.*",
+    "tools.telemetry_plotter",
+]
+ignore_errors = true

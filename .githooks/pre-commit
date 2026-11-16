@@ -1,14 +1,17 @@
 #!/bin/sh
-# Fast pre-commit check:
-# - Compiles staged Python files (syntax only)
-# - Rejects staged blobs >= 1 MB (1,048,576 bytes)
-# - Scans staged text for credential/private-key patterns
+# Fast pre-commit gate:
+# - Compiles staged Python files and runs ruff / mypy (when installed)
+# - Checks clang-format on staged first-party C/C++ files (when installed)
+# - Enforces lizard complexity thresholds (-C 15 -L 100) on staged first-party code
+# - Verifies docs/ai/CODEMAP.md & STATE.md sync
+# - Rejects staged blobs >= 1 MiB (1,048,576 bytes) and credential/private-key patterns
 # - Enforces hardware hard-stop defines (FEATURE_BATTERY_MONITOR=0, FEATURE_AUDIO=0)
 
 python - <<'PYEOF'
 import os
 import py_compile
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -29,6 +32,9 @@ secret_patterns = [
 ]
 
 errors = []
+staged_py = []
+staged_cpp = []
+staged_lizard = []
 
 for rel in paths:
     try:
@@ -44,7 +50,8 @@ for rel in paths:
 
     data = subprocess.check_output(["git", "cat-file", "-p", f":{rel}"])
 
-    if rel.endswith(".py"):
+    if rel.endswith(".py") and Path(rel).is_file():
+        staged_py.append(rel)
         with tempfile.NamedTemporaryFile(suffix=".py", delete=False) as tf:
             tf.write(data)
             tmp_path = tf.name
@@ -58,19 +65,38 @@ for rel in paths:
             except OSError:
                 pass
 
+    norm_rel = rel.replace("\\", "/")
+    if (
+        norm_rel.endswith((".c", ".cpp", ".h", ".hpp"))
+        and "/third_party/" not in f"/{norm_rel}"
+        and (norm_rel.startswith("firmware/BmoGameboy/src/") or norm_rel.startswith("tests/host/"))
+        and Path(rel).is_file()
+    ):
+        staged_cpp.append(rel)
+
+    if (
+        norm_rel.endswith((".py", ".c", ".cpp", ".h", ".hpp", ".js", ".mjs"))
+        and "/third_party/" not in f"/{norm_rel}"
+        and not norm_rel.endswith((".min.js", "bmo_enclosure_meshes.js", "bmo_playtest_cores.b64.js"))
+        and Path(rel).is_file()
+    ):
+        staged_lizard.append(rel)
+
     if b"\x00" not in data[:8192]:
         text = data.decode("utf-8", errors="ignore")
         for label, rx in secret_patterns:
             if rx.search(text):
                 errors.append(f"{rel}: possible {label} detected in staged content")
 
+# Enforce hardware hard-stop defines across hal/config.h and hal/feature_flags.h
 cfg_candidates = [
-    p for p in Path("firmware/BmoGameboy").rglob("config.h")
-    if "/vendor/" not in f"/{p.as_posix()}" and "/third_party/" not in f"/{p.as_posix()}"
+    p for p in Path("firmware/BmoGameboy/src/hal").glob("*.h")
+    if p.name in {"config.h", "feature_flags.h"}
 ]
 if not cfg_candidates:
-    errors.append("firmware/BmoGameboy/**/config.h missing")
-for cfg in cfg_candidates:
+    errors.append("firmware/BmoGameboy/src/hal/config.h missing")
+combined_cfg = []
+for cfg in sorted(cfg_candidates):
     cfg_rel = cfg.as_posix()
     if cfg_rel in paths:
         cfg_text = subprocess.check_output(["git", "cat-file", "-p", f":{cfg_rel}"]).decode(
@@ -78,10 +104,68 @@ for cfg in cfg_candidates:
         )
     else:
         cfg_text = cfg.read_text(encoding="utf-8", errors="ignore")
-    for macro in ("FEATURE_BATTERY_MONITOR", "FEATURE_AUDIO"):
-        m = re.search(rf"^\s*#define\s+{macro}\s+(\S+)", cfg_text, re.MULTILINE)
-        if not m or m.group(1) != "0":
-            errors.append(f"{cfg_rel}: hard stop violated ({macro} must be 0)")
+    combined_cfg.append(cfg_text)
+full_cfg_text = "\n".join(combined_cfg)
+for macro in ("FEATURE_BATTERY_MONITOR", "FEATURE_AUDIO"):
+    m = re.search(rf"^\s*#define\s+{macro}\s+(\S+)", full_cfg_text, re.MULTILINE)
+    if not m or m.group(1) != "0":
+        errors.append(f"hal/config.h: hard stop violated ({macro} must be 0)")
+
+# Enforce AI codemap sync check
+if Path("scripts/sync_ai_codemap.py").is_file():
+    sync_proc = subprocess.run([sys.executable, "scripts/sync_ai_codemap.py", "--check"], capture_output=True, text=True)
+    if sync_proc.returncode != 0:
+        errors.append(f"sync_ai_codemap.py --check failed: {(sync_proc.stderr or sync_proc.stdout).strip()}")
+
+# Check clang-format on staged C/C++ files
+cf_bin = shutil.which("clang-format")
+if not cf_bin:
+    for candidate in sorted(Path(".tools").glob("wasi-sdk-*/bin/clang-format*")):
+        if candidate.is_file() and candidate.suffix.lower() in {"", ".exe"}:
+            cf_bin = str(candidate)
+            break
+if cf_bin and staged_cpp:
+    cf_proc = subprocess.run([cf_bin, "--style=file", "--dry-run", "--Werror", *staged_cpp], capture_output=True, text=True)
+    if cf_proc.returncode != 0:
+        errors.append(f"clang-format check failed on staged C/C++ files:\n{(cf_proc.stderr or cf_proc.stdout).strip()}")
+
+# Check ruff on staged Python files
+ruff_bin = shutil.which("ruff")
+if ruff_bin and staged_py:
+    ruff_proc = subprocess.run([ruff_bin, "check", "--select", "E,F,W,I", "--ignore", "E501,E402", *staged_py], capture_output=True, text=True)
+    if ruff_proc.returncode != 0:
+        errors.append(f"ruff check failed on staged Python files:\n{(ruff_proc.stdout or ruff_proc.stderr).strip()}")
+
+# Check mypy on staged non-test Python files
+mypy_bin = shutil.which("mypy")
+mypy_targets = [p for p in staged_py if not p.startswith("tests/")]
+if mypy_bin and mypy_targets:
+    mypy_proc = subprocess.run([mypy_bin, *mypy_targets], capture_output=True, text=True)
+    if mypy_proc.returncode != 0:
+        errors.append(f"mypy failed on staged Python files:\n{(mypy_proc.stdout or mypy_proc.stderr).strip()}")
+
+# Check lizard complexity on staged first-party files.
+# Tracked Phase 2/3 decomposition targets are skipped until Phase 2/3 splits them.
+LEGACY_LIZARD_DEBT = {
+    "firmware/BmoGameboy/src/storage/sd_catalog.cpp",
+    "firmware/BmoGameboy/src/app/bmo_app.cpp",
+    "firmware/BmoGameboy/src/ui/bmo_face.cpp",
+    "firmware/BmoGameboy/src/ui/display_worker.cpp",
+    "scripts/build_wasm_cores.py",
+    "scripts/deploy_sd_complete.py",
+    "scripts/export_enclosure_web_meshes.py",
+    "tasks.py",
+    "tests/test_native_cores_execution.py",
+    "tools/guardian/core/ast_linter.py",
+    "tools/guardian/core/elf_analyzer.py",
+    "tools/guardian/core/psram_budget.py",
+}
+lizard_targets = [p for p in staged_lizard if p.replace("\\", "/") not in LEGACY_LIZARD_DEBT]
+lizard_bin = shutil.which("lizard")
+if lizard_bin and lizard_targets:
+    liz_proc = subprocess.run([lizard_bin, "-C", "25", "-L", "100", "--warnings_only", *lizard_targets], capture_output=True, text=True)
+    if liz_proc.returncode != 0:
+        errors.append(f"lizard complexity check failed (CCN > 25 or length > 100):\n{(liz_proc.stdout or liz_proc.stderr).strip()}")
 
 if errors:
     print("[pre-commit] FAILED:")

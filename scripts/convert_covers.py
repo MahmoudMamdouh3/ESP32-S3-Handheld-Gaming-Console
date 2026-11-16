@@ -23,6 +23,7 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from repo_tools import get_data_dir
+
 from scripts.rom_key import make_rom_key
 
 try:

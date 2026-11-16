@@ -2,7 +2,6 @@
 """Configure git to use the tracked .githooks directory."""
 
 import subprocess
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -18,7 +17,7 @@ def install_hooks() -> int:
         ["git", "-C", str(REPO_ROOT), "config", "core.hooksPath", ".githooks"],
         check=True,
     )
-    print(f"[OK] Configured core.hooksPath = .githooks")
+    print("[OK] Configured core.hooksPath = .githooks")
     return 0
 
 

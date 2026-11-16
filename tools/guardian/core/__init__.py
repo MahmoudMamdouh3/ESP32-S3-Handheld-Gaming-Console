@@ -2,7 +2,7 @@
 """Core hardware, memory, and static analyzers for BMO Handheld firmware."""
 
 from .ast_linter import FirmwareAstLinter, LintFinding
-from .bus_model import BusMetrics, HardwareBusModel, SUPPORTED_RESOLUTIONS
+from .bus_model import SUPPORTED_RESOLUTIONS, BusMetrics, HardwareBusModel
 from .clang_tidy_runner import ClangTidyFinding, ClangTidyRunner
 from .cppcheck_runner import CppcheckFinding, CppcheckRunner
 from .elf_analyzer import ElfAnalysisResult, ElfAnalyzer, SymbolEntry

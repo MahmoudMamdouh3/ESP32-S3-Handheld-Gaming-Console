@@ -128,21 +128,14 @@ class ElfAnalyzer:
         target_elf = elf_path or self.find_latest_elf()
         toolchain_found = self.get_tool("size") is not None
 
-        if not target_elf or not target_elf.exists() or not toolchain_found:
-            return ElfAnalysisResult(
-                elf_path=target_elf,
-                sections=[],
-                symbols_by_size=[],
-                iram_used_bytes=77824,
-                iram_total_bytes=327680,
-                dram_used_bytes=218816,
-                dram_total_bytes=327680,
-                flash_used_bytes=5692724,
-                flash_total_bytes=16777216,
-                psram_static_bytes=0,
-                largest_functions=[],
-                largest_data_objects=[],
-                toolchain_found=toolchain_found,
+        if not target_elf or not target_elf.exists():
+            raise FileNotFoundError(
+                f"Compiled ESP32-S3 ELF binary not found ({target_elf or 'no BmoGameboy*.elf discovered under build/'}). "
+                "Compile firmware first (e.g. `python tasks.py build --profile default`)."
+            )
+        if not toolchain_found:
+            raise RuntimeError(
+                "xtensa-esp32s3-elf-size toolchain binary not found in PATH or Arduino15 esp32 tools."
             )
 
         size_tool = self.get_tool("size")

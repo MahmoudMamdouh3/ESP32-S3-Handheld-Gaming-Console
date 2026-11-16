@@ -73,3 +73,29 @@ bmo_add_host_exec(peanut_opcode_test tests/host/peanut_opcode_test.cpp)
 target_compile_definitions(peanut_opcode_test PRIVATE BMO_REPO_ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 bmo_add_host_exec(walnut_opcode_test tests/host/walnut_opcode_test.cpp)
 bmo_add_host_exec(doom_palette_test tests/host/doom_palette_test.cpp)
+
+option(BMO_BUILD_BENCHMARKS "Build native host performance benchmark executable" ON)
+if(BMO_BUILD_BENCHMARKS)
+  add_executable(bmo_bench_host
+    benchmarks/bench_firmware_host.cpp
+    benchmarks/bmo_face_bench_unit.cpp
+  )
+  target_include_directories(bmo_bench_host PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/simulator/bmo_face_compat"
+    "${CMAKE_CURRENT_SOURCE_DIR}/simulator/hal"
+    "${CMAKE_CURRENT_SOURCE_DIR}/simulator"
+    "${CMAKE_CURRENT_SOURCE_DIR}/firmware/BmoGameboy"
+    "${CMAKE_CURRENT_SOURCE_DIR}/firmware/BmoGameboy/src"
+    "${CMAKE_CURRENT_SOURCE_DIR}/firmware/BmoGameboy/src/app"
+    "${CMAKE_CURRENT_SOURCE_DIR}/firmware/BmoGameboy/src/hal"
+    "${CMAKE_CURRENT_SOURCE_DIR}/firmware/BmoGameboy/src/storage"
+    "${CMAKE_CURRENT_SOURCE_DIR}/firmware/BmoGameboy/src/ui"
+    "${CMAKE_CURRENT_SOURCE_DIR}/firmware/BmoGameboy/src/cores"
+  )
+  target_compile_definitions(bmo_bench_host PRIVATE BMO_HOST_TEST=1 LOG_LEVEL=0 _CRT_SECURE_NO_WARNINGS)
+  if(MSVC)
+    target_compile_options(bmo_bench_host PRIVATE /O2 /W3)
+  else()
+    target_compile_options(bmo_bench_host PRIVATE -O2 -Wall -Wextra)
+  endif()
+endif()

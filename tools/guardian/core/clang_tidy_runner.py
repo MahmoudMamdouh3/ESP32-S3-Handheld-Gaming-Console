@@ -1,18 +1,23 @@
 # SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """
 tools.guardian.core.clang_tidy_runner — LLVM Clang-Tidy Deep Static Analyzer Wrapper
-Runs clang-tidy with high-signal embedded defect checks (null dereference, use-after-free,
-uninitialized values, division by zero, suspicious sizeof/memset, infinite loops) across
-host-compilable C/C++ emulator cores and harnesses.
+Runs clang-tidy using the repository `.clang-tidy` configuration across first-party
+firmware sources (`firmware/BmoGameboy/src/`) and host C/C++ verification suites.
 """
 
+from __future__ import annotations
+
+import json
+import os
 import re
 import shutil
+import site
 import subprocess
 import sys
+import sysconfig
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 
 @dataclass
@@ -26,24 +31,18 @@ class ClangTidyFinding:
 
 
 class ClangTidyRunner:
-    """Executes LLVM clang-tidy across host-compilable C/C++ firmware cores and harnesses."""
-
-    EMBEDDED_CHECKS = ",".join([
-        "-*",
-        "clang-analyzer-core.*",
-        "clang-analyzer-unix.Malloc",
-        "clang-analyzer-cplusplus.NewDelete",
-        "bugprone-assert-side-effect",
-        "bugprone-infinite-loop",
-        "bugprone-sizeof-expression",
-        "bugprone-string-constructor",
-        "bugprone-suspicious-memset-usage",
-        "bugprone-use-after-move",
-    ])
+    """Executes LLVM clang-tidy across first-party firmware and host C/C++ targets."""
 
     DIAG_REGEX = re.compile(
         r"^(?P<file>.+?):(?P<line>\d+):(?P<col>\d+):\s+(?P<sev>warning|error):\s+(?P<msg>.+?)\s+\[(?P<check>[^\]]+)\]$"
     )
+    XTENSA_UNSUPPORTED_FLAGS = {
+        "-mlongcalls",
+        "-fno-tree-switch-conversion",
+        "-fstrict-volatile-bitfields",
+        "-mdisable-hardware-atomics",
+        "-mtext-section-literals",
+    }
 
     def __init__(self, repo_root: Path):
         self.repo_root = repo_root
@@ -56,59 +55,127 @@ class ClangTidyRunner:
         if which_bin:
             return which_bin
 
-        candidates = [
-            Path(sys.executable).resolve().parent / "Scripts" / "clang-tidy.exe",
-            Path.home() / "AppData" / "Local" / "Programs" / "Python" / "Python310" / "Scripts" / "clang-tidy.exe",
-            Path(r"C:\Program Files\LLVM\bin\clang-tidy.exe"),
+        exe_name = "clang-tidy.exe" if os.name == "nt" else "clang-tidy"
+        candidates: list[Path] = [
+            Path(sys.executable).resolve().parent / "Scripts" / exe_name,
+            Path(sys.executable).resolve().parent / exe_name,
         ]
+        scripts_path = sysconfig.get_path("scripts")
+        if scripts_path:
+            candidates.append(Path(scripts_path) / exe_name)
+        user_base = site.getuserbase()
+        if user_base:
+            candidates.append(Path(user_base) / "Scripts" / exe_name)
+            candidates.append(Path(user_base) / "bin" / exe_name)
+        for wasi_bin in sorted((self.repo_root / ".tools").glob(f"wasi-sdk-*/bin/{exe_name}")):
+            candidates.append(wasi_bin)
+        candidates.append(Path(r"C:\Program Files\LLVM\bin\clang-tidy.exe"))
+
         for c in candidates:
-            if c.exists():
+            if c.is_file():
                 return str(c)
         return None
 
     def is_available(self) -> bool:
         return self.clang_tidy_bin is not None
 
-    def default_targets(self) -> List[Path]:
-        third_party = self.firmware_dir / "src" / "third_party"
-        targets = [
-            self.repo_root / "tests" / "host" / "host_cores_runner.c",
-            third_party / "agnes" / "agnes.c",
-            third_party / "smsplus" / "smsplus_bmo.c",
-            third_party / "huexpress" / "pce-go.c",
-            third_party / "stella2014" / "src" / "Thumbulator.c",
-            third_party / "fake08" / "src" / "vm.cpp",
-            third_party / "gwenesis" / "bus" / "gwenesis_bus.c",
-            third_party / "snes9x" / "src" / "apu.c",
-            third_party / "oswan" / "WS.c",
-            third_party / "race" / "cz80_support.c",
-            third_party / "handy" / "cart.cpp",
-            third_party / "doom" / "src" / "doomgeneric.c",
-        ]
+    def default_targets(self) -> list[Path]:
+        """Collect first-party firmware sources and host C/C++ verification targets."""
+        src_root = self.firmware_dir / "src"
+        targets: list[Path] = []
+        compdb = self.repo_root / "build" / "compile_commands.json"
+        if compdb.is_file():
+            for folder in ("app", "hal", "storage", "ui", "cores"):
+                d = src_root / folder
+                if d.is_dir():
+                    targets.extend(sorted(d.glob("*.cpp")))
+        else:
+            # Host-compilable first-party modules and host test/benchmark harnesses
+            for p in (
+                src_root / "hal" / "spi_arbiter.cpp",
+                self.repo_root / "simulator" / "bmo_face_firmware.cpp",
+                self.repo_root / "simulator" / "bmo_face_wasm.cpp",
+            ):
+                if p.is_file():
+                    targets.append(p)
+            targets.extend(sorted((self.repo_root / "tests" / "host").glob("*_test.cpp")))
+            runner = self.repo_root / "tests" / "host" / "host_cores_runner.c"
+            if runner.is_file():
+                targets.append(runner)
         return [t for t in targets if t.exists()]
 
-    def run(self, files: Optional[List[Path]] = None) -> List[ClangTidyFinding]:
-        if not self.is_available():
+    def _prepare_compdb(self) -> Optional[Path]:
+        src_compdb = self.repo_root / "build" / "compile_commands.json"
+        if not src_compdb.is_file():
+            return None
+        try:
+            entries = json.loads(src_compdb.read_text(encoding="utf-8", errors="ignore"))
+        except Exception:
+            return None
+        if not isinstance(entries, list):
+            return None
+
+        cleaned = []
+        for item in entries:
+            if not isinstance(item, dict):
+                continue
+            args = item.get("arguments")
+            if isinstance(args, list):
+                filtered = [a for a in args if a not in self.XTENSA_UNSUPPORTED_FLAGS]
+                new_item = dict(item)
+                new_item["arguments"] = filtered
+                cleaned.append(new_item)
+            else:
+                cmd_str = str(item.get("command", ""))
+                for flag in self.XTENSA_UNSUPPORTED_FLAGS:
+                    cmd_str = cmd_str.replace(f" {flag}", "")
+                new_item = dict(item)
+                new_item["command"] = cmd_str
+                cleaned.append(new_item)
+
+        out_dir = self.repo_root / "build" / "clang_tidy_compdb"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "compile_commands.json").write_text(json.dumps(cleaned), encoding="utf-8")
+        return out_dir
+
+    def run(self, files: Optional[list[Path]] = None) -> list[ClangTidyFinding]:
+        if not self.is_available() or not self.clang_tidy_bin:
             return []
 
         target_files = files if files else self.default_targets()
         if not target_files:
             return []
 
-        cmd = [
-            self.clang_tidy_bin,
-            "--quiet",
-            f"-checks={self.EMBEDDED_CHECKS}",
-            *[str(p) for p in target_files],
-            "--",
-            "-D_CRT_SECURE_NO_WARNINGS",
-            f"-I{self.firmware_dir / 'src'}",
-            f"-I{self.firmware_dir / 'src' / 'hal'}",
-            f"-I{self.firmware_dir / 'src' / 'storage'}",
-            f"-I{self.firmware_dir / 'src' / 'ui'}",
-            f"-I{self.firmware_dir / 'src' / 'engines'}",
-            f"-I{self.firmware_dir / 'src' / 'third_party'}",
-        ]
+        compdb_dir = self._prepare_compdb()
+        cmd: list[str] = [self.clang_tidy_bin, "--quiet"]
+        config_file = self.repo_root / ".clang-tidy"
+        if config_file.is_file():
+            cmd.append(f"--config-file={config_file}")
+        if compdb_dir and files is None:
+            cmd.extend(["-p", str(compdb_dir)])
+            cmd.extend(str(p) for p in target_files)
+        else:
+            cmd.extend(str(p) for p in target_files)
+            cmd.extend(
+                [
+                    "--",
+                    "-std=c++17",
+                    "-DBMO_HOST_TEST=1",
+                    "-DLOG_LEVEL=0",
+                    "-D_CRT_SECURE_NO_WARNINGS",
+                    f"-I{self.firmware_dir}",
+                    f"-I{self.firmware_dir / 'src'}",
+                    f"-I{self.firmware_dir / 'src' / 'app'}",
+                    f"-I{self.firmware_dir / 'src' / 'hal'}",
+                    f"-I{self.firmware_dir / 'src' / 'storage'}",
+                    f"-I{self.firmware_dir / 'src' / 'ui'}",
+                    f"-I{self.firmware_dir / 'src' / 'cores'}",
+                    f"-I{self.firmware_dir / 'src' / 'third_party'}",
+                    f"-I{self.repo_root / 'simulator' / 'hal'}",
+                    f"-I{self.repo_root / 'simulator' / 'bmo_face_compat'}",
+                    f"-I{self.repo_root / 'tests' / 'host' / 'fakes'}",
+                ]
+            )
 
         try:
             res = subprocess.run(
@@ -123,7 +190,7 @@ class ClangTidyRunner:
         except OSError as exc:
             raise RuntimeError(f"Unable to run clang-tidy: {exc}") from exc
 
-        findings: List[ClangTidyFinding] = []
+        findings: list[ClangTidyFinding] = []
         combined = (res.stdout or "") + "\n" + (res.stderr or "")
         for raw_line in combined.splitlines():
             m = self.DIAG_REGEX.match(raw_line.strip())

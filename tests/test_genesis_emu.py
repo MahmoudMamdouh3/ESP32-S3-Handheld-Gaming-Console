@@ -6,8 +6,9 @@ Verifies ROM header validation, vector table extraction, 68000 bus mapping,
 VDP CRAM color conversion, register decoding, controller multiplexing, and PSRAM budget.
 """
 
-import unittest
 import struct
+import unittest
+
 
 class TestGenesisEmulatorCore(unittest.TestCase):
     """Test suite for Sega Genesis / Mega Drive hardware architecture and core logic."""
@@ -111,19 +112,27 @@ class TestGenesisEmulatorCore(unittest.TestCase):
         def read_port(pad, th_high):
             if th_high:
                 data = 0x7F
-                if pad & 0x01: data &= ~0x01  # UP
-                if pad & 0x02: data &= ~0x02  # DOWN
-                if pad & 0x04: data &= ~0x04  # LEFT
-                if pad & 0x08: data &= ~0x08  # RIGHT
-                if pad & 0x10: data &= ~0x10  # B (maps to Genesis B)
+                if pad & 0x01:
+                    data &= ~0x01  # UP
+                if pad & 0x02:
+                    data &= ~0x02  # DOWN
+                if pad & 0x04:
+                    data &= ~0x04  # LEFT
+                if pad & 0x08:
+                    data &= ~0x08  # RIGHT
+                if pad & 0x10:
+                    data &= ~0x10  # B (maps to Genesis B)
                 return data
-            else:
-                data = 0x7F
-                if pad & 0x01: data &= ~0x01  # UP
-                if pad & 0x02: data &= ~0x02  # DOWN
-                if pad & 0x20: data &= ~0x10  # A (maps to Genesis A)
-                if pad & 0x80: data &= ~0x20  # START
-                return data
+            data = 0x7F
+            if pad & 0x01:
+                data &= ~0x01  # UP
+            if pad & 0x02:
+                data &= ~0x02  # DOWN
+            if pad & 0x20:
+                data &= ~0x10  # A (maps to Genesis A)
+            if pad & 0x80:
+                data &= ~0x20  # START
+            return data
 
         th1 = read_port(pad_state, True)
         th0 = read_port(pad_state, False)

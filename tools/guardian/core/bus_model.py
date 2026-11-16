@@ -6,7 +6,7 @@ memory bandwidth, frame transmission times, and maximum compute budgets.
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 
 @dataclass(frozen=True)
@@ -225,32 +225,32 @@ class HardwareBusModel:
         if res_key not in SUPPORTED_RESOLUTIONS:
             raise KeyError(f"Unknown resolution key: {res_key}")
         res = SUPPORTED_RESOLUTIONS[res_key]
-        
+
         # Raw wire transfer time
         raw_bytes = res.frame_bytes
         transfer_ns = (raw_bytes * self.byte_time_ns) + (self.addr_window_overhead_us * 1000)
         transfer_ms = transfer_ns / 1_000_000.0
-        
+
         frame_period_ms = 1000.0 / res.target_fps
         max_theoretical_fps = 1000.0 / transfer_ms if transfer_ms > 0 else 0.0
-        
+
         # In sequential execution (no DMA): CPU cannot run while SPI is blocking
         sequential_cpu_budget_ms = max(0.0, frame_period_ms - transfer_ms)
         sequential_cpu_budget_percent = (sequential_cpu_budget_ms / frame_period_ms) * 100.0
-        
+
         # Idealized overlap is an upper bound, not a claim about DMA or measured firmware behavior.
         ideal_overlap_cpu_budget_ms = frame_period_ms
         ideal_overlap_cpu_budget_percent = 100.0
-        
+
         spi_bus_utilization = (transfer_ms / frame_period_ms) * 100.0
-        
+
         if transfer_ms > frame_period_ms:
             status = "BUS_SATURATED"
         elif sequential_cpu_budget_percent < 40.0:
             status = "LOW_SEQUENTIAL_HEADROOM"
         else:
             status = "SEQUENTIAL_HEADROOM_AVAILABLE"
-            
+
         return BusMetrics(
             resolution_key=res_key,
             resolution=res,

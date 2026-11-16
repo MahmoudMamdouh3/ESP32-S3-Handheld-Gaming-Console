@@ -1,7 +1,7 @@
 import struct
 import unittest
 import zlib
-from pathlib import Path
+
 
 class SaveManagerBinaryTests(unittest.TestCase):
     MAGIC_V1 = 0x31535342  # "BSS1"
@@ -130,7 +130,7 @@ class SaveManagerBinaryTests(unittest.TestCase):
         pce_vram = b"\x55" * 0x10000
         pce_palette = b"\x00\x08" * 512
         state_payload = pce_ram + pce_vram + pce_palette
-        
+
         crc = self.compute_crc32(state_payload)
         packed_hdr = struct.pack(
             self.HEADER_FORMAT,

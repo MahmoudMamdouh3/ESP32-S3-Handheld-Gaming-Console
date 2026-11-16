@@ -4,9 +4,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.rom_key import make_rom_key, normalize_rom_path
 from host_test_support import find_wasi_cxx, require_compiler
 
+from scripts.rom_key import make_rom_key, normalize_rom_path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 

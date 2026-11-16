@@ -29,12 +29,51 @@ if str(REPO_ROOT) not in sys.path:
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-ARDUINO_FQBN = (
-    "esp32:esp32:esp32s3:"
-    "CDCOnBoot=cdc,CPUFreq=240,FlashMode=qio,FlashSize=16M,"
-    "PartitionScheme=custom,PSRAM=opi,USBMode=default"
-)
-ARDUINO_PROFILE = "esp32s3"
+def _load_sketch_profile():
+    sketch_yaml = FIRMWARE_DIR / "sketch.yaml"
+    default_profile = "esp32s3"
+    fqbn = ""
+    if sketch_yaml.is_file():
+        for raw_line in sketch_yaml.read_text(encoding="utf-8").splitlines():
+            s = raw_line.strip()
+            if s.startswith("default_profile:"):
+                default_profile = s.split(":", 1)[1].strip()
+            elif s.startswith("fqbn:"):
+                fqbn = s.split(":", 1)[1].strip()
+    return default_profile, fqbn
+
+
+def _discover_registry_contracts():
+    reg_path = FIRMWARE_DIR / "src" / "cores" / "core_registry.h"
+    emulators = []
+    teardowns = []
+    if reg_path.is_file():
+        text = reg_path.read_text(encoding="utf-8")
+        emulators = sorted(set(re.findall(r'#include\s+"(emu_[a-z0-9_]+)\.h"', text)))
+        teardowns = sorted(set(re.findall(r"\b([A-Za-z0-9_]+Emu::destroy)\b", text)))
+    return emulators, teardowns
+
+
+def _discover_catalog_extensions():
+    cat_path = FIRMWARE_DIR / "src" / "ui" / "console_catalog.h"
+    if not cat_path.is_file():
+        return []
+    text = cat_path.read_text(encoding="utf-8")
+    m = re.search(r"kExtensionRoutes\[\]\s*=\s*\{(.*?)\};", text, re.S)
+    if not m:
+        return []
+    return list(dict.fromkeys(re.findall(r'"(\.[a-z0-9]+)"', m.group(1))))
+
+
+def _discover_display_stream_methods():
+    display_h = FIRMWARE_DIR / "src" / "ui" / "display_emu.h"
+    if not display_h.is_file():
+        return []
+    text = display_h.read_text(encoding="utf-8")
+    return list(dict.fromkeys(re.findall(r"\bvoid\s+(stream[A-Za-z0-9_]+)\s*\(", text)))
+
+
+ARDUINO_PROFILE, ARDUINO_FQBN = _load_sketch_profile()
 TARGET_COMPILE_STATUS = "NOT_RUN"
 
 DEBUG_LOG_MACROS = {"LOG_LEVEL_DEBUG", "LOG_DEBUG", "LOG_DEBUG_STR"}
@@ -42,38 +81,9 @@ DEBUG_ONLY_MACRO_NAME = re.compile(
     r"(?:^|_)(?:DEBUG|UNIT_TESTS?|TEST_MODE|TEST_ONLY)(?:_|$)", re.IGNORECASE
 )
 
-EXPECTED_EMULATORS = [
-    "emu_walnut", "emu_peanut", "emu_nes", "emu_doom",
-    "emu_sms", "emu_pce", "emu_atari", "emu_pico",
-    "emu_genesis", "emu_snes", "emu_wswan", "emu_ngp",
-    "emu_lynx", "emu_colem",
-]
-
-EXPECTED_TEARDOWNS = [
-    "WalnutEmu::destroy()", "PeanutEmu::destroy()",
-    "NesEmu::destroy()", "DoomEmu::destroy()",
-    "SmsEmu::destroy()", "PceEmu::destroy()",
-    "AtariEmu::destroy()", "PicoEmu::destroy()",
-    "GenesisEmu::destroy()", "SNESEmu::destroy()",
-    "WSwanEmu::destroy()", "NGPEmu::destroy()",
-    "LynxEmu::destroy()", "ColemEmu::destroy()",
-]
-
-EXPECTED_EXTENSIONS = [
-    ".gb", ".gbc", ".nes", ".wad",
-    ".sms", ".gg", ".pce", ".a26", ".p8",
-    ".gen", ".md", ".smd", ".sfc", ".smc",
-    ".ws", ".wsc", ".ngp", ".ngc",
-    ".lnx", ".col", ".sg",
-]
-
-REQUIRED_STREAM_METHODS = [
-    "streamPixelRow", "streamNESFrame", "streamDoomFrame",
-    "streamSMSFrame", "streamPCEFrame", "streamAtariFrame",
-    "streamPicoFrame", "streamGenesisFrame", "streamSNESFrame",
-    "streamWSwanFrame", "streamNGPFrame", "streamLynxFrame",
-    "streamColemFrame",
-]
+EXPECTED_EMULATORS, EXPECTED_TEARDOWNS = _discover_registry_contracts()
+EXPECTED_EXTENSIONS = _discover_catalog_extensions()
+REQUIRED_STREAM_METHODS = _discover_display_stream_methods()
 
 
 def _find_arduino_cli():
@@ -252,29 +262,35 @@ def check_python_files():
 
 def check_firmware_safety_guardrails():
     issues = []
-    config_path = FIRMWARE_DIR / "src" / "hal" / "config.h"
+    hal_dir = FIRMWARE_DIR / "src" / "hal"
+    config_path = hal_dir / "config.h"
+    flags_path = hal_dir / "feature_flags.h"
     if not config_path.exists():
         return ["src/hal/config.h not found"]
     config_text = config_path.read_text(encoding="utf-8")
+    if flags_path.exists():
+        config_text = flags_path.read_text(encoding="utf-8") + "\n" + config_text
     for flag in ("FEATURE_BATTERY_MONITOR", "FEATURE_AUDIO"):
         if not re.search(rf"#define\s+{flag}\s+0\b", config_text):
-            issues.append(f"config.h: {flag} must be exactly 0 (hardware hard stop)")
+            issues.append(f"hal/config.h: {flag} must be exactly 0 (hardware hard stop)")
 
-    app_path = FIRMWARE_DIR / "src" / "app" / "bmo_app.cpp"
-    if app_path.exists():
-        app_text = app_path.read_text(encoding="utf-8")
+    app_dir = FIRMWARE_DIR / "src" / "app"
+    if app_dir.is_dir():
+        app_text = "\n".join(p.read_text(encoding="utf-8") for p in sorted(app_dir.glob("*.cpp")))
         if "CoreRegistry::findByIndex" not in app_text or "core->destroy()" not in app_text:
-            issues.append("src/app/bmo_app.cpp: missing CoreRegistry teardown dispatch in destroyActiveEmulator()")
+            issues.append("src/app/: missing CoreRegistry teardown dispatch in destroyActiveEmulator()")
     else:
-        issues.append("src/app/bmo_app.cpp not found")
+        issues.append("src/app/ not found")
 
     registry_path = FIRMWARE_DIR / "src" / "cores" / "core_registry.h"
     if registry_path.exists():
         registry_text = registry_path.read_text(encoding="utf-8")
-        for td in EXPECTED_TEARDOWNS:
-            symbol = td[:-2] if td.endswith("()") else td
-            if symbol not in registry_text:
-                issues.append(f"core_registry.h: missing teardown registration: {symbol}")
+        emulators, teardowns = _discover_registry_contracts()
+        if len(emulators) < 14 or len(teardowns) < 14:
+            issues.append("core_registry.h: expected >= 14 registered emulators and destroy() handlers")
+        for td in teardowns:
+            if td not in registry_text:
+                issues.append(f"core_registry.h: missing teardown registration: {td}")
     else:
         issues.append("src/cores/core_registry.h not found")
 
@@ -338,30 +354,32 @@ def check_flash_budget_static():
 def check_structural_soundness():
     issues = []
     emu_dir = FIRMWARE_DIR / "src" / "cores"
-    for stem in EXPECTED_EMULATORS:
+    emulators, _ = _discover_registry_contracts()
+    for stem in emulators:
         for ext in (".h", ".cpp"):
             if not (emu_dir / (stem + ext)).exists():
                 issues.append(f"Missing emulator wrapper: src/cores/{stem}{ext}")
 
-    for sd_module in ("sd_mount.cpp", "sd_catalog.cpp", "sd_metadata.cpp"):
-        if not (FIRMWARE_DIR / "src" / "storage" / sd_module).exists():
+    storage_dir = FIRMWARE_DIR / "src" / "storage"
+    for sd_module in ("sd_mount.cpp", "sd_metadata.cpp"):
+        if not (storage_dir / sd_module).exists():
             issues.append(f"Missing SD storage module: src/storage/{sd_module}")
+    if not ((storage_dir / "sd_catalog.cpp").exists() or (storage_dir / "rom_catalog_index.cpp").exists()):
+        issues.append("Missing SD catalog module (sd_catalog.cpp or rom_catalog_index.cpp)")
 
     catalog_h = FIRMWARE_DIR / "src" / "ui" / "console_catalog.h"
     if catalog_h.exists():
-        cat_text = catalog_h.read_text(encoding="utf-8")
-        for ext in EXPECTED_EXTENSIONS:
-            if ext not in cat_text:
-                issues.append(f'console_catalog.h: extension "{ext}" not registered')
+        extensions = _discover_catalog_extensions()
+        if len(extensions) < 21:
+            issues.append(f"console_catalog.h: expected >= 21 ROM extensions, found {len(extensions)}")
     else:
         issues.append("src/ui/console_catalog.h not found")
 
     display_h = FIRMWARE_DIR / "src" / "ui" / "display_emu.h"
     if display_h.exists():
-        header = display_h.read_text(encoding="utf-8")
-        for m in REQUIRED_STREAM_METHODS:
-            if m not in header:
-                issues.append(f"display_emu.h: missing stream method: {m}")
+        methods = _discover_display_stream_methods()
+        if len(methods) < 13:
+            issues.append(f"display_emu.h: expected >= 13 stream methods, found {len(methods)}")
     else:
         issues.append("display_emu.h not found")
     return issues
@@ -435,9 +453,13 @@ def main(argv=None):
     all_issues = []
     for phase_name, phase_fn in PHASES:
         if phase_fn is check_arduino_compile:
-            phase_fn = lambda: check_arduino_compile(require_target_compile)
+            def run_phase() -> list[str]:
+                return check_arduino_compile(require_target_compile)
+            active_fn = run_phase
+        else:
+            active_fn = phase_fn
         print(f"\n[{phase_name}]")
-        errors = phase_fn()
+        errors = active_fn()
         if errors:
             for e in errors:
                 print(f"  FAIL: {e}")

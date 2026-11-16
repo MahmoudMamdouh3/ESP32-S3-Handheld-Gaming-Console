@@ -6,7 +6,6 @@ from pathlib import Path
 
 from host_test_support import build_and_run_native_cxx
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 

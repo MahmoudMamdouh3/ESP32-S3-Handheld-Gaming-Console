@@ -77,8 +77,11 @@ def cmd_audit(args) -> int:
         print(f"    [WARNING]  [{f.rule_id}] {f.file_path.name}:{f.line_number} -- {f.message}")
 
     print("\n[3/4] Introspecting Xtensa ESP32-S3 ELF...")
-    elf_res = ElfAnalyzer(REPO_ROOT).analyze()
-    print(f"  IRAM: {elf_res.iram_used_bytes:,} B | DRAM: {elf_res.dram_used_bytes:,}/{elf_res.dram_total_bytes:,} B | Flash: {elf_res.flash_used_bytes:,}/{elf_res.flash_total_bytes:,} B")
+    try:
+        elf_res = ElfAnalyzer(REPO_ROOT).analyze()
+        print(f"  IRAM: {elf_res.iram_used_bytes:,} B | DRAM: {elf_res.dram_used_bytes:,}/{elf_res.dram_total_bytes:,} B | Flash: {elf_res.flash_used_bytes:,}/{elf_res.flash_total_bytes:,} B")
+    except (FileNotFoundError, RuntimeError) as exc:
+        print(f"  ELF analysis unavailable (NOT_TESTED): {exc}")
 
     print("\n[4/4] Cppcheck Static Analysis...")
     cppcheck = CppcheckRunner(REPO_ROOT)
@@ -117,8 +120,12 @@ def cmd_bus_calc(args) -> int:
 def cmd_profile_elf(args) -> int:
     """Introspect compiled Xtensa ELF sections and largest symbols."""
     target_path = Path(args.elf) if getattr(args, "elf", None) else None
-    res = ElfAnalyzer(REPO_ROOT).analyze(target_path)
-    print(f"Target ELF: {res.elf_path or 'Fallback Baseline'}")
+    try:
+        res = ElfAnalyzer(REPO_ROOT).analyze(target_path)
+    except (FileNotFoundError, RuntimeError) as exc:
+        print(f"FAIL: {exc}")
+        return 1
+    print(f"Target ELF: {res.elf_path}")
     print(f"Toolchain available: {res.toolchain_found}")
     print(f"IRAM Usage:  {res.iram_used_bytes:,} bytes")
     print(f"DRAM Usage:  {res.dram_used_bytes:,} / {res.dram_total_bytes:,} bytes")
@@ -174,7 +181,11 @@ def cmd_budget(args) -> int:
     total_flash = 16 * 1024 * 1024
     app0_size = 8 * 1024 * 1024
     target_path = Path(args.elf) if getattr(args, "elf", None) else None
-    elf_res = ElfAnalyzer(REPO_ROOT).analyze(target_path)
+    try:
+        elf_res = ElfAnalyzer(REPO_ROOT).analyze(target_path)
+    except (FileNotFoundError, RuntimeError) as exc:
+        print(f"FAIL: {exc}")
+        return 1
     print("Flash & SRAM Allocation Overview (ESP32-S3-N16R8):")
     print(f"  * Physical Flash Chip         : {total_flash / (1024 * 1024):.1f} MB ({total_flash:,} bytes)")
     print(f"  * Firmware App Partition (app0): {app0_size / (1024 * 1024):.1f} MB ({app0_size:,} bytes)")

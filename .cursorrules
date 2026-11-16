@@ -1,0 +1,19 @@
+# Cursor Rules — BMO Handheld (ESP32-S3-N16R8)
+Follow `AGENTS.md` (repo rules) and `firmware/AGENTS.md` (C/C++ RTOS/PSRAM rules) as canonical instructions.
+Read `docs/ai/STATE.md` (<= 60 lines) and `docs/ai/CODEMAP.md` (<= 200 lines) before scanning files.
+
+Hard Stops (Never Mutate Without Signed ADR in docs/decisions/ & Owner Sign-Off):
+- Keep FEATURE_BATTERY_MONITOR=0, FEATURE_AUDIO=0, FlashMode=qio, PSRAM=opi, app0=8MB.
+- Keep soldered GPIO pins immutable (strapping 0/3/45/46 & Flash/PSRAM 26-37 reserved).
+- Never flash/upload (`arduino-cli upload`, `esptool`, `tasks.py flash`) or touch `games/`, `roms/`, `sdcard/`, `.rom_cache/`, `Book/`.
+- Never read `firmware/BmoGameboy/src/third_party/**`, `simulator/three.min.js`, `simulator/bmo_enclosure_meshes.js`, `build/**`, or `Book/**` in full.
+
+AI Anti-Regression & Quality Budgets:
+- Zero `delay()` / `ets_delay_us()` in frame loops or RTOS workers.
+- Zero internal-DRAM `new`/`malloc`/`std::string`/`std::vector` in emulators/UI; use `hal/psram_alloc.h` (stack arrays <= 1,024 B).
+- Every SD/TFT/SPI function must acquire `SpiArbiter::ScopedLock`.
+- Simulator/CAD dimensions must come from `hardware/layout.json` (`8.80 x 12.40 x 3.20 cm`, `31 x 46` holes).
+- Target <= 400 lines/file (1,000 cap), <= 60 lines/function (100 cap), cyclomatic complexity <= 15, explicit units (`_ms`, `_us`, `_hz`, `_bytes`, `_cm`, `_mm`).
+- Never fabricate metrics on missing ELF/toolchain or add regex-only tests instead of real C++/WASM/Python checks.
+- Classify evidence strictly: `NOT_TESTED`, `HOST_TESTED`, `TARGET_COMPILED`, `HARDWARE_TESTED`.
+- Verify changes with `python tasks.py format --check`, `python tasks.py check`, `python tasks.py bench --check`, `python tasks.py build --profile all --warnings strict --fail-on-warnings`, and `python scripts/sync_ai_codemap.py --check`.

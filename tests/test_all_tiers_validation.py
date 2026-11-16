@@ -10,7 +10,6 @@ is a useless test — it passes even when the file is empty or wrong.
 Tests are numbered to make failure output easy to trace in CI logs.
 """
 
-import os
 import re
 import unittest
 from pathlib import Path

@@ -1,0 +1,9 @@
+{
+  "description": "Regression budgets relative to recorded Phase 1 baseline_before.json (and absolute bounds).",
+  "max_regression_ratio": 1.25,
+  "absolute_caps": {
+    "simulator.bmo_face_600_frames_imagedata_bytes": 185000000,
+    "simulator.gb_render_600_frames_imagedata_bytes": 125000000,
+    "simulator.sync_startup_script_bytes": 3500000
+  }
+}
