@@ -2,12 +2,9 @@
  * simulator/js/webserial.js
  * WebSerial port connection helper and browser ROM upload/dropzone ingestion.
  */
-(function (root) {
-  "use strict";
+import { CONSOLES_LIST, MAX_BROWSER_ROM_SIZE } from "./constants.js";
 
-  root.BmoSimModules = root.BmoSimModules || {};
-
-  root.BmoSimModules.webserialMethods = {
+export const webserialMethods = {
     async connectWebSerial() {
       const statusEl = document.getElementById("webserial-status");
       const logEl = document.getElementById("webserial-log");
@@ -86,4 +83,3 @@
       return added.length;
     }
   };
-}(typeof globalThis !== "undefined" ? globalThis : window));

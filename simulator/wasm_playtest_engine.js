@@ -2,11 +2,11 @@
  * Browser adapter for firmware emulator cores compiled to WebAssembly.
  */
 
-const GAMEBOY_VIEWPORT = { w: 240, h: 216, scale: 1, ox: 40, oy: 12 };
-const NES_VIEWPORT = { w: 256, h: 240, scale: 1, ox: 32, oy: 0 };
-const ATARI_VIEWPORT = { w: 160, h: 192, scale: 1, ox: 80, oy: 24 };
-const COLECO_VIEWPORT = { w: 256, h: 192, scale: 1, ox: 32, oy: 24 };
-const BMO_EXPRESSION_NAMES = [
+export const GAMEBOY_VIEWPORT = { w: 240, h: 216, scale: 1, ox: 40, oy: 12 };
+export const NES_VIEWPORT = { w: 256, h: 240, scale: 1, ox: 32, oy: 0 };
+export const ATARI_VIEWPORT = { w: 160, h: 192, scale: 1, ox: 80, oy: 24 };
+export const COLECO_VIEWPORT = { w: 256, h: 192, scale: 1, ox: 32, oy: 24 };
+export const BMO_EXPRESSION_NAMES = [
   "IDLE",
   "SURPRISED",
   "HAPPY",
@@ -26,7 +26,7 @@ const BMO_EXPRESSION_NAMES = [
   "TICKLED",
   "CELEBRATING",
 ];
-const BMO_EXPRESSIONS = Object.freeze(
+export const BMO_EXPRESSIONS = Object.freeze(
   Object.fromEntries(BMO_EXPRESSION_NAMES.map((name, index) => [name, index]))
 );
 const CORE_CONFIG = {
@@ -36,7 +36,7 @@ const CORE_CONFIG = {
   ROM_COLEM: { prefix: "bmo_colem", name: "ColecoVision", viewport: COLECO_VIEWPORT, frameRate: 60 },
 };
 
-class WasmPlaytestEngine {
+export class WasmPlaytestEngine {
   constructor() {
     this.instance = null;
     this.exports = null;
@@ -80,10 +80,13 @@ class WasmPlaytestEngine {
   async init() {
     if (this.ready) return true;
     let wasmBytes = null;
-    if (typeof window === "undefined" && typeof require === "function" && typeof __dirname !== "undefined") {
-      const fs = require("fs");
-      const path = require("path");
-      wasmBytes = fs.readFileSync(path.join(__dirname, "bmo_playtest_cores.wasm"));
+    if (typeof window === "undefined" && typeof process !== "undefined" && process.versions?.node) {
+      const [{ default: fsMod }, { dirname, join }, { fileURLToPath }] = await Promise.all([
+        import("node:fs"),
+        import("node:path"),
+        import("node:url"),
+      ]);
+      wasmBytes = fsMod.readFileSync(join(dirname(fileURLToPath(import.meta.url)), "bmo_playtest_cores.wasm"));
     } else {
       if (typeof fetch === "function" && window.location.protocol !== "file:") {
         try {
@@ -509,21 +512,4 @@ class WasmPlaytestEngine {
       ctx.fillText(this.runtimeError || "LOAD A SUPPORTED ROM TO PLAY", 160, 120);
     }
   }
-}
-
-if (typeof window !== "undefined") {
-  window.WasmPlaytestEngine = WasmPlaytestEngine;
-  window.BMO_EXPRESSIONS = BMO_EXPRESSIONS;
-  window.BMO_EXPRESSION_NAMES = BMO_EXPRESSION_NAMES;
-}
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = {
-    WasmPlaytestEngine,
-    BMO_EXPRESSIONS,
-    BMO_EXPRESSION_NAMES,
-    GAMEBOY_VIEWPORT,
-    NES_VIEWPORT,
-    ATARI_VIEWPORT,
-    COLECO_VIEWPORT,
-  };
 }

@@ -122,6 +122,10 @@ class HardwareLayoutTests(unittest.TestCase):
         with gen.WIRE_CSV_PATH.open("r", encoding="utf-8") as fh:
             rows = list(csv.DictReader(fh))
         self.assertEqual(rows, gen.generate_wire_list_rows(self.layout))
+        self.assertEqual(
+            gen.SIM_LAYOUT_JS_PATH.read_text(encoding="utf-8"),
+            gen.generate_simulator_layout_module(self.layout),
+        )
 
     def test_layout_collisions_and_3xaa_variant(self) -> None:
         gen = _load_generator_module()

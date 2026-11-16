@@ -39,15 +39,18 @@ class RomFileFilterTests(unittest.TestCase):
                            check=True, capture_output=True, text=True)
 
     def test_atari_7800_extension_is_not_mapped_to_atari_2600(self):
-        scanner = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "console_catalog.h").read_text(encoding="utf-8") + "\n" + (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage" / "sd_catalog.cpp").read_text(encoding="utf-8")
+        storage_src = "\n".join(
+            p.read_text(encoding="utf-8")
+            for p in sorted((REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage").glob("*.cpp"))
+        )
+        scanner = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "console_catalog.h").read_text(encoding="utf-8") + "\n" + storage_src
         display_h = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "display_emu.h").read_text(encoding="utf-8")
         atari_cpp = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "cores" / "emu_atari.cpp").read_text(encoding="utf-8")
         self.assertNotIn(".a78", scanner.lower())
         self.assertIn("Atari 2600", display_h)
         self.assertIn("stella2014", atari_cpp)
         for script_rel in (
-            "scripts/deploy_to_sd.py",
-            "scripts/deploy_sd_complete.py",
+            "scripts/deploy_sd.py",
             "simulator/console_history_data.js",
         ):
             self.assertNotIn(".a78", (REPO_ROOT / script_rel).read_text(encoding="utf-8").lower())

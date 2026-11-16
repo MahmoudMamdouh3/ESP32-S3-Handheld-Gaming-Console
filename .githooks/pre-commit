@@ -147,14 +147,8 @@ if mypy_bin and mypy_targets:
 # Check lizard complexity on staged first-party files.
 # Tracked Phase 2/3 decomposition targets are skipped until Phase 2/3 splits them.
 LEGACY_LIZARD_DEBT = {
-    "firmware/BmoGameboy/src/storage/sd_catalog.cpp",
-    "firmware/BmoGameboy/src/app/bmo_app.cpp",
-    "firmware/BmoGameboy/src/ui/bmo_face.cpp",
-    "firmware/BmoGameboy/src/ui/display_worker.cpp",
     "scripts/build_wasm_cores.py",
-    "scripts/deploy_sd_complete.py",
     "scripts/export_enclosure_web_meshes.py",
-    "tasks.py",
     "tests/test_native_cores_execution.py",
     "tools/guardian/core/ast_linter.py",
     "tools/guardian/core/elf_analyzer.py",

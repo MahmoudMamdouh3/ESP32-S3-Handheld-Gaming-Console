@@ -197,19 +197,19 @@ class PsramBudgetAnalyzer:
             r"s_pathArena\s*=\s*static_cast", "firmware/BmoGameboy/src/storage/sd_mount.cpp"
         )
         vis_idx_path, vis_idx_line = self._locate_symbol_site(
-            r"psramIndexes\s*=", "firmware/BmoGameboy/src/app/bmo_app.cpp"
+            r"psramIndexes\s*=", "firmware/BmoGameboy/src/app/app_state.cpp"
         )
         vis_games_path, vis_games_line = self._locate_symbol_site(
-            r"psramGames\s*=", "firmware/BmoGameboy/src/app/bmo_app.cpp"
+            r"psramGames\s*=", "firmware/BmoGameboy/src/app/app_state.cpp"
         )
         emu_buf_path, emu_buf_line = self._locate_symbol_site(
-            r"s_asyncEmuBuf\[0\]\s*=", "firmware/BmoGameboy/src/ui/display_worker.cpp"
+            r"s_asyncEmuBuf\[0\]\s*=", "firmware/BmoGameboy/src/ui/display_pipeline.cpp"
         )
         menu_canvas_path, menu_canvas_line = self._locate_symbol_site(
-            r"s_menuCanvasArr\[0\]\s*=", "firmware/BmoGameboy/src/ui/display_worker.cpp"
+            r"s_menuCanvasArr\[0\]\s*=", "firmware/BmoGameboy/src/ui/display_pipeline.cpp"
         )
         face_buf_path, face_buf_line = self._locate_symbol_site(
-            r"s_psramFaceBuf\s*=", "firmware/BmoGameboy/src/ui/bmo_face.cpp"
+            r"(?:s_psramFaceBuf|psramFaceBuf)\s*=", "firmware/BmoGameboy/src/ui/bmo_face_anim.cpp"
         )
         box_art_path, box_art_line = self._locate_symbol_site(
             r"s_boxArtBuf\s*=", "firmware/BmoGameboy/src/storage/box_art.cpp"

@@ -59,11 +59,8 @@ exclude = [
 # Legacy pre-Phase-3 typing exemptions; Phase 3 deletes this override block cleanly.
 [[tool.mypy.overrides]]
 module = [
-    "tasks",
     "scripts.build_wasm_cores",
     "scripts.convert_covers",
-    "scripts.deploy_sd_complete",
-    "scripts.deploy_to_sd",
     "scripts.export_enclosure_web_meshes",
     "scripts.generate_codemap",
     "scripts.install_git_hooks",

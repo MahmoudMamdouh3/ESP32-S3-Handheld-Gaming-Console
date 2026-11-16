@@ -103,7 +103,7 @@ PY_MUTATIONS: tuple[PyMutation, ...] = (
     ),
     PyMutation(
         name="deploy_missing_nes_extension",
-        rel_module="scripts/deploy_to_sd.py",
+        rel_module="scripts/deploy_sd.py",
         old_snippet='".gb", ".gbc", ".nes", ".wad",',
         new_snippet='".gb", ".gbc", ".wad",',
         unittest_target="tests/test_sd_deploy.py",
@@ -239,9 +239,9 @@ def main(argv: list[str] | None = None) -> int:
         elif not args.python_only:
             print("WARNING: WASI clang++/node unavailable; skipping C++ mutations.")
 
-        for mut in PY_MUTATIONS:
-            ok, msg = _run_py_mutation(mut, workdir)
-            results.append((mut.name, ok, msg))
+        for py_mut in PY_MUTATIONS:
+            ok, msg = _run_py_mutation(py_mut, workdir)
+            results.append((py_mut.name, ok, msg))
 
     killed = sum(1 for _, ok, _ in results if ok)
     for name, ok, msg in results:

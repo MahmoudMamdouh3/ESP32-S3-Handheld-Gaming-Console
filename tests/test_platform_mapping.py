@@ -4,12 +4,21 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INO = (REPO_ROOT / "firmware" / "BmoGameboy" / "BmoGameboy.ino").read_text(encoding="utf-8")
-BMO_APP = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "app" / "bmo_app.cpp").read_text(encoding="utf-8")
+BMO_APP = "\n".join(
+    p.read_text(encoding="utf-8")
+    for p in sorted((REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "app").glob("*.cpp"))
+)
 CONSOLE_CATALOG = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "console_catalog.h").read_text(encoding="utf-8")
 CORE_REGISTRY = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "cores" / "core_registry.h").read_text(encoding="utf-8")
 COMPAT_DOC = (REPO_ROOT / "docs" / "compatibility.md").read_text(encoding="utf-8")
-SD_CATALOG_CPP = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage" / "sd_catalog.cpp").read_text(encoding="utf-8")
-DISPLAY_WORKER_CPP = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "display_worker.cpp").read_text(encoding="utf-8")
+SD_CATALOG_CPP = "\n".join(
+    p.read_text(encoding="utf-8")
+    for p in sorted((REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage").glob("*.cpp"))
+)
+DISPLAY_WORKER_CPP = "\n".join(
+    (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / name).read_text(encoding="utf-8")
+    for name in ("display_driver.cpp", "display_pipeline.cpp")
+)
 FRAME_PACING = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "frame_pacing.h").read_text(encoding="utf-8")
 
 
@@ -60,8 +69,8 @@ class PlatformMappingTests(unittest.TestCase):
         # Verify bmo_app.cpp dispatches launch, frame stepping, palette cycling, and destroy through CoreRegistry.
         self.assertIn("CoreRegistry::findByRomType(selectedRom->type)", BMO_APP)
         self.assertIn("activeCore->start(selectedRom, romData, romSize)", BMO_APP)
-        destroy_body = BMO_APP.split("void destroyActiveEmulator()", 1)[1].split("if (s_currentRomBuffer)", 1)[0]
-        self.assertIn("CoreRegistry::findByIndex(s_selectedEmulatorIndex)", destroy_body)
+        destroy_body = BMO_APP.split("void destroyActiveEmulator()", 1)[1].split("SDCard::freeRom", 1)[0]
+        self.assertIn("CoreRegistry::findByIndex(rt.selectedEmulatorIndex)", destroy_body)
         self.assertIn("core->destroy()", destroy_body)
         self.assertIn("if (activeCore && activeCore->stepFrame)", BMO_APP)
         self.assertIn("activeCore->stepFrame()", BMO_APP)

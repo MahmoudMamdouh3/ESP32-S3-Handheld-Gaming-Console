@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import trimesh
 
-from hardware.enclosure.generate_bmo_enclosure import CONFIG, build_parts, export_all, validate_mesh
+from hardware.enclosure.generate_bmo_enclosure import CONFIG, build_parts, export_all, make_config, validate_mesh
 
 EXPECTED_PARTS = {
     "bmo_front_shell",
@@ -103,6 +103,20 @@ class EnclosureGeneratorTests(unittest.TestCase):
             overlap = trimesh.boolean.intersection([shell, glass], engine="manifold", check_volume=True)
             overlap_volume = 0.0 if overlap is None else float(overlap.volume)
             self.assertLessEqual(overlap_volume, 1e-12, "display glass intersects the front-shell rebate")
+
+    def test_reference_profile_from_layout_json_produces_valid_nonintersecting_parts(self):
+        ref_cfg = make_config("reference")
+        self.assertEqual(
+            (ref_cfg["outer"]["width"], ref_cfg["outer"]["height"], ref_cfg["outer"]["thickness"]),
+            (88.0, 124.0, 32.0),
+        )
+        self.assertEqual(ref_cfg["perfboard"]["design_envelope"], (78.74, 116.84, 1.6))
+        ref_parts = build_parts(config=ref_cfg)
+        self.assertEqual(set(ref_parts), EXPECTED_PARTS)
+        for name, mesh in ref_parts.items():
+            validate_mesh(mesh, name)
+        np.testing.assert_allclose(ref_parts["bmo_front_shell"].bounds, [[-44, -62, 0], [44, 62, 16]], atol=1e-5)
+        np.testing.assert_allclose(ref_parts["bmo_back_shell"].bounds, [[-44, -62, -16], [44, 62, 0]], atol=1e-5)
 
 
 if __name__ == "__main__":

@@ -2,12 +2,10 @@
  * simulator/js/bmo_mode.js
  * Firmware BMO Companion expression, gaze, dance, quote, and HUD helpers.
  */
-(function (root) {
-  "use strict";
+import { BMO_EXPRESSION_NAMES } from "../wasm_playtest_engine.js";
+import { STATE } from "./constants.js";
 
-  root.BmoSimModules = root.BmoSimModules || {};
-
-  root.BmoSimModules.bmoModeMethods = {
+export const bmoModeMethods = {
     enterBmoCompanion(showGreeting = true, interactiveSandbox = false) {
       this.currentState = STATE.IDLE_MASCOT;
       this.bmoSessionStarted = false;
@@ -186,7 +184,14 @@
         if (el) el.addEventListener("click", handler);
         return el;
       };
+      this.bindBmoActionButtons(bindClick);
+      this.bindBmoTogglesAndSlider();
+      this.bindBmoGazeAndSpeech(bindClick);
+      this.populateBmoQuotes();
+      this.syncBmoModeUI();
+    },
 
+    bindBmoActionButtons(bindClick) {
       bindClick("btn-bmo-mode", () => {
         if (this.currentState === STATE.IDLE_MASCOT) this.exitBmoCompanion();
         else this.enterBmoMode();
@@ -211,7 +216,9 @@
         if (engine.bmoIsDancing()) engine.stopBmoDance();
         else engine.startBmoDance(this.bmoDanceBpm);
       }));
+    },
 
+    bindBmoTogglesAndSlider() {
       const bpmSlider = document.getElementById("slider-bmo-bpm");
       const bpmVal = document.getElementById("val-bmo-bpm");
       if (bpmSlider) {
@@ -232,7 +239,7 @@
           if (this.bmoAutoCycle) {
             this.ensureBmoModeActive();
             this.bmoLastAutoCycleMs = performance.now();
-            const names = (window.BMO_EXPRESSION_NAMES || []).filter((n) => n !== "HIDDEN");
+            const names = BMO_EXPRESSION_NAMES.filter((n) => n !== "HIDDEN");
             if (names.length) {
               const nextExpr = names[this.bmoAutoCycleIndex % names.length];
               this.runBmoAction((engine) => engine.setBmoExpression(nextExpr), false);
@@ -259,7 +266,9 @@
           this.bmoHudVisible = chkHud.checked;
         });
       }
+    },
 
+    bindBmoGazeAndSpeech(bindClick) {
       const gazePad = document.getElementById("bmo-gaze-pad");
       if (gazePad) {
         let draggingGaze = false;
@@ -323,8 +332,6 @@
       bindClick("btn-bmo-clear-speech", () => {
         this.runBmoAction((engine) => engine.clearBmoSpeech());
       });
-      this.populateBmoQuotes();
-      this.syncBmoModeUI();
     },
 
     wrapSpeechLines(text, maxWidth, maxLines = 2) {
@@ -361,4 +368,3 @@
       });
     }
   };
-}(typeof globalThis !== "undefined" ? globalThis : window));

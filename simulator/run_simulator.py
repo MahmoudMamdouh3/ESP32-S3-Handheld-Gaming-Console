@@ -10,6 +10,7 @@ import socketserver
 import sys
 import webbrowser
 from pathlib import Path
+from typing import Any
 from urllib.parse import unquote, urlsplit
 
 PORT = 8080
@@ -40,6 +41,8 @@ def valid_origin_header(value: str | None, port: int = PORT) -> bool:
 def resolve_static_path(url_path: str) -> Path | None:
     """Resolve a URL path only when it stays inside the simulator directory."""
     relative = unquote(urlsplit(url_path).path).lstrip("/")
+    if ".." in relative.replace("\\", "/").split("/"):
+        return None
     candidate = (DIRECTORY / relative).resolve()
     try:
         candidate.relative_to(DIRECTORY.resolve())
@@ -57,17 +60,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         ".js": "application/javascript; charset=utf-8",
     }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, directory=str(DIRECTORY), **kwargs)
 
-    def end_headers(self):
+    def end_headers(self) -> None:
         self.send_header("Content-Security-Policy", CSP_POLICY)
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
         self.send_header("Cross-Origin-Resource-Policy", "same-origin")
         super().end_headers()
 
-    def _write_json(self, status: int, payload: dict):
+    def _write_json(self, status: int, payload: dict[str, Any]) -> None:
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -90,16 +93,29 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return str(DIRECTORY / ".blocked-path")
         return str(resolved)
 
-    def do_GET(self):
+    def do_GET(self) -> None:
         if not self._host_is_allowed():
             return
         route = urlsplit(self.path).path
+        if route == "/hardware/layout.json":
+            layout_path = DIRECTORY.parent / "hardware" / "layout.json"
+            if not layout_path.is_file():
+                self._write_json(404, {"status": "error", "message": "Not found"})
+                return
+            body = layout_path.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(body)
+            return
         if route.startswith("/api/"):
             self._write_json(404, {"status": "error", "message": "Not found"})
             return
         super().do_GET()
 
-    def do_POST(self):
+    def do_POST(self) -> None:
         if not self._host_is_allowed():
             return
         self.send_response(405)
@@ -137,7 +153,7 @@ def ensure_wasm_artifacts() -> None:
         )
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run the BMO Handheld loopback browser simulator.")
     parser.add_argument("--no-open", action="store_true", help="Start HTTP server without opening a browser tab.")
     parser.add_argument("--port", type=int, default=PORT, help="Loopback TCP port (default: 8080).")
@@ -160,7 +176,8 @@ def main(argv=None):
             httpd.serve_forever()
         except KeyboardInterrupt:
             print("\nSimulator stopped.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

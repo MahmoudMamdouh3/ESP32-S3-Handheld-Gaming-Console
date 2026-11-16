@@ -4,7 +4,7 @@
  * engineering breakthroughs, game development history, and landmark titles.
  */
 
-const CONSOLE_HISTORY_DATABASE = {
+export const CONSOLE_HISTORY_DATABASE = {
   ROM_ATARI: {
     id: "ROM_ATARI",
     name: "Atari 2600",
@@ -486,7 +486,7 @@ const CONSOLE_HISTORY_DATABASE = {
   }
 };
 
-const PROSPECTIVE_TIER3_CONSOLES = [
+export const PROSPECTIVE_TIER3_CONSOLES = [
   {
     name: "ZX Spectrum",
     year: 1982,
@@ -524,7 +524,3 @@ const PROSPECTIVE_TIER3_CONSOLES = [
     significance: "The original 1970s virtual machine designed by Joseph Weisbecker for COSMAC VIP."
   }
 ];
-
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { CONSOLE_HISTORY_DATABASE, PROSPECTIVE_TIER3_CONSOLES };
-}

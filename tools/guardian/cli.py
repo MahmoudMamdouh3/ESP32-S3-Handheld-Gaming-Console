@@ -40,12 +40,24 @@ FIRMWARE_DIR = REPO_ROOT / "firmware" / "BmoGameboy"
 
 def _parse_config_defines(config_path: Path) -> Dict[str, int]:
     defines: Dict[str, int] = {}
-    if not config_path.exists():
-        return defines
-    for line in config_path.read_text(encoding="utf-8", errors="ignore").splitlines():
-        m = re.match(r"^\s*#define\s+([A-Z0-9_]+)\s+(\d+)\b", line)
-        if m:
-            defines[m.group(1)] = int(m.group(2))
+    visited = set()
+
+    def _visit(path: Path) -> None:
+        resolved = path.resolve()
+        if resolved in visited or not resolved.exists():
+            return
+        visited.add(resolved)
+        text = resolved.read_text(encoding="utf-8", errors="ignore")
+        for line in text.splitlines():
+            m = re.match(r"^\s*#define\s+([A-Z0-9_]+)\s+(\d+)\b", line)
+            if m:
+                defines[m.group(1)] = int(m.group(2))
+                continue
+            inc = re.match(r'^\s*#include\s+"([^"]+)"', line)
+            if inc:
+                _visit(resolved.parent / inc.group(1))
+
+    _visit(config_path)
     return defines
 
 

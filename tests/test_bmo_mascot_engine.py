@@ -10,7 +10,11 @@ class BmoMascotSourceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.header = (FIRMWARE / "bmo_face.h").read_text(encoding="utf-8")
-        cls.source = (FIRMWARE / "bmo_face.cpp").read_text(encoding="utf-8")
+        cls.sdf_header = (FIRMWARE / "bmo_face_sdf.h").read_text(encoding="utf-8")
+        cls.source = "\n".join(
+            (FIRMWARE / name).read_text(encoding="utf-8")
+            for name in ("bmo_face_internal.h", "bmo_face_renderer.cpp", "bmo_face_anim.cpp")
+        )
 
     def test_framebuffer_dimensions_match_psram_allocation(self):
         width = int(re.search(r"#define\s+FACE_FB_W\s+(\d+)", self.header).group(1))
@@ -22,8 +26,8 @@ class BmoMascotSourceTests(unittest.TestCase):
     def test_expression_enum_and_target_rows_match_in_order(self):
         enum_body = re.search(r"enum BmoExpression\s*\{(.*?)\};", self.header, re.S).group(1)
         names = re.findall(r"^\s*([A-Z][A-Z0-9_]*)\s*(?:=\s*\d+)?\s*,?\s*(?://.*)?$", enum_body, re.M)
-        table_body = re.search(r"static const ExprTarget EXPR_TABLE\[\]\s*=\s*\{(.*?)\n\};", self.source, re.S).group(1)
-        rows = re.findall(r"/\*\s*([A-Z][A-Z0-9_]*)\s*\*/", table_body)
+        table_body = re.search(r"EXPR_TABLE\[18\]\s*=\s*\{(.*?)\};", self.sdf_header, re.S).group(1)
+        rows = re.findall(r"/\*\s*\d+\s+([A-Z][A-Z0-9_]*)\s*\*/", table_body)
         self.assertEqual(len(names), 18)
         self.assertEqual(rows, names)
 
@@ -36,10 +40,10 @@ class BmoMascotSourceTests(unittest.TestCase):
         self.assertIn("const float nextVelocity =", spring)
 
     def test_speech_particle_and_dance_limits_match_source(self):
-        self.assertRegex(self.source, r"static char\s+s_speechText\[64\]")
-        self.assertIn("strncpy(s_speechText, quote, sizeof(s_speechText) - 1)", self.source)
-        self.assertIn("s_speechText[sizeof(s_speechText) - 1] = '\\0'", self.source)
-        self.assertIn("nowMs - s_speechLastCharMs >= 25", self.source)
+        self.assertRegex(self.source, r"char\s+speechText\[64\]")
+        self.assertIn("strncpy(f.speechText, quote, sizeof(f.speechText) - 1)", self.source)
+        self.assertIn("f.speechText[sizeof(f.speechText) - 1] = '\\0'", self.source)
+        self.assertIn("nowMs - s_face.speechLastCharMs >= 25", self.source)
         self.assertIn("static const int MAX_PARTICLES = 8", self.source)
         self.assertIn("nowMs - lastZSpawn > 1800", self.source)
         self.assertIn("(bpm > 40.0f && bpm < 240.0f) ? bpm : 125.0f", self.source)

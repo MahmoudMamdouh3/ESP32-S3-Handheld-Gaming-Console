@@ -186,7 +186,7 @@ class TestQualityOfLifeAndUnifiedPersistence(unittest.TestCase):
         self.assertIn("/screenshots", sm_cpp)
 
     def test_04_ino_wires_supported_battery_persistence_and_all_save_states(self):
-        app_cpp = (SRC_DIR / "app" / "bmo_app.cpp").read_text(encoding="utf-8")
+        app_cpp = "\n".join(p.read_text(encoding="utf-8") for p in sorted((SRC_DIR / "app").glob("*.cpp")))
         reg = (SRC_DIR / "cores" / "core_registry.h").read_text(encoding="utf-8")
         cores = ("WalnutEmu", "PeanutEmu", "NesEmu", "SmsEmu", "PceEmu", "AtariEmu",
                  "PicoEmu", "GenesisEmu", "SNESEmu", "WSwanEmu", "NGPEmu", "LynxEmu", "ColemEmu")

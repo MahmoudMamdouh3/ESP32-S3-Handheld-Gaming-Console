@@ -206,19 +206,19 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
 
     def test_02_recursive_folder_hierarchy_navigation_in_sd_card(self):
         sd_h = (FIRMWARE_DIR / "src" / "storage" / "sd_card.h").read_text(encoding="utf-8")
-        sd_cpp = (FIRMWARE_DIR / "src" / "storage" / "sd_catalog.cpp").read_text(encoding="utf-8")
+        sd_cpp = (FIRMWARE_DIR / "src" / "storage" / "sd_scanner.cpp").read_text(encoding="utf-8")
         self.assertIn("scanDirectory", sd_h)
         self.assertIn("SDCard::scanDirectory", sd_cpp)
         self.assertIn("isIgnoredDirName", sd_cpp)
 
     def test_03_custom_console_bezels_and_pause_menu_qol_wiring(self):
         disp_h = (FIRMWARE_DIR / "src" / "ui" / "display_emu.h").read_text(encoding="utf-8")
-        disp_cpp = (FIRMWARE_DIR / "src" / "ui" / "display_worker.cpp").read_text(encoding="utf-8")
-        app_cpp = (FIRMWARE_DIR / "src" / "app" / "bmo_app.cpp").read_text(encoding="utf-8")
+        disp_cpp = (FIRMWARE_DIR / "src" / "ui" / "display_pipeline.cpp").read_text(encoding="utf-8")
+        app_cpp = "\n".join(p.read_text(encoding="utf-8") for p in sorted((FIRMWARE_DIR / "src" / "app").glob("*.cpp")))
         for sym in ["setBezelEnabled", "isBezelEnabled", "toggleBezel", "drawConsoleBezel", "getLastFramebuffer"]:
             self.assertIn(sym, disp_h)
             self.assertIn(f"DisplayEmu::{sym}", disp_cpp)
-        self.assertIn("DisplayEmu::drawConsoleBezel(s_selectedEmulatorIndex)", app_cpp)
+        self.assertIn("DisplayEmu::drawConsoleBezel(rt.selectedEmulatorIndex)", app_cpp)
         self.assertIn("SaveManager::saveScreenshotBmp", app_cpp)
 
     def test_04_fetch_covers_bgr565_and_bmp_generator(self):
@@ -337,16 +337,16 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
                 wasm_path = Path(tmp) / "bmo_playtest_cores.wasm"
                 wasm_path.write_bytes(wasm_bytes)
                 js_test = (
-                    "const fs=require('fs');"
-                    "const originalReadFileSync=fs.readFileSync.bind(fs);"
-                    "fs.readFileSync=(file,...args)=>{"
-                    "  const normalized=String(file).replace(/\\\\/g,'/');"
-                    "  return normalized.endsWith('/simulator/bmo_playtest_cores.wasm')"
-                    "    ? originalReadFileSync(process.argv[5],...args)"
-                    "    : originalReadFileSync(file,...args);"
-                    "};"
-                    "const {WasmPlaytestEngine}=require('./simulator/wasm_playtest_engine.js');"
-                    "(async()=>{"
+                    "const fs = await import('node:fs');\n"
+                    "const originalReadFileSync = fs.default.readFileSync.bind(fs.default);\n"
+                    "fs.default.readFileSync = (file, ...args) => {\n"
+                    "  const normalized = String(file).replace(/\\\\/g, '/');\n"
+                    "  return normalized.endsWith('/simulator/bmo_playtest_cores.wasm')\n"
+                    "    ? originalReadFileSync(process.argv[5], ...args)\n"
+                    "    : originalReadFileSync(file, ...args);\n"
+                    "};\n"
+                    "const { WasmPlaytestEngine } = await import('./simulator/wasm_playtest_engine.js');\n"
+                    "(async()=>{\n"
                     "  const eng=new WasmPlaytestEngine();"
                     "  await eng.init();"
                     "  const facePtr=eng.exports.bmo_face_framebuffer();"
@@ -443,7 +443,7 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
                     "})().catch(err=>{console.error(err);process.exit(1);});"
                 )
                 proc = subprocess.run(
-                    [node_bin, "-e", js_test, str(rom_path), str(nes_rom_path), str(atari_rom_path),
+                    [node_bin, "--input-type=module", "-e", js_test, str(rom_path), str(nes_rom_path), str(atari_rom_path),
                      str(colem_rom_path), str(wasm_path)],
                     cwd=str(REPO_ROOT),
                     capture_output=True,
@@ -472,10 +472,10 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
 
     def test_10_top_picks_curation_and_mbc7_rom_playability(self):
         sd_h = (FIRMWARE_DIR / "src" / "storage" / "sd_card.h").read_text(encoding="utf-8")
-        sd_cpp = (FIRMWARE_DIR / "src" / "storage" / "sd_catalog.cpp").read_text(encoding="utf-8")
+        sd_cpp = (FIRMWARE_DIR / "src" / "storage" / "rom_catalog_index.cpp").read_text(encoding="utf-8")
         disp_h = (FIRMWARE_DIR / "src" / "ui" / "display_emu.h").read_text(encoding="utf-8")
         disp_cpp = (FIRMWARE_DIR / "src" / "ui" / "ui_menus.cpp").read_text(encoding="utf-8")
-        app_cpp = (FIRMWARE_DIR / "src" / "app" / "bmo_app.cpp").read_text(encoding="utf-8")
+        app_cpp = "\n".join(p.read_text(encoding="utf-8") for p in sorted((FIRMWARE_DIR / "src" / "app").glob("*.cpp")))
         walnut_h = (FIRMWARE_DIR / "src" / "third_party" / "walnut_cgb" / "walnut_cgb.h").read_text(encoding="utf-8")
         peanut_h = (FIRMWARE_DIR / "src" / "third_party" / "peanut_gb" / "peanut_gb.h").read_text(encoding="utf-8")
 
@@ -484,7 +484,7 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         self.assertIn("SDCard::isPopularGame", sd_cpp)
         self.assertIn("void setTopPicksFilter(bool enabled);", disp_h)
         self.assertIn("TOP PICK", disp_cpp)
-        self.assertIn("s_topPicksOnly", app_cpp)
+        self.assertIn("rt.topPicksOnly", app_cpp)
         self.assertIn("0x22", walnut_h)
         self.assertIn("0x22", peanut_h)
 
@@ -551,16 +551,16 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
             node_bin = shutil.which("node")
             if node_bin:
                 js_test = (
-                    "const fs=require('fs');"
-                    "const originalReadFileSync=fs.readFileSync.bind(fs);"
-                    "fs.readFileSync=(file,...args)=>{"
-                    "  const normalized=String(file).replace(/\\\\/g,'/');"
-                    "  return normalized.endsWith('/simulator/bmo_playtest_cores.wasm')"
-                    "    ? originalReadFileSync(process.argv[1],...args)"
-                    "    : originalReadFileSync(file,...args);"
-                    "};"
-                    "const {WasmPlaytestEngine,BMO_EXPRESSION_NAMES,BMO_EXPRESSIONS}=require('./simulator/wasm_playtest_engine.js');"
-                    "(async()=>{"
+                    "const fs = await import('node:fs');\n"
+                    "const originalReadFileSync = fs.default.readFileSync.bind(fs.default);\n"
+                    "fs.default.readFileSync = (file, ...args) => {\n"
+                    "  const normalized = String(file).replace(/\\\\/g, '/');\n"
+                    "  return normalized.endsWith('/simulator/bmo_playtest_cores.wasm')\n"
+                    "    ? originalReadFileSync(process.argv[1], ...args)\n"
+                    "    : originalReadFileSync(file, ...args);\n"
+                    "};\n"
+                    "const { WasmPlaytestEngine, BMO_EXPRESSION_NAMES, BMO_EXPRESSIONS } = await import('./simulator/wasm_playtest_engine.js');\n"
+                    "(async()=>{\n"
                     "  if(BMO_EXPRESSION_NAMES.length!==18) throw new Error('expected 18 expressions');"
                     "  const eng=new WasmPlaytestEngine();"
                     "  await eng.init();"
@@ -603,7 +603,7 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
                     "})().catch(err=>{console.error(err);process.exit(1);});"
                 )
                 proc = subprocess.run(
-                    [node_bin, "-e", js_test, str(wasm_bin_path)],
+                    [node_bin, "--input-type=module", "-e", js_test, str(wasm_bin_path)],
                     cwd=str(REPO_ROOT),
                     capture_output=True,
                     text=True,
@@ -630,19 +630,20 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
             self.assertIn(token, index_html)
 
         js_test = (
-            "const fs=require('fs'), vm=require('vm');\n"
-            "global.window = globalThis;\n"
-            "vm.runInThisContext(fs.readFileSync('simulator/bmo_enclosure_meshes.js','utf8'));\n"
-            "vm.runInThisContext(fs.readFileSync('simulator/bmo_internals_3d.js','utf8'));\n"
-            "const em = global.BMO_ENCLOSURE_MESHES;\n"
+            "const fs = await import('node:fs');\n"
+            "const vm = await import('node:vm');\n"
+            "globalThis.window = globalThis;\n"
+            "vm.runInThisContext(fs.default.readFileSync('simulator/bmo_enclosure_meshes.js','utf8'));\n"
+            "const { BmoInternals3D, BUILD_GUIDE_STEPS, WIRE_DEFINITIONS } = await import('./simulator/bmo_internals_3d.js');\n"
+            "const em = globalThis.BMO_ENCLOSURE_MESHES;\n"
             "if(!em || em.units!=='cm') throw new Error('missing BMO_ENCLOSURE_MESHES cm payload');\n"
             "for(const k of ['bmo_front_shell','bmo_back_shell','bmo_battery_door']){\n"
             "  const p = em.parts && em.parts[k];\n"
             "  if(!p || !p.posB64 || !p.normI16B64 || !p.idxB64) throw new Error('incomplete mesh '+k);\n"
             "  if(k!=='bmo_battery_door' && (!p.groups || p.groups.length<2)) throw new Error('missing dark face material group '+k);\n"
             "}\n"
-            "const steps = global.BmoInternals3D.BUILD_GUIDE_STEPS;\n"
-            "const wires = global.BmoInternals3D.WIRE_DEFINITIONS;\n"
+            "const steps = BUILD_GUIDE_STEPS;\n"
+            "const wires = WIRE_DEFINITIONS;\n"
             "if(!Array.isArray(steps) || steps.length!==7) throw new Error('expected 7 guide steps, got '+(steps&&steps.length));\n"
             "if(!Array.isArray(wires) || wires.length!==22) throw new Error('expected 22 active wires, got '+(wires&&wires.length));\n"
             "const forbidden = new Set(['GPIO 0','GPIO 3','GPIO 33','GPIO 34','GPIO 35','GPIO 36','GPIO 37','GPIO 45','GPIO 46']);\n"
@@ -652,14 +653,14 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
             "  if(forbidden.has(pFrom)) throw new Error('forbidden GPIO wired: '+w.id+' -> '+pFrom);\n"
             "  if(pFrom.startsWith('GPIO ') && !allowedGpio.has(pFrom)) throw new Error('unexpected GPIO wired: '+w.id+' -> '+pFrom);\n"
             "}\n"
-            "const stats = global.BmoInternals3D.prototype.getStaticStats.call({});\n"
-            "if(stats.shellOuterMm!=='82 x 124 x 26' || !stats.perfboardMm.startsWith('50 x 70 x 1.6')){\n"
+            "const stats = BmoInternals3D.prototype.getStaticStats.call({});\n"
+            "if(stats.shellOuterMm!=='88 x 124 x 32' || !stats.perfboardMm.startsWith('78.74 x 116.84 x 1.6 (31x46)')){\n"
             "  throw new Error('stats mismatch: '+JSON.stringify(stats));\n"
             "}\n"
             "console.log('INTERNALS_3D_CONTRACT_PASS wires='+wires.length+' steps='+steps.length);\n"
         )
         proc = subprocess.run(
-            [node_bin, "-e", js_test],
+            [node_bin, "--input-type=module", "-e", js_test],
             cwd=str(REPO_ROOT),
             capture_output=True,
             text=True,

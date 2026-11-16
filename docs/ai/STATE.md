@@ -26,5 +26,5 @@
 - Step-by-step physical bring-up instructions for the owner are in [`docs/guides/owner-guide.md`](../guides/owner-guide.md) and [`docs/guides/bringup.md`](../guides/bringup.md).
 
 <!-- SYNC:BEGIN -->
-- **Synced Metrics (`sync_ai_codemap.py`):** branch `refactor/principal-overhaul`, `91` first-party firmware C/C++ files (`15,902` lines, max `bmo_app.cpp`=`1192`), `18` scripts, `27` C++ host test suites.
+- **Synced Metrics (`sync_ai_codemap.py`):** branch `refactor/principal-overhaul`, `118` first-party firmware C/C++ files (`15,937` lines, max `save_manager.cpp`=`662`), `17` scripts, `27` C++ host test suites.
 <!-- SYNC:END -->

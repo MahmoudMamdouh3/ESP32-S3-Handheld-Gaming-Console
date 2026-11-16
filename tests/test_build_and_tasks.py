@@ -65,7 +65,8 @@ class BuildAndTasksTests(unittest.TestCase):
         self.assertIn("debug-log-compile-only", ci_text)
         self.assertIn("profiler-compile-only", ci_text)
         self.assertIn("--sanitizers", ci_text)
-        tasks_text = (REPO_ROOT / "tasks.py").read_text(encoding="utf-8")
+        tasks_files = [REPO_ROOT / "tasks.py", *sorted((REPO_ROOT / "tools" / "tasks").glob("*.py"))]
+        tasks_text = "\n".join(p.read_text(encoding="utf-8") for p in tasks_files)
         self.assertIn("BMO_ENABLE_ASAN_UBSAN=ON", tasks_text)
 
     def test_doctor_command_runs_cleanly(self):

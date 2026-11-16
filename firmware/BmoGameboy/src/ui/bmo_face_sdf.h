@@ -187,10 +187,117 @@ inline uint16_t packBGR565(uint8_t r, uint8_t g, uint8_t b) {
   return static_cast<uint16_t>((bgr << 8) | (bgr >> 8));
 }
 
-/**
- * Pure C++ golden/preview renderer for an ExprTarget snapshot (no globals, no PSRAM).
- * Evaluates all pixels in `dst[destW x destH]` for deterministic host comparison.
- */
+inline void shadeEyePixel(float edx, float edy, float eyeW, float eyeH, float gazeX, float gazeY, EyeStyle style,
+                          float aaBand, float& cr, float& cg, float& cb) {
+  float dEye = 10.0f;
+  float dGlint = 10.0f;
+
+  if (style == EYE_CAPSULE) {
+    const float capH = eyeH * 0.55f;
+    const float capR = eyeW * 0.75f;
+    dEye = sdfCapsuleV(edx, edy, capR, capH);
+    const float glintCx = -capR * 0.32f + gazeX * capR * 0.20f;
+    const float glintCy = capH * 0.40f + gazeY * capH * 0.20f;
+    const float gx = edx - glintCx;
+    const float gy = edy - glintCy;
+    dGlint = sqrtf(gx * gx + gy * gy) - capR * 0.38f;
+  } else if (style == EYE_CRESCENT_UP) {
+    dEye = sdfCrescentArc(edx, edy, eyeW * 0.95f, 1.8f, 0.024f);
+  } else if (style == EYE_LINE_SLEEP) {
+    dEye = sdfSleepStroke(edx, edy, eyeW * 0.90f, 0.022f);
+  } else if (style == EYE_CROSS_ERROR) {
+    const float rxa = edx * 0.7071f + edy * 0.7071f;
+    const float rya = -edx * 0.7071f + edy * 0.7071f;
+    const float rxb = edx * 0.7071f - edy * 0.7071f;
+    const float ryb = edx * 0.7071f + edy * 0.7071f;
+    const float d1 = fmaxf(fabsf(rxa) - eyeW * 0.85f, fabsf(rya) - 0.025f);
+    const float d2 = fmaxf(fabsf(rxb) - eyeW * 0.85f, fabsf(ryb) - 0.025f);
+    dEye = fminf(d1, d2);
+  } else if (style == EYE_HEART) {
+    dEye = sdfHeart(edx, edy, eyeW * 1.1f);
+  }
+
+  const float eyeAlpha = coverage(dEye, aaBand);
+  if (eyeAlpha <= 0.002f) return;
+
+  if (style == EYE_CROSS_ERROR) {
+    cr = lerpf(cr, 225.0f / 255.0f, eyeAlpha);
+    cg = lerpf(cg, 36.0f / 255.0f, eyeAlpha);
+    cb = lerpf(cb, 48.0f / 255.0f, eyeAlpha);
+  } else if (style == EYE_HEART) {
+    cr = lerpf(cr, 1.0f, eyeAlpha);
+    cg = lerpf(cg, 105.0f / 255.0f, eyeAlpha);
+    cb = lerpf(cb, 140.0f / 255.0f, eyeAlpha);
+  } else {
+    cr = lerpf(cr, 16.0f / 255.0f, eyeAlpha);
+    cg = lerpf(cg, 30.0f / 255.0f, eyeAlpha);
+    cb = lerpf(cb, 43.0f / 255.0f, eyeAlpha);
+  }
+
+  if (style == EYE_CAPSULE) {
+    const float glintAlpha = coverage(dGlint, aaBand);
+    cr = lerpf(cr, 1.0f, glintAlpha);
+    cg = lerpf(cg, 1.0f, glintAlpha);
+    cb = lerpf(cb, 1.0f, glintAlpha);
+  }
+}
+
+inline void shadeMouthPixel(float mdx, float mdy, float mouthW, float mouthCrv, float mouthOpen, MouthStyle style,
+                            float aaBand, float& cr, float& cg, float& cb) {
+  if (style == MOUTH_OPEN_CAVITY) {
+    float dc, dt, db;
+    evaluateMouthCavity(mdx, mdy, mouthW, mouthCrv, mouthOpen, dc, dt, db);
+    const float ca = coverage(dc, aaBand);
+    if (ca > 0.002f) {
+      cr = lerpf(cr, 18.0f / 255.0f, ca);
+      cg = lerpf(cg, 28.0f / 255.0f, ca);
+      cb = lerpf(cb, 38.0f / 255.0f, ca);
+      const float ta = coverage(dt, aaBand);
+      if (ta > 0.002f) {
+        cr = lerpf(cr, 250.0f / 255.0f, ta);
+        cg = lerpf(cg, 127.0f / 255.0f, ta);
+        cb = lerpf(cb, 143.0f / 255.0f, ta);
+      }
+    }
+    const float ba = coverage(db, aaBand);
+    if (ba > 0.002f) {
+      cr = lerpf(cr, 16.0f / 255.0f, ba);
+      cg = lerpf(cg, 30.0f / 255.0f, ba);
+      cb = lerpf(cb, 43.0f / 255.0f, ba);
+    }
+    return;
+  }
+
+  if (style == MOUTH_ROUND_O) {
+    const float dCircle = sqrtf(mdx * mdx + mdy * mdy) - mouthW * 0.55f;
+    const float fa = coverage(dCircle, aaBand);
+    cr = lerpf(cr, 18.0f / 255.0f, fa);
+    cg = lerpf(cg, 28.0f / 255.0f, fa);
+    cb = lerpf(cb, 38.0f / 255.0f, fa);
+    const float sa = coverage(fabsf(dCircle) - 0.024f, aaBand);
+    cr = lerpf(cr, 16.0f / 255.0f, sa);
+    cg = lerpf(cg, 30.0f / 255.0f, sa);
+    cb = lerpf(cb, 43.0f / 255.0f, sa);
+    return;
+  }
+
+  if (style == MOUTH_ZIGZAG_ERROR) {
+    const float dZig = fabsf(mdy - sinf(mdx * 25.0f) * 0.035f) - 0.025f;
+    const float za = coverage(dZig, aaBand);
+    cr = lerpf(cr, 16.0f / 255.0f, za);
+    cg = lerpf(cg, 30.0f / 255.0f, za);
+    cb = lerpf(cb, 43.0f / 255.0f, za);
+    return;
+  }
+
+  const float ma = coverage(sdfMouthStroke(mdx, mdy, mouthW, mouthCrv, 0.025f), aaBand);
+  if (ma > 0.002f) {
+    cr = lerpf(cr, 16.0f / 255.0f, ma);
+    cg = lerpf(cg, 30.0f / 255.0f, ma);
+    cb = lerpf(cb, 43.0f / 255.0f, ma);
+  }
+}
+
 inline void renderTargetSnapshot(const ExprTarget& target, bool sleepingBg, uint16_t* dst, int destW, int destH) {
   if (!dst || destW <= 0 || destH <= 0) return;
   const float baseBgR = sleepingBg ? (111.0f / 255.0f) : (138.0f / 255.0f);
@@ -207,7 +314,7 @@ inline void renderTargetSnapshot(const ExprTarget& target, bool sleepingBg, uint
   const float leftCheekCx = -target.eyeOffsetX * 1.52f;
   const float rightCheekCx = target.eyeOffsetX * 1.52f;
   const float cheekCy = eyeCy - eyeH * 0.82f;
-  const float cheekR = 0.13f;
+  constexpr float cheekR = 0.13f;
 
   for (int py = 0; py < destH; ++py) {
     const float ny = 1.0f - 2.0f * ((float)py + 0.5f) / (float)destH;
@@ -220,11 +327,9 @@ inline void renderTargetSnapshot(const ExprTarget& target, bool sleepingBg, uint
 
       if (blush > 0.05f) {
         for (int side = 0; side < 2; ++side) {
-          const float cx = (side == 0) ? leftCheekCx : rightCheekCx;
-          const float dx = nx - cx;
+          const float dx = nx - ((side == 0) ? leftCheekCx : rightCheekCx);
           const float dy = ny - cheekCy;
-          const float dCheek = sqrtf(dx * dx + dy * dy);
-          const float a = blush * smoothstepf(cheekR, 0.0f, dCheek) * 0.75f;
+          const float a = blush * smoothstepf(cheekR, 0.0f, sqrtf(dx * dx + dy * dy)) * 0.75f;
           if (a > 0.005f) {
             cr = lerpf(cr, 1.0f, a);
             cg = lerpf(cg, 139.0f / 255.0f, a);
@@ -236,109 +341,16 @@ inline void renderTargetSnapshot(const ExprTarget& target, bool sleepingBg, uint
       if (target.eyeWidth > 0.0f && target.eyeHeight > 0.0f) {
         for (int side = 0; side < 2; ++side) {
           const bool isLeft = (side == 0);
-          const float edx = nx - (isLeft ? leftEyeCx : rightEyeCx);
-          const float edy = ny - eyeCy;
           EyeStyle st = target.eyeStyle;
           if (st == EYE_WINK_LEFT) st = isLeft ? EYE_CRESCENT_UP : EYE_CAPSULE;
-
-          float dEye = 10.0f;
-          float dGlint = 10.0f;
-          if (st == EYE_CAPSULE) {
-            const float capH = eyeH * 0.55f;
-            const float capR = eyeW * 0.75f;
-            dEye = sdfCapsuleV(edx, edy, capR, capH);
-            const float gx = edx + capR * 0.32f;
-            const float gy = edy - capH * 0.40f;
-            dGlint = sqrtf(gx * gx + gy * gy) - capR * 0.38f;
-          } else if (st == EYE_CRESCENT_UP) {
-            dEye = sdfCrescentArc(edx, edy, eyeW * 0.95f, 1.8f, 0.024f);
-          } else if (st == EYE_LINE_SLEEP) {
-            dEye = sdfSleepStroke(edx, edy, eyeW * 0.90f, 0.022f);
-          } else if (st == EYE_CROSS_ERROR) {
-            const float rxa = edx * 0.7071f + edy * 0.7071f;
-            const float rya = -edx * 0.7071f + edy * 0.7071f;
-            const float rxb = edx * 0.7071f - edy * 0.7071f;
-            const float ryb = edx * 0.7071f + edy * 0.7071f;
-            const float d1 = fmaxf(fabsf(rxa) - eyeW * 0.85f, fabsf(rya) - 0.025f);
-            const float d2 = fmaxf(fabsf(rxb) - eyeW * 0.85f, fabsf(ryb) - 0.025f);
-            dEye = fminf(d1, d2);
-          } else if (st == EYE_HEART) {
-            dEye = sdfHeart(edx, edy, eyeW * 1.1f);
-          }
-
-          const float eyeAlpha = coverage(dEye, aaBand);
-          if (eyeAlpha > 0.002f) {
-            if (st == EYE_CROSS_ERROR) {
-              cr = lerpf(cr, 225.0f / 255.0f, eyeAlpha);
-              cg = lerpf(cg, 36.0f / 255.0f, eyeAlpha);
-              cb = lerpf(cb, 48.0f / 255.0f, eyeAlpha);
-            } else if (st == EYE_HEART) {
-              cr = lerpf(cr, 1.0f, eyeAlpha);
-              cg = lerpf(cg, 105.0f / 255.0f, eyeAlpha);
-              cb = lerpf(cb, 140.0f / 255.0f, eyeAlpha);
-            } else {
-              cr = lerpf(cr, 16.0f / 255.0f, eyeAlpha);
-              cg = lerpf(cg, 30.0f / 255.0f, eyeAlpha);
-              cb = lerpf(cb, 43.0f / 255.0f, eyeAlpha);
-            }
-            if (st == EYE_CAPSULE) {
-              const float glintAlpha = coverage(dGlint, aaBand);
-              cr = lerpf(cr, 1.0f, glintAlpha);
-              cg = lerpf(cg, 1.0f, glintAlpha);
-              cb = lerpf(cb, 1.0f, glintAlpha);
-            }
-          }
+          shadeEyePixel(nx - (isLeft ? leftEyeCx : rightEyeCx), ny - eyeCy, eyeW, eyeH, 0.0f, 0.0f, st, aaBand, cr, cg,
+                        cb);
         }
       }
 
       if (target.mouthWidth > 0.0f) {
-        const float mdx = nx;
-        const float mdy = ny - target.mouthOffsetY;
-        if (target.mouthStyle == MOUTH_OPEN_CAVITY) {
-          float dc, dt, db;
-          evaluateMouthCavity(mdx, mdy, target.mouthWidth, target.mouthCurve, target.mouthOpenness, dc, dt, db);
-          const float ca = coverage(dc, aaBand);
-          if (ca > 0.002f) {
-            cr = lerpf(cr, 18.0f / 255.0f, ca);
-            cg = lerpf(cg, 28.0f / 255.0f, ca);
-            cb = lerpf(cb, 38.0f / 255.0f, ca);
-            const float ta = coverage(dt, aaBand);
-            if (ta > 0.002f) {
-              cr = lerpf(cr, 250.0f / 255.0f, ta);
-              cg = lerpf(cg, 127.0f / 255.0f, ta);
-              cb = lerpf(cb, 143.0f / 255.0f, ta);
-            }
-          }
-          const float ba = coverage(db, aaBand);
-          if (ba > 0.002f) {
-            cr = lerpf(cr, 16.0f / 255.0f, ba);
-            cg = lerpf(cg, 30.0f / 255.0f, ba);
-            cb = lerpf(cb, 43.0f / 255.0f, ba);
-          }
-        } else if (target.mouthStyle == MOUTH_ROUND_O) {
-          const float dCircle = sqrtf(mdx * mdx + mdy * mdy) - target.mouthWidth * 0.55f;
-          const float fa = coverage(dCircle, aaBand);
-          cr = lerpf(cr, 18.0f / 255.0f, fa);
-          cg = lerpf(cg, 28.0f / 255.0f, fa);
-          cb = lerpf(cb, 38.0f / 255.0f, fa);
-          const float sa = coverage(fabsf(dCircle) - 0.024f, aaBand);
-          cr = lerpf(cr, 16.0f / 255.0f, sa);
-          cg = lerpf(cg, 30.0f / 255.0f, sa);
-          cb = lerpf(cb, 43.0f / 255.0f, sa);
-        } else if (target.mouthStyle == MOUTH_ZIGZAG_ERROR) {
-          const float dZig = fabsf(mdy - sinf(mdx * 25.0f) * 0.035f) - 0.025f;
-          const float za = coverage(dZig, aaBand);
-          cr = lerpf(cr, 16.0f / 255.0f, za);
-          cg = lerpf(cg, 30.0f / 255.0f, za);
-          cb = lerpf(cb, 43.0f / 255.0f, za);
-        } else {
-          const float ma = coverage(sdfMouthStroke(mdx, mdy, target.mouthWidth, target.mouthCurve, 0.025f), aaBand);
-          if (ma > 0.002f) {
-            cr = lerpf(cr, 16.0f / 255.0f, ma);
-            cg = lerpf(cg, 30.0f / 255.0f, ma);
-            cb = lerpf(cb, 43.0f / 255.0f, ma);
-          }
-        }
+        shadeMouthPixel(nx, ny - target.mouthOffsetY, target.mouthWidth, target.mouthCurve, target.mouthOpenness,
+                        target.mouthStyle, aaBand, cr, cg, cb);
       }
 
       row[px] = packBGR565(static_cast<uint8_t>(cr * 255.0f + 0.5f), static_cast<uint8_t>(cg * 255.0f + 0.5f),
@@ -346,5 +358,7 @@ inline void renderTargetSnapshot(const ExprTarget& target, bool sleepingBg, uint
     }
   }
 }
+
+const ExprTarget* targetForIndex(size_t index);
 
 } // namespace BmoFaceSdf

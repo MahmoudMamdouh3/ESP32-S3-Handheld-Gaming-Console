@@ -7,18 +7,50 @@ the caliper survey recorded in docs/hardware_measurements.md.
 from __future__ import annotations
 
 import argparse
+import copy
+import json
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Iterator
 
 import numpy as np
 import trimesh
 
-# All dimensions in this block are millimetres. Update measured hardware here.
-CONFIG = {
-    "physical_fit_status": "WAITING",
-    "outer": {"width": 82.0, "height": 124.0, "thickness": 26.0, "corner_radius": 9.0},
-    "shell": {"wall": 2.1, "split_z": 0.0, "front_depth": 13.0, "rear_depth": 13.0},
-    "display": {
+LAYOUT_JSON_PATH = Path(__file__).resolve().parents[1] / "layout.json"
+
+
+def _load_hardware_layout(path: Path = LAYOUT_JSON_PATH) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _resolve_profile_dims_mm(
+    profile: str, enc: dict, pb_ref: dict
+) -> tuple[float, float, float, float, float, tuple[float, float, float]]:
+    ref_enc = enc["owner_reference_cm"]
+    if profile == "reference":
+        src = ref_enc
+        pb_w, pb_h = pb_ref["width_cm"], pb_ref["height_cm"]
+    elif profile == "compact":
+        src = enc["legacy_cad_compact_cm"]
+        pb_w, pb_h = src["perfboard_width_cm"], src["perfboard_height_cm"]
+    else:
+        raise ValueError(f"Unsupported enclosure profile: {profile!r}")
+    return (
+        round(float(src["width_cm"]) * 10.0, 3),
+        round(float(src["height_cm"]) * 10.0, 3),
+        round(float(src["thickness_cm"]) * 10.0, 3),
+        round(float(ref_enc.get("corner_radius_cm", 0.90)) * 10.0, 3),
+        round(float(ref_enc.get("side_wall_cm", 0.21)) * 10.0, 3),
+        (
+            round(float(pb_w) * 10.0, 3),
+            round(float(pb_h) * 10.0, 3),
+            round(float(pb_ref.get("thickness_cm", 0.16)) * 10.0, 3),
+        ),
+    )
+
+
+def _display_and_control_config() -> tuple[dict, dict, dict]:
+    display = {
         "profile": "2.4_in",
         "active_window_profiles": {"2.0_in": (42.0, 31.5), "2.4_in": (50.0, 37.5), "2.8_in": (58.0, 43.5)},
         "center_y": 29.0,
@@ -27,8 +59,8 @@ CONFIG = {
         "lens_recess_depth": 1.0,
         "lens_corner_radius": 2.0,
         "lens_thickness": 1.0,
-    },
-    "control": {
+    }
+    control = {
         "dpad_center": (-19.0, -22.0),
         "dpad_span": 28.0,
         "dpad_arm": 9.5,
@@ -39,58 +71,83 @@ CONFIG = {
         "pill_size": (12.0, 4.2),
         "shoulder_centers_x": (-27.0, 27.0),
         "shoulder_button_width": 18.0,
-    },
-    "ports": {
+    }
+    ports = {
         "usb_c_width": 9.5,
         "usb_c_height": 3.8,
         "usb_c_center_x": 0.0,
         "microsd_length": 14.0,
         "microsd_height": 2.6,
         "microsd_center_y": -34.0,
-    },
-    "battery": {
-        "chemistry_plan": "3 x AA NiMH plus 5 V boost converter (not installed)",
-        "door_center_y": -30.0,
-        "door_opening": (58.0, 49.0),
-        "cell_bay_envelope": (54.0, 47.0, 16.0),
-        "carrier_rail_width": 2.0,
-        "carrier_rail_height": 2.0,
-        "carrier_rail_x": 30.0,
-        "door_xy_clearance": 0.2,
-        "door_tab_size": (8.0, 8.0),
-        "door_screw_x": (-22.0, 22.0),
-        "door_screw_y_offset": 27.5,
-        "door_screw_clearance_diameter": 2.2,
-        "door_post_diameter": 5.0,
-        "door_post_height": 7.0,
-        "door_screw_pilot_diameter": 1.6,
-    },
-    "perfboard": {
-        "survey_status": "WAITING",
-        "design_envelope": (50.0, 70.0, 1.6),
-        "mount_hole_spacing": (43.0, 56.0),
-        "mount_center_y": -24.0,
-        "standoff_height": 7.0,
-        "standoff_outer_diameter": 6.0,
-        "screw_clearance_diameter": 2.2,
-    },
-    "fasteners": {
-        "case_screw_clearance_diameter": 2.2,
-        "case_screw_pilot_diameter": 1.6,
-        "case_screw_edge_inset": 8.0,
-        "boss_diameter": 6.2,
-        "boss_height": 7.0,
-    },
-    "features": {
-        "speaker_hole_diameter": 2.2,
-        "speaker_hex_radius": 4.2,
-        "speaker_center_y": 43.0,
-        "side_logo_deboss_depth": 0.5,
-        "rear_vent_count": 5,
-        "rear_vent_width": 2.0,
-        "rear_vent_length": 15.0,
-    },
-}
+    }
+    return display, control, ports
+
+
+def make_config(profile: str = "compact", layout: dict | None = None) -> dict:
+    """Build parametric enclosure CONFIG in millimetres from hardware/layout.json."""
+    layout_data = layout if layout is not None else _load_hardware_layout()
+    enc = layout_data["enclosure"]
+    width_mm, height_mm, thickness_mm, corner_mm, wall_mm, pb_envelope = _resolve_profile_dims_mm(
+        profile, enc, layout_data["perfboard"]
+    )
+    half_depth = round(thickness_mm / 2.0, 3)
+    display_cfg, control_cfg, ports_cfg = _display_and_control_config()
+    bay = enc["legacy_cad_compact_cm"]["battery_bay_cm"]
+    return {
+        "profile": profile,
+        "physical_fit_status": "WAITING",
+        "outer": {"width": width_mm, "height": height_mm, "thickness": thickness_mm, "corner_radius": corner_mm},
+        "shell": {"wall": wall_mm, "split_z": 0.0, "front_depth": half_depth, "rear_depth": half_depth},
+        "display": display_cfg,
+        "control": control_cfg,
+        "ports": ports_cfg,
+        "battery": {
+            "chemistry_plan": "3 x AA NiMH plus 5 V boost converter (not installed)",
+            "door_center_y": -30.0,
+            "door_opening": (58.0, 49.0),
+            "cell_bay_envelope": tuple(round(float(v) * 10.0, 3) for v in bay[:3]),
+            "carrier_rail_width": 2.0,
+            "carrier_rail_height": 2.0,
+            "carrier_rail_x": 30.0,
+            "door_xy_clearance": 0.2,
+            "door_tab_size": (8.0, 8.0),
+            "door_screw_x": (-22.0, 22.0),
+            "door_screw_y_offset": 27.5,
+            "door_screw_clearance_diameter": 2.2,
+            "door_post_diameter": 5.0,
+            "door_post_height": 7.0,
+            "door_screw_pilot_diameter": 1.6,
+        },
+        "perfboard": {
+            "survey_status": "WAITING",
+            "design_envelope": pb_envelope,
+            "mount_hole_spacing": (43.0, 56.0),
+            "mount_center_y": -24.0,
+            "standoff_height": 7.0,
+            "standoff_outer_diameter": 6.0,
+            "screw_clearance_diameter": 2.2,
+        },
+        "fasteners": {
+            "case_screw_clearance_diameter": 2.2,
+            "case_screw_pilot_diameter": 1.6,
+            "case_screw_edge_inset": 8.0,
+            "boss_diameter": 6.2,
+            "boss_height": 7.0,
+        },
+        "features": {
+            "speaker_hole_diameter": 2.2,
+            "speaker_hex_radius": 4.2,
+            "speaker_center_y": 43.0,
+            "side_logo_deboss_depth": 0.5,
+            "rear_vent_count": 5,
+            "rear_vent_width": 2.0,
+            "rear_vent_length": 15.0,
+        },
+    }
+
+
+CONFIG = make_config("compact")
+_ = CONFIG["battery"]["cell_bay_envelope"]
 
 BODY_W = CONFIG["outer"]["width"]
 BODY_H = CONFIG["outer"]["height"]
@@ -98,6 +155,36 @@ BODY_D = CONFIG["outer"]["thickness"]
 HALF_W = BODY_W / 2
 HALF_H = BODY_H / 2
 WALL = CONFIG["shell"]["wall"]
+CORNER = CONFIG["outer"]["corner_radius"]
+FRONT_FACE_Z = BODY_D / 2
+REAR_FACE_Z = -BODY_D / 2
+
+
+def _sync_module_geometry_constants(cfg: dict) -> None:
+    global CONFIG, BODY_W, BODY_H, BODY_D, HALF_W, HALF_H, WALL, CORNER, FRONT_FACE_Z, REAR_FACE_Z
+    CONFIG = cfg
+    BODY_W = cfg["outer"]["width"]
+    BODY_H = cfg["outer"]["height"]
+    BODY_D = cfg["outer"]["thickness"]
+    HALF_W = BODY_W / 2
+    HALF_H = BODY_H / 2
+    WALL = cfg["shell"]["wall"]
+    CORNER = cfg["outer"]["corner_radius"]
+    FRONT_FACE_Z = BODY_D / 2
+    REAR_FACE_Z = -BODY_D / 2
+
+
+@contextmanager
+def _active_config(cfg: dict | None) -> Iterator[dict]:
+    if cfg is None:
+        yield CONFIG
+        return
+    prev = copy.deepcopy(CONFIG)
+    _sync_module_geometry_constants(copy.deepcopy(cfg))
+    try:
+        yield CONFIG
+    finally:
+        _sync_module_geometry_constants(prev)
 CORNER = CONFIG["outer"]["corner_radius"]
 FRONT_FACE_Z = BODY_D / 2
 REAR_FACE_Z = -BODY_D / 2
@@ -473,27 +560,28 @@ def _battery_door() -> trimesh.Trimesh:
     return _difference(door, holes)
 
 
-def build_parts() -> dict[str, trimesh.Trimesh]:
+def build_parts(profile: str | None = None, config: dict | None = None) -> dict[str, trimesh.Trimesh]:
     """Construct all printable bodies in the assembled console coordinates."""
-    front = _front_shell()
-    back = _back_shell()
-    xyab: list[trimesh.Trimesh] = []
-    for center in CONFIG["control"]["action_centers"].values():
-        cap = _button_cap()
-        cap.apply_translation((center[0], center[1], FRONT_FACE_Z + 0.2))
-        xyab.append(cap)
-    pills = [_pill_cap(center) for center in CONFIG["control"]["pill_centers"].values()]
-    shoulders = [_lr_cap(x) for x in CONFIG["control"]["shoulder_centers_x"]]
-    parts = {
-        "bmo_front_shell": front,
-        "bmo_back_shell": back,
-        "bmo_battery_door": _battery_door(),
-        "bmo_dpad": _dpad_part(),
-        "bmo_buttons_xyab": trimesh.util.concatenate(xyab),
-        "bmo_buttons_start_select": trimesh.util.concatenate(pills),
-        "bmo_buttons_lr": trimesh.util.concatenate(shoulders),
-    }
-    return parts
+    effective_cfg = config if config is not None else (make_config(profile) if profile is not None else None)
+    with _active_config(effective_cfg):
+        front = _front_shell()
+        back = _back_shell()
+        xyab: list[trimesh.Trimesh] = []
+        for center in CONFIG["control"]["action_centers"].values():
+            cap = _button_cap()
+            cap.apply_translation((center[0], center[1], FRONT_FACE_Z + 0.2))
+            xyab.append(cap)
+        pills = [_pill_cap(center) for center in CONFIG["control"]["pill_centers"].values()]
+        shoulders = [_lr_cap(x) for x in CONFIG["control"]["shoulder_centers_x"]]
+        return {
+            "bmo_front_shell": front,
+            "bmo_back_shell": back,
+            "bmo_battery_door": _battery_door(),
+            "bmo_dpad": _dpad_part(),
+            "bmo_buttons_xyab": trimesh.util.concatenate(xyab),
+            "bmo_buttons_start_select": trimesh.util.concatenate(pills),
+            "bmo_buttons_lr": trimesh.util.concatenate(shoulders),
+        }
 
 
 def _set_preview_colors(mesh: trimesh.Trimesh, part_name: str) -> None:
@@ -535,40 +623,44 @@ def validate_mesh(mesh: trimesh.Trimesh, name: str) -> None:
         raise ValueError(f"{name}: manifold validation failed: {solid.status()}")
 
 
-def export_all(output_dir: Path) -> dict[str, Path]:
+def export_all(output_dir: Path, profile: str | None = None, config: dict | None = None) -> dict[str, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
-    parts = build_parts()
-    scene = trimesh.Scene()
-    exported: dict[str, Path] = {}
-    for name, mesh in parts.items():
-        validate_mesh(mesh, name)
-        _set_preview_colors(mesh, name)
-        stl_path = output_dir / f"{name}.stl"
-        mesh.export(stl_path, file_type="stl")
-        exported[name] = stl_path
-        preview_mesh = mesh.copy()
-        preview_mesh.apply_scale(0.001)  # glTF/GLB uses metres; STL files are millimetres by convention.
-        scene.add_geometry(preview_mesh, geom_name=name, node_name=name)
-    display_width, display_height = CONFIG["display"]["active_window_profiles"][CONFIG["display"]["profile"]]
-    lens_border = CONFIG["display"]["lens_border_xy"]
-    lens = _rounded_prism(display_width + 2 * lens_border, display_height + 2 * lens_border,
-                          CONFIG["display"]["lens_thickness"], CONFIG["display"]["lens_corner_radius"],
-                          (0, CONFIG["display"]["center_y"], FRONT_FACE_Z - CONFIG["display"]["lens_thickness"] / 2))
-    lens.visual.vertex_colors = np.tile(np.asarray([7, 8, 10, 255], dtype=np.uint8), (len(lens.vertices), 1))
-    lens.apply_scale(0.001)
-    scene.add_geometry(lens, geom_name="bmo_display_lens_preview", node_name="bmo_display_lens_preview")
-    glb_path = output_dir / "bmo_enclosure_assembly.glb"
-    scene.export(glb_path, file_type="glb")
-    exported["bmo_enclosure_assembly"] = glb_path
-    return exported
+    effective_cfg = config if config is not None else (make_config(profile) if profile is not None else None)
+    with _active_config(effective_cfg):
+        parts = build_parts()
+        scene = trimesh.Scene()
+        exported: dict[str, Path] = {}
+        for name, mesh in parts.items():
+            validate_mesh(mesh, name)
+            _set_preview_colors(mesh, name)
+            stl_path = output_dir / f"{name}.stl"
+            mesh.export(stl_path, file_type="stl")
+            exported[name] = stl_path
+            preview_mesh = mesh.copy()
+            preview_mesh.apply_scale(0.001)  # glTF/GLB uses metres; STL files are millimetres by convention.
+            scene.add_geometry(preview_mesh, geom_name=name, node_name=name)
+        display_width, display_height = CONFIG["display"]["active_window_profiles"][CONFIG["display"]["profile"]]
+        lens_border = CONFIG["display"]["lens_border_xy"]
+        lens = _rounded_prism(display_width + 2 * lens_border, display_height + 2 * lens_border,
+                              CONFIG["display"]["lens_thickness"], CONFIG["display"]["lens_corner_radius"],
+                              (0, CONFIG["display"]["center_y"], FRONT_FACE_Z - CONFIG["display"]["lens_thickness"] / 2))
+        lens.visual.vertex_colors = np.tile(np.asarray([7, 8, 10, 255], dtype=np.uint8), (len(lens.vertices), 1))
+        lens.apply_scale(0.001)
+        scene.add_geometry(lens, geom_name="bmo_display_lens_preview", node_name="bmo_display_lens_preview")
+        glb_path = output_dir / "bmo_enclosure_assembly.glb"
+        scene.export(glb_path, file_type="glb")
+        exported["bmo_enclosure_assembly"] = glb_path
+        return exported
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=Path(__file__).resolve().parent / "build")
+    parser.add_argument("--profile", choices=("compact", "reference"), default="compact")
     args = parser.parse_args()
-    paths = export_all(args.output)
-    print(f"Physical fit status: {CONFIG['physical_fit_status']}")
+    cfg = make_config(args.profile)
+    paths = export_all(args.output, config=cfg)
+    print(f"Enclosure profile: {args.profile} | Physical fit status: {cfg['physical_fit_status']}")
     for name, path in paths.items():
         print(f"{path.name}: {path.stat().st_size} bytes")
     return 0

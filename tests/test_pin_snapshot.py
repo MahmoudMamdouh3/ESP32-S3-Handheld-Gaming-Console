@@ -54,6 +54,24 @@ EXPECTED_AUX_PINS = {
 RESERVED_PINS = {0, 3, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 45, 46}
 
 
+def read_config_bundle(config_path: Path) -> str:
+    visited: set[Path] = set()
+    chunks: list[str] = []
+
+    def _visit(path: Path) -> None:
+        resolved = path.resolve()
+        if resolved in visited or not resolved.is_file():
+            return
+        visited.add(resolved)
+        text = resolved.read_text(encoding="utf-8")
+        chunks.append(text)
+        for match in re.finditer(r'^\s*#include\s+"([^"]+)"', text, re.MULTILINE):
+            _visit(resolved.parent / match.group(1))
+
+    _visit(config_path)
+    return "\n".join(chunks)
+
+
 def parse_defines(text: str) -> dict[str, int]:
     defines: dict[str, int] = {}
     for match in re.finditer(r"^\s*#define\s+([A-Z0-9_]+)\s+(-?\d+)\b", text, re.MULTILINE):
@@ -63,11 +81,11 @@ def parse_defines(text: str) -> dict[str, int]:
 
 class PinSnapshotTests(unittest.TestCase):
     def test_config_h_matches_pin_snapshot_and_hard_stops(self) -> None:
-        text = CONFIG_H.read_text(encoding="utf-8")
-        self.assertIn('#include "pins_check.h"', text)
+        raw_config = CONFIG_H.read_text(encoding="utf-8")
+        self.assertIn('#include "pins_check.h"', raw_config)
         self.assertTrue(PINS_CHECK_H.is_file(), "pins_check.h must exist beside config.h")
 
-        defines = parse_defines(text)
+        defines = parse_defines(read_config_bundle(CONFIG_H))
         self.assertEqual(defines.get("FEATURE_BATTERY_MONITOR"), 0)
         self.assertEqual(defines.get("FEATURE_AUDIO"), 0)
 

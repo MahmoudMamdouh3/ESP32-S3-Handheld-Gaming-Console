@@ -205,7 +205,7 @@
           <label class="internals-check-item"><input type="checkbox" class="internals-layer-chk" data-layer="screws" checked> 8× M2 Screws</label>
           <label class="internals-check-item"><input type="checkbox" class="internals-layer-chk" data-layer="display" checked> 2.4&quot; ST7789</label>
           <label class="internals-check-item"><input type="checkbox" class="internals-layer-chk" data-layer="switches" checked> 8 Tactile Sw</label>
-          <label class="internals-check-item"><input type="checkbox" class="internals-layer-chk" data-layer="perfboard" checked> 5×7 Perfboard</label>
+          <label class="internals-check-item"><input type="checkbox" class="internals-layer-chk" data-layer="perfboard" checked> <span id="internals-perfboard-chk-label">31×46 Perfboard</span></label>
           <label class="internals-check-item"><input type="checkbox" class="internals-layer-chk" data-layer="esp32" checked> DevKitC-1 N16R8</label>
           <label class="internals-check-item"><input type="checkbox" class="internals-layer-chk" data-layer="microsd" checked> 6-Pin MicroSD</label>
           <label class="internals-check-item"><input type="checkbox" class="internals-layer-chk" data-layer="wires" checked> 3D Jumper Wires</label>
@@ -240,14 +240,14 @@
         </div>
         <div class="internals-guide-card" id="internals-guide-card">
           <div class="internals-guide-heading" id="internals-guide-heading">1. Prep Perfboard &amp; Headers</div>
-          <div class="internals-guide-body" id="internals-guide-body">Mount the 5x7 cm double-sided perfboard (50x70 mm, 18x24 hole grid) behind the switch plane. Leave a 14 mm left corridor for the MicroSD board.</div>
+          <div class="internals-guide-body" id="internals-guide-body">Mount the 31×46 double-sided perfboard (78.74×116.84 mm, 31×46 hole grid @ 2.54 mm pitch) inside the 8.80×12.40×3.20 cm enclosure.</div>
           <div class="internals-guide-tip" id="internals-guide-tip">Tip: Tin your iron tip cleanly first; never bridge adjacent 2.54 mm pads unless intentionally making a shared SPI or GND bus.</div>
         </div>
 
         <div class="internals-clearance-grid">
           <div class="telemetry-box">
             <div class="telemetry-label">Shell Cavity</div>
-            <div class="telemetry-value">77.8×119.8×21.8 mm</div>
+            <div class="telemetry-value" id="internals-cavity-mm">83.8×119.8×28.0 mm</div>
           </div>
           <div class="telemetry-box">
             <div class="telemetry-label">Active Rear Z</div>
@@ -586,19 +586,11 @@
 
   </main>
 
+  <link rel="modulepreload" href="bmo_internals_3d.js">
   <script src="three.min.js"></script>
   <script src="OrbitControls.js"></script>
   <script src="bmo_enclosure_meshes.js"></script>
-  <script src="bmo_internals_3d.js"></script>
-  <script src="bmo_3d_console.js"></script>
-  <script src="console_history_data.js"></script>
   <script src="bmo_playtest_cores.b64.js"></script>
-  <script src="wasm_playtest_engine.js"></script>
-  <script src="js/constants.js"></script>
-  <script src="js/bmo_mode.js"></script>
-  <script src="js/internals.js"></script>
-  <script src="js/museum.js"></script>
-  <script src="js/webserial.js"></script>
-  <script src="simulator.js"></script>
+  <script type="module" src="simulator.js"></script>
 </body>
 </html>

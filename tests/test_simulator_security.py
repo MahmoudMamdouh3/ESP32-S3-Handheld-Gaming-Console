@@ -116,12 +116,18 @@ class SimulatorSecurityTests(unittest.TestCase):
         if not node_bin:
             self.skipTest("Node.js not installed")
 
-        js_script = r"""
-const fs = require("fs");
-const path = require("path");
-const vm = require("vm");
+        js_script = self._DOM_XSS_HARNESS_JS + self._DOM_XSS_ASSERTIONS_JS
+        proc = subprocess.run(
+            [node_bin, "--input-type=module", "-e", js_script, str(SIM_DIR)],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+        self.assertEqual(proc.returncode, 0, msg=f"{proc.stderr}\n{proc.stdout}")
+        self.assertIn("SIMULATOR_XSS_DEFENSE_PASS", proc.stdout)
 
-const simDir = path.resolve(process.argv[1]);
+    _DOM_XSS_HARNESS_JS = r"""
 const createdTags = [];
 function makeEl(tag, id) {
   const el = {
@@ -149,7 +155,6 @@ function makeEl(tag, id) {
   };
   return el;
 }
-
 const byId = new Map();
 for (const id of [
   "playtest-engine-log", "wasm-engine-status",
@@ -158,42 +163,23 @@ for (const id of [
 ]) {
   byId.set(id, makeEl("div", id));
 }
-
-const sandbox = {
-  console,
-  Math,
-  Date,
-  URLSearchParams,
-  Uint8Array,
-  Uint16Array,
-  Uint32Array,
-  Int32Array,
-  Array,
-  Object,
-  String,
-  Number,
-  Boolean,
-  JSON,
-  Error,
-  setTimeout,
-  clearTimeout,
-  requestAnimationFrame: () => 0,
-  navigator: {},
-  performance: { now: () => 0 },
-  document: {
-    getElementById: (id) => byId.get(id) || null,
-    createElement: (tag) => {
-      createdTags.push(tag.toLowerCase());
-      return makeEl(tag);
-    },
-    addEventListener() {},
-  },
+globalThis.window = globalThis;
+globalThis.window.addEventListener = () => {};
+globalThis.document = {
+  getElementById: (id) => byId.get(id) || null,
+  createElement: (tag) => { createdTags.push(tag.toLowerCase()); return makeEl(tag); },
+  addEventListener() {},
+  removeEventListener() {},
 };
-sandbox.window = sandbox;
-sandbox.window.addEventListener = () => {};
-sandbox.CONSOLES_LIST = [{ id: "ROM_GB", name: "Game Boy" }];
-sandbox.GAME_LIBRARY = { ROM_GB: [] };
-sandbox.CONSOLE_HISTORY_DATABASE = {
+globalThis.performance = globalThis.performance || { now: () => 0 };
+globalThis.requestAnimationFrame = () => 0;
+"""
+
+    _DOM_XSS_ASSERTIONS_JS = r"""
+const { BmoSimulator } = await import("./simulator/simulator.js");
+const proto = BmoSimulator.prototype;
+const maliciousConsoles = [{ id: "ROM_GB", name: "Game Boy" }];
+const maliciousDb = {
   ROM_GB: {
     name: "<img src=x onerror=alert(1)>",
     year: 1989,
@@ -207,23 +193,8 @@ sandbox.CONSOLE_HISTORY_DATABASE = {
     }],
   },
 };
-
-const moduleFiles = [
-  "js/constants.js",
-  "js/bmo_mode.js",
-  "js/internals.js",
-  "js/museum.js",
-  "js/webserial.js",
-  "simulator.js",
-];
-const combinedSimSource = moduleFiles
-  .map((rel) => fs.readFileSync(path.join(simDir, rel), "utf8"))
-  .join("\n");
-vm.runInNewContext(combinedSimSource + "\nwindow.__BmoSimulatorClass = BmoSimulator;", sandbox);
-
-const proto = sandbox.window.__BmoSimulatorClass.prototype;
 const fakeSim = {
-  selectedConsoleIndex: 1,
+  selectedConsoleIndex: 0,
   selectedGameIndex: 0,
   currentState: "CONSOLE_SELECT",
   gameLibrary: { ROM_GB: [], ROM_NES: [], ROM_ATARI: [], ROM_COLEM: [] },
@@ -232,8 +203,7 @@ const fakeSim = {
   updateSidebarMuseumView: proto.updateSidebarMuseumView,
   ingestUploadedRoms: proto.ingestUploadedRoms,
 };
-
-fakeSim.updateSidebarMuseumView();
+fakeSim.updateSidebarMuseumView(maliciousDb, maliciousConsoles);
 const titleText = byId.get("museum-sidebar-title").textContent;
 if (titleText !== "<img src=x onerror=alert(1)> (1989)") {
   throw new Error("Unexpected sidebar title textContent: " + titleText);
@@ -245,25 +215,13 @@ if (gameItems.length !== 1 || gameItems[0].children[0].textContent !== "<img src
 for (const tag of createdTags) {
   if (tag !== "div") throw new Error("Unexpected DOM tag created: " + tag);
 }
-
-(async () => {
-  await fakeSim.ingestUploadedRoms([{ name: "<img src=x onerror=alert(1)>.exe", size: 12 }]);
-  const logText = byId.get("playtest-engine-log").textContent;
-  if (!logText.includes("<img src=x onerror=alert(1)>.exe")) {
-    throw new Error("Rejected filename missing from status log: " + logText);
-  }
-  console.log("SIMULATOR_XSS_DEFENSE_PASS");
-})().catch((err) => { console.error(err); process.exit(1); });
+await fakeSim.ingestUploadedRoms([{ name: "<img src=x onerror=alert(1)>.exe", size: 12 }]);
+const logText = byId.get("playtest-engine-log").textContent;
+if (!logText.includes("<img src=x onerror=alert(1)>.exe")) {
+  throw new Error("Rejected filename missing from status log: " + logText);
+}
+console.log("SIMULATOR_XSS_DEFENSE_PASS");
 """
-        proc = subprocess.run(
-            [node_bin, "-e", js_script, str(SIM_DIR)],
-            cwd=str(REPO_ROOT),
-            capture_output=True,
-            text=True,
-            timeout=20,
-        )
-        self.assertEqual(proc.returncode, 0, msg=f"{proc.stderr}\n{proc.stdout}")
-        self.assertIn("SIMULATOR_XSS_DEFENSE_PASS", proc.stdout)
 
     def test_live_loopback_server_ephemeral_port_http_contracts(self):
         httpd = run_simulator.LoopbackThreadingServer(("127.0.0.1", 0), run_simulator.Handler)
@@ -294,7 +252,7 @@ for (const tag of createdTags) {
             self.assertIn(b"CONSOLES_LIST", js_body)
             conn.close()
 
-            for blocked_path in ("/%2e%2e/README.md", "/../../AGENTS.md"):
+            for blocked_path in ("/%2e%2e/README.md", "/../../AGENTS.md", "/hardware/.."):
                 conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
                 conn.putrequest("GET", blocked_path, skip_host=True)
                 conn.putheader("Host", f"127.0.0.1:{port}")
@@ -303,6 +261,16 @@ for (const tag of createdTags) {
                 trav_resp.read()
                 self.assertEqual(trav_resp.status, 404, msg=blocked_path)
                 conn.close()
+
+            conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+            conn.putrequest("GET", "/hardware/layout.json", skip_host=True)
+            conn.putheader("Host", f"127.0.0.1:{port}")
+            conn.endheaders()
+            layout_resp = conn.getresponse()
+            layout_body = layout_resp.read()
+            self.assertEqual(layout_resp.status, 200)
+            self.assertIn(b"owner_reference_cm", layout_body)
+            conn.close()
 
             for bad_host in (f"attacker.example:{port}", f"localhost:{port}"):
                 conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)

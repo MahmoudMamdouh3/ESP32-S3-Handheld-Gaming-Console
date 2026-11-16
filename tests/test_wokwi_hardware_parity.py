@@ -8,8 +8,26 @@ CONFIG_PATH = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "hal" / "config.h"
 DIAGRAM_PATH = REPO_ROOT / "hardware" / "diagram.json"
 
 
+def read_config_bundle(config_path: Path) -> str:
+    visited: set[Path] = set()
+    chunks: list[str] = []
+
+    def _visit(path: Path) -> None:
+        resolved = path.resolve()
+        if resolved in visited or not resolved.is_file():
+            return
+        visited.add(resolved)
+        text = resolved.read_text(encoding="utf-8")
+        chunks.append(text)
+        for inc in re.findall(r'^\s*#include\s+"([^"]+)"', text, re.MULTILINE):
+            _visit(resolved.parent / inc)
+
+    _visit(config_path)
+    return "\n".join(chunks)
+
+
 def load_config_pins():
-    source = CONFIG_PATH.read_text(encoding="utf-8")
+    source = read_config_bundle(CONFIG_PATH)
     return {
         name: int(value)
         for name, value in re.findall(r"^#define\s+([A-Z][A-Z0-9_]*)\s+(\d+)\s*$", source, re.MULTILINE)
@@ -55,7 +73,7 @@ class TestWokwiHardwareParity(unittest.TestCase):
             self.assert_connection("esp:GND.1", f"{part}:2.l")
 
     def test_disabled_peripherals_and_reserved_gpio_are_not_wired(self):
-        source = CONFIG_PATH.read_text(encoding="utf-8")
+        source = read_config_bundle(CONFIG_PATH)
         self.assertRegex(source, r"(?m)^#define FEATURE_BATTERY_MONITOR 0$")
         self.assertRegex(source, r"(?m)^#define FEATURE_AUDIO 0$")
 

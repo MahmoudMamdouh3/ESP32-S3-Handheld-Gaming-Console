@@ -2,34 +2,52 @@
  * simulator/js/internals.js
  * Interactive 3D teardown / internals presets, layer checkboxes, and build guide controls.
  */
-(function (root) {
-  "use strict";
+import { BmoInternals3D } from "../bmo_internals_3d.js";
+import { DEFAULT_HARDWARE_LAYOUT, resolveLayoutDimensions } from "./hardware_layout_data.js";
 
-  root.BmoSimModules = root.BmoSimModules || {};
+export const internalsMethods = {
+    syncInternalsLayoutSpec(layout = DEFAULT_HARDWARE_LAYOUT) {
+      const dims = resolveLayoutDimensions(layout);
+      const perfLabel = document.getElementById("internals-perfboard-chk-label");
+      if (perfLabel) {
+        perfLabel.textContent = `${dims.perfboardCols}×${dims.perfboardRows} Perfboard`;
+      }
+      const cavityEl = document.getElementById("internals-cavity-mm");
+      if (cavityEl) {
+        cavityEl.textContent = `${(dims.innerWidthCm * 10).toFixed(1)}×${(dims.innerHeightCm * 10).toFixed(1)}×${(dims.innerDepthCm * 10).toFixed(1)} mm`;
+      }
+    },
 
-  root.BmoSimModules.internalsMethods = {
     setupInternalsControls() {
       const bindClick = (id, handler) => {
         const el = document.getElementById(id);
         if (el) el.addEventListener("click", handler);
         return el;
       };
+      this.bindInternalsModeButtons(bindClick);
+      this.bindInternalsSliderAndLayers();
+      this.bindInternalsFiltersAndSteps(bindClick);
+      this.syncInternalsLayoutSpec(this.hardwareLayout || DEFAULT_HARDWARE_LAYOUT);
+      this.selectBeginnerGuideStep(0, false);
+      this.syncInternalsBadge();
+    },
 
+    bindInternalsModeButtons(bindClick) {
       bindClick("btn-internals-mode", () => {
         if (this.internalsModeActive) {
           this.applyInternalsPresetUI("assembled");
           if (this.bmo3D) this.bmo3D.setCameraPreset("front");
-        } else {
-          if (!this.is3DView) {
-            this.is3DView = true;
-            this.updateViewMode();
-          }
-          this.applyInternalsPresetUI("core");
-          if (this.bmo3D) this.bmo3D.playDisassemblySequence(true);
-          const panel = document.getElementById("internals-panel");
-          if (panel && typeof panel.scrollIntoView === "function") {
-            panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
-          }
+          return;
+        }
+        if (!this.is3DView) {
+          this.is3DView = true;
+          this.updateViewMode();
+        }
+        this.applyInternalsPresetUI("core");
+        if (this.bmo3D) this.bmo3D.playDisassemblySequence(true);
+        const panel = document.getElementById("internals-panel");
+        if (panel && typeof panel.scrollIntoView === "function") {
+          panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
         }
       });
 
@@ -53,10 +71,10 @@
         if (this.bmo3D) this.bmo3D.setCameraPreset("iso");
       });
 
-      bindClick("btn-internals-allwires", () => {
-        this.setInternalsHighlightUI("all");
-      });
+      bindClick("btn-internals-allwires", () => this.setInternalsHighlightUI("all"));
+    },
 
+    bindInternalsSliderAndLayers() {
       const sliderExplode = document.getElementById("slider-explode");
       if (sliderExplode) {
         sliderExplode.addEventListener("input", () => {
@@ -66,9 +84,7 @@
             this.updateViewMode();
           }
           this.internalsModeActive = pct > 2;
-          if (this.bmo3D) {
-            this.bmo3D.setExplode(pct / 100);
-          }
+          if (this.bmo3D) this.bmo3D.setExplode(pct / 100);
           this.syncExplosionReadout(pct / 100);
           this.syncInternalsBadge();
         });
@@ -88,47 +104,42 @@
       document.querySelectorAll(".internals-layer-chk").forEach((chk) => {
         chk.addEventListener("change", () => {
           const layer = chk.getAttribute("data-layer");
-          if (this.bmo3D && layer) {
-            this.bmo3D.setLayerVisible(layer, chk.checked);
-            if (layer === "expansion") {
-              const warnCard = document.getElementById("internals-expansion-warning");
-              const warnStatus = document.getElementById("internals-expansion-status");
-              if (warnCard && warnStatus) {
-                warnCard.dataset.state = chk.checked ? "conflict" : "inactive";
-                warnStatus.textContent = chk.checked
-                  ? "-9.3 mm Z clash w/ 3xAA bay (use 2xAA lower zone or deeper shell)"
-                  : "Disabled in config.h (Stage 1 USB)";
-              }
-              if (chk.checked && this.bmo3D.explodeCurrent < 0.25) {
-                this.applyInternalsPresetUI("core");
-              }
-            }
+          if (!this.bmo3D || !layer) return;
+          this.bmo3D.setLayerVisible(layer, chk.checked);
+          if (layer !== "expansion") return;
+          const warnCard = document.getElementById("internals-expansion-warning");
+          const warnStatus = document.getElementById("internals-expansion-status");
+          if (warnCard && warnStatus) {
+            warnCard.dataset.state = chk.checked ? "conflict" : "inactive";
+            warnStatus.textContent = chk.checked
+              ? "-9.3 mm Z clash w/ 3xAA bay (use 2xAA lower zone or deeper shell)"
+              : "Disabled in config.h (Stage 1 USB)";
+          }
+          if (chk.checked && this.bmo3D.explodeCurrent < 0.25) {
+            this.applyInternalsPresetUI("core");
           }
         });
       });
+    },
 
+    bindInternalsFiltersAndSteps(bindClick) {
       document.querySelectorAll(".internals-filter-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
-          const hl = btn.getAttribute("data-highlight") || "all";
-          this.setInternalsHighlightUI(hl);
+          this.setInternalsHighlightUI(btn.getAttribute("data-highlight") || "all");
         });
       });
 
       document.querySelectorAll(".internals-step-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
-          const idx = parseInt(btn.getAttribute("data-step"), 10) || 0;
-          this.selectBeginnerGuideStep(idx, true);
+          this.selectBeginnerGuideStep(parseInt(btn.getAttribute("data-step"), 10) || 0, true);
         });
       });
 
       bindClick("btn-internals-next-step", () => {
-        const steps = (window.BmoInternals3D && window.BmoInternals3D.BUILD_GUIDE_STEPS) || [];
+        const steps = BmoInternals3D.BUILD_GUIDE_STEPS || [];
         const count = steps.length || 7;
         this.selectBeginnerGuideStep((this.internalsStepIndex + 1) % count, true);
       });
-
-      this.selectBeginnerGuideStep(0, false);
-      this.syncInternalsBadge();
     },
 
     applyInternalsPresetUI(presetName) {
@@ -156,7 +167,7 @@
     },
 
     selectBeginnerGuideStep(stepIdx, applyTo3D = true) {
-      const steps = (window.BmoInternals3D && window.BmoInternals3D.BUILD_GUIDE_STEPS) || [];
+      const steps = BmoInternals3D.BUILD_GUIDE_STEPS || [];
       if (!steps.length) return;
       const clamped = ((stepIdx % steps.length) + steps.length) % steps.length;
       this.internalsStepIndex = clamped;
@@ -241,4 +252,3 @@
       }
     }
   };
-}(typeof globalThis !== "undefined" ? globalThis : window));

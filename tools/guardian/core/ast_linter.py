@@ -398,8 +398,8 @@ class FirmwareAstLinter:
                         )
                     )
 
-        # Rule 6: Check for hard stop flags in config.h
-        if rel_path_str.endswith("config.h"):
+        # Rule 6: Check for hard stop flags in config.h / feature_flags.h
+        if rel_path_str.endswith(("config.h", "feature_flags.h")):
             for idx, line in enumerate(lines, 1):
                 clean = line.strip()
                 if re.match(r"^#define\s+FEATURE_AUDIO\s+[^0\s]", clean):
@@ -465,8 +465,8 @@ class FirmwareAstLinter:
                             )
                         )
 
-        # Rule 9: Check for forbidden Octal PSRAM (GPIO 33-37) or Strapping (GPIO 0, 3, 45, 46) pin definitions in config.h
-        if rel_path_str.endswith("config.h"):
+        # Rule 9: Check for forbidden Octal PSRAM (GPIO 33-37) or Strapping (GPIO 0, 3, 45, 46) pin definitions
+        if rel_path_str.endswith(("config.h", "pin_map.h")):
             for idx, line in enumerate(lines, 1):
                 clean = line.strip()
                 m_pin = re.match(r"^#define\s+(BTN_[A-Z0-9_]+|TFT_[A-Z0-9_]+|SD_[A-Z0-9_]+)\s+(\d+)\b", clean)

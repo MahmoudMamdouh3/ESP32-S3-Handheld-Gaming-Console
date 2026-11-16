@@ -54,7 +54,7 @@ class TestTier2FirmwareValidation(unittest.TestCase):
 
     def test_03_teardown_contract_compliance(self):
         """Verify all Tier 2 emulators implement destroy() in CoreRegistry and are dispatched by bmo_app.cpp."""
-        app_content = (FIRMWARE_DIR / "src" / "app" / "bmo_app.cpp").read_text(encoding="utf-8")
+        app_content = "\n".join(p.read_text(encoding="utf-8") for p in sorted((FIRMWARE_DIR / "src" / "app").glob("*.cpp")))
         reg_content = (FIRMWARE_DIR / "src" / "cores" / "core_registry.h").read_text(encoding="utf-8")
         self.assertIn("CoreRegistry::findByIndex", app_content)
         self.assertIn("core->destroy()", app_content)

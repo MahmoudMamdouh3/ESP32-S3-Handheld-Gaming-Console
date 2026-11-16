@@ -3,8 +3,12 @@
 #include <stdlib.h>
 
 #include "../firmware/BmoGameboy/src/ui/bmo_face.h"
+#include "../firmware/BmoGameboy/src/ui/bmo_quotes.h"
 
 namespace {
+
+using BmoQuotes::kQuoteCount;
+using BmoQuotes::quoteForIndex;
 
 constexpr uint32_t SCREEN_WIDTH = 320;
 constexpr uint32_t SCREEN_HEIGHT = 240;
@@ -23,24 +27,6 @@ uint32_t nextRandom() {
   s_randomState ^= s_randomState >> 17;
   s_randomState ^= s_randomState << 5;
   return s_randomState;
-}
-
-const char* const kQuotes[] = {
-  "Who wants to play video games?!",
-  "Yay! BMO is so happy to see you!",
-  "Sometimes life is scary, but we have games!",
-  "Yes, Finn. It goes in my butt.",
-  "BMO chop! If this were a real attack, you'd be dead!",
-  "When bad things happen, I know you want to believe they're a joke.",
-  "I am a little living boy!",
-  "BMO is camera ready! *wink*",
-  "Oh, you are making BMO blush!",
-  "Whew! What a fun dance party!"
-};
-constexpr uint32_t kQuoteCount = sizeof(kQuotes) / sizeof(kQuotes[0]);
-
-const char* quoteForIndex(uint32_t index) {
-  return index < kQuoteCount ? kQuotes[index] : nullptr;
 }
 
 }  // namespace

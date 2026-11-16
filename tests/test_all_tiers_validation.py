@@ -118,11 +118,11 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
     # ------------------------------------------------------------------
     def test_03_teardown_compliance_all_14_emulators(self):
         """Verify all 14 destroy symbols are registered in CoreRegistry and dispatched in bmo_app.cpp."""
-        app = FIRMWARE_DIR / 'src' / 'app' / 'bmo_app.cpp'
+        app_files = sorted((FIRMWARE_DIR / 'src' / 'app').glob('*.cpp'))
         reg = FIRMWARE_DIR / 'src' / 'cores' / 'core_registry.h'
-        self.assertTrue(app.exists(), 'bmo_app.cpp not found')
+        self.assertTrue(len(app_files) > 0, 'src/app/*.cpp not found')
         self.assertTrue(reg.exists(), 'core_registry.h not found')
-        app_content = app.read_text(encoding='utf-8')
+        app_content = '\n'.join(p.read_text(encoding='utf-8') for p in app_files)
         reg_content = reg.read_text(encoding='utf-8')
         self.assertIn('CoreRegistry::findByIndex', app_content)
         self.assertIn('core->destroy()', app_content)
@@ -316,7 +316,12 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
         Verify FEATURE_BATTERY_MONITOR and FEATURE_AUDIO are exactly 0.
         Regex requires a word boundary after 0 to reject accidental '0x...' values.
         """
-        config = (FIRMWARE_DIR / 'src' / 'hal' / 'config.h').read_text(encoding='utf-8')
+        hal_dir = FIRMWARE_DIR / 'src' / 'hal'
+        config = "\n".join(
+            (hal_dir / name).read_text(encoding='utf-8')
+            for name in ('config.h', 'feature_flags.h')
+            if (hal_dir / name).is_file()
+        )
         for flag in ('FEATURE_BATTERY_MONITOR', 'FEATURE_AUDIO'):
             self.assertRegex(
                 config,

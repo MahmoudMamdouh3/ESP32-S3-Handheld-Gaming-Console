@@ -159,7 +159,12 @@ def load_repo_facts() -> RepoFacts:
     fqbn_m = re.search(r"fqbn:\s*(.+)", sketch_text)
     fqbn_line = fqbn_m.group(1).strip() if fqbn_m else ""
 
-    cfg_text = (REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "hal" / "config.h").read_text(encoding="utf-8")
+    hal_dir = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "hal"
+    cfg_text = "\n".join(
+        p.read_text(encoding="utf-8")
+        for p in sorted(hal_dir.glob("*.h"))
+        if p.name in {"config.h", "feature_flags.h", "pin_map.h", "board_timing.h"}
+    )
 
     def _cfg_int(name: str, default: int = -1) -> int:
         m = re.search(rf"#define\s+{name}\s+(\d+)", cfg_text)
@@ -194,8 +199,9 @@ def load_repo_facts() -> RepoFacts:
 
     tracked_files = {
         "bmo_app.cpp": REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "app" / "bmo_app.cpp",
-        "bmo_face.cpp": REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "bmo_face.cpp",
-        "sd_catalog.cpp": REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage" / "sd_catalog.cpp",
+        "app_state.cpp": REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "app" / "app_state.cpp",
+        "bmo_face.cpp": REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "ui" / "bmo_face_renderer.cpp",
+        "rom_catalog_index.cpp": REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "storage" / "rom_catalog_index.cpp",
     }
     line_counts = {
         k: len(p.read_text(encoding="utf-8", errors="ignore").splitlines())
@@ -257,160 +263,96 @@ def clean_snippet(raw: str) -> str:
     return (s[:140] + "...") if len(s) > 140 else s
 
 
-def _verify_against_measured_values(rel: str, text: str, facts: RepoFacts) -> tuple[str, str, str] | None:
-    """Deep-verify numeric/timing/size claims directly against MEASURED_VALUES, binaries, and headers."""
+def _verify_timing_and_bringup_claims(text: str, facts: RepoFacts) -> tuple[str, str, str] | None:
     meas_bin = MEASURED_VALUES["binaries"]
-    meas_cnt = MEASURED_VALUES["counts"]
-
-    # Check timing claims against MEASURED_VALUES['timings_s']
     if re.search(r"tasks\.py\s+check\b|check\s*--\s*fast|full\s+check", text, re.IGNORECASE):
         if "~75 s" in text or "74.69 s" in text:
-            return (
-                "TRUE",
-                "deep-verified",
-                "Verified full `tasks.py check` timing against MEASURED_VALUES['timings_s'] (~75 s).",
-            )
+            return ("TRUE", "deep-verified", "Verified full `tasks.py check` timing against MEASURED_VALUES['timings_s'] (~75 s).")
         if ("~30 s" in text or "29.31 s" in text) and "fast" in text.lower():
-            return (
-                "TRUE",
-                "deep-verified",
-                "Verified `tasks.py check --fast` timing against MEASURED_VALUES['timings_s'] (~30 s).",
-            )
+            return ("TRUE", "deep-verified", "Verified `tasks.py check --fast` timing against MEASURED_VALUES['timings_s'] (~30 s).")
+    if "bringup" not in text.lower():
+        return None
+    actual_bringup = facts.bin_sizes.get("bringup", meas_bin["bringup_flash_b"])
+    m_flash = re.search(r"bringup[^;\n]*?`?(\d[\d,]{5,})\s*B`?\s*[Ff]lash", text, re.IGNORECASE)
+    if not m_flash:
+        return None
+    val = int(m_flash.group(1).replace(",", ""))
+    if val != actual_bringup and "historical" not in text.lower() and "baseline" not in text.lower():
+        return ("STALE", "failed", f"bringup Flash size claim {val:,} B != measured {actual_bringup:,} B.")
+    return ("TRUE", "deep-verified", f"Verified bringup.ino Flash size {actual_bringup:,} B against MEASURED_VALUES['binaries'] / build/bringup.")
 
-    # Check compiled binary sizes against build/*.bin (or MEASURED_VALUES['binaries'])
-    if "bringup" in text.lower():
-        actual_bringup = facts.bin_sizes.get("bringup", meas_bin["bringup_flash_b"])
-        m_flash = re.search(r"bringup[^;\n]*?`?(\d[\d,]{5,})\s*B`?\s*[Ff]lash", text, re.IGNORECASE)
-        if m_flash:
-            val = int(m_flash.group(1).replace(",", ""))
-            if val != actual_bringup and "historical" not in text.lower() and "baseline" not in text.lower():
-                return (
-                    "STALE",
-                    "failed",
-                    f"bringup Flash size claim {val:,} B != measured {actual_bringup:,} B.",
-                )
-            return (
-                "TRUE",
-                "deep-verified",
-                f"Verified bringup.ino Flash size {actual_bringup:,} B against MEASURED_VALUES['binaries'] / build/bringup.",
-            )
 
+def _verify_profile_and_count_claims(text: str, facts: RepoFacts) -> tuple[str, str, str] | None:
+    meas_bin = MEASURED_VALUES["binaries"]
+    meas_cnt = MEASURED_VALUES["counts"]
     if re.search(r"default.*?`?\b3,29\d,\d{3}\s*B`?", text, re.IGNORECASE):
         actual_def = facts.bin_sizes.get("default", meas_bin["default_flash_b"])
         matches = re.findall(r"\b(3,29\d,\d{3})\s*B", text)
         if matches:
             val = int(matches[-1].replace(",", ""))
             if val != actual_def and "before" not in text.lower():
-                return (
-                    "STALE",
-                    "failed",
-                    f"default Flash claim {val:,} B != measured {actual_def:,} B.",
-                )
-            return (
-                "TRUE",
-                "deep-verified",
-                f"Verified default Flash size {actual_def:,} B against MEASURED_VALUES['binaries'] / build/target-compile.",
-            )
-
+                return ("STALE", "failed", f"default Flash claim {val:,} B != measured {actual_def:,} B.")
+            return ("TRUE", "deep-verified", f"Verified default Flash size {actual_def:,} B against MEASURED_VALUES['binaries'] / build/target-compile.")
     for label, key in (("no-doom", "no_doom_flash_b"), ("mit", "mit_flash_b")):
         if label in text.lower():
             actual_p = facts.bin_sizes.get(label, meas_bin[key])
             for m_sz in re.finditer(r"\b(\d{3},\d{3}|\d,\d{3},\d{3})\s*B\b", text):
-                val = int(m_sz.group(1).replace(",", ""))
-                if val == actual_p:
-                    return (
-                        "TRUE",
-                        "deep-verified",
-                        f"Verified {label} Flash size {actual_p:,} B against MEASURED_VALUES['binaries'].",
-                    )
-
+                if int(m_sz.group(1).replace(",", "")) == actual_p:
+                    return ("TRUE", "deep-verified", f"Verified {label} Flash size {actual_p:,} B against MEASURED_VALUES['binaries'].")
     if f"{meas_bin['default_dram_b']:,} B" in text:
-        return (
-            "TRUE",
-            "deep-verified",
-            f"Verified default Static DRAM {meas_bin['default_dram_b']:,} B against MEASURED_VALUES['binaries'].",
-        )
+        return ("TRUE", "deep-verified", f"Verified default Static DRAM {meas_bin['default_dram_b']:,} B against MEASURED_VALUES['binaries'].")
     if f"{meas_cnt['format_cpp_files']}` first-party" in text or f"{meas_cnt['format_cpp_files']} files" in text or "`128` first-party" in text:
-        return (
-            "TRUE",
-            "deep-verified",
-            f"Verified formatted C/C++ count ({meas_cnt['format_cpp_files']}) against MEASURED_VALUES['counts'].",
-        )
-    if ("168" in text or "93" in text or "26" in text) and ("Guardian" in text or "CTest" in text or "mutations" in text):
+        return ("TRUE", "deep-verified", f"Verified formatted C/C++ count ({meas_cnt['format_cpp_files']}) against MEASURED_VALUES['counts'].")
+    if any(n in text for n in ("168", "93", "26")) and any(k in text for k in ("Guardian", "CTest", "mutations")):
         return (
             "TRUE",
             "deep-verified",
             f"Verified test suite counts against MEASURED_VALUES['counts'] (Py={meas_cnt['py_check_tests']}, fast={meas_cnt['py_fast_tests']}, CTest={meas_cnt['ctest_targets']}, Guardian={meas_cnt['guardian_tests']}).",
         )
+    return None
 
-    # Check source file line count claims
+
+def _verify_line_count_claims(text: str, facts: RepoFacts) -> tuple[str, str, str] | None:
     for fname, actual_lines in facts.line_counts.items():
         m = re.search(rf"\b{re.escape(fname)}\b\s*(?:\(|->|:)?\s*`?(\d[\d,]+)\s*(?:lines?|\))", text)
-        if m:
-            claimed = int(m.group(1).replace(",", ""))
-            if claimed != actual_lines and "before" not in text.lower() and "baseline" not in text.lower():
-                return (
-                    "STALE",
-                    "failed",
-                    f"{fname} line count claim {claimed} != measured {actual_lines} lines at HEAD.",
-                )
-            return (
-                "TRUE",
-                "deep-verified",
-                f"Verified {fname} line count ({actual_lines} lines) directly against source file at HEAD.",
-            )
+        if not m:
+            continue
+        claimed = int(m.group(1).replace(",", ""))
+        if claimed != actual_lines and "before" not in text.lower() and "baseline" not in text.lower():
+            return ("STALE", "failed", f"{fname} line count claim {claimed} != measured {actual_lines} lines at HEAD.")
+        return ("TRUE", "deep-verified", f"Verified {fname} line count ({actual_lines} lines) directly against source file at HEAD.")
+    return None
 
-    # Check hard-stop constants directly against sketch.yaml & config.h
-    if "FlashMode=qio" in text and "PSRAM=opi" in text:
-        if "FlashMode=qio" in facts.sketch_fqbn_line and "PSRAM=opi" in facts.sketch_fqbn_line:
-            return (
-                "TRUE",
-                "deep-verified",
-                f"Verified against firmware/BmoGameboy/sketch.yaml ({facts.sketch_fqbn_line}).",
-            )
-    if "FEATURE_BATTERY_MONITOR=0" in text or "FEATURE_BATTERY_MONITOR = 0" in text:
-        if facts.feature_battery == 0:
-            return (
-                "TRUE",
-                "deep-verified",
-                "Verified FEATURE_BATTERY_MONITOR == 0 directly in firmware/BmoGameboy/src/hal/config.h.",
-            )
-    if "FEATURE_AUDIO=0" in text or "FEATURE_AUDIO = 0" in text:
-        if facts.feature_audio == 0:
-            return (
-                "TRUE",
-                "deep-verified",
-                "Verified FEATURE_AUDIO == 0 directly in firmware/BmoGameboy/src/hal/config.h.",
-            )
 
-    # Check enclosure outer reference dimensions directly against hardware/layout.json
-    if "8.80" in text and "12.40" in text and "3.20" in text:
-        if facts.layout_dims_cm == (8.80, 12.40, 3.20):
-            return (
-                "TRUE",
-                "deep-verified",
-                "Verified 8.80 x 12.40 x 3.20 cm enclosure envelope directly against hardware/layout.json.",
-            )
-
-    # Check GPIO pin claims directly against config.h
+def _verify_hardware_and_adr_claims(rel: str, text: str, facts: RepoFacts) -> tuple[str, str, str] | None:
+    if "FlashMode=qio" in text and "PSRAM=opi" in text and "FlashMode=qio" in facts.sketch_fqbn_line and "PSRAM=opi" in facts.sketch_fqbn_line:
+        return ("TRUE", "deep-verified", f"Verified against firmware/BmoGameboy/sketch.yaml ({facts.sketch_fqbn_line}).")
+    if any(s in text for s in ("FEATURE_BATTERY_MONITOR=0", "FEATURE_BATTERY_MONITOR = 0")) and facts.feature_battery == 0:
+        return ("TRUE", "deep-verified", "Verified FEATURE_BATTERY_MONITOR == 0 directly in firmware/BmoGameboy/src/hal/config.h.")
+    if any(s in text for s in ("FEATURE_AUDIO=0", "FEATURE_AUDIO = 0")) and facts.feature_audio == 0:
+        return ("TRUE", "deep-verified", "Verified FEATURE_AUDIO == 0 directly in firmware/BmoGameboy/src/hal/config.h.")
+    if all(d in text for d in ("8.80", "12.40", "3.20")) and facts.layout_dims_cm == (8.80, 12.40, 3.20):
+        return ("TRUE", "deep-verified", "Verified 8.80 x 12.40 x 3.20 cm enclosure envelope directly against hardware/layout.json.")
     for pin_name, pin_num in facts.pins.items():
         if re.search(rf"\b{pin_name}\s*[:=]\s*{pin_num}\b", text) or re.search(rf"{pin_name}.*GPIO\s*{pin_num}\b", text):
-            return (
-                "TRUE",
-                "deep-verified",
-                f"Verified {pin_name} == GPIO {pin_num} directly in firmware/BmoGameboy/src/hal/config.h.",
-            )
-
-    # Check ADR 0006 / BOM power math and datasheet figures directly
-    if rel in ("docs/decisions/0006-portable-power.md", "docs/bom.md"):
-        if "2.94 A" in text or "1.96 A" in text or "DMP2035U" in text or "2030" in text or "U3V70F5" in text:
-            return (
-                "TRUE",
-                "deep-verified",
-                "Verified against P_out/(eff*V_min) math (5.0/(0.85*2.0)=2.94 A, 5.0/(0.85*3.0)=1.96 A) and datasheets accessed 2026-11-15.",
-            )
-
+            return ("TRUE", "deep-verified", f"Verified {pin_name} == GPIO {pin_num} directly in firmware/BmoGameboy/src/hal/config.h.")
+    if rel in ("docs/decisions/0006-portable-power.md", "docs/bom.md") and any(k in text for k in ("2.94 A", "1.96 A", "DMP2035U", "2030", "U3V70F5")):
+        return (
+            "TRUE",
+            "deep-verified",
+            "Verified against P_out/(eff*V_min) math (5.0/(0.85*2.0)=2.94 A, 5.0/(0.85*3.0)=1.96 A) and datasheets accessed 2026-11-15.",
+        )
     return None
+
+
+def _verify_against_measured_values(rel: str, text: str, facts: RepoFacts) -> tuple[str, str, str] | None:
+    """Deep-verify numeric/timing/size claims directly against MEASURED_VALUES, binaries, and headers."""
+    return (
+        _verify_timing_and_bringup_claims(text, facts)
+        or _verify_profile_and_count_claims(text, facts)
+        or _verify_line_count_claims(text, facts)
+        or _verify_hardware_and_adr_claims(rel, text, facts)
+    )
 
 
 def classify_claim(rel: str, text: str, kind: str, facts: RepoFacts) -> tuple[str, str, str]:

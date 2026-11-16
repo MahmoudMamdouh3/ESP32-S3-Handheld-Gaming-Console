@@ -21,7 +21,7 @@ CORE_TOKENS = {
 }
 
 FACE_COLOR = re.compile(
-    r"static\s+const\s+uint16_t\s+(COL_[A-Z0-9_]+)\s*=\s*packBGR565\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\).*?//\s*#([0-9A-Fa-f]{6})"
+    r"static\s+const\s+uint16_t\s+(COL_[A-Z0-9_]+)\s*=\s*(?:BmoFaceSdf::)?packBGR565\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\).*?//\s*#([0-9A-Fa-f]{6})"
 )
 
 
@@ -113,7 +113,7 @@ def verify_token_parity(repo_root: Path, theme_colors: dict[str, tuple[str, int,
 
 
 def verify_face_palette(repo_root: Path) -> list[str]:
-    bmo_face = repo_root / "firmware" / "BmoGameboy" / "src" / "ui" / "bmo_face.cpp"
+    bmo_face = repo_root / "firmware" / "BmoGameboy" / "src" / "ui" / "bmo_face_internal.h"
     source = bmo_face.read_text(encoding="utf-8")
     design = (repo_root / "DESIGN.md").read_text(encoding="utf-8")
     source_colors = {}
@@ -200,7 +200,7 @@ def verify_design_tokens_json(
             if str(entry.get("direct_bgr565", "")).lower() != f"0x{direct_word:04x}":
                 issues.append(f"design/tokens.json: {token_name}.direct_bgr565 mismatch")
 
-    bmo_face_src = (repo_root / "firmware" / "BmoGameboy" / "src" / "ui" / "bmo_face.cpp").read_text(encoding="utf-8")
+    bmo_face_src = (repo_root / "firmware" / "BmoGameboy" / "src" / "ui" / "bmo_face_internal.h").read_text(encoding="utf-8")
     face_json = data.get("face_palette", {})
     for name, red, green, blue, _ in FACE_COLOR.findall(bmo_face_src):
         expected_hex = "#%02X%02X%02X" % (int(red), int(green), int(blue))

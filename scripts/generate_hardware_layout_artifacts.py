@@ -9,6 +9,7 @@ import csv
 import json
 import math
 from pathlib import Path
+from typing import Any, cast
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LAYOUT_PATH = REPO_ROOT / "hardware" / "layout.json"
@@ -16,10 +17,11 @@ TOP_SVG_PATH = REPO_ROOT / "docs" / "assets" / "layout_top_view.svg"
 SIDE_SVG_PATH = REPO_ROOT / "docs" / "assets" / "layout_side_section.svg"
 PERFBOARD_DOC_PATH = REPO_ROOT / "docs" / "wiring" / "perfboard-layout.md"
 WIRE_CSV_PATH = REPO_ROOT / "docs" / "wiring" / "wire_list.csv"
+SIM_LAYOUT_JS_PATH = REPO_ROOT / "simulator" / "js" / "hardware_layout_data.js"
 
 
-def load_layout(path: Path = LAYOUT_PATH) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"))
+def load_layout(path: Path = LAYOUT_PATH) -> dict[str, Any]:
+    return cast(dict[str, Any], json.loads(path.read_text(encoding="utf-8")))
 
 
 def _rect_circle_overlaps(x0: float, x1: float, y0: float, y1: float, cx: float, cy: float, radius: float) -> bool:
@@ -28,87 +30,69 @@ def _rect_circle_overlaps(x0: float, x1: float, y0: float, y1: float, cx: float,
     return math.hypot(cx - closest_x, cy - closest_y) < radius - 1e-6
 
 
-def check_layout_collisions(layout: dict) -> dict:
-    """Validate enclosure inner bounds, zone separation, rear (X, Y, Z) clearances, and standoff keep-outs."""
-    owner_ref = layout["enclosure"]["owner_reference_cm"]
-    side_wall = float(owner_ref.get("side_wall_cm", 0.21))
-    inner_x_min = side_wall
-    inner_x_max = float(owner_ref["width_cm"]) - side_wall
-    inner_y_min = side_wall
-    inner_y_max = float(owner_ref["height_cm"]) - side_wall
-
-    z_stack = layout["z_stackup"]
-    rear_zones = z_stack["rear_zones"]
-    upper = rear_zones["upper_zone"]
-    lower = rear_zones["lower_zone"]
-    collisions: list[dict] = []
-
-    uy0, uy1 = float(upper["y_range_cm"][0]), float(upper["y_range_cm"][1])
-    ly0, ly1 = float(lower["y_range_cm"][0]), float(lower["y_range_cm"][1])
-    if uy1 > ly0 + 1e-6:
-        collisions.append(
-            {
-                "kind": "zone_y_overlap",
-                "upper_y_range_cm": [uy0, uy1],
-                "lower_y_range_cm": [ly0, ly1],
-                "overlap_cm": round(uy1 - ly0, 3),
-                "message": f"Upper Y zone (ends {uy1:.3f} cm) overlaps lower Y zone (starts {ly0:.3f} cm) by {uy1 - ly0:.3f} cm",
-            }
-        )
-
-    standoffs = layout.get("perfboard", {}).get("mounting_holes", [])
-    standoff_r = float(layout.get("perfboard", {}).get("standoff_outer_radius_cm", 0.30))
-
-    flat_components: list[tuple[str, float, dict]] = []
-    for zone_name, zone in (("upper_zone", upper), ("lower_zone", lower)):
-        avail_depth = float(zone["available_depth_cm"])
-        for comp in zone["components"]:
-            flat_components.append((zone_name, avail_depth, comp))
-            x0, x1 = float(comp["x_range_cm"][0]), float(comp["x_range_cm"][1])
-            y0, y1 = float(comp["y_range_cm"][0]), float(comp["y_range_cm"][1])
-            depth = float(comp["depth_cm"])
-            if x0 < inner_x_min - 1e-6 or x1 > inner_x_max + 1e-6:
+def _check_zone_components(
+    zone_name: str,
+    zone: dict[str, Any],
+    inner_bounds: tuple[float, float, float, float],
+    standoffs: list[dict[str, Any]],
+    standoff_r: float,
+    collisions: list[dict[str, Any]],
+) -> list[tuple[str, float, dict[str, Any]]]:
+    inner_x_min, inner_x_max, inner_y_min, inner_y_max = inner_bounds
+    avail_depth = float(zone["available_depth_cm"])
+    flat: list[tuple[str, float, dict[str, Any]]] = []
+    for comp in zone["components"]:
+        flat.append((zone_name, avail_depth, comp))
+        x0, x1 = float(comp["x_range_cm"][0]), float(comp["x_range_cm"][1])
+        y0, y1 = float(comp["y_range_cm"][0]), float(comp["y_range_cm"][1])
+        depth = float(comp["depth_cm"])
+        if x0 < inner_x_min - 1e-6 or x1 > inner_x_max + 1e-6:
+            collisions.append(
+                {
+                    "kind": "inner_wall_x_bounds",
+                    "component": comp["name"],
+                    "x_range_cm": [x0, x1],
+                    "inner_x_bounds_cm": [round(inner_x_min, 3), round(inner_x_max, 3)],
+                    "message": f"{comp['name']} X range [{x0:.3f}, {x1:.3f}] exceeds inner wall [{inner_x_min:.3f}, {inner_x_max:.3f}]",
+                }
+            )
+        if y0 < inner_y_min - 1e-6 or y1 > inner_y_max + 1e-6:
+            collisions.append(
+                {
+                    "kind": "inner_wall_y_bounds",
+                    "component": comp["name"],
+                    "y_range_cm": [y0, y1],
+                    "inner_y_bounds_cm": [round(inner_y_min, 3), round(inner_y_max, 3)],
+                    "message": f"{comp['name']} Y range [{y0:.3f}, {y1:.3f}] exceeds inner wall [{inner_y_min:.3f}, {inner_y_max:.3f}]",
+                }
+            )
+        if depth > avail_depth + 1e-6:
+            collisions.append(
+                {
+                    "kind": "z_depth_exceeded",
+                    "component": comp["name"],
+                    "depth_cm": depth,
+                    "available_depth_cm": avail_depth,
+                    "message": f"{comp['name']} depth {depth:.2f} cm exceeds cavity {avail_depth:.2f} cm",
+                }
+            )
+        for hole in standoffs:
+            cx, cy = float(hole["x_cm"]), float(hole["y_cm"])
+            if _rect_circle_overlaps(x0, x1, y0, y1, cx, cy, standoff_r):
                 collisions.append(
                     {
-                        "kind": "inner_wall_x_bounds",
+                        "kind": "standoff_collision",
                         "component": comp["name"],
-                        "x_range_cm": [x0, x1],
-                        "inner_x_bounds_cm": [round(inner_x_min, 3), round(inner_x_max, 3)],
-                        "message": f"{comp['name']} X range [{x0:.3f}, {x1:.3f}] exceeds inner wall [{inner_x_min:.3f}, {inner_x_max:.3f}]",
+                        "standoff": hole["id"],
+                        "message": f"{comp['name']} overlaps standoff {hole['id']} at ({cx:.3f}, {cy:.3f}) r={standoff_r:.2f} cm",
                     }
                 )
-            if y0 < inner_y_min - 1e-6 or y1 > inner_y_max + 1e-6:
-                collisions.append(
-                    {
-                        "kind": "inner_wall_y_bounds",
-                        "component": comp["name"],
-                        "y_range_cm": [y0, y1],
-                        "inner_y_bounds_cm": [round(inner_y_min, 3), round(inner_y_max, 3)],
-                        "message": f"{comp['name']} Y range [{y0:.3f}, {y1:.3f}] exceeds inner wall [{inner_y_min:.3f}, {inner_y_max:.3f}]",
-                    }
-                )
-            if depth > avail_depth + 1e-6:
-                collisions.append(
-                    {
-                        "kind": "z_depth_exceeded",
-                        "component": comp["name"],
-                        "depth_cm": depth,
-                        "available_depth_cm": avail_depth,
-                        "message": f"{comp['name']} depth {depth:.2f} cm exceeds cavity {avail_depth:.2f} cm",
-                    }
-                )
-            for hole in standoffs:
-                cx, cy = float(hole["x_cm"]), float(hole["y_cm"])
-                if _rect_circle_overlaps(x0, x1, y0, y1, cx, cy, standoff_r):
-                    collisions.append(
-                        {
-                            "kind": "standoff_collision",
-                            "component": comp["name"],
-                            "standoff": hole["id"],
-                            "message": f"{comp['name']} overlaps standoff {hole['id']} at ({cx:.3f}, {cy:.3f}) r={standoff_r:.2f} cm",
-                        }
-                    )
+    return flat
 
+
+def _check_pairwise_xyz_overlaps(
+    flat_components: list[tuple[str, float, dict[str, Any]]], collisions: list[dict[str, Any]]
+) -> None:
     for idx, (zone_a, avail_a, comp_a) in enumerate(flat_components):
         ax0, ax1 = float(comp_a["x_range_cm"][0]), float(comp_a["x_range_cm"][1])
         ay0, ay1 = float(comp_a["y_range_cm"][0]), float(comp_a["y_range_cm"][1])
@@ -139,43 +123,64 @@ def check_layout_collisions(layout: dict) -> dict:
                     }
                 )
 
+
+def check_layout_collisions(layout: dict[str, Any]) -> dict[str, Any]:
+    """Validate enclosure inner bounds, zone separation, rear (X, Y, Z) clearances, and standoff keep-outs."""
+    owner_ref = layout["enclosure"]["owner_reference_cm"]
+    side_wall = float(owner_ref.get("side_wall_cm", 0.21))
+    inner_bounds = (
+        side_wall,
+        float(owner_ref["width_cm"]) - side_wall,
+        side_wall,
+        float(owner_ref["height_cm"]) - side_wall,
+    )
+    rear_zones = layout["z_stackup"]["rear_zones"]
+    upper = rear_zones["upper_zone"]
+    lower = rear_zones["lower_zone"]
+    collisions: list[dict[str, Any]] = []
+
+    uy0, uy1 = float(upper["y_range_cm"][0]), float(upper["y_range_cm"][1])
+    ly0, ly1 = float(lower["y_range_cm"][0]), float(lower["y_range_cm"][1])
+    if uy1 > ly0 + 1e-6:
+        collisions.append(
+            {
+                "kind": "zone_y_overlap",
+                "upper_y_range_cm": [uy0, uy1],
+                "lower_y_range_cm": [ly0, ly1],
+                "overlap_cm": round(uy1 - ly0, 3),
+                "message": f"Upper Y zone (ends {uy1:.3f} cm) overlaps lower Y zone (starts {ly0:.3f} cm) by {uy1 - ly0:.3f} cm",
+            }
+        )
+
+    standoffs = layout.get("perfboard", {}).get("mounting_holes", [])
+    standoff_r = float(layout.get("perfboard", {}).get("standoff_outer_radius_cm", 0.30))
+    flat_components: list[tuple[str, float, dict[str, Any]]] = []
+    for zone_name, zone in (("upper_zone", upper), ("lower_zone", lower)):
+        flat_components.extend(_check_zone_components(zone_name, zone, inner_bounds, standoffs, standoff_r, collisions))
+    _check_pairwise_xyz_overlaps(flat_components, collisions)
+
     upper_max_y = max(float(c["y_range_cm"][1]) for c in upper["components"])
-    available_lower_y_cm = round(inner_y_max - upper_max_y, 3)
+    available_lower_y_cm = round(inner_bounds[3] - upper_max_y, 3)
     return {
         "ok": len(collisions) == 0,
         "collision_count": len(collisions),
         "upper_max_y_cm": round(upper_max_y, 3),
-        "inner_y_max_cm": round(inner_y_max, 3),
+        "inner_y_max_cm": round(inner_bounds[3], 3),
         "available_lower_y_cm": available_lower_y_cm,
         "collisions": collisions,
     }
 
 
-def generate_top_view_svg(layout: dict) -> str:
-    # Scale: 50 px per cm, with 60 px margin
-    scale = 50.0
-    ox, oy = 60.0, 60.0
-    env = layout["enclosure"]["owner_reference_cm"]
-    w_cm = env["width_cm"]
-    h_cm = env["height_cm"]
-    svg_w = int(w_cm * scale + 140)
-    svg_h = int(h_cm * scale + 130)
-
+def _svg_ruler_and_shell_lines(layout: dict[str, Any], ox: float, oy: float, scale: float) -> list[str]:
     def px(cm: float) -> float:
         return round(ox + cm * scale, 2)
 
     def py(cm: float) -> float:
         return round(oy + cm * scale, 2)
 
-    lines = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {svg_w} {svg_h}" width="{svg_w}" height="{svg_h}" font-family="monospace">',
-        "  <!-- GENERATED FROM hardware/layout.json - DO NOT EDIT BY HAND -->",
-        f'  <rect x="0" y="0" width="{svg_w}" height="{svg_h}" fill="#0F2620"/>',
-        f'  <text x="{ox}" y="28" fill="#F8FDFA" font-size="14" font-weight="bold">BMO Handheld Top View (8.80 x 12.40 cm, 31x46 Perfboard Grid)</text>',
-        f'  <text x="{ox}" y="46" fill="#CEF5E4" font-size="11">Origin (0,0) top-left | Grid = 0.254 cm (1 hole) | Evidence: NOT_TESTED</text>',
-    ]
-
-    # 1.0 cm ruler ticks
+    env = layout["enclosure"]["owner_reference_cm"]
+    w_cm, h_cm = env["width_cm"], env["height_cm"]
+    lines: list[str] = []
     for x_i in range(int(w_cm) + 1):
         x_p = px(float(x_i))
         lines.append(f'  <line x1="{x_p}" y1="{oy - 6}" x2="{x_p}" y2="{oy}" stroke="#CEF5E4" stroke-width="1"/>')
@@ -185,33 +190,36 @@ def generate_top_view_svg(layout: dict) -> str:
         lines.append(f'  <line x1="{ox - 6}" y1="{y_p}" x2="{ox}" y2="{y_p}" stroke="#CEF5E4" stroke-width="1"/>')
         lines.append(f'  <text x="{ox - 36}" y="{y_p + 3}" fill="#CEF5E4" font-size="9">{y_i}cm</text>')
 
-    # Outer enclosure shell
     r_px = round(env["corner_radius_cm"] * scale, 2)
     lines.append(
         f'  <rect x="{px(0)}" y="{py(0)}" width="{round(w_cm * scale, 2)}" height="{round(h_cm * scale, 2)}" '
         f'rx="{r_px}" ry="{r_px}" fill="#5FB49C" fill-opacity="0.22" stroke="#5FB49C" stroke-width="2.5"/>'
     )
-
-    # Perfboard outline
     pb = layout["perfboard"]
     pb_x, pb_y = pb["board_top_left_cm"]
     lines.append(
         f'  <rect x="{px(pb_x)}" y="{py(pb_y)}" width="{round(pb["width_cm"] * scale, 2)}" height="{round(pb["height_cm"] * scale, 2)}" '
         f'fill="#1A4B42" fill-opacity="0.55" stroke="#FFE033" stroke-width="1.2" stroke-dasharray="4,2"/>'
     )
-
-    # Perfboard 31x46 holes
     c1x, r1y = pb["hole_c01_r01_cm"]
     pitch = pb["pitch_cm"]
     for col in range(pb["columns"]):
         for row in range(pb["rows"]):
-            hx = px(c1x + col * pitch)
-            hy = py(r1y + row * pitch)
-            lines.append(f'  <circle cx="{hx}" cy="{hy}" r="1.2" fill="#8AD5C3" fill-opacity="0.45"/>')
+            lines.append(
+                f'  <circle cx="{px(c1x + col * pitch)}" cy="{py(r1y + row * pitch)}" r="1.2" fill="#8AD5C3" fill-opacity="0.45"/>'
+            )
+    return lines
 
-    # Rear zones (dashed)
-    upper_comp = layout["z_stackup"]["rear_zones"]["upper_zone"]["components"]
-    for comp in upper_comp:
+
+def _svg_zones_display_and_buttons(layout: dict[str, Any], ox: float, oy: float, scale: float) -> list[str]:
+    def px(cm: float) -> float:
+        return round(ox + cm * scale, 2)
+
+    def py(cm: float) -> float:
+        return round(oy + cm * scale, 2)
+
+    lines: list[str] = []
+    for comp in layout["z_stackup"]["rear_zones"]["upper_zone"]["components"]:
         x0, x1 = comp["x_range_cm"]
         y0, y1 = comp["y_range_cm"]
         lines.append(
@@ -228,8 +236,6 @@ def generate_top_view_svg(layout: dict) -> str:
     lines.append(
         f'  <text x="{px(ax0 + 0.3)}" y="{py(ay0 + 0.4)}" fill="#FFE033" font-size="9">Rear Lower Zone: 2xAA Holder (5.80 x 3.20 cm)</text>'
     )
-
-    # Screen bezel & active display area
     bez = layout["display"]["bezel_rect_cm"]
     act = layout["display"]["active_area_landscape_cm"]
     lines.append(
@@ -248,20 +254,14 @@ def generate_top_view_svg(layout: dict) -> str:
     lines.append(
         f'  <text x="{px(1.2)}" y="{py(7.0)}" fill="#FF91A5" font-size="9">Rear Upper: DevKitC-1 (2.54x6.33cm) + MicroSD + Boost</text>'
     )
-
-    # Buttons (show snapped hole position + 0.60 cm recommended body and 1.20 cm OMRON ghost outline)
+    s12, s06 = round(1.20 * scale, 2), round(0.60 * scale, 2)
     for btn in layout["controls"]["buttons"]:
-        bx = px(btn["snapped_x_cm"])
-        by = py(btn["snapped_y_cm"])
+        bx, by = px(btn["snapped_x_cm"]), py(btn["snapped_y_cm"])
         color = "#FFE033" if btn["soldered"] else "#FF91A5"
-        # 1.20 cm OMRON ghost box
-        s12 = round(1.20 * scale, 2)
-        s06 = round(0.60 * scale, 2)
         lines.append(
             f'  <rect x="{round(bx - s12 / 2, 2)}" y="{round(by - s12 / 2, 2)}" width="{s12}" height="{s12}" '
             f'fill="none" stroke="{color}" stroke-opacity="0.4" stroke-width="1" stroke-dasharray="2,2"/>'
         )
-        # 0.60 cm recommended tactile switch box
         lines.append(
             f'  <rect x="{round(bx - s06 / 2, 2)}" y="{round(by - s06 / 2, 2)}" width="{s06}" height="{s06}" '
             f'fill="{color}" fill-opacity="0.35" stroke="{color}" stroke-width="1.5"/>'
@@ -269,16 +269,29 @@ def generate_top_view_svg(layout: dict) -> str:
         lines.append(
             f'  <text x="{round(bx - 14, 2)}" y="{round(by + 3, 2)}" fill="#F8FDFA" font-size="8.5" font-weight="bold">{btn["label"]}(G{btn["gpio"]})</text>'
         )
+    return lines
 
-    lines.append(
-        f'  <text x="{ox}" y="{svg_h - 16}" fill="#F8FDFA" font-size="10">'
-        f'Solid boxes = 0.60x0.60 cm switches (0.81 cm ABXY gap) | Dotted boxes = 1.20x1.20 cm OMRON (0.21 cm ABXY gap)</text>'
-    )
-    lines.append("</svg>\n")
+
+def generate_top_view_svg(layout: dict[str, Any]) -> str:
+    scale, ox, oy = 50.0, 60.0, 60.0
+    env = layout["enclosure"]["owner_reference_cm"]
+    svg_w = int(env["width_cm"] * scale + 140)
+    svg_h = int(env["height_cm"] * scale + 130)
+    lines = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {svg_w} {svg_h}" width="{svg_w}" height="{svg_h}" font-family="monospace">',
+        "  <!-- GENERATED FROM hardware/layout.json - DO NOT EDIT BY HAND -->",
+        f'  <rect x="0" y="0" width="{svg_w}" height="{svg_h}" fill="#0F2620"/>',
+        f'  <text x="{ox}" y="28" fill="#F8FDFA" font-size="14" font-weight="bold">BMO Handheld Top View (8.80 x 12.40 cm, 31x46 Perfboard Grid)</text>',
+        f'  <text x="{ox}" y="46" fill="#CEF5E4" font-size="11">Origin (0,0) top-left | Grid = 0.254 cm (1 hole) | Evidence: NOT_TESTED</text>',
+        *_svg_ruler_and_shell_lines(layout, ox, oy, scale),
+        *_svg_zones_display_and_buttons(layout, ox, oy, scale),
+        f'  <text x="{ox}" y="{svg_h - 16}" fill="#F8FDFA" font-size="10">Solid boxes = 0.60x0.60 cm switches (0.81 cm ABXY gap) | Dotted boxes = 1.20x1.20 cm OMRON (0.21 cm ABXY gap)</text>',
+        "</svg>\n",
+    ]
     return "\n".join(lines)
 
 
-def generate_side_section_svg(layout: dict) -> str:
+def generate_side_section_svg(layout: dict[str, Any]) -> str:
     # Horizontal axis = Y (0.00 to 12.40 cm), Vertical axis = Z (0.00 to 3.20 cm)
     scale_y = 55.0
     scale_z = 75.0
@@ -356,7 +369,7 @@ def generate_side_section_svg(layout: dict) -> str:
     return "\n".join(lines)
 
 
-def generate_perfboard_markdown(layout: dict) -> str:
+def generate_perfboard_markdown(layout: dict[str, Any]) -> str:
     pb = layout["perfboard"]
     env = layout["enclosure"]["owner_reference_cm"]
     buttons = layout["controls"]["buttons"]
@@ -458,10 +471,9 @@ $$d = \\sqrt{{1.00^2 + 1.00^2}} = 1.414\\text{{ cm}}$$
 """
 
 
-def generate_wire_list_rows(layout: dict) -> list[dict]:
-    return [
-        {
-            "wire_id": "W01",
+WIRE_LIST_SPEC: tuple[dict[str, str], ...] = (
+    {
+        "wire_id": "W01",
             "signal": "3V3_DISPLAY",
             "from_component": "ESP32-S3-DevKitC-1",
             "from_pin": "3V3",
@@ -848,9 +860,75 @@ def generate_wire_list_rows(layout: dict) -> list[dict]:
             "length_cm": "9.0",
             "gauge_awg": "30",
             "status": "UNSOLDERED_EXPANSION",
-            "notes": "Configured in config.h (GPIO_IN1_REG; shares WS2812 LED on DevKitC-1 v1.0); top-edge right-angle switch",
-        },
-    ]
+        "notes": "Configured in config.h (GPIO_IN1_REG; shares WS2812 LED on DevKitC-1 v1.0); top-edge right-angle switch",
+    },
+)
+
+
+def generate_wire_list_rows(layout: dict[str, Any]) -> list[dict[str, str]]:
+    """Return canonical soldered and optional wire-list table rows."""
+    _ = layout
+    return [dict(row) for row in WIRE_LIST_SPEC]
+
+
+def generate_simulator_layout_module(layout: dict[str, Any]) -> str:
+    """Emit an ES module wrapping hardware/layout.json with live HTTP fetch and offline fallback."""
+    encoded = json.dumps(layout, indent=2)
+    return "\n".join(
+        [
+            "// SPDX-License-Identifier: MIT OR GPL-2.0-or-later",
+            "// Auto-generated from hardware/layout.json by scripts/generate_hardware_layout_artifacts.py.",
+            f"export const DEFAULT_HARDWARE_LAYOUT = {encoded};",
+            "",
+            "export function resolveLayoutDimensions(layout = DEFAULT_HARDWARE_LAYOUT) {",
+            "  const ref = layout.enclosure.owner_reference_cm;",
+            "  const pb = layout.perfboard;",
+            "  const disp = layout.display;",
+            "  const sideWall = Number(ref.side_wall_cm ?? 0.21);",
+            "  const frontWall = Number(ref.front_wall_cm ?? 0.20);",
+            "  const backWall = Number(ref.back_wall_cm ?? 0.20);",
+            "  const rearUpper = layout.z_stackup?.rear_zones?.upper_zone;",
+            "  const rearAvail = Number(rearUpper?.available_depth_cm ?? 1.74);",
+            "  return {",
+            "    shellWidthCm: Number(ref.width_cm),",
+            "    shellHeightCm: Number(ref.height_cm),",
+            "    shellDepthCm: Number(ref.thickness_cm),",
+            "    cornerRadiusCm: Number(ref.corner_radius_cm ?? 0.90),",
+            "    shellSideWallCm: sideWall,",
+            "    shellFrontWallCm: frontWall,",
+            "    shellBackWallCm: backWall,",
+            "    innerWidthCm: Number((Number(ref.width_cm) - 2 * sideWall).toFixed(2)),",
+            "    innerHeightCm: Number((Number(ref.height_cm) - 2 * sideWall).toFixed(2)),",
+            "    innerDepthCm: Number((Number(ref.thickness_cm) - frontWall - backWall).toFixed(2)),",
+            "    perfboardCols: Number(pb.columns),",
+            "    perfboardRows: Number(pb.rows),",
+            "    perfboardPitchCm: Number(pb.pitch_cm),",
+            "    perfboardWidthCm: Number(pb.width_cm),",
+            "    perfboardHeightCm: Number(pb.height_cm),",
+            "    perfboardThicknessCm: Number(pb.thickness_cm),",
+            "    totalVias: Number(pb.columns) * Number(pb.rows),",
+            "    displayWidthCm: Number(disp.active_area_landscape_cm.width_cm),",
+            "    displayHeightCm: Number(disp.active_area_landscape_cm.height_cm),",
+            "    rearAvailDepthCm: rearAvail,",
+            "  };",
+            "}",
+            "",
+            "export async function loadHardwareLayout() {",
+            '  if (typeof fetch === "function" && typeof window !== "undefined" && window.location?.protocol !== "file:") {',
+            "    try {",
+            '      const resp = await fetch("/hardware/layout.json");',
+            "      if (resp.ok) {",
+            "        return await resp.json();",
+            "      }",
+            "    } catch {",
+            "      // Offline fallback to synchronized SSOT snapshot.",
+            "    }",
+            "  }",
+            "  return DEFAULT_HARDWARE_LAYOUT;",
+            "}",
+            "",
+        ]
+    )
 
 
 def main() -> int:
@@ -916,10 +994,14 @@ def main() -> int:
         writer.writeheader()
         writer.writerows(rows)
 
+    SIM_LAYOUT_JS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    SIM_LAYOUT_JS_PATH.write_text(generate_simulator_layout_module(layout), encoding="utf-8", newline="\n")
+
     print(f"Generated {TOP_SVG_PATH.relative_to(REPO_ROOT)}")
     print(f"Generated {SIDE_SVG_PATH.relative_to(REPO_ROOT)}")
     print(f"Generated {PERFBOARD_DOC_PATH.relative_to(REPO_ROOT)}")
     print(f"Generated {WIRE_CSV_PATH.relative_to(REPO_ROOT)}")
+    print(f"Generated {SIM_LAYOUT_JS_PATH.relative_to(REPO_ROOT)}")
     return 0
 
 

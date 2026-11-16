@@ -4,8 +4,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts import deploy_sd_complete
-from scripts.deploy_to_sd import (
+from scripts import deploy_sd
+from scripts.deploy_sd import (
     copy_single_file,
     deployment_plan,
     deployment_tasks,
@@ -130,15 +130,15 @@ class TestSdDeployment(unittest.TestCase):
             self.assertEqual(list(root.glob(".bmo-copy-*.tmp")), [])
 
     def test_deploy_sd_complete_uses_bmo_index_v3_and_rejects_unsupported_extensions(self):
-        self.assertNotIn(".a78", deploy_sd_complete.EXT_MAP)
-        self.assertNotIn(".sgx", deploy_sd_complete.EXT_MAP)
+        self.assertNotIn(".a78", deploy_sd.EXT_MAP)
+        self.assertNotIn(".sgx", deploy_sd.EXT_MAP)
 
         with tempfile.TemporaryDirectory() as temp_dir:
             dest_root = Path(temp_dir)
             games = [("gb/Mario.gb", 2, 1024, 0xAABBCCDD), ("nes/Contra.nes", 4, 2048, 0x11223344)]
             keyed = {make_rom_key("gb/Mario.gb").lower()}
-            with patch.object(deploy_sd_complete, "DEST_ROOT", dest_root):
-                deploy_sd_complete.generate_binary_index(games, keyed)
+            with patch.object(deploy_sd, "DEST_ROOT", dest_root):
+                deploy_sd.generate_binary_index(games, keyed)
 
             payload = (dest_root / ".bmo_index").read_bytes()
             magic, ver, count, entry_size, str_bytes, crc, ts, tot_lo, tot_hi, fp = struct.unpack(
@@ -154,7 +154,7 @@ class TestSdDeployment(unittest.TestCase):
             self.assertEqual(tot_hi, 0)
             self.assertEqual(
                 fp,
-                deploy_sd_complete.catalog_fingerprint(2, str_bytes, 3072, 0, crc),
+                deploy_sd.catalog_fingerprint(2, str_bytes, 3072, 0, crc),
             )
             first_entry = struct.unpack("<IHBBIII", payload[44:64])
             # Contra.nes sorts before Mario.gb by basename.
