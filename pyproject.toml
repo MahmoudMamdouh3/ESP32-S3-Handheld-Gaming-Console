@@ -14,7 +14,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "clang-tidy==22.1.8",
-    "cppcheck==1.5.1",
+    "cppcheck==1.5.3",
     "lizard>=1.17.13,<2.0.0",
     "mypy>=1.14.0,<3.0.0",
     "ruff>=0.8.0,<1.0.0",
