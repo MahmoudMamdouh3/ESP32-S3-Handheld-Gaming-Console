@@ -1,9 +1,19 @@
 {
-  "description": "Regression budgets relative to recorded Phase 1 baseline_before.json (and absolute bounds).",
+  "description": "Regression budgets relative to recorded Phase 1 baseline_before.json (and tightened Phase 5 caps).",
   "max_regression_ratio": 1.25,
   "absolute_caps": {
-    "simulator.bmo_face_600_frames_imagedata_bytes": 185000000,
-    "simulator.gb_render_600_frames_imagedata_bytes": 125000000,
-    "simulator.sync_startup_script_bytes": 3500000
+    "firmware_host.bmo_face_sdf_snapshot_320x240_us": 650.0,
+    "firmware_host.metadata_resolve_100_on_10k_us": 500.0,
+    "firmware_host.catalog_find_500_on_10k_us": 300.0,
+    "firmware_host.boxart_legacy_unique_1k_us": 1000.0,
+    "firmware_host.pico_128x128_nibble_60frames_us": 900.0,
+    "simulator.bmo_face_600_frames_imagedata_bytes": 0,
+    "simulator.bmo_face_600_frames_imagedata_calls": 0,
+    "simulator.gb_render_600_frames_imagedata_bytes": 0,
+    "simulator.gb_render_600_frames_imagedata_calls": 0,
+    "simulator.sync_startup_script_bytes": 50000,
+    "simulator.sync_startup_script_count": 1,
+    "scripts.convert_covers_ms": 350.0,
+    "scripts.deploy_sd_incremental_ms": 300.0
   }
 }

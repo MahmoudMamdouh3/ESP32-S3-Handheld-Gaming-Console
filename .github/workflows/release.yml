@@ -26,13 +26,13 @@ jobs:
           python-version: "3.12"
           cache: "pip"
           cache-dependency-path: |
-            requirements.txt
+            requirements.lock
 
       - name: Install Python verification tools
-        run: python -m pip install --disable-pip-version-check -r requirements.txt
+        run: python -m pip install --disable-pip-version-check -r requirements.lock
 
       - name: Run static checks and link verification
-        run: python tasks.py check --no-tests
+        run: python tasks.py check --no-tests --strict-lint
 
       - name: Setup Arduino CLI
         uses: arduino/setup-arduino-cli@b82ff2bde1fb8fbbe4abfd3a041cd2ff675dc0dc # v2.0.0

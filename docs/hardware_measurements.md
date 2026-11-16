@@ -20,7 +20,7 @@ Store completed records under `docs/hardware-measurements/` using `YYYY-MM-DD-sh
 8. FRAM is not installed. GPIO43/44 remain the proposal in `config.h`; no FRAM probe or persistence claim is valid until the exact part, voltage, address, and wiring are recorded.
 9. Measure potential flash-cache and Octal-PSRAM latency effects for relocated lookup/state tables (`NOT_TESTED` performance risk):
    - **Atari 2600 (`Stella2014`) `M6502::ourInstructionCycleTable[256]` (`1,024 B`):** moved from DRAM `.data` to flash `.flash.rodata` (`const`) to save internal DRAM. Verify Atari 2600 600-frame `p95`/`p99` stays inside the `16,667 us` budget after flash-cache cold misses.
-   - **Moved/constant palettes & DOOM palette rebuild:** verify `DisplayEmu::NES_PALETTE[64]` (in `.flash.rodata`) during NES 600-frame capture and unconditional 256-entry `s_doomPalette` conversion (`Ui::rebuildDoomPalette`, replacing cached `s_lastColors[256]`) during DOOM capture; confirm no frame-time regression relative to budget.
+   - **Moved/constant palettes & DOOM palette rebuild:** verify `DisplayEmu::NES_PALETTE[64]` (in `.flash.rodata`) during NES 600-frame capture and 256-entry `s_doomPalette` updates (`DoomPaletteCache::rebuildDoomPaletteIfChanged` gated by `hashDoomPaletteSource`) during DOOM capture; confirm no frame-time regression relative to budget.
    - **Recent-history buffer (`s_recentHistory`, `2,560 B`):** moved to Octal PSRAM (`MALLOC_CAP_SPIRAM`) with DRAM fallback; confirm menu launch and catalog load latency on cold boot.
 
 ## Firmware telemetry

@@ -29,13 +29,17 @@ jobs:
           python-version: "3.12"
           cache: "pip"
           cache-dependency-path: |
-            requirements.txt
+            requirements.lock
 
       - name: Install Python verification dependencies
-        run: python -m pip install --disable-pip-version-check -r requirements.txt
+        run: python -m pip install --disable-pip-version-check -r requirements.lock
 
-      - name: Run fast host validation and static checks
-        run: python tasks.py check --no-tests
+      - name: Run fast host validation, complexity, cppcheck, and claims checks
+        run: |
+          python tasks.py check --no-tests --strict-lint
+          python -m tools.guardian audit --cppcheck
+          lizard -C 25 -L 100 --warnings_only firmware/BmoGameboy/src/app firmware/BmoGameboy/src/hal firmware/BmoGameboy/src/storage firmware/BmoGameboy/src/ui firmware/BmoGameboy/src/cores simulator/simulator.js simulator/bmo_3d_console.js simulator/wasm_playtest_engine.js simulator/js scripts tools/guardian/core tools/tasks tests/host benchmarks
+          python scripts/extract_claims.py --fail-on-false
 
   host-tests:
     name: Host and WASI unit tests
@@ -49,10 +53,10 @@ jobs:
           python-version: "3.12"
           cache: "pip"
           cache-dependency-path: |
-            requirements.txt
+            requirements.lock
 
       - name: Install host test dependencies
-        run: python -m pip install --disable-pip-version-check -r requirements.txt
+        run: python -m pip install --disable-pip-version-check -r requirements.lock
 
       - name: Cache WASI SDK 34
         id: wasi-cache
@@ -86,6 +90,9 @@ jobs:
       - name: Run Guardian unit tests
         run: python -m unittest discover -s tools/guardian/tests -v
 
+      - name: Run host & simulator benchmark budget gate
+        run: python tasks.py bench --check
+
   firmware-build:
     name: ESP32-S3 firmware profiles and size gate
     needs: lint
@@ -99,10 +106,10 @@ jobs:
           python-version: "3.12"
           cache: "pip"
           cache-dependency-path: |
-            requirements.txt
+            requirements.lock
 
       - name: Install Python tools
-        run: python -m pip install --disable-pip-version-check -r requirements.txt
+        run: python -m pip install --disable-pip-version-check -r requirements.lock
 
       - name: Setup Arduino CLI
         uses: arduino/setup-arduino-cli@b82ff2bde1fb8fbbe4abfd3a041cd2ff675dc0dc # v2.0.0

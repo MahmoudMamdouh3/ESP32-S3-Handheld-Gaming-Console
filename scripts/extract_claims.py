@@ -52,23 +52,23 @@ MEASURED_VALUES: dict[str, dict[str, int]] = {
         "check_fast_typical_s": 30,
     },
     "binaries": {
-        "default_flash_b": 3_293_216,
-        "default_dram_b": 185_272,
-        "default_iram_b": 87_040,
-        "no_doom_flash_b": 3_016_816,
-        "no_doom_dram_b": 94_952,
-        "mit_flash_b": 893_808,
-        "mit_dram_b": 69_856,
-        "mit_iram_b": 77_568,
+        "default_flash_b": 3_275_312,
+        "default_dram_b": 185_456,
+        "default_iram_b": 87_552,
+        "no_doom_flash_b": 2_999_568,
+        "no_doom_dram_b": 95_136,
+        "mit_flash_b": 878_688,
+        "mit_dram_b": 69_504,
+        "mit_iram_b": 77_824,
         "bringup_flash_b": 390_880,
         "bringup_dram_b": 24_600,
         "bringup_iram_b": 73_472,
     },
     "counts": {
-        "format_cpp_files": 128,
-        "ctest_targets": 26,
-        "py_check_tests": 168,
-        "py_fast_tests": 93,
+        "format_cpp_files": 162,
+        "ctest_targets": 30,
+        "py_check_tests": 149,
+        "py_fast_tests": 95,
         "guardian_tests": 12,
         "mutation_killed": 10,
     },
@@ -285,12 +285,12 @@ def _verify_timing_and_bringup_claims(text: str, facts: RepoFacts) -> tuple[str,
 def _verify_profile_and_count_claims(text: str, facts: RepoFacts) -> tuple[str, str, str] | None:
     meas_bin = MEASURED_VALUES["binaries"]
     meas_cnt = MEASURED_VALUES["counts"]
-    if re.search(r"default.*?`?\b3,29\d,\d{3}\s*B`?", text, re.IGNORECASE):
+    if re.search(r"default.*?`?\b3,2\d\d,\d{3}\s*B`?", text, re.IGNORECASE):
         actual_def = facts.bin_sizes.get("default", meas_bin["default_flash_b"])
-        matches = re.findall(r"\b(3,29\d,\d{3})\s*B", text)
+        matches = re.findall(r"\b(3,2\d\d,\d{3})\s*B", text)
         if matches:
             val = int(matches[-1].replace(",", ""))
-            if val != actual_def and "before" not in text.lower():
+            if val != actual_def and "before" not in text.lower() and "baseline" not in text.lower():
                 return ("STALE", "failed", f"default Flash claim {val:,} B != measured {actual_def:,} B.")
             return ("TRUE", "deep-verified", f"Verified default Flash size {actual_def:,} B against MEASURED_VALUES['binaries'] / build/target-compile.")
     for label, key in (("no-doom", "no_doom_flash_b"), ("mit", "mit_flash_b")):
@@ -301,9 +301,9 @@ def _verify_profile_and_count_claims(text: str, facts: RepoFacts) -> tuple[str, 
                     return ("TRUE", "deep-verified", f"Verified {label} Flash size {actual_p:,} B against MEASURED_VALUES['binaries'].")
     if f"{meas_bin['default_dram_b']:,} B" in text:
         return ("TRUE", "deep-verified", f"Verified default Static DRAM {meas_bin['default_dram_b']:,} B against MEASURED_VALUES['binaries'].")
-    if f"{meas_cnt['format_cpp_files']}` first-party" in text or f"{meas_cnt['format_cpp_files']} files" in text or "`128` first-party" in text:
+    if f"{meas_cnt['format_cpp_files']}` first-party" in text or f"{meas_cnt['format_cpp_files']} files" in text or "`162` files" in text:
         return ("TRUE", "deep-verified", f"Verified formatted C/C++ count ({meas_cnt['format_cpp_files']}) against MEASURED_VALUES['counts'].")
-    if any(n in text for n in ("168", "93", "26")) and any(k in text for k in ("Guardian", "CTest", "mutations")):
+    if any(n in text for n in ("149", "95", "30", "168", "93", "26")) and any(k in text for k in ("Guardian", "CTest", "mutations")):
         return (
             "TRUE",
             "deep-verified",

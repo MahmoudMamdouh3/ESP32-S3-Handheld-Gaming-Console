@@ -25,7 +25,7 @@ Defined in [`firmware/BmoGameboy/src/storage/rom_index.h`](../firmware/BmoGamebo
 
 ## Path Keys (`path_key.h` / `scripts/rom_key.py`)
 
-Both firmware and `scripts/deploy_sd_complete.py` compute deterministic path keys from normalized relative ROM paths: `<sanitized_prefix>_<crc32_hex>`. Keys reduce filename collisions across nested folders (`HOST_TESTED` C++/Python parity via `tests/test_rom_key.py`).
+Both firmware and `scripts/deploy_sd.py` compute deterministic path keys from normalized relative ROM paths: `<sanitized_prefix>_<crc32_hex>`. Keys reduce filename collisions across nested folders (`HOST_TESTED` C++/Python parity via `tests/test_rom_key.py`).
 
 ## Saves, States, Favorites & Art
 
@@ -40,7 +40,6 @@ Both firmware and `scripts/deploy_sd_complete.py` compute deterministic path key
 
 ## Local SD Deployment Tooling
 
-- Copy local user-owned ROMs to a FAT32 card using:
-  - `python scripts/deploy_to_sd.py --destination F:\` (dry-run by default; requires `--apply` and matching volume label to write)
-  - `python scripts/deploy_sd_complete.py` (builds `BMOIDX03` index with 4 KiB ROM prefix CRCs + keyed covers; honors `BMO_DATA_DIR` environment override when data is outside the repository root)
+- Copy local user-owned ROMs, build the `BMOIDX03` index with 4 KiB ROM prefix CRCs, and convert keyed covers to a FAT32 card using the unified deployer:
+  - `python scripts/deploy_sd.py --destination F:\` (dry-run by default; requires `--apply` and matching volume label to write; honors `BMO_DATA_DIR` environment override when data is outside the repository root)
 - No commercial ROMs or scraper tools are included in this repository (`BMO_ENABLE_BAKED_ROMS=0` by default).

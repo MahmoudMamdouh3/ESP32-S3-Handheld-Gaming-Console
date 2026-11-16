@@ -1,6 +1,6 @@
 # Performance, Analytical Budgets, and Benchmarking Guide
 
-- **Updated:** `2026-11-15` (`HOST_TESTED` / `TARGET_COMPILED` analytical model; physical capture pending)
+- **Updated:** `2026-11-16` (`HOST_TESTED` / `TARGET_COMPILED` analytical model; physical capture pending)
 
 ## 1. Evidence Classification
 
@@ -9,7 +9,7 @@ All timing and memory figures in this repository strictly distinguish four level
 1. `NOT_TESTED` — analytical calculation (such as `bytes * 8 / SPI_Hz`) or source-configured constant not executed on physical hardware.
 2. `HOST_TESTED` — measured or checked on host/CI runners (`tests/`, `tests/host/`, `tests/test_native_cores_execution.py`, `python -m tools.guardian bench-host`). Host execution does **not** predict ESP32-S3 speed.
 3. `TARGET_COMPILED` — Flash, IRAM, and static DRAM numbers emitted by `xtensa-esp32s3` linking (`python tasks.py build` + `python tasks.py size`).
-4. `HARDWARE_TESTED` — physical serial logs, 600-frame telemetry windows, multimeter readings, or oscilloscope captures from the soldered ESP32-S3 perfboard recorded in [`docs/hardware_measurements.md`](hardware_measurements.md). **None are recorded as of 2026-11-15.**
+4. `HARDWARE_TESTED` — physical serial logs, 600-frame telemetry windows, multimeter readings, or oscilloscope captures from the soldered ESP32-S3 perfboard recorded in [`docs/hardware_measurements.md`](hardware_measurements.md). **None are recorded as of 2026-11-16 (`0` records).**
 
 > **Historical Note:** Legacy issue identifiers `PERF-01` through `PERF-25` from early development notes are retired and are not an active benchmark ledger.
 
@@ -66,10 +66,10 @@ The optional `BmoProfiler` service (`python tasks.py build --profile profiler-co
    *(Never run `telemetry_plotter.py` without `--input` for reporting; no-input mode emits synthetic demonstration data only.)*
 4. Record electrical readings, SPI `80 MHz` vs `40 MHz` panel stability, FreeRTOS stack high-water marks (in 4-byte words), and PSRAM measurements in [`docs/hardware_measurements.md`](hardware_measurements.md) and [`docs/benchmarks/README.md`](benchmarks/README.md). Look closely at the pass criteria (`>= 99%` of `>= 600` frames within `target_us` and `p99_us <= target_us`) before promoting any platform from `Experimental` to `Supported` in [`docs/compatibility.md`](compatibility.md).
 
-## 6. Analytical Models & Deferred Optimizations (`NOT_TESTED` Until Bring-Up)
+## 6. Analytical Models & Hardware-Gated Items (`NOT_TESTED` Until Bring-Up)
 
 - **Cold Boot & Catalog Scan Scaling (`BMOIDX03`):**
-  - *Cold boot to menu:* Currently dominated by a blocking `3,000 ms` boot splash (`bmo_app.cpp`) plus ST7789 init (`~150–250 ms`), SD mount, and `BMOIDX03` load. Post-bring-up target budget on a warm index is **`<= 3.0 s`** total boot-to-menu (requires converting the splash delay to a non-blocking timer, `F11`).
+  - *Cold boot to menu:* `bmo_app.cpp` renders the boot splash immediately prior to SD mount and paces the splash with a non-blocking `3,000 ms` deadline timer skippable on `A`/`START`/`SELECT` (combined with ST7789 init, SD mount, and `BMOIDX03` load). Real cold-boot wall-clock target (`<= 3.0 s`) remains **`NOT_TESTED`** on physical hardware.
   - *Catalog scan estimates (`25 MHz` SD SPI; `~56 B/entry` in `BMOIDX03` vs FAT32 traversal):*
     - `256` ROMs (`~14 KiB` index): `~5 ms` indexed read vs `~100–300 ms` cold FAT32 scan (analytical estimate, `NOT_TESTED`).
     - `2,500` ROMs (`~140 KiB` index): `~45 ms` indexed read vs `~1–3 s` cold FAT32 scan (analytical estimate, `NOT_TESTED`).
@@ -77,7 +77,7 @@ The optional `BmoProfiler` service (`python tasks.py build --profile profiler-co
 - **Input-to-Display Latency (`NOT_TESTED`):** `20 ms` debounce (`buttons.h`) + up to `16.7 ms` emulation step (`60 Hz`) + `10.4–15.4 ms` Core 0 SPI write (`80 MHz`) gives an analytical `~47–67 ms` button-to-glass window (`+10–15 ms` if running at `40 MHz` Safe Mode).
 - **Menu Frame Cost, Dirty-Rectangles & Power-Aware Scaling (`NOT_TESTED`):**
   - *Full-screen menu push (`320×240` = `153,600 B`):* `15.36 ms` wire time at `80 MHz` leaves `7.8%` wire headroom inside a `16.67 ms` `60 Hz` budget (`30.72 ms` at `40 MHz`, max `~32.5 FPS`).
-  - *Dirty-rect + `30 FPS` menu cap (Deferred):* Restricting idle mascot draws to the `160×160` central region (`51,200 B`, `5.12 ms` @ `80 MHz`) and capping menu loops at `30 FPS` (`33.33 ms`) cuts menu SPI duty cycle by `~3×–6×`.
+  - *Dirty-frame skip (implemented) vs sub-rect / `30 FPS` cap:* Signature-based menu dirty-skip avoids redundant `320×240` uploads when UI state is unchanged (`TARGET_COMPILED`), while optional `160×160` central-region mascot updates (`51,200 B`, `5.12 ms` @ `80 MHz`) and `30 FPS` menu capping remain tunable post-bring-up.
   - *Power-aware scaling (Deferred / `Decision 6`):* Lowering ESP32-S3 CPU clock (`setCpuFrequencyMhz`) during static menus/mascot sleep and dimming/gating `BLK` via a future `GPIO 2` transistor stage (**Decision 6**) are queued until USB/bench current draw is measured.
 - **Adaptive Frameskip Evaluation:** Firmware currently implements **no** automatic frameskip (`SELECT + RIGHT` fast-forward only skips frame-pacing sleep). Implementing render-skip (`skipDisplay`) for heavy 16-bit cores (`SNES`, `Genesis`, `PCE`, `OSWAN`, `NGP`) involves trading visual `30 FPS` smoothness against audio/timing determinism and is deferred until `BMO_PROFILE=1` traces show which cores miss `16,667 us` on silicon.
 - **Display SPI `vs.` Future Revision SDMMC Note:** Sharing FSPI (`GPIO 11/12/15`) between display and SD serializes reads/writes via `SpiArbiter`. Future PCB revisions could move microSD onto a dedicated 4-bit `SDMMC` bus (freeing FSPI exclusively for the panel) without changing emulator interfaces.

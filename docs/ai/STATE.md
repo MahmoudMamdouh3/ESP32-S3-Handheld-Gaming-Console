@@ -1,6 +1,6 @@
 # Project State Summary for AI Agents (`docs/ai/STATE.md`)
 
-- **Branch / Baseline:** `techlead/audit-2` (branched from `main` @ `d8d4b5e`, audited `2026-11-15`).
+- **Branch / Baseline:** `refactor/principal-overhaul` (branched from `techlead/audit-2` @ `0b32109`, audited `2026-11-16`).
 - **Hardware Target:** Hand-soldered `ESP32-S3-DevKitC-1-N16R8` (`44-pin` carrier, `2.54 × 6.33 cm`, carrying `ESP32-S3-WROOM-1-N16R8` with 16 MB **Quad SPI** flash + 8 MB **Octal SPI** PSRAM) on a `31 × 46` hole (`7.87 × 11.68 cm`, `0.254 cm` pitch) perfboard inside an `8.80 × 12.40 × 3.20 cm` BMO shell ([`hardware/layout.json`](../../hardware/layout.json)).
 - **Display & Storage:** `2.4"` (`6.10 cm` diagonal, `240×320`) ST7789VW SPI TFT + MicroSD slot sharing FSPI (`SCK=12`, `MOSI=11`, `MISO=15`, `TFT_CS=10`, `TFT_DC=8`, `TFT_RST=9`, `SD_CS=13`) serialized via `SpiArbiter::ScopedLock`.
 - **Buttons:** 8 soldered (`INPUT_PULLUP`: `UP=4`, `DOWN=5`, `LEFT=6`, `RIGHT=7`, `A=16`, `B=17`, `START=18`, `SELECT=21`); 4 configured unsoldered expansion (`X=14`, `Y=42`, `L=47`, `R=48`).

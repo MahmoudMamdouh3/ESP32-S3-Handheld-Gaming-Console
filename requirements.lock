@@ -1,0 +1,20 @@
+# Pinned Python runtime and verification dependencies for BMO Handheld (ESP32-S3-N16R8).
+# Derived from requirements.txt, hardware/enclosure/requirements.txt, requirements-dev.txt, and pyproject.toml.
+ast-serialize==0.13.1
+clang-tidy==22.1.8
+cppcheck==1.5.1
+importlib-metadata==9.0.0
+librt==0.16.0
+lizard==1.26.0
+manifold3d==3.0.1
+mypy==2.4.1
+mypy-extensions==1.2.0
+numpy==2.2.6
+pathspec==1.1.1
+pillow==12.2.0
+pygments==2.20.0
+ruff==0.17.5
+tomli==2.4.1 ; python_version < "3.11"
+trimesh==4.6.8
+typing-extensions==4.15.0
+zipp==4.1.0
