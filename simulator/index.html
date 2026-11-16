@@ -72,6 +72,8 @@
         </div>
         <div class="stage-toolbar-group">
           <label class="control-pill" for="rom-file-upload" id="btn-toolbar-load-rom" style="cursor: pointer;">+ Load ROM</label>
+          <label class="control-pill" for="rom-folder-upload" id="btn-toolbar-load-folder" style="cursor: pointer;">+ Load Folder (F:\)</label>
+          <input type="search" id="rom-search-input" class="rom-search-input" placeholder="Search ROMs..." aria-label="Filter loaded ROM titles">
           <button class="control-pill" id="btn-internals-mode" aria-pressed="false" aria-label="Open hardware internals teardown and beginner soldering guide">Dissect / Internals</button>
           <button class="control-pill" id="btn-bmo-mode" aria-pressed="false" aria-label="Toggle BMO Mascot testing mode">BMO Mode</button>
           <button class="control-pill" id="btn-toggle-viewmode" aria-label="Switch between 3D console model and flat layout">2D Flat View</button>
@@ -535,16 +537,22 @@
       <!-- WebSerial SD Manager & ROM Dropzone Card -->
       <div class="panel-card" id="webserial-sd-manager">
         <div class="card-header">
-          <div class="card-title">🔌 Device Serial Connection</div>
-          <div class="badge-counter" id="webserial-status">Offline</div>
+          <div class="card-title">🔌 Local ROMs &amp; Device Connection</div>
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <div class="badge-counter" id="rom-library-count-badge">7 ROMs</div>
+            <div class="badge-counter" id="webserial-status">Offline</div>
+          </div>
         </div>
         <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+          <button class="control-pill" id="btn-rescan-local-library">Rescan Local ROMs</button>
+          <label class="control-pill" for="rom-folder-upload" style="cursor: pointer;">+ Load Folder (F:\ / games)</label>
+          <label class="control-pill" for="rom-file-upload" style="cursor: pointer;">+ Load ROM File</label>
           <button class="control-pill" id="btn-webserial-connect">Connect Device (WebSerial)</button>
-          <label class="control-pill" for="rom-file-upload" style="cursor: pointer;">+ Load Game ROM (.gb, .gbc, .nes, .sms, .gg, .a26, .col)</label>
           <input type="file" id="rom-file-upload" accept=".gb,.gbc,.nes,.sms,.gg,.a26,.col" style="display: none;" multiple>
+          <input type="file" id="rom-folder-upload" webkitdirectory directory multiple style="display: none;">
         </div>
         <div id="webserial-log" style="margin-top: 8px; font-family: monospace; font-size: 11px; opacity: 0.85;">
-          Play built-in BMO homebrew demos immediately or load/drop a .gb, .gbc, .nes, .sms, .gg, .a26, or .col ROM. Serial currently only opens a port; it does not read or write SD-card files.
+          Run via 'python simulator/run_simulator.py' for automatic F:\ / games / boxart discovery, or click '+ Load Folder (F:\ / games)' to mount your local collection directly.
         </div>
       </div>
 

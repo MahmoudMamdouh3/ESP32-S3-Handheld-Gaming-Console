@@ -29,6 +29,7 @@ MODULE_ORDER: tuple[str, ...] = (
     "./bmo_3d_console.js",
     "./js/museum_icons.js",
     "./js/museum.js",
+    "./js/local_library_client.js",
     "./js/webserial.js",
     "./js/bmo_mode.js",
     "./js/internals.js",

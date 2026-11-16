@@ -1384,3 +1384,25 @@ kbd.key-cap {
 #internals-expansion-warning[data-state="conflict"] .telemetry-value {
   color: #ff99a2;
 }
+
+.rom-search-input {
+  min-width: 140px;
+  max-width: 185px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bezel-lens);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+}
+
+.rom-search-input::placeholder {
+  color: var(--text-dim);
+}
+
+.rom-search-input:focus {
+  border-color: var(--accent-bmo);
+  box-shadow: 0 0 0 2px rgba(95, 180, 156, 0.2);
+}

@@ -1,15 +1,18 @@
 import ast
 import http.client
 import io
+import json
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import unittest
 from pathlib import Path
+from unittest import mock
 
-from simulator import run_simulator
+from simulator import local_library, run_simulator
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SIM_DIR = REPO_ROOT / "simulator"
@@ -515,6 +518,134 @@ console.log("CLASSIC_BUNDLE_CONTROLS_PASS");
             httpd.shutdown()
             httpd.server_close()
             thread.join(timeout=2)
+
+    def test_local_library_discovery_raw_cover_and_route_safety(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_root = Path(tmp_dir)
+            gb_dir = tmp_root / "games"
+            hd_dir = tmp_root / "roms" / "boxart" / "hd"
+            raw_box_dir = tmp_root / "roms" / "boxart"
+            gb_dir.mkdir(parents=True, exist_ok=True)
+            hd_dir.mkdir(parents=True, exist_ok=True)
+            raw_box_dir.mkdir(parents=True, exist_ok=True)
+
+            (gb_dir / "Hero Quest.gb").write_bytes(b"\x00\xc3\x50\x01" + b"\x00" * 128)
+            (gb_dir / "Pixel Rpg.sfc").write_bytes(b"\x78\x9c" + b"\x01" * 128)
+            tiny_png = (
+                b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde"
+                b"\x00\x00\x00\x0cIDATx\x9cc\xf8\xcf\xc0\x00\x00\x03\x01\x01\x00\x18\xdd\x8d\xb0\x00\x00\x00\x00IEND\xaeB`\x82"
+            )
+            (hd_dir / "Hero Quest.png").write_bytes(tiny_png)
+            raw_key = local_library.make_rom_key("sfc/Pixel Rpg.sfc")
+            (raw_box_dir / f"{raw_key}.raw").write_bytes(b"\xf8\x00" * 4096)
+
+            with mock.patch.object(local_library, "_discover_windows_gamelib_drives", return_value=[]):
+                catalog = local_library.build_local_library_catalog(tmp_root)
+            self.assertEqual(catalog.total_roms, 2)
+            self.assertEqual(catalog.matched_covers, 2)
+            payload = json.loads(catalog.manifest_bytes.decode("utf-8"))
+            by_title = {row[1]: row for row in payload["entries"]}
+            self.assertIn("Hero Quest", by_title)
+            self.assertIn("Pixel Rpg", by_title)
+
+            prev_catalog = run_simulator._CACHED_CATALOG
+            run_simulator._CACHED_CATALOG = catalog
+            try:
+                h_manifest = _TestableHandler("GET", "/local-library/manifest.json")
+                h_manifest.do_GET()
+                resp_text = h_manifest.connection.written.getvalue().decode("utf-8", errors="ignore")
+                self.assertIn('"totalRoms":2', resp_text)
+
+                rom_tok = by_title["Hero Quest"][3]
+                h_rom = _TestableHandler("GET", f"/local-library/rom/{rom_tok}")
+                h_rom.do_GET()
+                rom_raw = h_rom.connection.written.getvalue()
+                self.assertIn(b"\x00\xc3\x50\x01", rom_raw)
+
+                png_tok = by_title["Hero Quest"][4]
+                h_png = _TestableHandler("GET", f"/local-library/cover/{png_tok}")
+                h_png.do_GET()
+                self.assertIn(b"Content-Type: image/png", h_png.connection.written.getvalue())
+
+                raw_tok = by_title["Pixel Rpg"][4]
+                h_bmp = _TestableHandler("GET", f"/local-library/cover/{raw_tok}")
+                h_bmp.do_GET()
+                bmp_resp = h_bmp.connection.written.getvalue()
+                self.assertIn(b"Content-Type: image/bmp", bmp_resp)
+                self.assertIn(b"\r\n\r\nBM", bmp_resp)
+
+                for bad_route in ("/local-library/rom/../../AGENTS.md", "/local-library/cover/notatoken", "/local-library/unknown"):
+                    h_bad = _TestableHandler("GET", bad_route)
+                    h_bad.do_GET()
+                    status_line = h_bad.connection.written.getvalue().decode("ascii", errors="ignore").splitlines()[0]
+                    self.assertIn("404 ", status_line, msg=bad_route)
+            finally:
+                run_simulator._CACHED_CATALOG = prev_catalog
+
+    def test_folder_ingestion_matches_raw_and_png_boxart_lazily_in_node(self):
+        node_bin = shutil.which("node")
+        if not node_bin:
+            self.skipTest("Node.js not installed")
+
+        script = r"""
+import { ingestLazyFolderFiles, makeRomKeyJs, decodeRawBgr565ToBmpBlob } from "./simulator/js/local_library_client.js";
+let eagerRomReads = 0;
+const gbFile = {
+  name: "Mario Demo.gb",
+  size: 16384,
+  webkitRelativePath: "F/gb/Mario Demo.gb",
+  async arrayBuffer() { eagerRomReads++; return new Uint8Array(16384).buffer; },
+};
+const nesFile = {
+  name: "Zelda Demo.nes",
+  size: 16400,
+  webkitRelativePath: "F/nes/Zelda Demo.nes",
+  async arrayBuffer() { eagerRomReads++; return new Uint8Array(16400).buffer; },
+};
+const rawBuf = new Uint8Array(8192);
+for (let i = 0; i < 8192; i += 2) { rawBuf[i] = 0xf8; rawBuf[i + 1] = 0x00; }
+const rawCover = {
+  name: `${makeRomKeyJs("gb/Mario Demo.gb")}.raw`,
+  size: 8192,
+  webkitRelativePath: `F/boxart/${makeRomKeyJs("gb/Mario Demo.gb")}.raw`,
+  async arrayBuffer() { return rawBuf.buffer; },
+};
+const hdCover = {
+  name: "Zelda Demo.png",
+  size: 120,
+  webkitRelativePath: "F/boxart/hd/Zelda Demo.png",
+  async arrayBuffer() { return new Uint8Array(120).buffer; },
+};
+const fakeSim = {
+  selectedConsoleIndex: 0,
+  selectedGameIndex: 0,
+  gameLibrary: { ROM_FAVORITES: [], ROM_GB: [], ROM_NES: [] },
+  rebuildFavoritesInDatabase(db) { db.ROM_FAVORITES = []; },
+  markRenderDirty() {},
+  showSimulatorMessage(m) { this._msg = m; },
+};
+const count = ingestLazyFolderFiles(fakeSim, [gbFile, nesFile, rawCover, hdCover]);
+if (count !== 2 || eagerRomReads !== 0) {
+  throw new Error(`Expected lazy ingestion of 2 ROMs with 0 eager reads, got count=${count} reads=${eagerRomReads}`);
+}
+if (!fakeSim.gameLibrary.ROM_GB[0]?.coverRawFile) throw new Error("Missing matched .raw cover for Mario Demo");
+if (!fakeSim.gameLibrary.ROM_NES[0]?.coverFile) throw new Error("Missing matched .png cover for Zelda Demo");
+const bmpBlob = decodeRawBgr565ToBmpBlob(rawBuf);
+const bmpBytes = new Uint8Array(await bmpBlob.arrayBuffer());
+if (bmpBytes.length !== 12342 || bmpBytes[0] !== 0x42 || bmpBytes[1] !== 0x4d) {
+  throw new Error(`Invalid BMP output: len=${bmpBytes.length}`);
+}
+console.log("LAZY_FOLDER_BOXART_PASS");
+"""
+        proc = subprocess.run(
+            [node_bin, "--input-type=module", "-e", script],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+        self.assertEqual(proc.returncode, 0, msg=f"{proc.stderr}\n{proc.stdout}")
+        self.assertIn("LAZY_FOLDER_BOXART_PASS", proc.stdout)
 
 
 if __name__ == "__main__":

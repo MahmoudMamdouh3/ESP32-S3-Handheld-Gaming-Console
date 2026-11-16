@@ -92,7 +92,7 @@ Compact structural map for AI agents and contributors. Regenerate via `python sc
 | Script | Lines | Purpose |
 | :--- | ---: | :--- |
 | [`scripts/build_wasm_cores.py`](../../scripts/build_wasm_cores.py) | `324` | Compile firmware emulator sources used by browser gameplay to WebAssembly. |
-| [`scripts/bundle_simulator.py`](../../scripts/bundle_simulator.py) | `151` | Bundle simulator ES modules into a classic defer script for both http:// and file:// exe |
+| [`scripts/bundle_simulator.py`](../../scripts/bundle_simulator.py) | `152` | Bundle simulator ES modules into a classic defer script for both http:// and file:// exe |
 | [`scripts/check_markdown_links.py`](../../scripts/check_markdown_links.py) | `87` | Verify local Markdown links and reject file:// URIs. |
 | [`scripts/color_calc.py`](../../scripts/color_calc.py) | `52` | scripts/color_calc.py — RGB888 <-> Byte-Swapped BGR565 ST7789 Wire Format Calculator |
 | [`scripts/convert_covers.py`](../../scripts/convert_covers.py) | `309` | scripts/convert_covers.py — Local Box Art Resampler & Multi-Target BGR565 Converter |

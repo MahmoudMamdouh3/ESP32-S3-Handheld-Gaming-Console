@@ -3,6 +3,7 @@
  * WebSerial port connection helper and browser ROM upload/dropzone ingestion.
  */
 import { CONSOLES_LIST, MAX_BROWSER_ROM_SIZE } from "./constants.js";
+import { ingestLazyFolderFiles, isFolderOrBatchUpload } from "./local_library_client.js";
 
 const EXT_TO_SYSTEM = {
   ".gb": { systemId: "ROM_GB", console: "GB" },
@@ -38,9 +39,11 @@ export const webserialMethods = {
 
     async ingestUploadedRoms(fileList) {
       if (!fileList || fileList.length === 0) return 0;
+      const files = Array.from(fileList);
+      if (isFolderOrBatchUpload(files)) return ingestLazyFolderFiles(this, files);
       const added = [];
       const rejected = [];
-      for (const file of Array.from(fileList)) {
+      for (const file of files) {
         const dot = file.name.lastIndexOf(".");
         const ext = dot >= 0 ? file.name.slice(dot).toLowerCase() : "";
         const route = EXT_TO_SYSTEM[ext];

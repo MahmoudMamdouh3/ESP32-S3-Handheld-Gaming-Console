@@ -41,7 +41,7 @@ Defined cleanly in [`tools/tasks/__init__.py`](../tools/tasks/__init__.py) and c
 
 | Profile | Extra Preprocessor Flags | Output Build Directory | Platforms & Licensing Status | Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| `default` | *(none; inherits `feature_flags.h` defaults)* | `build/target-compile/` | All `15` platforms (`BMO_ENABLE_DOOM=1`, `BMO_EXPERIMENTAL_CORES=1`); personal local use only (`GPL` + `NC`, see [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md)) | Standard full-feature handheld image (`3,275,312 B` App, `185,456 B` DRAM, `TARGET_COMPILED`) |
+| `default` | *(none; inherits `feature_flags.h` defaults)* | `build/target-compile/` | All `15` platforms (`BMO_ENABLE_DOOM=1`, `BMO_EXPERIMENTAL_CORES=1`); personal local use only (`GPL` + `NC`, see [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md)) | Standard full-feature handheld image (`3,275,568 B` App, `185,456 B` DRAM, `TARGET_COMPILED`) |
 | `no-doom` | `-DBMO_ENABLE_DOOM=0` | `build/profile-no-doom/` | `14` console cores without DOOM (`~90 KiB` DRAM saved); personal local use only | Cuts DOOM `.bss`/data zone static overhead (`95,136 B` DRAM) |
 | `mit` | `-DBMO_EXPERIMENTAL_CORES=0 -DBMO_ENABLE_DOOM=0` | `build/profile-mit/` | `GB`, `GBC`, `NES` (`Peanut-GB`, `Walnut-CGB`, `agnes` — **`MIT` only**) | **Only redistributable CI/Release binary** (`878,688 B` App, `69,504 B` DRAM) |
 | `audio-compile-only` | `-DFEATURE_AUDIO=1 -DBMO_HARDWARE_CONFIRMED_AUDIO=1` | `build/profile-audio-compile-only/` | Compile-only hardware-stop verification (no I2S DAC fitted; do **not** flash) | Prevents I2S code rot while keeping hardware hard stop `0` |

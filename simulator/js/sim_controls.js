@@ -246,13 +246,38 @@ function toggleSelectedFavorite(sim, activeConsole, games) {
   }
 }
 
+function jumpByStartingLetter(games, currentIdx, direction) {
+  if (games.length <= 1) return currentIdx;
+  const charAt = (idx) => {
+    const item = games[idx];
+    const title = typeof item === "string" ? item : (item && item.title ? item.title : "");
+    return title.trim().slice(0, 1).toUpperCase();
+  };
+  const currentChar = charAt(currentIdx);
+  let i = currentIdx;
+  for (let step = 0; step < games.length; step++) {
+    i = (i + direction + games.length) % games.length;
+    if (charAt(i) !== currentChar) {
+      if (direction < 0) {
+        const targetChar = charAt(i);
+        while (i > 0 && charAt(i - 1) === targetChar) i--;
+      }
+      return i;
+    }
+  }
+  return currentIdx;
+}
+
 function handleGameSelectButton(sim, key) {
   const activeConsole = CONSOLES_LIST[sim.selectedConsoleIndex];
   const games = sim.getVisibleGames(activeConsole.id);
-  if (key === "UP") { if (sim.selectedGameIndex > 0) sim.selectedGameIndex--; return; }
-  if (key === "DOWN") { if (sim.selectedGameIndex < games.length - 1) sim.selectedGameIndex++; return; }
-  if (key === "RIGHT") { sim.selectedGameIndex = Math.min(games.length - 1, sim.selectedGameIndex + 8); return; }
-  if (key === "LEFT") { sim.selectedGameIndex = Math.max(0, sim.selectedGameIndex - 8); return; }
+  const pageStep = Math.min(100, Math.max(8, Math.floor(games.length / 40)));
+  if (key === "UP" && games.length > 0) { sim.selectedGameIndex = (sim.selectedGameIndex - 1 + games.length) % games.length; return; }
+  if (key === "DOWN" && games.length > 0) { sim.selectedGameIndex = (sim.selectedGameIndex + 1) % games.length; return; }
+  if (key === "RIGHT" && games.length > 0) { sim.selectedGameIndex = Math.min(games.length - 1, sim.selectedGameIndex + pageStep); return; }
+  if (key === "LEFT" && games.length > 0) { sim.selectedGameIndex = Math.max(0, sim.selectedGameIndex - pageStep); return; }
+  if (key === "R" && games.length > 0) { sim.selectedGameIndex = jumpByStartingLetter(games, sim.selectedGameIndex, 1); return; }
+  if (key === "L" && games.length > 0) { sim.selectedGameIndex = jumpByStartingLetter(games, sim.selectedGameIndex, -1); return; }
   if (key === "START" && activeConsole.id !== "ROM_FAVORITES") {
     sim.topPicksFilter = !sim.topPicksFilter;
     sim.selectedGameIndex = 0;

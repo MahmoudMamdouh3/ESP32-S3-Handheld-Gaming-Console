@@ -4415,12 +4415,365 @@
         };
       Object.assign(__exports, { museumMethods });
     },
+    "./js/local_library_client.js": (__exports, __require) => {
+      // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
+      /**
+       * simulator/js/local_library_client.js
+       * Auto-discovers local ROMs and box art via the loopback server or a one-click folder picker.
+       */
+
+      const {CONSOLES_LIST, MAX_BROWSER_ROM_SIZE, slugifyTitle} = __require("./js/constants.js");
+      const RAW_COVER_BYTES = 64 * 64 * 2;
+      const LARGE_UPLOAD_THRESHOLD = 12;
+
+      const ALL_EXT_TO_SYSTEM = {
+        ".gb": { systemId: "ROM_GB", console: "GB" },
+        ".gbc": { systemId: "ROM_GBC", console: "GBC" },
+        ".nes": { systemId: "ROM_NES", console: "NES" },
+        ".wad": { systemId: "ROM_WAD", console: "DOOM" },
+        ".sms": { systemId: "ROM_SMS", console: "SMS" },
+        ".gg": { systemId: "ROM_GG", console: "GG" },
+        ".pce": { systemId: "ROM_PCE", console: "PCE" },
+        ".a26": { systemId: "ROM_ATARI", console: "A26" },
+        ".p8": { systemId: "ROM_PICO8", console: "P8" },
+        ".gen": { systemId: "ROM_GENESIS", console: "MD" },
+        ".md": { systemId: "ROM_GENESIS", console: "MD" },
+        ".smd": { systemId: "ROM_GENESIS", console: "MD" },
+        ".sfc": { systemId: "ROM_SNES", console: "SNES" },
+        ".smc": { systemId: "ROM_SNES", console: "SNES" },
+        ".ws": { systemId: "ROM_WSWAN", console: "WS" },
+        ".wsc": { systemId: "ROM_WSWAN", console: "WS" },
+        ".ngp": { systemId: "ROM_NGP", console: "NGP" },
+        ".ngc": { systemId: "ROM_NGP", console: "NGP" },
+        ".lnx": { systemId: "ROM_LYNX", console: "LNX" },
+        ".col": { systemId: "ROM_COLEM", console: "COL" },
+        ".sg": { systemId: "ROM_COLEM", console: "COL" },
+      };
+
+      const SYSTEM_BADGE_MAP = {
+        ROM_GB: "GB",
+        ROM_GBC: "GBC",
+        ROM_NES: "NES",
+        ROM_SNES: "SNES",
+        ROM_GENESIS: "MD",
+        ROM_SMS: "SMS",
+        ROM_GG: "GG",
+        ROM_PCE: "PCE",
+        ROM_ATARI: "A26",
+        ROM_COLEM: "COL",
+        ROM_NGP: "NGP",
+        ROM_LYNX: "LNX",
+        ROM_WSWAN: "WS",
+        ROM_PICO8: "P8",
+        ROM_WAD: "DOOM",
+      };
+
+      const COVER_IMAGE_EXTS = new Set([".png", ".jpg", ".jpeg", ".bmp"]);
+      let _crcTable = /** @type {Uint32Array | null} */ (null);
+
+      function getCrc32Table() {
+        if (_crcTable) return _crcTable;
+        const table = new Uint32Array(256);
+        for (let i = 0; i < 256; i++) {
+          let c = i;
+          for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+          table[i] = c >>> 0;
+        }
+        _crcTable = table;
+        return table;
+      }
+
+      /** @param {string} text */
+      function crc32Utf8Hex(text) {
+        const table = getCrc32Table();
+        const bytes = new TextEncoder().encode(text);
+        let crc = 0xffffffff;
+        for (let i = 0; i < bytes.length; i++) {
+          crc = table[(crc ^ bytes[i]) & 0xff] ^ (crc >>> 8);
+        }
+        return ((crc ^ 0xffffffff) >>> 0).toString(16).padStart(8, "0");
+      }
+
+      /** @param {string} relativePath */
+      function makeRomKeyJs(relativePath) {
+        const norm = String(relativePath || "").replace(/\\/g, "/").replace(/^\/+/, "").toLowerCase();
+        const base = norm.split("/").pop() || norm;
+        const dot = base.lastIndexOf(".");
+        const stem = dot >= 0 ? base.slice(0, dot) : base;
+        let prefix = "";
+        let prevUnder = false;
+        for (let i = 0; i < stem.length && prefix.length < 23; i++) {
+          const ch = stem[i];
+          if ((ch >= "a" && ch <= "z") || (ch >= "0" && ch <= "9") || ch === "-") {
+            prefix += ch;
+            prevUnder = false;
+          } else if (prefix.length > 0 && !prevUnder) {
+            prefix += "_";
+            prevUnder = true;
+          }
+        }
+        prefix = prefix.replace(/_+$/, "") || "rom";
+        return `${prefix}_${crc32Utf8Hex(norm)}`;
+      }
+
+      /**
+       * Decode an 8,192-byte 64x64 big-endian RGB565 `.raw` cover file into a BMP Blob.
+       * @param {ArrayBuffer | Uint8Array} input
+       * @returns {Blob}
+       */
+      function decodeRawBgr565ToBmpBlob(input) {
+        const raw = input instanceof Uint8Array ? input : new Uint8Array(input);
+        if (raw.length !== RAW_COVER_BYTES) {
+          throw new Error(`Expected ${RAW_COVER_BYTES}-byte .raw cover, got ${raw.length}`);
+        }
+        const width = 64;
+        const height = 64;
+        const dataSize = width * height * 3;
+        const bmp = new Uint8Array(54 + dataSize);
+        const dv = new DataView(bmp.buffer);
+        bmp[0] = 0x42;
+        bmp[1] = 0x4d;
+        dv.setUint32(2, bmp.length, true);
+        dv.setUint32(10, 54, true);
+        dv.setUint32(14, 40, true);
+        dv.setInt32(18, width, true);
+        dv.setInt32(22, height, true);
+        dv.setUint16(26, 1, true);
+        dv.setUint16(28, 24, true);
+        dv.setUint32(34, dataSize, true);
+
+        let dst = 54;
+        for (let y = height - 1; y >= 0; y--) {
+          const rowOff = y * width * 2;
+          for (let x = 0; x < width; x++) {
+            const idx = rowOff + x * 2;
+            const val = (raw[idx] << 8) | raw[idx + 1];
+            bmp[dst++] = (((val & 0x1f) * 255) / 31) | 0;
+            bmp[dst++] = ((((val >> 5) & 0x3f) * 255) / 63) | 0;
+            bmp[dst++] = ((((val >> 11) & 0x1f) * 255) / 31) | 0;
+          }
+        }
+        return new Blob([bmp], { type: "image/bmp" });
+      }
+
+      /**
+       * @param {any} sim
+       * @param {Array<any>} incomingEntries
+       */
+      function mergeDiscoveredLibrary(sim, incomingEntries) {
+        const db = sim.gameLibrary || {};
+        /** @type {Record<string, Map<string, any>>} */
+        const mapsBySys = {};
+        for (const c of CONSOLES_LIST) {
+          if (c.id === "ROM_FAVORITES") continue;
+          const map = new Map();
+          const existing = Array.isArray(db[c.id]) ? db[c.id] : [];
+          for (const item of existing) {
+            if (item && item.title) map.set(`${item.title.toLowerCase()}|${item.ext || ""}`, item);
+          }
+          mapsBySys[c.id] = map;
+        }
+
+        let added = 0;
+        for (const item of incomingEntries) {
+          const map = mapsBySys[item.systemId];
+          if (!map) continue;
+          const key = `${item.title.toLowerCase()}|${item.ext || ""}`;
+          if (!map.has(key)) added++;
+          map.set(key, item);
+        }
+
+        for (const [sysId, map] of Object.entries(mapsBySys)) {
+          const list = Array.from(map.values());
+          list.sort((a, b) => String(a.title || "").localeCompare(String(b.title || ""), undefined, { sensitivity: "base" }));
+          db[sysId] = list;
+        }
+        sim.gameLibrary = db;
+        sim.rebuildFavoritesInDatabase(db);
+        sim.selectedGameIndex = 0;
+        sim.markRenderDirty();
+        return added;
+      }
+
+      /**
+       * @param {any} sim
+       * @param {boolean} [refresh]
+       */
+      async function fetchServerLocalLibrary(sim, refresh = false) {
+        if (typeof window === "undefined" || !window.location || window.location.protocol === "file:") {
+          return 0;
+        }
+        if (typeof fetch !== "function") return 0;
+        const url = refresh ? "/local-library/manifest.json?refresh=1" : "/local-library/manifest.json";
+        const resp = await fetch(url);
+        if (!resp.ok) return 0;
+        const payload = await resp.json();
+        const rawEntries = Array.isArray(payload?.entries) ? payload.entries : [];
+        if (rawEntries.length === 0) return 0;
+
+        const built = rawEntries.map((row) => {
+          const systemId = String(row[0] || "");
+          const title = String(row[1] || "");
+          const ext = String(row[2] || "");
+          const romToken = String(row[3] || "");
+          const coverToken = String(row[4] || "");
+          const flags = Number(row[5] || 0);
+          return {
+            title,
+            console: SYSTEM_BADGE_MAP[systemId] || systemId.replace("ROM_", ""),
+            systemId,
+            ext,
+            isFav: Boolean(flags & 1),
+            isPopular: Boolean(flags & 4),
+            romUrl: `/local-library/rom/${romToken}`,
+            coverUrl: coverToken ? `/local-library/cover/${coverToken}` : "",
+            coverKey: coverToken || "",
+          };
+        });
+
+        mergeDiscoveredLibrary(sim, built);
+        const sources = Array.isArray(payload?.sources) && payload.sources.length > 0
+          ? payload.sources.join(", ")
+          : "local storage";
+        const matched = Number(payload?.matchedCovers || 0).toLocaleString();
+        const msg = `Auto-detected ${built.length.toLocaleString()} local ROMs (${matched} with box art) from ${sources}.`;
+        sim.showSimulatorMessage(msg);
+        const serialLog = typeof document !== "undefined" ? document.getElementById("webserial-log") : null;
+        if (serialLog) serialLog.textContent = msg;
+        if (typeof sim.updateLibraryStatsBanner === "function") sim.updateLibraryStatsBanner();
+        return built.length;
+      }
+
+      /** @param {string} relPath */
+      function shouldSkipFolderPath(relPath) {
+        const lower = relPath.toLowerCase();
+        return (
+          lower.includes("/.git/") ||
+          lower.includes("/build/") ||
+          lower.includes("/tests/") ||
+          lower.includes("/third_party/") ||
+          lower.includes("/_local_archived_assets/")
+        );
+      }
+
+      /** @param {Array<File>} files */
+      function indexFolderCovers(files) {
+        /** @type {Map<string, File>} */
+        const imgByStem = new Map();
+        /** @type {Map<string, File>} */
+        const imgBySlug = new Map();
+        /** @type {Map<string, File>} */
+        const rawByKey = new Map();
+
+        for (const file of files) {
+          const name = file.name || "";
+          const dot = name.lastIndexOf(".");
+          if (dot <= 0) continue;
+          const ext = name.slice(dot).toLowerCase();
+          const stem = name.slice(0, dot).toLowerCase();
+          if (COVER_IMAGE_EXTS.has(ext)) {
+            if (!imgByStem.has(stem)) imgByStem.set(stem, file);
+            const slug = slugifyTitle(stem);
+            if (!imgBySlug.has(slug)) imgBySlug.set(slug, file);
+          } else if (ext === ".raw" && file.size === RAW_COVER_BYTES) {
+            rawByKey.set(stem, file);
+          }
+        }
+        return { imgByStem, imgBySlug, rawByKey };
+      }
+
+      /** @param {File} file @param {string} cleanTitle @param {string} ext @param {{ imgByStem: Map<string, File>, imgBySlug: Map<string, File>, rawByKey: Map<string, File> }} covers */
+      function matchFolderCover(file, cleanTitle, ext, covers) {
+        const name = file.name || "";
+        const relPath = String(file.webkitRelativePath || name).replace(/\\/g, "/");
+        const relNoTop = relPath.includes("/") ? relPath.slice(relPath.indexOf("/") + 1) : relPath;
+        const coverFile = covers.imgByStem.get(cleanTitle.toLowerCase()) || covers.imgBySlug.get(slugifyTitle(cleanTitle)) || null;
+        if (coverFile) return { coverFile, coverRawFile: null, coverKey: `f:${coverFile.name}:${coverFile.size}` };
+        const rawMatch =
+          covers.rawByKey.get(makeRomKeyJs(relNoTop)) ||
+          covers.rawByKey.get(makeRomKeyJs(`${ext.slice(1)}/${name}`)) ||
+          covers.rawByKey.get(makeRomKeyJs(relPath)) ||
+          null;
+        return { coverFile: null, coverRawFile: rawMatch, coverKey: rawMatch ? `r:${rawMatch.name}` : "" };
+      }
+
+      /** @param {File} file @param {{ imgByStem: Map<string, File>, imgBySlug: Map<string, File>, rawByKey: Map<string, File> }} covers */
+      function buildLazyFolderRomEntry(file, covers) {
+        const name = file.name || "";
+        const relPath = String(file.webkitRelativePath || name).replace(/\\/g, "/");
+        if (shouldSkipFolderPath(relPath)) return null;
+        const dot = name.lastIndexOf(".");
+        if (dot <= 0) return null;
+        const ext = name.slice(dot).toLowerCase();
+        const route = ALL_EXT_TO_SYSTEM[ext];
+        if (!route) return null;
+        const cleanTitle = name.slice(0, dot);
+        const { coverFile, coverRawFile, coverKey } = matchFolderCover(file, cleanTitle, ext, covers);
+        return {
+          title: cleanTitle,
+          console: route.console,
+          systemId: route.systemId,
+          ext,
+          isFav: false,
+          isPopular: false,
+          romFile: file,
+          fileSize: file.size,
+          coverFile,
+          coverRawFile,
+          coverKey,
+        };
+      }
+
+      /**
+       * Index cover image / `.raw` files from a FileList and match folder ROM entries lazily.
+       * @param {any} sim
+       * @param {Array<File>} files
+       */
+      function ingestLazyFolderFiles(sim, files) {
+        const covers = indexFolderCovers(files);
+        /** @type {Array<any>} */
+        const romEntries = [];
+        let matchedCovers = 0;
+
+        for (const file of files) {
+          const entry = buildLazyFolderRomEntry(file, covers);
+          if (!entry) continue;
+          if (entry.coverFile || entry.coverRawFile) matchedCovers++;
+          romEntries.push(entry);
+        }
+
+        if (romEntries.length === 0) {
+          sim.showSimulatorMessage("No supported ROM files were found inside that folder.", true);
+          return 0;
+        }
+
+        mergeDiscoveredLibrary(sim, romEntries);
+        const firstSupported = romEntries.find((e) => CONSOLES_LIST.some((c) => c.id === e.systemId && c.browserSupported)) || romEntries[0];
+        const targetIdx = CONSOLES_LIST.findIndex((c) => c.id === firstSupported.systemId);
+        if (targetIdx >= 0) sim.selectedConsoleIndex = targetIdx;
+        if (typeof sim.updateLibraryStatsBanner === "function") sim.updateLibraryStatsBanner();
+        const folderMsg = `Loaded ${romEntries.length.toLocaleString()} ROM(s) (${matchedCovers.toLocaleString()} matched covers) cleanly on demand.`;
+        sim.showSimulatorMessage(folderMsg);
+        const serialLog = typeof document !== "undefined" ? document.getElementById("webserial-log") : null;
+        if (serialLog) serialLog.textContent = folderMsg;
+        return romEntries.length;
+      }
+
+      /** @param {Array<File>} files */
+      function isFolderOrBatchUpload(files) {
+        if (!files || files.length === 0) return false;
+        if (files.length >= LARGE_UPLOAD_THRESHOLD) return true;
+        return files.some((file) => Boolean(file && file.webkitRelativePath && String(file.webkitRelativePath).includes("/")));
+      }
+      Object.assign(__exports, { RAW_COVER_BYTES, ALL_EXT_TO_SYSTEM, makeRomKeyJs, decodeRawBgr565ToBmpBlob, mergeDiscoveredLibrary, fetchServerLocalLibrary, ingestLazyFolderFiles, isFolderOrBatchUpload, MAX_BROWSER_ROM_SIZE });
+    },
     "./js/webserial.js": (__exports, __require) => {
       /**
        * simulator/js/webserial.js
        * WebSerial port connection helper and browser ROM upload/dropzone ingestion.
        */
       const {CONSOLES_LIST, MAX_BROWSER_ROM_SIZE} = __require("./js/constants.js");
+      const {ingestLazyFolderFiles, isFolderOrBatchUpload} = __require("./js/local_library_client.js");
       const EXT_TO_SYSTEM = {
         ".gb": { systemId: "ROM_GB", console: "GB" },
         ".gbc": { systemId: "ROM_GBC", console: "GBC" },
@@ -4455,9 +4808,11 @@
 
           async ingestUploadedRoms(fileList) {
             if (!fileList || fileList.length === 0) return 0;
+            const files = Array.from(fileList);
+            if (isFolderOrBatchUpload(files)) return ingestLazyFolderFiles(this, files);
             const added = [];
             const rejected = [];
-            for (const file of Array.from(fileList)) {
+            for (const file of files) {
               const dot = file.name.lastIndexOf(".");
               const ext = dot >= 0 ? file.name.slice(dot).toLowerCase() : "";
               const route = EXT_TO_SYSTEM[ext];
@@ -5389,13 +5744,38 @@
         }
       }
 
+      function jumpByStartingLetter(games, currentIdx, direction) {
+        if (games.length <= 1) return currentIdx;
+        const charAt = (idx) => {
+          const item = games[idx];
+          const title = typeof item === "string" ? item : (item && item.title ? item.title : "");
+          return title.trim().slice(0, 1).toUpperCase();
+        };
+        const currentChar = charAt(currentIdx);
+        let i = currentIdx;
+        for (let step = 0; step < games.length; step++) {
+          i = (i + direction + games.length) % games.length;
+          if (charAt(i) !== currentChar) {
+            if (direction < 0) {
+              const targetChar = charAt(i);
+              while (i > 0 && charAt(i - 1) === targetChar) i--;
+            }
+            return i;
+          }
+        }
+        return currentIdx;
+      }
+
       function handleGameSelectButton(sim, key) {
         const activeConsole = CONSOLES_LIST[sim.selectedConsoleIndex];
         const games = sim.getVisibleGames(activeConsole.id);
-        if (key === "UP") { if (sim.selectedGameIndex > 0) sim.selectedGameIndex--; return; }
-        if (key === "DOWN") { if (sim.selectedGameIndex < games.length - 1) sim.selectedGameIndex++; return; }
-        if (key === "RIGHT") { sim.selectedGameIndex = Math.min(games.length - 1, sim.selectedGameIndex + 8); return; }
-        if (key === "LEFT") { sim.selectedGameIndex = Math.max(0, sim.selectedGameIndex - 8); return; }
+        const pageStep = Math.min(100, Math.max(8, Math.floor(games.length / 40)));
+        if (key === "UP" && games.length > 0) { sim.selectedGameIndex = (sim.selectedGameIndex - 1 + games.length) % games.length; return; }
+        if (key === "DOWN" && games.length > 0) { sim.selectedGameIndex = (sim.selectedGameIndex + 1) % games.length; return; }
+        if (key === "RIGHT" && games.length > 0) { sim.selectedGameIndex = Math.min(games.length - 1, sim.selectedGameIndex + pageStep); return; }
+        if (key === "LEFT" && games.length > 0) { sim.selectedGameIndex = Math.max(0, sim.selectedGameIndex - pageStep); return; }
+        if (key === "R" && games.length > 0) { sim.selectedGameIndex = jumpByStartingLetter(games, sim.selectedGameIndex, 1); return; }
+        if (key === "L" && games.length > 0) { sim.selectedGameIndex = jumpByStartingLetter(games, sim.selectedGameIndex, -1); return; }
         if (key === "START" && activeConsole.id !== "ROM_FAVORITES") {
           sim.topPicksFilter = !sim.topPicksFilter;
           sim.selectedGameIndex = 0;
@@ -5715,8 +6095,13 @@
         ctx.fillText(c.browserSupported ? `Browser core: ${c.ext}` : `Firmware core: ${c.ext}`, cardX + 16, cardY + 95);
         ctx.fillStyle = "#ffe033";
         ctx.font = "bold 13px 'JetBrains Mono', monospace";
-        const romLabel = c.count === 1 ? "1 PLAYABLE ROM" : `${c.count.toLocaleString()} PLAYABLE ROMS`;
-        ctx.fillText(c.count > 0 || c.browserSupported ? romLabel : "ESP32-S3 FIRMWARE ONLY", cardX + 16, cardY + 124);
+        let romLabel = "ESP32-S3 FIRMWARE ONLY";
+        if (c.browserSupported || c.id === "ROM_FAVORITES") {
+          romLabel = c.count === 1 ? "1 PLAYABLE ROM" : `${c.count.toLocaleString()} PLAYABLE ROMS`;
+        } else if (c.count > 0) {
+          romLabel = `${c.count.toLocaleString()} LOCAL ROMS (HW CORE)`;
+        }
+        ctx.fillText(romLabel, cardX + 16, cardY + 124);
 
         ctx.fillStyle = "#5fb49c";
         ctx.font = "bold 18px 'Outfit', sans-serif";
@@ -5879,7 +6264,13 @@
         ctx.textAlign = "center";
         ctx.fillStyle = THEME_T.white;
         ctx.font = "bold 15px 'Outfit', sans-serif";
-        if (c.id === "ROM_FAVORITES") {
+        if (sim.librarySearchQuery && String(sim.librarySearchQuery).trim()) {
+          ctx.fillText("NO MATCHING ROMS", 160, 96);
+          ctx.fillStyle = THEME_T.mint;
+          ctx.font = "11px 'Outfit', sans-serif";
+          ctx.fillText(`Filter: "${sim.librarySearchQuery.trim()}"`, 160, 126);
+          ctx.fillText("Clear search box to show all titles.", 160, 144);
+        } else if (c.id === "ROM_FAVORITES") {
           ctx.fillText("NO FAVORITES YET!", 160, 96);
           ctx.fillStyle = THEME_T.mint;
           ctx.font = "11px 'Outfit', sans-serif";
@@ -5927,14 +6318,23 @@
         ctx.stroke();
 
         const coverSlug = (typeof game === "object" && game.coverSlug) ? game.coverSlug : "";
-        const cover = sim.getCoverImage(title, coverSlug);
+        const cover = sim.getCoverImage(title, coverSlug, game);
         sim.updateHdCoverPanel(cover, title);
-        if (cover.ready) {
+        if (cover.ready && cover.canvasSafe) {
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = "high";
           ctx.drawImage(cover.img, 128, 54, 64, 64);
           ctx.strokeStyle = isFav ? THEME_T.yellow : THEME_T.teal;
           ctx.strokeRect(127.5, 53.5, 65, 65);
+        } else if (cover.ready) {
+          ctx.fillStyle = THEME_T.black;
+          ctx.fillRect(102, 62, 116, 52);
+          ctx.fillStyle = THEME_T.mint;
+          ctx.font = "bold 12px 'JetBrains Mono', monospace";
+          ctx.fillText("BOX ART", 160, 86);
+          ctx.fillStyle = THEME_T.yellow;
+          ctx.font = "9px 'JetBrains Mono', monospace";
+          ctx.fillText("HD PREVIEW READY", 160, 102);
         } else {
           ctx.fillStyle = THEME_T.black;
           ctx.fillRect(102, 62, 116, 52);
@@ -6381,6 +6781,7 @@
       const {DEFAULT_HARDWARE_LAYOUT, loadHardwareLayout} = __require("./js/hardware_layout_data.js");
       const {seedBuiltInHomebrewDemos} = __require("./js/homebrew_demos.js");
       const {internalsMethods} = __require("./js/internals.js");
+      const {decodeRawBgr565ToBmpBlob, fetchServerLocalLibrary} = __require("./js/local_library_client.js");
       const {museumMethods} = __require("./js/museum.js");
       const {applyUrlStateParamsImpl, handleButtonPressImpl, setupInputHandlersImpl, setupUIControlsImpl} = __require("./js/sim_controls.js");
       const {renderBootSplashImpl, renderConsoleSelectMenuImpl, renderEmulationViewImpl, renderGameSelectMenuImpl, renderIdleMascotScreenImpl} = __require("./js/sim_screens.js");
@@ -6426,6 +6827,7 @@
           this.lastInputActivityMs = 0;
           this.bootTimer = 0;
           this.topPicksFilter = false;
+          this.librarySearchQuery = "";
           /** @type {string | number} */
           this.currentState = STATE.BOOT_SPLASH;
           this.engineReady = Promise.resolve(false);
@@ -6444,6 +6846,7 @@
           this.selectedGameIndex = 0;
           this.gameListScrollOffset = 0;
           this.topPicksFilter = false;
+          this.librarySearchQuery = "";
           this.coverImages = new Map();
           this._lastRenderSig = null;
           this._screenTextureDirty = true;
@@ -6518,6 +6921,20 @@
             this.hardwareLayout = layout;
             this.syncInternalsLayoutSpec(layout);
           });
+          this.initLocalLibraryAutoDetect();
+        }
+
+        initLocalLibraryAutoDetect() {
+          if (typeof window === "undefined" || !window.location) return;
+          if (window.location.protocol === "file:") {
+            this.updateLibraryStatsBanner();
+            const serialLog = document.getElementById("webserial-log");
+            if (serialLog) {
+              serialLog.textContent = "Direct file:// mode: browsers block auto-reading disk folders without permission. Click '+ Load Folder' to mount F:\\ or games/ in one step, or run 'python simulator/run_simulator.py' for automatic detection.";
+            }
+            return;
+          }
+          fetchServerLocalLibrary(this).catch(() => {});
         }
 
         initThreeView() {
@@ -6580,9 +6997,13 @@
           }
           if (this.coverImages instanceof Map) {
             for (const entry of this.coverImages.values()) {
+              if (entry) entry.disposed = true;
               if (entry && entry.img) {
                 entry.img.onload = null;
                 entry.img.onerror = null;
+              }
+              if (entry && entry.objectUrl && typeof URL !== "undefined" && typeof URL.revokeObjectURL === "function") {
+                URL.revokeObjectURL(entry.objectUrl);
               }
             }
             this.coverImages.clear();
@@ -6621,10 +7042,27 @@
         }
 
         getVisibleGames(consoleId) {
-          const all = this.gameLibrary[consoleId] || [];
-          if (consoleId === "ROM_FAVORITES" || !this.topPicksFilter) return all;
-          const popular = all.filter((g) => g && g.isPopular);
-          return popular.length > 0 ? popular : all;
+          let list = this.gameLibrary[consoleId] || [];
+          if (consoleId !== "ROM_FAVORITES" && this.topPicksFilter) {
+            const popular = list.filter((g) => g && g.isPopular);
+            if (popular.length > 0) list = popular;
+          }
+          const q = String(this.librarySearchQuery || "").trim().toLowerCase();
+          if (!q) return list;
+          return list.filter((g) => {
+            const title = typeof g === "string" ? g : (g && g.title ? g.title : "");
+            return title.toLowerCase().includes(q);
+          });
+        }
+
+        updateLibraryStatsBanner() {
+          const badge = document.getElementById("rom-library-count-badge");
+          if (!badge) return;
+          let total = 0;
+          for (const c of CONSOLES_LIST) {
+            if (c.id !== "ROM_FAVORITES") total += (this.gameLibrary[c.id] || []).length;
+          }
+          badge.textContent = `${total.toLocaleString()} ROMs`;
         }
 
         rebuildFavoritesInDatabase(db) {
@@ -6678,12 +7116,37 @@
           this.bmoLastInputMs = now;
         }
 
+        /** @param {string} title @param {string} gameConsoleId @param {any} gameObj */
+        async _resolveGameRomBytes(title, gameConsoleId, gameObj) {
+          const targetConsole = CONSOLES_LIST.find((item) => item.id === gameConsoleId);
+          if (targetConsole && !targetConsole.browserSupported) {
+            const extLabel = gameObj?.ext || targetConsole.ext;
+            throw new Error(
+              `${targetConsole.name} (${extLabel}) runs on physical ESP32-S3 hardware / native CTest (browser WASM supports GB, GBC, NES, SMS, GG, Atari 2600, and ColecoVision).`
+            );
+          }
+          let romBytes = gameObj?.romBytes || null;
+          if (!romBytes && gameObj?.romFile) {
+            this.showSimulatorMessage(`Loading ${title}...`);
+            romBytes = new Uint8Array(await gameObj.romFile.arrayBuffer());
+          } else if (!romBytes && gameObj?.romUrl && typeof fetch === "function") {
+            this.showSimulatorMessage(`Loading ${title}...`);
+            const resp = await fetch(gameObj.romUrl);
+            if (!resp.ok) throw new Error(`Could not fetch local ROM (${resp.status}).`);
+            romBytes = new Uint8Array(await resp.arrayBuffer());
+          }
+          if (!romBytes) throw new Error("This library entry has no ROM data. Load a supported local ROM file to play.");
+          if (romBytes.length > MAX_BROWSER_ROM_SIZE) {
+            throw new Error(`${title}: exceeds ${Math.round(MAX_BROWSER_ROM_SIZE / (1024 * 1024))} MiB browser limit.`);
+          }
+          return romBytes;
+        }
+
         async launchSelectedGame(consoleId, gameObj) {
           const title = typeof gameObj === "string" ? gameObj : (gameObj.title || "Game");
-          const romBytes = (typeof gameObj === "object" && gameObj.romBytes) ? gameObj.romBytes : null;
-          const gameConsoleId = (typeof gameObj === "object" && gameObj.systemId) ? gameObj.systemId : consoleId;
+          const gameConsoleId = (typeof gameObj === "object" && gameObj && gameObj.systemId) ? gameObj.systemId : consoleId;
           try {
-            if (!romBytes) throw new Error("This library entry has no ROM data. Load a supported local ROM file to play.");
+            const romBytes = await this._resolveGameRomBytes(title, gameConsoleId, gameObj);
             if (!(await this.engineReady) || !this.wasmEngine) {
               throw new Error("The WebAssembly emulator cores could not be initialized.");
             }
@@ -6740,10 +7203,10 @@
           const title = typeof game === "string" ? game : (game?.title || "");
           const isFav = Boolean(game && typeof game === "object" && game.isFav);
           const coverSlug = (game && typeof game === "object" && game.coverSlug) ? game.coverSlug : "";
-          const cover = title ? this.getCoverImage(title, coverSlug) : null;
+          const cover = title ? this.getCoverImage(title, coverSlug, game) : null;
           let coverFlag = "N";
           if (cover) coverFlag = cover.ready ? "R" : (cover.failed ? "F" : "L");
-          return `GAME|${cIdx}|${idx}|${games.length}|${this.topPicksFilter}|${isFav}|${coverFlag}|${this._getFaceBlinkKey()}`;
+          return `GAME|${cIdx}|${idx}|${games.length}|${this.topPicksFilter}|${this.librarySearchQuery}|${isFav}|${coverFlag}|${this._getFaceBlinkKey()}`;
         }
 
         /** @param {number} cIdx */
@@ -6874,29 +7337,63 @@
 
         slugifyTitle(title) { return slugifyTitle(title); }
 
-        getCoverImage(title, slugOverride = "") {
+        _evictOldestCover(cache) {
+          if (cache.size < 32) return;
+          const oldestKey = cache.keys().next().value;
+          if (oldestKey === undefined) return;
+          const victim = cache.get(oldestKey);
+          if (victim) victim.disposed = true;
+          if (victim && victim.img) {
+            victim.img.onload = null;
+            victim.img.onerror = null;
+            victim.img.src = "";
+          }
+          if (victim && victim.objectUrl && typeof URL !== "undefined" && typeof URL.revokeObjectURL === "function") {
+            URL.revokeObjectURL(victim.objectUrl);
+          }
+          cache.delete(oldestKey);
+        }
+
+        /** @param {any} entry @param {string} slug @param {any} [gameObj] */
+        _assignCoverSource(entry, slug, gameObj = null) {
+          const isFileProto = typeof window !== "undefined" && window.location?.protocol === "file:";
+          const hasUrlApi = typeof URL !== "undefined" && typeof URL.createObjectURL === "function";
+          const coverFile = gameObj?.coverFile || null;
+          const coverRawFile = gameObj?.coverRawFile || null;
+          if (coverFile && hasUrlApi) {
+            entry.objectUrl = URL.createObjectURL(coverFile);
+            entry.canvasSafe = true;
+            entry.img.src = entry.objectUrl;
+            return;
+          }
+          if (coverRawFile && hasUrlApi) {
+            entry.canvasSafe = true;
+            Promise.resolve(coverRawFile.arrayBuffer()).then((buf) => {
+              if (entry.disposed) return;
+              entry.objectUrl = URL.createObjectURL(decodeRawBgr565ToBmpBlob(buf));
+              entry.img.src = entry.objectUrl;
+            }).catch(() => { entry.failed = true; this.markRenderDirty(); });
+            return;
+          }
+          const srcUrl = gameObj?.coverUrl || "";
+          entry.canvasSafe = !isFileProto || srcUrl.startsWith("blob:") || srcUrl.startsWith("data:");
+          entry.img.src = srcUrl || `covers/${slug}.png`;
+        }
+
+        /** @param {string} title @param {string} [slugOverride] @param {any} [gameObj] */
+        getCoverImage(title, slugOverride = "", gameObj = null) {
           const slug = slugOverride || this.slugifyTitle(title);
+          const cacheKey = (gameObj && typeof gameObj === "object" && gameObj.coverKey) ? gameObj.coverKey : slug;
           const cache = this.coverImages instanceof Map ? this.coverImages : new Map();
           if (!(this.coverImages instanceof Map)) this.coverImages = cache;
-          let entry = cache.get(slug);
+          let entry = cache.get(cacheKey);
           if (entry) {
-            cache.delete(slug);
-            cache.set(slug, entry);
+            cache.delete(cacheKey);
+            cache.set(cacheKey, entry);
             return entry;
           }
-          if (cache.size >= 32) {
-            const oldestKey = cache.keys().next().value;
-            if (oldestKey !== undefined) {
-              const victim = cache.get(oldestKey);
-              if (victim && victim.img) {
-                victim.img.onload = null;
-                victim.img.onerror = null;
-                victim.img.src = "";
-              }
-              cache.delete(oldestKey);
-            }
-          }
-          entry = { img: new Image(), ready: false, failed: false, slug };
+          this._evictOldestCover(cache);
+          entry = { img: new Image(), ready: false, failed: false, canvasSafe: true, disposed: false, objectUrl: "", slug: cacheKey };
           entry.img.onload = () => {
             entry.ready = true;
             this.markRenderDirty();
@@ -6905,8 +7402,8 @@
             entry.failed = true;
             this.markRenderDirty();
           };
-          entry.img.src = `covers/${slug}.png`;
-          cache.set(slug, entry);
+          this._assignCoverSource(entry, slug, gameObj);
+          cache.set(cacheKey, entry);
           return entry;
         }
 
@@ -6922,12 +7419,12 @@
             panelImg.src = entry.img.src;
             panelImg.style.visibility = "visible";
             panelTitle.textContent = title;
-            panelMeta.textContent = `${entry.img.naturalWidth} × ${entry.img.naturalHeight} original scan`;
-          } else if (entry && entry.failed) {
+            panelMeta.textContent = `${entry.img.naturalWidth} × ${entry.img.naturalHeight} box art`;
+          } else if (!entry || entry.failed) {
             this.lastHdCoverSlug = slug;
             panelImg.style.visibility = "hidden";
-            panelTitle.textContent = title;
-            panelMeta.textContent = "No cover art for this title";
+            panelTitle.textContent = title || "Select a Game";
+            panelMeta.textContent = entry ? "No cover art for this title" : "Browse any console library to preview artwork";
           }
         }
 
@@ -6981,6 +7478,48 @@
             sim.trackListener(fileInput, "change", (/** @type {Event} */ e) => {
               const target = /** @type {HTMLInputElement | null} */ (e.target);
               if (target?.files) sim.ingestUploadedRoms(target.files).catch((error) => sim.showSimulatorMessage(error.message, true));
+            });
+          }
+          const folderInput = document.getElementById("rom-folder-upload");
+          if (folderInput) {
+            sim.trackListener(folderInput, "change", (/** @type {Event} */ e) => {
+              const target = /** @type {HTMLInputElement | null} */ (e.target);
+              if (target?.files) sim.ingestUploadedRoms(target.files).catch((error) => sim.showSimulatorMessage(error.message, true));
+            });
+          }
+          const rescanBtn = document.getElementById("btn-rescan-local-library");
+          if (rescanBtn) {
+            sim.trackListener(rescanBtn, "click", () => {
+              if (window.location && window.location.protocol === "file:") {
+                if (folderInput) folderInput.click();
+                return;
+              }
+              fetchServerLocalLibrary(sim, true).catch((error) => sim.showSimulatorMessage(error.message, true));
+            });
+          }
+          const searchInput = /** @type {HTMLInputElement | null} */ (document.getElementById("rom-search-input"));
+          if (searchInput) {
+            sim.trackListener(searchInput, "input", () => {
+              sim.librarySearchQuery = searchInput.value;
+              sim.selectedGameIndex = 0;
+              sim.markRenderDirty();
+            });
+            sim.trackListener(searchInput, "keydown", (/** @type {KeyboardEvent} */ e) => {
+              if (e.key === "Escape") {
+                searchInput.value = "";
+                sim.librarySearchQuery = "";
+                sim.selectedGameIndex = 0;
+                sim.markRenderDirty();
+                searchInput.blur();
+              } else if (e.key === "Enter") {
+                e.preventDefault();
+                searchInput.blur();
+                if (sim.currentState === STATE.BOOT_SPLASH || sim.currentState === STATE.CONSOLE_SELECT) {
+                  sim.currentState = STATE.GAME_SELECT;
+                  sim.selectedGameIndex = 0;
+                  sim.markRenderDirty();
+                }
+              }
             });
           }
           sim.trackListener(window, "dragover", (/** @type {Event} */ e) => e.preventDefault());

@@ -6,12 +6,31 @@ from __future__ import annotations
 import argparse
 import http.server
 import json
+import re
 import socketserver
 import sys
+import threading
 import webbrowser
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlsplit
+
+try:
+    from simulator.local_library import (
+        IMAGE_MIME_TYPES,
+        MAX_LOCAL_ROM_BYTES,
+        LocalLibraryCatalog,
+        build_local_library_catalog,
+        decode_raw_bgr565_to_bmp,
+    )
+except ImportError:
+    from local_library import (  # type: ignore[no-redef]
+        IMAGE_MIME_TYPES,
+        MAX_LOCAL_ROM_BYTES,
+        LocalLibraryCatalog,
+        build_local_library_catalog,
+        decode_raw_bgr565_to_bmp,
+    )
 
 PORT = 8080
 HOST = "127.0.0.1"
@@ -51,6 +70,21 @@ def resolve_static_path(url_path: str) -> Path | None:
     return candidate
 
 
+_ROM_TOKEN_RE = re.compile(r"^r[0-9a-f]{15}$")
+_COVER_TOKEN_RE = re.compile(r"^c[0-9a-f]{15}$")
+_CATALOG_LOCK = threading.Lock()
+_CACHED_CATALOG: LocalLibraryCatalog | None = None
+
+
+def get_local_catalog(refresh: bool = False) -> LocalLibraryCatalog:
+    """Return cached local ROM & box-art catalog, scanning read-only on first use."""
+    global _CACHED_CATALOG
+    with _CATALOG_LOCK:
+        if _CACHED_CATALOG is None or refresh:
+            _CACHED_CATALOG = build_local_library_catalog(DIRECTORY.parent)
+        return _CACHED_CATALOG
+
+
 class Handler(http.server.SimpleHTTPRequestHandler):
     server_version = "BmoSimulator/1"
     sys_version = ""
@@ -70,14 +104,30 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Cross-Origin-Resource-Policy", "same-origin")
         super().end_headers()
 
-    def _write_json(self, status: int, payload: dict[str, Any]) -> None:
+    def _write_bytes(
+        self,
+        body: bytes,
+        content_type: str,
+        cache_control: str = "no-store",
+        head_only: bool = False,
+    ) -> None:
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", cache_control)
+        self.end_headers()
+        if not head_only:
+            self.wfile.write(body)
+
+    def _write_json(self, status: int, payload: dict[str, Any], head_only: bool = False) -> None:
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
-        self.wfile.write(body)
+        if not head_only:
+            self.wfile.write(body)
 
     def _host_is_allowed(self) -> bool:
         bound_addr = getattr(getattr(self, "server", None), "server_address", None)
@@ -93,27 +143,99 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return str(DIRECTORY / ".blocked-path")
         return str(resolved)
 
-    def do_GET(self) -> None:
-        if not self._host_is_allowed():
+    def _serve_local_library(self, route: str, query: str, head_only: bool = False) -> bool:
+        if route == "/local-library/manifest.json":
+            refresh = "refresh=1" in query
+            catalog = get_local_catalog(refresh=refresh)
+            self._write_bytes(catalog.manifest_bytes, "application/json; charset=utf-8", head_only=head_only)
+            return True
+        if route.startswith("/local-library/rom/"):
+            self._serve_local_rom(route.removeprefix("/local-library/rom/"), head_only=head_only)
+            return True
+        if route.startswith("/local-library/cover/"):
+            self._serve_local_cover(route.removeprefix("/local-library/cover/"), head_only=head_only)
+            return True
+        return False
+
+    def _serve_local_rom(self, token: str, head_only: bool = False) -> None:
+        if not _ROM_TOKEN_RE.fullmatch(token):
+            self._write_json(404, {"status": "error", "message": "Not found"}, head_only=head_only)
             return
-        route = urlsplit(self.path).path
+        rom_path = get_local_catalog().rom_paths.get(token)
+        if rom_path is None or rom_path.is_symlink() or not rom_path.is_file():
+            self._write_json(404, {"status": "error", "message": "Not found"}, head_only=head_only)
+            return
+        try:
+            size = rom_path.stat().st_size
+            if size > MAX_LOCAL_ROM_BYTES:
+                self._write_json(413, {"status": "error", "message": "ROM exceeds 32 MiB limit"}, head_only=head_only)
+                return
+            body = b"" if head_only else rom_path.read_bytes()
+        except OSError:
+            self._write_json(404, {"status": "error", "message": "Not found"}, head_only=head_only)
+            return
+        if head_only:
+            self.send_response(200)
+            self.send_header("Content-Type", "application/octet-stream")
+            self.send_header("Content-Length", str(size))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            return
+        self._write_bytes(body, "application/octet-stream")
+
+    def _serve_local_cover(self, token: str, head_only: bool = False) -> None:
+        if not _COVER_TOKEN_RE.fullmatch(token):
+            self._write_json(404, {"status": "error", "message": "Not found"}, head_only=head_only)
+            return
+        cover_path = get_local_catalog().cover_paths.get(token)
+        if cover_path is None or cover_path.is_symlink() or not cover_path.is_file():
+            self._write_json(404, {"status": "error", "message": "Not found"}, head_only=head_only)
+            return
+        ext = cover_path.suffix.lower()
+        try:
+            if ext == ".raw":
+                body = decode_raw_bgr565_to_bmp(cover_path.read_bytes())
+                content_type = "image/bmp"
+            else:
+                content_type = IMAGE_MIME_TYPES.get(ext, "")
+                if not content_type:
+                    self._write_json(404, {"status": "error", "message": "Not found"}, head_only=head_only)
+                    return
+                body = cover_path.read_bytes()
+        except (OSError, ValueError):
+            self._write_json(404, {"status": "error", "message": "Not found"}, head_only=head_only)
+            return
+        self._write_bytes(body, content_type, cache_control="max-age=300", head_only=head_only)
+
+    def _handle_read_request(self, head_only: bool) -> bool:
+        if not self._host_is_allowed():
+            return True
+        parsed = urlsplit(self.path)
+        route = parsed.path
         if route == "/hardware/layout.json":
             layout_path = DIRECTORY.parent / "hardware" / "layout.json"
             if not layout_path.is_file():
-                self._write_json(404, {"status": "error", "message": "Not found"})
-                return
-            body = layout_path.read_bytes()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.send_header("Cache-Control", "no-store")
-            self.end_headers()
-            self.wfile.write(body)
-            return
+                self._write_json(404, {"status": "error", "message": "Not found"}, head_only=head_only)
+                return True
+            self._write_bytes(layout_path.read_bytes(), "application/json; charset=utf-8", head_only=head_only)
+            return True
+        if route.startswith("/local-library/"):
+            if self._serve_local_library(route, parsed.query, head_only=head_only):
+                return True
+            self._write_json(404, {"status": "error", "message": "Not found"}, head_only=head_only)
+            return True
         if route.startswith("/api/"):
-            self._write_json(404, {"status": "error", "message": "Not found"})
-            return
-        super().do_GET()
+            self._write_json(404, {"status": "error", "message": "Not found"}, head_only=head_only)
+            return True
+        return False
+
+    def do_HEAD(self) -> None:
+        if not self._handle_read_request(head_only=True):
+            super().do_HEAD()
+
+    def do_GET(self) -> None:
+        if not self._handle_read_request(head_only=False):
+            super().do_GET()
 
     def do_POST(self) -> None:
         if not self._host_is_allowed():

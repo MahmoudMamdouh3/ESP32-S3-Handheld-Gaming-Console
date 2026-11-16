@@ -10,11 +10,11 @@
 
 | Metric | Baseline (`d8d4b5e`) | Prior Stabilization (`0b32109`) | Current (`refactor/principal-overhaul`) | Outcome vs Baseline | Evidence Level |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`default` Profile App Image (`app0 = 8,388,608 B`)** | `3,291,744 B` (`39.2%`) | `3,293,216 B` (`39.3%`) | `3,275,312 B` (`39.0%`, `5,113,296 B` free) | **`-16,432 B`** (`-17,904 B` vs `0b32109`) | `TARGET_COMPILED` |
+| **`default` Profile App Image (`app0 = 8,388,608 B`)** | `3,291,744 B` (`39.2%`) | `3,293,216 B` (`39.3%`) | `3,275,568 B` (`39.0%`, `5,113,040 B` free) | **`-16,176 B`** (`-17,648 B` vs `0b32109`) | `TARGET_COMPILED` |
 | **`default` Profile Static DRAM (`327,680 B`)** | `192,280 B` (`58.7%`) | `185,272 B` (`56.5%`) | `185,456 B` (`56.6%`, `142,224 B` free) | **`-6,824 B`** freed overall (`+10,240 B` DMA bounce vs baseline; `0` WiFi/BT) | `TARGET_COMPILED` |
 | **`default` Profile IRAM Used** | `87,040 B` | `87,040 B` | `87,552 B` | `+512 B` (`std::atomic` / task-notify hot paths) | `TARGET_COMPILED` |
-| **`profiler-compile-only` DRAM (`-DBMO_PROFILE=1`)** | `—` | `190,312 B` (`pre-PSRAM`) | `185,472 B` (`3,278,016 B` App) | **`-4,840 B` DRAM** (ring buffer moved to PSRAM) | `TARGET_COMPILED` |
-| **`no-doom` / `mit` Footprint** | `101,960 B` / `75,840 B` DRAM | `94,952 B` / `69,856 B` DRAM | `95,136 B` / `69,504 B` DRAM (`2,999,568 B` / `878,688 B` App) | **`-6,824 B`** (`no-doom`), **`-6,336 B`** (`mit`) | `TARGET_COMPILED` |
+| **`profiler-compile-only` DRAM (`-DBMO_PROFILE=1`)** | `—` | `190,312 B` (`pre-PSRAM`) | `185,472 B` (`3,278,272 B` App) | **`-4,840 B` DRAM** (ring buffer moved to PSRAM) | `TARGET_COMPILED` |
+| **`no-doom` / `mit` Footprint** | `101,960 B` / `75,840 B` DRAM | `94,952 B` / `69,856 B` DRAM | `95,136 B` / `69,504 B` DRAM (`2,999,840 B` / `878,688 B` App) | **`-6,824 B`** (`no-doom`), **`-6,336 B`** (`mit`) | `TARGET_COMPILED` |
 | **Standalone Bring-Up Sketch (`bringup.ino`)** | None | `390,880 B` Flash / `24,600 B` RAM | `390,880 B` Flash / `24,600 B` RAM (`73,472 B` IRAM) | Isolated LCD, SD & GPIO tester (`esp32s3`) | `TARGET_COMPILED` |
 | **First-Party Compiler Warnings (`-Wall -Wextra -Wshadow`)** | `0` across 3 profiles | `0` across `7` profiles | `0` across all `7` profiles | `clang-tidy` `0` errors + `cppcheck` `0` findings | `TARGET_COMPILED` |
 | **Full Verification Suite (`tasks.py test` + `bench`)** | `82.56 s` | `74.69 s` (`12` Guardian + `168` Py + `26` CTest) | `30` CTest + `149` Py + `12` Guardian + `10/10` mutations + `bench --check` | Added behavioral app/save/blit tests, `ASan/UBSan`, `ruff`, `mypy`, `tsc`, `lizard` | `HOST_TESTED` |

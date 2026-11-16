@@ -98,8 +98,13 @@ export function renderConsoleSelectMenuImpl(sim) {
   ctx.fillText(c.browserSupported ? `Browser core: ${c.ext}` : `Firmware core: ${c.ext}`, cardX + 16, cardY + 95);
   ctx.fillStyle = "#ffe033";
   ctx.font = "bold 13px 'JetBrains Mono', monospace";
-  const romLabel = c.count === 1 ? "1 PLAYABLE ROM" : `${c.count.toLocaleString()} PLAYABLE ROMS`;
-  ctx.fillText(c.count > 0 || c.browserSupported ? romLabel : "ESP32-S3 FIRMWARE ONLY", cardX + 16, cardY + 124);
+  let romLabel = "ESP32-S3 FIRMWARE ONLY";
+  if (c.browserSupported || c.id === "ROM_FAVORITES") {
+    romLabel = c.count === 1 ? "1 PLAYABLE ROM" : `${c.count.toLocaleString()} PLAYABLE ROMS`;
+  } else if (c.count > 0) {
+    romLabel = `${c.count.toLocaleString()} LOCAL ROMS (HW CORE)`;
+  }
+  ctx.fillText(romLabel, cardX + 16, cardY + 124);
 
   ctx.fillStyle = "#5fb49c";
   ctx.font = "bold 18px 'Outfit', sans-serif";
@@ -262,7 +267,13 @@ function renderEmptyGameLibrary(sim, ctx, c) {
   ctx.textAlign = "center";
   ctx.fillStyle = THEME_T.white;
   ctx.font = "bold 15px 'Outfit', sans-serif";
-  if (c.id === "ROM_FAVORITES") {
+  if (sim.librarySearchQuery && String(sim.librarySearchQuery).trim()) {
+    ctx.fillText("NO MATCHING ROMS", 160, 96);
+    ctx.fillStyle = THEME_T.mint;
+    ctx.font = "11px 'Outfit', sans-serif";
+    ctx.fillText(`Filter: "${sim.librarySearchQuery.trim()}"`, 160, 126);
+    ctx.fillText("Clear search box to show all titles.", 160, 144);
+  } else if (c.id === "ROM_FAVORITES") {
     ctx.fillText("NO FAVORITES YET!", 160, 96);
     ctx.fillStyle = THEME_T.mint;
     ctx.font = "11px 'Outfit', sans-serif";
@@ -310,14 +321,23 @@ function renderGameCardDetails(sim, ctx, c, games, idx) {
   ctx.stroke();
 
   const coverSlug = (typeof game === "object" && game.coverSlug) ? game.coverSlug : "";
-  const cover = sim.getCoverImage(title, coverSlug);
+  const cover = sim.getCoverImage(title, coverSlug, game);
   sim.updateHdCoverPanel(cover, title);
-  if (cover.ready) {
+  if (cover.ready && cover.canvasSafe) {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(cover.img, 128, 54, 64, 64);
     ctx.strokeStyle = isFav ? THEME_T.yellow : THEME_T.teal;
     ctx.strokeRect(127.5, 53.5, 65, 65);
+  } else if (cover.ready) {
+    ctx.fillStyle = THEME_T.black;
+    ctx.fillRect(102, 62, 116, 52);
+    ctx.fillStyle = THEME_T.mint;
+    ctx.font = "bold 12px 'JetBrains Mono', monospace";
+    ctx.fillText("BOX ART", 160, 86);
+    ctx.fillStyle = THEME_T.yellow;
+    ctx.font = "9px 'JetBrains Mono', monospace";
+    ctx.fillText("HD PREVIEW READY", 160, 102);
   } else {
     ctx.fillStyle = THEME_T.black;
     ctx.fillRect(102, 62, 116, 52);
