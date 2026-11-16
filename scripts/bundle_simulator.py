@@ -34,6 +34,7 @@ MODULE_ORDER: tuple[str, ...] = (
     "./js/internals.js",
     "./js/sim_controls.js",
     "./js/sim_screens.js",
+    "./js/homebrew_demos.js",
     "./simulator.js",
 )
 

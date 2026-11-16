@@ -6,6 +6,7 @@ import { Bmo3DConsole } from "./bmo_3d_console.js";
 import { bmoModeMethods } from "./js/bmo_mode.js";
 import { CONSOLES_LIST, MAX_BROWSER_ROM_SIZE, STATE, slugifyTitle } from "./js/constants.js";
 import { DEFAULT_HARDWARE_LAYOUT, loadHardwareLayout } from "./js/hardware_layout_data.js";
+import { seedBuiltInHomebrewDemos } from "./js/homebrew_demos.js";
 import { internalsMethods } from "./js/internals.js";
 import { museumMethods } from "./js/museum.js";
 import { applyUrlStateParamsImpl, handleButtonPressImpl, setupInputHandlersImpl, setupUIControlsImpl } from "./js/sim_controls.js";
@@ -168,6 +169,12 @@ export class BmoSimulator {
       );
       this.bmo3D.setOnInternalSelect((meta) => this.handleInternalPartSelected(meta));
       this.bmo3D.onExplosionChange = (t) => this.syncExplosionReadout(t);
+      this.bmo3D.onScreenClick = () => {
+        if (this.currentState === STATE.BOOT_SPLASH) {
+          this.handleButtonPress("A");
+          this.markRenderDirty();
+        }
+      };
       this.bmo3D.shouldUpdateScreenTexture = () => {
         if (!this._screenTextureDirty) return false;
         this._screenTextureDirty = false;
@@ -237,7 +244,8 @@ export class BmoSimulator {
   createGameLibrary() {
     const db = {};
     CONSOLES_LIST.forEach((c) => { db[c.id] = []; });
-    db.ROM_FAVORITES = [];
+    seedBuiltInHomebrewDemos(db);
+    this.rebuildFavoritesInDatabase(db);
     return db;
   }
 
@@ -360,7 +368,8 @@ export class BmoSimulator {
     const game = idx >= 0 ? games[idx] : null;
     const title = typeof game === "string" ? game : (game?.title || "");
     const isFav = Boolean(game && typeof game === "object" && game.isFav);
-    const cover = title ? this.getCoverImage(title) : null;
+    const coverSlug = (game && typeof game === "object" && game.coverSlug) ? game.coverSlug : "";
+    const cover = title ? this.getCoverImage(title, coverSlug) : null;
     let coverFlag = "N";
     if (cover) coverFlag = cover.ready ? "R" : (cover.failed ? "F" : "L");
     return `GAME|${cIdx}|${idx}|${games.length}|${this.topPicksFilter}|${isFav}|${coverFlag}|${this._getFaceBlinkKey()}`;
@@ -494,8 +503,8 @@ export class BmoSimulator {
 
   slugifyTitle(title) { return slugifyTitle(title); }
 
-  getCoverImage(title) {
-    const slug = this.slugifyTitle(title);
+  getCoverImage(title, slugOverride = "") {
+    const slug = slugOverride || this.slugifyTitle(title);
     const cache = this.coverImages instanceof Map ? this.coverImages : new Map();
     if (!(this.coverImages instanceof Map)) this.coverImages = cache;
     let entry = cache.get(slug);

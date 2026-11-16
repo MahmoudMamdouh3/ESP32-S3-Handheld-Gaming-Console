@@ -21,6 +21,7 @@
 #include "../third_party/stella2014/src/Console.h"
 #include "../third_party/stella2014/src/Event.h"
 #include "../third_party/stella2014/src/EventHandler.h"
+#include "../third_party/stella2014/src/M6532.h"
 #include "../third_party/stella2014/src/MD5.h"
 #include "../third_party/stella2014/src/OSystem.h"
 #include "../third_party/stella2014/src/Props.h"
@@ -197,6 +198,7 @@ void AtariEmu::update() {
   ev.set(Event::ConsoleSelect, selectBtn ? 1 : 0);
   ev.set(Event::ConsoleReset, resetBtn ? 1 : 0);
 
+  s_console->riot().update();
   s_console->tia().update();
   renderTiaToPanel();
 }

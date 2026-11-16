@@ -4,6 +4,16 @@
  */
 import { CONSOLES_LIST, MAX_BROWSER_ROM_SIZE } from "./constants.js";
 
+const EXT_TO_SYSTEM = {
+  ".gb": { systemId: "ROM_GB", console: "GB" },
+  ".gbc": { systemId: "ROM_GBC", console: "GBC" },
+  ".nes": { systemId: "ROM_NES", console: "NES" },
+  ".sms": { systemId: "ROM_SMS", console: "SMS" },
+  ".gg": { systemId: "ROM_GG", console: "GG" },
+  ".a26": { systemId: "ROM_ATARI", console: "ATARI" },
+  ".col": { systemId: "ROM_COLEM", console: "COLEM" },
+};
+
 export const webserialMethods = {
     async connectWebSerial() {
       const statusEl = document.getElementById("webserial-status");
@@ -33,14 +43,12 @@ export const webserialMethods = {
       for (const file of Array.from(fileList)) {
         const dot = file.name.lastIndexOf(".");
         const ext = dot >= 0 ? file.name.slice(dot).toLowerCase() : "";
-        const systemId = ext === ".gb" ? "ROM_GB"
-          : ext === ".nes" ? "ROM_NES"
-            : ext === ".a26" ? "ROM_ATARI"
-                : ext === ".col" ? "ROM_COLEM" : "";
-        if (!systemId) {
-          rejected.push(`${file.name}: browser gameplay currently supports .gb, .nes, .a26, and .col ROMs only.`);
+        const route = EXT_TO_SYSTEM[ext];
+        if (!route) {
+          rejected.push(`${file.name}: browser gameplay supports .gb, .gbc, .nes, .sms, .gg, .a26, and .col ROMs.`);
           continue;
         }
+        const { systemId, console: consoleBadge } = route;
         if (file.size > MAX_BROWSER_ROM_SIZE) {
           rejected.push(`${file.name}: browser ROMs cannot exceed 8 MiB.`);
           continue;
@@ -51,9 +59,7 @@ export const webserialMethods = {
           const bytes = new Uint8Array(await file.arrayBuffer());
           const entry = {
             title: cleanTitle,
-            console: systemId === "ROM_GB" ? "GB"
-              : systemId === "ROM_NES" ? "NES"
-                : systemId === "ROM_ATARI" ? "ATARI" : "COLEM",
+            console: consoleBadge,
             systemId,
             isFav: false,
             isPopular: false,

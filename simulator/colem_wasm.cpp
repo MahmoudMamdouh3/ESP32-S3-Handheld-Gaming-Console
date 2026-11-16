@@ -27,6 +27,7 @@ uint32_t s_snapshotFrameCount = 0;
 uint32_t s_snapshotRomChecksum = 0;
 uint32_t s_snapshotButtonMask = 0;
 int32_t s_error = 0;
+BmoSmsConsoleMode s_activeMode = BMO_SMS_CONSOLE_COLECO;
 bool s_running = false;
 bool s_snapshotValid = false;
 
@@ -42,6 +43,18 @@ uint16_t browserRgb565(uint16_t panelPixel) {
 void updateFramebuffer() {
   if (!s_running || !bmo_sms_is_running()) return;
   bmo_sms_render_panel565(s_panelSource);
+  if (s_activeMode == BMO_SMS_CONSOLE_GG) {
+    constexpr uint32_t ggWidth = 160;
+    constexpr uint32_t ggHeight = 144;
+    for (uint32_t r = 0; r < ggHeight; ++r) {
+      const uint16_t* srcRow = &s_panelSource[(24U + r) * SCREEN_WIDTH + 48U];
+      uint16_t* dstRow = &s_framebuffer[r * ggWidth];
+      for (uint32_t c = 0; c < ggWidth; ++c) {
+        dstRow[c] = browserRgb565(srcRow[c]);
+      }
+    }
+    return;
+  }
   for (size_t i = 0; i < FRAMEBUFFER_SIZE; ++i) {
     s_framebuffer[i] = browserRgb565(s_panelSource[i]);
   }
@@ -65,10 +78,17 @@ void applyButtons() {
   if (s_buttonMask & 0x10U) pad |= BMO_SMS_INPUT_BUTTON1;
   if (s_buttonMask & 0x20U) pad |= BMO_SMS_INPUT_BUTTON2;
 
-  int keypad = 0x0F;
-  if (s_buttonMask & 0x40U) keypad = 0x01;       // Start -> Keypad 1
-  else if (s_buttonMask & 0x80U) keypad = 0x0A;  // Select -> Keypad *
-  const int sys = (keypad << BMO_SMS_COLECO_KEYPAD_SHIFT);
+  int sys = 0;
+  if (s_activeMode == BMO_SMS_CONSOLE_COLECO) {
+    int keypad = 0x0F;
+    if (s_buttonMask & 0x40U) keypad = 0x01;       // Start -> Keypad 1
+    else if (s_buttonMask & 0x80U) keypad = 0x0A;  // Select -> Keypad *
+    sys = (keypad << BMO_SMS_COLECO_KEYPAD_SHIFT);
+  } else if (s_activeMode == BMO_SMS_CONSOLE_GG) {
+    if (s_buttonMask & 0x40U) sys |= BMO_SMS_SYS_START;
+  } else if (s_buttonMask & 0x40U) {
+    sys |= BMO_SMS_SYS_PAUSE;
+  }
 
   bmo_sms_set_input(pad, sys);
 }
@@ -92,22 +112,18 @@ void releaseCore() {
   s_snapshotValid = false;
 }
 
-}  // namespace
-
-extern "C" {
-
-__attribute__((visibility("default")))
-int32_t bmo_colem_load_rom(uint32_t size) {
+int32_t loadSmsMode(uint32_t size, BmoSmsConsoleMode mode, uint32_t minSize) {
   releaseCore();
   s_error = 0;
+  s_activeMode = mode;
   uint8_t* rom = bmo_emu_rom_buffer();
   const uint32_t capacity = bmo_emu_rom_capacity();
-  if (!rom || size < 512U || size > capacity) {
+  if (!rom || size < minSize || size > capacity) {
     s_error = -1;
     return s_error;
   }
 
-  if (!bmo_sms_init(rom, size, BMO_SMS_CONSOLE_COLECO, nullptr)) {
+  if (!bmo_sms_init(rom, size, mode, nullptr)) {
     releaseCore();
     s_error = -2;
     return s_error;
@@ -126,6 +142,44 @@ int32_t bmo_colem_load_rom(uint32_t size) {
   applyButtons();
   updateFramebuffer();
   return 0;
+}
+
+void saveSmsSnapshot() {
+  if (!s_running || !s_snapshotBlob) return;
+  size_t outLen = 0;
+  if (!bmo_sms_save_state(s_snapshotBlob, s_snapshotBlobCap, &outLen) || outLen == 0) {
+    return;
+  }
+  s_snapshotBlobLen = outLen;
+  memcpy(s_snapshotFb, s_framebuffer, sizeof(s_framebuffer));
+  s_snapshotFrameCount = s_frameCount;
+  s_snapshotRomChecksum = s_romChecksum;
+  s_snapshotButtonMask = s_buttonMask;
+  s_snapshotValid = true;
+}
+
+int32_t loadSmsSnapshot() {
+  if (!s_running || !s_snapshotBlob || !s_snapshotValid ||
+      s_snapshotRomChecksum != s_romChecksum || s_snapshotBlobLen == 0) {
+    return 0;
+  }
+  if (!bmo_sms_load_state(s_snapshotBlob, s_snapshotBlobLen)) {
+    return 0;
+  }
+  memcpy(s_framebuffer, s_snapshotFb, sizeof(s_framebuffer));
+  s_frameCount = s_snapshotFrameCount;
+  s_buttonMask = s_snapshotButtonMask;
+  applyButtons();
+  return 1;
+}
+
+}  // namespace
+
+extern "C" {
+
+__attribute__((visibility("default")))
+int32_t bmo_colem_load_rom(uint32_t size) {
+  return loadSmsMode(size, BMO_SMS_CONSOLE_COLECO, 512U);
 }
 
 __attribute__((visibility("default")))
@@ -198,37 +252,128 @@ int32_t bmo_colem_is_running() {
 
 __attribute__((visibility("default")))
 void bmo_colem_save_state() {
-  if (!s_running || !s_snapshotBlob) return;
-  size_t outLen = 0;
-  if (!bmo_sms_save_state(s_snapshotBlob, s_snapshotBlobCap, &outLen) || outLen == 0) {
-    return;
-  }
-  s_snapshotBlobLen = outLen;
-  memcpy(s_snapshotFb, s_framebuffer, sizeof(s_framebuffer));
-  s_snapshotFrameCount = s_frameCount;
-  s_snapshotRomChecksum = s_romChecksum;
-  s_snapshotButtonMask = s_buttonMask;
-  s_snapshotValid = true;
+  saveSmsSnapshot();
 }
 
 __attribute__((visibility("default")))
 int32_t bmo_colem_load_state() {
-  if (!s_running || !s_snapshotBlob || !s_snapshotValid ||
-      s_snapshotRomChecksum != s_romChecksum || s_snapshotBlobLen == 0) {
-    return 0;
-  }
-  if (!bmo_sms_load_state(s_snapshotBlob, s_snapshotBlobLen)) {
-    return 0;
-  }
-  memcpy(s_framebuffer, s_snapshotFb, sizeof(s_framebuffer));
-  s_frameCount = s_snapshotFrameCount;
-  s_buttonMask = s_snapshotButtonMask;
-  applyButtons();
-  return 1;
+  return loadSmsSnapshot();
 }
 
 __attribute__((visibility("default")))
 void bmo_colem_destroy() {
+  releaseCore();
+  s_error = 0;
+}
+
+__attribute__((visibility("default")))
+int32_t bmo_sms_wasm_load_rom(uint32_t size) {
+  return loadSmsMode(size, BMO_SMS_CONSOLE_SMS, 1024U);
+}
+
+__attribute__((visibility("default")))
+void bmo_sms_wasm_set_buttons(uint32_t buttons) {
+  bmo_colem_set_buttons(buttons);
+}
+
+__attribute__((visibility("default")))
+uint32_t bmo_sms_wasm_run_frame() {
+  return bmo_colem_run_frame();
+}
+
+__attribute__((visibility("default")))
+uint16_t* bmo_sms_wasm_framebuffer() {
+  return s_framebuffer;
+}
+
+__attribute__((visibility("default")))
+uint32_t bmo_sms_wasm_frame_count() {
+  return s_frameCount;
+}
+
+__attribute__((visibility("default")))
+uint32_t bmo_sms_wasm_rom_checksum() {
+  return s_romChecksum;
+}
+
+__attribute__((visibility("default")))
+int32_t bmo_sms_wasm_last_error() {
+  return s_error;
+}
+
+__attribute__((visibility("default")))
+int32_t bmo_sms_wasm_is_running() {
+  return s_running && s_activeMode == BMO_SMS_CONSOLE_SMS ? 1 : 0;
+}
+
+__attribute__((visibility("default")))
+void bmo_sms_wasm_save_state() {
+  saveSmsSnapshot();
+}
+
+__attribute__((visibility("default")))
+int32_t bmo_sms_wasm_load_state() {
+  return loadSmsSnapshot();
+}
+
+__attribute__((visibility("default")))
+void bmo_sms_wasm_destroy() {
+  releaseCore();
+  s_error = 0;
+}
+
+__attribute__((visibility("default")))
+int32_t bmo_gg_wasm_load_rom(uint32_t size) {
+  return loadSmsMode(size, BMO_SMS_CONSOLE_GG, 1024U);
+}
+
+__attribute__((visibility("default")))
+void bmo_gg_wasm_set_buttons(uint32_t buttons) {
+  bmo_colem_set_buttons(buttons);
+}
+
+__attribute__((visibility("default")))
+uint32_t bmo_gg_wasm_run_frame() {
+  return bmo_colem_run_frame();
+}
+
+__attribute__((visibility("default")))
+uint16_t* bmo_gg_wasm_framebuffer() {
+  return s_framebuffer;
+}
+
+__attribute__((visibility("default")))
+uint32_t bmo_gg_wasm_frame_count() {
+  return s_frameCount;
+}
+
+__attribute__((visibility("default")))
+uint32_t bmo_gg_wasm_rom_checksum() {
+  return s_romChecksum;
+}
+
+__attribute__((visibility("default")))
+int32_t bmo_gg_wasm_last_error() {
+  return s_error;
+}
+
+__attribute__((visibility("default")))
+int32_t bmo_gg_wasm_is_running() {
+  return s_running && s_activeMode == BMO_SMS_CONSOLE_GG ? 1 : 0;
+}
+
+__attribute__((visibility("default")))
+void bmo_gg_wasm_save_state() {
+  saveSmsSnapshot();
+}
+
+__attribute__((visibility("default")))
+int32_t bmo_gg_wasm_load_state() {
+  return loadSmsSnapshot();
+}
+
+__attribute__((visibility("default")))
+void bmo_gg_wasm_destroy() {
   releaseCore();
   s_error = 0;
 }

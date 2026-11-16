@@ -180,6 +180,11 @@ function bindScreenPointerEvents(sim) {
     sim.setBmoModeGaze(((e.clientX - rect.left) / rect.width) * 2 - 1, 1 - ((e.clientY - rect.top) / rect.height) * 2);
   };
   addListener(sim, sim.canvas, "pointerdown", (e) => {
+    if (sim.currentState === STATE.BOOT_SPLASH) {
+      sim.handleButtonPress("A");
+      if (typeof sim.markRenderDirty === "function") sim.markRenderDirty();
+      return;
+    }
     if (sim.currentState !== STATE.IDLE_MASCOT) return;
     draggingScreen = true;
     screenMoved = false;
@@ -335,6 +340,7 @@ function bindViewAndThemeControls(sim) {
       document.querySelectorAll(".scale-btn").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       document.documentElement.style.setProperty("--scale-multiplier", btn.getAttribute("data-scale"));
+      if (sim.bmo3D) sim.bmo3D.onResize();
     });
   });
 

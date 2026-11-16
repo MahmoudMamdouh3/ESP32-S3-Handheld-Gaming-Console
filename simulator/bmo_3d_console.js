@@ -66,6 +66,7 @@ export class Bmo3DConsole {
     this.lastFrameTime = performance.now();
     this.onInternalSelect = null;
     this.onExplosionChange = null;
+    this.onScreenClick = null;
     /** @type {any[] | null} */
     this.acousticFeltMeshes = null;
     this.dpadRestZ = 1.42;
@@ -105,8 +106,8 @@ export class Bmo3DConsole {
     // 1. Scene
     this.scene = new THREE.Scene();
 
-    // 2. Camera: 38 deg FOV for authentic product focal length
-    this.camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
+    // 2. Camera: 42 deg FOV frames full chassis including L/R shoulders and SELECT/START pills
+    this.camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
     this.setCameraPreset("front");
 
     // Use an sRGB output transform for display and canvas textures.
@@ -260,13 +261,21 @@ export class Bmo3DConsole {
       }
       if (pointerDownPos && e.target === dom) {
         const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
-        if (dist < 6 && this.internals) {
-          const hit = this.getIntersectedInternal(e);
+        if (dist < 6) {
+          const hit = this.internals ? this.getIntersectedInternal(e) : null;
           if (hit && hit.userData && hit.userData.isInternalPart) {
             const tag = hit.userData.wireId || hit.userData.groupTag || "all";
             this.internals.setHighlight(tag);
             if (typeof this.onInternalSelect === "function") {
               this.onInternalSelect(hit.userData);
+            }
+          } else if (this.screenMesh && typeof this.onScreenClick === "function") {
+            const rect = dom.getBoundingClientRect();
+            this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            this.raycaster.setFromCamera(this.mouse, this.camera);
+            if (this.raycaster.intersectObject(this.screenMesh, false).length > 0) {
+              this.onScreenClick();
             }
           }
         }

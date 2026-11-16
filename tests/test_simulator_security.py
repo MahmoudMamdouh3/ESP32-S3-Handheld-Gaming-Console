@@ -272,11 +272,14 @@ function makeClassList(el) {
 
 function makeEl(id, cls = "", attrs = {}) {
   const listeners = new Map();
+  const drawnTexts = [];
   const ctx2d = {
+    drawnTexts,
     fillRect() {}, clearRect() {}, strokeRect() {}, beginPath() {}, closePath() {},
     moveTo() {}, lineTo() {}, quadraticCurveTo() {}, arc() {}, ellipse() {}, fill() {}, stroke() {},
     save() {}, restore() {}, translate() {}, scale() {}, rotate() {}, roundRect() {},
-    fillText() {}, drawImage() {}, measureText: (s) => ({ width: String(s).length * 6 }),
+    fillText(text, x, y) { drawnTexts.push({ text: String(text), x, y, textAlign: ctx2d.textAlign }); },
+    drawImage() {}, measureText: (s) => ({ width: String(s).length * 6 }),
     createRadialGradient: () => ({ addColorStop() {} }),
     createLinearGradient: () => ({ addColorStop() {} }),
     fillStyle: "", strokeStyle: "", lineWidth: 1, font: "", textAlign: "", textBaseline: "",
@@ -423,6 +426,19 @@ if (!byId.get("internals-guide-heading").textContent.startsWith("2.")) {
 byId.get("btn-bmo-mode").click();
 if (sim.currentState !== 5 || !sim.bmoModeActive || !byId.get("bmo-mode-panel").classList.contains("is-active")) {
   throw new Error(`BMO Mode toolbar toggle failed: state=${sim.currentState}`);
+}
+for (const sysId of ["ROM_GB", "ROM_GBC", "ROM_NES", "ROM_SMS", "ROM_GG", "ROM_ATARI", "ROM_COLEM", "ROM_FAVORITES"]) {
+  if (!Array.isArray(sim.gameLibrary[sysId]) || sim.gameLibrary[sysId].length === 0) {
+    throw new Error(`Expected built-in homebrew demo in ${sysId}`);
+  }
+}
+sim.selectedConsoleIndex = 1;
+const canvasCtx = byId.get("tft-display").getContext("2d");
+canvasCtx.drawnTexts.length = 0;
+sim.renderConsoleMuseumModal();
+const cpuDraw = canvasCtx.drawnTexts.find((d) => d.text.startsWith("CPU :"));
+if (!cpuDraw || cpuDraw.textAlign !== "left" || cpuDraw.x < 22) {
+  throw new Error(`Museum text alignment regression: ${JSON.stringify(cpuDraw)}`);
 }
 console.log("CLASSIC_BUNDLE_CONTROLS_PASS");
 """

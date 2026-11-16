@@ -6,6 +6,36 @@ import { CONSOLE_HISTORY_DATABASE } from "../console_history_data.js";
 import { CONSOLES_LIST } from "./constants.js";
 import { PIXEL_ART_PAINTERS, drawGenericCartridgeIcon } from "./museum_icons.js";
 
+function fitMuseumText(ctx, text, maxWidth) {
+  let shown = String(text || "");
+  if (ctx.measureText(shown).width <= maxWidth) return shown;
+  while (shown.length > 3 && ctx.measureText(`${shown}...`).width > maxWidth) {
+    shown = shown.slice(0, -1);
+  }
+  return shown.length > 0 ? `${shown}...` : "";
+}
+
+function wrapMuseumLines(ctx, text, maxWidth, maxLines) {
+  const words = String(text || "").split(/\s+/).filter(Boolean);
+  const lines = [];
+  let current = "";
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (ctx.measureText(candidate).width <= maxWidth) {
+      current = candidate;
+    } else {
+      if (current) lines.push(current);
+      if (lines.length >= maxLines) {
+        current = "";
+        break;
+      }
+      current = word;
+    }
+  }
+  if (current && lines.length < maxLines) lines.push(current);
+  return lines;
+}
+
 export const museumMethods = {
     updateSidebarMuseumView(historyDb = CONSOLE_HISTORY_DATABASE, consolesList = CONSOLES_LIST) {
       const currentConsole = consolesList[this.selectedConsoleIndex];
@@ -64,86 +94,84 @@ export const museumMethods = {
     },
 
     renderConsoleMuseumModal() {
+      const ctx = this.ctx;
       const c = CONSOLES_LIST[this.selectedConsoleIndex];
       const data = CONSOLE_HISTORY_DATABASE[c.id];
+      ctx.save();
 
       // Background overlay
-      this.ctx.fillStyle = "rgba(10, 14, 23, 0.95)";
-      this.ctx.fillRect(0, 0, 320, 240);
+      ctx.fillStyle = "rgba(10, 14, 23, 0.95)";
+      ctx.fillRect(0, 0, 320, 240);
 
       // Museum Card Frame
-      this.ctx.fillStyle = "#151d2a";
-      this.ctx.beginPath();
-      this.ctx.roundRect(10, 10, 300, 220, 10);
-      this.ctx.fill();
-      this.ctx.strokeStyle = c.color;
-      this.ctx.lineWidth = 1.5;
-      this.ctx.stroke();
+      ctx.fillStyle = "#151d2a";
+      ctx.beginPath();
+      ctx.roundRect(10, 10, 300, 220, 10);
+      ctx.fill();
+      ctx.strokeStyle = c.color;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
 
       // Title
-      this.ctx.fillStyle = "#ffffff";
-      this.ctx.font = "bold 13px 'Outfit', sans-serif";
-      this.ctx.textAlign = "left";
-      this.ctx.fillText(`🏛️ ${c.name} (${c.year})`, 22, 32);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 13px 'Outfit', sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(fitMuseumText(ctx, `${c.name} (${c.year})`, 210), 22, 32);
 
-      this.ctx.fillStyle = c.color;
-      this.ctx.font = "bold 9px 'Press Start 2P', monospace";
-      this.ctx.textAlign = "right";
-      this.ctx.fillText("MUSEUM", 295, 30);
+      ctx.fillStyle = c.color;
+      ctx.font = "bold 9px 'Press Start 2P', monospace";
+      ctx.textAlign = "right";
+      ctx.fillText("MUSEUM", 295, 30);
 
       // Separator line
-      this.ctx.strokeStyle = "rgba(255,255,255,0.1)";
-      this.ctx.beginPath();
-      this.ctx.moveTo(22, 42);
-      this.ctx.lineTo(298, 42);
-      this.ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,0.1)";
+      ctx.beginPath();
+      ctx.moveTo(22, 42);
+      ctx.lineTo(298, 42);
+      ctx.stroke();
+
+      // Restore left alignment before rendering all spec and body rows.
+      ctx.textAlign = "left";
 
       if (data) {
         // Hardware Specs Box
-        this.ctx.fillStyle = "#1e272e";
-        this.ctx.beginPath();
-        this.ctx.roundRect(22, 50, 276, 52, 6);
-        this.ctx.fill();
+        ctx.fillStyle = "#1e272e";
+        ctx.beginPath();
+        ctx.roundRect(22, 50, 276, 52, 6);
+        ctx.fill();
 
-        this.ctx.font = "10px 'JetBrains Mono', monospace";
-        this.ctx.fillStyle = "#feca57";
-        this.ctx.fillText(`CPU : ${data.specs.cpu ? data.specs.cpu.slice(0, 34) : 'Custom Architecture'}`, 28, 66);
-        this.ctx.fillStyle = "#00d2d3";
-        this.ctx.fillText(`RAM : ${data.specs.ram || '8 KB'} | Res: ${data.specs.resolution || '256x224'}`, 28, 80);
-        this.ctx.fillStyle = "#ff9ff3";
-        this.ctx.fillText(`Audio: ${data.specs.sound ? data.specs.sound.slice(0, 34) : 'Stereo PSG/FM'}`, 28, 94);
+        ctx.font = "10px 'JetBrains Mono', monospace";
+        ctx.fillStyle = "#feca57";
+        ctx.fillText(fitMuseumText(ctx, `CPU : ${data.specs.cpu || "Custom Architecture"}`, 264), 28, 66);
+        ctx.fillStyle = "#00d2d3";
+        ctx.fillText(fitMuseumText(ctx, `RAM : ${data.specs.ram || "8 KB"} | Res: ${data.specs.resolution || "256x224"}`, 264), 28, 80);
+        ctx.fillStyle = "#ff9ff3";
+        ctx.fillText(fitMuseumText(ctx, `Audio: ${data.specs.sound || "Stereo PSG/FM"}`, 264), 28, 94);
 
         // Historical Breakthrough Text
-        this.ctx.fillStyle = "#dcdde1";
-        this.ctx.font = "10px 'Outfit', sans-serif";
-        const words = (data.historicalSignificance || "").split(" ");
-        let line = "";
+        ctx.fillStyle = "#dcdde1";
+        ctx.font = "10px 'Outfit', sans-serif";
+        const bodyLines = wrapMuseumLines(ctx, data.historicalSignificance || "", 274, 5);
         let yPos = 118;
-        for (let w of words) {
-          if ((line + w).length > 46) {
-            this.ctx.fillText(line, 22, yPos);
-            line = w + " ";
-            yPos += 14;
-            if (yPos > 175) break;
-          } else {
-            line += w + " ";
-          }
+        for (const textLine of bodyLines) {
+          ctx.fillText(textLine, 22, yPos);
+          yPos += 14;
         }
-        if (line && yPos <= 175) this.ctx.fillText(line, 22, yPos);
 
         // Hallmark Game Highlight
         if (data.hallmarkGames && data.hallmarkGames.length > 0) {
           const hg = data.hallmarkGames[0];
-          this.ctx.fillStyle = "#feca57";
-          this.ctx.font = "bold 10px 'Outfit', sans-serif";
-          this.ctx.fillText(`★ Key Landmark: ${hg.title} (${hg.year})`, 22, 195);
+          ctx.fillStyle = "#feca57";
+          ctx.font = "bold 10px 'Outfit', sans-serif";
+          ctx.fillText(fitMuseumText(ctx, `Key Landmark: ${hg.title} (${hg.year})`, 274), 22, 198);
         }
       }
 
       // Dismiss Prompt
-      this.ctx.fillStyle = "#a4b0be";
-      this.ctx.font = "9px 'Press Start 2P', monospace";
-      this.ctx.textAlign = "center";
-      this.ctx.fillText("PRESS B TO RETURN", 160, 220);
+      ctx.fillStyle = "#a4b0be";
+      ctx.font = "9px 'Press Start 2P', monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("PRESS B TO RETURN", 160, 220);
+      ctx.restore();
     }
   };

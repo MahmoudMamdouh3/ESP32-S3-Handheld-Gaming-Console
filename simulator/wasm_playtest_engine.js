@@ -4,6 +4,8 @@
 
 export const GAMEBOY_VIEWPORT = { w: 240, h: 216, scale: 1, ox: 40, oy: 12 };
 export const NES_VIEWPORT = { w: 256, h: 240, scale: 1, ox: 32, oy: 0 };
+export const SMS_VIEWPORT = { w: 256, h: 192, scale: 1, ox: 32, oy: 24 };
+export const GG_VIEWPORT = { w: 160, h: 144, scale: 1, ox: 80, oy: 48 };
 export const ATARI_VIEWPORT = { w: 160, h: 192, scale: 1, ox: 80, oy: 24 };
 export const COLECO_VIEWPORT = { w: 256, h: 192, scale: 1, ox: 32, oy: 24 };
 export const BMO_EXPRESSION_NAMES = [
@@ -31,9 +33,41 @@ export const BMO_EXPRESSIONS = Object.freeze(
 );
 const CORE_CONFIG = {
   ROM_GB: { prefix: "bmo_emu", name: "Peanut-GB", viewport: GAMEBOY_VIEWPORT, frameRate: 59.7275 },
+  ROM_GBC: { prefix: "bmo_gbc", name: "Walnut-CGB", viewport: GAMEBOY_VIEWPORT, frameRate: 59.7275 },
   ROM_NES: { prefix: "bmo_nes", name: "Agnes NES", viewport: NES_VIEWPORT, frameRate: 60.0988 },
+  ROM_SMS: { prefix: "bmo_sms_wasm", name: "SMSPlus Master System", viewport: SMS_VIEWPORT, frameRate: 59.9227 },
+  ROM_GG: { prefix: "bmo_gg_wasm", name: "SMSPlus Game Gear", viewport: GG_VIEWPORT, frameRate: 59.9227 },
   ROM_ATARI: { prefix: "bmo_atari", name: "Stella Atari 2600", viewport: ATARI_VIEWPORT, frameRate: 60 },
   ROM_COLEM: { prefix: "bmo_colem", name: "ColecoVision", viewport: COLECO_VIEWPORT, frameRate: 60 },
+};
+
+const ROM_LOAD_FAILURES = {
+  ROM_GB: {
+    "-1": "The file is too small or too large to be a Game Boy ROM.",
+    "-2": "The ROM header declares an unsupported or truncated cartridge size.",
+    "-3": "The Game Boy cartridge header checksum is invalid.",
+    "-4": "This Game Boy cartridge mapper is not supported by the vendored firmware core.",
+  },
+  ROM_NES: {
+    "-1": "The file is too small or too large to be an NES ROM.",
+    "-2": "The NES ROM header is invalid or declares no PRG-ROM.",
+    "-3": "NES 2.0 headers are not supported by the vendored firmware core.",
+    "-4": "The NES ROM header declares a truncated cartridge image.",
+    "-5": "This NES mapper is not supported by the vendored firmware core (mappers 0, 1, 2, and 4 only).",
+    "-6": "The vendored NES core could not initialize this ROM or allocate its state.",
+  },
+  ROM_SMS: {
+    "-1": "Master System / Game Gear ROMs must be at least 1 KiB.",
+    "-2": "The SMSPlus core could not allocate memory for this ROM.",
+  },
+  ROM_ATARI: {
+    "-1": "Atari 2600 ROMs must be 2, 4, 8, 16, or 32 KiB.",
+    "-2": "The Atari 2600 core could not initialize this ROM or allocate its state.",
+  },
+  ROM_COLEM: {
+    "-1": "ColecoVision ROM files must be at least 512 bytes.",
+    "-2": "The ColecoVision core could not allocate its working or save-state memory.",
+  },
 };
 
 const IS_LITTLE_ENDIAN = (new Uint8Array(new Uint32Array([0x04030201]).buffer))[0] === 1;
@@ -413,12 +447,18 @@ export class WasmPlaytestEngine {
     return this.exports.bmo_face_happiness();
   }
 
+  _failRomLoadMessage(consoleId, coreName, result) {
+    const failGroup = consoleId === "ROM_GBC" ? "ROM_GB" : (consoleId === "ROM_GG" ? "ROM_SMS" : consoleId);
+    const failures = ROM_LOAD_FAILURES[failGroup] || ROM_LOAD_FAILURES.ROM_COLEM;
+    return failures[String(result)] || `${coreName} rejected this ROM (${result}).`;
+  }
+
   loadRom(consoleId, title, romBytes) {
     if (!this.ready || !this.exports) throw new Error("The WebAssembly emulator cores are not ready.");
     const config = CORE_CONFIG[consoleId];
-    if (!config) throw new Error("Browser gameplay currently supports Game Boy (.gb), NES (.nes), Atari 2600 (.a26), and ColecoVision (.col) ROMs only.");
+    if (!config) throw new Error("Browser gameplay currently supports Game Boy (.gb), Game Boy Color (.gbc), NES (.nes), Master System (.sms), Game Gear (.gg), Atari 2600 (.a26), and ColecoVision (.col) ROMs.");
     if (!(romBytes instanceof Uint8Array) || romBytes.length === 0) {
-      throw new Error("Choose a real .gb, .nes, .a26, or .col ROM file before starting a game.");
+      throw new Error("Choose a real .gb, .gbc, .nes, .sms, .gg, .a26, or .col ROM file before starting a game.");
     }
 
     this.exports[`${this.corePrefix}_destroy`]();
@@ -435,32 +475,7 @@ export class WasmPlaytestEngine {
     new Uint8Array(this.exports.memory.buffer, romPointer, romBytes.length).set(romBytes);
     const result = this.exports[`${config.prefix}_load_rom`](romBytes.length);
     if (result !== 0) {
-      const failures = consoleId === "ROM_GB"
-        ? {
-          "-1": "The file is too small or too large to be a Game Boy ROM.",
-          "-2": "The ROM header declares an unsupported or truncated cartridge size.",
-          "-3": "The Game Boy cartridge header checksum is invalid.",
-          "-4": "This Game Boy cartridge mapper is not supported by the vendored firmware core."
-        }
-        : consoleId === "ROM_NES"
-          ? {
-          "-1": "The file is too small or too large to be an NES ROM.",
-          "-2": "The NES ROM header is invalid or declares no PRG-ROM.",
-          "-3": "NES 2.0 headers are not supported by the vendored firmware core.",
-          "-4": "The NES ROM header declares a truncated cartridge image.",
-          "-5": "This NES mapper is not supported by the vendored firmware core (mappers 0, 1, 2, and 4 only).",
-          "-6": "The vendored NES core could not initialize this ROM or allocate its state."
-          }
-          : consoleId === "ROM_ATARI"
-            ? {
-            "-1": "Atari 2600 ROMs must be 2, 4, 8, 16, or 32 KiB.",
-            "-2": "The Atari 2600 core could not initialize this ROM or allocate its state."
-            }
-            : {
-              "-1": "ColecoVision ROM files must be at least 512 bytes.",
-              "-2": "The ColecoVision core could not allocate its working or save-state memory."
-            };
-      throw new Error(failures[String(result)] || `${config.name} rejected this ROM (${result}).`);
+      throw new Error(this._failRomLoadMessage(consoleId, config.name, result));
     }
 
     this.activeConsoleId = consoleId;
@@ -476,7 +491,9 @@ export class WasmPlaytestEngine {
     this.loaded = true;
     this.lastRenderTime = 0;
     this.frameAccumulator = 0;
-    if (this.paletteColors && this.corePrefix === "bmo_emu") this.setPalette(this.paletteColors);
+    if (this.paletteColors && (this.corePrefix === "bmo_emu" || this.corePrefix === "bmo_gbc")) {
+      this.setPalette(this.paletteColors);
+    }
     if (this.offscreenCanvas) {
       this.offscreenCanvas.width = this.viewport.w;
       this.offscreenCanvas.height = this.viewport.h;
@@ -500,19 +517,15 @@ export class WasmPlaytestEngine {
   setPalette(colors) {
     if (!Array.isArray(colors) || colors.length !== 4) return;
     const cur = this.paletteColors;
-    const sameColors = cur && cur.length === 4 &&
-      cur[0] === colors[0] && cur[1] === colors[1] && cur[2] === colors[2] && cur[3] === colors[3];
+    const sameColors = Boolean(cur && cur.length === 4 && cur.every((v, idx) => v === colors[idx]));
     if (sameColors && this._paletteExports === this.exports && this._palettePrefix === this.corePrefix) return;
     if (!sameColors) this.paletteColors = colors.slice();
     if (!this.exports) return;
     this._paletteExports = this.exports;
     this._palettePrefix = this.corePrefix;
-    if (this.corePrefix !== "bmo_emu") return;
-    const p0 = Number.parseInt(colors[0].charCodeAt(0) === 35 ? colors[0].slice(1) : colors[0], 16);
-    const p1 = Number.parseInt(colors[1].charCodeAt(0) === 35 ? colors[1].slice(1) : colors[1], 16);
-    const p2 = Number.parseInt(colors[2].charCodeAt(0) === 35 ? colors[2].slice(1) : colors[2], 16);
-    const p3 = Number.parseInt(colors[3].charCodeAt(0) === 35 ? colors[3].slice(1) : colors[3], 16);
-    this.exports.bmo_emu_set_palette(p0, p1, p2, p3);
+    if (this.corePrefix !== "bmo_emu" && this.corePrefix !== "bmo_gbc") return;
+    const [p0, p1, p2, p3] = colors.map((c) => Number.parseInt(c.startsWith("#") ? c.slice(1) : c, 16));
+    this.exports[`${this.corePrefix}_set_palette`](p0, p1, p2, p3);
   }
 
   setButtonBit(bit, pressed) {

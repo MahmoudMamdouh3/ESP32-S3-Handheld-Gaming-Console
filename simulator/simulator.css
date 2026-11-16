@@ -337,8 +337,9 @@ main.simulator-workspace {
 
 .three-viewport-frame {
   width: 100%;
-  max-width: 500px;
-  height: 680px;
+  max-width: calc(500px * var(--scale-multiplier));
+  height: min(calc(680px * var(--scale-multiplier)), calc(100vh - 250px));
+  min-height: 460px;
   position: relative;
   border-radius: 16px;
   background: var(--bg-panel);
@@ -396,7 +397,8 @@ main.simulator-workspace {
 /* Screen Bezel Housing (ST7789 2.4" 320x240 scaled proportionally to 8.80 cm chassis width) */
 .screen-bezel-housing {
   width: calc(296px * var(--scale-multiplier));
-  height: calc(240px * var(--scale-multiplier));
+  min-height: calc(240px * var(--scale-multiplier));
+  height: auto;
   background: var(--bezel-color);
   border-radius: calc(12px * var(--scale-multiplier)) calc(12px * var(--scale-multiplier)) calc(36px * var(--scale-multiplier)) calc(12px * var(--scale-multiplier));
   box-shadow: 
@@ -438,6 +440,7 @@ main.simulator-workspace {
 .display-viewport-frame {
   width: calc(256px * var(--scale-multiplier));
   height: calc(192px * var(--scale-multiplier));
+  flex-shrink: 0;
   background: #000000;
   position: relative;
   overflow: hidden;

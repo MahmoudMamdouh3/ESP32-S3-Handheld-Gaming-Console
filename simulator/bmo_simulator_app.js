@@ -25,12 +25,12 @@
       const CONSOLES_LIST = [
         { id: "ROM_FAVORITES", name: "★ Favorites", year: "Starred", ext: "★", badge: "FAV", color: "#FFE033", count: 0 },
         { id: "ROM_GB", name: "Game Boy", year: "1989", ext: ".gb", badge: "DMG", color: "#5FB49C", count: 0, browserSupported: true },
-        { id: "ROM_GBC", name: "Game Boy Color", year: "1998", ext: ".gbc", badge: "GBC", color: "#2ED573", count: 0 },
+        { id: "ROM_GBC", name: "Game Boy Color", year: "1998", ext: ".gbc", badge: "GBC", color: "#2ED573", count: 0, browserSupported: true },
         { id: "ROM_NES", name: "Nintendo NES", year: "1983", ext: ".nes", badge: "NES", color: "#FF5E57", count: 0, browserSupported: true },
         { id: "ROM_SNES", name: "Super Nintendo", year: "1990", ext: ".sfc", badge: "SNES", color: "#9C88FF", count: 0 },
         { id: "ROM_GENESIS", name: "Sega Genesis", year: "1988", ext: ".gen", badge: "MD", color: "#2E86DE", count: 0 },
-        { id: "ROM_SMS", name: "Master System", year: "1985", ext: ".sms", badge: "SMS", color: "#3B82F6", count: 0 },
-        { id: "ROM_GG", name: "Game Gear", year: "1990", ext: ".gg", badge: "GG", color: "#F368E0", count: 0 },
+        { id: "ROM_SMS", name: "Master System", year: "1985", ext: ".sms", badge: "SMS", color: "#3B82F6", count: 0, browserSupported: true },
+        { id: "ROM_GG", name: "Game Gear", year: "1990", ext: ".gg", badge: "GG", color: "#F368E0", count: 0, browserSupported: true },
         { id: "ROM_PCE", name: "PC Engine / TG16", year: "1987", ext: ".pce", badge: "PCE", color: "#FF6B6B", count: 0 },
         { id: "ROM_ATARI", name: "Atari 2600", year: "1977", ext: ".a26", badge: "A26", color: "#E056FD", count: 0, browserSupported: true },
         { id: "ROM_COLEM", name: "ColecoVision", year: "1982", ext: ".col", badge: "COL", color: "#00D2D3", count: 0, browserSupported: true },
@@ -1127,6 +1127,8 @@
 
       const GAMEBOY_VIEWPORT = { w: 240, h: 216, scale: 1, ox: 40, oy: 12 };
       const NES_VIEWPORT = { w: 256, h: 240, scale: 1, ox: 32, oy: 0 };
+      const SMS_VIEWPORT = { w: 256, h: 192, scale: 1, ox: 32, oy: 24 };
+      const GG_VIEWPORT = { w: 160, h: 144, scale: 1, ox: 80, oy: 48 };
       const ATARI_VIEWPORT = { w: 160, h: 192, scale: 1, ox: 80, oy: 24 };
       const COLECO_VIEWPORT = { w: 256, h: 192, scale: 1, ox: 32, oy: 24 };
       const BMO_EXPRESSION_NAMES = [
@@ -1154,9 +1156,41 @@
       );
       const CORE_CONFIG = {
         ROM_GB: { prefix: "bmo_emu", name: "Peanut-GB", viewport: GAMEBOY_VIEWPORT, frameRate: 59.7275 },
+        ROM_GBC: { prefix: "bmo_gbc", name: "Walnut-CGB", viewport: GAMEBOY_VIEWPORT, frameRate: 59.7275 },
         ROM_NES: { prefix: "bmo_nes", name: "Agnes NES", viewport: NES_VIEWPORT, frameRate: 60.0988 },
+        ROM_SMS: { prefix: "bmo_sms_wasm", name: "SMSPlus Master System", viewport: SMS_VIEWPORT, frameRate: 59.9227 },
+        ROM_GG: { prefix: "bmo_gg_wasm", name: "SMSPlus Game Gear", viewport: GG_VIEWPORT, frameRate: 59.9227 },
         ROM_ATARI: { prefix: "bmo_atari", name: "Stella Atari 2600", viewport: ATARI_VIEWPORT, frameRate: 60 },
         ROM_COLEM: { prefix: "bmo_colem", name: "ColecoVision", viewport: COLECO_VIEWPORT, frameRate: 60 },
+      };
+
+      const ROM_LOAD_FAILURES = {
+        ROM_GB: {
+          "-1": "The file is too small or too large to be a Game Boy ROM.",
+          "-2": "The ROM header declares an unsupported or truncated cartridge size.",
+          "-3": "The Game Boy cartridge header checksum is invalid.",
+          "-4": "This Game Boy cartridge mapper is not supported by the vendored firmware core.",
+        },
+        ROM_NES: {
+          "-1": "The file is too small or too large to be an NES ROM.",
+          "-2": "The NES ROM header is invalid or declares no PRG-ROM.",
+          "-3": "NES 2.0 headers are not supported by the vendored firmware core.",
+          "-4": "The NES ROM header declares a truncated cartridge image.",
+          "-5": "This NES mapper is not supported by the vendored firmware core (mappers 0, 1, 2, and 4 only).",
+          "-6": "The vendored NES core could not initialize this ROM or allocate its state.",
+        },
+        ROM_SMS: {
+          "-1": "Master System / Game Gear ROMs must be at least 1 KiB.",
+          "-2": "The SMSPlus core could not allocate memory for this ROM.",
+        },
+        ROM_ATARI: {
+          "-1": "Atari 2600 ROMs must be 2, 4, 8, 16, or 32 KiB.",
+          "-2": "The Atari 2600 core could not initialize this ROM or allocate its state.",
+        },
+        ROM_COLEM: {
+          "-1": "ColecoVision ROM files must be at least 512 bytes.",
+          "-2": "The ColecoVision core could not allocate its working or save-state memory.",
+        },
       };
 
       const IS_LITTLE_ENDIAN = (new Uint8Array(new Uint32Array([0x04030201]).buffer))[0] === 1;
@@ -1531,12 +1565,18 @@
           return this.exports.bmo_face_happiness();
         }
 
+        _failRomLoadMessage(consoleId, coreName, result) {
+          const failGroup = consoleId === "ROM_GBC" ? "ROM_GB" : (consoleId === "ROM_GG" ? "ROM_SMS" : consoleId);
+          const failures = ROM_LOAD_FAILURES[failGroup] || ROM_LOAD_FAILURES.ROM_COLEM;
+          return failures[String(result)] || `${coreName} rejected this ROM (${result}).`;
+        }
+
         loadRom(consoleId, title, romBytes) {
           if (!this.ready || !this.exports) throw new Error("The WebAssembly emulator cores are not ready.");
           const config = CORE_CONFIG[consoleId];
-          if (!config) throw new Error("Browser gameplay currently supports Game Boy (.gb), NES (.nes), Atari 2600 (.a26), and ColecoVision (.col) ROMs only.");
+          if (!config) throw new Error("Browser gameplay currently supports Game Boy (.gb), Game Boy Color (.gbc), NES (.nes), Master System (.sms), Game Gear (.gg), Atari 2600 (.a26), and ColecoVision (.col) ROMs.");
           if (!(romBytes instanceof Uint8Array) || romBytes.length === 0) {
-            throw new Error("Choose a real .gb, .nes, .a26, or .col ROM file before starting a game.");
+            throw new Error("Choose a real .gb, .gbc, .nes, .sms, .gg, .a26, or .col ROM file before starting a game.");
           }
 
           this.exports[`${this.corePrefix}_destroy`]();
@@ -1553,32 +1593,7 @@
           new Uint8Array(this.exports.memory.buffer, romPointer, romBytes.length).set(romBytes);
           const result = this.exports[`${config.prefix}_load_rom`](romBytes.length);
           if (result !== 0) {
-            const failures = consoleId === "ROM_GB"
-              ? {
-                "-1": "The file is too small or too large to be a Game Boy ROM.",
-                "-2": "The ROM header declares an unsupported or truncated cartridge size.",
-                "-3": "The Game Boy cartridge header checksum is invalid.",
-                "-4": "This Game Boy cartridge mapper is not supported by the vendored firmware core."
-              }
-              : consoleId === "ROM_NES"
-                ? {
-                "-1": "The file is too small or too large to be an NES ROM.",
-                "-2": "The NES ROM header is invalid or declares no PRG-ROM.",
-                "-3": "NES 2.0 headers are not supported by the vendored firmware core.",
-                "-4": "The NES ROM header declares a truncated cartridge image.",
-                "-5": "This NES mapper is not supported by the vendored firmware core (mappers 0, 1, 2, and 4 only).",
-                "-6": "The vendored NES core could not initialize this ROM or allocate its state."
-                }
-                : consoleId === "ROM_ATARI"
-                  ? {
-                  "-1": "Atari 2600 ROMs must be 2, 4, 8, 16, or 32 KiB.",
-                  "-2": "The Atari 2600 core could not initialize this ROM or allocate its state."
-                  }
-                  : {
-                    "-1": "ColecoVision ROM files must be at least 512 bytes.",
-                    "-2": "The ColecoVision core could not allocate its working or save-state memory."
-                  };
-            throw new Error(failures[String(result)] || `${config.name} rejected this ROM (${result}).`);
+            throw new Error(this._failRomLoadMessage(consoleId, config.name, result));
           }
 
           this.activeConsoleId = consoleId;
@@ -1594,7 +1609,9 @@
           this.loaded = true;
           this.lastRenderTime = 0;
           this.frameAccumulator = 0;
-          if (this.paletteColors && this.corePrefix === "bmo_emu") this.setPalette(this.paletteColors);
+          if (this.paletteColors && (this.corePrefix === "bmo_emu" || this.corePrefix === "bmo_gbc")) {
+            this.setPalette(this.paletteColors);
+          }
           if (this.offscreenCanvas) {
             this.offscreenCanvas.width = this.viewport.w;
             this.offscreenCanvas.height = this.viewport.h;
@@ -1618,19 +1635,15 @@
         setPalette(colors) {
           if (!Array.isArray(colors) || colors.length !== 4) return;
           const cur = this.paletteColors;
-          const sameColors = cur && cur.length === 4 &&
-            cur[0] === colors[0] && cur[1] === colors[1] && cur[2] === colors[2] && cur[3] === colors[3];
+          const sameColors = Boolean(cur && cur.length === 4 && cur.every((v, idx) => v === colors[idx]));
           if (sameColors && this._paletteExports === this.exports && this._palettePrefix === this.corePrefix) return;
           if (!sameColors) this.paletteColors = colors.slice();
           if (!this.exports) return;
           this._paletteExports = this.exports;
           this._palettePrefix = this.corePrefix;
-          if (this.corePrefix !== "bmo_emu") return;
-          const p0 = Number.parseInt(colors[0].charCodeAt(0) === 35 ? colors[0].slice(1) : colors[0], 16);
-          const p1 = Number.parseInt(colors[1].charCodeAt(0) === 35 ? colors[1].slice(1) : colors[1], 16);
-          const p2 = Number.parseInt(colors[2].charCodeAt(0) === 35 ? colors[2].slice(1) : colors[2], 16);
-          const p3 = Number.parseInt(colors[3].charCodeAt(0) === 35 ? colors[3].slice(1) : colors[3], 16);
-          this.exports.bmo_emu_set_palette(p0, p1, p2, p3);
+          if (this.corePrefix !== "bmo_emu" && this.corePrefix !== "bmo_gbc") return;
+          const [p0, p1, p2, p3] = colors.map((c) => Number.parseInt(c.startsWith("#") ? c.slice(1) : c, 16));
+          this.exports[`${this.corePrefix}_set_palette`](p0, p1, p2, p3);
         }
 
         setButtonBit(bit, pressed) {
@@ -1757,7 +1770,7 @@
           }
         }
       }
-      Object.assign(__exports, { GAMEBOY_VIEWPORT, NES_VIEWPORT, ATARI_VIEWPORT, COLECO_VIEWPORT, BMO_EXPRESSION_NAMES, BMO_EXPRESSIONS, WasmPlaytestEngine });
+      Object.assign(__exports, { GAMEBOY_VIEWPORT, NES_VIEWPORT, SMS_VIEWPORT, GG_VIEWPORT, ATARI_VIEWPORT, COLECO_VIEWPORT, BMO_EXPRESSION_NAMES, BMO_EXPRESSIONS, WasmPlaytestEngine });
     },
     "./js/internals_3d_data.js": (__exports, __require) => {
       /**
@@ -3356,6 +3369,7 @@
           this.lastFrameTime = performance.now();
           this.onInternalSelect = null;
           this.onExplosionChange = null;
+          this.onScreenClick = null;
           /** @type {any[] | null} */
           this.acousticFeltMeshes = null;
           this.dpadRestZ = 1.42;
@@ -3395,8 +3409,8 @@
           // 1. Scene
           this.scene = new THREE.Scene();
 
-          // 2. Camera: 38 deg FOV for authentic product focal length
-          this.camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
+          // 2. Camera: 42 deg FOV frames full chassis including L/R shoulders and SELECT/START pills
+          this.camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
           this.setCameraPreset("front");
 
           // Use an sRGB output transform for display and canvas textures.
@@ -3550,13 +3564,21 @@
             }
             if (pointerDownPos && e.target === dom) {
               const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
-              if (dist < 6 && this.internals) {
-                const hit = this.getIntersectedInternal(e);
+              if (dist < 6) {
+                const hit = this.internals ? this.getIntersectedInternal(e) : null;
                 if (hit && hit.userData && hit.userData.isInternalPart) {
                   const tag = hit.userData.wireId || hit.userData.groupTag || "all";
                   this.internals.setHighlight(tag);
                   if (typeof this.onInternalSelect === "function") {
                     this.onInternalSelect(hit.userData);
+                  }
+                } else if (this.screenMesh && typeof this.onScreenClick === "function") {
+                  const rect = dom.getBoundingClientRect();
+                  this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                  this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                  this.raycaster.setFromCamera(this.mouse, this.camera);
+                  if (this.raycaster.intersectObject(this.screenMesh, false).length > 0) {
+                    this.onScreenClick();
                   }
                 }
               }
@@ -4222,6 +4244,36 @@
       const {CONSOLE_HISTORY_DATABASE} = __require("./console_history_data.js");
       const {CONSOLES_LIST} = __require("./js/constants.js");
       const {PIXEL_ART_PAINTERS, drawGenericCartridgeIcon} = __require("./js/museum_icons.js");
+      function fitMuseumText(ctx, text, maxWidth) {
+        let shown = String(text || "");
+        if (ctx.measureText(shown).width <= maxWidth) return shown;
+        while (shown.length > 3 && ctx.measureText(`${shown}...`).width > maxWidth) {
+          shown = shown.slice(0, -1);
+        }
+        return shown.length > 0 ? `${shown}...` : "";
+      }
+
+      function wrapMuseumLines(ctx, text, maxWidth, maxLines) {
+        const words = String(text || "").split(/\s+/).filter(Boolean);
+        const lines = [];
+        let current = "";
+        for (const word of words) {
+          const candidate = current ? `${current} ${word}` : word;
+          if (ctx.measureText(candidate).width <= maxWidth) {
+            current = candidate;
+          } else {
+            if (current) lines.push(current);
+            if (lines.length >= maxLines) {
+              current = "";
+              break;
+            }
+            current = word;
+          }
+        }
+        if (current && lines.length < maxLines) lines.push(current);
+        return lines;
+      }
+
       const museumMethods = {
           updateSidebarMuseumView(historyDb = CONSOLE_HISTORY_DATABASE, consolesList = CONSOLES_LIST) {
             const currentConsole = consolesList[this.selectedConsoleIndex];
@@ -4280,87 +4332,85 @@
           },
 
           renderConsoleMuseumModal() {
+            const ctx = this.ctx;
             const c = CONSOLES_LIST[this.selectedConsoleIndex];
             const data = CONSOLE_HISTORY_DATABASE[c.id];
+            ctx.save();
 
             // Background overlay
-            this.ctx.fillStyle = "rgba(10, 14, 23, 0.95)";
-            this.ctx.fillRect(0, 0, 320, 240);
+            ctx.fillStyle = "rgba(10, 14, 23, 0.95)";
+            ctx.fillRect(0, 0, 320, 240);
 
             // Museum Card Frame
-            this.ctx.fillStyle = "#151d2a";
-            this.ctx.beginPath();
-            this.ctx.roundRect(10, 10, 300, 220, 10);
-            this.ctx.fill();
-            this.ctx.strokeStyle = c.color;
-            this.ctx.lineWidth = 1.5;
-            this.ctx.stroke();
+            ctx.fillStyle = "#151d2a";
+            ctx.beginPath();
+            ctx.roundRect(10, 10, 300, 220, 10);
+            ctx.fill();
+            ctx.strokeStyle = c.color;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
 
             // Title
-            this.ctx.fillStyle = "#ffffff";
-            this.ctx.font = "bold 13px 'Outfit', sans-serif";
-            this.ctx.textAlign = "left";
-            this.ctx.fillText(`🏛️ ${c.name} (${c.year})`, 22, 32);
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 13px 'Outfit', sans-serif";
+            ctx.textAlign = "left";
+            ctx.fillText(fitMuseumText(ctx, `${c.name} (${c.year})`, 210), 22, 32);
 
-            this.ctx.fillStyle = c.color;
-            this.ctx.font = "bold 9px 'Press Start 2P', monospace";
-            this.ctx.textAlign = "right";
-            this.ctx.fillText("MUSEUM", 295, 30);
+            ctx.fillStyle = c.color;
+            ctx.font = "bold 9px 'Press Start 2P', monospace";
+            ctx.textAlign = "right";
+            ctx.fillText("MUSEUM", 295, 30);
 
             // Separator line
-            this.ctx.strokeStyle = "rgba(255,255,255,0.1)";
-            this.ctx.beginPath();
-            this.ctx.moveTo(22, 42);
-            this.ctx.lineTo(298, 42);
-            this.ctx.stroke();
+            ctx.strokeStyle = "rgba(255,255,255,0.1)";
+            ctx.beginPath();
+            ctx.moveTo(22, 42);
+            ctx.lineTo(298, 42);
+            ctx.stroke();
+
+            // Restore left alignment before rendering all spec and body rows.
+            ctx.textAlign = "left";
 
             if (data) {
               // Hardware Specs Box
-              this.ctx.fillStyle = "#1e272e";
-              this.ctx.beginPath();
-              this.ctx.roundRect(22, 50, 276, 52, 6);
-              this.ctx.fill();
+              ctx.fillStyle = "#1e272e";
+              ctx.beginPath();
+              ctx.roundRect(22, 50, 276, 52, 6);
+              ctx.fill();
 
-              this.ctx.font = "10px 'JetBrains Mono', monospace";
-              this.ctx.fillStyle = "#feca57";
-              this.ctx.fillText(`CPU : ${data.specs.cpu ? data.specs.cpu.slice(0, 34) : 'Custom Architecture'}`, 28, 66);
-              this.ctx.fillStyle = "#00d2d3";
-              this.ctx.fillText(`RAM : ${data.specs.ram || '8 KB'} | Res: ${data.specs.resolution || '256x224'}`, 28, 80);
-              this.ctx.fillStyle = "#ff9ff3";
-              this.ctx.fillText(`Audio: ${data.specs.sound ? data.specs.sound.slice(0, 34) : 'Stereo PSG/FM'}`, 28, 94);
+              ctx.font = "10px 'JetBrains Mono', monospace";
+              ctx.fillStyle = "#feca57";
+              ctx.fillText(fitMuseumText(ctx, `CPU : ${data.specs.cpu || "Custom Architecture"}`, 264), 28, 66);
+              ctx.fillStyle = "#00d2d3";
+              ctx.fillText(fitMuseumText(ctx, `RAM : ${data.specs.ram || "8 KB"} | Res: ${data.specs.resolution || "256x224"}`, 264), 28, 80);
+              ctx.fillStyle = "#ff9ff3";
+              ctx.fillText(fitMuseumText(ctx, `Audio: ${data.specs.sound || "Stereo PSG/FM"}`, 264), 28, 94);
 
               // Historical Breakthrough Text
-              this.ctx.fillStyle = "#dcdde1";
-              this.ctx.font = "10px 'Outfit', sans-serif";
-              const words = (data.historicalSignificance || "").split(" ");
-              let line = "";
+              ctx.fillStyle = "#dcdde1";
+              ctx.font = "10px 'Outfit', sans-serif";
+              const bodyLines = wrapMuseumLines(ctx, data.historicalSignificance || "", 274, 5);
               let yPos = 118;
-              for (let w of words) {
-                if ((line + w).length > 46) {
-                  this.ctx.fillText(line, 22, yPos);
-                  line = w + " ";
-                  yPos += 14;
-                  if (yPos > 175) break;
-                } else {
-                  line += w + " ";
-                }
+              for (const textLine of bodyLines) {
+                ctx.fillText(textLine, 22, yPos);
+                yPos += 14;
               }
-              if (line && yPos <= 175) this.ctx.fillText(line, 22, yPos);
 
               // Hallmark Game Highlight
               if (data.hallmarkGames && data.hallmarkGames.length > 0) {
                 const hg = data.hallmarkGames[0];
-                this.ctx.fillStyle = "#feca57";
-                this.ctx.font = "bold 10px 'Outfit', sans-serif";
-                this.ctx.fillText(`★ Key Landmark: ${hg.title} (${hg.year})`, 22, 195);
+                ctx.fillStyle = "#feca57";
+                ctx.font = "bold 10px 'Outfit', sans-serif";
+                ctx.fillText(fitMuseumText(ctx, `Key Landmark: ${hg.title} (${hg.year})`, 274), 22, 198);
               }
             }
 
             // Dismiss Prompt
-            this.ctx.fillStyle = "#a4b0be";
-            this.ctx.font = "9px 'Press Start 2P', monospace";
-            this.ctx.textAlign = "center";
-            this.ctx.fillText("PRESS B TO RETURN", 160, 220);
+            ctx.fillStyle = "#a4b0be";
+            ctx.font = "9px 'Press Start 2P', monospace";
+            ctx.textAlign = "center";
+            ctx.fillText("PRESS B TO RETURN", 160, 220);
+            ctx.restore();
           }
         };
       Object.assign(__exports, { museumMethods });
@@ -4371,6 +4421,16 @@
        * WebSerial port connection helper and browser ROM upload/dropzone ingestion.
        */
       const {CONSOLES_LIST, MAX_BROWSER_ROM_SIZE} = __require("./js/constants.js");
+      const EXT_TO_SYSTEM = {
+        ".gb": { systemId: "ROM_GB", console: "GB" },
+        ".gbc": { systemId: "ROM_GBC", console: "GBC" },
+        ".nes": { systemId: "ROM_NES", console: "NES" },
+        ".sms": { systemId: "ROM_SMS", console: "SMS" },
+        ".gg": { systemId: "ROM_GG", console: "GG" },
+        ".a26": { systemId: "ROM_ATARI", console: "ATARI" },
+        ".col": { systemId: "ROM_COLEM", console: "COLEM" },
+      };
+
       const webserialMethods = {
           async connectWebSerial() {
             const statusEl = document.getElementById("webserial-status");
@@ -4400,14 +4460,12 @@
             for (const file of Array.from(fileList)) {
               const dot = file.name.lastIndexOf(".");
               const ext = dot >= 0 ? file.name.slice(dot).toLowerCase() : "";
-              const systemId = ext === ".gb" ? "ROM_GB"
-                : ext === ".nes" ? "ROM_NES"
-                  : ext === ".a26" ? "ROM_ATARI"
-                      : ext === ".col" ? "ROM_COLEM" : "";
-              if (!systemId) {
-                rejected.push(`${file.name}: browser gameplay currently supports .gb, .nes, .a26, and .col ROMs only.`);
+              const route = EXT_TO_SYSTEM[ext];
+              if (!route) {
+                rejected.push(`${file.name}: browser gameplay supports .gb, .gbc, .nes, .sms, .gg, .a26, and .col ROMs.`);
                 continue;
               }
+              const { systemId, console: consoleBadge } = route;
               if (file.size > MAX_BROWSER_ROM_SIZE) {
                 rejected.push(`${file.name}: browser ROMs cannot exceed 8 MiB.`);
                 continue;
@@ -4418,9 +4476,7 @@
                 const bytes = new Uint8Array(await file.arrayBuffer());
                 const entry = {
                   title: cleanTitle,
-                  console: systemId === "ROM_GB" ? "GB"
-                    : systemId === "ROM_NES" ? "NES"
-                      : systemId === "ROM_ATARI" ? "ATARI" : "COLEM",
+                  console: consoleBadge,
                   systemId,
                   isFav: false,
                   isPopular: false,
@@ -5267,6 +5323,11 @@
           sim.setBmoModeGaze(((e.clientX - rect.left) / rect.width) * 2 - 1, 1 - ((e.clientY - rect.top) / rect.height) * 2);
         };
         addListener(sim, sim.canvas, "pointerdown", (e) => {
+          if (sim.currentState === STATE.BOOT_SPLASH) {
+            sim.handleButtonPress("A");
+            if (typeof sim.markRenderDirty === "function") sim.markRenderDirty();
+            return;
+          }
           if (sim.currentState !== STATE.IDLE_MASCOT) return;
           draggingScreen = true;
           screenMoved = false;
@@ -5422,6 +5483,7 @@
             document.querySelectorAll(".scale-btn").forEach((b) => b.classList.remove("active"));
             btn.classList.add("active");
             document.documentElement.style.setProperty("--scale-multiplier", btn.getAttribute("data-scale"));
+            if (sim.bmo3D) sim.bmo3D.onResize();
           });
         });
 
@@ -5598,8 +5660,8 @@
 
         if (Math.floor(sim.bootTimer * 2) % 2 === 0) {
           ctx.fillStyle = "#ffe033";
-          ctx.font = "bold 11px 'Press Start 2P', monospace";
-          ctx.fillText("PRESS ANY BUTTON", 160, 218);
+          ctx.font = "bold 10px 'Press Start 2P', monospace";
+          ctx.fillText("PRESS A / Z OR CLICK SCREEN", 160, 218);
         }
       }
 
@@ -5653,7 +5715,8 @@
         ctx.fillText(c.browserSupported ? `Browser core: ${c.ext}` : `Firmware core: ${c.ext}`, cardX + 16, cardY + 95);
         ctx.fillStyle = "#ffe033";
         ctx.font = "bold 13px 'JetBrains Mono', monospace";
-        ctx.fillText(`${c.count.toLocaleString()} LOCAL ROMS`, cardX + 16, cardY + 124);
+        const romLabel = c.count === 1 ? "1 PLAYABLE ROM" : `${c.count.toLocaleString()} PLAYABLE ROMS`;
+        ctx.fillText(c.count > 0 || c.browserSupported ? romLabel : "ESP32-S3 FIRMWARE ONLY", cardX + 16, cardY + 124);
 
         ctx.fillStyle = "#5fb49c";
         ctx.font = "bold 18px 'Outfit', sans-serif";
@@ -5812,27 +5875,38 @@
 
       function renderEmptyGameLibrary(sim, ctx, c) {
         sim.updateHdCoverPanel(null, "");
+        ctx.save();
+        ctx.textAlign = "center";
         ctx.fillStyle = THEME_T.white;
-        ctx.font = "bold 16px 'Outfit', sans-serif";
+        ctx.font = "bold 15px 'Outfit', sans-serif";
         if (c.id === "ROM_FAVORITES") {
-          ctx.fillText("NO FAVORITES YET!", 160, 100);
+          ctx.fillText("NO FAVORITES YET!", 160, 96);
           ctx.fillStyle = THEME_T.mint;
-          ctx.font = "12px 'Outfit', sans-serif";
-          ctx.fillText("Load a supported ROM, then press SELECT", 160, 128);
-          ctx.fillText("in its library to star it *", 160, 148);
+          ctx.font = "11px 'Outfit', sans-serif";
+          ctx.fillText("Open any console library and press", 160, 126);
+          ctx.fillText("SELECT (Shift) to star a title.", 160, 144);
+        } else if (c.browserSupported === true) {
+          ctx.fillText("NO LOCAL ROMS", 160, 96);
+          ctx.fillStyle = THEME_T.mint;
+          ctx.font = "11px 'Outfit', sans-serif";
+          ctx.fillText(`Drop a ${c.ext} file anywhere on this window`, 160, 126);
+          ctx.fillText("or click + Load ROM above.", 160, 144);
         } else {
-          ctx.fillText("NO LOCAL ROMS", 160, 100);
+          ctx.fillText("ESP32-S3 HARDWARE CORE", 160, 92);
           ctx.fillStyle = THEME_T.mint;
-          ctx.font = "12px 'Outfit', sans-serif";
-          const browserRom = c.browserSupported === true;
-          ctx.fillText(browserRom ? `Load a ${c.ext} file to play it here.` : "This system is not supported in browser gameplay yet.", 160, 138);
-          if (browserRom) ctx.fillText("Use the Load ROM button beside the simulator.", 160, 158);
+          ctx.font = "11px 'Outfit', sans-serif";
+          ctx.fillText(`${c.name} runs on physical ESP32-S3`, 160, 120);
+          ctx.fillText("or native CTest (ADR 0008 licensing).", 160, 138);
+          ctx.fillStyle = THEME_T.yellow;
+          ctx.font = "10px 'JetBrains Mono', monospace";
+          ctx.fillText("Browser WASM: GB/GBC/NES/SMS/GG/A26/COL", 160, 164);
         }
         ctx.fillStyle = THEME_T.black;
         ctx.fillRect(0, 212, 320, 28);
         ctx.fillStyle = "#a4b0be";
         ctx.font = "10px 'JetBrains Mono', monospace";
-        ctx.fillText("B: BACK", 160, 230);
+        ctx.fillText("B: BACK TO SYSTEMS", 160, 230);
+        ctx.restore();
       }
 
       function renderGameCardDetails(sim, ctx, c, games, idx) {
@@ -5852,7 +5926,8 @@
         ctx.roundRect(81.5, 46.5, 157, 113, 12);
         ctx.stroke();
 
-        const cover = sim.getCoverImage(title);
+        const coverSlug = (typeof game === "object" && game.coverSlug) ? game.coverSlug : "";
+        const cover = sim.getCoverImage(title, coverSlug);
         sim.updateHdCoverPanel(cover, title);
         if (cover.ready) {
           ctx.imageSmoothingEnabled = true;
@@ -5927,10 +6002,10 @@
         ctx.fillStyle = THEME_T.teal;
         ctx.fillRect(0, 213, 320, 1);
         drawMenuPill(ctx, 6, 220, "A", "PLAY", THEME_T.coral, THEME_T.black, THEME_T.white);
-        drawMenuPill(ctx, 56, 220, "B", "BACK", THEME_T.mint, THEME_T.black, THEME_T.white);
-        drawMenuPill(ctx, 106, 220, "SEL", isFav ? "UNSTAR" : "STAR", THEME_T.yellow, THEME_T.black, THEME_T.white);
-        drawMenuPill(ctx, 180, 220, "ST", sim.topPicksFilter ? "ALL" : "TOP", THEME_T.blue, THEME_T.white, THEME_T.white);
-        drawMenuPill(ctx, 236, 220, "<>", "A-Z", THEME_T.teal, THEME_T.black, THEME_T.white);
+        drawMenuPill(ctx, 52, 220, "B", "BACK", THEME_T.mint, THEME_T.black, THEME_T.white);
+        drawMenuPill(ctx, 98, 220, "SEL", isFav ? "UNSTAR" : "STAR", THEME_T.yellow, THEME_T.black, THEME_T.white);
+        drawMenuPill(ctx, 186, 220, "ST", sim.topPicksFilter ? "ALL" : "TOP", THEME_T.blue, THEME_T.white, THEME_T.white);
+        drawMenuPill(ctx, 246, 220, "<>", "A-Z", THEME_T.teal, THEME_T.black, THEME_T.white);
       }
 
       function renderEmulationViewImpl(sim) {
@@ -5977,6 +6052,324 @@
       }
       Object.assign(__exports, { renderBootSplashImpl, renderConsoleSelectMenuImpl, renderIdleMascotScreenImpl, renderGameSelectMenuImpl, renderEmulationViewImpl });
     },
+    "./js/homebrew_demos.js": (__exports, __require) => {
+      /**
+       * simulator/js/homebrew_demos.js
+       * Compact, first-party interactive homebrew demo cartridges (LR35902 / 6502 / Z80 bytecode)
+       * so every browser-supported system boots immediately into a playable WASM demo.
+       */
+
+      function makeByteWriter(buffer, baseOffset, basePc = baseOffset) {
+        let cursor = baseOffset;
+        const labels = new Map();
+        const fixups = [];
+        const w = {
+          pc: () => basePc + (cursor - baseOffset),
+          bytes: (...vals) => { for (const v of vals) buffer[cursor++] = v & 0xff; },
+          mark: (name) => { labels.set(name, w.pc()); },
+          jrRel: (opcode, name) => { buffer[cursor++] = opcode & 0xff; fixups.push({ kind: "rel", at: cursor++, target: name }); },
+          jpAbs: (opcode, name) => { buffer[cursor++] = opcode & 0xff; fixups.push({ kind: "abs", at: cursor, target: name }); cursor += 2; },
+          finish: () => {
+            for (const fx of fixups) {
+              const dst = labels.get(fx.target);
+              if (dst === undefined) throw new Error(`Missing asm label: ${fx.target}`);
+              if (fx.kind === "rel") {
+                const pcAfter = basePc + (fx.at + 1 - baseOffset);
+                buffer[fx.at] = (dst - pcAfter) & 0xff;
+              } else {
+                buffer[fx.at] = dst & 0xff;
+                buffer[fx.at + 1] = (dst >> 8) & 0xff;
+              }
+            }
+          },
+        };
+        return w;
+      }
+
+      function buildGameBoyBytes(isColor) {
+        const rom = new Uint8Array(32768);
+        rom[0x100] = 0x00;
+        rom[0x101] = 0xc3;
+        rom[0x102] = 0x50;
+        rom[0x103] = 0x01;
+        const title = isColor ? "BMO GBC DEMO" : "BMO GB DEMO";
+        for (let i = 0; i < title.length; i++) rom[0x134 + i] = title.charCodeAt(i);
+        if (isColor) rom[0x143] = 0xc0;
+
+        const w = makeByteWriter(rom, 0x150, 0x150);
+        w.mark("init_wait");
+        w.bytes(0xf0, 0x44, 0xfe, 0x90);
+        w.jrRel(0x38, "init_wait");
+        w.bytes(0xaf, 0xe0, 0x40); // XOR A; LDH (LCDC), A
+
+        w.jpAbs(0x11, "tiles");
+        w.bytes(0x21, 0x00, 0x80, 0x06, 0x40);
+        w.mark("tile_cp");
+        w.bytes(0x1a, 0x22, 0x13, 0x05);
+        w.jrRel(0x20, "tile_cp");
+
+        w.bytes(0x21, 0x00, 0x98, 0x01, 0x00, 0x04);
+        w.mark("map_fill");
+        w.bytes(0x7d, 0x1f, 0xad, 0xe6, 0x03, 0x22, 0x0b, 0x78, 0xb1);
+        w.jrRel(0x20, "map_fill");
+
+        if (isColor) {
+          w.bytes(0x3e, 0x80, 0xe0, 0x68);
+          for (const c of [0xff, 0x7f, 0x2a, 0x4f, 0x9f, 0x1b, 0x03, 0x18]) w.bytes(0x3e, c, 0xe0, 0x69);
+        }
+        w.bytes(0x3e, 0xe4, 0xe0, 0x47, 0x3e, 0x91, 0xe0, 0x40);
+
+        w.mark("loop");
+        w.mark("wait_active"); w.bytes(0xf0, 0x44, 0xfe, 0x90); w.jrRel(0x30, "wait_active");
+        w.mark("wait_vbl"); w.bytes(0xf0, 0x44, 0xfe, 0x90); w.jrRel(0x38, "wait_vbl");
+
+        w.bytes(0x3e, 0x20, 0xe0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0x47);
+        w.bytes(0xcb, 0x40); w.jrRel(0x20, "no_r"); w.bytes(0xf0, 0x43, 0xc6, 0x02, 0xe0, 0x43); w.mark("no_r");
+        w.bytes(0xcb, 0x48); w.jrRel(0x20, "no_l"); w.bytes(0xf0, 0x43, 0xd6, 0x02, 0xe0, 0x43); w.mark("no_l");
+        w.bytes(0xcb, 0x50); w.jrRel(0x20, "no_u"); w.bytes(0xf0, 0x42, 0xd6, 0x02, 0xe0, 0x42); w.mark("no_u");
+        w.bytes(0xcb, 0x58); w.jrRel(0x20, "no_d"); w.bytes(0xf0, 0x42, 0xc6, 0x02, 0xe0, 0x42); w.mark("no_d");
+
+        w.bytes(0x3e, 0x10, 0xe0, 0x00, 0xf0, 0x00, 0xf0, 0x00, 0x47);
+        w.bytes(0xcb, 0x40); w.jrRel(0x20, "no_a");
+        w.bytes(0xf0, 0x47, 0x2f, 0xe0, 0x47);
+        if (isColor) {
+          w.bytes(0x3e, 0x80, 0xe0, 0x68, 0xf0, 0x80, 0x3c, 0xe0, 0x80, 0xe0, 0x69);
+        }
+        w.mark("no_a");
+        w.bytes(0xcb, 0x48); w.jrRel(0x20, "no_b");
+        w.bytes(0xaf, 0xe0, 0x42, 0xe0, 0x43);
+        w.mark("no_b");
+        w.jpAbs(0xc3, "loop");
+
+        w.mark("tiles");
+        w.bytes(
+          0xff, 0x00, 0x81, 0x00, 0xbd, 0x42, 0xbd, 0x5a, 0xbd, 0x5a, 0xbd, 0x42, 0x81, 0x00, 0xff, 0x00,
+          0x00, 0xff, 0x00, 0x7e, 0x3c, 0xff, 0x7e, 0xff, 0x7e, 0xff, 0x3c, 0xff, 0x00, 0x7e, 0x00, 0xff,
+          0xaa, 0x00, 0x55, 0xff, 0xaa, 0x00, 0x55, 0xff, 0xaa, 0x00, 0x55, 0xff, 0xaa, 0x00, 0x55, 0xff,
+          0x3c, 0xff, 0x7e, 0x7e, 0xff, 0x3c, 0xff, 0x18, 0xff, 0x18, 0xff, 0x3c, 0x7e, 0x7e, 0x3c, 0xff
+        );
+        w.finish();
+
+        let sum = 0;
+        for (let a = 0x134; a <= 0x14c; a++) sum = (sum - rom[a] - 1) & 0xff;
+        rom[0x14d] = sum;
+        return rom;
+      }
+
+      function buildNesDemoBytes() {
+        const rom = new Uint8Array(16 + 16384 + 8192);
+        rom.set([0x4e, 0x45, 0x53, 0x1a, 0x01, 0x01, 0x01], 0);
+        const chr = 16 + 16384;
+        for (let r = 0; r < 8; r++) {
+          rom[chr + r] = r === 0 || r === 7 ? 0xff : 0x81;
+          rom[chr + 16 + r] = r % 2 === 0 ? 0xaa : 0x55;
+          rom[chr + 24 + r] = r % 2 === 0 ? 0x55 : 0xaa;
+          rom[chr + 32 + r] = 0x18 << (r % 3);
+          rom[chr + 48 + r] = 0xc3;
+          rom[chr + 56 + r] = 0x3c;
+        }
+
+        const w = makeByteWriter(rom, 16, 0x8000);
+        w.bytes(0x78, 0xd8, 0xa2, 0xff, 0x9a, 0xa9, 0x00, 0x8d, 0x00, 0x20, 0x8d, 0x01, 0x20);
+        w.mark("vbl1"); w.bytes(0x2c, 0x02, 0x20); w.jrRel(0x10, "vbl1");
+        w.mark("vbl2"); w.bytes(0x2c, 0x02, 0x20); w.jrRel(0x10, "vbl2");
+
+        w.bytes(0xad, 0x02, 0x20, 0xa9, 0x3f, 0x8d, 0x06, 0x20, 0xa9, 0x00, 0x8d, 0x06, 0x20);
+        for (const col of [0x0f, 0x2a, 0x3a, 0x27, 0x0f, 0x16, 0x26, 0x37]) w.bytes(0xa9, col, 0x8d, 0x07, 0x20);
+
+        w.bytes(0xa9, 0x20, 0x8d, 0x06, 0x20, 0xa9, 0x00, 0x8d, 0x06, 0x20, 0xa0, 0x04, 0xa2, 0x00);
+        w.mark("nt_loop"); w.bytes(0x8a, 0x29, 0x03, 0x8d, 0x07, 0x20, 0xe8); w.jrRel(0xd0, "nt_loop");
+        w.bytes(0x88); w.jrRel(0xd0, "nt_loop");
+
+        w.bytes(0xa9, 0x0e, 0x85, 0x03, 0x8d, 0x01, 0x20, 0xa9, 0x00, 0x85, 0x01, 0x85, 0x02);
+        w.mark("loop");
+        w.mark("w_vbl"); w.bytes(0x2c, 0x02, 0x20); w.jrRel(0x10, "w_vbl");
+        w.bytes(0xa9, 0x01, 0x8d, 0x16, 0x40, 0xa9, 0x00, 0x8d, 0x16, 0x40, 0xa2, 0x08);
+        w.mark("pad"); w.bytes(0xad, 0x16, 0x40, 0x4a, 0x26, 0x00, 0xca); w.jrRel(0xd0, "pad");
+
+        w.bytes(0xa5, 0x00, 0x29, 0x01); w.jrRel(0xf0, "n_r"); w.bytes(0xe6, 0x01, 0xe6, 0x01); w.mark("n_r");
+        w.bytes(0xa5, 0x00, 0x29, 0x02); w.jrRel(0xf0, "n_l"); w.bytes(0xc6, 0x01, 0xc6, 0x01); w.mark("n_l");
+        w.bytes(0xa5, 0x00, 0x29, 0x04); w.jrRel(0xf0, "n_d"); w.bytes(0xe6, 0x02, 0xe6, 0x02); w.mark("n_d");
+        w.bytes(0xa5, 0x00, 0x29, 0x08); w.jrRel(0xf0, "n_u"); w.bytes(0xc6, 0x02, 0xc6, 0x02); w.mark("n_u");
+        w.bytes(0xa5, 0x00, 0x29, 0x80); w.jrRel(0xf0, "n_a"); w.bytes(0xa5, 0x03, 0x49, 0x40, 0x85, 0x03); w.mark("n_a");
+        w.bytes(0xa5, 0x00, 0x29, 0x40); w.jrRel(0xf0, "n_b"); w.bytes(0xa9, 0x00, 0x85, 0x01, 0x85, 0x02); w.mark("n_b");
+
+        w.bytes(0xa5, 0x03, 0x8d, 0x01, 0x20, 0xad, 0x02, 0x20);
+        w.bytes(0xa5, 0x01, 0x8d, 0x05, 0x20, 0xa5, 0x02, 0x8d, 0x05, 0x20, 0xa9, 0x00, 0x8d, 0x00, 0x20);
+        w.jpAbs(0x4c, "loop");
+        w.finish();
+
+        rom[16 + 0x3ffc] = 0x00;
+        rom[16 + 0x3ffd] = 0x80;
+        return rom;
+      }
+
+      function buildSmsOrGgBytes(isGameGear) {
+        const rom = new Uint8Array(32768);
+        const sig = "TMR SEGA  ";
+        for (let i = 0; i < sig.length; i++) rom[0x7ff0 + i] = sig.charCodeAt(i);
+        rom[0x7fff] = isGameGear ? 0x6c : 0x4c;
+
+        // VDP frame interrupt vector at 0x0038: IN A,(0xBF); EI; RETI.
+        rom.set([0xdb, 0xbf, 0xfb, 0xed, 0x4d], 0x0038);
+
+        const boot = makeByteWriter(rom, 0x0000, 0x0000);
+        boot.bytes(0xf3, 0xed, 0x56, 0x31, 0xf0, 0xdf, 0xc3, 0x50, 0x00);
+        boot.finish();
+
+        const m = makeByteWriter(rom, 0x0050, 0x0050);
+        const vdpReg = (reg, val) => m.bytes(0x3e, val, 0xd3, 0xbf, 0x3e, 0x80 | reg, 0xd3, 0xbf);
+        vdpReg(0, 0x06); // Mode 4 + show left column
+        vdpReg(1, 0x60); // Display ON + VBlank IRQ enable
+        vdpReg(2, 0x0f); // Name table at VRAM 0x3800 (bit 0 must be 1 on SMS)
+        vdpReg(5, 0x7e); // Sprite table at VRAM 0x3F00
+        vdpReg(7, 0x01); // Backdrop = CRAM sprite[1]
+
+        // Fill CRAM BG[0..15] + Sprite[16..31] (32 bytes SMS, 64 bytes GG).
+        m.bytes(0x3e, 0x00, 0xd3, 0xbf, 0x3e, 0xc0, 0xd3, 0xbf);
+        if (isGameGear) {
+          const ggPal = [0x01, 0x04, 0xa8, 0x0b, 0xf6, 0x03, 0xef, 0x0d, 0x1e, 0x07, 0x2f, 0x02, 0xff, 0x0f, 0x00, 0x00];
+          for (let i = 0; i < 32; i++) {
+            const pair = ggPal[i & 7];
+            m.bytes(0x3e, pair, 0xd3, 0xbe);
+            m.bytes(0x3e, ggPal[(i & 7) | 8], 0xd3, 0xbe);
+          }
+        } else {
+          const smsPal = [0x14, 0x2b, 0x0f, 0x3f, 0x17, 0x20, 0x3c, 0x03];
+          for (let i = 0; i < 32; i++) m.bytes(0x3e, smsPal[i & 7], 0xd3, 0xbe);
+        }
+
+        // Write 2 crisp 4bpp tiles (64 bytes) to VRAM 0x0000.
+        m.bytes(0x3e, 0x00, 0xd3, 0xbf, 0x3e, 0x40, 0xd3, 0xbf);
+        for (let row = 0; row < 8; row++) {
+          const p = row === 0 || row === 7 ? 0xff : 0x81;
+          m.bytes(0x3e, p, 0xd3, 0xbe, 0x3e, 0x3c, 0xd3, 0xbe, 0x3e, 0x00, 0xd3, 0xbe, 0x3e, 0x00, 0xd3, 0xbe);
+        }
+        for (let row = 0; row < 8; row++) {
+          const c = (row & 1) ? 0xaa : 0x55;
+          m.bytes(0x3e, c, 0xd3, 0xbe, 0x3e, 0xff - c, 0xd3, 0xbe, 0x3e, 0xc3, 0xd3, 0xbe, 0x3e, 0x00, 0xd3, 0xbe);
+        }
+
+        // Fill Name Table 0x3800..0x3EFF (896 words = [tile 0/1, 0x00]).
+        m.bytes(0x3e, 0x00, 0xd3, 0xbf, 0x3e, 0x78, 0xd3, 0xbf, 0x01, 0x80, 0x03);
+        m.mark("nt");
+        m.bytes(0x79, 0xe6, 0x01, 0xd3, 0xbe, 0x3e, 0x00, 0xd3, 0xbe, 0x0b, 0x78, 0xb1);
+        m.jrRel(0x20, "nt");
+
+        m.bytes(0x21, 0x00, 0x00, 0x0e, 0x01); // HL=scroll, C=backdrop
+        m.mark("loop");
+        m.bytes(0xfb, 0x76, 0xdb, 0xdc, 0x47); // EI; HALT; IN A,(0xDC); LD B,A
+        m.bytes(0xcb, 0x58); m.jrRel(0x20, "s_r"); m.bytes(0x2c, 0x2c); m.mark("s_r");
+        m.bytes(0xcb, 0x50); m.jrRel(0x20, "s_l"); m.bytes(0x2d, 0x2d); m.mark("s_l");
+        m.bytes(0xcb, 0x40); m.jrRel(0x20, "s_u"); m.bytes(0x25, 0x25); m.mark("s_u");
+        m.bytes(0xcb, 0x48); m.jrRel(0x20, "s_d"); m.bytes(0x24, 0x24); m.mark("s_d");
+        m.bytes(0x7d, 0xd3, 0xbf, 0x3e, 0x88, 0xd3, 0xbf);
+        m.bytes(0x7c, 0xd3, 0xbf, 0x3e, 0x89, 0xd3, 0xbf);
+        m.bytes(0xcb, 0x60); m.jrRel(0x20, "no_b1");
+        m.bytes(0x0c, 0x79, 0xe6, 0x07, 0xd3, 0xbf, 0x3e, 0x87, 0xd3, 0xbf);
+        m.mark("no_b1");
+        m.jpAbs(0xc3, "loop");
+        m.finish();
+        return rom;
+      }
+
+      function buildAtariDemoBytes() {
+        const rom = new Uint8Array(4096);
+        rom.fill(0xea);
+        const w = makeByteWriter(rom, 0x0000, 0xf000);
+        w.bytes(0x78, 0xd8, 0xa9, 0x2e, 0x85, 0x80, 0xa9, 0xaa, 0x85, 0x81);
+        w.mark("frame");
+        w.bytes(0xa9, 0x02, 0x85, 0x02, 0x85, 0x00, 0x85, 0x02, 0x85, 0x02, 0x85, 0x02);
+        w.bytes(0xa9, 0x00, 0x85, 0x00, 0xa9, 0x02, 0x85, 0x01); // VSYNC=0, VBLANK=2
+
+        // 34 VBlank lines, poll joystick (SWCHA $0280) and fire (INPT4 $0C) during VBlank.
+        w.bytes(0xad, 0x80, 0x02, 0x29, 0x80); w.jrRel(0xd0, "no_r"); w.bytes(0xe6, 0x80, 0xe6, 0x80); w.mark("no_r");
+        w.bytes(0xad, 0x80, 0x02, 0x29, 0x40); w.jrRel(0xd0, "no_l"); w.bytes(0xc6, 0x80, 0xc6, 0x80); w.mark("no_l");
+        w.bytes(0xa5, 0x0c, 0x29, 0x80); w.jrRel(0xd0, "no_f"); w.bytes(0xe6, 0x81, 0xe6, 0x80); w.mark("no_f");
+        w.bytes(0xa2, 0x22); w.mark("vb"); w.bytes(0x85, 0x02, 0xca); w.jrRel(0xd0, "vb");
+
+        w.bytes(0xa9, 0x00, 0x85, 0x01, 0xa2, 0xc0); // VBLANK=0, 192 visible lines
+        w.mark("scan");
+        w.bytes(0x8a, 0x18, 0x65, 0x80, 0x85, 0x09, 0x45, 0x81, 0x85, 0x08, 0xa5, 0x81, 0x85, 0x0e, 0x85, 0x02, 0xca);
+        w.jrRel(0xd0, "scan");
+
+        w.bytes(0xa9, 0x02, 0x85, 0x01, 0xa2, 0x1e); // 30 Overscan lines
+        w.mark("os"); w.bytes(0x85, 0x02, 0xca); w.jrRel(0xd0, "os");
+        w.jpAbs(0x4c, "frame");
+        w.finish();
+
+        rom[0x0ffc] = 0x00;
+        rom[0x0ffd] = 0xf0;
+        return rom;
+      }
+
+      function buildColecoDemoBytes() {
+        const rom = new Uint8Array(8192);
+        rom[0] = 0x55;
+        rom[1] = 0xaa;
+        rom[0x0a] = 0x20;
+        rom[0x0b] = 0x80;
+
+        const w = makeByteWriter(rom, 0x20, 0x8020);
+        const vdp = (r, v) => w.bytes(0x3e, v, 0xd3, 0xbf, 0x3e, 0x80 | r, 0xd3, 0xbf);
+        vdp(1, 0xc0);
+        vdp(2, 0x06);
+        vdp(3, 0x80);
+        vdp(4, 0x00);
+        vdp(7, 0x5e);
+
+        w.bytes(0x3e, 0x00, 0xd3, 0xbf, 0x3e, 0x40, 0xd3, 0xbf);
+        for (const b of [0xff, 0x81, 0xbd, 0xa5, 0xa5, 0xbd, 0x81, 0xff, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa]) {
+          w.bytes(0x3e, b, 0xd3, 0xbe);
+        }
+        w.bytes(0x3e, 0x00, 0xd3, 0xbf, 0x3e, 0x60, 0xd3, 0xbf);
+        for (let i = 0; i < 32; i++) w.bytes(0x3e, i % 2 ? 0xb0 : 0x70, 0xd3, 0xbe);
+        w.bytes(0x3e, 0x00, 0xd3, 0xbf, 0x3e, 0x58, 0xd3, 0xbf, 0x01, 0x00, 0x03);
+        w.mark("fill");
+        w.bytes(0x79, 0xe6, 0x01, 0xd3, 0xbe, 0x0b, 0x78, 0xb1);
+        w.jrRel(0x20, "fill");
+
+        w.bytes(0x16, 0x5e); // D = backdrop R7 color
+        w.mark("loop");
+        w.bytes(0x3e, 0x00, 0xd3, 0xc0, 0xdb, 0xfc, 0x47);
+        w.bytes(0xcb, 0x40); w.jrRel(0x20, "no_u"); w.bytes(0x14); w.mark("no_u");
+        w.bytes(0xcb, 0x48); w.jrRel(0x20, "no_r"); w.bytes(0x14); w.mark("no_r");
+        w.bytes(0xcb, 0x50); w.jrRel(0x20, "no_d"); w.bytes(0x15); w.mark("no_d");
+        w.bytes(0xcb, 0x58); w.jrRel(0x20, "no_l"); w.bytes(0x15); w.mark("no_l");
+        w.bytes(0x7a, 0xd3, 0xbf, 0x3e, 0x87, 0xd3, 0xbf);
+        w.bytes(0x06, 0x40); w.mark("dl"); w.bytes(0x10, 0xfe);
+        w.jpAbs(0xc3, "loop");
+        w.finish();
+        return rom;
+      }
+
+      function seedBuiltInHomebrewDemos(db) {
+        const entries = [
+          { systemId: "ROM_GB", console: "GB", title: "BMO Tile Pan (Homebrew)", isFav: true, romBytes: buildGameBoyBytes(false) },
+          { systemId: "ROM_GBC", console: "GBC", title: "BMO Color Wave (Homebrew)", isFav: true, romBytes: buildGameBoyBytes(true) },
+          { systemId: "ROM_NES", console: "NES", title: "BMO Chroma Scroll (Homebrew)", isFav: true, romBytes: buildNesDemoBytes() },
+          { systemId: "ROM_SMS", console: "SMS", title: "BMO SMS Scroll (Homebrew)", isFav: false, romBytes: buildSmsOrGgBytes(false) },
+          { systemId: "ROM_GG", console: "GG", title: "BMO GG Prism (Homebrew)", isFav: false, romBytes: buildSmsOrGgBytes(true) },
+          { systemId: "ROM_ATARI", console: "ATARI", title: "BMO TIA Stripes (Homebrew)", isFav: false, romBytes: buildAtariDemoBytes() },
+          { systemId: "ROM_COLEM", console: "COLEM", title: "BMO VDP Matrix (Homebrew)", isFav: false, romBytes: buildColecoDemoBytes() },
+        ];
+        for (const item of entries) {
+          if (!Array.isArray(db[item.systemId])) db[item.systemId] = [];
+          db[item.systemId].push({
+            title: item.title,
+            console: item.console,
+            systemId: item.systemId,
+            isFav: item.isFav,
+            isPopular: true,
+            isHomebrew: true,
+            coverSlug: "virtual_bmo",
+            romBytes: item.romBytes,
+          });
+        }
+        return db;
+      }
+      Object.assign(__exports, { seedBuiltInHomebrewDemos });
+    },
     "./simulator.js": (__exports, __require) => {
       /**
        * simulator.js
@@ -5986,6 +6379,7 @@
       const {bmoModeMethods} = __require("./js/bmo_mode.js");
       const {CONSOLES_LIST, MAX_BROWSER_ROM_SIZE, STATE, slugifyTitle} = __require("./js/constants.js");
       const {DEFAULT_HARDWARE_LAYOUT, loadHardwareLayout} = __require("./js/hardware_layout_data.js");
+      const {seedBuiltInHomebrewDemos} = __require("./js/homebrew_demos.js");
       const {internalsMethods} = __require("./js/internals.js");
       const {museumMethods} = __require("./js/museum.js");
       const {applyUrlStateParamsImpl, handleButtonPressImpl, setupInputHandlersImpl, setupUIControlsImpl} = __require("./js/sim_controls.js");
@@ -6146,6 +6540,12 @@
             );
             this.bmo3D.setOnInternalSelect((meta) => this.handleInternalPartSelected(meta));
             this.bmo3D.onExplosionChange = (t) => this.syncExplosionReadout(t);
+            this.bmo3D.onScreenClick = () => {
+              if (this.currentState === STATE.BOOT_SPLASH) {
+                this.handleButtonPress("A");
+                this.markRenderDirty();
+              }
+            };
             this.bmo3D.shouldUpdateScreenTexture = () => {
               if (!this._screenTextureDirty) return false;
               this._screenTextureDirty = false;
@@ -6215,7 +6615,8 @@
         createGameLibrary() {
           const db = {};
           CONSOLES_LIST.forEach((c) => { db[c.id] = []; });
-          db.ROM_FAVORITES = [];
+          seedBuiltInHomebrewDemos(db);
+          this.rebuildFavoritesInDatabase(db);
           return db;
         }
 
@@ -6338,7 +6739,8 @@
           const game = idx >= 0 ? games[idx] : null;
           const title = typeof game === "string" ? game : (game?.title || "");
           const isFav = Boolean(game && typeof game === "object" && game.isFav);
-          const cover = title ? this.getCoverImage(title) : null;
+          const coverSlug = (game && typeof game === "object" && game.coverSlug) ? game.coverSlug : "";
+          const cover = title ? this.getCoverImage(title, coverSlug) : null;
           let coverFlag = "N";
           if (cover) coverFlag = cover.ready ? "R" : (cover.failed ? "F" : "L");
           return `GAME|${cIdx}|${idx}|${games.length}|${this.topPicksFilter}|${isFav}|${coverFlag}|${this._getFaceBlinkKey()}`;
@@ -6472,8 +6874,8 @@
 
         slugifyTitle(title) { return slugifyTitle(title); }
 
-        getCoverImage(title) {
-          const slug = this.slugifyTitle(title);
+        getCoverImage(title, slugOverride = "") {
+          const slug = slugOverride || this.slugifyTitle(title);
           const cache = this.coverImages instanceof Map ? this.coverImages : new Map();
           if (!(this.coverImages instanceof Map)) this.coverImages = cache;
           let entry = cache.get(slug);

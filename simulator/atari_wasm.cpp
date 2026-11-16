@@ -8,6 +8,7 @@
 #include "../firmware/BmoGameboy/src/third_party/stella2014/src/Console.h"
 #include "../firmware/BmoGameboy/src/third_party/stella2014/src/Event.h"
 #include "../firmware/BmoGameboy/src/third_party/stella2014/src/EventHandler.h"
+#include "../firmware/BmoGameboy/src/third_party/stella2014/src/M6532.h"
 #include "../firmware/BmoGameboy/src/third_party/stella2014/src/MD5.h"
 #include "../firmware/BmoGameboy/src/third_party/stella2014/src/OSystem.h"
 #include "../firmware/BmoGameboy/src/third_party/stella2014/src/Props.h"
@@ -245,6 +246,7 @@ __attribute__((visibility("default")))
 uint32_t bmo_atari_run_frame() {
   if (!s_running || !s_console) return s_frameCount;
   applyButtons();
+  s_console->riot().update();
   s_console->tia().update();
   ++s_frameCount;
   updateFramebuffer();

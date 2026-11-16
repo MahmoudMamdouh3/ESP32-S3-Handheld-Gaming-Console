@@ -43,8 +43,8 @@ export function renderBootSplashImpl(sim, dt) {
 
   if (Math.floor(sim.bootTimer * 2) % 2 === 0) {
     ctx.fillStyle = "#ffe033";
-    ctx.font = "bold 11px 'Press Start 2P', monospace";
-    ctx.fillText("PRESS ANY BUTTON", 160, 218);
+    ctx.font = "bold 10px 'Press Start 2P', monospace";
+    ctx.fillText("PRESS A / Z OR CLICK SCREEN", 160, 218);
   }
 }
 
@@ -98,7 +98,8 @@ export function renderConsoleSelectMenuImpl(sim) {
   ctx.fillText(c.browserSupported ? `Browser core: ${c.ext}` : `Firmware core: ${c.ext}`, cardX + 16, cardY + 95);
   ctx.fillStyle = "#ffe033";
   ctx.font = "bold 13px 'JetBrains Mono', monospace";
-  ctx.fillText(`${c.count.toLocaleString()} LOCAL ROMS`, cardX + 16, cardY + 124);
+  const romLabel = c.count === 1 ? "1 PLAYABLE ROM" : `${c.count.toLocaleString()} PLAYABLE ROMS`;
+  ctx.fillText(c.count > 0 || c.browserSupported ? romLabel : "ESP32-S3 FIRMWARE ONLY", cardX + 16, cardY + 124);
 
   ctx.fillStyle = "#5fb49c";
   ctx.font = "bold 18px 'Outfit', sans-serif";
@@ -257,27 +258,38 @@ function drawMenuPill(ctx, x, y, glyph, label, bg, glyphCol, labelCol) {
 
 function renderEmptyGameLibrary(sim, ctx, c) {
   sim.updateHdCoverPanel(null, "");
+  ctx.save();
+  ctx.textAlign = "center";
   ctx.fillStyle = THEME_T.white;
-  ctx.font = "bold 16px 'Outfit', sans-serif";
+  ctx.font = "bold 15px 'Outfit', sans-serif";
   if (c.id === "ROM_FAVORITES") {
-    ctx.fillText("NO FAVORITES YET!", 160, 100);
+    ctx.fillText("NO FAVORITES YET!", 160, 96);
     ctx.fillStyle = THEME_T.mint;
-    ctx.font = "12px 'Outfit', sans-serif";
-    ctx.fillText("Load a supported ROM, then press SELECT", 160, 128);
-    ctx.fillText("in its library to star it *", 160, 148);
+    ctx.font = "11px 'Outfit', sans-serif";
+    ctx.fillText("Open any console library and press", 160, 126);
+    ctx.fillText("SELECT (Shift) to star a title.", 160, 144);
+  } else if (c.browserSupported === true) {
+    ctx.fillText("NO LOCAL ROMS", 160, 96);
+    ctx.fillStyle = THEME_T.mint;
+    ctx.font = "11px 'Outfit', sans-serif";
+    ctx.fillText(`Drop a ${c.ext} file anywhere on this window`, 160, 126);
+    ctx.fillText("or click + Load ROM above.", 160, 144);
   } else {
-    ctx.fillText("NO LOCAL ROMS", 160, 100);
+    ctx.fillText("ESP32-S3 HARDWARE CORE", 160, 92);
     ctx.fillStyle = THEME_T.mint;
-    ctx.font = "12px 'Outfit', sans-serif";
-    const browserRom = c.browserSupported === true;
-    ctx.fillText(browserRom ? `Load a ${c.ext} file to play it here.` : "This system is not supported in browser gameplay yet.", 160, 138);
-    if (browserRom) ctx.fillText("Use the Load ROM button beside the simulator.", 160, 158);
+    ctx.font = "11px 'Outfit', sans-serif";
+    ctx.fillText(`${c.name} runs on physical ESP32-S3`, 160, 120);
+    ctx.fillText("or native CTest (ADR 0008 licensing).", 160, 138);
+    ctx.fillStyle = THEME_T.yellow;
+    ctx.font = "10px 'JetBrains Mono', monospace";
+    ctx.fillText("Browser WASM: GB/GBC/NES/SMS/GG/A26/COL", 160, 164);
   }
   ctx.fillStyle = THEME_T.black;
   ctx.fillRect(0, 212, 320, 28);
   ctx.fillStyle = "#a4b0be";
   ctx.font = "10px 'JetBrains Mono', monospace";
-  ctx.fillText("B: BACK", 160, 230);
+  ctx.fillText("B: BACK TO SYSTEMS", 160, 230);
+  ctx.restore();
 }
 
 function renderGameCardDetails(sim, ctx, c, games, idx) {
@@ -297,7 +309,8 @@ function renderGameCardDetails(sim, ctx, c, games, idx) {
   ctx.roundRect(81.5, 46.5, 157, 113, 12);
   ctx.stroke();
 
-  const cover = sim.getCoverImage(title);
+  const coverSlug = (typeof game === "object" && game.coverSlug) ? game.coverSlug : "";
+  const cover = sim.getCoverImage(title, coverSlug);
   sim.updateHdCoverPanel(cover, title);
   if (cover.ready) {
     ctx.imageSmoothingEnabled = true;
@@ -372,10 +385,10 @@ export function renderGameSelectMenuImpl(sim) {
   ctx.fillStyle = THEME_T.teal;
   ctx.fillRect(0, 213, 320, 1);
   drawMenuPill(ctx, 6, 220, "A", "PLAY", THEME_T.coral, THEME_T.black, THEME_T.white);
-  drawMenuPill(ctx, 56, 220, "B", "BACK", THEME_T.mint, THEME_T.black, THEME_T.white);
-  drawMenuPill(ctx, 106, 220, "SEL", isFav ? "UNSTAR" : "STAR", THEME_T.yellow, THEME_T.black, THEME_T.white);
-  drawMenuPill(ctx, 180, 220, "ST", sim.topPicksFilter ? "ALL" : "TOP", THEME_T.blue, THEME_T.white, THEME_T.white);
-  drawMenuPill(ctx, 236, 220, "<>", "A-Z", THEME_T.teal, THEME_T.black, THEME_T.white);
+  drawMenuPill(ctx, 52, 220, "B", "BACK", THEME_T.mint, THEME_T.black, THEME_T.white);
+  drawMenuPill(ctx, 98, 220, "SEL", isFav ? "UNSTAR" : "STAR", THEME_T.yellow, THEME_T.black, THEME_T.white);
+  drawMenuPill(ctx, 186, 220, "ST", sim.topPicksFilter ? "ALL" : "TOP", THEME_T.blue, THEME_T.white, THEME_T.white);
+  drawMenuPill(ctx, 246, 220, "<>", "A-Z", THEME_T.teal, THEME_T.black, THEME_T.white);
 }
 
 export function renderEmulationViewImpl(sim) {
