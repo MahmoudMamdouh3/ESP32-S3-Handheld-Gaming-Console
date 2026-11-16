@@ -4,13 +4,14 @@ Contributions to firmware, host tests, enclosure CAD, and the browser simulator 
 
 ## Setup
 
-Use [`tasks.py`](tasks.py) as the unified cross-platform developer entry point (see [docs/build-and-ci.md](docs/build-and-ci.md) for profile details and CI documentation):
+Use [`tasks.py`](tasks.py) as the unified cross-platform developer entry point (see [docs/build-and-ci.md](docs/build-and-ci.md) for all compile flags/profiles and [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) for step-by-step error diagnosis):
 
 ```powershell
 # 1. Configure Git hooks, check Python deps, and install pinned ESP32 core/libs from sketch.yaml:
 python tasks.py setup
 
-# 2. Run fast local validation (< 1 min, no firmware compile):
+# 2. Run fast inner-loop checks (~18-30 s with --fast) or full host static/CTest gate (~75 s):
+python tasks.py check --fast
 python tasks.py check
 
 # 3. Run full host test suites + repository validator:
@@ -18,14 +19,14 @@ python tasks.py test
 
 # 4. Compile firmware (default profile + strict first-party warnings):
 python tasks.py build
-python tasks.py size
+python tasks.py size --check-budgets
 ```
 
 Equivalent direct commands:
 
 ```powershell
 python scripts/install_git_hooks.py
-python -m pip install -r requirements.txt
+python -m pip install -r requirements.lock
 python -m unittest discover -s tests -v
 python -m unittest discover -s tools/guardian/tests -v
 .\arduino-cli.exe compile --profile esp32s3 firmware/BmoGameboy

@@ -44,7 +44,7 @@ All buttons are wired active-low (`INPUT_PULLUP`: idle `HIGH = 1`, pressed `LOW 
 | **Console Carousel (`STATE_CONSOLE_MENU`)** | `LEFT / RIGHT`: Previous / next console platform | Open Game List for selected console | Enter Idle BMO Mascot face | Open Diagnostics Screen | Open Console History Museum |
 | **Console Museum (`STATE_CONSOLE_MUSEUM`)** | `LEFT / RIGHT`: Browse console history cards | Return to Console Carousel | Return to Console Carousel | — | Return to Console Carousel |
 | **Game List (`STATE_GAME_MENU`)** | `UP / DOWN`: Prev / next game; `LEFT / RIGHT`: Page jump (`±5`) | Launch selected game | Back to Console Carousel | Toggle **Top Picks** filter | Toggle **Favorite** (`★`) on selected game |
-| **Diagnostics (`STATE_DIAGNOSTICS`)** | `LEFT / RIGHT`: Toggle `40 MHz` vs `80 MHz` Display SPI clock | Apply / refresh diagnostics | Back to Console Carousel | Back to Console Carousel | — |
+| **Diagnostics (`STATE_DIAGNOSTICS`)** | `LEFT / RIGHT` (in SPI Stress view): Toggle `40 MHz` vs `80 MHz` Display SPI clock & save to NVS (`bmo_disp/spi_hz`) | Toggle **SPI Stress Pattern** | Exit Diagnostics back to Console Carousel | Retry SD mount (if unmounted) or rebuild SD library index | Toggle **Live Matrix Dashboard** vs **Frame Profiler** (`SELECT` outside SPI Stress view) |
 | **In-Game Pause Menu (`STATE_PAUSE_MENU`)** | `UP / DOWN`: Select Resume / Save State / Load State / Screenshot / Quit | Confirm selected pause option (Quit requires second `A` press within `3 s`) | Resume gameplay immediately | Resume gameplay | — |
 
 ---

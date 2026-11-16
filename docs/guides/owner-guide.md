@@ -51,7 +51,7 @@ Do not skip ahead to 3D printing the case or loading hundreds of games until Ste
 ## 3. How to Prepare Your MicroSD Card
 
 1. Use a reputable **16 GB or 32 GB MicroSDHC card** formatted as **FAT32** (on Windows, right-click the drive -> *Format...* -> File system: `FAT32`). Cards `64 GB` and larger default to `exFAT`, which the ESP32-S3 will not read unless reformatted to `FAT32`.
-2. Create these folders at the root of the MicroSD card (or run `python scripts/deploy_sd_complete.py --sd-root E:\` replacing `E:\` with your SD card drive letter):
+2. Create these folders at the root of the MicroSD card (or run `python scripts/deploy_sd.py --destination E:\ --apply` — omit `--apply` for a dry-run preview — replacing `E:\` with your `FAT32` drive letter; see also the [Troubleshooting Guide](troubleshooting.md)):
    - `/gb` — Game Boy (`.gb`)
    - `/gbc` — Game Boy Color (`.gbc`)
    - `/nes` — Nintendo Entertainment System (`.nes`)

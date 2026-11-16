@@ -95,7 +95,7 @@ Compact structural map for AI agents and contributors. Regenerate via `python sc
 | [`scripts/check_markdown_links.py`](../../scripts/check_markdown_links.py) | `87` | Verify local Markdown links and reject file:// URIs. |
 | [`scripts/color_calc.py`](../../scripts/color_calc.py) | `52` | scripts/color_calc.py — RGB888 <-> Byte-Swapped BGR565 ST7789 Wire Format Calculator |
 | [`scripts/convert_covers.py`](../../scripts/convert_covers.py) | `309` | scripts/convert_covers.py — Local Box Art Resampler & Multi-Target BGR565 Converter |
-| [`scripts/deploy_sd.py`](../../scripts/deploy_sd.py) | `449` | Canonical BMO Handheld SD card deployer & binary ROM index builder (BMOIDX03). |
+| [`scripts/deploy_sd.py`](../../scripts/deploy_sd.py) | `458` | Canonical BMO Handheld SD card deployer & binary ROM index builder (BMOIDX03). |
 | [`scripts/export_enclosure_web_meshes.py`](../../scripts/export_enclosure_web_meshes.py) | `254` | Export manifold CAD enclosure shells to deterministic Three.js mesh data. |
 | [`scripts/extract_claims.py`](../../scripts/extract_claims.py) | `596` | scripts/extract_claims.py — Extract and verify numeric & factual claims across the repos |
 | [`scripts/fetch_covers.py`](../../scripts/fetch_covers.py) | `84` | scripts/fetch_covers.py — Backward-compatible alias for scripts/convert_covers.py. |

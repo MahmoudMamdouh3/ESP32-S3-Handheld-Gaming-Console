@@ -21,13 +21,14 @@ Firmware, host test suite, browser WebAssembly simulator, and 3D-printable enclo
 | :--- | :--- |
 | **Plain-English Owner Guide & First Steps** | **[docs/guides/owner-guide.md](docs/guides/owner-guide.md)** |
 | **Hardware Bring-Up, Electrical Safety & BOM** | **[docs/guides/bringup.md](docs/guides/bringup.md), [docs/guides/safety.md](docs/guides/safety.md), [docs/bom.md](docs/bom.md)** |
+| **Developer & Hardware Troubleshooting Guide** | **[docs/guides/troubleshooting.md](docs/guides/troubleshooting.md)** |
+| **Build Flags, Profiles, CMake & CI Reference** | **[docs/build-and-ci.md](docs/build-and-ci.md), [tasks.py](tasks.py)** |
 | **Decisions Waiting for Owner Approval** | **[docs/owner-decisions.md](docs/owner-decisions.md)** |
 | **31×46 Perfboard Layout, Z-Stackup & Wire List** | **[docs/wiring/perfboard-layout.md](docs/wiring/perfboard-layout.md), [docs/wiring/wire_list.csv](docs/wiring/wire_list.csv), [hardware/layout.json](hardware/layout.json)** |
 | Hardware pins, hard stops & SPI clock risks | [docs/hardware.md](docs/hardware.md) |
 | System architecture & memory layout | [docs/architecture.md](docs/architecture.md) |
 | Supported consoles, status & controls | [docs/compatibility.md](docs/compatibility.md), [docs/reference/controls.md](docs/reference/controls.md) |
-| Performance budgets & device measurements | [docs/performance.md](docs/performance.md) & [docs/hardware_measurements.md](docs/hardware_measurements.md) |
-| Build system, tasks CLI & CI architecture | [docs/build-and-ci.md](docs/build-and-ci.md), [tasks.py](tasks.py) |
+| Performance budgets & device measurements | [docs/performance.md](docs/performance.md), [benchmarks/RESULTS.md](benchmarks/RESULTS.md), [docs/hardware_measurements.md](docs/hardware_measurements.md) |
 | Hardware bench checklist & audit reports | [docs/hardware-validation-kit.md](docs/hardware-validation-kit.md), [docs/audits/findings-register.md](docs/audits/findings-register.md) |
 | Binary formats (`BMOIDX03`, `BSS2`, SD deployment) | [docs/formats.md](docs/formats.md), [docs/conventions.md](docs/conventions.md) |
 | 3D-printable enclosure & wiring guides | [docs/enclosure-3d-printing.md](docs/enclosure-3d-printing.md), [wiring/](docs/wiring/01-display-and-buttons.md) |

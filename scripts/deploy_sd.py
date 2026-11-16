@@ -15,9 +15,18 @@ import warnings
 import zlib
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from scripts.repo_tools import get_data_dir
-from scripts.rom_key import make_rom_key
+if TYPE_CHECKING:
+    from scripts.repo_tools import get_data_dir
+    from scripts.rom_key import make_rom_key
+else:
+    try:
+        from scripts.repo_tools import get_data_dir
+        from scripts.rom_key import make_rom_key
+    except ImportError:
+        from repo_tools import get_data_dir
+        from rom_key import make_rom_key
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEST_ROOT: Path | None = None

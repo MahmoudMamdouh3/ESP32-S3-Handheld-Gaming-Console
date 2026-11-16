@@ -1,4 +1,7 @@
+import os
 import struct
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -169,6 +172,20 @@ class TestSdDeployment(unittest.TestCase):
                 str_table[contra_off : contra_off + contra_len].decode("utf-8"),
                 "nes/Contra.nes",
             )
+
+    def test_deploy_sd_direct_cli_execution_succeeds(self):
+        repo_root = Path(__file__).resolve().parents[1]
+        env = os.environ.copy()
+        env.pop("PYTHONPATH", None)
+        proc = subprocess.run(
+            [sys.executable, str(repo_root / "scripts" / "deploy_sd.py"), "--help"],
+            cwd=str(repo_root),
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn("--destination", proc.stdout)
 
 
 if __name__ == "__main__":
