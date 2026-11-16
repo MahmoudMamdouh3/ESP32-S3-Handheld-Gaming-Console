@@ -79,13 +79,30 @@ class PlatformMappingTests(unittest.TestCase):
         table_match = re.search(r"kCores\[\]\s*=\s*\{(.*?)\};", CORE_REGISTRY, re.S)
         self.assertIsNotNone(table_match, "CoreRegistry::detail::kCores[] missing in core_registry.h")
         registry = {}
-        for idx, rom_type, dmg, start_fn, step_fn, destroy_fn in re.findall(
+        active_battery_fns = {}
+        row_re = re.compile(
             r"\{\s*(\d+)\s*,\s*(ROM_[A-Z0-9_]+)\s*,\s*(true|false)\s*,\s*"
-            r"([A-Za-z0-9_:]+)\s*,\s*([A-Za-z0-9_:]+)\s*,\s*([A-Za-z0-9_:]+)\s*,",
-            table_match.group(1),
-        ):
+            + r",\s*".join([r"([A-Za-z0-9_:]+)"] * 9)
+            + r"\s*\}"
+        )
+        for match in row_re.finditer(table_match.group(1)):
+            idx, rom_type, dmg, *fns = match.groups()
+            start_fn, step_fn, destroy_fn, has_bat, has_active_bat, load_bat, save_bat, save_st, load_st = fns
+            for cb_name, cb_val in zip(
+                ("start", "stepFrame", "destroy", "hasBatterySave", "loadBatteryRam", "saveBatteryRam", "saveState", "loadState"),
+                (start_fn, step_fn, destroy_fn, has_bat, load_bat, save_bat, save_st, load_st),
+                strict=True,
+            ):
+                self.assertNotEqual(cb_val, "nullptr", f"{rom_type} callback {cb_name} unexpectedly nullptr")
             registry[rom_type] = (int(idx), dmg == "true", start_fn, step_fn, destroy_fn)
+            active_battery_fns[rom_type] = has_active_bat
         self.assertEqual(len(registry), 15)
+        for active_rom in ("ROM_SMS", "ROM_GG", "ROM_PCE", "ROM_GENESIS", "ROM_SNES", "ROM_WSWAN", "ROM_NGP"):
+            self.assertNotEqual(
+                active_battery_fns[active_rom],
+                "nullptr",
+                f"{active_rom} must wire hasActiveBatteryRam",
+            )
 
         wrapper_to_file = {row[3]: row[4] for row in PLATFORMS}
         for row in PLATFORMS:

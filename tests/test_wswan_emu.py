@@ -87,8 +87,6 @@ _WSWAN_CXX_BEHAVIOR = r"""
 int main() {
   static_assert(CoreRegistry::detail::kCores[11].emulatorIndex == 11, "WSwan core index must be 11");
   static_assert(CoreRegistry::detail::kCores[11].romType == ROM_WSWAN, "Core 11 must be ROM_WSWAN");
-  static_assert(CoreRegistry::detail::kCores[11].hasActiveBatteryRam != nullptr,
-                "WSwan supports active battery check");
 
   const ConsoleCatalog::ConsoleSpec* spec = ConsoleCatalog::findByType(ROM_WSWAN);
   BMO_CHECK(spec != nullptr);

@@ -65,7 +65,7 @@ Compact structural map for AI agents and contributors. Regenerate via `python sc
 | [`firmware/BmoGameboy/src/ui/ui_diagnostics.cpp`](../../firmware/BmoGameboy/src/ui/ui_diagnostics.cpp) | `198` | #include "display_internal.h" |
 | [`firmware/BmoGameboy/src/ui/ui_menus.cpp`](../../firmware/BmoGameboy/src/ui/ui_menus.cpp) | `648` | #include "display_internal.h" |
 | [`firmware/BmoGameboy/src/ui/ui_widgets.cpp`](../../firmware/BmoGameboy/src/ui/ui_widgets.cpp) | `377` | #include "display_internal.h" |
-| [`firmware/BmoGameboy/src/cores/core_registry.h`](../../firmware/BmoGameboy/src/cores/core_registry.h) | `217` | Static dispatch table mapping emulator indices 0..14 to C++ wrappers |
+| [`firmware/BmoGameboy/src/cores/core_registry.h`](../../firmware/BmoGameboy/src/cores/core_registry.h) | `216` | Static dispatch table mapping emulator indices 0..14 to C++ wrappers |
 
 ## 3. Emulator Wrapper Files (`firmware/BmoGameboy/src/cores/`)
 

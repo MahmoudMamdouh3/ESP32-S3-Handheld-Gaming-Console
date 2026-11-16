@@ -34,7 +34,6 @@ constexpr bool verifyTier1Descriptors() {
   for (int i = 0; i < 9; ++i) {
     const auto& desc = CoreRegistry::detail::kCores[i];
     if (desc.emulatorIndex != i || desc.romType != kTier1Types[i]) return false;
-    if (!desc.start || !desc.stepFrame || !desc.destroy || !desc.saveState || !desc.loadState) return false;
   }
   return CoreRegistry::detail::kCores[0].supportsDmgPalette && CoreRegistry::detail::kCores[1].supportsDmgPalette &&
          !CoreRegistry::detail::kCores[2].supportsDmgPalette;
@@ -208,7 +207,7 @@ class TestTier1FirmwareValidation(unittest.TestCase):
             [REPO_ROOT / "tests" / "host" / "peanut_opcode_test.cpp"],
             include_dirs=inc_dirs,
             defines=("BMO_HOST_TEST=1", "LOG_LEVEL=0"),
-            workdir=REPO_ROOT,
+            run_cwd=REPO_ROOT,
         )
         self.assertEqual(res1.returncode, 0, res1.stdout + res1.stderr)
 
@@ -217,7 +216,7 @@ class TestTier1FirmwareValidation(unittest.TestCase):
             [REPO_ROOT / "tests" / "host" / "gb_error_and_bmp_test.cpp", FW_SRC / "cores" / "gb_common.cpp"],
             include_dirs=inc_dirs,
             defines=("BMO_HOST_TEST=1", "LOG_LEVEL=0"),
-            workdir=REPO_ROOT,
+            run_cwd=REPO_ROOT,
         )
         self.assertEqual(res2.returncode, 0, res2.stdout + res2.stderr)
 

@@ -77,7 +77,7 @@ def find_native_cxx():
 
 
 def build_and_run_native_cxx(test_case, sources, *, include_dirs=(), defines=(),
-                             args=(), sanitize=True, timeout=300, workdir=None):
+                             args=(), sanitize=True, timeout=300, workdir=None, run_cwd=None):
     """Compile C++17 sources natively and run the executable.
 
     On Windows this uses MSVC from vcvars64.bat (``/fsanitize=address`` when
@@ -97,6 +97,7 @@ def build_and_run_native_cxx(test_case, sources, *, include_dirs=(), defines=(),
     tmp_ctx = tempfile.TemporaryDirectory() if workdir is None else None
     out_dir = Path(tmp_ctx.name if tmp_ctx else workdir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    exec_cwd = Path(run_cwd) if run_cwd is not None else out_dir
     exe = out_dir / ("host_test.exe" if os.name == "nt" else "host_test")
     try:
         if kind == "msvc":
@@ -113,7 +114,11 @@ def build_and_run_native_cxx(test_case, sources, *, include_dirs=(), defines=(),
                 f'call "{tool}" >nul\r\n'
                 f'cl {" ".join(flags)} /Fe:"{exe}" /Fo:"{out_dir}\\\\" /Fd:"{out_dir}\\\\" {src_args} >"{out_dir}\\build.log" 2>&1\r\n'
                 f'if errorlevel 1 (type "{out_dir}\\build.log" & exit /b 97)\r\n'
-                f'"{exe}" {run_args}\r\n',
+                f'pushd "{exec_cwd}"\r\n'
+                f'"{exe}" {run_args}\r\n'
+                'set "BMO_EXIT=%ERRORLEVEL%"\r\n'
+                'popd\r\n'
+                'exit /b %BMO_EXIT%\r\n',
                 encoding="utf-8",
             )
             proc = subprocess.run([str(bat)], capture_output=True, text=True, timeout=timeout,
@@ -132,7 +137,7 @@ def build_and_run_native_cxx(test_case, sources, *, include_dirs=(), defines=(),
         if build.returncode != 0:
             test_case.fail("Native compile failed:\n" + build.stdout + build.stderr)
         return subprocess.run([str(exe), *[str(a) for a in args]], capture_output=True,
-                              text=True, timeout=timeout, cwd=str(out_dir))
+                              text=True, timeout=timeout, cwd=str(exec_cwd))
     finally:
         if tmp_ctx is not None:
             with contextlib.suppress(OSError):
@@ -323,7 +328,7 @@ def build_and_run_firmware_cxx(
             defines=("BMO_HOST_TEST=1", "LOG_LEVEL=0", *defines),
             sanitize=sanitize,
             timeout=timeout,
-            workdir=repo_root,
+            run_cwd=repo_root,
         )
         test_case.assertEqual(
             res.returncode,

@@ -102,7 +102,7 @@ class TestAllConsolesFirmwareValidation(unittest.TestCase):
             [REPO_ROOT / "tests" / "host" / "rom_key_parity.cpp"],
             include_dirs=(FW_SRC / "storage",),
             args=tuple(sample_paths),
-            workdir=REPO_ROOT,
+            run_cwd=REPO_ROOT,
         )
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         cpp_keys = [line.strip() for line in proc.stdout.splitlines() if line.strip()]

@@ -96,8 +96,6 @@ _GENESIS_CXX_BEHAVIOR = r"""
 int main() {
   static_assert(CoreRegistry::detail::kCores[9].emulatorIndex == 9, "Genesis core index must be 9");
   static_assert(CoreRegistry::detail::kCores[9].romType == ROM_GENESIS, "Core 9 must be ROM_GENESIS");
-  static_assert(CoreRegistry::detail::kCores[9].hasActiveBatteryRam != nullptr,
-                "Genesis supports active battery check");
 
   const ConsoleCatalog::ConsoleSpec* spec = ConsoleCatalog::findByType(ROM_GENESIS);
   BMO_CHECK(spec != nullptr);

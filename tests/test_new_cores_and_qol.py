@@ -219,7 +219,7 @@ class TestNewCoresAndQolBehavior(unittest.TestCase):
             ],
             include_dirs=inc_dirs,
             defines=("BMO_HOST_TEST=1", "LOG_LEVEL=0", "FEATURE_PROFILER=1"),
-            workdir=REPO_ROOT,
+            run_cwd=REPO_ROOT,
         )
         self.assertEqual(res_app.returncode, 0, res_app.stdout + res_app.stderr)
 
@@ -232,7 +232,7 @@ class TestNewCoresAndQolBehavior(unittest.TestCase):
             ],
             include_dirs=inc_dirs,
             defines=("BMO_HOST_TEST=1", "LOG_LEVEL=0"),
-            workdir=REPO_ROOT,
+            run_cwd=REPO_ROOT,
         )
         self.assertEqual(res_save.returncode, 0, res_save.stdout + res_save.stderr)
 

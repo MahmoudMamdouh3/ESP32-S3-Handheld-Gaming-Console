@@ -189,9 +189,8 @@ constexpr bool validateDescriptors() {
   for (int i = 0; i < 15; ++i) {
     const auto& d = kCores[i];
     if (d.emulatorIndex != i) return false;
-    if (!d.start || !d.stepFrame || !d.destroy || !d.hasBatterySave || !d.loadBatteryRam || !d.saveBatteryRam ||
-        !d.saveState || !d.loadState) {
-      return false;
+    for (int j = i + 1; j < 15; ++j) {
+      if (kCores[j].romType == d.romType) return false;
     }
   }
   return true;

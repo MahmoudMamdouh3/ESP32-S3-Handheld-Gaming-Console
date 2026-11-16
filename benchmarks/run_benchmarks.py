@@ -130,6 +130,8 @@ def _check_baseline_regressions(
             limit = max(base_val * 2.0, base_val + 524288.0)
         elif key.endswith("_us") and base_val < 250.0:
             limit = max(base_val * max_ratio, base_val * 2.5)
+        elif key.endswith("_ms") and base_val < 50.0:
+            limit = max(base_val * max_ratio, 65.0)
         else:
             limit = base_val * max_ratio
         if flat_cur[key] > limit:

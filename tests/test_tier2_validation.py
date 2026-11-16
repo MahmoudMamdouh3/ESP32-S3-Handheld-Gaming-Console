@@ -32,7 +32,6 @@ constexpr bool verifyTier2Descriptors() {
     const int idx = 9 + k;
     const auto& desc = CoreRegistry::detail::kCores[idx];
     if (desc.emulatorIndex != idx || desc.romType != kTier2Types[k]) return false;
-    if (!desc.start || !desc.stepFrame || !desc.destroy || !desc.saveState || !desc.loadState) return false;
   }
   return true;
 }
