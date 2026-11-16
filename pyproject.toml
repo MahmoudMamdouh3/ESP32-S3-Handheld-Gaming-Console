@@ -13,7 +13,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "clang-tidy==22.1.8",
+    "clang-tidy==23.1.4",
     "cppcheck==1.5.1",
     "lizard>=1.17.13,<2.0.0",
     "mypy>=1.14.0,<3.0.0",
