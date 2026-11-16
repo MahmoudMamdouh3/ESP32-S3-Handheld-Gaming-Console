@@ -99,100 +99,102 @@ void emitPushCall(std::vector<uint8_t>& rom, size_t& pc, uint16_t addr) {
   rom[pc++] = static_cast<uint8_t>((addr >> 8) & 0xFFU);
 }
 
-int testSyntheticSm83Opcodes() {
+std::vector<uint8_t> buildSyntheticSm83Rom() {
   std::vector<uint8_t> rom(32768U, 0x00U);
   rom[0x0100U] = 0x00U; // NOP
   rom[0x0101U] = 0xC3U; // JP 0x0150
   rom[0x0102U] = 0x50U;
   rom[0x0103U] = 0x01U;
 
-  // Subroutine emitSerial(A) at 0x01B0: sends A over GB serial SB/SC & waits for TX complete
+  // Subroutine emitSerial(A) at 0x01B0
   size_t subTx = 0x01B0U;
   rom[subTx++] = 0xE0U;
-  rom[subTx++] = 0x01U; // LDH (SB), A
+  rom[subTx++] = 0x01U;
   rom[subTx++] = 0x3EU;
-  rom[subTx++] = 0x81U; // LD A, 0x81
+  rom[subTx++] = 0x81U;
   rom[subTx++] = 0xE0U;
-  rom[subTx++] = 0x02U; // LDH (SC), A
-  // waitLoop @ subTx:
+  rom[subTx++] = 0x02U;
   rom[subTx++] = 0xF0U;
-  rom[subTx++] = 0x02U; // LDH A, (SC)
+  rom[subTx++] = 0x02U;
   rom[subTx++] = 0xE6U;
-  rom[subTx++] = 0x80U; // AND 0x80
+  rom[subTx++] = 0x80U;
   rom[subTx++] = 0x20U;
-  rom[subTx++] = 0xFAU; // JR NZ, -6 (back to LDH A, (SC))
-  rom[subTx++] = 0xC9U; // RET
+  rom[subTx++] = 0xFAU;
+  rom[subTx++] = 0xC9U;
 
-  // Subroutine loopSum() at 0x01D0: B=4, XOR A, A += 0x10 each pass => returns 0x40
+  // Subroutine loopSum() at 0x01D0
   size_t subSum = 0x01D0U;
   rom[subSum++] = 0x06U;
-  rom[subSum++] = 0x04U; // LD B, 4
-  rom[subSum++] = 0xAFU; // XOR A
+  rom[subSum++] = 0x04U;
+  rom[subSum++] = 0xAFU;
   rom[subSum++] = 0xC6U;
-  rom[subSum++] = 0x10U; // ADD A, 0x10
-  rom[subSum++] = 0x05U; // DEC B
+  rom[subSum++] = 0x10U;
+  rom[subSum++] = 0x05U;
   rom[subSum++] = 0x20U;
-  rom[subSum++] = 0xFBU; // JR NZ, -5
-  rom[subSum++] = 0xC9U; // RET
+  rom[subSum++] = 0xFBU;
+  rom[subSum++] = 0xC9U;
 
-  // Main program at 0x0150
   size_t pc = 0x0150U;
   rom[pc++] = 0x31U;
   rom[pc++] = 0xFEU;
-  rom[pc++] = 0xDFU; // LD SP, 0xDFFE
-  // Enable LCD + BGP palette 0xE4 so lcd_draw_line runs cleanly on scanlines
+  rom[pc++] = 0xDFU;
   rom[pc++] = 0x3EU;
   rom[pc++] = 0xE4U;
   rom[pc++] = 0xE0U;
-  rom[pc++] = 0x47U; // LDH (BGP), A
+  rom[pc++] = 0x47U;
   rom[pc++] = 0x3EU;
   rom[pc++] = 0x81U;
   rom[pc++] = 0xE0U;
-  rom[pc++] = 0x40U; // LDH (LCDC), A
+  rom[pc++] = 0x40U;
 
-  // 1) DAA BCD check: 0x29 + 0x17 -> 0x40 + DAA -> 0x46
+  // 1) DAA BCD check: 0x29 + 0x17 + DAA -> 0x46
   rom[pc++] = 0x3EU;
   rom[pc++] = 0x29U;
   rom[pc++] = 0xC6U;
   rom[pc++] = 0x17U;
-  rom[pc++] = 0x27U; // DAA
+  rom[pc++] = 0x27U;
   emitPushCall(rom, pc, 0x01B0U);
 
-  // 2) Carry branch check: 0x80 + 0x85 sets Carry => JR NC NOT taken => emits 0xA5
+  // 2) Carry branch check -> 0xA5
   rom[pc++] = 0x3EU;
   rom[pc++] = 0x80U;
   rom[pc++] = 0xC6U;
   rom[pc++] = 0x85U;
   rom[pc++] = 0x30U;
-  rom[pc++] = 0x02U; // JR NC, +2
+  rom[pc++] = 0x02U;
   rom[pc++] = 0x3EU;
   rom[pc++] = 0xA5U;
   emitPushCall(rom, pc, 0x01B0U);
 
-  // 3) CALL/RET + DJNZ loop check => emits 0x40
+  // 3) CALL/RET + DJNZ loop -> 0x40
   emitPushCall(rom, pc, 0x01D0U);
   emitPushCall(rom, pc, 0x01B0U);
 
-  // 4) Joypad input matrix P15=0 (select action buttons A/B/Sel/Start): LDH (0x00), 0x10 inside poll loop
+  // 4) Joypad input matrix P15=0 poll loop
   const size_t spinPc = pc;
   rom[pc++] = 0x3EU;
   rom[pc++] = 0x10U;
   rom[pc++] = 0xE0U;
-  rom[pc++] = 0x00U; // LDH (P1), 0x10
+  rom[pc++] = 0x00U;
   rom[pc++] = 0xF0U;
-  rom[pc++] = 0x00U; // LDH A, (P1)
+  rom[pc++] = 0x00U;
   rom[pc++] = 0xE6U;
-  rom[pc++] = 0x0FU; // AND 0x0F
+  rom[pc++] = 0x0FU;
   rom[pc++] = 0xFEU;
-  rom[pc++] = 0x0FU; // CP 0x0F (all released)
+  rom[pc++] = 0x0FU;
   rom[pc++] = 0x28U;
   const uint8_t relOffset = static_cast<uint8_t>((spinPc - (pc + 1U)) & 0xFFU);
-  rom[pc++] = relOffset; // JR Z, spinPc
+  rom[pc++] = relOffset;
   emitPushCall(rom, pc, 0x01B0U);
   rom[pc++] = 0x18U;
-  rom[pc++] = 0xFEU; // JR -2 (idle)
+  rom[pc++] = 0xFEU;
 
   finalizeCartridgeChecksum(rom, "BMO_SM83_TEST");
+  return rom;
+}
+
+int testSyntheticSm83Opcodes() {
+  const std::vector<uint8_t> rom = buildSyntheticSm83Rom();
 
   HarnessCtx ctx;
   ctx.rom = rom.data();
@@ -204,9 +206,8 @@ int testSyntheticSm83Opcodes() {
   BMO_CHECK(initErr == PGB::GB_INIT_NO_ERROR);
   PGB::gb_init_lcd(&gb, lcdDrawLine);
   PGB::gb_init_serial(&gb, serialTx, nullptr);
-  gb.direct.joypad = 0xFFU; // active-low: all released
+  gb.direct.joypad = 0xFFU;
 
-  // Run 3 frames with no button pressed => first 3 opcode results emitted, waiting on A button
   for (int f = 0; f < 3; ++f) {
     PGB::gb_run_frame(&gb);
   }
@@ -217,7 +218,6 @@ int testSyntheticSm83Opcodes() {
   BMO_CHECK(ctx.serialOut[1] == 0xA5U);
   BMO_CHECK(ctx.serialOut[2] == 0x40U);
 
-  // Press JOYPAD_A (active-low bit 0 cleared) and step 2 frames
   gb.direct.joypad = static_cast<uint8_t>(0xFFU ^ JOYPAD_A);
   for (int f = 0; f < 2; ++f) {
     PGB::gb_run_frame(&gb);

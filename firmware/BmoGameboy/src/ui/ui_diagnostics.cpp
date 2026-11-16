@@ -101,7 +101,7 @@ void DisplayEmu::drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeD
     menuCanvas->print(k.label);
   }
 
-  drawFooter("A SPI | SEL PROF | B EXIT");
+  drawFooter("A SPI | SEL PROF | STA SD | B EXIT");
   writeMenuCanvas();
 }
 

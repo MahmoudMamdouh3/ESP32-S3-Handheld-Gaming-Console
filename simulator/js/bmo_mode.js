@@ -19,9 +19,9 @@ export const bmoModeMethods = {
       this.bmoButtonHoldStart = 0;
       this.bmoLastGazeX = 0;
       this.bmoDirectionToggleCount = 0;
-      const chkSleep = document.getElementById("chk-bmo-autosleep");
+      const chkSleep = /** @type {HTMLInputElement | null} */ (document.getElementById("chk-bmo-autosleep"));
       if (chkSleep) chkSleep.checked = this.bmoAutoSleep;
-      const chkCycle = document.getElementById("chk-bmo-autocycle");
+      const chkCycle = /** @type {HTMLInputElement | null} */ (document.getElementById("chk-bmo-autocycle"));
       if (chkCycle) chkCycle.checked = false;
       this.syncBmoModeUI();
     },
@@ -36,7 +36,7 @@ export const bmoModeMethods = {
       } else if (!this.bmoModeActive) {
         this.bmoModeActive = true;
         this.bmoAutoSleep = false;
-        const chkSleep = document.getElementById("chk-bmo-autosleep");
+        const chkSleep = /** @type {HTMLInputElement | null} */ (document.getElementById("chk-bmo-autosleep"));
         if (chkSleep) chkSleep.checked = false;
       }
       this.bmoSessionStarted = true;
@@ -53,7 +53,7 @@ export const bmoModeMethods = {
         this.wasmEngine.setBmoExpression("HAPPY");
         this.wasmEngine.clearBmoSpeech();
       }
-      const chkCycle = document.getElementById("chk-bmo-autocycle");
+      const chkCycle = /** @type {HTMLInputElement | null} */ (document.getElementById("chk-bmo-autocycle"));
       if (chkCycle) chkCycle.checked = false;
       this.bmoLastInputMs = performance.now();
       this.lastInputActivityMs = this.bmoLastInputMs;
@@ -76,7 +76,7 @@ export const bmoModeMethods = {
       this.ensureBmoModeActive();
       if (stopCycle) {
         this.bmoAutoCycle = false;
-        const chkCycle = document.getElementById("chk-bmo-autocycle");
+        const chkCycle = /** @type {HTMLInputElement | null} */ (document.getElementById("chk-bmo-autocycle"));
         if (chkCycle) chkCycle.checked = false;
       }
       this.bmoLastInputMs = performance.now();
@@ -118,7 +118,7 @@ export const bmoModeMethods = {
     },
 
     populateBmoQuotes() {
-      const select = document.getElementById("select-bmo-quote");
+      const select = /** @type {HTMLSelectElement | null} */ (document.getElementById("select-bmo-quote"));
       if (!select || !this.wasmEngine || !this.wasmEngine.bmoReady) return;
       const quotes = this.wasmEngine.bmoQuotes();
       if (!quotes.length) return;
@@ -219,7 +219,7 @@ export const bmoModeMethods = {
     },
 
     bindBmoTogglesAndSlider() {
-      const bpmSlider = document.getElementById("slider-bmo-bpm");
+      const bpmSlider = /** @type {HTMLInputElement | null} */ (document.getElementById("slider-bmo-bpm"));
       const bpmVal = document.getElementById("val-bmo-bpm");
       if (bpmSlider) {
         bpmSlider.addEventListener("input", () => {
@@ -232,7 +232,7 @@ export const bmoModeMethods = {
         });
       }
 
-      const chkAutoCycle = document.getElementById("chk-bmo-autocycle");
+      const chkAutoCycle = /** @type {HTMLInputElement | null} */ (document.getElementById("chk-bmo-autocycle"));
       if (chkAutoCycle) {
         chkAutoCycle.addEventListener("change", () => {
           this.bmoAutoCycle = chkAutoCycle.checked;
@@ -250,7 +250,7 @@ export const bmoModeMethods = {
         });
       }
 
-      const chkAutoSleep = document.getElementById("chk-bmo-autosleep");
+      const chkAutoSleep = /** @type {HTMLInputElement | null} */ (document.getElementById("chk-bmo-autosleep"));
       if (chkAutoSleep) {
         chkAutoSleep.checked = this.bmoAutoSleep;
         chkAutoSleep.addEventListener("change", () => {
@@ -259,7 +259,7 @@ export const bmoModeMethods = {
         });
       }
 
-      const chkHud = document.getElementById("chk-bmo-hud");
+      const chkHud = /** @type {HTMLInputElement | null} */ (document.getElementById("chk-bmo-hud"));
       if (chkHud) {
         chkHud.checked = this.bmoHudVisible;
         chkHud.addEventListener("change", () => {
@@ -301,7 +301,7 @@ export const bmoModeMethods = {
         });
       });
 
-      const quoteSelect = document.getElementById("select-bmo-quote");
+      const quoteSelect = /** @type {HTMLSelectElement | null} */ (document.getElementById("select-bmo-quote"));
       bindClick("btn-bmo-say-quote", () => {
         const idx = quoteSelect ? parseInt(quoteSelect.value, 10) || 0 : 0;
         this.runBmoAction((engine) => engine.sayBmoQuote(idx, 3800));
@@ -313,7 +313,7 @@ export const bmoModeMethods = {
         this.runBmoAction((engine) => engine.sayBmoQuote(idx, 3800));
       });
 
-      const customInput = document.getElementById("input-bmo-speech");
+      const customInput = /** @type {HTMLInputElement | null} */ (document.getElementById("input-bmo-speech"));
       const submitCustomSpeech = () => {
         if (!customInput) return;
         const text = customInput.value.trim();

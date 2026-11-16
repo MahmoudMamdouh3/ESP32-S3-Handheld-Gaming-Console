@@ -46,47 +46,38 @@ struct DecodedHeader {
   bool isLegacyV1;
 };
 
-inline bool decodeHeader(const uint8_t* rawHeader, size_t bytesRead, size_t fileSize, uint32_t expectedCoreId,
-                         uint32_t expectedPathKeyHash, uint32_t expectedRomSize, size_t maxStateSize, size_t maxRamSize,
-                         DecodedHeader* out) {
-  if (!rawHeader || !out || bytesRead < sizeof(HeaderV1) || fileSize < sizeof(HeaderV1)) {
+namespace detail {
+inline bool decodeV1Header(const HeaderV1& v1, size_t fileSize, uint32_t expectedCoreId, size_t maxStateSize,
+                           size_t maxRamSize, DecodedHeader* out) {
+  if (v1.coreId != expectedCoreId || v1.stateSize == 0U || v1.stateSize > maxStateSize || v1.ramSize > maxRamSize) {
+    return false;
+  }
+  const uint64_t expectedFileSize =
+      static_cast<uint64_t>(sizeof(HeaderV1)) + static_cast<uint64_t>(v1.stateSize) + static_cast<uint64_t>(v1.ramSize);
+  if (expectedFileSize != static_cast<uint64_t>(fileSize)) {
     return false;
   }
 
-  memset(out, 0, sizeof(*out));
-  HeaderV1 v1{};
-  memcpy(&v1, rawHeader, sizeof(v1));
+  out->header.magic = v1.magic;
+  out->header.version = v1.version;
+  out->header.headerSize = static_cast<uint32_t>(sizeof(HeaderV1));
+  out->header.timestamp = v1.timestamp;
+  out->header.coreId = v1.coreId;
+  out->header.pathKeyHash = 0U;
+  out->header.romSize = 0U;
+  out->header.stateSize = v1.stateSize;
+  out->header.ramSize = v1.ramSize;
+  out->header.crc32 = v1.crc32;
+  memcpy(out->header.romTitle, v1.romTitle, sizeof(out->header.romTitle));
+  out->header.romTitle[sizeof(out->header.romTitle) - 1] = '\0';
+  out->payloadOffset = sizeof(HeaderV1);
+  out->isLegacyV1 = true;
+  return true;
+}
 
-  if (v1.magic == MAGIC_V1 && v1.version == VERSION_V1) {
-    if (v1.coreId != expectedCoreId || v1.stateSize == 0U || v1.stateSize > maxStateSize) {
-      return false;
-    }
-    if (v1.ramSize > maxRamSize) {
-      return false;
-    }
-    const uint64_t expectedFileSize = static_cast<uint64_t>(sizeof(HeaderV1)) + static_cast<uint64_t>(v1.stateSize) +
-                                      static_cast<uint64_t>(v1.ramSize);
-    if (expectedFileSize != static_cast<uint64_t>(fileSize)) {
-      return false;
-    }
-
-    out->header.magic = v1.magic;
-    out->header.version = v1.version;
-    out->header.headerSize = static_cast<uint32_t>(sizeof(HeaderV1));
-    out->header.timestamp = v1.timestamp;
-    out->header.coreId = v1.coreId;
-    out->header.pathKeyHash = 0U;
-    out->header.romSize = 0U;
-    out->header.stateSize = v1.stateSize;
-    out->header.ramSize = v1.ramSize;
-    out->header.crc32 = v1.crc32;
-    memcpy(out->header.romTitle, v1.romTitle, sizeof(out->header.romTitle));
-    out->header.romTitle[sizeof(out->header.romTitle) - 1] = '\0';
-    out->payloadOffset = sizeof(HeaderV1);
-    out->isLegacyV1 = true;
-    return true;
-  }
-
+inline bool decodeV2Header(const uint8_t* rawHeader, size_t bytesRead, size_t fileSize, uint32_t expectedCoreId,
+                           uint32_t expectedPathKeyHash, uint32_t expectedRomSize, size_t maxStateSize,
+                           size_t maxRamSize, DecodedHeader* out) {
   if (bytesRead < sizeof(HeaderV2) || fileSize < sizeof(HeaderV2)) {
     return false;
   }
@@ -119,6 +110,24 @@ inline bool decodeHeader(const uint8_t* rawHeader, size_t bytesRead, size_t file
   out->payloadOffset = sizeof(HeaderV2);
   out->isLegacyV1 = false;
   return true;
+}
+} // namespace detail
+
+inline bool decodeHeader(const uint8_t* rawHeader, size_t bytesRead, size_t fileSize, uint32_t expectedCoreId,
+                         uint32_t expectedPathKeyHash, uint32_t expectedRomSize, size_t maxStateSize, size_t maxRamSize,
+                         DecodedHeader* out) {
+  if (!rawHeader || !out || bytesRead < sizeof(HeaderV1) || fileSize < sizeof(HeaderV1)) {
+    return false;
+  }
+
+  memset(out, 0, sizeof(*out));
+  HeaderV1 v1{};
+  memcpy(&v1, rawHeader, sizeof(v1));
+  if (v1.magic == MAGIC_V1 && v1.version == VERSION_V1) {
+    return detail::decodeV1Header(v1, fileSize, expectedCoreId, maxStateSize, maxRamSize, out);
+  }
+  return detail::decodeV2Header(rawHeader, bytesRead, fileSize, expectedCoreId, expectedPathKeyHash, expectedRomSize,
+                                maxStateSize, maxRamSize, out);
 }
 
 inline bool inspectSummaryHeader(const uint8_t* rawHeader, size_t bytesRead, size_t fileSize, HeaderV2* outHeader) {

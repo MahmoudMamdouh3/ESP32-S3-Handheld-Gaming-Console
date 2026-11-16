@@ -38,6 +38,25 @@ void gwenesis_io_get_buttons(void) {
   }
 }
 
+static void populate_genesis_test_rom(uint8_t* rom) {
+  rom[0] = 0x00U;
+  rom[1] = 0xFFU;
+  rom[2] = 0x80U;
+  rom[3] = 0x00U;
+  rom[4] = 0x00U;
+  rom[5] = 0x00U;
+  rom[6] = 0x02U;
+  rom[7] = 0x00U;
+  memcpy(&rom[0x100], "SEGA MEGA DRIVE ", 16);
+  memcpy(&rom[0x1F0], "U               ", 16);
+
+  const uint8_t prog[] = {0x20U, 0x3CU, 0x12U, 0x34U, 0x56U, 0x4DU, 0x33U, 0xFCU, 0x00U, 0x42U, 0x00U,
+                          0xFFU, 0x00U, 0x00U, 0x23U, 0xFCU, 0x80U, 0x04U, 0x81U, 0x44U, 0x00U, 0xC0U,
+                          0x00U, 0x04U, 0x23U, 0xFCU, 0xC0U, 0x00U, 0x00U, 0x00U, 0x00U, 0xC0U, 0x00U,
+                          0x04U, 0x33U, 0xFCU, 0x00U, 0xEEU, 0x00U, 0xC0U, 0x00U, 0x00U, 0x60U, 0xFEU};
+  memcpy(&rom[0x200], prog, sizeof(prog));
+}
+
 int test_genesis_core(void) {
   s_gen_fb = (uint16_t*)calloc(320U * 224U, sizeof(uint16_t));
   uint8_t* rom = (uint8_t*)calloc(1U, 1024U);
@@ -58,33 +77,7 @@ int test_genesis_core(void) {
     return 1;
   }
 
-  /* M68K vectors: SSP=$00FF8000, PC=$00000200 */
-  rom[0] = 0x00U;
-  rom[1] = 0xFFU;
-  rom[2] = 0x80U;
-  rom[3] = 0x00U;
-  rom[4] = 0x00U;
-  rom[5] = 0x00U;
-  rom[6] = 0x02U;
-  rom[7] = 0x00U;
-  memcpy(&rom[0x100], "SEGA MEGA DRIVE ", 16);
-  memcpy(&rom[0x1F0], "U               ", 16);
-
-  /* Big-endian M68K machine code at $0200:
-   * MOVE.L #$1234564D, D0
-   * MOVE.W #$0042, $00FF0000
-   * MOVE.L #$80048144, $00C00004  (VDP Reg0=04, Reg1=44 display enable)
-   * MOVE.L #$87000000, $00C00004  (VDP Reg7=00)
-   * MOVE.L #$C0000000, $00C00004  (CRAM write addr 0)
-   * MOVE.W #$00EE, $00C00000      (CRAM[0] = 0x0EE yellow)
-   * BRA.S -2
-   */
-  const uint8_t prog[] = {0x20U, 0x3CU, 0x12U, 0x34U, 0x56U, 0x4DU, 0x33U, 0xFCU, 0x00U, 0x42U, 0x00U,
-                          0xFFU, 0x00U, 0x00U, 0x23U, 0xFCU, 0x80U, 0x04U, 0x81U, 0x44U, 0x00U, 0xC0U,
-                          0x00U, 0x04U, 0x23U, 0xFCU, 0xC0U, 0x00U, 0x00U, 0x00U, 0x00U, 0xC0U, 0x00U,
-                          0x04U, 0x33U, 0xFCU, 0x00U, 0xEEU, 0x00U, 0xC0U, 0x00U, 0x00U, 0x60U, 0xFEU};
-  memcpy(&rom[0x200], prog, sizeof(prog));
-
+  populate_genesis_test_rom(rom);
   gwenesis_vdp_allocate_buffers();
   gwenesis_ym2612_tables_alloc();
   load_cartridge(rom, 1024U);
@@ -96,7 +89,6 @@ int test_genesis_core(void) {
   system_clock = 0;
   frame_counter = 0;
   v_counter = 0;
-
   for (int f = 0; f < 50; ++f) {
     gwenesis_vdp_render_config();
     int visible_h = REG1_PAL ? 240 : 224;
@@ -108,9 +100,7 @@ int test_genesis_core(void) {
       v_counter = (uint16_t)scan_line;
       m68k_run((unsigned int)deadline);
       z80_run(deadline);
-      if (scan_line < visible_h && scan_line < 224) {
-        gwenesis_vdp_render_line(scan_line);
-      }
+      if (scan_line < visible_h && scan_line < 224) gwenesis_vdp_render_line(scan_line);
     }
     m68k.cycles -= deadline;
     ++frame_counter;

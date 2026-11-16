@@ -11,6 +11,7 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
   "include": [
+    "simulator/types.d.ts",
     "simulator/*.js",
     "simulator/js/**/*.js",
     "benchmarks/*.mjs"

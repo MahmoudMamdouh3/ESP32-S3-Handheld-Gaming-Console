@@ -52,8 +52,6 @@ struct RuntimeState {
   unsigned long frameTimeMax = 0;
   unsigned long frameTimeSum = 0;
   int frameTimeCount = 0;
-  unsigned long* framePercentileSamples = nullptr;
-  size_t framePercentileCount = 0;
 
   unsigned long lastFpsLogMs = 0;
   int frames = 0;
@@ -100,14 +98,11 @@ void destroyActiveEmulator();
 /** Destroy active emulator cleanly and transition back to the console carousel. */
 void finishQuitToConsole();
 
-/** Record a single core frame duration sample into interval and percentile trackers. */
-void recordFrameTime(unsigned long us, int emulatorIndex);
+/** Record a single core frame duration sample into interval stats (percentiles live in BmoProfiler). */
+void recordFrameTime(unsigned long us);
 
 /** Reset per-second frame min/max/sum accumulators. */
 void resetFrameStats();
-
-/** Reset the 600-sample percentile rolling window cursor. */
-void resetFramePercentiles();
 
 /** Rebuild the filtered visible-games list when `visibleGamesDirty` is set. */
 void rebuildVisibleGames();

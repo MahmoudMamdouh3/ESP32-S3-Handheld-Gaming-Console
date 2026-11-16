@@ -22,6 +22,10 @@ public:
       buffer = nullptr;
     }
   }
+  PSRAMCanvas(const PSRAMCanvas&) = delete;
+  PSRAMCanvas& operator=(const PSRAMCanvas&) = delete;
+  PSRAMCanvas(PSRAMCanvas&&) = delete;
+  PSRAMCanvas& operator=(PSRAMCanvas&&) = delete;
 };
 
 namespace BmoDisplayInternal {

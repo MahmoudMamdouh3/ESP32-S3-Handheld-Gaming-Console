@@ -17,7 +17,7 @@ import sys
 import sysconfig
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import ClassVar
 
 
 @dataclass
@@ -36,13 +36,13 @@ class ClangTidyRunner:
     DIAG_REGEX = re.compile(
         r"^(?P<file>.+?):(?P<line>\d+):(?P<col>\d+):\s+(?P<sev>warning|error):\s+(?P<msg>.+?)\s+\[(?P<check>[^\]]+)\]$"
     )
-    XTENSA_UNSUPPORTED_FLAGS = {
+    XTENSA_UNSUPPORTED_FLAGS: ClassVar[frozenset[str]] = frozenset({
         "-mlongcalls",
         "-fno-tree-switch-conversion",
         "-fstrict-volatile-bitfields",
         "-mdisable-hardware-atomics",
         "-mtext-section-literals",
-    }
+    })
 
     def __init__(self, repo_root: Path):
         self.repo_root = repo_root
@@ -50,7 +50,7 @@ class ClangTidyRunner:
         self.clang_tidy_bin = self._find_clang_tidy()
         self.timeout_seconds = 300
 
-    def _find_clang_tidy(self) -> Optional[str]:
+    def _find_clang_tidy(self) -> str | None:
         which_bin = shutil.which("clang-tidy")
         if which_bin:
             return which_bin
@@ -67,8 +67,7 @@ class ClangTidyRunner:
         if user_base:
             candidates.append(Path(user_base) / "Scripts" / exe_name)
             candidates.append(Path(user_base) / "bin" / exe_name)
-        for wasi_bin in sorted((self.repo_root / ".tools").glob(f"wasi-sdk-*/bin/{exe_name}")):
-            candidates.append(wasi_bin)
+        candidates.extend(sorted((self.repo_root / ".tools").glob(f"wasi-sdk-*/bin/{exe_name}")))
         candidates.append(Path(r"C:\Program Files\LLVM\bin\clang-tidy.exe"))
 
         for c in candidates:
@@ -91,20 +90,22 @@ class ClangTidyRunner:
                     targets.extend(sorted(d.glob("*.cpp")))
         else:
             # Host-compilable first-party modules and host test/benchmark harnesses
-            for p in (
-                src_root / "hal" / "spi_arbiter.cpp",
-                self.repo_root / "simulator" / "bmo_face_firmware.cpp",
-                self.repo_root / "simulator" / "bmo_face_wasm.cpp",
-            ):
-                if p.is_file():
-                    targets.append(p)
+            targets.extend(
+                p
+                for p in (
+                    src_root / "hal" / "spi_arbiter.cpp",
+                    self.repo_root / "simulator" / "bmo_face_firmware.cpp",
+                    self.repo_root / "simulator" / "bmo_face_wasm.cpp",
+                )
+                if p.is_file()
+            )
             targets.extend(sorted((self.repo_root / "tests" / "host").glob("*_test.cpp")))
             runner = self.repo_root / "tests" / "host" / "host_cores_runner.c"
             if runner.is_file():
                 targets.append(runner)
         return [t for t in targets if t.exists()]
 
-    def _prepare_compdb(self) -> Optional[Path]:
+    def _prepare_compdb(self) -> Path | None:
         src_compdb = self.repo_root / "build" / "compile_commands.json"
         if not src_compdb.is_file():
             return None
@@ -138,7 +139,7 @@ class ClangTidyRunner:
         (out_dir / "compile_commands.json").write_text(json.dumps(cleaned), encoding="utf-8")
         return out_dir
 
-    def run(self, files: Optional[list[Path]] = None) -> list[ClangTidyFinding]:
+    def run(self, files: list[Path] | None = None) -> list[ClangTidyFinding]:
         if not self.is_available() or not self.clang_tidy_bin:
             return []
 

@@ -75,7 +75,7 @@ export const internalsMethods = {
     },
 
     bindInternalsSliderAndLayers() {
-      const sliderExplode = document.getElementById("slider-explode");
+      const sliderExplode = /** @type {HTMLInputElement | null} */ (document.getElementById("slider-explode"));
       if (sliderExplode) {
         sliderExplode.addEventListener("input", () => {
           const pct = parseInt(sliderExplode.value, 10) || 0;
@@ -101,7 +101,8 @@ export const internalsMethods = {
         });
       });
 
-      document.querySelectorAll(".internals-layer-chk").forEach((chk) => {
+      document.querySelectorAll(".internals-layer-chk").forEach((el) => {
+        const chk = /** @type {HTMLInputElement} */ (el);
         chk.addEventListener("change", () => {
           const layer = chk.getAttribute("data-layer");
           if (!this.bmo3D || !layer) return;
@@ -131,7 +132,7 @@ export const internalsMethods = {
 
       document.querySelectorAll(".internals-step-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
-          this.selectBeginnerGuideStep(parseInt(btn.getAttribute("data-step"), 10) || 0, true);
+          this.selectBeginnerGuideStep(parseInt(btn.getAttribute("data-step") || "0", 10) || 0, true);
         });
       });
 
@@ -174,7 +175,7 @@ export const internalsMethods = {
       const step = steps[clamped];
 
       document.querySelectorAll(".internals-step-btn").forEach((b) => {
-        b.classList.toggle("active", parseInt(b.getAttribute("data-step"), 10) === clamped);
+        b.classList.toggle("active", parseInt(b.getAttribute("data-step") || "-1", 10) === clamped);
       });
       const heading = document.getElementById("internals-guide-heading");
       const body = document.getElementById("internals-guide-body");
@@ -191,7 +192,7 @@ export const internalsMethods = {
         this.applyInternalsPresetUI(step.preset);
         this.setInternalsHighlightUI(step.highlight);
         if (step.id === "step_7") {
-          const expChk = document.getElementById("chk-internals-expansion");
+          const expChk = /** @type {HTMLInputElement | null} */ (document.getElementById("chk-internals-expansion"));
           if (expChk && !expChk.checked) {
             expChk.checked = true;
             expChk.dispatchEvent(new Event("change"));
@@ -212,7 +213,7 @@ export const internalsMethods = {
     syncExplosionReadout(t) {
       const pct = Math.round(Math.max(0, Math.min(1, Number(t) || 0)) * 100);
       const valEl = document.getElementById("val-explode");
-      const sliderEl = document.getElementById("slider-explode");
+      const sliderEl = /** @type {HTMLInputElement | null} */ (document.getElementById("slider-explode"));
       if (valEl) valEl.textContent = `${pct}%`;
       if (sliderEl && Math.abs(parseInt(sliderEl.value, 10) - pct) >= 1) {
         sliderEl.value = String(pct);
@@ -222,7 +223,8 @@ export const internalsMethods = {
     syncLayerCheckboxes() {
       if (!this.bmo3D) return;
       const internalsVis = this.bmo3D.internals ? this.bmo3D.internals.layerVisibility : {};
-      document.querySelectorAll(".internals-layer-chk").forEach((chk) => {
+      document.querySelectorAll(".internals-layer-chk").forEach((el) => {
+        const chk = /** @type {HTMLInputElement} */ (el);
         const layer = chk.getAttribute("data-layer");
         if (!layer) return;
         if (layer in this.bmo3D.layerVis) chk.checked = Boolean(this.bmo3D.layerVis[layer]);

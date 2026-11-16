@@ -337,7 +337,7 @@ def _copy_worker(pair: tuple[Path, Path]) -> tuple[bool, int, bool | str]:
     try:
         written, size = copy_single_file(src, dst)
         return (True, size, written)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return (False, 0, str(exc))
 
 

@@ -8,7 +8,7 @@ and verifies that DOOM zone sizing fits within the 8 MiB Octal PSRAM ceiling acr
 import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Dict, List
+from typing import Any
 
 PSRAM_TOTAL_BYTES = 8 * 1024 * 1024  # 8,388,608 B (ESP32-S3-WROOM-1-N16R8 Octal PSRAM)
 
@@ -35,7 +35,7 @@ class PsramBudgetReport:
     doom_margin_bytes: int
     doom_floor_bytes: int
     doom_cap_bytes: int
-    persistent_sites: List[PsramAllocationSite]
+    persistent_sites: list[PsramAllocationSite]
     persistent_total_floor: int
     persistent_total_2k: int
     persistent_total_max: int
@@ -108,7 +108,7 @@ class PsramBudgetAnalyzer:
                         return candidate.relative_to(self.repo_root).as_posix(), idx
         return fallback_rel, 1
 
-    def _extract_constants(self) -> Dict[str, int]:
+    def _extract_constants(self) -> dict[str, int]:
         sd_h = (self.fw_dir / "src" / "storage" / "sd_card.h").read_text(encoding="utf-8", errors="ignore")
         zone_h = (self.fw_dir / "src" / "cores" / "psram_zone_budget.h").read_text(encoding="utf-8", errors="ignore")
         rom_file_sizeof = self._extract_rom_file_sizeof(sd_h)
@@ -183,128 +183,53 @@ class PsramBudgetAnalyzer:
             raise ValueError("RomFile declaration contains no supported fields")
         return (offset + max_alignment - 1) // max_alignment * max_alignment
 
+    def _collect_persistent_sites(self, consts: dict[str, int], pool_2k: int) -> list[PsramAllocationSite]:
+        min_pool = consts["min_pool"]
+        max_pool = consts["max_pool"]
+        rom_sz = consts["rom_file_sizeof"]
+        specs: tuple[tuple[str, str, str, int, str, int, int, int, str], ...] = (
+            ("SDCard::romList", r"heap_caps_malloc\(sizeof\(RomFile\)", "firmware/BmoGameboy/src/storage/sd_mount.cpp",
+             rom_sz, "ceil(catalog * 1.25), clamped to [256..36000]", min_pool * rom_sz, pool_2k * rom_sz, max_pool * rom_sz,
+             "Persistent (dynamic pool)"),
+            ("SDCard::s_pathArena", r"s_pathArena\s*=\s*static_cast", "firmware/BmoGameboy/src/storage/sd_mount.cpp",
+             1, "Pow2 path arena (16 KiB..4 MiB) or exact stringTableBytes", 16384, 131072, 4194304,
+             "Persistent (dynamic pool)"),
+            ("s_visibleRomIndexes", r"psramIndexes\s*=", "firmware/BmoGameboy/src/app/app_state.cpp",
+             4, "poolCap * sizeof(int) (ESP32-S3: 4 B)", min_pool * 4, pool_2k * 4, max_pool * 4,
+             "Persistent (dynamic pool)"),
+            ("s_visibleGames", r"psramGames\s*=", "firmware/BmoGameboy/src/app/app_state.cpp",
+             4, "poolCap * sizeof(RomFile*) (ESP32-S3: 4 B)", min_pool * 4, pool_2k * 4, max_pool * 4,
+             "Persistent (dynamic pool)"),
+            ("s_asyncEmuBuf[0..1]", r"s_asyncEmuBuf\[0\]\s*=", "firmware/BmoGameboy/src/ui/display_pipeline.cpp",
+             320 * 240 * 2, "2 * (320 * 240 * 2)", 2 * 320 * 240 * 2, 2 * 320 * 240 * 2, 2 * 320 * 240 * 2,
+             "Persistent (boot)"),
+            ("s_menuCanvasArr[0..1]", r"s_menuCanvasArr\[0\]\s*=", "firmware/BmoGameboy/src/ui/display_pipeline.cpp",
+             320 * 240 * 2, "2 * (320 * 240 * 2)", 2 * 320 * 240 * 2, 2 * 320 * 240 * 2, 2 * 320 * 240 * 2,
+             "Persistent (cached UI)"),
+            ("s_psramFaceBuf", r"(?:s_psramFaceBuf|psramFaceBuf)\s*=", "firmware/BmoGameboy/src/ui/bmo_face_anim.cpp",
+             320 * 240 * 2, "1 * (320 * 240 * 2)", 320 * 240 * 2, 320 * 240 * 2, 320 * 240 * 2,
+             "Persistent (boot)"),
+            ("s_boxArtBuf", r"s_boxArtBuf\s*=", "firmware/BmoGameboy/src/storage/box_art.cpp",
+             64 * 64 * 2, "1 * (64 * 64 * 2)", 64 * 64 * 2, 64 * 64 * 2, 64 * 64 * 2,
+             "Persistent (first art load)"),
+        )
+        sites: list[PsramAllocationSite] = []
+        for sym, pat, rel_file, unit_b, formula, b_floor, b_2k, b_max, pers in specs:
+            f_path, line_num = self._locate_symbol_site(pat, rel_file)
+            sites.append(
+                PsramAllocationSite(
+                    symbol=sym, file_path=f_path, line_number=line_num, unit_bytes=unit_b,
+                    count_formula=formula, bytes_at_floor=b_floor, bytes_at_2k=b_2k, bytes_at_max=b_max, persistence=pers,
+                )
+            )
+        return sites
+
     def analyze(self) -> PsramBudgetReport:
         consts = self._extract_constants()
         min_pool = consts["min_pool"]
         max_pool = consts["max_pool"]
         pool_2k = self.compute_pool_capacity(2000, min_pool, max_pool)
-        rom_sz = consts["rom_file_sizeof"]
-
-        rom_list_path, rom_list_line = self._locate_symbol_site(
-            r"heap_caps_malloc\(sizeof\(RomFile\)", "firmware/BmoGameboy/src/storage/sd_mount.cpp"
-        )
-        arena_path, arena_line = self._locate_symbol_site(
-            r"s_pathArena\s*=\s*static_cast", "firmware/BmoGameboy/src/storage/sd_mount.cpp"
-        )
-        vis_idx_path, vis_idx_line = self._locate_symbol_site(
-            r"psramIndexes\s*=", "firmware/BmoGameboy/src/app/app_state.cpp"
-        )
-        vis_games_path, vis_games_line = self._locate_symbol_site(
-            r"psramGames\s*=", "firmware/BmoGameboy/src/app/app_state.cpp"
-        )
-        emu_buf_path, emu_buf_line = self._locate_symbol_site(
-            r"s_asyncEmuBuf\[0\]\s*=", "firmware/BmoGameboy/src/ui/display_pipeline.cpp"
-        )
-        menu_canvas_path, menu_canvas_line = self._locate_symbol_site(
-            r"s_menuCanvasArr\[0\]\s*=", "firmware/BmoGameboy/src/ui/display_pipeline.cpp"
-        )
-        face_buf_path, face_buf_line = self._locate_symbol_site(
-            r"(?:s_psramFaceBuf|psramFaceBuf)\s*=", "firmware/BmoGameboy/src/ui/bmo_face_anim.cpp"
-        )
-        box_art_path, box_art_line = self._locate_symbol_site(
-            r"s_boxArtBuf\s*=", "firmware/BmoGameboy/src/storage/box_art.cpp"
-        )
-
-        sites: List[PsramAllocationSite] = [
-            PsramAllocationSite(
-                symbol="SDCard::romList",
-                file_path=rom_list_path,
-                line_number=rom_list_line,
-                unit_bytes=rom_sz,
-                count_formula="ceil(catalog * 1.25), clamped to [256..36000]",
-                bytes_at_floor=min_pool * rom_sz,
-                bytes_at_2k=pool_2k * rom_sz,
-                bytes_at_max=max_pool * rom_sz,
-                persistence="Persistent (dynamic pool)",
-            ),
-            PsramAllocationSite(
-                symbol="SDCard::s_pathArena",
-                file_path=arena_path,
-                line_number=arena_line,
-                unit_bytes=1,
-                count_formula="Pow2 path arena (16 KiB..4 MiB) or exact stringTableBytes",
-                bytes_at_floor=16384,
-                bytes_at_2k=131072,
-                bytes_at_max=4194304,
-                persistence="Persistent (dynamic pool)",
-            ),
-            PsramAllocationSite(
-                symbol="s_visibleRomIndexes",
-                file_path=vis_idx_path,
-                line_number=vis_idx_line,
-                unit_bytes=4,
-                count_formula="poolCap * sizeof(int) (ESP32-S3: 4 B)",
-                bytes_at_floor=min_pool * 4,
-                bytes_at_2k=pool_2k * 4,
-                bytes_at_max=max_pool * 4,
-                persistence="Persistent (dynamic pool)",
-            ),
-            PsramAllocationSite(
-                symbol="s_visibleGames",
-                file_path=vis_games_path,
-                line_number=vis_games_line,
-                unit_bytes=4,
-                count_formula="poolCap * sizeof(RomFile*) (ESP32-S3: 4 B)",
-                bytes_at_floor=min_pool * 4,
-                bytes_at_2k=pool_2k * 4,
-                bytes_at_max=max_pool * 4,
-                persistence="Persistent (dynamic pool)",
-            ),
-            PsramAllocationSite(
-                symbol="s_asyncEmuBuf[0..1]",
-                file_path=emu_buf_path,
-                line_number=emu_buf_line,
-                unit_bytes=320 * 240 * 2,
-                count_formula="2 * (320 * 240 * 2)",
-                bytes_at_floor=2 * 320 * 240 * 2,
-                bytes_at_2k=2 * 320 * 240 * 2,
-                bytes_at_max=2 * 320 * 240 * 2,
-                persistence="Persistent (boot)",
-            ),
-            PsramAllocationSite(
-                symbol="s_menuCanvasArr[0..1]",
-                file_path=menu_canvas_path,
-                line_number=menu_canvas_line,
-                unit_bytes=320 * 240 * 2,
-                count_formula="2 * (320 * 240 * 2)",
-                bytes_at_floor=2 * 320 * 240 * 2,
-                bytes_at_2k=2 * 320 * 240 * 2,
-                bytes_at_max=2 * 320 * 240 * 2,
-                persistence="Persistent (cached UI)",
-            ),
-            PsramAllocationSite(
-                symbol="s_psramFaceBuf",
-                file_path=face_buf_path,
-                line_number=face_buf_line,
-                unit_bytes=320 * 240 * 2,
-                count_formula="1 * (320 * 240 * 2)",
-                bytes_at_floor=320 * 240 * 2,
-                bytes_at_2k=320 * 240 * 2,
-                bytes_at_max=320 * 240 * 2,
-                persistence="Persistent (boot)",
-            ),
-            PsramAllocationSite(
-                symbol="s_boxArtBuf",
-                file_path=box_art_path,
-                line_number=box_art_line,
-                unit_bytes=64 * 64 * 2,
-                count_formula="1 * (64 * 64 * 2)",
-                bytes_at_floor=64 * 64 * 2,
-                bytes_at_2k=64 * 64 * 2,
-                bytes_at_max=64 * 64 * 2,
-                persistence="Persistent (first art load)",
-            ),
-        ]
+        sites = self._collect_persistent_sites(consts, pool_2k)
 
         tot_floor = sum(s.bytes_at_floor for s in sites)
         tot_2k = sum(s.bytes_at_2k for s in sites)
@@ -314,21 +239,11 @@ class PsramBudgetAnalyzer:
         free_2k = PSRAM_TOTAL_BYTES - tot_2k
         free_max = PSRAM_TOTAL_BYTES - tot_max
 
-        dz_floor = self.compute_doom_zone_bytes(
-            free_floor, consts["doom_margin"], consts["doom_floor"], consts["doom_cap"]
-        )
-        dz_2k = self.compute_doom_zone_bytes(
-            free_2k, consts["doom_margin"], consts["doom_floor"], consts["doom_cap"]
-        )
-        dz_max = self.compute_doom_zone_bytes(
-            free_max, consts["doom_margin"], consts["doom_floor"], consts["doom_cap"]
-        )
-
         return PsramBudgetReport(
             total_psram_bytes=PSRAM_TOTAL_BYTES,
             min_rom_pool=min_pool,
             max_rom_pool=max_pool,
-            rom_file_sizeof=rom_sz,
+            rom_file_sizeof=consts["rom_file_sizeof"],
             doom_margin_bytes=consts["doom_margin"],
             doom_floor_bytes=consts["doom_floor"],
             doom_cap_bytes=consts["doom_cap"],
@@ -339,9 +254,15 @@ class PsramBudgetAnalyzer:
             free_after_boot_floor=free_floor,
             free_after_boot_2k=free_2k,
             free_after_boot_max=free_max,
-            doom_zone_floor_catalog=dz_floor,
-            doom_zone_2k_catalog=dz_2k,
-            doom_zone_max_catalog=dz_max,
+            doom_zone_floor_catalog=self.compute_doom_zone_bytes(
+                free_floor, consts["doom_margin"], consts["doom_floor"], consts["doom_cap"]
+            ),
+            doom_zone_2k_catalog=self.compute_doom_zone_bytes(
+                free_2k, consts["doom_margin"], consts["doom_floor"], consts["doom_cap"]
+            ),
+            doom_zone_max_catalog=self.compute_doom_zone_bytes(
+                free_max, consts["doom_margin"], consts["doom_floor"], consts["doom_cap"]
+            ),
         )
 
     def format_markdown(self) -> str:
@@ -368,5 +289,5 @@ class PsramBudgetAnalyzer:
         )
         return "\n".join(lines)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self.analyze())

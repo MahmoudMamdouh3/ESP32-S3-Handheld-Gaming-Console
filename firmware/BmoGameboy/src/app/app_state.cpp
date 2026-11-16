@@ -16,8 +16,6 @@
 #include "../storage/box_art.h"
 #include "../ui/bmo_face.h"
 #include "../ui/display_emu.h"
-#include "../ui/frame_pacing.h"
-#include "../ui/frame_percentiles.h"
 
 namespace {
 
@@ -86,13 +84,13 @@ void syncVisiblePoolCapacity() {
       static_cast<const RomFile**>(heap_caps_malloc(sizeof(const RomFile*) * (size_t)targetCap, MALLOC_CAP_SPIRAM));
   if (!psramIndexes || !psramGames) {
     if (psramIndexes) heap_caps_free(psramIndexes);
-    if (psramGames) heap_caps_free(psramGames);
+    if (psramGames) heap_caps_free(static_cast<void*>(psramGames));
     LOG_WARN_STR("PSRAM game-menu allocation failed; using the current bounded capacity.");
     return;
   }
 
   if (rt.visibleRomIndexes != rt.fallbackRomIndexes) heap_caps_free(rt.visibleRomIndexes);
-  if (rt.visibleGames != rt.fallbackVisibleGames) heap_caps_free(rt.visibleGames);
+  if (rt.visibleGames != rt.fallbackVisibleGames) heap_caps_free(static_cast<void*>(rt.visibleGames));
   rt.visibleRomIndexes = psramIndexes;
   rt.visibleGames = psramGames;
   rt.maxVisibleCapacity = targetCap;
@@ -156,30 +154,12 @@ void finishQuitToConsole() {
   Buttons::suppressMenuInputUntil(static_cast<uint32_t>(millis() + 300U));
 }
 
-void recordFrameTime(unsigned long us, int emulatorIndex) {
+void recordFrameTime(unsigned long us) {
   RuntimeState& rt = mutableState();
   if (us < rt.frameTimeMin) rt.frameTimeMin = us;
   if (us > rt.frameTimeMax) rt.frameTimeMax = us;
   rt.frameTimeSum += us;
   rt.frameTimeCount++;
-  if (!rt.framePercentileSamples) {
-    rt.framePercentileSamples = static_cast<unsigned long*>(
-        heap_caps_calloc(FramePercentiles::WINDOW_SIZE, sizeof(unsigned long), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
-    if (!rt.framePercentileSamples) {
-      rt.framePercentileSamples =
-          static_cast<unsigned long*>(calloc(FramePercentiles::WINDOW_SIZE, sizeof(unsigned long)));
-    }
-  }
-  if (!rt.framePercentileSamples) return;
-  rt.framePercentileSamples[rt.framePercentileCount++] = us;
-  if (rt.framePercentileCount == FramePercentiles::WINDOW_SIZE) {
-    FramePercentiles::Summary percentiles;
-    if (FramePercentiles::sortAndSummarize(rt.framePercentileSamples, FramePercentiles::WINDOW_SIZE, percentiles)) {
-      LOG_INFO("Frame window: emu=%d n=600 target=%luus p50=%luus p95=%luus p99=%luus (core execution)", emulatorIndex,
-               FramePacing::targetFrameUs(emulatorIndex), percentiles.p50, percentiles.p95, percentiles.p99);
-    }
-    rt.framePercentileCount = 0;
-  }
 }
 
 void resetFrameStats() {
@@ -188,10 +168,6 @@ void resetFrameStats() {
   rt.frameTimeMax = 0;
   rt.frameTimeSum = 0;
   rt.frameTimeCount = 0;
-}
-
-void resetFramePercentiles() {
-  mutableState().framePercentileCount = 0;
 }
 
 void rebuildVisibleGames() {

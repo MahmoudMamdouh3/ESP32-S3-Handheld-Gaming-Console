@@ -209,13 +209,15 @@ def _current_branch_name() -> str:
 
 
 def _compute_state_sync_line() -> str:
-    fw_files = []
+    fw_files: list[tuple[Path, int]] = []
     for folder in ("app", "hal", "storage", "ui", "cores", "tests"):
         d = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / folder
         if d.is_dir():
-            for p in d.iterdir():
-                if p.is_file() and p.suffix.lower() in {".c", ".cpp", ".h", ".hpp"}:
-                    fw_files.append((p, count_lines(p)))
+            fw_files.extend(
+                (p, count_lines(p))
+                for p in d.iterdir()
+                if p.is_file() and p.suffix.lower() in {".c", ".cpp", ".h", ".hpp"}
+            )
     max_file, max_lines = max(fw_files, key=lambda item: item[1]) if fw_files else (Path("none"), 0)
     total_fw_lines = sum(n for _, n in fw_files)
     script_count = len(list((REPO_ROOT / "scripts").glob("*.py")))

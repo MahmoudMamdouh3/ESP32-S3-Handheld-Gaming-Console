@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 """Unit tests for Guardian hardware, bus, AST, static analysis, link, and color checks."""
 
+import argparse
 import io
 import json
 import runpy
@@ -27,7 +28,7 @@ FIRMWARE_DIR = REPO_ROOT / "firmware" / "BmoGameboy"
 class TestGuardianEngine(unittest.TestCase):
     """Verify Guardian hardware analyzers and static checks."""
 
-    def test_01_bus_model_mathematical_precision(self):
+    def test_01_bus_model_mathematical_precision(self) -> None:
         bus_model = HardwareBusModel(spi_clock_hz=80_000_000, cpu_clock_hz=240_000_000)
 
         metrics = bus_model.calculate_metrics("MENU_FULLSCREEN")
@@ -42,7 +43,7 @@ class TestGuardianEngine(unittest.TestCase):
         self.assertEqual(gb_metrics.resolution.frame_bytes, 103680)
         self.assertAlmostEqual(gb_metrics.spi_transfer_ms, 10.3692, places=2)
 
-    def test_bus_model_does_not_infer_dma_or_frame_drops(self):
+    def test_bus_model_does_not_infer_dma_or_frame_drops(self) -> None:
         fast_bus = HardwareBusModel(spi_clock_hz=1_000_000)
         saturated = fast_bus.calculate_metrics("MENU_FULLSCREEN")
         self.assertEqual(saturated.status, "BUS_SATURATED")
@@ -52,7 +53,7 @@ class TestGuardianEngine(unittest.TestCase):
         low_headroom = normal_bus.calculate_metrics("MENU_FULLSCREEN")
         self.assertEqual(low_headroom.status, "LOW_SEQUENTIAL_HEADROOM")
 
-    def test_02_all_supported_resolutions_registered(self):
+    def test_02_all_supported_resolutions_registered(self) -> None:
         all_metrics = HardwareBusModel().calculate_all()
         self.assertGreaterEqual(len(all_metrics), 15)
         keys = [m.resolution_key for m in all_metrics]
@@ -67,7 +68,7 @@ class TestGuardianEngine(unittest.TestCase):
         ):
             self.assertIn(expected, keys)
 
-    def test_03_ast_linter_detects_real_firmware_state(self):
+    def test_03_ast_linter_detects_real_firmware_state(self) -> None:
         findings = FirmwareAstLinter(FIRMWARE_DIR).lint_all()
         self.assertIsInstance(findings, list)
         for f in findings:
@@ -76,7 +77,7 @@ class TestGuardianEngine(unittest.TestCase):
             self.assertTrue(f.message)
         self.assertEqual([f for f in findings if f.severity == "CRITICAL"], [])
 
-    def test_04_cppcheck_scans_all_firmware_sources(self):
+    def test_04_cppcheck_scans_all_firmware_sources(self) -> None:
         runner = CppcheckRunner(REPO_ROOT)
         runner.cppcheck_bin = "cppcheck"
         with patch(
@@ -90,17 +91,16 @@ class TestGuardianEngine(unittest.TestCase):
         self.assertEqual(run.call_args.kwargs["timeout"], 600)
         self.assertIn("--error-exitcode=1", command)
 
-    def test_05_cppcheck_timeout_is_reported(self):
+    def test_05_cppcheck_timeout_is_reported(self) -> None:
         runner = CppcheckRunner(REPO_ROOT)
         runner.cppcheck_bin = "cppcheck"
         with patch(
             "tools.guardian.core.cppcheck_runner.subprocess.run",
             side_effect=subprocess.TimeoutExpired("cppcheck", 600),
-        ):
-            with self.assertRaisesRegex(RuntimeError, "timed out"):
-                runner.run()
+        ), self.assertRaisesRegex(RuntimeError, "timed out"):
+            runner.run()
 
-    def test_06_cppcheck_findings_and_branch_notes(self):
+    def test_06_cppcheck_findings_and_branch_notes(self) -> None:
         runner = CppcheckRunner(REPO_ROOT)
         runner.cppcheck_bin = "cppcheck"
         output = (
@@ -127,19 +127,18 @@ class TestGuardianEngine(unittest.TestCase):
         ):
             self.assertEqual(runner.run(), [])
 
-    def test_07_guardian_module_propagates_cppcheck_failure(self):
+    def test_07_guardian_module_propagates_cppcheck_failure(self) -> None:
         finding = CppcheckFinding("src/example.c", 17, "error", "exampleCheck", "detected issue")
         with (
             patch.object(sys, "argv", ["tools.guardian", "cppcheck"]),
             patch.object(CppcheckRunner, "is_available", return_value=True),
             patch.object(CppcheckRunner, "run", return_value=[finding]),
-            redirect_stdout(io.StringIO()),
+            redirect_stdout(io.StringIO()),self.assertRaises(SystemExit) as result
         ):
-            with self.assertRaises(SystemExit) as result:
-                runpy.run_module("tools.guardian", run_name="__main__")
+            runpy.run_module("tools.guardian", run_name="__main__")
         self.assertEqual(result.exception.code, 1)
 
-    def test_08_ast_linter_ignores_comments_and_handles_local_arrays(self):
+    def test_08_ast_linter_ignores_comments_and_handles_local_arrays(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             firmware = root / "firmware" / "BmoGameboy"
@@ -168,7 +167,7 @@ class TestGuardianEngine(unittest.TestCase):
             vendor.write_text("void probe() {\n  uint8_t scratch[4096];\n}\n", encoding="utf-8")
             self.assertEqual(FirmwareAstLinter(firmware).lint_file(vendor), [])
 
-    def test_09_clang_tidy_runner_executes_and_parses_diagnostics(self):
+    def test_09_clang_tidy_runner_executes_and_parses_diagnostics(self) -> None:
         runner = ClangTidyRunner(REPO_ROOT)
         targets = runner.default_targets()
         self.assertGreaterEqual(len(targets), 12)
@@ -183,7 +182,7 @@ class TestGuardianEngine(unittest.TestCase):
         self.assertEqual(findings[0].check_name, "clang-analyzer-core.NullDereference")
         self.assertEqual(findings[0].line, 42)
 
-    def test_10_markdown_link_audit_rejects_file_uris_and_respects_nested_fences(self):
+    def test_10_markdown_link_audit_rejects_file_uris_and_respects_nested_fences(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "docs").mkdir()
@@ -199,16 +198,13 @@ class TestGuardianEngine(unittest.TestCase):
             self.assertEqual([item[2] for item in issues], ["UNRESOLVED_LINK", "FILE_URI_LINK"])
             self.assertEqual(issues[0][1], 4)
 
-    def test_11_doctor_psram_budget_and_color_tokens(self):
-        class Args:
-            json = True
-
+    def test_11_doctor_psram_budget_and_color_tokens(self) -> None:
         buf = io.StringIO()
         with redirect_stdout(buf):
             self.assertEqual(cmd_doctor(None), 0)
             psram_buf = io.StringIO()
             with redirect_stdout(psram_buf):
-                self.assertEqual(cmd_psram_budget(Args()), 0)
+                self.assertEqual(cmd_psram_budget(argparse.Namespace(json=True)), 0)
             payload = json.loads(psram_buf.getvalue())
             self.assertEqual(payload["rom_file_sizeof"], 16)
             self.assertEqual(verify_color_tokens_main(), 0)

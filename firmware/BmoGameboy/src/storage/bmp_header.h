@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 namespace BmpHeader {
 
@@ -19,6 +20,34 @@ inline uint16_t readLe16(const uint8_t* ptr) {
 inline uint32_t readLe32(const uint8_t* ptr) {
   return static_cast<uint32_t>(ptr[0]) | (static_cast<uint32_t>(ptr[1]) << 8) | (static_cast<uint32_t>(ptr[2]) << 16) |
          (static_cast<uint32_t>(ptr[3]) << 24);
+}
+
+inline void writeLe16(uint8_t* ptr, uint16_t val) {
+  ptr[0] = static_cast<uint8_t>(val & 0xFFU);
+  ptr[1] = static_cast<uint8_t>((val >> 8) & 0xFFU);
+}
+
+inline void writeLe32(uint8_t* ptr, uint32_t val) {
+  ptr[0] = static_cast<uint8_t>(val & 0xFFU);
+  ptr[1] = static_cast<uint8_t>((val >> 8) & 0xFFU);
+  ptr[2] = static_cast<uint8_t>((val >> 16) & 0xFFU);
+  ptr[3] = static_cast<uint8_t>((val >> 24) & 0xFFU);
+}
+
+/** Populate a canonical 54-byte uncompressed 24-bpp BMP header. */
+inline void write24BppHeader(uint8_t header[54], int32_t width, int32_t height, uint32_t dataSize) {
+  if (!header) return;
+  memset(header, 0, 54);
+  header[0] = 'B';
+  header[1] = 'M';
+  writeLe32(header + 2, 54U + dataSize);
+  writeLe32(header + 10, 54U);
+  writeLe32(header + 14, 40U);
+  writeLe32(header + 18, static_cast<uint32_t>(width));
+  writeLe32(header + 22, static_cast<uint32_t>(height));
+  writeLe16(header + 26, 1U);
+  writeLe16(header + 28, 24U);
+  writeLe32(header + 34, dataSize);
 }
 
 /**

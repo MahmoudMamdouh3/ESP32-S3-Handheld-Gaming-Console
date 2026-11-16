@@ -10,7 +10,6 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
 
 
 @dataclass
@@ -32,9 +31,9 @@ class SectionEntry:
 
 @dataclass
 class ElfAnalysisResult:
-    elf_path: Optional[Path]
-    sections: List[SectionEntry]
-    symbols_by_size: List[SymbolEntry]
+    elf_path: Path | None
+    sections: list[SectionEntry]
+    symbols_by_size: list[SymbolEntry]
     iram_used_bytes: int
     iram_total_bytes: int
     dram_used_bytes: int
@@ -42,8 +41,8 @@ class ElfAnalysisResult:
     flash_used_bytes: int
     flash_total_bytes: int
     psram_static_bytes: int
-    largest_functions: List[SymbolEntry]
-    largest_data_objects: List[SymbolEntry]
+    largest_functions: list[SymbolEntry]
+    largest_data_objects: list[SymbolEntry]
     toolchain_found: bool
 
 
@@ -54,7 +53,7 @@ class ElfAnalyzer:
         self.repo_root = repo_root
         self.toolchain_bin = self._find_toolchain_dir()
 
-    def _find_toolchain_dir(self) -> Optional[Path]:
+    def _find_toolchain_dir(self) -> Path | None:
         data_dirs = []
         configured_data_dir = os.environ.get("ARDUINO_DIRECTORIES_DATA")
         if configured_data_dir:
@@ -85,7 +84,7 @@ class ElfAnalyzer:
                 return c
         return None
 
-    def get_tool(self, name: str) -> Optional[str]:
+    def get_tool(self, name: str) -> str | None:
         if self.toolchain_bin:
             tool_exe = self.toolchain_bin / f"xtensa-esp32s3-elf-{name}.exe"
             if tool_exe.exists():
@@ -98,7 +97,7 @@ class ElfAnalyzer:
             return found
         return None
 
-    def find_latest_elf(self) -> Optional[Path]:
+    def find_latest_elf(self) -> Path | None:
         search_dirs = [
             self.repo_root / "build",
             self.repo_root / "firmware" / "BmoGameboy" / "build",
@@ -106,7 +105,7 @@ class ElfAnalyzer:
             Path(os.environ.get("TEMP", "")) / "arduino",
             Path(os.environ.get("TEMP", "")) / "arduino-sketch",
         ]
-        best_elf: Optional[Path] = None
+        best_elf: Path | None = None
         best_mtime: float = 0.0
 
         for s_dir in search_dirs:
@@ -124,76 +123,78 @@ class ElfAnalyzer:
 
         return best_elf
 
-    def analyze(self, elf_path: Optional[Path] = None) -> ElfAnalysisResult:
+    def _classify_section(self, name: str) -> str:
+        if "dummy" in name:
+            return "DUMMY"
+        if ".iram0" in name:
+            return "IRAM"
+        if ".dram0" in name or name == ".noinit":
+            return "DRAM"
+        if ".flash.text" in name:
+            return "FLASH_TEXT"
+        if ".flash.rodata" in name or ".flash.appdesc" in name or name == ".eh_frame":
+            return "FLASH_RODATA"
+        if ".ext_ram" in name:
+            return "PSRAM"
+        if ".rtc" in name:
+            return "RTC"
+        return "UNKNOWN"
+
+    def _parse_sections(self, size_tool: str, target_elf: Path) -> list[SectionEntry]:
+        sections: list[SectionEntry] = []
+        try:
+            out = subprocess.check_output([size_tool, "-A", str(target_elf)], text=True, errors="ignore")
+        except Exception:
+            return sections
+        for line in out.splitlines():
+            parts = line.split()
+            if len(parts) >= 3 and parts[1].isdigit():
+                s_name = parts[0]
+                s_size = int(parts[1])
+                s_vma = int(parts[2]) if parts[2].isdigit() else 0
+                sections.append(SectionEntry(name=s_name, size=s_size, vma=s_vma, memory_type=self._classify_section(s_name)))
+        return sections
+
+    def _parse_symbols(self, nm_tool: str, target_elf: Path) -> list[SymbolEntry]:
+        symbols: list[SymbolEntry] = []
+        try:
+            out = subprocess.check_output([nm_tool, "-S", "-C", "--size-sort", str(target_elf)], text=True, errors="ignore")
+        except Exception:
+            return symbols
+        sec_map = {"T": "text", "W": "text", "D": "data_or_bss", "B": "data_or_bss", "R": "rodata"}
+        for line in out.splitlines():
+            parts = line.split(maxsplit=3)
+            if len(parts) >= 4:
+                sym_t = parts[2]
+                symbols.append(
+                    SymbolEntry(
+                        address=int(parts[0], 16),
+                        size=int(parts[1], 16),
+                        sym_type=sym_t,
+                        name=parts[3],
+                        section=sec_map.get(sym_t.upper(), "unknown"),
+                    )
+                )
+        return symbols
+
+    def analyze(self, elf_path: Path | None = None) -> ElfAnalysisResult:
         target_elf = elf_path or self.find_latest_elf()
-        toolchain_found = self.get_tool("size") is not None
+        size_tool = self.get_tool("size")
+        toolchain_found = size_tool is not None
 
         if not target_elf or not target_elf.exists():
             raise FileNotFoundError(
                 f"Compiled ESP32-S3 ELF binary not found ({target_elf or 'no BmoGameboy*.elf discovered under build/'}). "
                 "Compile firmware first (e.g. `python tasks.py build --profile default`)."
             )
-        if not toolchain_found:
+        if not size_tool:
             raise RuntimeError(
                 "xtensa-esp32s3-elf-size toolchain binary not found in PATH or Arduino15 esp32 tools."
             )
 
-        size_tool = self.get_tool("size")
-        sections: List[SectionEntry] = []
-        if size_tool:
-            try:
-                out = subprocess.check_output([size_tool, "-A", str(target_elf)], text=True, errors="ignore")
-                for line in out.splitlines():
-                    parts = line.split()
-                    if len(parts) >= 3 and parts[1].isdigit():
-                        s_name = parts[0]
-                        s_size = int(parts[1])
-                        s_vma = int(parts[2]) if parts[2].isdigit() else 0
-
-                        m_type = "UNKNOWN"
-                        if "dummy" in s_name:
-                            m_type = "DUMMY"
-                        elif ".iram0" in s_name:
-                            m_type = "IRAM"
-                        elif ".dram0" in s_name or s_name == ".noinit":
-                            m_type = "DRAM"
-                        elif ".flash.text" in s_name:
-                            m_type = "FLASH_TEXT"
-                        elif ".flash.rodata" in s_name or ".flash.appdesc" in s_name or s_name == ".eh_frame":
-                            m_type = "FLASH_RODATA"
-                        elif ".ext_ram" in s_name:
-                            m_type = "PSRAM"
-                        elif ".rtc" in s_name:
-                            m_type = "RTC"
-
-                        sections.append(SectionEntry(name=s_name, size=s_size, vma=s_vma, memory_type=m_type))
-            except Exception:
-                pass
-
+        sections = self._parse_sections(size_tool, target_elf)
         nm_tool = self.get_tool("nm")
-        symbols: List[SymbolEntry] = []
-        if nm_tool:
-            try:
-                out = subprocess.check_output([nm_tool, "-S", "-C", "--size-sort", str(target_elf)], text=True, errors="ignore")
-                for line in out.splitlines():
-                    parts = line.split(maxsplit=3)
-                    if len(parts) >= 4:
-                        addr = int(parts[0], 16)
-                        sz = int(parts[1], 16)
-                        sym_t = parts[2]
-                        s_name = parts[3]
-
-                        sec = "unknown"
-                        if sym_t.upper() in {"T", "W"}:
-                            sec = "text"
-                        elif sym_t.upper() in {"D", "B"}:
-                            sec = "data_or_bss"
-                        elif sym_t.upper() == "R":
-                            sec = "rodata"
-
-                        symbols.append(SymbolEntry(address=addr, size=sz, sym_type=sym_t, name=s_name, section=sec))
-            except Exception:
-                pass
+        symbols = self._parse_symbols(nm_tool, target_elf) if nm_tool else []
 
         symbols_sorted = sorted(symbols, key=lambda s: s.size, reverse=True)
         largest_fn = [s for s in symbols_sorted if s.section == "text"][:20]

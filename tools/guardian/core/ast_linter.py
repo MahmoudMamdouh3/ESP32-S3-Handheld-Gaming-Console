@@ -12,7 +12,7 @@ import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
+from typing import ClassVar
 
 
 @dataclass
@@ -45,161 +45,134 @@ class FirmwareAstLinter:
         self.firmware_dir = firmware_dir
         self.repo_root = firmware_dir.parents[1] if firmware_dir.name == "BmoGameboy" else firmware_dir
 
-    EXCLUDED_TOP_DIRS = {
+    EXCLUDED_TOP_DIRS: ClassVar[frozenset[str]] = frozenset({
         ".git", ".tools", ".venv", "venv", "zig", "arduino-cli-bin", ".rom_cache",
-        "games", "roms", "resources", "scratch", "build", "BMO asperite files", "test_compile"
-    }
-    EXCLUDED_ANY_DIRS = {"__pycache__", "legacy_headers", ".git"}
+        "games", "roms", "resources", "scratch", "build", "BMO asperite files", "test_compile",
+    })
+    EXCLUDED_ANY_DIRS: ClassVar[frozenset[str]] = frozenset({"__pycache__", "legacy_headers", ".git"})
+    _CATEGORY_PREFIXES: ClassVar[tuple[tuple[str, str], ...]] = (
+        ("firmware/BmoGameboy/src/hal", "FIRMWARE_CORE"),
+        ("firmware/BmoGameboy/src/storage", "FIRMWARE_CORE"),
+        ("firmware/BmoGameboy/src/ui", "FIRMWARE_CORE"),
+        ("firmware/BmoGameboy/src/cores", "EMULATOR_WRAPPERS"),
+        ("firmware/BmoGameboy/src/third_party", "THIRD_PARTY_ENGINES"),
+        ("firmware/BmoGameboy", "FIRMWARE_TOP"),
+        ("simulator", "SIMULATOR"),
+        ("hardware", "HARDWARE"),
+        ("tools/guardian", "GUARDIAN_TOOLCHAIN"),
+        ("tools", "TOOLS"),
+        ("scripts", "SCRIPTS"),
+        ("tests", "TESTS"),
+        ("docs", "DOCUMENTATION"),
+    )
 
     def _is_excluded(self, path: Path) -> bool:
         try:
             rel_parts = path.relative_to(self.repo_root).parts
         except ValueError:
             rel_parts = path.parts
-        if not rel_parts:
+        if not rel_parts or rel_parts[0] in self.EXCLUDED_TOP_DIRS:
             return True
-        if rel_parts[0] in self.EXCLUDED_TOP_DIRS:
-            return True
-        if self.EXCLUDED_ANY_DIRS.intersection(rel_parts):
-            return True
-        return False
+        return bool(self.EXCLUDED_ANY_DIRS.intersection(rel_parts))
 
-    def get_repo_line_stats(self) -> List[FileLineStats]:
+    def _classify_rel_path(self, rel_path: str) -> str:
+        for prefix, category in self._CATEGORY_PREFIXES:
+            if rel_path.startswith(prefix):
+                return category
+        return "OTHER"
+
+    @staticmethod
+    def _count_c_comments_and_sloc(lines: list[str]) -> tuple[int, int]:
+        comments = 0
+        sloc = 0
+        in_block_comment = False
+        for line in lines:
+            s = line.strip()
+            if not s:
+                continue
+            if in_block_comment:
+                comments += 1
+                if "*/" in s:
+                    in_block_comment = False
+            elif s.startswith("/*"):
+                comments += 1
+                if "*/" not in s:
+                    in_block_comment = True
+            elif s.startswith("//"):
+                comments += 1
+            else:
+                sloc += 1
+        return comments, sloc
+
+    @classmethod
+    def _count_file_lines(cls, lines: list[str], suffix: str) -> tuple[int, int]:
+        if suffix in {".c", ".cpp", ".h", ".hpp", ".ino"}:
+            return cls._count_c_comments_and_sloc(lines)
+        comments = 0
+        sloc = 0
+        for line in lines:
+            s = line.strip()
+            if not s:
+                continue
+            if (suffix == ".py" and (s.startswith("#") or '"""' in s or "'''" in s)) or (
+                suffix == ".md" and s.startswith("<!--")
+            ):
+                comments += 1
+            else:
+                sloc += 1
+        return comments, sloc
+
+    def _stat_for_path(self, path: Path, target_suffixes: frozenset[str]) -> FileLineStats | None:
+        if self._is_excluded(path) or not path.is_file():
+            return None
+        suffix = path.suffix.lower()
+        if suffix not in target_suffixes:
+            return None
+        rel_path = str(path.relative_to(self.repo_root)).replace("\\", "/")
+        cat = self._classify_rel_path(rel_path)
+        try:
+            file_size = path.stat().st_size
+        except OSError:
+            return None
+
+        if cat == "BAKED_ROMS" and file_size > 262144:
+            try:
+                total = path.read_bytes().count(b"\n") + 1
+            except Exception:
+                return None
+            return FileLineStats(path, rel_path, cat, total, total, 0, 0, 100.0)
+
+        try:
+            content = path.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            return None
+
+        lines = content.splitlines()
+        total = len(lines)
+        blanks = sum(1 for raw in lines if not raw.strip())
+        comments, sloc = self._count_file_lines(lines, suffix)
+        density = (sloc / total * 100.0) if total > 0 else 0.0
+        return FileLineStats(path, rel_path, cat, total, sloc, comments, blanks, density)
+
+    def get_repo_line_stats(self) -> list[FileLineStats]:
         """Calculates line statistics across all tracked source and documentation files in the repository."""
-        stats: List[FileLineStats] = []
-        target_suffixes = {".c", ".cpp", ".h", ".hpp", ".ino", ".py", ".md", ".json", ".csv"}
-
+        target_suffixes = frozenset({".c", ".cpp", ".h", ".hpp", ".ino", ".py", ".md", ".json", ".csv"})
         tracked = subprocess.run(
             ["git", "ls-files", "-z"],
             cwd=self.repo_root,
             check=True,
             capture_output=True,
         ).stdout
-        paths = (self.repo_root / os.fsdecode(item) for item in tracked.split(b"\0") if item)
-
-        for path in paths:
-            if self._is_excluded(path) or not path.is_file():
+        stats: list[FileLineStats] = []
+        for item in tracked.split(b"\0"):
+            if not item:
                 continue
-            suffix = path.suffix.lower()
-            if suffix not in target_suffixes:
-                continue
-
-            rel_path = str(path.relative_to(self.repo_root)).replace("\\", "/")
-
-            cat = "OTHER"
-            if (
-                rel_path.startswith("firmware/BmoGameboy/src/hal")
-                or rel_path.startswith("firmware/BmoGameboy/src/storage")
-                or rel_path.startswith("firmware/BmoGameboy/src/ui")
-            ):
-                cat = "FIRMWARE_CORE"
-            elif rel_path.startswith("firmware/BmoGameboy/src/cores"):
-                cat = "EMULATOR_WRAPPERS"
-            elif rel_path.startswith("firmware/BmoGameboy/src/third_party"):
-                cat = "THIRD_PARTY_ENGINES"
-            elif rel_path.startswith("firmware/BmoGameboy"):
-                cat = "FIRMWARE_TOP"
-            elif rel_path.startswith("simulator"):
-                cat = "SIMULATOR"
-            elif rel_path.startswith("hardware"):
-                cat = "HARDWARE"
-            elif rel_path.startswith("tools/guardian"):
-                cat = "GUARDIAN_TOOLCHAIN"
-            elif rel_path.startswith("tools"):
-                cat = "TOOLS"
-            elif rel_path.startswith("scripts"):
-                cat = "SCRIPTS"
-            elif rel_path.startswith("tests"):
-                cat = "TESTS"
-            elif rel_path.startswith("docs"):
-                cat = "DOCUMENTATION"
-
-            # Fast path for multi-megabyte baked ROM C array headers (> 256 KB)
-            try:
-                file_size = path.stat().st_size
-            except OSError:
-                continue
-
-            if cat == "BAKED_ROMS" and file_size > 262144:
-                try:
-                    raw = path.read_bytes()
-                    total = raw.count(b"\n") + 1
-                except Exception:
-                    continue
-                stats.append(
-                    FileLineStats(
-                        file_path=path,
-                        rel_path=rel_path,
-                        category=cat,
-                        total_lines=total,
-                        sloc=total,
-                        comment_lines=0,
-                        blank_lines=0,
-                        code_density_percent=100.0,
-                    )
-                )
-                continue
-
-            try:
-                content = path.read_text(encoding="utf-8", errors="ignore")
-            except Exception:
-                continue
-
-            lines = content.splitlines()
-            total = len(lines)
-            blanks = sum(1 for raw in lines if not raw.strip())
-            comments = 0
-            sloc = 0
-
-            in_block_comment = False
-            for line in lines:
-                s = line.strip()
-                if not s:
-                    continue
-                if suffix in {".c", ".cpp", ".h", ".hpp", ".ino"}:
-                    if in_block_comment:
-                        comments += 1
-                        if "*/" in s:
-                            in_block_comment = False
-                    elif s.startswith("/*"):
-                        comments += 1
-                        if "*/" not in s:
-                            in_block_comment = True
-                    elif s.startswith("//"):
-                        comments += 1
-                    else:
-                        sloc += 1
-                elif suffix == ".py":
-                    if s.startswith("#") or '"""' in s or "'''" in s:
-                        comments += 1
-                    else:
-                        sloc += 1
-                elif suffix == ".md":
-                    if s.startswith("<!--"):
-                        comments += 1
-                    else:
-                        sloc += 1
-                else:
-                    sloc += 1
-
-            density = (sloc / total * 100.0) if total > 0 else 0.0
-            stats.append(
-                FileLineStats(
-                    file_path=path,
-                    rel_path=rel_path,
-                    category=cat,
-                    total_lines=total,
-                    sloc=sloc,
-                    comment_lines=comments,
-                    blank_lines=blanks,
-                    code_density_percent=density,
-                )
-            )
-
+            if entry := self._stat_for_path(self.repo_root / os.fsdecode(item), target_suffixes):
+                stats.append(entry)
         return stats
 
-    def lint_all(self) -> List[LintFinding]:
-        findings: List[LintFinding] = []
+    def lint_all(self) -> list[LintFinding]:
+        findings: list[LintFinding] = []
 
         for path in sorted(self.firmware_dir.rglob("*")):
             if not path.is_file():
@@ -214,73 +187,60 @@ class FirmwareAstLinter:
 
         return findings
 
-    def lint_file(self, path: Path) -> List[LintFinding]:
-        findings: List[LintFinding] = []
-        try:
-            content = path.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
-            return findings
-
-        lines = content.splitlines()
-        try:
-            rel_path = path.relative_to(self.firmware_dir)
-        except ValueError:
-            rel_path = path
-        rel_path_str = str(rel_path).replace("\\", "/")
-
-        # Rule: forbid non-static local arrays larger than 1 KiB outside third-party engines.
-        # This keeps large scratch buffers off the limited task stacks.
+    def _check_local_stack_arrays(self, path: Path, rel_path_str: str, lines: list[str]) -> list[LintFinding]:
         norm_rel = f"/{rel_path_str.strip('/')}"
-        if "/src/third_party/" not in norm_rel and "/third_party/" not in norm_rel:
-            local_array_re = re.compile(
-                r"^\s*(?:(?:static|const|volatile|constexpr)\s+)*(?P<type>uint8_t|int8_t|char|bool|uint16_t|int16_t|short|uint32_t|int32_t|int|long|float|uint64_t|int64_t|double)\s+"
-                r"\w+\s*(?P<dims>(?:\[\s*\d+\s*\])+)")
-            type_sizes = {
-                "uint8_t": 1, "int8_t": 1, "char": 1, "bool": 1,
-                "uint16_t": 2, "int16_t": 2, "short": 2,
-                "uint32_t": 4, "int32_t": 4, "int": 4, "long": 4, "float": 4,
-                "uint64_t": 8, "int64_t": 8, "double": 8,
-            }
-            brace_depth = 0
-            function_depths: List[int] = []
-            function_open_re = re.compile(r"\b[\w:~]+\s*\([^;{}]*\)\s*(?:const\s*)?(?:noexcept\s*)?\{")
-            for idx, line in enumerate(lines, 1):
-                clean = line.split("//", 1)[0].strip()
-                if clean.startswith(("/*", "*", "#")):
-                    continue
-                match = local_array_re.match(clean)
-                if match and function_depths and brace_depth >= function_depths[-1] and "static" not in clean.split("[", 1)[0]:
-                    dimensions = [int(value) for value in re.findall(r"\[\s*(\d+)\s*\]", match.group("dims"))]
-                    element_count = 1
-                    for dimension in dimensions:
-                        element_count *= dimension
-                    byte_count = element_count * type_sizes[match.group("type")]
-                    if byte_count > 1024:
-                        findings.append(
-                            LintFinding(
-                                rule_id="LARGE_LOCAL_STACK_ARRAY",
-                                severity="CRITICAL",
-                                file_path=path,
-                                line_number=idx,
-                                line_content=clean,
-                                message=f"Local array occupies {byte_count} bytes on the task stack (limit is 1,024 B).",
-                                suggested_fix="Move the buffer to static storage or allocate it from an explicitly budgeted heap.",
-                            )
+        if "/src/third_party/" in norm_rel or "/third_party/" in norm_rel:
+            return []
+        local_array_re = re.compile(
+            r"^\s*(?:(?:static|const|volatile|constexpr)\s+)*(?P<type>uint8_t|int8_t|char|bool|uint16_t|int16_t|short|uint32_t|int32_t|int|long|float|uint64_t|int64_t|double)\s+"
+            r"\w+\s*(?P<dims>(?:\[\s*\d+\s*\])+)"
+        )
+        type_sizes = {
+            "uint8_t": 1, "int8_t": 1, "char": 1, "bool": 1,
+            "uint16_t": 2, "int16_t": 2, "short": 2,
+            "uint32_t": 4, "int32_t": 4, "int": 4, "long": 4, "float": 4,
+            "uint64_t": 8, "int64_t": 8, "double": 8,
+        }
+        function_open_re = re.compile(r"\b[\w:~]+\s*\([^;{}]*\)\s*(?:const\s*)?(?:noexcept\s*)?\{")
+        findings: list[LintFinding] = []
+        brace_depth = 0
+        function_depths: list[int] = []
+        for idx, line in enumerate(lines, 1):
+            clean = line.split("//", 1)[0].strip()
+            if clean.startswith(("/*", "*", "#")):
+                continue
+            match = local_array_re.match(clean)
+            if match and function_depths and brace_depth >= function_depths[-1] and "static" not in clean.split("[", 1)[0]:
+                dimensions = [int(value) for value in re.findall(r"\[\s*(\d+)\s*\]", match.group("dims"))]
+                element_count = 1
+                for dimension in dimensions:
+                    element_count *= dimension
+                byte_count = element_count * type_sizes[match.group("type")]
+                if byte_count > 1024:
+                    findings.append(
+                        LintFinding(
+                            rule_id="LARGE_LOCAL_STACK_ARRAY",
+                            severity="CRITICAL",
+                            file_path=path,
+                            line_number=idx,
+                            line_content=clean,
+                            message=f"Local array occupies {byte_count} bytes on the task stack (limit is 1,024 B).",
+                            suggested_fix="Move the buffer to static storage or allocate it from an explicitly budgeted heap.",
                         )
+                    )
+            opened_function = bool(function_open_re.search(clean))
+            brace_depth += clean.count("{") - clean.count("}")
+            if opened_function and "{" in clean:
+                function_depths.append(brace_depth)
+            function_depths = [depth for depth in function_depths if depth <= brace_depth]
+        return findings
 
-                opened_function = bool(function_open_re.search(clean))
-                brace_depth += clean.count("{") - clean.count("}")
-                if opened_function and "{" in clean:
-                    function_depths.append(brace_depth)
-                function_depths = [depth for depth in function_depths if depth <= brace_depth]
-
-        # Rule 1: Check for naked Serial.print in emulator wrappers
+    def _check_core_wrapper_rules(self, path: Path, rel_path_str: str, lines: list[str]) -> list[LintFinding]:
+        findings: list[LintFinding] = []
         if "src/cores/" in rel_path_str:
             for idx, line in enumerate(lines, 1):
                 clean = line.strip()
-                if clean.startswith("//") or clean.startswith("/*"):
-                    continue
-                if re.search(r"\bSerial\.(print|println|printf|write)\b", clean):
+                if not clean.startswith(("//", "/*")) and re.search(r"\bSerial\.(print|println|printf|write)\b", clean):
                     findings.append(
                         LintFinding(
                             rule_id="NAKED_SERIAL_PRINT_IN_EMU",
@@ -292,15 +252,10 @@ class FirmwareAstLinter:
                             suggested_fix="Replace with gated LOG_ERROR, LOG_WARN, or LOG_INFO macro.",
                         )
                     )
-
-        # Rule 2: Check for missing #pragma GCC optimize in emulator wrappers
         if "src/cores/emu_" in rel_path_str and rel_path_str.endswith(".cpp"):
-            first_non_comment = ""
-            for line in lines:
-                s = line.strip()
-                if s and not s.startswith("//") and not s.startswith("/*"):
-                    first_non_comment = s
-                    break
+            first_non_comment = next(
+                (s for raw in lines if (s := raw.strip()) and not s.startswith(("//", "/*"))), ""
+            )
             if not first_non_comment.startswith("#pragma GCC optimize"):
                 findings.append(
                     LintFinding(
@@ -313,54 +268,58 @@ class FirmwareAstLinter:
                         suggested_fix='Add `#pragma GCC optimize("O3,unroll-loops")` to top of file.',
                     )
                 )
+        return findings
 
-        # Rule 3: Check for plain malloc() in vendor engines & firmware (should use PSRAM)
+    def _check_malloc_and_sd_rules(self, path: Path, rel_path_str: str, lines: list[str]) -> list[LintFinding]:
+        findings: list[LintFinding] = []
         in_host_fallback = False
+        skip_path = any(seg in rel_path_str for seg in ("host_test", "m_argv", "m_misc"))
         for idx, line in enumerate(lines, 1):
             clean = line.strip()
-            if clean.startswith("//") or clean.startswith("/*") or clean.startswith("#define"):
+            if clean.startswith(("//", "/*", "#define")):
                 continue
-            if "#else" in clean:
-                if idx > 2 and ("Doom_MallocPSRAM" in lines[idx - 2] or "heap_caps_malloc" in lines[idx - 2]):
-                    in_host_fallback = True
+            if "#else" in clean and idx > 2 and ("Doom_MallocPSRAM" in lines[idx - 2] or "heap_caps_malloc" in lines[idx - 2]):
+                in_host_fallback = True
             elif "#endif" in clean:
                 in_host_fallback = False
-
-            if in_host_fallback:
-                continue
-
-            if re.search(r"\bmalloc\s*\([^)]+\)", clean) and "heap_caps_malloc" not in clean and "Doom_MallocPSRAM" not in clean:
-                if "host_test" not in rel_path_str and "m_argv" not in rel_path_str and "m_misc" not in rel_path_str:
-                    severity = "CRITICAL" if any(k in clean.lower() for k in ["screen", "framebuffer", "ctx", "zone", "ram", "buffer"]) else "WARNING"
-                    findings.append(
-                        LintFinding(
-                            rule_id="NAKED_MALLOC_WITHOUT_SPIRAM",
-                            severity=severity,
-                            file_path=path,
-                            line_number=idx,
-                            line_content=clean,
-                            message="Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM.",
-                            suggested_fix="Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`.",
-                        )
+            if (
+                not in_host_fallback
+                and not skip_path
+                and re.search(r"\bmalloc\s*\([^)]+\)", clean)
+                and "heap_caps_malloc" not in clean
+                and "Doom_MallocPSRAM" not in clean
+            ):
+                severity = "CRITICAL" if any(k in clean.lower() for k in ("screen", "framebuffer", "ctx", "zone", "ram", "buffer")) else "WARNING"
+                findings.append(
+                    LintFinding(
+                        rule_id="NAKED_MALLOC_WITHOUT_SPIRAM",
+                        severity=severity,
+                        file_path=path,
+                        line_number=idx,
+                        line_content=clean,
+                        message="Plain malloc() allocates from internal DRAM (327KB budget). Large allocations must use PSRAM.",
+                        suggested_fix="Use `heap_caps_malloc(size, MALLOC_CAP_SPIRAM)`.",
                     )
+                )
 
-        # Rule 4: Check for sub-optimal SD card SPI frequency
         if rel_path_str.endswith(("sd_card.cpp", "sd_mount.cpp")):
-            for idx, line in enumerate(lines, 1):
-                if "SD.begin" in line and "4000000" in line:
-                    findings.append(
-                        LintFinding(
-                            rule_id="SD_SPI_SPEED_SUBOPTIMAL",
-                            severity="CRITICAL",
-                            file_path=path,
-                            line_number=idx,
-                            line_content=line.strip(),
-                            message="SD card mounted at 4 MHz instead of 25 MHz standard (5-6x slower ROM load).",
-                            suggested_fix="Increase SD.begin clock to 25000000 (25 MHz).",
-                        )
-                    )
+            findings.extend(
+                LintFinding(
+                    rule_id="SD_SPI_SPEED_SUBOPTIMAL",
+                    severity="CRITICAL",
+                    file_path=path,
+                    line_number=idx,
+                    line_content=line.strip(),
+                    message="SD card mounted at 4 MHz instead of 25 MHz standard (5-6x slower ROM load).",
+                    suggested_fix="Increase SD.begin clock to 25000000 (25 MHz).",
+                )
+                for idx, line in enumerate(lines, 1)
+                if "SD.begin" in line and "4000000" in line
+            )
+        return findings
 
-        # Rule 5: Check for unguarded per-frame filter rebuilds and direct digitalRead in app/sketch
+    def _check_app_and_hardware_rules(self, path: Path, rel_path_str: str, lines: list[str]) -> list[LintFinding]:
+        findings: list[LintFinding] = []
         if rel_path_str.endswith(("BmoGameboy.ino", "bmo_app.cpp")) or "src/app/" in rel_path_str:
             loop_idx = (
                 next((i for i, src_line in enumerate(lines, 1) if "void loop()" in src_line), 9999)
@@ -398,7 +357,6 @@ class FirmwareAstLinter:
                         )
                     )
 
-        # Rule 6: Check for hard stop flags in config.h / feature_flags.h
         if rel_path_str.endswith(("config.h", "feature_flags.h")):
             for idx, line in enumerate(lines, 1):
                 clean = line.strip()
@@ -427,50 +385,10 @@ class FirmwareAstLinter:
                         )
                     )
 
-        # Rule 7: Check for stack-allocated large frame buffers
-        for idx, line in enumerate(lines, 1):
-            clean = line.strip()
-            if re.search(r"uint16_t\s+[a-zA-Z0-9_]+\[\s*(240|256|320|480)\s*\]", clean):
-                if line.startswith("  ") or line.startswith("\t"):
-                    if "static" not in clean:
-                        findings.append(
-                            LintFinding(
-                                rule_id="STACK_ALLOCATED_SCANLINE_BUFFER",
-                                severity="WARNING",
-                                file_path=path,
-                                line_number=idx,
-                                line_content=clean,
-                                message="Large scanline buffer allocated on stack in hot path.",
-                                suggested_fix="Make static module-level or 4-byte aligned DRAM/PSRAM buffer.",
-                            )
-                        )
-
-        # Rule 8: Check for raw unaligned 16/32-bit pointer casts in ROM reading paths
-        if "src/cores/" in rel_path_str or "src/third_party/" in rel_path_str:
-            for idx, line in enumerate(lines, 1):
-                clean = line.strip()
-                if clean.startswith("//") or clean.startswith("/*"):
-                    continue
-                if re.search(r"\*\s*\(\s*uint16_t\s*\*\s*\)\s*&?[a-zA-Z0-9_]+\[", clean):
-                    if "gb_rom_read" in clean or "rom" in clean.lower():
-                        findings.append(
-                            LintFinding(
-                                rule_id="UNALIGNED_ROM_POINTER_CAST",
-                                severity="WARNING",
-                                file_path=path,
-                                line_number=idx,
-                                line_content=clean,
-                                message="Unaligned 16-bit pointer dereference in ROM memory path.",
-                                suggested_fix="Use explicit byte-wise little-endian reconstruction: `b0 | (b1 << 8)`.",
-                            )
-                        )
-
-        # Rule 9: Check for forbidden Octal PSRAM (GPIO 33-37) or Strapping (GPIO 0, 3, 45, 46) pin definitions
         if rel_path_str.endswith(("config.h", "pin_map.h")):
             for idx, line in enumerate(lines, 1):
                 clean = line.strip()
-                m_pin = re.match(r"^#define\s+(BTN_[A-Z0-9_]+|TFT_[A-Z0-9_]+|SD_[A-Z0-9_]+)\s+(\d+)\b", clean)
-                if m_pin:
+                if (m_pin := re.match(r"^#define\s+(BTN_[A-Z0-9_]+|TFT_[A-Z0-9_]+|SD_[A-Z0-9_]+)\s+(\d+)\b", clean)):
                     pin_macro, pin_num = m_pin.group(1), int(m_pin.group(2))
                     if pin_num in {0, 3, 33, 34, 35, 36, 37, 45, 46}:
                         findings.append(
@@ -484,105 +402,133 @@ class FirmwareAstLinter:
                                 suggested_fix="Assign to a safe GPIO per docs/hardware.md and AGENTS.md.",
                             )
                         )
+        return findings
 
-        # Rule 10: Per-function SpiArbiter enforcement across src/{app,hal,storage,ui}
-        if (
+    def _check_spi_arbiter_functions(self, path: Path, rel_path_str: str, lines: list[str]) -> list[LintFinding]:
+        if not (
             any(seg in rel_path_str for seg in ("src/app/", "src/hal/", "src/storage/", "src/ui/"))
             and rel_path_str.endswith(".cpp")
             and not rel_path_str.endswith("spi_arbiter.cpp")
         ):
-            fn_open_re = re.compile(r"^\s*(?:[\w:<>*&]+\s+)+(?P<name>[\w:~]+)\s*\([^;{}]*\)\s*(?:const\s*)?\{")
-            io_re = re.compile(
-                r"\b(?:SD\.(?:open|mkdir|remove|exists|rename|rmdir)|"
-                r"SPI\.(?:writeBytes|transfer|beginTransaction)|"
-                r"tft\.(?:startWrite|setAddrWindow|writePixels|fillRect|drawRect|fillScreen|print))\b"
-            )
-            raw_mid_tx_funcs = {
-                "DisplayEmu::streamPixelRow",
-                "DisplayEmu::pushPixelsRaw",
-                "DisplayEmu::writeWindowBytes",
-                "streamPixelRow",
-                "pushPixelsRaw",
-                "writeWindowBytes",
-            }
-            cur_fn = None
-            fn_start = 0
-            fn_buf: List[str] = []
-            fn_depth = 0
-            for idx, raw_line in enumerate(lines, 1):
-                clean = raw_line.split("//", 1)[0]
-                if cur_fn is None:
-                    m_fn = fn_open_re.match(clean)
-                    if m_fn and not clean.lstrip().startswith(
-                        ("if", "for", "while", "switch", "else", "namespace", "struct", "class")
-                    ):
-                        cur_fn = m_fn.group("name")
-                        fn_start = idx
-                        fn_buf = [clean]
-                        fn_depth = clean.count("{") - clean.count("}")
-                        if fn_depth <= 0:
-                            cur_fn = None
-                else:
-                    fn_buf.append(clean)
-                    fn_depth += clean.count("{") - clean.count("}")
+            return []
+        fn_open_re = re.compile(r"^\s*(?:[\w:<>*&]+\s+)+(?P<name>[\w:~]+)\s*\([^;{}]*\)\s*(?:const\s*)?\{")
+        io_re = re.compile(
+            r"\b(?:SD\.(?:open|mkdir|remove|exists|rename|rmdir)|"
+            r"SPI\.(?:writeBytes|transfer|beginTransaction)|"
+            r"tft\.(?:startWrite|setAddrWindow|writePixels|fillRect|drawRect|fillScreen|print))\b"
+        )
+        raw_mid_tx_funcs = {
+            "DisplayEmu::streamPixelRow",
+            "DisplayEmu::pushPixelsRaw",
+            "DisplayEmu::writeWindowBytes",
+            "streamPixelRow",
+            "pushPixelsRaw",
+            "writeWindowBytes",
+        }
+        findings: list[LintFinding] = []
+        cur_fn: str | None = None
+        fn_start = 0
+        fn_buf: list[str] = []
+        fn_depth = 0
+        for idx, raw_line in enumerate(lines, 1):
+            clean = raw_line.split("//", 1)[0]
+            if cur_fn is None:
+                m_fn = fn_open_re.match(clean)
+                if m_fn and not clean.lstrip().startswith(("if", "for", "while", "switch", "else", "namespace", "struct", "class")):
+                    cur_fn = m_fn.group("name")
+                    fn_start = idx
+                    fn_buf = [clean]
+                    fn_depth = clean.count("{") - clean.count("}")
                     if fn_depth <= 0:
-                        body = "\n".join(fn_buf)
-                        if (
-                            cur_fn not in raw_mid_tx_funcs
-                            and io_re.search(body)
-                            and "SpiArbiter::ScopedLock" not in body
-                            and "SpiArbiter::lock()" not in body
-                        ):
-                            sev = "CRITICAL" if "::" in cur_fn else "WARNING"
-                            findings.append(
-                                LintFinding(
-                                    rule_id="UNARBITRATED_SD_IO_IN_FUNC",
-                                    severity=sev,
-                                    file_path=path,
-                                    line_number=fn_start,
-                                    line_content=f"{cur_fn}() touches SD/SPI/TFT without SpiArbiter",
-                                    message=f"{cur_fn}() executes SPI/SD/TFT I/O without acquiring SpiArbiter::ScopedLock inside the function.",
-                                    suggested_fix="Add `SpiArbiter::ScopedLock spiLock;` inside the function body.",
-                                )
-                            )
                         cur_fn = None
+                continue
+            fn_buf.append(clean)
+            fn_depth += clean.count("{") - clean.count("}")
+            if fn_depth <= 0:
+                body = "\n".join(fn_buf)
+                if (
+                    cur_fn not in raw_mid_tx_funcs
+                    and io_re.search(body)
+                    and "SpiArbiter::ScopedLock" not in body
+                    and "SpiArbiter::lock()" not in body
+                ):
+                    findings.append(
+                        LintFinding(
+                            rule_id="UNARBITRATED_SD_IO_IN_FUNC",
+                            severity="CRITICAL" if "::" in cur_fn else "WARNING",
+                            file_path=path,
+                            line_number=fn_start,
+                            line_content=f"{cur_fn}() touches SD/SPI/TFT without SpiArbiter",
+                            message=f"{cur_fn}() executes SPI/SD/TFT I/O without acquiring SpiArbiter::ScopedLock inside the function.",
+                            suggested_fix="Add `SpiArbiter::ScopedLock spiLock;` inside the function body.",
+                        )
+                    )
+                cur_fn = None
+        return findings
 
-        # Rule 10b: Flag blocking delay() / ets_delay_us() and internal-DRAM STL allocations in app/ui/cores
-        if any(seg in rel_path_str for seg in ("src/app/", "src/ui/", "src/cores/")) and rel_path_str.endswith(".cpp"):
-            for idx, raw_line in enumerate(lines, 1):
-                clean = raw_line.split("//", 1)[0].strip()
-                if not clean or clean.startswith(("/*", "*", "#")):
-                    continue
-                if re.search(r"\b(?:delay|ets_delay_us)\s*\(", clean):
+    def _check_misc_safety_rules(self, path: Path, rel_path_str: str, lines: list[str]) -> list[LintFinding]:
+        findings: list[LintFinding] = []
+        scanline_re = re.compile(r"uint16_t\s+[a-zA-Z0-9_]+\[\s*(240|256|320|480)\s*\]")
+        unaligned_re = re.compile(r"\*\s*\(\s*uint16_t\s*\*\s*\)\s*&?[a-zA-Z0-9_]+\[")
+        is_core_or_vendor = "src/cores/" in rel_path_str or "src/third_party/" in rel_path_str
+        is_hot_cpp = any(seg in rel_path_str for seg in ("src/app/", "src/ui/", "src/cores/")) and rel_path_str.endswith(".cpp")
+        alloc_err_re = re.compile(
+            r"(malloc|calloc|realloc|Doom_MallocPSRAM|heap_caps_malloc|default_ram\s*<\s*min_ram|newlumpinfo\s*==\s*NULL|new_open_wadfiles\s*==\s*NULL|rover\s*==\s*start|Unable to allocate|Z_Malloc:\s*failed|Couldn't realloc)"
+        )
+        for idx, raw_line in enumerate(lines, 1):
+            clean = raw_line.strip()
+            if scanline_re.search(clean) and raw_line.startswith(("  ", "\t")) and "static" not in clean:
+                findings.append(
+                    LintFinding(
+                        rule_id="STACK_ALLOCATED_SCANLINE_BUFFER",
+                        severity="WARNING",
+                        file_path=path,
+                        line_number=idx,
+                        line_content=clean,
+                        message="Large scanline buffer allocated on stack in hot path.",
+                        suggested_fix="Make static module-level or 4-byte aligned DRAM/PSRAM buffer.",
+                    )
+                )
+            if clean.startswith(("//", "/*", "*")):
+                continue
+            if is_core_or_vendor and unaligned_re.search(clean) and ("gb_rom_read" in clean or "rom" in clean.lower()):
+                findings.append(
+                    LintFinding(
+                        rule_id="UNALIGNED_ROM_POINTER_CAST",
+                        severity="WARNING",
+                        file_path=path,
+                        line_number=idx,
+                        line_content=clean,
+                        message="Unaligned 16-bit pointer dereference in ROM memory path.",
+                        suggested_fix="Use explicit byte-wise little-endian reconstruction: `b0 | (b1 << 8)`.",
+                    )
+                )
+            stripped_code = raw_line.split("//", 1)[0].strip()
+            if is_hot_cpp and stripped_code and not stripped_code.startswith(("/*", "*", "#")):
+                if re.search(r"\b(?:delay|ets_delay_us)\s*\(", stripped_code):
                     findings.append(
                         LintFinding(
                             rule_id="BLOCKING_DELAY_IN_FIRMWARE",
                             severity="WARNING",
                             file_path=path,
                             line_number=idx,
-                            line_content=clean,
+                            line_content=stripped_code,
                             message="Blocking delay() / ets_delay_us() stalls Core 1 / RTOS responsiveness.",
                             suggested_fix="Replace with non-blocking deadline timers or vTaskDelayUntil.",
                         )
                     )
-                if "src/cores/" in rel_path_str and re.search(r"\bstd::(?:string|vector)\b", clean):
+                if "src/cores/" in rel_path_str and re.search(r"\bstd::(?:string|vector)\b", stripped_code):
                     findings.append(
                         LintFinding(
                             rule_id="INTERNAL_DRAM_STL_IN_CORE",
                             severity="WARNING",
                             file_path=path,
                             line_number=idx,
-                            line_content=clean,
+                            line_content=stripped_code,
                             message="std::string / std::vector allocates from internal DRAM instead of fixed/PSRAM pools.",
                             suggested_fix="Use fixed char/struct buffers or explicit bmo_psram_malloc buffers.",
                         )
                     )
-
-        # Rule 11: Forbid reachable exit() or I_Error() on allocation failure
-        for idx, line in enumerate(lines, 1):
-            clean = line.strip()
-            if clean.startswith("//") or clean.startswith("/*") or clean.startswith("*"):
-                continue
             if re.search(r"\bexit\s*\(", clean):
                 findings.append(
                     LintFinding(
@@ -597,7 +543,7 @@ class FirmwareAstLinter:
                 )
             if re.search(r"\bI_Error\s*\(", clean):
                 window = " ".join(src_line.strip() for src_line in lines[max(0, idx - 5) : idx])
-                if re.search(r"(malloc|calloc|realloc|Doom_MallocPSRAM|heap_caps_malloc|default_ram\s*<\s*min_ram|newlumpinfo\s*==\s*NULL|new_open_wadfiles\s*==\s*NULL|rover\s*==\s*start|Unable to allocate|Z_Malloc:\s*failed|Couldn't realloc)", window + " " + clean):
+                if alloc_err_re.search(window + " " + clean):
                     findings.append(
                         LintFinding(
                             rule_id="EXIT_OR_ERROR_ON_ALLOC_FAILURE",
@@ -609,5 +555,25 @@ class FirmwareAstLinter:
                             suggested_fix="Return NULL/false or unwind via Doom_Bailout so begin() returns false cleanly.",
                         )
                     )
+        return findings
 
+    def lint_file(self, path: Path) -> list[LintFinding]:
+        try:
+            content = path.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            return []
+        lines = content.splitlines()
+        try:
+            rel_path = path.relative_to(self.firmware_dir)
+        except ValueError:
+            rel_path = path
+        rel_path_str = str(rel_path).replace("\\", "/")
+
+        findings: list[LintFinding] = []
+        findings.extend(self._check_local_stack_arrays(path, rel_path_str, lines))
+        findings.extend(self._check_core_wrapper_rules(path, rel_path_str, lines))
+        findings.extend(self._check_malloc_and_sd_rules(path, rel_path_str, lines))
+        findings.extend(self._check_app_and_hardware_rules(path, rel_path_str, lines))
+        findings.extend(self._check_spi_arbiter_functions(path, rel_path_str, lines))
+        findings.extend(self._check_misc_safety_rules(path, rel_path_str, lines))
         return findings

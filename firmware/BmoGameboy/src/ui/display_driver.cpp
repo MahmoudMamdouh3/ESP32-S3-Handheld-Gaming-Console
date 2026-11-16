@@ -13,7 +13,7 @@
 
 namespace BmoDisplayInternal {
 
-Adafruit_ST7789 tft = Adafruit_ST7789(&SPI, TFT_CS, TFT_DC, TFT_RST);
+Adafruit_ST7789 tft = Adafruit_ST7789(&SPI, TFT_CS, TFT_DC, TFT_RST); // NOLINT(bugprone-throwing-static-initialization)
 
 } // namespace BmoDisplayInternal
 
@@ -34,15 +34,8 @@ void initPanelHardware(uint32_t spiClockHz) {
   tft.setSPISpeed(spiClockHz);
   tft.setRotation(3);
 
-  // Configure landscape MADCTL (MY | MV | BGR); Phase 3 replaces raw 8 MHz transaction with safe TFT helper.
-  SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
-  digitalWrite(TFT_DC, LOW);
-  digitalWrite(TFT_CS, LOW);
-  SPI.transfer(0x36);
-  digitalWrite(TFT_DC, HIGH);
-  SPI.transfer(MADCTL_MY | MADCTL_MV | MADCTL_BGR);
-  digitalWrite(TFT_CS, HIGH);
-  SPI.endTransaction();
+  const uint8_t madctl = MADCTL_MY | MADCTL_MV | MADCTL_BGR;
+  tft.sendCommand(0x36, &madctl, 1);
 
   tft.fillScreen(ST77XX_BLACK);
 }

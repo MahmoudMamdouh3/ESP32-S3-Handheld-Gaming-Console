@@ -11,7 +11,6 @@
 #include "../hal/buttons.h"
 #include "../hal/config.h"
 #include "../storage/save_manager.h"
-#include "../ui/bmo_face.h"
 #include "../ui/display_emu.h"
 #include "gb_common.h"
 
@@ -70,11 +69,7 @@ IRAM_ATTR void gb_cart_ram_write(struct gb_s* gbCtx, const uint_fast32_t addr, c
 
 void gb_error(struct gb_s* gbCtx, const enum gb_error_e gb_err, const uint16_t val) {
   (void)gbCtx;
-  LOG_ERROR("Peanut-GB Error: %d at PC 0x%04X", gb_err, val);
-  Serial.flush();
-  BmoFace::setExpression(BmoFace::ERROR);
-  BmoFace::draw();
-  esp_restart();
+  GbCommon::reportError("Peanut-GB", static_cast<int>(gb_err), val);
 }
 
 IRAM_ATTR void lcd_draw_line(struct gb_s* gbCtx, const uint8_t pixels[160], const uint_fast8_t line) {
@@ -139,6 +134,7 @@ void PeanutEmu::update() {
 }
 
 void PeanutEmu::destroy() {
+  GbCommon::clearError();
   s_asyncGbFrame = nullptr;
   void* gbPtr = gb;
   GbCommon::freeGbRuntime(&gbPtr, &cart_ram, &current_rom_data, &current_rom_len);

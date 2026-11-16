@@ -14,10 +14,11 @@ import base64
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 import trimesh
+from numpy.typing import NDArray
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -30,7 +31,7 @@ CREASE_ANGLE_DEG = 38.0
 CM_SCALE = 0.1  # CAD runs in millimetres; Three.js simulator uses centimetres.
 
 
-def _classify_shell_face_materials(mesh: trimesh.Trimesh, part_name: str) -> np.ndarray:
+def _classify_shell_face_materials(mesh: trimesh.Trimesh, part_name: str) -> NDArray[np.uint8]:
     """Assign material group 1 to recessed side-wall BMO letter faces."""
     face_count = len(mesh.faces)
     mat_ids = np.zeros(face_count, dtype=np.uint8)
@@ -63,83 +64,46 @@ def _classify_shell_face_materials(mesh: trimesh.Trimesh, part_name: str) -> np.
     return mat_ids
 
 
-def _build_crease_split_buffers(
-    mesh: trimesh.Trimesh,
-    mat_ids: np.ndarray,
-    crease_angle_deg: float = CREASE_ANGLE_DEG,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[List[int]]]:
-    """Split vertices across sharp creases and sort triangles by material group."""
-    verts_cm = np.asarray(mesh.vertices, dtype=np.float64) * CM_SCALE
-    faces = np.asarray(mesh.faces, dtype=np.int64)
-    face_normals = np.asarray(mesh.face_normals, dtype=np.float64)
-    face_areas = np.maximum(np.asarray(mesh.area_faces, dtype=np.float64), 1e-12)
-    cos_thresh = float(np.cos(np.radians(crease_angle_deg)))
-
-    # Order triangles deterministically by material group, then original face index.
-    ordered_face_indices = sorted(range(len(faces)), key=lambda idx: (int(mat_ids[idx]), idx))
-
-    # Build deterministic vertex -> incident face list sorted by face index.
-    vert_to_faces: List[List[int]] = [[] for _ in range(len(verts_cm))]
-    for f_idx in range(len(faces)):
-        i0, i1, i2 = faces[f_idx]
-        vert_to_faces[i0].append(f_idx)
-        vert_to_faces[i1].append(f_idx)
-        vert_to_faces[i2].append(f_idx)
-
-    # Partition each vertex's incident faces into smooth shading clusters.
-    face_corner_to_new_vert: Dict[Tuple[int, int], int] = {}
-    out_positions: List[Tuple[float, float, float]] = []
-    out_normals: List[Tuple[float, float, float]] = []
-
-    for v_idx, inc_faces in enumerate(vert_to_faces):
-        if not inc_faces:
+def _cluster_vertex_creases(
+    inc_faces: list[int],
+    face_normals: NDArray[np.float64],
+    cos_thresh: float,
+) -> list[list[int]]:
+    inc_sorted = sorted(inc_faces)
+    clusters: list[list[int]] = []
+    visited: set[int] = set()
+    for seed_face in inc_sorted:
+        if seed_face in visited:
             continue
-        inc_sorted = sorted(inc_faces)
-        clusters: List[List[int]] = []
-        visited = set()
+        cluster = [seed_face]
+        visited.add(seed_face)
+        queue = [seed_face]
+        seed_n = face_normals[seed_face]
+        while queue:
+            curr = queue.pop(0)
+            curr_n = face_normals[curr]
+            for cand in inc_sorted:
+                if cand in visited:
+                    continue
+                cand_n = face_normals[cand]
+                # Prevent cascading across > 55 deg total bend at saddle corners.
+                if float(np.dot(curr_n, cand_n)) >= cos_thresh and float(np.dot(seed_n, cand_n)) >= 0.55:
+                    visited.add(cand)
+                    cluster.append(cand)
+                    queue.append(cand)
+        clusters.append(cluster)
+    return clusters
 
-        for seed_face in inc_sorted:
-            if seed_face in visited:
-                continue
-            cluster = [seed_face]
-            visited.add(seed_face)
-            queue = [seed_face]
-            seed_n = face_normals[seed_face]
 
-            while queue:
-                curr = queue.pop(0)
-                curr_n = face_normals[curr]
-                for cand in inc_sorted:
-                    if cand in visited:
-                        continue
-                    cand_n = face_normals[cand]
-                    # Prevent cascading across > 55 deg total bend at saddle corners.
-                    if float(np.dot(curr_n, cand_n)) >= cos_thresh and float(np.dot(seed_n, cand_n)) >= 0.55:
-                        visited.add(cand)
-                        cluster.append(cand)
-                        queue.append(cand)
-            clusters.append(cluster)
-
-        px, py, pz = verts_cm[v_idx]
-        for cluster in clusters:
-            accum_n = np.zeros(3, dtype=np.float64)
-            for f_idx in cluster:
-                accum_n += face_normals[f_idx] * face_areas[f_idx]
-            norm_len = float(np.linalg.norm(accum_n))
-            if norm_len > 1e-12:
-                accum_n /= norm_len
-            else:
-                accum_n = face_normals[cluster[0]]
-
-            new_v_idx = len(out_positions)
-            out_positions.append((float(px), float(py), float(pz)))
-            out_normals.append((float(accum_n[0]), float(accum_n[1]), float(accum_n[2])))
-            for f_idx in cluster:
-                face_corner_to_new_vert[(f_idx, v_idx)] = new_v_idx
-
-    out_indices: List[int] = []
-    groups: List[List[int]] = []
-    current_mat = None
+def _emit_ordered_material_groups(
+    faces: NDArray[np.int64],
+    mat_ids: NDArray[np.uint8],
+    face_corner_to_new_vert: dict[tuple[int, int], int],
+) -> tuple[list[int], list[list[int]]]:
+    ordered_face_indices = sorted(range(len(faces)), key=lambda idx: (int(mat_ids[idx]), idx))
+    out_indices: list[int] = []
+    groups: list[list[int]] = []
+    current_mat: int | None = None
     group_start = 0
 
     for f_idx in ordered_face_indices:
@@ -161,11 +125,51 @@ def _build_crease_split_buffers(
 
     if current_mat is not None and len(out_indices) > group_start:
         groups.append([group_start, len(out_indices) - group_start, current_mat])
+    return out_indices, groups
 
+
+def _build_crease_split_buffers(
+    mesh: trimesh.Trimesh,
+    mat_ids: NDArray[np.uint8],
+    crease_angle_deg: float = CREASE_ANGLE_DEG,
+) -> tuple[NDArray[Any], NDArray[Any], NDArray[Any], list[list[int]]]:
+    """Split vertices across sharp creases and sort triangles by material group."""
+    verts_cm: NDArray[np.float64] = np.asarray(mesh.vertices, dtype=np.float64) * CM_SCALE
+    faces: NDArray[np.int64] = np.asarray(mesh.faces, dtype=np.int64)
+    face_normals: NDArray[np.float64] = np.asarray(mesh.face_normals, dtype=np.float64)
+    face_areas: NDArray[np.float64] = np.maximum(np.asarray(mesh.area_faces, dtype=np.float64), 1e-12)
+    cos_thresh = float(np.cos(np.radians(crease_angle_deg)))
+
+    vert_to_faces: list[list[int]] = [[] for _ in range(len(verts_cm))]
+    for f_idx, (i0, i1, i2) in enumerate(faces):
+        vert_to_faces[int(i0)].append(f_idx)
+        vert_to_faces[int(i1)].append(f_idx)
+        vert_to_faces[int(i2)].append(f_idx)
+
+    face_corner_to_new_vert: dict[tuple[int, int], int] = {}
+    out_positions: list[tuple[float, float, float]] = []
+    out_normals: list[tuple[float, float, float]] = []
+
+    for v_idx, inc_faces in enumerate(vert_to_faces):
+        if not inc_faces:
+            continue
+        px, py, pz = verts_cm[v_idx]
+        for cluster in _cluster_vertex_creases(inc_faces, face_normals, cos_thresh):
+            accum_n: NDArray[np.float64] = np.zeros(3, dtype=np.float64)
+            for f_idx in cluster:
+                accum_n += face_normals[f_idx] * face_areas[f_idx]
+            norm_len = float(np.linalg.norm(accum_n))
+            unit_n: NDArray[np.float64] = accum_n / norm_len if norm_len > 1e-12 else face_normals[cluster[0]]
+            new_v_idx = len(out_positions)
+            out_positions.append((float(px), float(py), float(pz)))
+            out_normals.append((float(unit_n[0]), float(unit_n[1]), float(unit_n[2])))
+            for f_idx in cluster:
+                face_corner_to_new_vert[(f_idx, v_idx)] = new_v_idx
+
+    out_indices, groups = _emit_ordered_material_groups(faces, mat_ids, face_corner_to_new_vert)
     pos_arr = np.asarray(out_positions, dtype="<f4")
     norm_arr = np.clip(np.rint(np.asarray(out_normals, dtype=np.float64) * 32767.0), -32767, 32767).astype("<i2")
-    idx_dtype = "<u2" if len(out_positions) <= 65535 else "<u4"
-    idx_arr = np.asarray(out_indices, dtype=idx_dtype)
+    idx_arr = np.asarray(out_indices, dtype="<u2" if len(out_positions) <= 65535 else "<u4")
     return pos_arr, norm_arr, idx_arr, groups
 
 
@@ -201,7 +205,7 @@ def export_web_meshes(out_path: Path = DEFAULT_OUT_PATH) -> dict[str, dict[str, 
         index_type = "u16" if idx_arr.dtype == np.dtype("<u2") else "u32"
 
         parts_dict[part_name] = {
-            "vertexCount": int(len(pos_arr)),
+            "vertexCount": len(pos_arr),
             "triangleCount": int(len(idx_arr) // 3),
             "indexType": index_type,
             "groups": groups,
@@ -210,7 +214,7 @@ def export_web_meshes(out_path: Path = DEFAULT_OUT_PATH) -> dict[str, dict[str, 
             "idxB64": base64.b64encode(idx_arr.tobytes()).decode("ascii"),
         }
         stats[part_name] = {
-            "vertices": int(len(pos_arr)),
+            "vertices": len(pos_arr),
             "triangles": int(len(idx_arr) // 3),
             "inkTriangles": int((mat_ids == 1).sum()),
         }

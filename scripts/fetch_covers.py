@@ -8,29 +8,77 @@ Prefer invoking `python scripts/convert_covers.py`.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
+from typing import TYPE_CHECKING
 
-SCRIPTS_DIR = Path(__file__).resolve().parent
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
+if TYPE_CHECKING:
+    from scripts.convert_covers import (
+        COVER_HEIGHT,
+        COVER_WIDTH,
+        RAW_BYTE_SIZE,
+        REPO_ROOT,
+        SUPPORTED_ROM_EXTENSIONS,
+        encode_bmp_24bit,
+        encode_raw_bgr565,
+        generate_procedural_cover_rgb,
+        image_to_pixels_rgb,
+        main,
+        rgb888_to_bgr565_swapped,
+        slugify_title,
+        sync_all_covers,
+        write_cover_files,
+    )
+else:
+    try:
+        from scripts.convert_covers import (
+            COVER_HEIGHT,
+            COVER_WIDTH,
+            RAW_BYTE_SIZE,
+            REPO_ROOT,
+            SUPPORTED_ROM_EXTENSIONS,
+            encode_bmp_24bit,
+            encode_raw_bgr565,
+            generate_procedural_cover_rgb,
+            image_to_pixels_rgb,
+            main,
+            rgb888_to_bgr565_swapped,
+            slugify_title,
+            sync_all_covers,
+            write_cover_files,
+        )
+    except ImportError:
+        from convert_covers import (
+            COVER_HEIGHT,
+            COVER_WIDTH,
+            RAW_BYTE_SIZE,
+            REPO_ROOT,
+            SUPPORTED_ROM_EXTENSIONS,
+            encode_bmp_24bit,
+            encode_raw_bgr565,
+            generate_procedural_cover_rgb,
+            image_to_pixels_rgb,
+            main,
+            rgb888_to_bgr565_swapped,
+            slugify_title,
+            sync_all_covers,
+            write_cover_files,
+        )
 
-from convert_covers import (  # noqa: F401
-    COVER_HEIGHT,
-    COVER_WIDTH,
-    RAW_BYTE_SIZE,
-    REPO_ROOT,
-    SUPPORTED_ROM_EXTENSIONS,
-    encode_bmp_24bit,
-    encode_raw_bgr565,
-    generate_procedural_cover_rgb,
-    image_to_pixels_rgb,
-    main,
-    rgb888_to_bgr565_swapped,
-    slugify_title,
-    sync_all_covers,
-    write_cover_files,
-)
+__all__ = [
+    "COVER_HEIGHT",
+    "COVER_WIDTH",
+    "RAW_BYTE_SIZE",
+    "REPO_ROOT",
+    "SUPPORTED_ROM_EXTENSIONS",
+    "encode_bmp_24bit",
+    "encode_raw_bgr565",
+    "generate_procedural_cover_rgb",
+    "image_to_pixels_rgb",
+    "main",
+    "rgb888_to_bgr565_swapped",
+    "slugify_title",
+    "sync_all_covers",
+    "write_cover_files",
+]
 
 if __name__ == "__main__":
     raise SystemExit(main())

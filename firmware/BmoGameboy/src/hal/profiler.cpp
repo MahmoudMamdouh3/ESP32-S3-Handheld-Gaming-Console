@@ -4,6 +4,7 @@
 #if FEATURE_PROFILER
 
 #include <Arduino.h>
+#include "feature_flags.h"
 #include <esp_timer.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>

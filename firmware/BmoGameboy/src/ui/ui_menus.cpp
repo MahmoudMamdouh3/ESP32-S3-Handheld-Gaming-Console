@@ -36,28 +36,10 @@ void DisplayEmu::drawBootSplash(bool pressAnyButtonBlink) {
   writeMenuCanvas();
 }
 
-void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts, int consoleCount, bool sdMounted) {
-  using namespace BmoDisplayInternal;
-  if (!menuCanvas || consoleCount <= 0) return;
-  if (selectedIndex < 0) selectedIndex = 0;
-  if (selectedIndex >= consoleCount) selectedIndex = consoleCount - 1;
+namespace {
+using namespace BmoDisplayInternal;
 
-  const RomType currentConsole = ConsoleCatalog::CONSOLES[selectedIndex];
-  const bool isFav = (currentConsole == ROM_FAVORITES);
-
-  menuCanvas->fillScreen(UI_BLACK);
-  menuCanvas->fillRect(0, 0, 320, 42, UI_DEEP_TEAL);
-
-  BmoFace::renderToBuffer(menuCanvas->getBuffer(), 320, 8, 5, 48, 30);
-  menuCanvas->drawRoundRect(8, 5, 48, 30, 4, UI_DEEP_TEAL);
-
-  menuCanvas->setFont();
-  char counterStr[32];
-  snprintf(counterStr, sizeof(counterStr), "SYSTEM %d/%d", selectedIndex + 1, consoleCount);
-  menuCanvas->setCursor(220, 20);
-  menuCanvas->setTextColor(UI_MINT);
-  menuCanvas->print(counterStr);
-
+int stepCarouselOffset() {
   if (fabsf(carouselOffset) > 0.05f || fabsf(carouselVel) > 0.5f) {
     const unsigned long nowMs = millis();
     float dt = (lastCarouselUpdateMs > 0) ? (nowMs - lastCarouselUpdateMs) / 1000.0f : 0.01666f;
@@ -79,13 +61,11 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
     carouselVel = 0.0f;
     lastCarouselUpdateMs = millis();
   }
-  const int cardOffset = (int)carouselOffset;
+  return static_cast<int>(carouselOffset);
+}
 
-  menuCanvas->fillRoundRect(-18 + cardOffset, 64, 40, 128, 8, UI_DEEP_TEAL);
-  menuCanvas->drawRoundRect(-18 + cardOffset, 64, 40, 128, 8, UI_TEAL);
-  menuCanvas->fillRoundRect(298 + cardOffset, 64, 40, 128, 8, UI_DEEP_TEAL);
-  menuCanvas->drawRoundRect(298 + cardOffset, 64, 40, 128, 8, UI_TEAL);
-
+void drawConsoleCenterCard(RomType currentConsole, int gameCount, int cardOffset) {
+  const bool isFav = (currentConsole == ROM_FAVORITES);
   const int cardX = 35 + cardOffset;
   constexpr int cardY = 54;
   constexpr int cardW = 250;
@@ -126,11 +106,119 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
   } else {
     menuCanvas->setTextColor(UI_YELLOW);
     char countBuf[32];
-    snprintf(countBuf, sizeof(countBuf), "* %d Games Ready", gameCounts[selectedIndex]);
+    snprintf(countBuf, sizeof(countBuf), "* %d Games Ready", gameCount);
     menuCanvas->print(countBuf);
   }
+  DisplayEmu::drawConsoleIcon(currentConsole, cardX + 175, cardY + 50, UI_YELLOW);
+}
 
-  drawConsoleIcon(currentConsole, cardX + 175, cardY + 50, UI_YELLOW);
+void drawGameMenuHeaderAndBattery(RomType console) {
+  menuCanvas->fillScreen(UI_BLACK);
+  menuCanvas->fillRect(0, 0, 320, 38, UI_DEEP_TEAL);
+  BmoFace::renderToBuffer(menuCanvas->getBuffer(), 320, 8, 4, 48, 30);
+  menuCanvas->drawRoundRect(8, 4, 48, 30, 4, UI_DEEP_TEAL);
+
+#if FEATURE_BATTERY_MONITOR
+  const int pct = Battery::getPercentage();
+  const uint16_t battColor = (pct > 50) ? Theme::COLOR_SUCCESS : ((pct > 20) ? UI_YELLOW : UI_CORAL);
+  menuCanvas->drawRoundRect(280, 13, 24, 12, 2, UI_WHITE);
+  menuCanvas->fillRect(304, 16, 2, 6, UI_WHITE);
+  const int fillW = static_cast<int>((pct / 100.0f) * 20);
+  if (fillW > 0) menuCanvas->fillRect(282, 15, fillW, 8, battColor);
+#else
+  menuCanvas->drawRoundRect(280, 13, 30, 12, 2, UI_MINT);
+  menuCanvas->fillRect(282, 15, 10, 8, UI_MINT);
+  menuCanvas->drawRect(294, 15, 10, 8, UI_WHITE);
+  menuCanvas->setFont();
+  menuCanvas->setTextColor(UI_WHITE);
+  menuCanvas->setCursor(286, 15);
+  menuCanvas->print("U");
+  menuCanvas->setTextColor(UI_MINT);
+  menuCanvas->setCursor(255, 16);
+  menuCanvas->print("N/A");
+#endif
+
+  menuCanvas->setFont(&FreeSans9pt7b);
+  char heading[40];
+  if (console == ROM_FAVORITES) {
+    snprintf(heading, sizeof(heading), "* FAVORITE GAMES");
+  } else if (topPicksFilter) {
+    snprintf(heading, sizeof(heading), "%s TOP PICKS", ConsoleCatalog::consoleName(console));
+  } else {
+    snprintf(heading, sizeof(heading), "%s LIBRARY", ConsoleCatalog::consoleName(console));
+  }
+  BmoDisplayInternal::drawCentered(heading, 25, UI_YELLOW);
+}
+
+void drawEmptyGameLibraryScreen(RomType console, bool sdMounted) {
+  menuCanvas->setFont(&FreeSans12pt7b);
+  if (console == ROM_FAVORITES) {
+    BmoDisplayInternal::drawCentered("NO FAVORITES YET!", 100, UI_WHITE);
+    menuCanvas->setFont(&FreeSans9pt7b);
+    BmoDisplayInternal::drawCentered("Press SELECT on any game in any", 128, UI_MINT);
+    BmoDisplayInternal::drawCentered("console library to star it *", 148, UI_MINT);
+  } else {
+    BmoDisplayInternal::drawCentered("NO GAMES", 100, UI_WHITE);
+    menuCanvas->setFont(&FreeSans9pt7b);
+    BmoDisplayInternal::drawCentered(
+        sdMounted ? "Add compatible ROMs to the SD card." : "Insert an SD card to add more games.", 138, UI_MINT);
+  }
+  if (SDCard::getSkippedRomCount() > 0) {
+    char skipped[40];
+    snprintf(skipped, sizeof(skipped), "SKIPPED PATHS: %d", SDCard::getSkippedRomCount());
+    menuCanvas->setFont();
+    BmoDisplayInternal::drawCentered(skipped, 174, UI_YELLOW);
+  }
+  BmoDisplayInternal::drawFooter("B: BACK");
+}
+
+void drawAlphaJumpOverlayIfActive() {
+  if (alphaBadgeExpireMs <= millis() || alphaBadgeLetter == '\0') return;
+  constexpr int cx = 270;
+  constexpr int cy = 115;
+  constexpr int r = 18;
+  menuCanvas->fillCircle(cx, cy, r + 1, UI_BLACK);
+  menuCanvas->fillCircle(cx, cy, r, UI_YELLOW);
+  menuCanvas->drawCircle(cx, cy, r, UI_WHITE);
+
+  menuCanvas->setFont(&FreeSans9pt7b);
+  menuCanvas->setTextColor(UI_BLACK);
+  const char badgeStr[2] = {alphaBadgeLetter, '\0'};
+  int16_t bx = 0;
+  int16_t by = 0;
+  uint16_t bw = 0;
+  uint16_t bh = 0;
+  menuCanvas->getTextBounds(badgeStr, 0, 0, &bx, &by, &bw, &bh);
+  menuCanvas->setCursor(cx - (static_cast<int>(bw) / 2) - bx, cy - (static_cast<int>(bh) / 2) - by);
+  menuCanvas->print(badgeStr);
+}
+} // namespace
+
+void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts, int consoleCount, bool sdMounted) {
+  using namespace BmoDisplayInternal;
+  if (!menuCanvas || consoleCount <= 0) return;
+  if (selectedIndex < 0) selectedIndex = 0;
+  if (selectedIndex >= consoleCount) selectedIndex = consoleCount - 1;
+
+  const RomType currentConsole = ConsoleCatalog::CONSOLES[selectedIndex];
+  menuCanvas->fillScreen(UI_BLACK);
+  menuCanvas->fillRect(0, 0, 320, 42, UI_DEEP_TEAL);
+  BmoFace::renderToBuffer(menuCanvas->getBuffer(), 320, 8, 5, 48, 30);
+  menuCanvas->drawRoundRect(8, 5, 48, 30, 4, UI_DEEP_TEAL);
+
+  menuCanvas->setFont();
+  char counterStr[32];
+  snprintf(counterStr, sizeof(counterStr), "SYSTEM %d/%d", selectedIndex + 1, consoleCount);
+  menuCanvas->setCursor(220, 20);
+  menuCanvas->setTextColor(UI_MINT);
+  menuCanvas->print(counterStr);
+
+  const int cardOffset = stepCarouselOffset();
+  menuCanvas->fillRoundRect(-18 + cardOffset, 64, 40, 128, 8, UI_DEEP_TEAL);
+  menuCanvas->drawRoundRect(-18 + cardOffset, 64, 40, 128, 8, UI_TEAL);
+  menuCanvas->fillRoundRect(298 + cardOffset, 64, 40, 128, 8, UI_DEEP_TEAL);
+  menuCanvas->drawRoundRect(298 + cardOffset, 64, 40, 128, 8, UI_TEAL);
+  drawConsoleCenterCard(currentConsole, gameCounts[selectedIndex], cardOffset);
 
   menuCanvas->setFont(&FreeSans12pt7b);
   menuCanvas->setCursor(14, 134);
@@ -152,7 +240,6 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
     drawButtonPill(160, 220, "SEL", "SPECS", UI_TEAL, UI_BLACK, UI_WHITE);
     drawButtonPill(238, 220, "< >", "SYSTEM", UI_YELLOW, UI_BLACK, UI_WHITE);
   }
-
   writeMenuCanvas();
 }
 
@@ -201,65 +288,9 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   if (count < 0) count = 0;
   if (count > 0 && (selectedIndex < 0 || selectedIndex >= count)) selectedIndex = 0;
 
-  menuCanvas->fillScreen(UI_BLACK);
-  menuCanvas->fillRect(0, 0, 320, 38, UI_DEEP_TEAL);
-
-  BmoFace::renderToBuffer(menuCanvas->getBuffer(), 320, 8, 4, 48, 30);
-  menuCanvas->drawRoundRect(8, 4, 48, 30, 4, UI_DEEP_TEAL);
-
-#if FEATURE_BATTERY_MONITOR
-  const int pct = Battery::getPercentage();
-  const uint16_t battColor = (pct > 50) ? Theme::COLOR_SUCCESS : ((pct > 20) ? UI_YELLOW : UI_CORAL);
-  menuCanvas->drawRoundRect(280, 13, 24, 12, 2, UI_WHITE);
-  menuCanvas->fillRect(304, 16, 2, 6, UI_WHITE);
-  const int fillW = (int)((pct / 100.0f) * 20);
-  if (fillW > 0) {
-    menuCanvas->fillRect(282, 15, fillW, 8, battColor);
-  }
-#else
-  menuCanvas->drawRoundRect(280, 13, 30, 12, 2, UI_MINT);
-  menuCanvas->fillRect(282, 15, 10, 8, UI_MINT);
-  menuCanvas->drawRect(294, 15, 10, 8, UI_WHITE);
-  menuCanvas->setFont();
-  menuCanvas->setTextColor(UI_WHITE);
-  menuCanvas->setCursor(286, 15);
-  menuCanvas->print("U");
-  menuCanvas->setTextColor(UI_MINT);
-  menuCanvas->setCursor(255, 16);
-  menuCanvas->print("N/A");
-#endif
-
-  menuCanvas->setFont(&FreeSans9pt7b);
-  char heading[40];
-  if (console == ROM_FAVORITES) {
-    snprintf(heading, sizeof(heading), "* FAVORITE GAMES");
-  } else if (topPicksFilter) {
-    snprintf(heading, sizeof(heading), "%s TOP PICKS", ConsoleCatalog::consoleName(console));
-  } else {
-    snprintf(heading, sizeof(heading), "%s LIBRARY", ConsoleCatalog::consoleName(console));
-  }
-  drawCentered(heading, 25, UI_YELLOW);
-
+  drawGameMenuHeaderAndBattery(console);
   if (count == 0) {
-    menuCanvas->setFont(&FreeSans12pt7b);
-    if (console == ROM_FAVORITES) {
-      drawCentered("NO FAVORITES YET!", 100, UI_WHITE);
-      menuCanvas->setFont(&FreeSans9pt7b);
-      drawCentered("Press SELECT on any game in any", 128, UI_MINT);
-      drawCentered("console library to star it *", 148, UI_MINT);
-    } else {
-      drawCentered("NO GAMES", 100, UI_WHITE);
-      menuCanvas->setFont(&FreeSans9pt7b);
-      drawCentered(sdMounted ? "Add compatible ROMs to the SD card." : "Insert an SD card to add more games.", 138,
-                   UI_MINT);
-    }
-    if (SDCard::getSkippedRomCount() > 0) {
-      char skipped[40];
-      snprintf(skipped, sizeof(skipped), "SKIPPED PATHS: %d", SDCard::getSkippedRomCount());
-      menuCanvas->setFont();
-      drawCentered(skipped, 174, UI_YELLOW);
-    }
-    drawFooter("B: BACK");
+    drawEmptyGameLibraryScreen(console, sdMounted);
     writeMenuCanvas();
     return;
   }
@@ -274,7 +305,6 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
 
   menuCanvas->fillRoundRect(81, 46, 158, 114, 12, UI_DEEP_TEAL);
   menuCanvas->drawRoundRect(81, 46, 158, 114, 12, isFav ? UI_YELLOW : UI_TEAL);
-
   if (BoxArt::hasArt()) {
     BoxArt::draw(menuCanvas, 128, 54, true, isFav ? UI_YELLOW : UI_TEAL);
   } else {
@@ -284,7 +314,6 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   }
 
   menuCanvas->drawRoundRect(112, 126, 96, 18, 8, isFav ? UI_YELLOW : (isPop ? UI_MINT : UI_TEAL));
-
   menuCanvas->setFont();
   if (isFav) {
     menuCanvas->setTextColor(UI_YELLOW);
@@ -302,7 +331,6 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
 
   menuCanvas->setFont(&FreeSans9pt7b);
   drawFittedCentered(title, 180, 290, UI_WHITE);
-
   menuCanvas->setFont();
   char position[36];
   snprintf(position, sizeof(position), "%d / %d  [%s%s]", selectedIndex + 1, count,
@@ -317,15 +345,13 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
     menuCanvas->setCursor(6, 209);
     menuCanvas->print(skipped);
   }
-
   if (count > 1) {
-    constexpr int trackX = 60;
-    constexpr int trackW = 200;
-    constexpr int trackY = 168;
+    constexpr int trackX = 60, trackW = 200, trackY = 168;
     menuCanvas->fillRect(trackX, trackY, trackW, 2, UI_DEEP_TEAL);
     const int rawThumbW = trackW / count;
     const int thumbW = (rawThumbW < 14) ? 14 : rawThumbW;
-    const int thumbX = trackX + (int)(((float)selectedIndex / (float)(count - 1)) * (float)(trackW - thumbW));
+    const int thumbX = trackX + static_cast<int>((static_cast<float>(selectedIndex) / static_cast<float>(count - 1)) *
+                                                 static_cast<float>(trackW - thumbW));
     menuCanvas->fillRoundRect(thumbX, trackY - 1, thumbW, 4, 2, isFav ? UI_YELLOW : UI_MINT);
   }
 
@@ -336,26 +362,7 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   drawButtonPill(106, 220, "SEL", isFav ? "UNSTAR" : "STAR", UI_YELLOW, UI_BLACK, UI_WHITE);
   drawButtonPill(180, 220, "ST", topPicksFilter ? "ALL" : "TOP", UI_BLUE, UI_WHITE, UI_WHITE);
   drawButtonPill(236, 220, "<>", "A-Z", UI_TEAL, UI_BLACK, UI_WHITE);
-
-  if (alphaBadgeExpireMs > millis() && alphaBadgeLetter != '\0') {
-    constexpr int cx = 270;
-    constexpr int cy = 115;
-    constexpr int r = 18;
-
-    menuCanvas->fillCircle(cx, cy, r + 1, UI_BLACK);
-    menuCanvas->fillCircle(cx, cy, r, UI_YELLOW);
-    menuCanvas->drawCircle(cx, cy, r, UI_WHITE);
-
-    menuCanvas->setFont(&FreeSans9pt7b);
-    menuCanvas->setTextColor(UI_BLACK);
-    const char badgeStr[2] = {alphaBadgeLetter, '\0'};
-    int16_t bx, by;
-    uint16_t bw, bh;
-    menuCanvas->getTextBounds(badgeStr, 0, 0, &bx, &by, &bw, &bh);
-    menuCanvas->setCursor(cx - ((int)bw / 2) - bx, cy - ((int)bh / 2) - by);
-    menuCanvas->print(badgeStr);
-  }
-
+  drawAlphaJumpOverlayIfActive();
   writeMenuCanvas();
 }
 

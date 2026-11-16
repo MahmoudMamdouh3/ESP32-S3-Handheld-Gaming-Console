@@ -132,7 +132,7 @@ if cf_bin and staged_cpp:
 # Check ruff on staged Python files
 ruff_bin = shutil.which("ruff")
 if ruff_bin and staged_py:
-    ruff_proc = subprocess.run([ruff_bin, "check", "--select", "E,F,W,I", "--ignore", "E501,E402", *staged_py], capture_output=True, text=True)
+    ruff_proc = subprocess.run([ruff_bin, "check", *staged_py], capture_output=True, text=True)
     if ruff_proc.returncode != 0:
         errors.append(f"ruff check failed on staged Python files:\n{(ruff_proc.stdout or ruff_proc.stderr).strip()}")
 
@@ -145,19 +145,9 @@ if mypy_bin and mypy_targets:
         errors.append(f"mypy failed on staged Python files:\n{(mypy_proc.stdout or mypy_proc.stderr).strip()}")
 
 # Check lizard complexity on staged first-party files.
-# Tracked Phase 2/3 decomposition targets are skipped until Phase 2/3 splits them.
-LEGACY_LIZARD_DEBT = {
-    "scripts/build_wasm_cores.py",
-    "scripts/export_enclosure_web_meshes.py",
-    "tests/test_native_cores_execution.py",
-    "tools/guardian/core/ast_linter.py",
-    "tools/guardian/core/elf_analyzer.py",
-    "tools/guardian/core/psram_budget.py",
-}
-lizard_targets = [p for p in staged_lizard if p.replace("\\", "/") not in LEGACY_LIZARD_DEBT]
 lizard_bin = shutil.which("lizard")
-if lizard_bin and lizard_targets:
-    liz_proc = subprocess.run([lizard_bin, "-C", "25", "-L", "100", "--warnings_only", *lizard_targets], capture_output=True, text=True)
+if lizard_bin and staged_lizard:
+    liz_proc = subprocess.run([lizard_bin, "-C", "25", "-L", "100", "--warnings_only", *staged_lizard], capture_output=True, text=True)
     if liz_proc.returncode != 0:
         errors.append(f"lizard complexity check failed (CCN > 25 or length > 100):\n{(liz_proc.stdout or liz_proc.stderr).strip()}")
 

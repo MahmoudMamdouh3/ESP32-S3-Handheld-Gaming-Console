@@ -1,175 +1,177 @@
-#!/usr/bin/env python3
-"""
-test_genesis_emu.py
-Unit tests for the Sega Genesis / Mega Drive (68000 CPU + VDP Scanline) emulator core.
-Verifies ROM header validation, vector table extraction, 68000 bus mapping,
-VDP CRAM color conversion, register decoding, controller multiplexing, and PSRAM budget.
+"""Behavioral tests for the Sega Genesis (Gwenesis) emulator core."""
+
+from __future__ import annotations
+
+import tempfile
+import unittest
+from pathlib import Path
+
+from host_test_support import build_and_run_firmware_cxx, build_and_run_wasi_c
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+THIRD_PARTY = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "third_party"
+
+_GENESIS_DRIVER_C = r"""
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+extern int test_genesis_core(void);
+
+void* heap_caps_malloc(size_t s, uint32_t c) { (void)c; return malloc(s ? s : 1U); }
+void* heap_caps_calloc(size_t n, size_t s, uint32_t c) { (void)c; return calloc(n ? n : 1U, s ? s : 1U); }
+void* heap_caps_realloc(void* p, size_t s, uint32_t c) { (void)c; return realloc(p, s ? s : 1U); }
+void heap_caps_free(void* p) { free(p); }
+unsigned long millis(void) { static unsigned long t = 0; t += 16UL; return t; }
+
+int main(void) {
+  return test_genesis_core();
+}
 """
 
-import struct
-import unittest
+_GENESIS_IO_MUX_C = r"""
+#include <stdio.h>
+#include "io/gwenesis_io.h"
+#include "savestate/gwenesis_savestate.h"
+
+void gwenesis_io_get_buttons(void) {}
+SaveState* saveGwenesisStateOpenForWrite(const char* module_name) { (void)module_name; return NULL; }
+SaveState* saveGwenesisStateOpenForRead(const char* module_name) { (void)module_name; return NULL; }
+void saveGwenesisStateSetBuffer(SaveState* state, const char* key, const void* buf, size_t len) {
+  (void)state; (void)key; (void)buf; (void)len;
+}
+void saveGwenesisStateGetBuffer(SaveState* state, const char* key, void* buf, size_t len) {
+  (void)state; (void)key; (void)buf; (void)len;
+}
+
+int main(void) {
+  gwenesis_io_write_ctrl(0x09U, 0x40U);
+  for (int btn = 0; btn < 8; ++btn) {
+    gwenesis_io_pad_release_button(0, btn);
+  }
+  gwenesis_io_write_ctrl(0x03U, 0x40U);
+  if ((gwenesis_io_read_ctrl(0x03U) & 0x7FU) != 0x7FU) {
+    fprintf(stderr, "Expected idle TH=1 state 0x7F\n");
+    return 1;
+  }
+  gwenesis_io_write_ctrl(0x03U, 0x00U);
+  if ((gwenesis_io_read_ctrl(0x03U) & 0x7FU) != 0x33U) {
+    fprintf(stderr, "Expected idle TH=0 state 0x33\n");
+    return 2;
+  }
+
+  /* Press Start (bit 7) + C (bit 4) + Up (bit 0) -> TH=1 sees C+Up, TH=0 sees Start+Up. */
+  gwenesis_io_pad_press_button(0, 7);
+  gwenesis_io_pad_press_button(0, 4);
+  gwenesis_io_pad_press_button(0, 0);
+
+  gwenesis_io_write_ctrl(0x03U, 0x40U);
+  const unsigned int hi = gwenesis_io_read_ctrl(0x03U);
+  if ((hi & 0x10U) != 0U || (hi & 0x01U) != 0U || (hi & 0x20U) == 0U) {
+    fprintf(stderr, "TH=1 mux mismatch: 0x%02X\n", hi);
+    return 3;
+  }
+
+  gwenesis_io_write_ctrl(0x03U, 0x00U);
+  const unsigned int lo = gwenesis_io_read_ctrl(0x03U);
+  if ((lo & 0x20U) != 0U || (lo & 0x10U) == 0U || (lo & 0x01U) != 0U) {
+    fprintf(stderr, "TH=0 mux mismatch: 0x%02X\n", lo);
+    return 4;
+  }
+  return 0;
+}
+"""
+
+_GENESIS_CXX_BEHAVIOR = r"""
+#include <stdint.h>
+#include <string.h>
+#include <vector>
+
+#include "cores/core_registry.h"
+#include "storage/battery_save.h"
+#include "storage/rom_file_filter.h"
+#include "test_check.h"
+#include "ui/console_catalog.h"
+
+int main() {
+  static_assert(CoreRegistry::detail::kCores[9].emulatorIndex == 9, "Genesis core index must be 9");
+  static_assert(CoreRegistry::detail::kCores[9].romType == ROM_GENESIS, "Core 9 must be ROM_GENESIS");
+  static_assert(CoreRegistry::detail::kCores[9].hasActiveBatteryRam != nullptr,
+                "Genesis supports active battery check");
+
+  const ConsoleCatalog::ConsoleSpec* spec = ConsoleCatalog::findByType(ROM_GENESIS);
+  BMO_CHECK(spec != nullptr);
+  BMO_CHECK(spec->viewX == 0 && spec->viewY == 8 && spec->viewW == 320 && spec->viewH == 224);
+  BMO_CHECK(ConsoleCatalog::determineTypeFromFilename("/roms/md/Sonic2.md") == ROM_GENESIS);
+  BMO_CHECK(ConsoleCatalog::determineTypeFromFilename("streets.GEN") == ROM_GENESIS);
+  BMO_CHECK(ConsoleCatalog::determineTypeFromFilename("gunstar.smd") == ROM_GENESIS);
+
+  std::vector<uint8_t> rom(0x200U, 0U);
+  BMO_CHECK(!BatterySave::genesisHeaderHasBattery(rom.data(), rom.size()));
+
+  rom[0x1B0] = 'R';
+  rom[0x1B1] = 'A';
+  rom[0x1B4] = 0x00U; rom[0x1B5] = 0x20U; rom[0x1B6] = 0x00U; rom[0x1B7] = 0x00U;
+  rom[0x1B8] = 0x00U; rom[0x1B9] = 0x20U; rom[0x1BA] = 0x3FU; rom[0x1BB] = 0xFFU;
+  BMO_CHECK(BatterySave::genesisHeaderHasBattery(rom.data(), rom.size()));
+
+  // Inverted range or >16 KB span must return false.
+  rom[0x1B8] = 0x00U; rom[0x1B9] = 0x1FU;
+  BMO_CHECK(!BatterySave::genesisHeaderHasBattery(rom.data(), rom.size()));
+  rom[0x1B8] = 0x00U; rom[0x1B9] = 0x30U;
+  BMO_CHECK(!BatterySave::genesisHeaderHasBattery(rom.data(), rom.size()));
+  BMO_CHECK(!BatterySave::genesisHeaderHasBattery(rom.data(), 0x1B0U));
+
+  const uint8_t segaHdr[4] = {'S', 'E', 'G', 'A'};
+  const uint8_t badHdr[4] = {'T', 'E', 'X', 'T'};
+  BMO_CHECK(RomFileFilter::isPlausibleFile("sonic.md", 0x200U, nullptr, 0U, segaHdr, 4U));
+  BMO_CHECK(!RomFileFilter::isPlausibleFile("readme.md", 0x200U, nullptr, 0U, badHdr, 4U));
+  BMO_CHECK(!RomFileFilter::isPlausibleFile("tiny.md", 32U, nullptr, 0U, segaHdr, 4U));
+  return 0;
+}
+"""
 
 
 class TestGenesisEmulatorCore(unittest.TestCase):
-    """Test suite for Sega Genesis / Mega Drive hardware architecture and core logic."""
+    """Compiled WASI + C++17 behavioral checks for Gwenesis and Genesis firmware metadata."""
 
-    def test_01_rom_header_and_vector_table(self):
-        """Verify vector table (SSP, PC) extraction from Genesis ROM header."""
-        # Genesis vector table:
-        # 0x000000: Initial SSP (e.g. 0x00FFFE00)
-        # 0x000004: Initial PC  (e.g. 0x00000200)
-        # 0x000100: "SEGA MEGA DRIVE " or "SEGA GENESIS    "
-        rom = bytearray(512)
-        expected_ssp = 0x00FFFE00
-        expected_pc = 0x00000200
-        struct.pack_into(">II", rom, 0, expected_ssp, expected_pc)
-        rom[0x100:0x110] = b"SEGA MEGA DRIVE "
+    def test_genesis_core_boot_vdp_and_th_mux_wasi(self) -> None:
+        gwen_dir = THIRD_PARTY / "gwenesis"
+        c_sources = [
+            gwen_dir / "bus" / "gwenesis_bus.c",
+            gwen_dir / "cpus" / "M68K" / "m68kcpu.c",
+            gwen_dir / "cpus" / "Z80" / "Z80.c",
+            gwen_dir / "io" / "gwenesis_io.c",
+            gwen_dir / "savestate" / "gwenesis_savestate.c",
+            gwen_dir / "sound" / "gwenesis_sn76489.c",
+            gwen_dir / "sound" / "ym2612.c",
+            gwen_dir / "sound" / "z80inst.c",
+            gwen_dir / "vdp" / "gwenesis_vdp_gfx.c",
+            gwen_dir / "vdp" / "gwenesis_vdp_mem.c",
+            REPO_ROOT / "tests" / "host" / "bridge_genesis.c",
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            driver = Path(tmp) / "genesis_driver.c"
+            driver.write_text(_GENESIS_DRIVER_C, encoding="utf-8")
+            res = build_and_run_wasi_c(
+                self,
+                [driver, *c_sources],
+                include_dirs=(gwen_dir, REPO_ROOT / "firmware" / "BmoGameboy" / "src"),
+                forced_includes=("stdint.h",),
+            )
+            self.assertIn("[HOST_CORE] GENESIS_68K STATUS=PASS", res.stdout)
 
-        ssp = (rom[0] << 24) | (rom[1] << 16) | (rom[2] << 8) | rom[3]
-        pc = (rom[4] << 24) | (rom[5] << 16) | (rom[6] << 8) | rom[7]
-        magic = bytes(rom[0x100:0x110]).decode('ascii', errors='ignore')
+            io_mux_driver = Path(tmp) / "genesis_io_mux.c"
+            io_mux_driver.write_text(_GENESIS_IO_MUX_C, encoding="utf-8")
+            build_and_run_wasi_c(
+                self,
+                [io_mux_driver, gwen_dir / "io" / "gwenesis_io.c"],
+                include_dirs=(gwen_dir,),
+                forced_includes=("stddef.h", "stdint.h"),
+            )
 
-        self.assertEqual(ssp, expected_ssp, "Initial SSP must match big-endian 32-bit vector")
-        self.assertEqual(pc, expected_pc, "Initial PC must match big-endian 32-bit vector")
-        self.assertIn("SEGA", magic, "Magic string must identify Sega platform")
-
-    def test_02_memory_bus_decoding(self):
-        """Verify 24-bit 68000 bus range decoding."""
-        def decode_region(addr):
-            addr &= 0xFFFFFF
-            if addr < 0x400000:
-                return "ROM"
-            elif 0xA00000 <= addr <= 0xA01FFF:
-                return "Z80_RAM"
-            elif 0xA10000 <= addr <= 0xA1001F:
-                return "IO_PORTS"
-            elif 0xC00000 <= addr <= 0xC0001F:
-                return "VDP"
-            elif 0xE00000 <= addr <= 0xFFFFFF:
-                return "WORK_RAM"
-            return "UNMAPPED"
-
-        self.assertEqual(decode_region(0x000000), "ROM")
-        self.assertEqual(decode_region(0x1FFFFF), "ROM")
-        self.assertEqual(decode_region(0xA00050), "Z80_RAM")
-        self.assertEqual(decode_region(0xA10003), "IO_PORTS")
-        self.assertEqual(decode_region(0xC00004), "VDP")
-        self.assertEqual(decode_region(0xFF0000), "WORK_RAM")
-        self.assertEqual(decode_region(0xE01234), "WORK_RAM", "Mirror of Work RAM")
-
-    def test_03_vdp_cram_rgb_to_bgr565(self):
-        """Verify VDP 9-bit RGB to ST7789 byte-swapped BGR565 conversion."""
-        # Genesis CRAM: 0000 bbb0 ggg0 rrr0 (each channel 0..7)
-        def genesis_color_to_bgr565(cram_val):
-            r = (cram_val >> 1) & 0x07
-            g = (cram_val >> 5) & 0x07
-            b = (cram_val >> 9) & 0x07
-            r8 = (r * 255) // 7
-            g8 = (g * 255) // 7
-            b8 = (b * 255) // 7
-            bgr = ((b8 & 0xF8) << 8) | ((g8 & 0xFC) << 3) | (r8 >> 3)
-            # Byte-swap for ST7789 SPI
-            return ((bgr & 0xFF) << 8) | ((bgr >> 8) & 0xFF)
-
-        # Pure Black (0x000)
-        self.assertEqual(genesis_color_to_bgr565(0x000), 0x0000)
-        # Pure White (RGB 7,7,7 -> 0x0EEE)
-        white = genesis_color_to_bgr565(0x0EEE)
-        self.assertEqual(white, 0xFFFF)
-        # Red (r=7, g=0, b=0 -> 0x000E)
-        red = genesis_color_to_bgr565(0x000E)
-        self.assertNotEqual(red, 0x0000)
-
-    def test_04_vdp_register_and_command_decoding(self):
-        """Verify VDP command word and register write decoding."""
-        # Register write command: 1000 RRRR DDDD DDDD (bit 15=1, 14=0)
-        cmd_reg = 0x8174  # Write 0x74 to Register 1 (Mode Set 2)
-        is_reg_write = (cmd_reg & 0xC000) == 0x8000
-        reg_num = (cmd_reg >> 8) & 0x1F
-        reg_val = cmd_reg & 0xFF
-
-        self.assertTrue(is_reg_write)
-        self.assertEqual(reg_num, 1)
-        self.assertEqual(reg_val, 0x74)
-
-        # Address / Code command: 2 words
-        # Word 1: 0x4000 (VRAM write at 0x0000)
-        # Word 2: 0x0000
-        w1 = 0x4000
-        w2 = 0x0000
-        vdp_code = ((w1 >> 14) & 0x03) | ((w2 >> 2) & 0x3C)
-        vdp_addr = (w1 & 0x3FFF) | ((w2 & 0x0007) << 14)
-        self.assertEqual(vdp_code, 1, "Code 1 represents VRAM Write")
-        self.assertEqual(vdp_addr, 0)
-
-    def test_05_controller_multiplexing(self):
-        """Verify Genesis 3-button controller TH pin multiplexing."""
-        # pad_state bits: UP=0x01, DOWN=0x02, LEFT=0x04, RIGHT=0x08, B=0x10, A=0x20, START=0x80
-        pad_state = 0x01 | 0x20  # UP + A pressed
-
-        # When TH is 1: returns D-Pad + B + C (bit 0=Up, 1=Down, 2=Left, 3=Right, 4=B, 5=C)
-        # Genesis inputs are active LOW (0 when pressed, 1 when released)
-        def read_port(pad, th_high):
-            if th_high:
-                data = 0x7F
-                if pad & 0x01:
-                    data &= ~0x01  # UP
-                if pad & 0x02:
-                    data &= ~0x02  # DOWN
-                if pad & 0x04:
-                    data &= ~0x04  # LEFT
-                if pad & 0x08:
-                    data &= ~0x08  # RIGHT
-                if pad & 0x10:
-                    data &= ~0x10  # B (maps to Genesis B)
-                return data
-            data = 0x7F
-            if pad & 0x01:
-                data &= ~0x01  # UP
-            if pad & 0x02:
-                data &= ~0x02  # DOWN
-            if pad & 0x20:
-                data &= ~0x10  # A (maps to Genesis A)
-            if pad & 0x80:
-                data &= ~0x20  # START
-            return data
-
-        th1 = read_port(pad_state, True)
-        th0 = read_port(pad_state, False)
-
-        # When TH is 1, UP is active (bit 0 cleared)
-        self.assertEqual(th1 & 0x01, 0)
-        # When TH is 0, A is active (bit 4 cleared)
-        self.assertEqual(th0 & 0x10, 0)
-
-    def test_06_framebuffer_and_psram_budget(self):
-        """Verify 320x224 frame resolution and Octal PSRAM footprint."""
-        fb_w, fb_h = 320, 224
-        fb_bytes = fb_w * fb_h * 2
-        self.assertEqual(fb_bytes, 143360)
-
-        # Genesis PSRAM allocations:
-        # Framebuffer (143,360) + 68K RAM (65,536) + VRAM (65,536) + Z80 RAM (8,192) + CRAM/VSRAM (208)
-        ram_bytes = 65536
-        vram_bytes = 65536
-        z80_bytes = 8192
-        cram_vsram_bytes = 128 + 80
-        total_bytes = fb_bytes + ram_bytes + vram_bytes + z80_bytes + cram_vsram_bytes
-
-        self.assertLess(total_bytes, 300 * 1024, "Total core memory must stay under 300 KB in PSRAM")
-
-    def test_07_68000_instruction_opcode_table(self):
-        """Verify 68000 opcode masks for primary instruction families."""
-        # NOP = 0x4E71
-        self.assertEqual(0x4E71 & 0xFFFF, 0x4E71)
-        # RTS = 0x4E75
-        self.assertEqual(0x4E75 & 0xFFFF, 0x4E75)
-        # MOVEQ: 0111 RRR 0 DDDDDDDD -> top 4 bits = 0x7
-        self.assertEqual((0x7000 >> 12) & 0xF, 0x7)
-        # BRA: 0110 0000 DDDDDDDD -> top 8 bits = 0x60
-        self.assertEqual((0x6000 >> 8) & 0xFF, 0x60)
-        # BSR: 0110 0001 DDDDDDDD -> top 8 bits = 0x61
-        self.assertEqual((0x6100 >> 8) & 0xFF, 0x61)
+    def test_genesis_battery_header_catalog_and_filter_cxx(self) -> None:
+        build_and_run_firmware_cxx(self, _GENESIS_CXX_BEHAVIOR)
 
 
 if __name__ == "__main__":

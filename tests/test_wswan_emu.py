@@ -1,127 +1,148 @@
-#!/usr/bin/env python3
-"""
-test_wswan_emu.py
-Unit tests for the Bandai WonderSwan / WonderSwan Color (NEC V30MZ CPU + VDC) emulator core.
-Verifies reset vector, 20-bit segmented memory mapping, RGB444 color conversion,
-I/O port registers, keypad input multiplexing, and PSRAM memory budget.
+"""Behavioral tests for the Bandai WonderSwan / WSC (Oswan) emulator core."""
+
+from __future__ import annotations
+
+import tempfile
+import unittest
+from pathlib import Path
+
+from host_test_support import build_and_run_firmware_cxx, build_and_run_wasi_c
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+THIRD_PARTY = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "third_party"
+
+_WSWAN_DRIVER_C = r"""
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "WS.h"
+#include "WSFileio.h"
+#include "WSHard.h"
+#include "WSInput.h"
+
+extern int test_wswan_core(void);
+
+int main(void) {
+  if (test_wswan_core() != 0) {
+    return 1;
+  }
+
+  /* Verify real Oswan SRAM bank allocation (ramType=0x01) + 0xB5 keypad mux. */
+  const size_t rom_size = 0x20000U;
+  uint8_t* rom = (uint8_t*)calloc(1U, rom_size);
+  if (!rom) {
+    return 2;
+  }
+  rom[0x1FFF0] = 0xEBU; /* infinite loop at FFFF:0000 */
+  rom[0x1FFF1] = 0xFEU;
+  rom[0x1FFF6] = 0x01U; /* developer ID */
+  rom[0x1FFF7] = 0x01U; /* WSC capable */
+  rom[0x1FFFA] = 0x02U; /* 1 Mbit ROM */
+  rom[0x1FFFB] = 0x01U; /* 64 Kbit SRAM */
+
+  WsInit();
+  if (WsCreateFromMemory(rom, rom_size) != 0) {
+    WsDeInit();
+    free(rom);
+    return 3;
+  }
+  WsReset();
+
+  if (RAMBanks <= 0 || RAMSize <= 0 || !RAMMap || !RAMMap[0]) {
+    WsDeInit();
+    free(rom);
+    fprintf(stderr, "Expected Oswan cartridge SRAM allocation\n");
+    return 4;
+  }
+
+  /* Verify 0xB5 keypad matrix selection reflects written control bits 0x10 / 0x20 / 0x40. */
+  WriteIO(0xB5U, 0x10U);
+  const BYTE k10 = ReadIO(0xB5U);
+  WriteIO(0xB5U, 0x20U);
+  const BYTE k20 = ReadIO(0xB5U);
+  WriteIO(0xB5U, 0x40U);
+  const BYTE k40 = ReadIO(0xB5U);
+  WsDeInit();
+  free(rom);
+
+  if ((k10 & 0xF0U) != 0x10U || (k20 & 0xF0U) != 0x20U || (k40 & 0xF0U) != 0x40U) {
+    fprintf(stderr, "Keypad mux readback mismatch: 0x%02X 0x%02X 0x%02X\n", k10, k20, k40);
+    return 5;
+  }
+  return 0;
+}
 """
 
-import unittest
+_WSWAN_CXX_BEHAVIOR = r"""
+#include <stdint.h>
+#include <vector>
+
+#include "cores/core_registry.h"
+#include "storage/battery_save.h"
+#include "test_check.h"
+#include "ui/console_catalog.h"
+
+int main() {
+  static_assert(CoreRegistry::detail::kCores[11].emulatorIndex == 11, "WSwan core index must be 11");
+  static_assert(CoreRegistry::detail::kCores[11].romType == ROM_WSWAN, "Core 11 must be ROM_WSWAN");
+  static_assert(CoreRegistry::detail::kCores[11].hasActiveBatteryRam != nullptr,
+                "WSwan supports active battery check");
+
+  const ConsoleCatalog::ConsoleSpec* spec = ConsoleCatalog::findByType(ROM_WSWAN);
+  BMO_CHECK(spec != nullptr);
+  BMO_CHECK(spec->viewX == 48 && spec->viewY == 48 && spec->viewW == 224 && spec->viewH == 144);
+  BMO_CHECK(ConsoleCatalog::determineTypeFromFilename("klonoa.ws") == ROM_WSWAN);
+  BMO_CHECK(ConsoleCatalog::determineTypeFromFilename("ff4.WSC") == ROM_WSWAN);
+
+  BMO_CHECK(CoreRegistry::detail::hasExtension("klonoa.ws", ".ws"));
+  BMO_CHECK(!CoreRegistry::detail::hasExtension("klonoa.wsc", ".ws"));
+  BMO_CHECK(CoreRegistry::detail::hasExtension("klonoa.WSC", ".wsc"));
+
+  std::vector<uint8_t> wsRom(0x100U, 0U);
+  const uint8_t noBat[] = {0x00U, 0xFFU};
+  for (uint8_t code : noBat) {
+    wsRom[wsRom.size() - 5U] = code;
+    BMO_CHECK(!BatterySave::wswanHeaderHasBattery(wsRom.data(), wsRom.size()));
+  }
+  const uint8_t yesBat[] = {0x01U, 0x02U, 0x03U, 0x04U, 0x10U, 0x20U, 0x50U};
+  for (uint8_t code : yesBat) {
+    wsRom[wsRom.size() - 5U] = code;
+    BMO_CHECK(BatterySave::wswanHeaderHasBattery(wsRom.data(), wsRom.size()));
+  }
+  BMO_CHECK(!BatterySave::wswanHeaderHasBattery(wsRom.data(), 12U));
+  return 0;
+}
+"""
 
 
 class TestWSwanEmulatorCore(unittest.TestCase):
-    """Test suite for WonderSwan hardware architecture and core logic."""
+    """Compiled WASI + C++17 behavioral checks for Oswan and WonderSwan firmware metadata."""
 
-    def test_01_reset_vector_and_entry_point(self):
-        """Verify V30MZ reset vector CS:IP = FFFF:0000 (Physical 0xFFFF0)."""
-        cs = 0xFFFF
-        ip = 0x0000
-        physical = (cs << 4) + ip
-        self.assertEqual(physical, 0xFFFF0, "NEC V30MZ reset vector must start at physical 0xFFFF0")
+    def test_wswan_oswan_v30mz_keypad_mux_and_sram_wasi(self) -> None:
+        osw_dir = THIRD_PARTY / "oswan"
+        c_sources = [
+            osw_dir / "WS.c",
+            osw_dir / "WSApu.c",
+            osw_dir / "WSFileio.c",
+            osw_dir / "WSInput.c",
+            osw_dir / "WSRender.c",
+            osw_dir / "cpu" / "nec.c",
+            REPO_ROOT / "tests" / "host" / "bridge_wswan.c",
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            driver = Path(tmp) / "wswan_driver.c"
+            driver.write_text(_WSWAN_DRIVER_C, encoding="utf-8")
+            res = build_and_run_wasi_c(
+                self,
+                [driver, *c_sources],
+                include_dirs=(osw_dir, osw_dir / "cpu", REPO_ROOT / "firmware" / "BmoGameboy" / "src"),
+            )
+            self.assertIn("[HOST_CORE] WONDERSWAN STATUS=PASS", res.stdout)
 
-    def test_02_segmented_address_calculation(self):
-        """Verify 20-bit segmented real-mode address calculation: (segment << 4) + offset."""
-        def to_physical(seg, off):
-            return ((seg << 4) + off) & 0xFFFFF
-
-        # IVT vector 0 (Divide by Zero)
-        self.assertEqual(to_physical(0x0000, 0x0000), 0x00000)
-        # Internal RAM middle
-        self.assertEqual(to_physical(0x0800, 0x0124), 0x08124)
-        # Boundary wrap at 1MB
-        self.assertEqual(to_physical(0xFFFF, 0x0010), 0x00000)
-
-    def test_03_memory_map_regions(self):
-        """Verify 1MB address bus region classification."""
-        def classify_address(addr):
-            addr &= 0xFFFFF
-            if addr < 0x10000:
-                return "IRAM"       # 64KB Internal RAM
-            elif addr < 0x20000:
-                return "SRAM"       # 64KB Cartridge Save RAM
-            else:
-                return "ROM"        # Cartridge ROM
-
-        self.assertEqual(classify_address(0x00000), "IRAM")
-        self.assertEqual(classify_address(0x0FFFF), "IRAM")
-        self.assertEqual(classify_address(0x10000), "SRAM")
-        self.assertEqual(classify_address(0x1FFFF), "SRAM")
-        self.assertEqual(classify_address(0x20000), "ROM")
-        self.assertEqual(classify_address(0xFFFF0), "ROM")
-
-    def test_04_wswan_rgb444_to_bgr565_conversion(self):
-        """Verify WonderSwan Color 12-bit RGB444 to ST7789 byte-swapped BGR565 conversion."""
-        # WonderSwan Color: 16-bit word with 12-bit color: 0000 bbbb gggg rrrr (each channel 0..15)
-        def wswan_color_to_bgr565(c12):
-            r = c12 & 0x0F
-            g = (c12 >> 4) & 0x0F
-            b = (c12 >> 8) & 0x0F
-            r8 = (r * 255) // 15
-            g8 = (g * 255) // 15
-            b8 = (b * 255) // 15
-            bgr = ((b8 & 0xF8) << 8) | ((g8 & 0xFC) << 3) | (r8 >> 3)
-            # Byte-swap for ST7789 SPI
-            return ((bgr & 0xFF) << 8) | ((bgr >> 8) & 0xFF)
-
-        # Black
-        self.assertEqual(wswan_color_to_bgr565(0x000), 0x0000)
-        # White (RGB 15,15,15 -> 0x0FFF)
-        white = wswan_color_to_bgr565(0x0FFF)
-        self.assertEqual(white, 0xFFFF)
-
-    def test_05_io_port_assignments(self):
-        """Verify WonderSwan hardware I/O port assignments."""
-        ports = {
-            0x00: "DISP_CTRL",
-            0x02: "LINE_CURRENT",
-            0x03: "LINE_COMPARE",
-            0x04: "SPR_TABLE_BASE",
-            0x08: "BG_SCROLL_X",
-            0x09: "BG_SCROLL_Y",
-            0x15: "INT_STATUS",
-            0x60: "HW_SYSTEM_TYPE",
-            0xB5: "KEYPAD_READ",
-        }
-        self.assertEqual(ports[0x60], "HW_SYSTEM_TYPE")
-        self.assertEqual(ports[0xB5], "KEYPAD_READ")
-
-    def test_06_keypad_bit_masking(self):
-        """Verify WonderSwan keypad bits (X1-X4, Button A, Button B, Start)."""
-        keys = 0x0001 | 0x0010  # X1 (Up) + Button A
-        has_up = bool(keys & 0x0001)
-        has_right = bool(keys & 0x0002)
-        has_a = bool(keys & 0x0010)
-        has_b = bool(keys & 0x0020)
-
-        self.assertTrue(has_up)
-        self.assertFalse(has_right)
-        self.assertTrue(has_a)
-        self.assertFalse(has_b)
-
-    def test_07_framebuffer_and_psram_budget(self):
-        """Verify 224x144 frame resolution and Octal PSRAM footprint."""
-        fb_w, fb_h = 224, 144
-        fb_bytes = fb_w * fb_h * 2
-        self.assertEqual(fb_bytes, 64512)
-
-        # WonderSwan PSRAM allocations:
-        # Framebuffer (64,512) + 64KB IRAM (65,536) + 64KB Cart SRAM (65,536)
-        iram_bytes = 65536
-        sram_bytes = 65536
-        total_bytes = fb_bytes + iram_bytes + sram_bytes
-        self.assertLess(total_bytes, 200 * 1024, "Total core memory must stay under 200 KB in PSRAM")
-
-    def test_08_c_core_source_invariants_and_banking(self):
-        """Verify genuine Oswan WS.c source implements port 0xC1 SRAM banking, port 0xB5 keypad mux, and PSRAM buffers."""
-        from pathlib import Path
-        repo_root = Path(__file__).resolve().parents[1]
-        c_src = (repo_root / "firmware" / "BmoGameboy" / "src" / "third_party" / "oswan" / "WS.c").read_text(encoding="utf-8")
-        self.assertIn("WsAllocateBuffers", c_src)
-        self.assertIn("bmo_psram_malloc", c_src)
-        self.assertIn("case 0xC1:", c_src, "Port 0xC1 must map cartridge SRAM banks to Page[1]")
-        self.assertIn("Page[1] = RAMMap[V]", c_src)
-        self.assertIn("case 0xB5:", c_src, "Port 0xB5 must multiplex keypad nibbles")
-        self.assertIn("ButtonState >> 4", c_src)
+    def test_wswan_battery_header_and_color_routing_cxx(self) -> None:
+        build_and_run_firmware_cxx(self, _WSWAN_CXX_BEHAVIOR)
 
 
 if __name__ == "__main__":

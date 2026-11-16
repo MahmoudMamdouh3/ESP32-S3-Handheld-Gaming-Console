@@ -89,7 +89,7 @@ class PlatformMappingTests(unittest.TestCase):
 
         wrapper_to_file = {row[3]: row[4] for row in PLATFORMS}
         for row in PLATFORMS:
-            rom_type, carousel_index, wrapper_index, wrapper, wrapper_file = row[:5]
+            rom_type, _carousel_index, wrapper_index, wrapper, wrapper_file = row[:5]
             reg_idx, dmg_pal, start_fn, step_fn, destroy_fn = registry[rom_type]
             self.assertEqual(reg_idx, wrapper_index)
             self.assertEqual(destroy_fn, f"{wrapper}::destroy")
@@ -107,8 +107,8 @@ class PlatformMappingTests(unittest.TestCase):
         doc_rows = [line for line in COMPAT_DOC.splitlines() if line.startswith("| `ROM_")]
         self.assertEqual(len(doc_rows), 15)
 
-        for row, doc_line in zip(PLATFORMS, doc_rows):
-            rom_type, carousel_index, wrapper_index, wrapper, wrapper_file, extensions, viewport, offset, period, key = row
+        for row, doc_line in zip(PLATFORMS, doc_rows, strict=True):
+            rom_type, carousel_index, wrapper_index, _wrapper, wrapper_file, extensions, viewport, offset, period, key = row
             self.assertIn(f"| `{rom_type}` | {carousel_index} | {wrapper_index} |", doc_line)
             self.assertIn(wrapper_file, doc_line)
             self.assertIn(", ".join(f"`{ext}`" for ext in extensions), doc_line)

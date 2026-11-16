@@ -101,6 +101,7 @@ export function createDropShadowTextureImpl(radius = 64) {
   canvas.width = 128;
   canvas.height = 128;
   const ctx = canvas.getContext("2d");
+  if (!ctx) return new THREE.Texture();
   const grad = ctx.createRadialGradient(64, 64, radius * 0.20, 64, 64, radius);
   grad.addColorStop(0, "rgba(0, 0, 0, 0.50)");
   grad.addColorStop(0.65, "rgba(0, 0, 0, 0.15)");
@@ -120,6 +121,7 @@ export function createButtonTextureImpl(label, bgColorStr, textColorStr) {
   canvas.width = 256;
   canvas.height = 256;
   const ctx = canvas.getContext("2d");
+  if (!ctx) return new THREE.Texture();
 
   ctx.fillStyle = bgColorStr;
   ctx.fillRect(0, 0, 256, 256);
@@ -162,6 +164,7 @@ export function createDpadTextureImpl() {
   canvas.width = 512;
   canvas.height = 512;
   const ctx = canvas.getContext("2d");
+  if (!ctx) return new THREE.Texture();
   ctx.clearRect(0, 0, 512, 512);
   ctx.fillStyle = "rgba(0, 0, 0, 0.32)";
   const drawTriangle = (cx, cy, size, angle) => {

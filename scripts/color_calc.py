@@ -4,7 +4,6 @@ scripts/color_calc.py — RGB888 <-> Byte-Swapped BGR565 ST7789 Wire Format Calc
 """
 
 import argparse
-from typing import Tuple
 
 
 def to_bgr565_swapped(r: int, g: int, b: int) -> int:
@@ -16,7 +15,7 @@ def to_bgr565_swapped(r: int, g: int, b: int) -> int:
     return ((bgr >> 8) | (bgr << 8)) & 0xFFFF
 
 
-def from_bgr565_swapped(swapped: int) -> Tuple[int, int, int]:
+def from_bgr565_swapped(swapped: int) -> tuple[int, int, int]:
     """Unpacks ST7789 byte-swapped BGR565 back to 8-bit (R, G, B)."""
     bgr = ((swapped >> 8) | ((swapped & 0xFF) << 8)) & 0xFFFF
     r5 = bgr & 0x1F

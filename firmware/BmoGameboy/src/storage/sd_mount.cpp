@@ -60,7 +60,8 @@ static bool growPathArena(size_t requiredCap) {
     return false;
   }
   if (s_pathArena && oldStart != reinterpret_cast<uintptr_t>(nextBuf)) {
-    const ptrdiff_t delta = nextBuf - reinterpret_cast<const char*>(oldStart);
+    const ptrdiff_t delta =
+        static_cast<ptrdiff_t>(reinterpret_cast<uintptr_t>(nextBuf)) - static_cast<ptrdiff_t>(oldStart);
     for (int i = 0; i < numRoms; ++i) {
       const uintptr_t addr = reinterpret_cast<uintptr_t>(romList[i].filename);
       if (addr >= oldStart && addr < oldEnd) {

@@ -140,6 +140,50 @@ def _find_c_compiler() -> Path:
     )
 
 
+def _build_compile_commands(
+    temp_dir: Path, c_compiler: Path, compiler: Path
+) -> tuple[list[list[str]], list[Path]]:
+    c_sources = [AGNES_SOURCE, *sorted(SMSPLUS_DIR.glob("*.c")), *sorted(STELLA_SRC_DIR.glob("*.c"))]
+    stella_cpp_sources = sorted(STELLA_SRC_DIR.glob("*.cpp"))
+    compile_commands: list[list[str]] = []
+    object_paths: list[Path] = []
+    common_flags = ["--target=wasm32-wasip1", "-Os", "-flto", "-ffunction-sections", "-fdata-sections"]
+
+    for idx, source in enumerate(c_sources):
+        output = temp_dir / f"c_{idx}_{source.stem}.o"
+        object_paths.append(output)
+        compile_commands.append([
+            str(c_compiler), *common_flags,
+            "-I", str(SMSPLUS_DIR), "-I", str(STELLA_SRC_DIR),
+            "-c", str(source), "-o", str(output),
+        ])
+
+    for idx, source in enumerate(stella_cpp_sources):
+        output = temp_dir / f"stella_{idx}_{source.stem}.o"
+        object_paths.append(output)
+        compile_commands.append([
+            str(compiler), *common_flags, "-fno-exceptions", "-fno-rtti", "-std=c++17",
+            "-I", str(STELLA_SRC_DIR), "-c", str(source), "-o", str(output),
+        ])
+    return compile_commands, object_paths
+
+
+def _build_link_command(compiler: Path, object_paths: list[Path], out_file: Path) -> list[str]:
+    return [
+        str(compiler), "--target=wasm32-wasip1", "-Os", "-flto", "-fno-exceptions", "-fno-rtti",
+        "-I", str(BMO_COMPAT), "-I", str(WASM_HAL), "-I", str(STELLA_SRC_DIR), "-I", str(SMSPLUS_DIR),
+        "-DLOG_LEVEL=0", "-nostartfiles", "-DPEANUT_GB_IS_LITTLE_ENDIAN=1", "-DPEANUT_GB_HIGH_LCD_ACCURACY=1",
+        "-std=c++17",
+        str(CORE_SOURCE), str(NES_SOURCE), str(ATARI_WASM_SOURCE), str(COLEM_WASM_SOURCE),
+        str(BMO_FACE_FIRMWARE_SOURCE), str(BMO_FACE_WASM_SOURCE),
+        *(str(obj) for obj in object_paths),
+        "-Wl,--no-entry", "-Wl,--gc-sections", "-Wl,--strip-all", "-Wl,--export-memory",
+        "-Wl,--initial-memory=16777216", "-Wl,--max-memory=67108864", "-Wl,-z,stack-size=1048576",
+        *(f"-Wl,--export={symbol}" for symbol in EXPORTS),
+        "-o", str(out_file),
+    ]
+
+
 def build_wasm_module(output_path: Path | None = WASM_OUT_PATH) -> bytes:
     """Compile the firmware-derived WebAssembly cores and optionally write the output."""
     compiler = _find_compiler()
@@ -148,96 +192,10 @@ def build_wasm_module(output_path: Path | None = WASM_OUT_PATH) -> bytes:
     temp_root = REPO_ROOT / "build" / "wasm-tmp"
     temp_root.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="bmo-wasm-", dir=str(temp_root)) as temp_dir:
-        temp_output = Path(temp_dir) / "bmo_playtest_cores.wasm"
-        c_compiler = _find_c_compiler()
-        c_sources = [
-            AGNES_SOURCE,
-            *sorted(SMSPLUS_DIR.glob("*.c")),
-            *sorted(STELLA_SRC_DIR.glob("*.c")),
-        ]
-        stella_cpp_sources = sorted(STELLA_SRC_DIR.glob("*.cpp"))
-        compile_commands: list[list[str]] = []
-        object_paths: list[Path] = []
-
-        for idx, source in enumerate(c_sources):
-            output = Path(temp_dir) / f"c_{idx}_{source.stem}.o"
-            object_paths.append(output)
-            compile_commands.append([
-                str(c_compiler),
-                "--target=wasm32-wasip1",
-                "-Os",
-                "-flto",
-                "-ffunction-sections",
-                "-fdata-sections",
-                "-I",
-                str(SMSPLUS_DIR),
-                "-I",
-                str(STELLA_SRC_DIR),
-                "-c",
-                str(source),
-                "-o",
-                str(output),
-            ])
-
-        for idx, source in enumerate(stella_cpp_sources):
-            output = Path(temp_dir) / f"stella_{idx}_{source.stem}.o"
-            object_paths.append(output)
-            compile_commands.append([
-                str(compiler),
-                "--target=wasm32-wasip1",
-                "-Os",
-                "-flto",
-                "-ffunction-sections",
-                "-fdata-sections",
-                "-fno-exceptions",
-                "-fno-rtti",
-                "-std=c++17",
-                "-I",
-                str(STELLA_SRC_DIR),
-                "-c",
-                str(source),
-                "-o",
-                str(output),
-            ])
-
-        command = [
-            str(compiler),
-            "--target=wasm32-wasip1",
-            "-Os",
-            "-flto",
-            "-fno-exceptions",
-            "-fno-rtti",
-            "-I",
-            str(BMO_COMPAT),
-            "-I",
-            str(WASM_HAL),
-            "-I",
-            str(STELLA_SRC_DIR),
-            "-I",
-            str(SMSPLUS_DIR),
-            "-DLOG_LEVEL=0",
-            "-nostartfiles",
-            "-DPEANUT_GB_IS_LITTLE_ENDIAN=1",
-            "-DPEANUT_GB_HIGH_LCD_ACCURACY=1",
-            "-std=c++17",
-            str(CORE_SOURCE),
-            str(NES_SOURCE),
-            str(ATARI_WASM_SOURCE),
-            str(COLEM_WASM_SOURCE),
-            str(BMO_FACE_FIRMWARE_SOURCE),
-            str(BMO_FACE_WASM_SOURCE),
-            *(str(obj) for obj in object_paths),
-            "-Wl,--no-entry",
-            "-Wl,--gc-sections",
-            "-Wl,--strip-all",
-            "-Wl,--export-memory",
-            "-Wl,--initial-memory=16777216",
-            "-Wl,--max-memory=67108864",
-            "-Wl,-z,stack-size=1048576",
-            *(f"-Wl,--export={symbol}" for symbol in EXPORTS),
-            "-o",
-            str(temp_output),
-        ]
+        temp_path = Path(temp_dir)
+        temp_output = temp_path / "bmo_playtest_cores.wasm"
+        compile_commands, object_paths = _build_compile_commands(temp_path, _find_c_compiler(), compiler)
+        link_cmd = _build_link_command(compiler, object_paths, temp_output)
 
         def _compile_unit(cmd: list[str]) -> None:
             subprocess.run(cmd, cwd=REPO_ROOT, check=True, capture_output=True, text=True)
@@ -245,7 +203,7 @@ def build_wasm_module(output_path: Path | None = WASM_OUT_PATH) -> bytes:
         try:
             with ThreadPoolExecutor(max_workers=min(8, os.cpu_count() or 4)) as pool:
                 list(pool.map(_compile_unit, compile_commands))
-            subprocess.run(command, cwd=REPO_ROOT, check=True, capture_output=True, text=True)
+            subprocess.run(link_cmd, cwd=REPO_ROOT, check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError as error:
             raise RuntimeError(
                 f"WASI core compilation failed for {error.cmd[0]}:\n{error.stdout}{error.stderr}"

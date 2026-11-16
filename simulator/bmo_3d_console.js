@@ -66,6 +66,9 @@ export class Bmo3DConsole {
     this.lastFrameTime = performance.now();
     this.onInternalSelect = null;
     this.onExplosionChange = null;
+    /** @type {any[] | null} */
+    this.acousticFeltMeshes = null;
+    this.dpadRestZ = 1.42;
     this.layerVis = {
       shells: true,
       frontShell: true,
@@ -229,6 +232,7 @@ export class Bmo3DConsole {
 
   setupRaycasting() {
     const dom = this.renderer.domElement;
+    /** @type {{ x: number, y: number } | null} */
     let pointerDownPos = null;
 
     this._onPointerDownBound = (e) => {

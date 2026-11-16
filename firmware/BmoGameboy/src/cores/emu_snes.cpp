@@ -13,6 +13,7 @@
 #include "../storage/battery_save.h"
 #include "../storage/save_manager.h"
 #include "core_helpers.h"
+#include <math.h>
 #include <string.h>
 
 extern "C" {
@@ -167,7 +168,7 @@ bool SNESEmu::init(uint8_t* romData, size_t romSize) {
 
   memset(&Settings, 0, sizeof(Settings));
   Settings.CyclesPercentage = 100;
-  Settings.H_Max = SNES_CYCLES_PER_SCANLINE;
+  Settings.H_Max = static_cast<uint32_t>(lround((SNES_SCANLINE_TIME / SNES_CLOCK_LEN) * 6.0));
   Settings.FrameTimePAL = 20000;
   Settings.FrameTimeNTSC = 16667;
   Settings.ControllerOption = SNES_JOYPAD;

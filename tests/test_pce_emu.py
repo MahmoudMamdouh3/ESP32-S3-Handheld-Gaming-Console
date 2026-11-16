@@ -1,110 +1,150 @@
-#!/usr/bin/env python3
-"""
-test_pce_emu.py
-Unit tests for the PC Engine (HuC6280 CPU + VDC Scanline) emulator core.
-Verifies memory banking, MPR registers, VDC auto-increment, VCE palette conversion,
-resolution budgeting, and save state serialization.
+"""Behavioral tests for the PC Engine / TurboGrafx-16 (HuExpress) emulator core."""
+
+from __future__ import annotations
+
+import tempfile
+import unittest
+from pathlib import Path
+
+from host_test_support import build_and_run_firmware_cxx, build_and_run_wasi_c
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+THIRD_PARTY = REPO_ROOT / "firmware" / "BmoGameboy" / "src" / "third_party"
+
+_PCE_DRIVER_C = r"""
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "pce-go.h"
+#include "pce.h"
+
+extern int test_pce_core(void);
+
+int main(void) {
+  if (test_pce_core() != 0) {
+    return 1;
+  }
+
+  /* Verify 512-byte US copier header stripping ((romSize % 8192) == 512). */
+  const size_t rom_size = 512U + 8192U;
+  uint8_t* rom = (uint8_t*)calloc(1U, rom_size);
+  if (!rom) {
+    return 2;
+  }
+  rom[512U + 0x1FFE] = 0x00U;
+  rom[512U + 0x1FFF] = 0xE0U;
+  const uint8_t prog[] = {
+      0xA9U, 0xF8U, 0x53U, 0x02U,        /* LDA #$F8 ; TAM #$02 */
+      0xA9U, 0xFFU, 0x53U, 0x01U,        /* LDA #$FF ; TAM #$01 */
+      0xA9U, 0x77U, 0x8DU, 0x00U, 0x20U, /* LDA #$77 ; STA $2000 */
+      0x9CU, 0x02U, 0x04U,               /* STZ $0402 */
+      0x9CU, 0x03U, 0x04U,               /* STZ $0403 */
+      0xA9U, 0xDBU, 0x8DU, 0x04U, 0x04U, /* LDA #$DB ; STA $0404 */
+      0xA9U, 0x01U, 0x8DU, 0x05U, 0x04U, /* LDA #$01 ; STA $0405 */
+      0x80U, 0xFEU                       /* BRA -2 */
+  };
+  memcpy(rom + 512U, prog, sizeof(prog));
+
+  if (InitPCE(22050, false) != 0 || LoadCardBorrowed(rom, rom_size) != 0) {
+    ShutdownPCE();
+    free(rom);
+    return 3;
+  }
+  ResetPCE(false);
+  for (int f = 0; f < 8; ++f) {
+    StepPCE();
+  }
+  const uint8_t ram0 = PCE.RAM ? PCE.RAM[0] : 0U;
+  const uint16_t vce0 = PCE.VCE.regs ? PCE.VCE.regs[0].W : 0U;
+  const uint32_t rom_banks = PCE.ROM_SIZE;
+  ShutdownPCE();
+  free(rom);
+
+  if (rom_banks != 1U || ram0 != 0x77U || vce0 != 0x01DBU) {
+    fprintf(stderr, "Copier boot mismatch: banks=%u ram0=0x%02X vce0=0x%04X\n",
+            (unsigned)rom_banks, ram0, vce0);
+    return 4;
+  }
+  return 0;
+}
 """
 
-import struct
-import unittest
+_PCE_CXX_BEHAVIOR = r"""
+#include <stdint.h>
+#include <string.h>
+
+#include "cores/core_registry.h"
+#include "storage/battery_save.h"
+#include "storage/save_state_format.h"
+#include "test_check.h"
+#include "ui/console_catalog.h"
+
+int main() {
+  static_assert(CoreRegistry::detail::kCores[6].emulatorIndex == 6, "PCE core index must be 6");
+  static_assert(CoreRegistry::detail::kCores[6].romType == ROM_PCE, "Core 6 must be ROM_PCE");
+
+  const ConsoleCatalog::ConsoleSpec* spec = ConsoleCatalog::findByType(ROM_PCE);
+  BMO_CHECK(spec != nullptr);
+  BMO_CHECK(spec->viewX == 32 && spec->viewY == 0 && spec->viewW == 256 && spec->viewH == 240);
+  BMO_CHECK(ConsoleCatalog::determineTypeFromFilename("/roms/pce/Rondo.pce") == ROM_PCE);
+
+  const uint8_t validBram[4] = {'H', 'U', 'B', 'M'};
+  const uint8_t badBram[4] = {'B', 'A', 'D', '!'};
+  BMO_CHECK(BatterySave::pceBramHasHeader(validBram, sizeof(validBram)));
+  BMO_CHECK(!BatterySave::pceBramHasHeader(badBram, sizeof(badBram)));
+  BMO_CHECK(!BatterySave::pceBramHasHeader(validBram, 3U));
+
+  SaveStateFormat::HeaderV2 hdr{};
+  hdr.magic = SaveStateFormat::MAGIC_V2;
+  hdr.version = SaveStateFormat::VERSION_V2;
+  hdr.headerSize = sizeof(hdr);
+  hdr.coreId = 6U;
+  hdr.pathKeyHash = 0x11223344U;
+  hdr.romSize = 262144U;
+  hdr.stateSize = 1024U;
+  hdr.ramSize = 2048U;
+  hdr.crc32 = 0xA5A55A5AU;
+  SaveStateFormat::DecodedHeader decoded{};
+  BMO_CHECK(SaveStateFormat::decodeHeader(reinterpret_cast<const uint8_t*>(&hdr), sizeof(hdr),
+                                          sizeof(hdr) + 3072U, 6U, 0x11223344U, 262144U,
+                                          1024U, 2048U, &decoded));
+  BMO_CHECK(decoded.header.stateSize == 1024U && decoded.header.ramSize == 2048U &&
+            decoded.header.crc32 == 0xA5A55A5AU && decoded.payloadOffset == sizeof(hdr) && !decoded.isLegacyV1);
+  BMO_CHECK(!SaveStateFormat::decodeHeader(reinterpret_cast<const uint8_t*>(&hdr), sizeof(hdr),
+                                           sizeof(hdr) + 3072U, 7U, 0x11223344U, 262144U,
+                                           1024U, 2048U, &decoded));
+  return 0;
+}
+"""
 
 
 class TestPceEmulatorCore(unittest.TestCase):
-    """Test suite for PC Engine hardware architecture and emulation logic."""
+    """Compiled WASI + C++17 behavioral checks for HuExpress and PCE firmware metadata."""
 
-    def test_01_rom_header_and_banking(self):
-        """Verify 512-byte copier header detection and 8KB banking math."""
-        # Standard HuCard ROM without copier header (e.g. 256KB = 32 banks)
-        raw_size = 256 * 1024
-        header_size = 512
-        with_header = raw_size + header_size
+    def test_pce_huexpress_copier_vce_and_boot_wasi(self) -> None:
+        hu_dir = THIRD_PARTY / "huexpress"
+        c_sources = [
+            hu_dir / "gfx.c",
+            hu_dir / "h6280.c",
+            hu_dir / "pce-go.c",
+            hu_dir / "pce.c",
+            hu_dir / "psg.c",
+            REPO_ROOT / "tests" / "host" / "bridge_pce.c",
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            driver = Path(tmp) / "pce_driver.c"
+            driver.write_text(_PCE_DRIVER_C, encoding="utf-8")
+            res = build_and_run_wasi_c(
+                self,
+                [driver, *c_sources],
+                include_dirs=(hu_dir, REPO_ROOT / "firmware" / "BmoGameboy" / "src"),
+            )
+            self.assertIn("[HOST_CORE] PC_ENGINE STATUS=PASS", res.stdout)
 
-        # Copier header check: size & 0x1FFF == 512
-        self.assertEqual(with_header & 0x1FFF, 512, "Copier header condition should detect 512-byte remainder")
-        self.assertEqual(raw_size & 0x1FFF, 0, "Clean ROM has no header remainder")
-
-        # 8KB bank count
-        bank_count = raw_size // 0x2000
-        self.assertEqual(bank_count, 32)
-
-    def test_02_mpr_memory_mapping(self):
-        """Verify MPR0..MPR7 8KB page translation across 21-bit physical address space."""
-        # 8 MPR registers map 8KB CPU windows:
-        # Window 0: 0x0000 - 0x1FFF -> MPR[0]
-        # Window 7: 0xE000 - 0xFFFF -> MPR[7]
-        mpr = [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0xF8]
-
-        # Test RAM mapping at MPR[7] = 0xF8 (Work RAM)
-        cpu_addr = 0xE123
-        page = (cpu_addr >> 13) & 7
-        offset = cpu_addr & 0x1FFF
-        bank = mpr[page]
-
-        self.assertEqual(page, 7)
-        self.assertEqual(offset, 0x0123)
-        self.assertEqual(bank, 0xF8, "Page 7 should map to Work RAM bank 0xF8 by default")
-
-    def test_03_vdc_vram_and_auto_increment(self):
-        """Verify VDC VRAM address auto-increment steps (1, 32, 64, 128 words)."""
-        inc_steps = [1, 32, 64, 128]
-        # In VDC Control Register (CR), bits 11-12 select auto-increment step:
-        # 00 = +1, 01 = +32, 10 = +64, 11 = +128
-        for code, expected_step in enumerate(inc_steps):
-            step = inc_steps[code]
-            self.assertEqual(step, expected_step)
-
-        # 64KB VRAM = 32,768 16-bit words
-        vram_words = 32768
-        vram_bytes = vram_words * 2
-        self.assertEqual(vram_bytes, 65536)
-
-    def test_04_vce_rgb333_to_bgr565_conversion(self):
-        """Verify VCE 9-bit RGB333 to ST7789 byte-swapped BGR565 conversion."""
-        # PC Engine 9-bit color format: bits 0-2 = Blue (0..7), 3-5 = Red (0..7), 6-8 = Green (0..7)
-        # Convert each 3-bit channel to 8-bit, then pack to byte-swapped BGR565
-        def pce_color_to_bgr565(pce_val):
-            b3 = pce_val & 7
-            r3 = (pce_val >> 3) & 7
-            g3 = (pce_val >> 6) & 7
-            r8 = (r3 * 255) // 7
-            g8 = (g3 * 255) // 7
-            b8 = (b3 * 255) // 7
-            bgr = ((b8 & 0xF8) << 8) | ((g8 & 0xFC) << 3) | (r8 >> 3)
-            # Byte-swap for ST7789 SPI
-            return ((bgr & 0xFF) << 8) | ((bgr >> 8) & 0xFF)
-
-        # Black
-        self.assertEqual(pce_color_to_bgr565(0x000), 0x0000)
-        # White (RGB 7,7,7 = 0x1FF)
-        white = pce_color_to_bgr565(0x1FF)
-        self.assertEqual(white, 0xFFFF)
-
-    def test_05_framebuffer_resolution_and_psram_budget(self):
-        """Verify 256x240 frame resolution and Octal PSRAM footprint."""
-        fb_w, fb_h = 256, 240
-        fb_bytes = fb_w * fb_h * 2
-        self.assertEqual(fb_bytes, 122880)
-
-        # Ensure total core footprint is within 250 KB in PSRAM
-        ram_bytes = 8192
-        bram_bytes = 2048
-        vram_bytes = 65536
-        palette_bytes = 512 * 2
-        total_core_bytes = fb_bytes + ram_bytes + bram_bytes + vram_bytes + palette_bytes
-        self.assertLess(total_core_bytes, 250 * 1024, "Total core memory must stay under 250 KB")
-
-    def test_06_save_state_structure_integrity(self):
-        """Verify core context serialization round-trip for SaveManager."""
-        # Context structure pack simulation:
-        # RAM (8192) + BRAM (2048) + VRAM (65536) + Palette (1024) + Regs
-        ram = bytes([0x5A] * 8192)
-        bram = bytes([0xA5] * 2048)
-        header = struct.pack("<HHHHBBBBB", 0xE000, 0x01FF, 0x0000, 0x0000, 0x12, 0x34, 0x56, 0xFD, 0x20)
-
-        self.assertEqual(len(ram), 8192)
-        self.assertEqual(len(bram), 2048)
-        self.assertEqual(len(header), 13)
+    def test_pce_catalog_bram_and_state_format_cxx(self) -> None:
+        build_and_run_firmware_cxx(self, _PCE_CXX_BEHAVIOR)
 
 
 if __name__ == "__main__":

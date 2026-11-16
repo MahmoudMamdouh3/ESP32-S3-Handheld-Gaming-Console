@@ -9,7 +9,6 @@ import math
 import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import List, Optional
 
 DEFAULT_FRAME_BUDGET_US = 16667
 
@@ -40,7 +39,7 @@ class TelemetrySample:
     avg_us: int
     min_us: int
     max_us: int
-    emulator_index: Optional[int] = None
+    emulator_index: int | None = None
     target_frame_us: int = DEFAULT_FRAME_BUDGET_US
     dropped: int = 0
     total_dropped: int = 0
@@ -98,9 +97,9 @@ class ProfileCsvRow:
     spi_avg_us: int
 
 
-def parse_profile_csv(text: str) -> List[ProfileCsvRow]:
+def parse_profile_csv(text: str) -> list[ProfileCsvRow]:
     """Extract `[PROFILE_CSV]` rows emitted by firmware built with `-DBMO_PROFILE=1`."""
-    rows: List[ProfileCsvRow] = []
+    rows: list[ProfileCsvRow] = []
     for line in text.splitlines():
         match = PROFILE_CSV_RE.search(line)
         if not match:
@@ -125,9 +124,9 @@ def parse_profile_csv(text: str) -> List[ProfileCsvRow]:
     return rows
 
 
-def parse_frame_percentile_windows(text: str) -> List[FramePercentileWindow]:
+def parse_frame_percentile_windows(text: str) -> list[FramePercentileWindow]:
     """Read firmware percentile reports for unpaced emulator execution time."""
-    windows: List[FramePercentileWindow] = []
+    windows: list[FramePercentileWindow] = []
     for line in text.splitlines():
         match = FRAME_WINDOW_RE.search(line)
         if not match:
@@ -157,9 +156,9 @@ def parse_frame_percentile_windows(text: str) -> List[FramePercentileWindow]:
     ]
 
 
-def parse_telemetry_stream(text: str) -> List[TelemetrySample]:
+def parse_telemetry_stream(text: str) -> list[TelemetrySample]:
     """Extracts all structured TelemetrySample entries from serial log text."""
-    samples: List[TelemetrySample] = []
+    samples: list[TelemetrySample] = []
     for line in text.splitlines():
         match = TELEMETRY_LINE_RE.search(line)
         if not match:
@@ -195,21 +194,21 @@ def parse_telemetry_stream(text: str) -> List[TelemetrySample]:
     ]
 
 
-def _percentile(sorted_vals: List[int], pct: float) -> float:
+def _percentile(sorted_vals: list[int], pct: float) -> float:
     if not sorted_vals:
         return 0.0
     if len(sorted_vals) == 1:
         return float(sorted_vals[0])
     pos = (len(sorted_vals) - 1) * (pct / 100.0)
-    lo = int(math.floor(pos))
-    hi = int(math.ceil(pos))
+    lo = math.floor(pos)
+    hi = math.ceil(pos)
     if lo == hi:
         return float(sorted_vals[lo])
     weight = pos - lo
     return sorted_vals[lo] * (1.0 - weight) + sorted_vals[hi] * weight
 
 
-def summarize_telemetry(samples: List[TelemetrySample]) -> TelemetrySummary:
+def summarize_telemetry(samples: list[TelemetrySample]) -> TelemetrySummary:
     """Computes statistical frame pacing and FPS metrics across telemetry samples."""
     if not samples:
         return TelemetrySummary(0, 0.0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0.0)
@@ -236,8 +235,8 @@ def summarize_telemetry(samples: List[TelemetrySample]) -> TelemetrySummary:
     )
 
 
-def render_ascii_plot(samples: List[TelemetrySample], width: int = 50,
-                      frame_windows: Optional[List[FramePercentileWindow]] = None,
+def render_ascii_plot(samples: list[TelemetrySample], width: int = 50,
+                      frame_windows: list[FramePercentileWindow] | None = None,
                       source_label: str = "CAPTURED") -> str:
     """Renders an ASCII bar chart of FPS and frame time latency."""
     summary = summarize_telemetry(samples)
@@ -258,7 +257,7 @@ def render_ascii_plot(samples: List[TelemetrySample], width: int = 50,
         )
     for s in samples[:30]:
         ratio = min(1.0, s.avg_us / float(s.target_frame_us))
-        filled = int(round(ratio * width))
+        filled = round(ratio * width)
         bar = "#" * filled + "." * (width - filled)
         lines.append(f" [{s.sample_index:02d}] {s.fps:2d} FPS |{bar}| {s.avg_us:5d}us (jitter {s.jitter_us:4d}us)")
     lines.append("=" * 70)
@@ -267,7 +266,7 @@ def render_ascii_plot(samples: List[TelemetrySample], width: int = 50,
 
 def generate_synthetic_telemetry(seconds: int = 12) -> str:
     """Generates representative 60 FPS serial output lines for self-test and CI validation."""
-    lines: List[str] = []
+    lines: list[str] = []
     total_drop = 0
     for i in range(seconds):
         avg = 4850 + ((i * 137) % 420)

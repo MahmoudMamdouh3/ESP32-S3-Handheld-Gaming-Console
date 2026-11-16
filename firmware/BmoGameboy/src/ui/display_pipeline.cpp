@@ -47,7 +47,7 @@ uint16_t __attribute__((aligned(4))) s_doomLineBuf[320];
 uint16_t s_doomPalette[256];
 #endif
 
-enum LastFrameFormat { FRAME_FMT_NONE = 0, FRAME_FMT_RAW16, FRAME_FMT_NES8, FRAME_FMT_DOOM8 };
+enum LastFrameFormat : uint8_t { FRAME_FMT_NONE = 0, FRAME_FMT_RAW16, FRAME_FMT_NES8, FRAME_FMT_DOOM8 };
 
 uint8_t* s_asyncEmuBuf[2] = {nullptr, nullptr};
 int s_activeEmuBuf = 0;
@@ -61,7 +61,7 @@ int s_lastFrameH = 0;
 uint16_t* s_streamCapBuf = nullptr;
 int s_streamCapPixels = 0;
 
-enum DisplayCmdType {
+enum DisplayCmdType : uint8_t {
   CMD_NONE = 0,
   CMD_PUSH_CANVAS,
   CMD_PUSH_FULLSCREEN,
@@ -418,35 +418,35 @@ void DisplayEmu::streamAtariFrame(const uint16_t* atari_framebuffer) {
 void DisplayEmu::streamPicoFrame(const uint16_t* pico_framebuffer) {
   streamRawFrameAsync(pico_framebuffer, 96, 56, 128, 128);
 }
+namespace {
+
+void streamCenteredRawFrame(const uint16_t* fb, int width, int height, int fallbackW, int fallbackH) {
+  const int w = (width > 0 && width <= TFT_WIDTH) ? width : fallbackW;
+  const int h = (height > 0 && height <= TFT_HEIGHT) ? height : fallbackH;
+  const int x = (TFT_WIDTH - w) / 2;
+  const int y = (TFT_HEIGHT - h) / 2;
+  DisplayEmu::streamRawFrameAsync(fb, x, y, w, h);
+}
+
+} // namespace
+
 void DisplayEmu::streamGenesisFrame(const uint16_t* genesis_framebuffer, int width, int height) {
-  (void)width;
-  (void)height;
-  streamRawFrameAsync(genesis_framebuffer, 0, 8, 320, 224);
+  streamCenteredRawFrame(genesis_framebuffer, width, height, 320, 224);
 }
 void DisplayEmu::streamSNESFrame(const uint16_t* snes_framebuffer, int width, int height) {
-  (void)width;
-  (void)height;
-  streamRawFrameAsync(snes_framebuffer, 32, 8, 256, 224);
+  streamCenteredRawFrame(snes_framebuffer, width, height, 256, 224);
 }
 void DisplayEmu::streamWSwanFrame(const uint16_t* wswan_framebuffer, int width, int height) {
-  (void)width;
-  (void)height;
-  streamRawFrameAsync(wswan_framebuffer, 48, 48, 224, 144);
+  streamCenteredRawFrame(wswan_framebuffer, width, height, 224, 144);
 }
 void DisplayEmu::streamNGPFrame(const uint16_t* ngp_framebuffer, int width, int height) {
-  (void)width;
-  (void)height;
-  streamRawFrameAsync(ngp_framebuffer, 80, 44, 160, 152);
+  streamCenteredRawFrame(ngp_framebuffer, width, height, 160, 152);
 }
 void DisplayEmu::streamLynxFrame(const uint16_t* lynx_framebuffer, int width, int height) {
-  (void)width;
-  (void)height;
-  streamRawFrameAsync(lynx_framebuffer, 80, 69, 160, 102);
+  streamCenteredRawFrame(lynx_framebuffer, width, height, 160, 102);
 }
 void DisplayEmu::streamColemFrame(const uint16_t* colem_framebuffer, int width, int height) {
-  (void)width;
-  (void)height;
-  streamRawFrameAsync(colem_framebuffer, 32, 24, 256, 192);
+  streamCenteredRawFrame(colem_framebuffer, width, height, 256, 192);
 }
 void DisplayEmu::streamGBFrame(const uint16_t* gb_framebuffer) {
   streamRawFrameAsync(gb_framebuffer, OFFSET_X, OFFSET_Y, 240, 216);

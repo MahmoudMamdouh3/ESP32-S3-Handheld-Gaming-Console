@@ -38,7 +38,9 @@ const CORE_CONFIG = {
 
 export class WasmPlaytestEngine {
   constructor() {
+    /** @type {WebAssembly.Instance | null} */
     this.instance = null;
+    /** @type {any} */
     this.exports = null;
     this.ready = false;
     this.bmoReady = false;
@@ -79,6 +81,7 @@ export class WasmPlaytestEngine {
 
   async init() {
     if (this.ready) return true;
+    /** @type {ArrayBuffer | Uint8Array<ArrayBuffer> | null} */
     let wasmBytes = null;
     if (typeof window === "undefined" && typeof process !== "undefined" && process.versions?.node) {
       const [{ default: fsMod }, { dirname, join }, { fileURLToPath }] = await Promise.all([
@@ -151,7 +154,7 @@ export class WasmPlaytestEngine {
         return 0;
       }
     };
-    const { instance } = await WebAssembly.instantiate(wasmBytes, { wasi_snapshot_preview1: wasi });
+    const { instance } = await WebAssembly.instantiate(/** @type {BufferSource} */ (wasmBytes), { wasi_snapshot_preview1: wasi });
     this.instance = instance;
     this.exports = instance.exports;
     this.ready = true;

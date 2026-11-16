@@ -80,8 +80,8 @@ void Buttons::update(bool enableMenuRepeat) {
   // GPIO_IN1_REG, where pin N is bit (N - 32). The Game Boy joypad bitmask
   // below only covers the original 8 buttons; X, Y, L, R are read through
   // Buttons::get() by the SNES, Genesis, and DOOM wrappers.
-  uint32_t gpio_in = REG_READ(GPIO_IN_REG);
-  uint32_t gpio_in1 = REG_READ(GPIO_IN1_REG);
+  uint32_t gpio_in = REG_READ(GPIO_IN_REG);   // NOLINT(performance-no-int-to-ptr)
+  uint32_t gpio_in1 = REG_READ(GPIO_IN1_REG); // NOLINT(performance-no-int-to-ptr)
 
   bool rawPressed[NUM_BUTTONS];
   uint16_t rawBits = 0;
@@ -106,7 +106,7 @@ void Buttons::update(bool enableMenuRepeat) {
     }
     if (s_turboEnabled) {
       s_turboTick++;
-      bool pulseOn = ((s_turboTick % s_turboPeriod) < (s_turboPeriod / 2));
+      bool pulseOn = ((s_turboTick % s_turboPeriod) < (s_turboPeriod / 2U));
       if (rawPressed[A]) rawPressed[A] = pulseOn;
       if (rawPressed[B]) rawPressed[B] = pulseOn;
     }

@@ -17,6 +17,7 @@ import shutil
 import subprocess
 import sys
 import time
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -29,7 +30,8 @@ if str(REPO_ROOT) not in sys.path:
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-def _load_sketch_profile():
+
+def _load_sketch_profile() -> tuple[str, str]:
     sketch_yaml = FIRMWARE_DIR / "sketch.yaml"
     default_profile = "esp32s3"
     fqbn = ""
@@ -43,10 +45,10 @@ def _load_sketch_profile():
     return default_profile, fqbn
 
 
-def _discover_registry_contracts():
+def _discover_registry_contracts() -> tuple[list[str], list[str]]:
     reg_path = FIRMWARE_DIR / "src" / "cores" / "core_registry.h"
-    emulators = []
-    teardowns = []
+    emulators: list[str] = []
+    teardowns: list[str] = []
     if reg_path.is_file():
         text = reg_path.read_text(encoding="utf-8")
         emulators = sorted(set(re.findall(r'#include\s+"(emu_[a-z0-9_]+)\.h"', text)))
@@ -54,7 +56,7 @@ def _discover_registry_contracts():
     return emulators, teardowns
 
 
-def _discover_catalog_extensions():
+def _discover_catalog_extensions() -> list[str]:
     cat_path = FIRMWARE_DIR / "src" / "ui" / "console_catalog.h"
     if not cat_path.is_file():
         return []
@@ -65,7 +67,7 @@ def _discover_catalog_extensions():
     return list(dict.fromkeys(re.findall(r'"(\.[a-z0-9]+)"', m.group(1))))
 
 
-def _discover_display_stream_methods():
+def _discover_display_stream_methods() -> list[str]:
     display_h = FIRMWARE_DIR / "src" / "ui" / "display_emu.h"
     if not display_h.is_file():
         return []
@@ -86,18 +88,18 @@ EXPECTED_EXTENSIONS = _discover_catalog_extensions()
 REQUIRED_STREAM_METHODS = _discover_display_stream_methods()
 
 
-def _find_arduino_cli():
-    for candidate in ["arduino-cli", "arduino-cli.exe"]:
+def _find_arduino_cli() -> str | None:
+    for candidate in ("arduino-cli", "arduino-cli.exe"):
         if shutil.which(candidate):
             return candidate
-    for candidate in [REPO_ROOT / "arduino-cli.exe", REPO_ROOT / "arduino-cli"]:
-        if candidate.exists():
-            return str(candidate)
+    for candidate_path in (REPO_ROOT / "arduino-cli.exe", REPO_ROOT / "arduino-cli"):
+        if candidate_path.exists():
+            return str(candidate_path)
     return None
 
 
-def _parse_partitions_csv(csv_path):
-    result = {}
+def _parse_partitions_csv(csv_path: Path) -> dict[str, dict[str, int]]:
+    result: dict[str, dict[str, int]] = {}
     for line in csv_path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line or line.startswith("#"):
@@ -123,43 +125,8 @@ def _parse_partitions_csv(csv_path):
     return result
 
 
-def check_arduino_compile(require_target_compile=False):
-    global TARGET_COMPILE_STATUS
-    issues = []
-    cli = _find_arduino_cli()
-    if not cli:
-        TARGET_COMPILE_STATUS = "SKIPPED"
-        print("  arduino-cli is unavailable; target compile was skipped.")
-        if require_target_compile:
-            issues.append("arduino-cli is unavailable in strict target-compile mode")
-        return issues
-
-    build_dir = REPO_ROOT / "build" / "target-compile"
-    build_dir.mkdir(parents=True, exist_ok=True)
-    print(f"  Compiling profile: {ARDUINO_PROFILE} ({ARDUINO_FQBN})")
-    try:
-        result = subprocess.run(
-            [cli, "compile", "--clean", "--profile", ARDUINO_PROFILE,
-             "--build-path", str(build_dir), str(FIRMWARE_DIR)],
-            capture_output=True, text=True, timeout=1800,
-        )
-    except subprocess.TimeoutExpired:
-        TARGET_COMPILE_STATUS = "FAILED"
-        issues.append("arduino-cli compile timed out after 1800 s")
-        return issues
-    except Exception as exc:
-        TARGET_COMPILE_STATUS = "FAILED"
-        issues.append(f"arduino-cli invocation error: {exc}")
-        return issues
-
-    combined = result.stdout + result.stderr
-    if combined.strip():
-        print(combined.rstrip())
-    if result.returncode != 0:
-        TARGET_COMPILE_STATUS = "FAILED"
-        issues.append("arduino-cli compile returned non-zero exit (see output above)")
-        return issues
-
+def _validate_compile_metrics(combined: str, build_dir: Path) -> list[str]:
+    issues: list[str] = []
     text_m = re.search(r"Sketch uses (\d+) bytes.*?Maximum is (\d+) bytes", combined)
     sram_m = re.search(r"Global variables use (\d+) bytes.*?Maximum is (\d+) bytes", combined)
     if text_m:
@@ -199,13 +166,53 @@ def check_arduino_compile(require_target_compile=False):
         print(f"  App image: {image_size:,} / {app0_size:,} bytes (app0); {app0_size - image_size:,} bytes free")
         if image_size > app0_size:
             issues.append(f"app image exceeds app0 by {image_size - app0_size:,} bytes")
+    return issues
 
+
+def check_arduino_compile(require_target_compile: bool = False) -> list[str]:
+    global TARGET_COMPILE_STATUS
+    issues: list[str] = []
+    cli = _find_arduino_cli()
+    if not cli:
+        TARGET_COMPILE_STATUS = "SKIPPED"
+        print("  arduino-cli is unavailable; target compile was skipped.")
+        if require_target_compile:
+            issues.append("arduino-cli is unavailable in strict target-compile mode")
+        return issues
+
+    build_dir = REPO_ROOT / "build" / "target-compile"
+    build_dir.mkdir(parents=True, exist_ok=True)
+    print(f"  Compiling profile: {ARDUINO_PROFILE} ({ARDUINO_FQBN})")
+    try:
+        result = subprocess.run(
+            [cli, "compile", "--clean", "--profile", ARDUINO_PROFILE,
+             "--build-path", str(build_dir), str(FIRMWARE_DIR)],
+            capture_output=True, text=True, timeout=1800,
+        )
+    except subprocess.TimeoutExpired:
+        TARGET_COMPILE_STATUS = "FAILED"
+        issues.append("arduino-cli compile timed out after 1800 s")
+        return issues
+    except Exception as exc:
+        TARGET_COMPILE_STATUS = "FAILED"
+        issues.append(f"arduino-cli invocation error: {exc}")
+        return issues
+
+    combined = result.stdout + result.stderr
+    if combined.strip():
+        print(combined.rstrip())
+    if result.returncode != 0:
+        TARGET_COMPILE_STATUS = "FAILED"
+        issues.append("arduino-cli compile returned non-zero exit (see output above)")
+        return issues
+
+    issues.extend(_validate_compile_metrics(combined, build_dir))
     TARGET_COMPILE_STATUS = "FAILED" if issues else "VERIFIED"
     return issues
 
 
-def _debug_only_definitions(text):
-    found = []
+def _debug_only_definitions(text: str) -> list[str]:
+    found: list[str] = []
     definition = re.compile(
         r"^\s*#\s*define\s+([A-Za-z_][A-Za-z0-9_]*)|(?:^|\s)-D([A-Za-z_][A-Za-z0-9_]*)",
         re.MULTILINE,
@@ -217,8 +224,16 @@ def _debug_only_definitions(text):
     return found
 
 
-def check_release_debug_macro_guardrails():
-    issues = []
+def _check_python_syntax_file(script: Path) -> str | None:
+    try:
+        compile(script.read_text(encoding="utf-8"), str(script), "exec")
+        return None
+    except SyntaxError as exc:
+        return f"{script.name}: syntax error: {exc}"
+
+
+def check_release_debug_macro_guardrails() -> list[str]:
+    issues: list[str] = []
     ignored_dirs = {".git", ".tools", "build", "node_modules", "__pycache__", "games", "roms", "sdcard", "Book"}
     third_party_dir = FIRMWARE_DIR / "src" / "third_party"
     for current_root, directory_names, file_names in os.walk(REPO_ROOT):
@@ -236,44 +251,36 @@ def check_release_debug_macro_guardrails():
                 text = header.read_text(encoding="utf-8", errors="ignore")
             except OSError:
                 continue
-            for macro in _debug_only_definitions(text):
-                issues.append(f"{relative.as_posix()}: release header defines debug/test-only macro {macro}")
+            issues.extend(
+                f"{relative.as_posix()}: release header defines debug/test-only macro {macro}"
+                for macro in _debug_only_definitions(text)
+            )
 
     profile = FIRMWARE_DIR / "sketch.yaml"
     if profile.is_file():
-        for macro in _debug_only_definitions(profile.read_text(encoding="utf-8", errors="ignore")):
-            issues.append(f"{profile.relative_to(REPO_ROOT).as_posix()}: release profile defines debug/test-only macro {macro}")
+        issues.extend(
+            f"{profile.relative_to(REPO_ROOT).as_posix()}: release profile defines debug/test-only macro {macro}"
+            for macro in _debug_only_definitions(profile.read_text(encoding="utf-8", errors="ignore"))
+        )
     return issues
 
 
-def check_python_files():
-    errors = []
+def check_python_files() -> list[str]:
+    errors: list[str] = []
     guardian_dir = REPO_ROOT / "tools" / "guardian"
     for folder in [SCRIPTS_DIR, TESTS_DIR, guardian_dir]:
         if not folder.exists():
             continue
-        for script in sorted(folder.rglob("*.py")):
-            try:
-                compile(script.read_text(encoding="utf-8"), str(script), "exec")
-            except SyntaxError as exc:
-                errors.append(f"{script.name}: syntax error: {exc}")
+        errors.extend(
+            err
+            for script in sorted(folder.rglob("*.py"))
+            if (err := _check_python_syntax_file(script))
+        )
     return errors
 
 
-def check_firmware_safety_guardrails():
-    issues = []
-    hal_dir = FIRMWARE_DIR / "src" / "hal"
-    config_path = hal_dir / "config.h"
-    flags_path = hal_dir / "feature_flags.h"
-    if not config_path.exists():
-        return ["src/hal/config.h not found"]
-    config_text = config_path.read_text(encoding="utf-8")
-    if flags_path.exists():
-        config_text = flags_path.read_text(encoding="utf-8") + "\n" + config_text
-    for flag in ("FEATURE_BATTERY_MONITOR", "FEATURE_AUDIO"):
-        if not re.search(rf"#define\s+{flag}\s+0\b", config_text):
-            issues.append(f"hal/config.h: {flag} must be exactly 0 (hardware hard stop)")
-
+def _check_core_and_registry_guardrails() -> list[str]:
+    issues: list[str] = []
     app_dir = FIRMWARE_DIR / "src" / "app"
     if app_dir.is_dir():
         app_text = "\n".join(p.read_text(encoding="utf-8") for p in sorted(app_dir.glob("*.cpp")))
@@ -288,48 +295,70 @@ def check_firmware_safety_guardrails():
         emulators, teardowns = _discover_registry_contracts()
         if len(emulators) < 14 or len(teardowns) < 14:
             issues.append("core_registry.h: expected >= 14 registered emulators and destroy() handlers")
-        for td in teardowns:
-            if td not in registry_text:
-                issues.append(f"core_registry.h: missing teardown registration: {td}")
+        issues.extend(f"core_registry.h: missing teardown registration: {td}" for td in teardowns if td not in registry_text)
     else:
         issues.append("src/cores/core_registry.h not found")
 
     emu_dir = FIRMWARE_DIR / "src" / "cores"
     if emu_dir.exists():
-        for cpp in sorted(emu_dir.glob("*.cpp")):
-            if re.search(r"\bSerial\.print", cpp.read_text(encoding="utf-8")):
-                issues.append(f"{cpp.name}: naked Serial.print in emulator wrapper — use LOG_ macros")
+        issues.extend(
+            f"{cpp.name}: naked Serial.print in emulator wrapper — use LOG_ macros"
+            for cpp in sorted(emu_dir.glob("*.cpp"))
+            if re.search(r"\bSerial\.print", cpp.read_text(encoding="utf-8"))
+        )
 
     walnut_cpp = FIRMWARE_DIR / "src" / "cores" / "emu_walnut.cpp"
     if walnut_cpp.exists():
         wt = walnut_cpp.read_text(encoding="utf-8")
         if "*(uint16_t*)&" in wt or "*(uint32_t*)&" in wt:
             issues.append("emu_walnut.cpp: unaligned raw pointer dereference (Xtensa safety)")
+    return issues
 
+
+def _check_partitions_guardrail() -> list[str]:
     partitions_csv = FIRMWARE_DIR / "partitions.csv"
-    if partitions_csv.exists():
-        parts = _parse_partitions_csv(partitions_csv)
-        if "app0" not in parts:
-            issues.append("partitions.csv: app0 partition missing")
-        elif parts["app0"]["size"] < 0x800000:
-            sz = parts["app0"]["size"]
-            issues.append(f"partitions.csv: app0 is {sz:,} bytes — must be >= 8 MB")
-        sorted_p = sorted(parts.values(), key=lambda p: p["offset"])
-        for i in range(len(sorted_p) - 1):
-            a, b = sorted_p[i], sorted_p[i + 1]
-            if a["offset"] + a["size"] > b["offset"]:
-                issues.append(
-                    f"partitions.csv: overlap between 0x{a['offset']:06X}+{a['size']:06X} and 0x{b['offset']:06X}"
-                )
-    else:
-        issues.append("partitions.csv not found")
+    if not partitions_csv.exists():
+        return ["partitions.csv not found"]
+    issues: list[str] = []
+    parts = _parse_partitions_csv(partitions_csv)
+    if "app0" not in parts:
+        issues.append("partitions.csv: app0 partition missing")
+    elif parts["app0"]["size"] < 0x800000:
+        sz = parts["app0"]["size"]
+        issues.append(f"partitions.csv: app0 is {sz:,} bytes — must be >= 8 MB")
+    sorted_p = sorted(parts.values(), key=lambda p: p["offset"])
+    for i in range(len(sorted_p) - 1):
+        a, b = sorted_p[i], sorted_p[i + 1]
+        if a["offset"] + a["size"] > b["offset"]:
+            issues.append(
+                f"partitions.csv: overlap between 0x{a['offset']:06X}+{a['size']:06X} and 0x{b['offset']:06X}"
+            )
+    return issues
 
+
+def check_firmware_safety_guardrails() -> list[str]:
+    issues: list[str] = []
+    hal_dir = FIRMWARE_DIR / "src" / "hal"
+    config_path = hal_dir / "config.h"
+    flags_path = hal_dir / "feature_flags.h"
+    if not config_path.exists():
+        return ["src/hal/config.h not found"]
+    config_text = config_path.read_text(encoding="utf-8")
+    if flags_path.exists():
+        config_text = flags_path.read_text(encoding="utf-8") + "\n" + config_text
+    issues.extend(
+        f"hal/config.h: {flag} must be exactly 0 (hardware hard stop)"
+        for flag in ("FEATURE_BATTERY_MONITOR", "FEATURE_AUDIO")
+        if not re.search(rf"#define\s+{flag}\s+0\b", config_text)
+    )
+    issues.extend(_check_core_and_registry_guardrails())
+    issues.extend(_check_partitions_guardrail())
     issues.extend(check_release_debug_macro_guardrails())
     return issues
 
 
-def check_flash_budget_static():
-    issues = []
+def check_flash_budget_static() -> list[str]:
+    issues: list[str] = []
     legacy_engines = FIRMWARE_DIR / "src" / "engines"
     if legacy_engines.exists():
         issues.append("Legacy stub directory src/engines must not exist (use src/third_party)")
@@ -351,21 +380,25 @@ def check_flash_budget_static():
     return issues
 
 
-def check_structural_soundness():
-    issues = []
+def check_structural_soundness() -> list[str]:
+    issues: list[str] = []
     emu_dir = FIRMWARE_DIR / "src" / "cores"
     emulators, _ = _discover_registry_contracts()
-    for stem in emulators:
-        for ext in (".h", ".cpp"):
-            if not (emu_dir / (stem + ext)).exists():
-                issues.append(f"Missing emulator wrapper: src/cores/{stem}{ext}")
-
     storage_dir = FIRMWARE_DIR / "src" / "storage"
-    for sd_module in ("sd_mount.cpp", "sd_metadata.cpp"):
-        if not (storage_dir / sd_module).exists():
-            issues.append(f"Missing SD storage module: src/storage/{sd_module}")
+    issues.extend(
+        f"Missing SD storage module: src/storage/{sd_module}"
+        for sd_module in ("sd_mount.cpp", "sd_metadata.cpp")
+        if not (storage_dir / sd_module).exists()
+    )
     if not ((storage_dir / "sd_catalog.cpp").exists() or (storage_dir / "rom_catalog_index.cpp").exists()):
         issues.append("Missing SD catalog module (sd_catalog.cpp or rom_catalog_index.cpp)")
+
+    for stem in emulators:
+        issues.extend(
+            f"Missing emulator wrapper: src/cores/{stem}{ext}"
+            for ext in (".h", ".cpp")
+            if not (emu_dir / (stem + ext)).exists()
+        )
 
     catalog_h = FIRMWARE_DIR / "src" / "ui" / "console_catalog.h"
     if catalog_h.exists():
@@ -385,12 +418,15 @@ def check_structural_soundness():
     return issues
 
 
-def check_game_data():
-    issues = []
+def check_game_data() -> list[str]:
+    issues: list[str] = []
     try:
-        from repo_tools import find_game_roots, get_data_dir, validate_rom_header
+        from scripts.repo_tools import find_game_roots, get_data_dir, validate_rom_header
     except ImportError:
-        return ["repo_tools.py not importable — cannot validate ROM archives"]
+        try:
+            from repo_tools import find_game_roots, get_data_dir, validate_rom_header  # type: ignore[no-redef]
+        except ImportError:
+            return ["repo_tools.py not importable — cannot validate ROM archives"]
 
     try:
         data_dir = get_data_dir(REPO_ROOT)
@@ -424,7 +460,7 @@ def check_game_data():
     return issues
 
 
-PHASES = [
+PHASES: list[tuple[str, Callable[[], list[str]]]] = [
     ("Phase 0: Target Firmware Compile", check_arduino_compile),
     ("Phase 1: Python Syntax", check_python_files),
     ("Phase 2: Firmware Safety Guardrails", check_firmware_safety_guardrails),
@@ -434,7 +470,7 @@ PHASES = [
 ]
 
 
-def main(argv=None):
+def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Validate BMO Handheld source, build, and safety contracts.")
     parser.add_argument(
         "--require-target-compile",
@@ -450,7 +486,7 @@ def main(argv=None):
     print("BMO Handheld — Repository Validator")
     print("=" * 62)
 
-    all_issues = []
+    all_issues: list[str] = []
     for phase_name, phase_fn in PHASES:
         if phase_fn is check_arduino_compile:
             def run_phase() -> list[str]:

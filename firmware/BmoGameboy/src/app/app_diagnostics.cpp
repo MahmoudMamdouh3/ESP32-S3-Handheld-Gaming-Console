@@ -50,10 +50,10 @@ void logDiagnosticsStackWatermark(uint32_t loopHwm, uint32_t displayHwm) {
 }
 
 void renderDiagnosticsView(BmoAppRuntime::RuntimeState& rt, bool spiStressFallback, uint16_t btnMask) {
-  const uint32_t freeDram = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-  const uint32_t freePsram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
-  const uint32_t largestPsramBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
-  const uint32_t freeIram = heap_caps_get_free_size(MALLOC_CAP_IRAM_8BIT);
+  const uint32_t freeDram = static_cast<uint32_t>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+  const uint32_t freePsram = static_cast<uint32_t>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+  const uint32_t largestPsramBlock = static_cast<uint32_t>(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM));
+  const uint32_t freeIram = static_cast<uint32_t>(heap_caps_get_free_size(MALLOC_CAP_IRAM_8BIT));
   const uint32_t loopHwm = static_cast<uint32_t>(uxTaskGetStackHighWaterMark(nullptr));
   const uint32_t displayHwm = DisplayEmu::getDisplayStackHighWaterMarkWords();
   logDiagnosticsStackWatermark(loopHwm, displayHwm);
@@ -83,10 +83,6 @@ void handleDiagnostics() {
   const uint16_t btnMask = Buttons::rawMask();
   bool spiStressFallback = (DisplayEmu::getDiagnosticSpiClock() == TFT_SPI_FALLBACK_HZ);
 
-  if (input.edgePressed(Buttons::SELECT) && !rt.spiStressPattern) {
-    rt.diagShowProfiler = !rt.diagShowProfiler;
-  }
-
   if (input.edgePressed(Buttons::B)) {
     rt.spiStressPattern = false;
     rt.diagShowProfiler = false;
@@ -100,6 +96,8 @@ void handleDiagnostics() {
     DisplayEmu::setDiagnosticSpiClock(nextSpiHz);
     BmoAppRuntime::persistDisplaySpiClock(nextSpiHz);
   } else if (!rt.spiStressPattern && input.edgePressed(Buttons::SELECT)) {
+    rt.diagShowProfiler = !rt.diagShowProfiler;
+  } else if (!rt.spiStressPattern && input.edgePressed(Buttons::START)) {
     triggerDiagnosticsSdRefresh(rt);
   }
 

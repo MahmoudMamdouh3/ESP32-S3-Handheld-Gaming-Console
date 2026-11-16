@@ -63,9 +63,11 @@ def check_include_case_sensitivity(repo_root: Path = REPO_ROOT) -> list[str]:
             if source.suffix.lower() not in {".c", ".cpp", ".h", ".hpp", ".ino"}:
                 continue
             text = source.read_text(encoding="utf-8", errors="ignore")
-            for match in include_re.finditer(text):
-                if mismatch := _find_case_mismatch(source, match.group(1).replace("\\", "/"), repo_root):
-                    issues.append(mismatch)
+            issues.extend(
+                mismatch
+                for match in include_re.finditer(text)
+                if (mismatch := _find_case_mismatch(source, match.group(1).replace("\\", "/"), repo_root))
+            )
     return issues
 
 
@@ -79,7 +81,7 @@ def _run_structural_and_doc_checks(failures: list[str]) -> None:
         ("Static engine source gate", validate_repo.check_flash_budget_static),
         ("Structural registration", validate_repo.check_structural_soundness),
     ):
-        issues = fn()  # type: ignore[no-untyped-call]
+        issues = fn()
         if issues:
             failures.extend(f"{label}: {item}" for item in issues)
         else:
@@ -112,13 +114,28 @@ def _run_static_analyzers(args: argparse.Namespace, failures: list[str]) -> None
     ruff_bin = shutil.which("ruff")
     if ruff_bin:
         print("[5b] Running ruff check...")
-        ruff_cmd = [ruff_bin, "check", "."] if args.strict_lint else [ruff_bin, "check", "--select", "E,F,W,I", "--ignore", "E501,E402", "."]
-        if run_checked(ruff_cmd).returncode != 0:
+        if run_checked([ruff_bin, "check", "."]).returncode != 0:
             failures.append("ruff check failed")
     elif args.strict_lint:
         failures.append("ruff not installed (--strict-lint)")
     else:
         print("  INFO: ruff not installed; skipping Python lint check.")
+
+    mypy_bin = shutil.which("mypy")
+    if mypy_bin:
+        print("[5b2] Running mypy strict type check...")
+        if run_checked([mypy_bin, "scripts", "hardware", "tools", "simulator", "benchmarks", "tasks.py"]).returncode != 0:
+            failures.append("mypy failed")
+    elif args.strict_lint:
+        failures.append("mypy not installed (--strict-lint)")
+    else:
+        print("  INFO: mypy not installed; skipping Python type check.")
+
+    tsc_bin = REPO_ROOT / ".tools" / "node" / "node_modules" / ".bin" / ("tsc.cmd" if os.name == "nt" else "tsc")
+    if tsc_bin.is_file():
+        print("[5b3] Running TypeScript JS type check...")
+        if run_checked([str(tsc_bin), "--noEmit", "-p", "jsconfig.json"]).returncode != 0:
+            failures.append("tsc --noEmit -p jsconfig.json failed")
 
     print("[5c] AI codemap & state sync check...")
     if run_checked([sys.executable, str(REPO_ROOT / "scripts" / "sync_ai_codemap.py"), "--check"]).returncode != 0:
@@ -152,12 +169,12 @@ def cmd_check(args: argparse.Namespace) -> int:
     _run_static_analyzers(args, failures)
     if not args.no_tests:
         _run_check_unit_tests(args, failures)
-        if not getattr(args, "fast", False):
-            if ctest_err := run_host_ctest(use_sanitizers=getattr(args, "sanitizers", False)):
-                failures.append(ctest_err)
-    elif getattr(args, "sanitizers", False):
-        if ctest_err := run_host_ctest(use_sanitizers=True):
+        if not getattr(args, "fast", False) and (
+            ctest_err := run_host_ctest(use_sanitizers=getattr(args, "sanitizers", False))
+        ):
             failures.append(ctest_err)
+    elif getattr(args, "sanitizers", False) and (ctest_err := run_host_ctest(use_sanitizers=True)):
+        failures.append(ctest_err)
 
     if failures:
         print("\nCHECK FAILED:")

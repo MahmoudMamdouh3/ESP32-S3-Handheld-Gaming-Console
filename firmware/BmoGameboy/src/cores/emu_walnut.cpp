@@ -11,7 +11,6 @@
 #include "../hal/buttons.h"
 #include "../hal/config.h"
 #include "../storage/save_manager.h"
-#include "../ui/bmo_face.h"
 #include "../ui/display_emu.h"
 #include "gb_common.h"
 
@@ -82,11 +81,7 @@ IRAM_ATTR void gb_cart_ram_write(struct gb_s* gbCtx, const uint_fast32_t addr, c
 
 void gb_error(struct gb_s* gbCtx, const enum gb_error_e gb_err, const uint16_t val) {
   (void)gbCtx;
-  LOG_ERROR("Walnut-CGB Error: %d at PC 0x%04X", gb_err, val);
-  Serial.flush();
-  BmoFace::setExpression(BmoFace::ERROR);
-  BmoFace::draw();
-  esp_restart();
+  GbCommon::reportError("Walnut-CGB", static_cast<int>(gb_err), val);
 }
 
 IRAM_ATTR void lcd_draw_line(struct gb_s* gbCtx, const uint8_t* pixels, const uint_fast8_t line) {
@@ -141,6 +136,7 @@ void WalnutEmu::update() {
 }
 
 void WalnutEmu::destroy() {
+  GbCommon::clearError();
   s_asyncGbcFrame = nullptr;
   void* gbPtr = gb;
   GbCommon::freeGbRuntime(&gbPtr, &cart_ram, &current_rom_data, &current_rom_len);
@@ -199,5 +195,5 @@ bool WalnutEmu::loadState(const char* romFilename, int slot) {
 static_assert(ENABLE_SOUND == 1, "Walnut-CGB expects sound registers active before audio stub mixing.");
 static_assert(WALNUT_FULL_GBC_SUPPORT == 1, "Walnut-CGB must keep full GBC banking/palette support enabled.");
 static_assert(WALNUT_GB_RGB565_BIGENDIAN == 1, "Walnut-CGB color LUT must emit byte-swapped ST7789 wire BGR565.");
-static_assert(sizeof(struct gb_s) > 0 && sizeof(struct gb_s) < 262144U,
+static_assert(sizeof(struct gb_s) < 262144U,
               "struct gb_s size sanity bound failed; update Walnut state buffer limits.");

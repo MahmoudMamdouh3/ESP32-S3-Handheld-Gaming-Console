@@ -140,12 +140,12 @@ bool AtariEmu::init(const uint8_t* romData, size_t romSize) {
   s_settings->setValue("ramrandom", true);
   s_settings->setValue("joyallow4", false);
 
-  string cartMD5 = MD5(romData, (uint32_t)romSize);
+  string cartMD5 = MD5(romData, (uint32_t)romSize); // NOLINT(bugprone-unused-local-non-trivial-variable)
   Properties props;
   s_osystem->propSet().getMD5(cartMD5, props);
 
-  string cartType = props.get(Cartridge_Type);
-  string cartId;
+  string cartType = props.get(Cartridge_Type); // NOLINT(bugprone-unused-local-non-trivial-variable)
+  string cartId;                               // NOLINT(bugprone-unused-local-non-trivial-variable)
   Cartridge* cart =
       Cartridge::create(romData, (uint32_t)romSize, cartMD5, cartType, cartId, *s_osystem, *s_settings, "");
   if (!cart) {

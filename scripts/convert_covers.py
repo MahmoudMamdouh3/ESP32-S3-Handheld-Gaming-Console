@@ -13,18 +13,23 @@ import hashlib
 import re
 import shutil
 import struct
-import sys
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from scripts.repo_tools import get_data_dir
+    from scripts.rom_key import make_rom_key
+else:
+    try:
+        from scripts.repo_tools import get_data_dir
+        from scripts.rom_key import make_rom_key
+    except ImportError:
+        from repo_tools import get_data_dir
+        from rom_key import make_rom_key
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPTS_DIR.parent
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
-
-from repo_tools import get_data_dir
-
-from scripts.rom_key import make_rom_key
 
 try:
     from PIL import Image
@@ -50,7 +55,7 @@ def rgb888_to_bgr565_swapped(r: int, g: int, b: int) -> int:
 
 def generate_procedural_cover_rgb(
     title: str, width: int = COVER_WIDTH, height: int = COVER_HEIGHT
-) -> List[Tuple[int, int, int]]:
+) -> list[tuple[int, int, int]]:
     """Generates a deterministic retro cartridge cover art grid (RGB888) when no local artwork is supplied."""
     digest = hashlib.sha256(title.encode("utf-8", errors="ignore")).digest()
     accent_r = 60 + (digest[0] % 180)
@@ -60,7 +65,7 @@ def generate_procedural_cover_rgb(
     border_gold = (255, 224, 51)
     mint_screen = (206, 245, 228)
 
-    pixels: List[Tuple[int, int, int]] = []
+    pixels: list[tuple[int, int, int]] = []
     for y in range(height):
         for x in range(width):
             if x < 2 or x >= width - 2 or y < 2 or y >= height - 2:
@@ -77,8 +82,8 @@ def generate_procedural_cover_rgb(
 
 
 def encode_raw_bgr565(
-    pixels_rgb: Iterable[Tuple[int, int, int]],
-    expected_bytes: Optional[int] = RAW_BYTE_SIZE,
+    pixels_rgb: Iterable[tuple[int, int, int]],
+    expected_bytes: int | None = RAW_BYTE_SIZE,
 ) -> bytes:
     """Encodes RGB888 pixels into little-endian uint16_t swapped BGR565."""
     out = bytearray()
@@ -91,7 +96,7 @@ def encode_raw_bgr565(
 
 
 def encode_bmp_24bit(
-    pixels_rgb: List[Tuple[int, int, int]],
+    pixels_rgb: list[tuple[int, int, int]],
     width: int = COVER_WIDTH,
     height: int = COVER_HEIGHT,
 ) -> bytes:
@@ -127,7 +132,7 @@ def encode_bmp_24bit(
 
 def image_to_pixels_rgb(
     img_path: Path, width: int = COVER_WIDTH, height: int = COVER_HEIGHT
-) -> Optional[List[Tuple[int, int, int]]]:
+) -> list[tuple[int, int, int]] | None:
     """Converts a local PNG/JPG image into Lanczos-resampled RGB888 pixels."""
     if Image is None or not img_path.exists():
         return None
@@ -144,11 +149,11 @@ def image_to_pixels_rgb(
 def write_cover_files(
     base_name: str,
     out_dir: Path,
-    pixels_rgb: Optional[List[Tuple[int, int, int]]] = None,
+    pixels_rgb: list[tuple[int, int, int]] | None = None,
     width: int = COVER_WIDTH,
     height: int = COVER_HEIGHT,
-    rom_relative_path: Optional[str] = None,
-) -> Tuple[Path, Path]:
+    rom_relative_path: str | None = None,
+) -> tuple[Path, Path]:
     """Writes both .raw and .bmp cover files using a ROM path key when supplied."""
     out_dir.mkdir(parents=True, exist_ok=True)
     if pixels_rgb is None:
@@ -169,7 +174,7 @@ def slugify_title(title: str) -> str:
     return s or "cover"
 
 
-def _find_local_source_image(stem: str, search_dirs: Iterable[Path]) -> Optional[Path]:
+def _find_local_source_image(stem: str, search_dirs: Iterable[Path]) -> Path | None:
     for directory in search_dirs:
         if not directory.is_dir():
             continue
@@ -181,13 +186,13 @@ def _find_local_source_image(stem: str, search_dirs: Iterable[Path]) -> Optional
 
 
 def sync_all_covers(
-    rom_dir: Optional[Path] = None,
-    sd_boxart_dir: Optional[Path] = None,
-    covers_dir: Optional[Path] = None,
-    sim_covers_dir: Optional[Path] = None,
+    rom_dir: Path | None = None,
+    sd_boxart_dir: Path | None = None,
+    covers_dir: Path | None = None,
+    sim_covers_dir: Path | None = None,
     target_width: int = COVER_WIDTH,
     target_height: int = COVER_HEIGHT,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Converts local user-supplied cover images or generates procedural covers into SD .raw/.bmp pairs."""
     data_dir = get_data_dir(REPO_ROOT)
     resolved_rom_dir = rom_dir if rom_dir is not None else (data_dir / "roms")
@@ -199,7 +204,7 @@ def sync_all_covers(
     if sim_covers_dir is not None:
         sim_covers_dir.mkdir(parents=True, exist_ok=True)
 
-    manifest: Dict[str, str] = {}
+    manifest: dict[str, str] = {}
     if not resolved_rom_dir.exists():
         return manifest
 

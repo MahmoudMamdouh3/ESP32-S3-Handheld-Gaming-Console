@@ -166,13 +166,17 @@ def first_party_cpp_files() -> list[Path]:
     return files
 
 
+def _is_module_available(module: str) -> bool:
+    try:
+        __import__(module)
+        return True
+    except ImportError:
+        return False
+
+
 def _ensure_python_deps() -> None:
-    missing = []
-    for module, pkg in (("PIL", "Pillow"), ("numpy", "numpy"), ("trimesh", "trimesh"), ("manifold3d", "manifold3d")):
-        try:
-            __import__(module)
-        except ImportError:
-            missing.append(pkg)
+    deps = (("PIL", "Pillow"), ("numpy", "numpy"), ("trimesh", "trimesh"), ("manifold3d", "manifold3d"))
+    missing = [pkg for module, pkg in deps if not _is_module_available(module)]
     if missing:
         print(f"  Missing packages: {', '.join(missing)}")
         subprocess.run([sys.executable, "-m", "pip", "install", "-r", str(REQUIREMENTS_TXT)], check=True)
@@ -354,7 +358,7 @@ def cmd_size(args: argparse.Namespace) -> int:
         print(f"ELF size inspection unavailable: {exc}")
         return 1 if (args.check_budgets or args.elf) else 0
 
-    app0_size = validate_repo._parse_partitions_csv(PARTITIONS_CSV).get("app0", {}).get("size", 8 * 1024 * 1024)  # type: ignore[no-untyped-call]
+    app0_size = validate_repo._parse_partitions_csv(PARTITIONS_CSV).get("app0", {}).get("size", 8 * 1024 * 1024)
     bin_path = elf_res.elf_path.with_suffix(".bin") if elf_res.elf_path and elf_res.elf_path.with_suffix(".bin").is_file() else None
     flash_bytes = bin_path.stat().st_size if bin_path else elf_res.flash_used_bytes
     flash_pct = (flash_bytes / app0_size * 100.0) if app0_size else 0.0

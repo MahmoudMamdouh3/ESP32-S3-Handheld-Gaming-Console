@@ -75,6 +75,7 @@ function addFrontText(text, width, height, fontSize, color) {
   canvas.width = 256;
   canvas.height = 96;
   const ctx = canvas.getContext("2d");
+  if (!ctx) return new THREE.Object3D();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = color;
   ctx.font = `bold ${fontSize}px 'Press Start 2P', monospace`;

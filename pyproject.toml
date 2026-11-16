@@ -55,19 +55,3 @@ exclude = [
     "sdcard/",
     "firmware/BmoGameboy/src/third_party/",
 ]
-
-# Legacy pre-Phase-3 typing exemptions; Phase 3 deletes this override block cleanly.
-[[tool.mypy.overrides]]
-module = [
-    "scripts.build_wasm_cores",
-    "scripts.convert_covers",
-    "scripts.export_enclosure_web_meshes",
-    "scripts.generate_codemap",
-    "scripts.install_git_hooks",
-    "scripts.validate_repo",
-    "scripts.verify_color_tokens",
-    "hardware.enclosure.generate_bmo_enclosure",
-    "tools.guardian.*",
-    "tools.telemetry_plotter",
-]
-ignore_errors = true

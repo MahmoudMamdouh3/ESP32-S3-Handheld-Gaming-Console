@@ -46,8 +46,8 @@ uint16_t s_panelPalette[144];
 uint8_t s_currHeld = 0;
 uint8_t s_currDown = 0;
 uint8_t s_prevHeld = 0;
-std::string s_cartDataKey;
-std::string s_cartDataHex;
+char s_cartDataKey[64] = "";
+char s_cartDataHex[513] = "";
 bool s_running = false;
 
 void initPanelPalette() {
@@ -130,7 +130,8 @@ Host::Host(int windowWidth, int windowHeight) : currKDown(0), currKHeld(0), _log
 
 void Host::loadSettingsIni() {}
 void Host::saveSettingsIni() {}
-std::string Host::getCartDataFile(std::string cartDataKey) {
+// cppcheck-suppress passedByValue
+std::string Host::getCartDataFile(std::string cartDataKey) { // NOLINT(performance-unnecessary-value-param)
   return cartDataKey;
 }
 
@@ -217,23 +218,30 @@ std::string Host::customBiosLua() {
   return _customBiosLua;
 }
 
-std::string Host::getCartDataFileContents(std::string cartDataKey) {
+// cppcheck-suppress passedByValue
+std::string Host::getCartDataFileContents(std::string cartDataKey) { // NOLINT(performance-unnecessary-value-param)
   if (cartDataKey == s_cartDataKey) return s_cartDataHex;
   return "";
 }
 
-void Host::saveCartData(std::string cartDataKey, std::string contents) {
-  s_cartDataKey = cartDataKey;
-  s_cartDataHex = contents;
+// cppcheck-suppress passedByValue
+void Host::saveCartData(std::string cartDataKey, // NOLINT(performance-unnecessary-value-param)
+                                                 // cppcheck-suppress passedByValue
+                        std::string contents) {  // NOLINT(performance-unnecessary-value-param)
+  snprintf(s_cartDataKey, sizeof(s_cartDataKey), "%s", cartDataKey.c_str());
+  snprintf(s_cartDataHex, sizeof(s_cartDataHex), "%s", contents.c_str());
 }
 
-size_t Host::getFileContents(std::string fileName, char* buffer) {
+// cppcheck-suppress passedByValue
+size_t Host::getFileContents(std::string fileName, char* buffer) { // NOLINT(performance-unnecessary-value-param)
   (void)fileName;
   (void)buffer;
   return 0;
 }
 
-void Host::writeBufferToFile(std::string cartDataKey, char* buffer, size_t length) {
+// cppcheck-suppress passedByValue
+void Host::writeBufferToFile(std::string cartDataKey, // NOLINT(performance-unnecessary-value-param)
+                             char* buffer, size_t length) {
   (void)cartDataKey;
   (void)buffer;
   (void)length;
@@ -242,14 +250,16 @@ void Host::writeBufferToFile(std::string cartDataKey, char* buffer, size_t lengt
 std::string Host::getCartDirectory() {
   return _cartDirectory;
 }
-void Host::setCartDirectory(std::string cartDirectory) {
-  _cartDirectory = cartDirectory;
+// cppcheck-suppress passedByValue
+void Host::setCartDirectory(std::string cartDirectory) { // NOLINT(performance-unnecessary-value-param)
+  _cartDirectory = std::move(cartDirectory);
 }
 std::vector<std::string> Host::listdirs() {
   return {};
 }
 
-int Host::getSetting(std::string sname) {
+// cppcheck-suppress passedByValue
+int Host::getSetting(std::string sname) { // NOLINT(performance-unnecessary-value-param)
   if (sname == "stretch") return (int)stretch;
   if (sname == "kbmode") return (int)kbmode;
   if (sname == "resizekey") return (int)resizekey;
@@ -258,7 +268,8 @@ int Host::getSetting(std::string sname) {
   return 0;
 }
 
-void Host::setSetting(std::string sname, int sdata) {
+// cppcheck-suppress passedByValue
+void Host::setSetting(std::string sname, int sdata) { // NOLINT(performance-unnecessary-value-param)
   if (sname == "stretch")
     stretch = (StretchOption)sdata;
   else if (sname == "kbmode")
@@ -275,17 +286,20 @@ Color* Host::GetPaletteColors() {
   return _paletteColors;
 }
 
+// cppcheck-suppress passedByValue
 void Host::setPlatformParams(int windowWidth, int windowHeight, uint32_t sdlWindowFlags, uint32_t sdlRendererFlags,
-                             uint32_t sdlPixelFormat, std::string logFilePrefixStr, std::string customBiosLuaStr,
-                             std::string cartDirectoryStr) {
+                             uint32_t sdlPixelFormat,
+                             std::string logFilePrefixStr,   // NOLINT(performance-unnecessary-value-param)
+                             std::string customBiosLuaStr,   // NOLINT(performance-unnecessary-value-param)
+                             std::string cartDirectoryStr) { // NOLINT(performance-unnecessary-value-param)
   (void)windowWidth;
   (void)windowHeight;
   (void)sdlWindowFlags;
   (void)sdlRendererFlags;
   (void)sdlPixelFormat;
-  _logFilePrefix = logFilePrefixStr;
-  _customBiosLua = customBiosLuaStr;
-  _cartDirectory = cartDirectoryStr;
+  _logFilePrefix = std::move(logFilePrefixStr);
+  _customBiosLua = std::move(customBiosLuaStr);
+  _cartDirectory = std::move(cartDirectoryStr);
 }
 
 bool PicoEmu::init(const uint8_t* romData, size_t romSize) {
@@ -295,8 +309,8 @@ bool PicoEmu::init(const uint8_t* romData, size_t romSize) {
   s_currHeld = 0;
   s_currDown = 0;
   s_prevHeld = 0;
-  s_cartDataKey.clear();
-  s_cartDataHex.clear();
+  s_cartDataKey[0] = '\0';
+  s_cartDataHex[0] = '\0';
 
   s_memory = (PicoRam*)bmo_psram_calloc(1, sizeof(PicoRam));
   s_panelFb = (uint16_t*)bmo_psram_calloc(PICO_W * PICO_H, sizeof(uint16_t));
@@ -357,8 +371,8 @@ void PicoEmu::destroy() {
   s_currHeld = 0;
   s_currDown = 0;
   s_prevHeld = 0;
-  s_cartDataKey.clear();
-  s_cartDataHex.clear();
+  s_cartDataKey[0] = '\0';
+  s_cartDataHex[0] = '\0';
 
   if (s_vm) {
     delete s_vm;
@@ -403,7 +417,7 @@ bool PicoEmu::loadBatteryRam(const char* romFilename) {
     return false;
   }
   // Keep in-memory hex cache synchronized if the cart invokes cartdata() later.
-  s_cartDataHex = s_vm->getSerializedCartData();
+  snprintf(s_cartDataHex, sizeof(s_cartDataHex), "%s", s_vm->getSerializedCartData().c_str());
   return true;
 }
 
@@ -438,7 +452,7 @@ bool PicoEmu::saveState(const char* romFilename, int slot) {
 
       memcpy(stateBuf + off, &ramSize, sizeof(size_t));
       off += sizeof(size_t);
-      memcpy(stateBuf + off, s_memory->data, ramSize);
+      memcpy(stateBuf + off, s_memory, ramSize);
       off += ramSize;
 
       memcpy(stateBuf + off, &musicSize, sizeof(size_t));
@@ -472,7 +486,7 @@ bool PicoEmu::loadState(const char* romFilename, int slot) {
         memcpy(&picoRamSize, stateBuf + off, sizeof(size_t));
         off += sizeof(size_t);
         if (picoRamSize != sizeof(PicoRam) || off + picoRamSize + sizeof(size_t) > outSize) return false;
-        memcpy(s_memory->data, stateBuf + off, picoRamSize);
+        memcpy(s_memory, stateBuf + off, picoRamSize);
         off += picoRamSize;
 
         size_t musicSize = 0;
@@ -492,7 +506,8 @@ Host::Host(int windowWidth, int windowHeight) : currKDown(0), currKHeld(0) {
 }
 void Host::loadSettingsIni() {}
 void Host::saveSettingsIni() {}
-std::string Host::getCartDataFile(std::string cartDataKey) {
+// cppcheck-suppress passedByValue
+std::string Host::getCartDataFile(std::string cartDataKey) { // NOLINT(performance-unnecessary-value-param)
   return cartDataKey;
 }
 void Host::setUpPaletteColors() {}

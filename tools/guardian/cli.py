@@ -14,18 +14,16 @@ Usage:
 """
 
 import argparse
+import contextlib
 import json
 import re
 import shutil
 import sys
 from pathlib import Path
-from typing import Dict
 
 if hasattr(sys.stdout, "reconfigure"):
-    try:
+    with contextlib.suppress(Exception):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
 
 from .core.ast_linter import FirmwareAstLinter
 from .core.bus_model import HardwareBusModel
@@ -38,8 +36,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 FIRMWARE_DIR = REPO_ROOT / "firmware" / "BmoGameboy"
 
 
-def _parse_config_defines(config_path: Path) -> Dict[str, int]:
-    defines: Dict[str, int] = {}
+def _parse_config_defines(config_path: Path) -> dict[str, int]:
+    defines: dict[str, int] = {}
     visited = set()
 
     def _visit(path: Path) -> None:
@@ -61,7 +59,7 @@ def _parse_config_defines(config_path: Path) -> Dict[str, int]:
     return defines
 
 
-def cmd_audit(args) -> int:
+def cmd_audit(args: argparse.Namespace) -> int:
     """Run firmware AST linter, analytical bus model, ELF metrics, and optional Cppcheck."""
     print("=" * 70)
     print(" BMO GUARDIAN -- Firmware & Hardware Static Audit")
@@ -118,7 +116,7 @@ def cmd_audit(args) -> int:
     return 0
 
 
-def cmd_bus_calc(args) -> int:
+def cmd_bus_calc(args: argparse.Namespace) -> int:
     """Calculate analytical SPI transfer estimates per viewport mode."""
     metrics = HardwareBusModel().calculate_all()
     print(f"{'Console / Viewport':32s} | {'Res':9s} | {'SPI ms':7s} | {'Target':6s} | {'Seq CPU %':9s} | {'Status'}")
@@ -129,7 +127,7 @@ def cmd_bus_calc(args) -> int:
     return 0
 
 
-def cmd_profile_elf(args) -> int:
+def cmd_profile_elf(args: argparse.Namespace) -> int:
     """Introspect compiled Xtensa ELF sections and largest symbols."""
     target_path = Path(args.elf) if getattr(args, "elf", None) else None
     try:
@@ -153,7 +151,7 @@ def cmd_profile_elf(args) -> int:
     return 0
 
 
-def cmd_cppcheck(args) -> int:
+def cmd_cppcheck(args: argparse.Namespace) -> int:
     """Run Cppcheck across the firmware source tree."""
     cppcheck = CppcheckRunner(REPO_ROOT)
     if not cppcheck.is_available():
@@ -167,7 +165,7 @@ def cmd_cppcheck(args) -> int:
     return 1 if errors else 0
 
 
-def cmd_clang_tidy(args) -> int:
+def cmd_clang_tidy(args: argparse.Namespace) -> int:
     """Run clang-tidy static analysis across host-portable C/C++ targets."""
     runner = ClangTidyRunner(REPO_ROOT)
     if not runner.is_available():
@@ -188,7 +186,7 @@ def cmd_clang_tidy(args) -> int:
     return 1 if errors else 0
 
 
-def cmd_budget(args) -> int:
+def cmd_budget(args: argparse.Namespace) -> int:
     """Inspect Flash app0 partition headroom against a compiled ELF."""
     total_flash = 16 * 1024 * 1024
     app0_size = 8 * 1024 * 1024
@@ -209,7 +207,7 @@ def cmd_budget(args) -> int:
     return 0
 
 
-def cmd_psram_budget(args) -> int:
+def cmd_psram_budget(args: argparse.Namespace) -> int:
     """Compute source-derived persistent PSRAM ledger and DOOM zone sizing."""
     analyzer = PsramBudgetAnalyzer(REPO_ROOT)
     if getattr(args, "json", False):
@@ -219,7 +217,7 @@ def cmd_psram_budget(args) -> int:
     return 0
 
 
-def cmd_doctor(args) -> int:
+def cmd_doctor(args: argparse.Namespace | None) -> int:
     """Preflight check for hardware hard stops, AST criticals, and available toolchains."""
     issues = 0
     cfg_path = FIRMWARE_DIR / "src" / "hal" / "config.h"
@@ -258,7 +256,7 @@ def cmd_doctor(args) -> int:
     return 1 if issues else 0
 
 
-def cmd_verify(args) -> int:
+def cmd_verify(args: argparse.Namespace) -> int:
     """Run AST critical check and all repository + guardian unittest suites."""
     import unittest
 

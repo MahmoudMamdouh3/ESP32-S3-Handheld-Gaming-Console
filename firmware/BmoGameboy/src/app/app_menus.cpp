@@ -179,7 +179,6 @@ void updateKonamiSequence(const BmoInput::InputFrame& input) {
     } else {
       s_konamiStep = (bi == kKonamiSeq[0]) ? 1 : 0;
     }
-    break;
   }
 }
 

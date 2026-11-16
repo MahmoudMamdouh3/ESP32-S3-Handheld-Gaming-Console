@@ -30,6 +30,15 @@ uint8_t* allocCartRam(const char* tag, uint32_t heapCaps = MALLOC_CAP_SPIRAM);
 /** Wait for display DMA, free GB state/cartridge RAM, and clear ROM bindings. */
 void freeGbRuntime(void** gbPtr, uint8_t** cartRamPtr, const uint8_t** romPtr, size_t* romLen);
 
+/** Clear any pending core error flag prior to initializing or destroying a GB core. */
+void clearError();
+
+/** Record a fatal opcode/ROM error without calling esp_restart() from inside core execution. */
+void reportError(const char* coreName, int errCode, uint16_t addr);
+
+/** Atomically consume a pending core error and optionally output error code and PC address. */
+bool consumeError(int* outErrCode = nullptr, uint16_t* outAddr = nullptr);
+
 /**
  * Expand one 160-pixel Game Boy scanline into 240 pixels (3:2 NN: A B C D -> A A B C C D)
  * using three aligned 32-bit stores per 4-pixel group, then copy 1 or 2 rows to async PSRAM.

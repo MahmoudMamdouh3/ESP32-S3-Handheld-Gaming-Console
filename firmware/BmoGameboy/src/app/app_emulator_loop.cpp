@@ -6,12 +6,15 @@
 #include <stdio.h>
 
 #include "../cores/core_registry.h"
+#include "../cores/gb_common.h"
 #include "../hal/buttons.h"
 #include "../hal/profiler.h"
 #include "../storage/save_manager.h"
+#include "../ui/bmo_face.h"
 #include "../ui/display_emu.h"
 #include "../ui/frame_pacing.h"
 #include "../ui/pause_quit_policy.h"
+#include "../ui/theme.h"
 #include "app_state.h"
 
 namespace {
@@ -246,11 +249,20 @@ void handleEmulator() {
     BMO_PROFILE_START(ZONE_EMU_FRAME);
     activeCore->stepFrame();
     BMO_PROFILE_END(ZONE_EMU_FRAME);
+    int gbErr = 0;
+    uint16_t gbAddr = 0;
+    if (GbCommon::consumeError(&gbErr, &gbAddr)) {
+      LOG_ERROR("Core aborted safely: err=%d pc=0x%04X", gbErr, static_cast<unsigned int>(gbAddr));
+      BmoAppRuntime::finishQuitToConsole();
+      DisplayEmu::showToast("EMULATOR CORE ERROR", Theme::ACCENT_RED, 2800);
+      BmoFace::setExpression(BmoFace::ERROR);
+      return;
+    }
   }
 
   const unsigned long elapsed = micros() - frameStart;
   const unsigned long targetFrameUs = FramePacing::targetFrameUs(rt.selectedEmulatorIndex);
-  BmoAppRuntime::recordFrameTime(elapsed, rt.selectedEmulatorIndex);
+  BmoAppRuntime::recordFrameTime(elapsed);
   enforceEmulatorPacing(rt, frameStart, targetFrameUs, select && Buttons::get(Buttons::RIGHT).pressed);
   logFpsStatsIfNeeded(rt, targetFrameUs);
 }

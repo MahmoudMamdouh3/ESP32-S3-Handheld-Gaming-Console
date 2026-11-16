@@ -8,6 +8,7 @@
 #include "../cores/core_registry.h"
 #include "../hal/buttons.h"
 #include "../hal/feature_flags.h"
+#include "../hal/profiler.h"
 #include "../storage/box_art.h"
 #include "../storage/sd_card.h"
 #include "../ui/bmo_face.h"
@@ -73,7 +74,7 @@ void activateStartedCore(BmoAppRuntime::RuntimeState& rt, const CoreRegistry::Co
   }
 
   BmoAppRuntime::resetFrameStats();
-  BmoAppRuntime::resetFramePercentiles();
+  BMO_PROFILE_RESET();
   rt.currentState = BmoApp::STATE_EMULATOR;
   rt.launchCelebrationPending = true;
   rt.launchCelebrationStartMs = millis();

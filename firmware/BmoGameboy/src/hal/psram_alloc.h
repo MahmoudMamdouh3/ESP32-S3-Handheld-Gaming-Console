@@ -2,6 +2,7 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -14,14 +15,13 @@ extern "C" {
 
 static inline void* bmo_psram_malloc(size_t size) {
   if (size == 0) size = 1;
-  void* ptr = heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-  if (!ptr) {
-    ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT);
-  }
-  return ptr;
+  return heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
 }
 
 static inline void* bmo_psram_calloc(size_t nmemb, size_t size) {
+  if (nmemb > 0U && size > (SIZE_MAX / nmemb)) {
+    return NULL;
+  }
   const size_t total = nmemb * size;
   void* ptr = bmo_psram_malloc(total);
   if (ptr) {
@@ -36,11 +36,7 @@ static inline void* bmo_psram_realloc(void* ptr, size_t size) {
     heap_caps_free(ptr);
     return NULL;
   }
-  void* resized = heap_caps_realloc(ptr, size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-  if (!resized) {
-    resized = heap_caps_realloc(ptr, size, MALLOC_CAP_8BIT);
-  }
-  return resized;
+  return heap_caps_realloc(ptr, size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
 }
 
 static inline void* bmo_internal_aligned_calloc(size_t align, size_t size) {
@@ -68,6 +64,9 @@ static inline void* bmo_psram_malloc(size_t size) {
 }
 
 static inline void* bmo_psram_calloc(size_t nmemb, size_t size) {
+  if (nmemb > 0U && size > (SIZE_MAX / nmemb)) {
+    return NULL;
+  }
   return calloc(nmemb ? nmemb : 1, size ? size : 1);
 }
 

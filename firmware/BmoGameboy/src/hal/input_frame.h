@@ -41,12 +41,12 @@ struct InputFrame {
 class Debouncer {
 public:
   explicit Debouncer(uint32_t debounceMs = DEFAULT_DEBOUNCE_MS, uint32_t repeatInitialMs = DEFAULT_REPEAT_INITIAL_MS,
-                     uint32_t repeatIntervalMs = DEFAULT_REPEAT_INTERVAL_MS)
+                     uint32_t repeatIntervalMs = DEFAULT_REPEAT_INTERVAL_MS) noexcept
       : debounceMs_(debounceMs), repeatInitialMs_(repeatInitialMs), repeatIntervalMs_(repeatIntervalMs) {
     reset(0);
   }
 
-  void reset(uint16_t initialMask = 0, uint32_t nowMs = 0) {
+  void reset(uint16_t initialMask = 0, uint32_t nowMs = 0) noexcept {
     lastStableMask_ = initialMask;
     lastRawMask_ = initialMask;
     for (int i = 0; i < BUTTON_COUNT; ++i) {

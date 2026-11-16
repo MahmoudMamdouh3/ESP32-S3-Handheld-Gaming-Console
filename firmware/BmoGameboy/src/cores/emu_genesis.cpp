@@ -190,7 +190,7 @@ bool GenesisEmu::isRunning() {
 
 static size_t genesisSramBytes() {
   if (!SRAM_ENABLED || !SRAM || SRAM_END < SRAM_START) return 0;
-  size_t sz = static_cast<size_t>(SRAM_END - SRAM_START + 1U);
+  size_t sz = static_cast<size_t>(SRAM_END) - static_cast<size_t>(SRAM_START) + 1U;
   if (sz > SRAM_SIZE) sz = SRAM_SIZE;
   return sz;
 }

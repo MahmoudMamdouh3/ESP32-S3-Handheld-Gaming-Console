@@ -103,18 +103,7 @@ void S9xResetAPU(void) {
   }
 }
 
-int test_snes_core(void) {
-  uint8_t* rom = (uint8_t*)calloc(1U, 0x8000U);
-  s_snes_fb = (uint16_t*)calloc(256U * 224U, sizeof(uint16_t));
-  if (!rom || !s_snes_fb) {
-    free(rom);
-    free(s_snes_fb);
-    s_snes_fb = NULL;
-    printf("[HOST_CORE] SNES_65C816 STATUS=FAIL (oom)\n");
-    return 1;
-  }
-
-  /* 65C816 LoROM program at $8000 (offset 0x0000): unblank display, set CRAM[0] green, store WRAM[0]=0x42. */
+static void populate_snes_test_rom(uint8_t* rom) {
   const uint8_t prog[] = {
       0x78U,                             /* SEI */
       0x18U, 0xFBU,                      /* CLC ; XCE */
@@ -126,20 +115,18 @@ int test_snes_core(void) {
       0x80U, 0xFEU                       /* BRA -2 */
   };
   memcpy(rom, prog, sizeof(prog));
-
   memcpy(&rom[0x7FC0], "BMO SNES HOST TEST   ", 21);
-  rom[0x7FD5] = 0x20U; /* LoROM */
-  rom[0x7FD6] = 0x00U; /* ROM only */
-  rom[0x7FD7] = 0x05U; /* 32 KB */
+  rom[0x7FD5] = 0x20U;
+  rom[0x7FD6] = 0x00U;
+  rom[0x7FD7] = 0x05U;
   rom[0x7FD8] = 0x00U;
-  rom[0x7FD9] = 0x01U; /* NTSC */
-  rom[0x7FFC] = 0x00U; /* Reset vector -> $8000 */
+  rom[0x7FD9] = 0x01U;
+  rom[0x7FFC] = 0x00U;
   rom[0x7FFD] = 0x80U;
 
   uint32_t sum = 0;
   for (size_t i = 0; i < 0x8000U; ++i) {
-    if (i >= 0x7FDCU && i <= 0x7FDFU) continue;
-    sum += rom[i];
+    if (i < 0x7FDCU || i > 0x7FDFU) sum += rom[i];
   }
   sum += 0xFFU + 0xFFU;
   uint16_t csum = (uint16_t)(sum & 0xFFFFU);
@@ -148,7 +135,20 @@ int test_snes_core(void) {
   rom[0x7FDD] = (uint8_t)(comp >> 8);
   rom[0x7FDE] = (uint8_t)(csum & 0xFFU);
   rom[0x7FDF] = (uint8_t)(csum >> 8);
+}
 
+int test_snes_core(void) {
+  uint8_t* rom = (uint8_t*)calloc(1U, 0x8000U);
+  s_snes_fb = (uint16_t*)calloc(256U * 224U, sizeof(uint16_t));
+  if (!rom || !s_snes_fb) {
+    free(rom);
+    free(s_snes_fb);
+    s_snes_fb = NULL;
+    printf("[HOST_CORE] SNES_65C816 STATUS=FAIL (oom)\n");
+    return 1;
+  }
+
+  populate_snes_test_rom(rom);
   memset(&Settings, 0, sizeof(Settings));
   Settings.CyclesPercentage = 100;
   Settings.H_Max = SNES_CYCLES_PER_SCANLINE;
@@ -158,7 +158,6 @@ int test_snes_core(void) {
   Settings.HBlankStart = (256 * Settings.H_Max) / SNES_HCOUNTER_MAX;
   Settings.Mute = true;
   Settings.APUEnabled = false;
-
   Memory.ROM = rom;
   Memory.ROM_Offset = 0;
   Memory.ROM_AllocSize = 0x8000U;
@@ -181,7 +180,6 @@ int test_snes_core(void) {
   S9xFixColourBrightness();
   S9xReset();
   s_snes_running = true;
-
   for (int f = 0; f < 50; ++f) {
     IPPU.RenderThisFrame = true;
     S9xMainLoop();
@@ -192,7 +190,6 @@ int test_snes_core(void) {
   for (size_t i = 0; i < 256U * 224U; ++i) {
     if (s_snes_fb[i] != 0U) ++nz;
   }
-
   s_snes_running = false;
   S9xSetLineCallback(NULL);
   S9xDeinitDSP();

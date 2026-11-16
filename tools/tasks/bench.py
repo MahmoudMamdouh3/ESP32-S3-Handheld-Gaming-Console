@@ -10,7 +10,7 @@ import subprocess
 import sys
 
 from tools.tasks import BUILD_ROOT, FIRMWARE_DIR, REPO_ROOT, run_checked
-from tools.tasks.build import find_arduino_cli, find_clang_format, parse_sketch_yaml
+from tools.tasks.build import _is_module_available, find_arduino_cli, find_clang_format, parse_sketch_yaml
 
 
 def _resolve_serial_port(cli: str, explicit_port: str | None) -> str | None:
@@ -35,7 +35,7 @@ def cmd_flash(args: argparse.Namespace) -> int:
     sys.path.insert(0, str(REPO_ROOT))
     from scripts import validate_repo
 
-    if issues := validate_repo.check_firmware_safety_guardrails():  # type: ignore[no-untyped-call]
+    if issues := validate_repo.check_firmware_safety_guardrails():
         print("Refusing to flash due to firmware safety guardrail failure:")
         for item in issues:
             print(f"  - {item}")
@@ -96,10 +96,9 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         required_failures += 1
 
     for mod, pkg in (("PIL", "Pillow"), ("numpy", "numpy"), ("trimesh", "trimesh"), ("manifold3d", "manifold3d")):
-        try:
-            __import__(mod)
+        if _is_module_available(mod):
             print(f"  [OK]   Python package: {pkg}")
-        except ImportError:
+        else:
             print(f"  [WARN] Python package missing: {pkg} (run `python -m pip install -r requirements-dev.txt`)")
 
     hooks_val = (subprocess.run(["git", "config", "--get", "core.hooksPath"], cwd=str(REPO_ROOT), capture_output=True, text=True).stdout or "").strip()

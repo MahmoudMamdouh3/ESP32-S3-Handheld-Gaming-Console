@@ -6,7 +6,6 @@ memory bandwidth, frame transmission times, and maximum compute budgets.
 """
 
 from dataclasses import dataclass
-from typing import Dict, List
 
 
 @dataclass(frozen=True)
@@ -30,7 +29,7 @@ class ConsoleResolution:
 
 
 # Canonical display resolution database for all supported systems on BMO
-SUPPORTED_RESOLUTIONS: Dict[str, ConsoleResolution] = {
+SUPPORTED_RESOLUTIONS: dict[str, ConsoleResolution] = {
     "GAMEBOY_DMG_SCALED": ConsoleResolution(
         name="Game Boy DMG (1.5x Scaled)",
         native_w=160,
@@ -267,5 +266,5 @@ class HardwareBusModel:
             status=status,
         )
 
-    def calculate_all(self) -> List[BusMetrics]:
-        return [self.calculate_metrics(k) for k in SUPPORTED_RESOLUTIONS.keys()]
+    def calculate_all(self) -> list[BusMetrics]:
+        return [self.calculate_metrics(k) for k in SUPPORTED_RESOLUTIONS]

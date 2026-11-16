@@ -71,7 +71,7 @@ def parse_bom_tables(markdown: str) -> list[dict[str, str]]:
             continue
         if len(cells) != len(headers):
             raise AssertionError(f"Malformed BOM table row: {line}")
-        row = dict(zip(headers, cells))
+        row = dict(zip(headers, cells, strict=True))
         row["Ref"] = row["Ref"].replace("*", "").strip()
         rows.append(row)
     return rows
@@ -91,32 +91,7 @@ def _get_url_column(row: dict[str, str]) -> str:
     return ""
 
 
-def validate_bom_row(row: dict[str, str]) -> None:
-    """Assert MPN/manufacturer datasheet URL and rating >= worst-case requirement for a single BOM row."""
-    ref = row["Ref"]
-    spec_col = row.get("Vetted Part / Spec") or row.get("Vetted Part / Options") or ""
-    margin_col = row.get("Worst-Case Requirement vs. Part Rating", "")
-    url_col = _get_url_column(row)
-
-    if not url_col.startswith("https://"):
-        raise AssertionError(f"{ref}: invalid or missing datasheet URL: {url_col!r}")
-    expected_tokens = EXPECTED_URL_TOKENS.get(ref)
-    if expected_tokens is None:
-        raise AssertionError(f"{ref}: missing EXPECTED_URL_TOKENS entry in tests/test_bom_ratings.py")
-    url_lower = url_col.lower()
-    for token in expected_tokens:
-        if token not in url_lower:
-            raise AssertionError(f"{ref}: datasheet URL {url_col!r} must include MPN/manufacturer token {token!r}")
-
-    if " vs. Part " not in margin_col:
-        raise AssertionError(f"{ref}: must state 'Req ... vs. Part ...' in margin column, got: {margin_col!r}")
-
-    for banned in (*BANNED_UNSAFE_PARTS, *BANNED_ACTIVE_SPECS):
-        if banned in spec_col or banned in margin_col:
-            raise AssertionError(f"{ref}: banned/retired part {banned!r} found in active BOM spec/rating")
-
-    req_text, part_text = margin_col.split(" vs. Part ", 1)
-
+def _validate_core_bom_row(ref: str, url_lower: str, req_text: str, part_text: str) -> None:
     if ref == "U1":
         req_ma = _extract_first_float(r">=\s*(\d+(?:\.\d+)?)\s*mA", req_text, "U1 req mA")
         part_ma = _extract_first_float(r"(\d+(?:\.\d+)?)\s*(?:–\d+(?:\.\d+)?)?\s*mA", part_text, "U1 part mA")
@@ -135,7 +110,17 @@ def validate_bom_row(row: dict[str, str]) -> None:
             raise AssertionError(f"{ref}: MISO limit {miso_limit} V exceeds 3.35 V ESP32 GPIO ceiling")
         if "3.3 V-only" not in part_text:
             raise AssertionError(f"{ref}: SD1 part must be documented as 3.3 V-only")
-    elif ref in ("SW_DPAD", "SW_AB", "SW_SYS", "SW_LR"):
+    elif ref == "PCB1":
+        if "2462" in url_lower:
+            raise AssertionError(f"{ref}: perfboard URL must not point to battery holder datasheet 2462")
+        if "0.254 cm" not in req_text or "FR-4" not in part_text:
+            raise AssertionError(f"{ref}: missing 0.254 cm grid or FR-4 rating")
+    else:
+        raise AssertionError(f"Unhandled BOM Ref {ref!r} — add explicit rating validation rule")
+
+
+def _validate_passive_or_switch_row(ref: str, req_text: str, part_text: str) -> None:
+    if ref in ("SW_DPAD", "SW_AB", "SW_SYS", "SW_LR"):
         req_ma = _extract_first_float(r"<=\s*(\d+(?:\.\d+)?)\s*mA", req_text, f"{ref} req mA")
         part_ma = _extract_first_float(r"(\d+(?:\.\d+)?)\s*mA", part_text, f"{ref} part mA")
         part_v = _extract_first_float(r"(\d+(?:\.\d+)?)\s*VDC", part_text, f"{ref} part VDC")
@@ -152,12 +137,16 @@ def validate_bom_row(row: dict[str, str]) -> None:
         part_v = _extract_first_float(r"(\d+(?:\.\d+)?)(?:–\d+(?:\.\d+)?)?\s*V\s*DC", part_text, "C_DEC part V")
         if part_v < req_v * 2:
             raise AssertionError(f"{ref}: capacitor voltage {part_v} V needs >= 2x {req_v} V margin")
-    elif ref == "PCB1":
-        if "2462" in url_lower:
-            raise AssertionError(f"{ref}: perfboard URL must not point to battery holder datasheet 2462")
-        if "0.254 cm" not in req_text or "FR-4" not in part_text:
-            raise AssertionError(f"{ref}: missing 0.254 cm grid or FR-4 rating")
-    elif ref == "BAT1":
+    elif ref == "R_BAT1, R_BAT2, C_BAT":
+        req_mw = _extract_first_float(r"<=\s*(\d+(?:\.\d+)?)\s*mW", req_text, "R_BAT req mW")
+        part_mw = _extract_first_float(r"(\d+(?:\.\d+)?)\s*mW", part_text, "R_BAT part mW")
+        adc_v = _extract_first_float(r"ADC output\s*\d+(?:\.\d+)?–(\d+(?:\.\d+)?)\s*V", part_text, "ADC max V")
+        if part_mw < req_mw or adc_v >= 3.3:
+            raise AssertionError(f"{ref}: divider margin invalid ({part_mw} mW vs {req_mw} mW, ADC {adc_v} V)")
+
+
+def _validate_power_path_row(ref: str, req_text: str, part_text: str) -> None:
+    if ref == "BAT1":
         req_a = _extract_first_float(r">=\s*(\d+(?:\.\d+)?)\s*A\s*\(2xAA\)", req_text, "BAT1 2xAA req A")
         part_a = _extract_first_float(r">=\s*(\d+(?:\.\d+)?)\s*A\s*NiMH", part_text, "BAT1 discharge A")
         if part_a < req_a:
@@ -183,7 +172,10 @@ def validate_bom_row(row: dict[str, str]) -> None:
             amps, volts = float(amps_s), float(volts_s)
             if amps < req_a or amps < 2.0 or volts < 5.0:
                 raise AssertionError(f"{ref}: switch rating {amps} A @ {volts} VDC below req {req_a} A (>= 2 A @ >= 5 V)")
-    elif ref == "Q1":
+
+
+def _validate_regulator_and_diode_row(ref: str, req_text: str, part_text: str) -> None:
+    if ref == "Q1":
         req_a = _extract_first_float(r">=\s*(\d+(?:\.\d+)?)\s*A\s*\(2xAA\)", req_text, "Q1 req A")
         part_a = _extract_first_float(r"-(\d+(?:\.\d+)?)\s*A", part_text, "Q1 Id max A")
         vgs_abs = _extract_first_float(r"@\s*-?(\d+(?:\.\d+)?)\s*V", part_text, "Q1 Rds(on) Vgs")
@@ -214,14 +206,41 @@ def validate_bom_row(row: dict[str, str]) -> None:
         d1_a = _extract_first_float(r"1N5822\s*(\d+(?:\.\d+)?)\s*A", part_text, "1N5822 A")
         if d1_a < req_a:
             raise AssertionError(f"{ref}: diode rating {d1_a} A < req {req_a} A")
-    elif ref == "R_BAT1, R_BAT2, C_BAT":
-        req_mw = _extract_first_float(r"<=\s*(\d+(?:\.\d+)?)\s*mW", req_text, "R_BAT req mW")
-        part_mw = _extract_first_float(r"(\d+(?:\.\d+)?)\s*mW", part_text, "R_BAT part mW")
-        adc_v = _extract_first_float(r"ADC output\s*\d+(?:\.\d+)?–(\d+(?:\.\d+)?)\s*V", part_text, "ADC max V")
-        if part_mw < req_mw or adc_v >= 3.3:
-            raise AssertionError(f"{ref}: divider margin invalid ({part_mw} mW vs {req_mw} mW, ADC {adc_v} V)")
+
+
+def validate_bom_row(row: dict[str, str]) -> None:
+    """Assert MPN/manufacturer datasheet URL and rating >= worst-case requirement for a single BOM row."""
+    ref = row["Ref"]
+    spec_col = row.get("Vetted Part / Spec") or row.get("Vetted Part / Options") or ""
+    margin_col = row.get("Worst-Case Requirement vs. Part Rating", "")
+    url_col = _get_url_column(row)
+
+    if not url_col.startswith("https://"):
+        raise AssertionError(f"{ref}: invalid or missing datasheet URL: {url_col!r}")
+    expected_tokens = EXPECTED_URL_TOKENS.get(ref)
+    if expected_tokens is None:
+        raise AssertionError(f"{ref}: missing EXPECTED_URL_TOKENS entry in tests/test_bom_ratings.py")
+    url_lower = url_col.lower()
+    for token in expected_tokens:
+        if token not in url_lower:
+            raise AssertionError(f"{ref}: datasheet URL {url_col!r} must include MPN/manufacturer token {token!r}")
+
+    if " vs. Part " not in margin_col:
+        raise AssertionError(f"{ref}: must state 'Req ... vs. Part ...' in margin column, got: {margin_col!r}")
+
+    for banned in (*BANNED_UNSAFE_PARTS, *BANNED_ACTIVE_SPECS):
+        if banned in spec_col or banned in margin_col:
+            raise AssertionError(f"{ref}: banned/retired part {banned!r} found in active BOM spec/rating")
+
+    req_text, part_text = margin_col.split(" vs. Part ", 1)
+    if ref in ("SW_DPAD", "SW_AB", "SW_SYS", "SW_LR", "R_CS1, R_CS2", "R_SCK, R_MOSI", "C_DEC1, C_DEC2", "R_BAT1, R_BAT2, C_BAT"):
+        _validate_passive_or_switch_row(ref, req_text, part_text)
+    elif ref in ("BAT1", "BH1", "F1", "SW_PWR"):
+        _validate_power_path_row(ref, req_text, part_text)
+    elif ref in ("Q1", "U2A", "U2B", "U2C", "U2D", "D1"):
+        _validate_regulator_and_diode_row(ref, req_text, part_text)
     else:
-        raise AssertionError(f"Unhandled BOM Ref {ref!r} — add explicit rating validation rule")
+        _validate_core_bom_row(ref, url_lower, req_text, part_text)
 
 
 class BomRatingsTests(unittest.TestCase):

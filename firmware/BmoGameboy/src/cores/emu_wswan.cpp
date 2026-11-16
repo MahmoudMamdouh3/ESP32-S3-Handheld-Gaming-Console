@@ -27,7 +27,7 @@ uint16_t* s_panelFb = nullptr; // 224 x 144 panel BGR565 in PSRAM
 bool s_running = false;
 
 // WonderSwan KEYCTL bit layout matching oswan IO[0xB5]
-enum : int {
+enum : uint16_t {
   WS_Y1 = 1 << 0,
   WS_Y2 = 1 << 1,
   WS_Y3 = 1 << 2,

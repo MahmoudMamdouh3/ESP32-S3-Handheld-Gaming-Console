@@ -22,11 +22,37 @@ const EXT_KEY_BIT_MAP = {
 export class BmoSimulator {
   constructor() {
     this.canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("tft-display"));
-    this.ctx = this.canvas.getContext("2d", { alpha: false });
-    this.canvas.width = 320;
-    this.canvas.height = 240;
+    this.ctx = this.canvas ? this.canvas.getContext("2d", { alpha: false }) : null;
+    if (this.canvas) {
+      this.canvas.width = 320;
+      this.canvas.height = 240;
+    }
     this.hardwareLayout = DEFAULT_HARDWARE_LAYOUT;
+    /** @type {number | null} */
     this._rafId = null;
+    /** @type {FrameRequestCallback} */
+    this._boundRenderLoop = (ts) => this.renderLoop(ts);
+    /** @type {Record<string, any>} */
+    this.coverImages = {};
+    /** @type {Record<string, any>} */
+    this.gameLibrary = this.createGameLibrary();
+    /** @type {WasmPlaytestEngine | null} */
+    this.wasmEngine = null;
+    /** @type {any} */
+    this.bmo = { expression: "IDLE", blinkState: 0.0, blinkTimer: 0, eyeLookX: 0, eyeLookY: 0, mouthCurve: 0.8, isBlinking: false };
+    this.bmoLastDirectionChangeMs = 0;
+    this.bmoDirectionToggleCount = 0;
+    this.bmoQuoteIndex = 0;
+    this.bmoButtonHoldStart = 0;
+    this.bmoLastGazeX = 0;
+    this.bmoLastInputMs = 0;
+    this.lastInputActivityMs = 0;
+    this.topPicksFilter = false;
+    /** @type {string | number} */
+    this.currentState = STATE.BOOT_SPLASH;
+    this.engineReady = Promise.resolve(false);
+    this.engineLoadFailed = false;
+    this.engineLoadError = "";
 
     this.initSimulationState();
     this.initEngineAndControls();
@@ -46,7 +72,6 @@ export class BmoSimulator {
     this.lastFrameTime = performance.now();
     this.fps = 60;
     this._activeMouseButton = null;
-    this._boundRenderLoop = this.renderLoop.bind(this);
 
     this.bmo = { expression: "IDLE", blinkState: 0.0, blinkTimer: 0, eyeLookX: 0, eyeLookY: 0, mouthCurve: 0.8, isBlinking: false };
     this.bmoSessionStarted = false;
@@ -244,7 +269,8 @@ export class BmoSimulator {
       }
       this.wasmEngine.loadRom(gameConsoleId, title, romBytes);
     } catch (error) {
-      this.showSimulatorMessage(error.message, true);
+      const message = error instanceof Error ? error.message : String(error);
+      this.showSimulatorMessage(message, true);
       return false;
     }
     this.isPausedInGame = false;
@@ -288,9 +314,12 @@ export class BmoSimulator {
       this.enterBmoCompanion(false);
     }
     this.updateBmoAnimation(dt);
-    this.ctx.fillStyle = "#0a0e17";
-    this.ctx.fillRect(0, 0, 320, 240);
+    if (this.ctx) {
+      this.ctx.fillStyle = "#0a0e17";
+      this.ctx.fillRect(0, 0, 320, 240);
+    }
 
+    /** @type {Record<string | number, () => void>} */
     const screenPainters = {
       [STATE.BOOT_SPLASH]: () => this.renderBootSplash(dt),
       [STATE.CONSOLE_SELECT]: () => this.renderConsoleSelectMenu(),
@@ -299,7 +328,8 @@ export class BmoSimulator {
       [STATE.EMULATION_VIEW]: () => this.renderEmulationView(),
       [STATE.IDLE_MASCOT]: () => this.renderIdleMascotScreen(timestamp),
     };
-    if (screenPainters[this.currentState]) screenPainters[this.currentState]();
+    const painter = screenPainters[this.currentState];
+    if (painter) painter();
     this.updateTelemetryHud();
     requestAnimationFrame(this._boundRenderLoop);
   }
@@ -339,6 +369,7 @@ export class BmoSimulator {
 
   drawBmoFace(x, y, scale = 1.0) {
     const ctx = this.ctx;
+    if (!ctx) return;
     ctx.save();
     ctx.translate(x, y);
     ctx.fillStyle = "#55efc4";

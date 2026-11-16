@@ -255,17 +255,10 @@ bool DisplayEmu::getTopPicksFilter() {
   return BmoDisplayInternal::topPicksFilter;
 }
 
-void DisplayEmu::drawConsoleIcon(RomType type, int x, int y, uint16_t primaryColor) {
-  using namespace BmoDisplayInternal;
-  if (!menuCanvas) return;
-  (void)primaryColor;
+namespace {
+using namespace BmoDisplayInternal;
 
-  menuCanvas->fillRoundRect(x, y, 58, 74, 8, UI_BLACK);
-  menuCanvas->drawRoundRect(x, y, 58, 74, 8, UI_TEAL);
-
-  const int cx = x + 29;
-  const int cy = y + 37;
-
+void drawBadgeOrPortableIcon(RomType type, int cx, int cy) {
   switch (type) {
   case ROM_FAVORITES:
     menuCanvas->fillTriangle(cx, cy - 22, cx - 18, cy + 18, cx + 18, cy - 6, UI_YELLOW);
@@ -278,7 +271,6 @@ void DisplayEmu::drawConsoleIcon(RomType type, int x, int y, uint16_t primaryCol
     menuCanvas->fillCircle(cx - 11, cy + 3, 2, UI_CORAL);
     menuCanvas->fillCircle(cx + 11, cy + 3, 2, UI_CORAL);
     break;
-
   case ROM_GB:
   case ROM_GBC:
     menuCanvas->fillRoundRect(cx - 16, cy - 26, 32, 54, 4, (type == ROM_GB) ? UI_TEAL : UI_BLUE);
@@ -292,7 +284,34 @@ void DisplayEmu::drawConsoleIcon(RomType type, int x, int y, uint16_t primaryCol
     menuCanvas->fillCircle(cx + 8, cy + 7, 2, UI_CORAL);
     menuCanvas->fillCircle(cx + 3, cy + 11, 2, UI_CORAL);
     break;
+  case ROM_PICO8:
+    menuCanvas->fillRoundRect(cx - 16, cy - 24, 32, 48, 4, UI_DEEP_TEAL);
+    menuCanvas->fillRect(cx - 12, cy - 18, 24, 26, UI_YELLOW);
+    menuCanvas->fillRect(cx - 12, cy + 10, 5, 4, UI_CORAL);
+    menuCanvas->fillRect(cx - 7, cy + 10, 5, 4, UI_YELLOW);
+    menuCanvas->fillRect(cx - 2, cy + 10, 5, 4, Theme::COLOR_SUCCESS);
+    menuCanvas->fillRect(cx + 3, cy + 10, 5, 4, UI_BLUE);
+    menuCanvas->fillRect(cx + 8, cy + 10, 4, 4, UI_WHITE);
+    break;
+  case ROM_WAD:
+    menuCanvas->fillRoundRect(cx - 16, cy - 18, 32, 36, 6, UI_BLACK);
+    menuCanvas->drawRoundRect(cx - 16, cy - 18, 32, 36, 6, UI_CORAL);
+    menuCanvas->fillRect(cx - 11, cy - 8, 22, 8, Theme::COLOR_SUCCESS);
+    break;
+  default:
+    menuCanvas->fillRoundRect(cx - 16, cy - 22, 32, 44, 4, UI_BLACK);
+    menuCanvas->drawRoundRect(cx - 16, cy - 22, 32, 44, 4, UI_YELLOW);
+    menuCanvas->fillRect(cx - 11, cy - 15, 22, 18, UI_TEAL);
+    menuCanvas->setFont();
+    menuCanvas->setCursor(cx - 8, cy - 4);
+    menuCanvas->setTextColor(UI_BLACK);
+    menuCanvas->print(ConsoleCatalog::consoleBadge(type));
+    break;
+  }
+}
 
+void drawHomeConsoleIcon(RomType type, int cx, int cy) {
+  switch (type) {
   case ROM_NES:
     menuCanvas->fillRoundRect(cx - 24, cy - 14, 48, 28, 3, UI_WHITE);
     menuCanvas->fillRect(cx - 21, cy - 11, 42, 22, UI_BLACK);
@@ -301,7 +320,6 @@ void DisplayEmu::drawConsoleIcon(RomType type, int x, int y, uint16_t primaryCol
     menuCanvas->fillCircle(cx + 10, cy + 1, 3, UI_CORAL);
     menuCanvas->fillCircle(cx + 17, cy + 1, 3, UI_CORAL);
     break;
-
   case ROM_SNES:
     menuCanvas->fillRoundRect(cx - 26, cy - 14, 52, 28, 12, UI_WHITE);
     menuCanvas->fillRoundRect(cx - 22, cy - 11, 44, 22, 9, UI_MUTED);
@@ -312,7 +330,6 @@ void DisplayEmu::drawConsoleIcon(RomType type, int x, int y, uint16_t primaryCol
     menuCanvas->fillCircle(cx + 19, cy, 2, UI_BLUE);
     menuCanvas->fillCircle(cx + 14, cy + 5, 2, UI_CORAL);
     break;
-
   case ROM_GENESIS:
     menuCanvas->fillRoundRect(cx - 24, cy - 14, 48, 28, 10, UI_BLACK);
     menuCanvas->drawRoundRect(cx - 24, cy - 14, 48, 28, 10, UI_MUTED);
@@ -322,7 +339,6 @@ void DisplayEmu::drawConsoleIcon(RomType type, int x, int y, uint16_t primaryCol
     menuCanvas->fillCircle(cx + 12, cy + 2, 2, UI_WHITE);
     menuCanvas->fillCircle(cx + 18, cy - 1, 2, UI_WHITE);
     break;
-
   case ROM_SMS:
   case ROM_GG:
     menuCanvas->fillRoundRect(cx - 25, cy - 16, 50, 32, 6, UI_BLACK);
@@ -331,7 +347,6 @@ void DisplayEmu::drawConsoleIcon(RomType type, int x, int y, uint16_t primaryCol
     menuCanvas->fillCircle(cx + 18, cy - 2, 2, UI_CORAL);
     menuCanvas->fillCircle(cx + 18, cy + 5, 2, UI_YELLOW);
     break;
-
   case ROM_ATARI:
     menuCanvas->fillRoundRect(cx - 16, cy - 4, 32, 26, 4, UI_BLACK);
     menuCanvas->drawRoundRect(cx - 16, cy - 4, 32, 26, 4, UI_YELLOW);
@@ -340,31 +355,27 @@ void DisplayEmu::drawConsoleIcon(RomType type, int x, int y, uint16_t primaryCol
     menuCanvas->fillCircle(cx, cy - 22, 5, UI_CORAL);
     menuCanvas->fillCircle(cx - 10, cy + 2, 3, UI_CORAL);
     break;
-
-  case ROM_PICO8:
-    menuCanvas->fillRoundRect(cx - 16, cy - 24, 32, 48, 4, UI_DEEP_TEAL);
-    menuCanvas->fillRect(cx - 12, cy - 18, 24, 26, UI_YELLOW);
-    menuCanvas->fillRect(cx - 12, cy + 10, 5, 4, UI_CORAL);
-    menuCanvas->fillRect(cx - 7, cy + 10, 5, 4, UI_YELLOW);
-    menuCanvas->fillRect(cx - 2, cy + 10, 5, 4, Theme::COLOR_SUCCESS);
-    menuCanvas->fillRect(cx + 3, cy + 10, 5, 4, UI_BLUE);
-    menuCanvas->fillRect(cx + 8, cy + 10, 4, 4, UI_WHITE);
-    break;
-
-  case ROM_WAD:
-    menuCanvas->fillRoundRect(cx - 16, cy - 18, 32, 36, 6, UI_BLACK);
-    menuCanvas->drawRoundRect(cx - 16, cy - 18, 32, 36, 6, UI_CORAL);
-    menuCanvas->fillRect(cx - 11, cy - 8, 22, 8, Theme::COLOR_SUCCESS);
-    break;
-
   default:
-    menuCanvas->fillRoundRect(cx - 16, cy - 22, 32, 44, 4, UI_BLACK);
-    menuCanvas->drawRoundRect(cx - 16, cy - 22, 32, 44, 4, UI_YELLOW);
-    menuCanvas->fillRect(cx - 11, cy - 15, 22, 18, UI_TEAL);
-    menuCanvas->setFont();
-    menuCanvas->setCursor(cx - 8, cy - 4);
-    menuCanvas->setTextColor(UI_BLACK);
-    menuCanvas->print(ConsoleCatalog::consoleBadge(type));
+    drawBadgeOrPortableIcon(type, cx, cy);
     break;
+  }
+}
+} // namespace
+
+void DisplayEmu::drawConsoleIcon(RomType type, int x, int y, uint16_t primaryColor) {
+  using namespace BmoDisplayInternal;
+  if (!menuCanvas) return;
+  (void)primaryColor;
+
+  menuCanvas->fillRoundRect(x, y, 58, 74, 8, UI_BLACK);
+  menuCanvas->drawRoundRect(x, y, 58, 74, 8, UI_TEAL);
+
+  const int cx = x + 29;
+  const int cy = y + 37;
+  if (type == ROM_NES || type == ROM_SNES || type == ROM_GENESIS || type == ROM_SMS || type == ROM_GG ||
+      type == ROM_ATARI) {
+    drawHomeConsoleIcon(type, cx, cy);
+  } else {
+    drawBadgeOrPortableIcon(type, cx, cy);
   }
 }

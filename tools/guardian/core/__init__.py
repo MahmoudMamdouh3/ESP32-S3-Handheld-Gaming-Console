@@ -9,18 +9,18 @@ from .elf_analyzer import ElfAnalysisResult, ElfAnalyzer, SymbolEntry
 from .psram_budget import PsramBudgetAnalyzer, PsramBudgetReport
 
 __all__ = [
-    "FirmwareAstLinter",
-    "LintFinding",
-    "HardwareBusModel",
-    "BusMetrics",
     "SUPPORTED_RESOLUTIONS",
-    "ClangTidyRunner",
+    "BusMetrics",
     "ClangTidyFinding",
-    "CppcheckRunner",
+    "ClangTidyRunner",
     "CppcheckFinding",
-    "ElfAnalyzer",
+    "CppcheckRunner",
     "ElfAnalysisResult",
-    "SymbolEntry",
+    "ElfAnalyzer",
+    "FirmwareAstLinter",
+    "HardwareBusModel",
+    "LintFinding",
     "PsramBudgetAnalyzer",
     "PsramBudgetReport",
+    "SymbolEntry",
 ]

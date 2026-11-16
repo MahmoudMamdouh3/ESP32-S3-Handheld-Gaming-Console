@@ -42,12 +42,7 @@ def parse_theme_colors(theme_text: str) -> dict[str, tuple[str, int, int, int]]:
     return parsed
 
 
-def verify_token_parity(repo_root: Path, theme_colors: dict[str, tuple[str, int, int, int]]) -> list[str]:
-    issues: list[str] = []
-    css_path = repo_root / "simulator" / "simulator.css"
-    if not css_path.exists():
-        return [f"simulator.css not found under {repo_root}"]
-
+def _parse_simulator_css_vars(css_path: Path) -> dict[str, str]:
     css_text = css_path.read_text(encoding="utf-8", errors="ignore")
     root_match = re.search(r":root\s*\{([^}]+)\}", css_text, re.DOTALL)
     css_vars: dict[str, str] = {}
@@ -56,28 +51,14 @@ def verify_token_parity(repo_root: Path, theme_colors: dict[str, tuple[str, int,
             vm = re.search(r"(--[a-zA-Z0-9_-]+)\s*:\s*([^;]+);", line)
             if vm:
                 css_vars[vm.group(1).strip()] = vm.group(2).strip().lower()
+    return css_vars
 
-    for token_name, (css_var, expected_hex) in CORE_TOKENS.items():
-        parsed = theme_colors.get(token_name)
-        if parsed is None:
-            issues.append(f"theme.h: cannot derive RGB values for {token_name} from makeUiColor()")
-        elif parsed[0].lower() != expected_hex.lower():
-            issues.append(
-                f"theme.h:{parsed[3]}: RGB for {token_name} produces {parsed[0]}, expected {expected_hex}"
-            )
-        if css_var not in css_vars:
-            issues.append(f"{css_path.name}: CSS variable {css_var} missing from :root")
-        elif css_vars[css_var] != expected_hex.lower():
-            issues.append(
-                f"{css_path.name}: token mismatch for {css_var}: expected {expected_hex.lower()}, found {css_vars[css_var]}"
-            )
 
-    design_path = repo_root / "DESIGN.md"
-    if not design_path.exists():
-        issues.append("DESIGN.md is missing")
-        return issues
-
-    seen_tokens = set()
+def _verify_design_md_table(
+    design_path: Path, theme_colors: dict[str, tuple[str, int, int, int]]
+) -> list[str]:
+    issues: list[str] = []
+    seen_tokens: set[str] = set()
     for line_number, line in enumerate(design_path.read_text(encoding="utf-8", errors="ignore").splitlines(), start=1):
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
         if not cells:
@@ -103,12 +84,39 @@ def verify_token_parity(repo_root: Path, theme_colors: dict[str, tuple[str, int,
                 break
             actual = cells[col].replace("`", "").strip()
             if actual.lower() != expected_val.lower():
-                issues.append(
-                    f"DESIGN.md:{line_number}: {token} mismatch: expected {expected_val}, found {actual}"
-                )
-    for token in CORE_TOKENS:
-        if token not in seen_tokens:
-            issues.append(f"DESIGN.md: color table missing {token}")
+                issues.append(f"DESIGN.md:{line_number}: {token} mismatch: expected {expected_val}, found {actual}")
+    issues.extend(f"DESIGN.md: color table missing {token}" for token in CORE_TOKENS if token not in seen_tokens)
+    return issues
+
+
+def verify_token_parity(repo_root: Path, theme_colors: dict[str, tuple[str, int, int, int]]) -> list[str]:
+    issues: list[str] = []
+    css_path = repo_root / "simulator" / "simulator.css"
+    if not css_path.exists():
+        return [f"simulator.css not found under {repo_root}"]
+
+    css_vars = _parse_simulator_css_vars(css_path)
+    for token_name, (css_var, expected_hex) in CORE_TOKENS.items():
+        parsed = theme_colors.get(token_name)
+        if parsed is None:
+            issues.append(f"theme.h: cannot derive RGB values for {token_name} from makeUiColor()")
+        elif parsed[0].lower() != expected_hex.lower():
+            issues.append(
+                f"theme.h:{parsed[3]}: RGB for {token_name} produces {parsed[0]}, expected {expected_hex}"
+            )
+        if css_var not in css_vars:
+            issues.append(f"{css_path.name}: CSS variable {css_var} missing from :root")
+        elif css_vars[css_var] != expected_hex.lower():
+            issues.append(
+                f"{css_path.name}: token mismatch for {css_var}: expected {expected_hex.lower()}, found {css_vars[css_var]}"
+            )
+
+    design_path = repo_root / "DESIGN.md"
+    if not design_path.exists():
+        issues.append("DESIGN.md is missing")
+        return issues
+
+    issues.extend(_verify_design_md_table(design_path, theme_colors))
     return issues
 
 
@@ -116,10 +124,9 @@ def verify_face_palette(repo_root: Path) -> list[str]:
     bmo_face = repo_root / "firmware" / "BmoGameboy" / "src" / "ui" / "bmo_face_internal.h"
     source = bmo_face.read_text(encoding="utf-8")
     design = (repo_root / "DESIGN.md").read_text(encoding="utf-8")
-    source_colors = {}
+    source_colors: dict[str, tuple[str, str | None]] = {}
     for name, red, green, blue, comment_hex in FACE_COLOR.findall(source):
-        rgb = (int(red), int(green), int(blue))
-        expected_hex = "#%02X%02X%02X" % rgb
+        expected_hex = f"#{int(red):02X}{int(green):02X}{int(blue):02X}"
         if expected_hex.lower() != f"#{comment_hex}".lower():
             source_colors[name] = (expected_hex, "source comment mismatch")
         else:
@@ -137,8 +144,7 @@ def verify_face_palette(repo_root: Path) -> list[str]:
             issues.append(f"{name}: {source_error}; expected {expected_hex}")
         if registered.get(name) != expected_hex:
             issues.append(f"DESIGN.md face palette mismatch for {name}: expected {expected_hex}, found {registered.get(name)}")
-    for name in sorted(set(registered) - set(source_colors)):
-        issues.append(f"DESIGN.md registers missing source color {name}")
+    issues.extend(f"DESIGN.md registers missing source color {name}" for name in sorted(set(registered) - set(source_colors)))
     if not source_colors:
         issues.append("No face-renderer COL_* colors were parsed")
     return issues
@@ -203,7 +209,7 @@ def verify_design_tokens_json(
     bmo_face_src = (repo_root / "firmware" / "BmoGameboy" / "src" / "ui" / "bmo_face_internal.h").read_text(encoding="utf-8")
     face_json = data.get("face_palette", {})
     for name, red, green, blue, _ in FACE_COLOR.findall(bmo_face_src):
-        expected_hex = "#%02X%02X%02X" % (int(red), int(green), int(blue))
+        expected_hex = f"#{int(red):02X}{int(green):02X}{int(blue):02X}"
         entry = face_json.get(name)
         if not isinstance(entry, dict) or str(entry.get("hex", "")).upper() != expected_hex:
             issues.append(f"design/tokens.json: face_palette.{name} expected {expected_hex}, found {entry}")

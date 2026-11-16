@@ -39,7 +39,7 @@ inline bool sdSeekRead(void*, AtomicFs::ReadHandle* handle, size_t offset) {
 
 inline int sdReadChunk(void*, AtomicFs::ReadHandle* handle, uint8_t* dst, size_t len) {
   if (!handle || !handle->impl) return -1;
-  return static_cast<File*>(handle->impl)->read(dst, len);
+  return static_cast<int>(static_cast<File*>(handle->impl)->read(dst, len));
 }
 
 inline void sdCloseRead(void*, AtomicFs::ReadHandle* handle) {

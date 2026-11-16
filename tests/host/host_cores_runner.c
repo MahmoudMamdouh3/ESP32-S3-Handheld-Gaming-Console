@@ -193,38 +193,55 @@ static int test_sms_core(void) {
   return 0;
 }
 
-static int test_nes_agnes_core(void) {
+static int capture_agnes_framebuffer(agnes_t* agn, uint32_t* fb) {
+  int nz = 0;
+  for (int y = 0; y < AGNES_SCREEN_HEIGHT; ++y) {
+    for (int x = 0; x < AGNES_SCREEN_WIDTH; ++x) {
+      agnes_color_t c = agnes_get_screen_pixel(agn, x, y);
+      uint32_t packed = ((uint32_t)c.r << 16) | ((uint32_t)c.g << 8) | (uint32_t)c.b;
+      fb[(size_t)y * AGNES_SCREEN_WIDTH + (size_t)x] = packed;
+      if (packed != 0U) ++nz;
+    }
+  }
+  return nz;
+}
+
+static uint8_t* build_nes_test_ines(size_t* out_size) {
   const size_t rom_size = 16U + 16384U + 8192U;
   uint8_t* rom = (uint8_t*)calloc(1U, rom_size);
-  if (!rom) {
-    printf("[HOST_CORE] NES_AGNES STATUS=FAIL (oom)\n");
-    return 1;
-  }
-
+  if (!rom) return NULL;
   rom[0] = 'N';
   rom[1] = 'E';
   rom[2] = 'S';
   rom[3] = 0x1AU;
   rom[4] = 1U;
   rom[5] = 1U;
-
   uint8_t* prg = rom + 16U;
   memset(prg, 0xEAU, 16384U);
   prg[0x3FFCU] = 0x00U;
   prg[0x3FFDU] = 0x80U;
-
-  const uint8_t prog[] = {
-      0xA9U, 0x5CU, 0x8DU, 0x00U, 0x60U, /* LDA #$5C ; STA $6000 */
-      0xA9U, 0x3FU, 0x8DU, 0x06U, 0x20U, /* LDA #$3F ; STA $2006 */
-      0xA9U, 0x00U, 0x8DU, 0x06U, 0x20U, /* LDA #$00 ; STA $2006 */
-      0xA9U, 0x21U, 0x8DU, 0x07U, 0x20U, /* LDA #$21 ; STA $2007 (sky blue backdrop) */
-      0xA9U, 0x08U, 0x8DU, 0x01U, 0x20U, /* LDA #$08 ; STA $2001 (enable BG) */
-      0xE8U,                             /* INX ($8019) */
-      0x8EU, 0x01U, 0x60U,               /* STX $6001 */
-      0x4CU, 0x19U, 0x80U                /* JMP $8019 */
-  };
+  const uint8_t prog[] = {0xA9U, 0x5CU, 0x8DU, 0x00U, 0x60U, 0xA9U, 0x3FU, 0x8DU, 0x06U, 0x20U, 0xA9U,
+                          0x00U, 0x8DU, 0x06U, 0x20U, 0xA9U, 0x21U, 0x8DU, 0x07U, 0x20U, 0xA9U, 0x08U,
+                          0x8DU, 0x01U, 0x20U, 0xE8U, 0x8EU, 0x01U, 0x60U, 0x4CU, 0x19U, 0x80U};
   memcpy(prg, prog, sizeof(prog));
+  *out_size = rom_size;
+  return rom;
+}
 
+static int step_agnes_frames(agnes_t* agn, int frames) {
+  for (int f = 0; f < frames; ++f) {
+    if (!agnes_next_frame(agn)) return 0;
+  }
+  return 1;
+}
+
+static int test_nes_agnes_core(void) {
+  size_t rom_size = 0;
+  uint8_t* rom = build_nes_test_ines(&rom_size);
+  if (!rom) {
+    printf("[HOST_CORE] NES_AGNES STATUS=FAIL (oom)\n");
+    return 1;
+  }
   agnes_t* agn = agnes_make();
   if (!agn || !agnes_load_ines_data(agn, rom, rom_size)) {
     if (agn) agnes_destroy(agn);
@@ -232,89 +249,23 @@ static int test_nes_agnes_core(void) {
     printf("[HOST_CORE] NES_AGNES STATUS=FAIL (init)\n");
     return 1;
   }
-
   agnes_input_t inp;
   memset(&inp, 0, sizeof(inp));
   agnes_set_input(agn, &inp, &inp);
 
-  for (int f = 0; f < 25; ++f) {
-    if (!agnes_next_frame(agn)) {
-      agnes_destroy(agn);
-      free(rom);
-      printf("[HOST_CORE] NES_AGNES STATUS=FAIL (step A)\n");
-      return 1;
-    }
-  }
-
-  size_t state_sz = agnes_state_size();
-  agnes_state_t* snap = (agnes_state_t*)malloc(state_sz);
+  agnes_state_t* snap = (agnes_state_t*)malloc(agnes_state_size());
   uint32_t* fb_a = (uint32_t*)calloc((size_t)AGNES_SCREEN_WIDTH * AGNES_SCREEN_HEIGHT, sizeof(uint32_t));
   uint32_t* fb_b = (uint32_t*)calloc((size_t)AGNES_SCREEN_WIDTH * AGNES_SCREEN_HEIGHT, sizeof(uint32_t));
-  if (!snap || !fb_a || !fb_b) {
-    free(snap);
-    free(fb_a);
-    free(fb_b);
-    agnes_destroy(agn);
-    free(rom);
-    printf("[HOST_CORE] NES_AGNES STATUS=FAIL (oom alloc)\n");
-    return 1;
+  int ok = (snap && fb_a && fb_b && step_agnes_frames(agn, 25));
+  if (ok) {
+    agnes_dump_state(agn, snap);
+    ok = step_agnes_frames(agn, 25);
   }
+  int nz = ok ? capture_agnes_framebuffer(agn, fb_a) : 0;
+  ok = ok && agnes_restore_state(agn, snap) && step_agnes_frames(agn, 25);
+  if (ok) capture_agnes_framebuffer(agn, fb_b);
+  int match = ok && (memcmp(fb_a, fb_b, (size_t)AGNES_SCREEN_WIDTH * AGNES_SCREEN_HEIGHT * sizeof(uint32_t)) == 0);
 
-  agnes_dump_state(agn, snap);
-  for (int f = 0; f < 25; ++f) {
-    if (!agnes_next_frame(agn)) {
-      free(snap);
-      free(fb_a);
-      free(fb_b);
-      agnes_destroy(agn);
-      free(rom);
-      printf("[HOST_CORE] NES_AGNES STATUS=FAIL (step B)\n");
-      return 1;
-    }
-  }
-
-  int nz = 0;
-  for (int y = 0; y < AGNES_SCREEN_HEIGHT; ++y) {
-    for (int x = 0; x < AGNES_SCREEN_WIDTH; ++x) {
-      agnes_color_t c = agnes_get_screen_pixel(agn, x, y);
-      uint32_t packed = ((uint32_t)c.r << 16) | ((uint32_t)c.g << 8) | (uint32_t)c.b;
-      fb_a[(size_t)y * AGNES_SCREEN_WIDTH + (size_t)x] = packed;
-      if (packed != 0U) {
-        ++nz;
-      }
-    }
-  }
-
-  if (!agnes_restore_state(agn, snap)) {
-    free(snap);
-    free(fb_a);
-    free(fb_b);
-    agnes_destroy(agn);
-    free(rom);
-    printf("[HOST_CORE] NES_AGNES STATUS=FAIL (restore)\n");
-    return 1;
-  }
-
-  for (int f = 0; f < 25; ++f) {
-    if (!agnes_next_frame(agn)) {
-      free(snap);
-      free(fb_a);
-      free(fb_b);
-      agnes_destroy(agn);
-      free(rom);
-      printf("[HOST_CORE] NES_AGNES STATUS=FAIL (step C)\n");
-      return 1;
-    }
-  }
-
-  for (int y = 0; y < AGNES_SCREEN_HEIGHT; ++y) {
-    for (int x = 0; x < AGNES_SCREEN_WIDTH; ++x) {
-      agnes_color_t c = agnes_get_screen_pixel(agn, x, y);
-      fb_b[(size_t)y * AGNES_SCREEN_WIDTH + (size_t)x] = ((uint32_t)c.r << 16) | ((uint32_t)c.g << 8) | (uint32_t)c.b;
-    }
-  }
-
-  int match = (memcmp(fb_a, fb_b, (size_t)AGNES_SCREEN_WIDTH * AGNES_SCREEN_HEIGHT * sizeof(uint32_t)) == 0);
   free(snap);
   free(fb_a);
   free(fb_b);

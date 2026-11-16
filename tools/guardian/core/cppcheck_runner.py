@@ -9,7 +9,6 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
 
 
 @dataclass
@@ -30,7 +29,7 @@ class CppcheckRunner:
         self.cppcheck_bin = self._find_cppcheck()
         self.timeout_seconds = 600
 
-    def _find_cppcheck(self) -> Optional[str]:
+    def _find_cppcheck(self) -> str | None:
         # Check PATH
         which_bin = shutil.which("cppcheck")
         if which_bin:
@@ -51,8 +50,9 @@ class CppcheckRunner:
     def is_available(self) -> bool:
         return self.cppcheck_bin is not None
 
-    def run(self) -> List[CppcheckFinding]:
-        if not self.is_available():
+    def run(self) -> list[CppcheckFinding]:
+        cppcheck_bin = self.cppcheck_bin
+        if cppcheck_bin is None:
             return []
 
         # Target first-party core and wrappers
@@ -61,20 +61,22 @@ class CppcheckRunner:
         ]
 
         cmd = [
-            self.cppcheck_bin,
+            cppcheck_bin,
             "-j8",
             "--max-configs=1",
             "--enable=warning,performance,portability",
+            f"-i{self.firmware_dir / 'src' / 'third_party'}",
             "--suppress=missingIncludeSystem",
             "--suppress=missingInclude",
             "--inline-suppr",
+            "--suppress=*:*third_party/*",
             "--error-exitcode=1",
             "--template={file}::{line}::{severity}::{id}::{message}",
             "--quiet",
             *target_dirs,
         ]
 
-        findings: List[CppcheckFinding] = []
+        findings: list[CppcheckFinding] = []
         try:
             res = subprocess.run(
                 cmd,

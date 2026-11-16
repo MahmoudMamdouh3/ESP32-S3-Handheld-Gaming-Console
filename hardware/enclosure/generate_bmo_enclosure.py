@@ -9,9 +9,10 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterable, Iterator
+from typing import Any, cast
 
 import numpy as np
 import trimesh
@@ -19,12 +20,12 @@ import trimesh
 LAYOUT_JSON_PATH = Path(__file__).resolve().parents[1] / "layout.json"
 
 
-def _load_hardware_layout(path: Path = LAYOUT_JSON_PATH) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"))
+def _load_hardware_layout(path: Path = LAYOUT_JSON_PATH) -> dict[str, Any]:
+    return cast(dict[str, Any], json.loads(path.read_text(encoding="utf-8")))
 
 
 def _resolve_profile_dims_mm(
-    profile: str, enc: dict, pb_ref: dict
+    profile: str, enc: dict[str, Any], pb_ref: dict[str, Any]
 ) -> tuple[float, float, float, float, float, tuple[float, float, float]]:
     ref_enc = enc["owner_reference_cm"]
     if profile == "reference":
@@ -49,7 +50,7 @@ def _resolve_profile_dims_mm(
     )
 
 
-def _display_and_control_config() -> tuple[dict, dict, dict]:
+def _display_and_control_config() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     display = {
         "profile": "2.4_in",
         "active_window_profiles": {"2.0_in": (42.0, 31.5), "2.4_in": (50.0, 37.5), "2.8_in": (58.0, 43.5)},
@@ -83,7 +84,7 @@ def _display_and_control_config() -> tuple[dict, dict, dict]:
     return display, control, ports
 
 
-def make_config(profile: str = "compact", layout: dict | None = None) -> dict:
+def make_config(profile: str = "compact", layout: dict[str, Any] | None = None) -> dict[str, Any]:
     """Build parametric enclosure CONFIG in millimetres from hardware/layout.json."""
     layout_data = layout if layout is not None else _load_hardware_layout()
     enc = layout_data["enclosure"]
@@ -160,7 +161,7 @@ FRONT_FACE_Z = BODY_D / 2
 REAR_FACE_Z = -BODY_D / 2
 
 
-def _sync_module_geometry_constants(cfg: dict) -> None:
+def _sync_module_geometry_constants(cfg: dict[str, Any]) -> None:
     global CONFIG, BODY_W, BODY_H, BODY_D, HALF_W, HALF_H, WALL, CORNER, FRONT_FACE_Z, REAR_FACE_Z
     CONFIG = cfg
     BODY_W = cfg["outer"]["width"]
@@ -175,7 +176,7 @@ def _sync_module_geometry_constants(cfg: dict) -> None:
 
 
 @contextmanager
-def _active_config(cfg: dict | None) -> Iterator[dict]:
+def _active_config(cfg: dict[str, Any] | None) -> Iterator[dict[str, Any]]:
     if cfg is None:
         yield CONFIG
         return
@@ -190,20 +191,25 @@ FRONT_FACE_Z = BODY_D / 2
 REAR_FACE_Z = -BODY_D / 2
 
 
+def _rot_matrix(angle: float, direction: list[int], point: tuple[float, float, float] | None = None) -> Any:
+    rot_fn = cast(Any, trimesh.transformations).rotation_matrix
+    return rot_fn(angle, direction, point=point) if point is not None else rot_fn(angle, direction)
+
+
 def _box(extents: tuple[float, float, float], center: tuple[float, float, float]) -> trimesh.Trimesh:
     mesh = trimesh.creation.box(extents=extents)
     mesh.apply_translation(center)
-    return mesh
+    return cast(trimesh.Trimesh, mesh)
 
 
 def _cylinder(radius: float, height: float, center: tuple[float, float, float], axis: str = "z", sections: int = 48) -> trimesh.Trimesh:
     mesh = trimesh.creation.cylinder(radius=radius, height=height, sections=sections)
     if axis == "x":
-        mesh.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, [0, 1, 0]))
+        mesh.apply_transform(_rot_matrix(float(np.pi / 2), [0, 1, 0]))
     elif axis == "y":
-        mesh.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0]))
+        mesh.apply_transform(_rot_matrix(float(np.pi / 2), [1, 0, 0]))
     mesh.apply_translation(center)
-    return mesh
+    return cast(trimesh.Trimesh, mesh)
 
 
 def _rounded_prism(width: float, height: float, depth: float, radius: float, center: tuple[float, float, float]) -> trimesh.Trimesh:
@@ -217,9 +223,11 @@ def _rounded_prism(width: float, height: float, depth: float, radius: float, cen
         pieces.append(_box((width - 2 * radius, height, depth), center))
     if height - 2 * radius > 1e-6:
         pieces.append(_box((width, height - 2 * radius, depth), center))
-    for sx in (-1, 1):
-        for sy in (-1, 1):
-            pieces.append(_cylinder(radius, depth, (x + sx * (width / 2 - radius), y + sy * (height / 2 - radius), z), sections=64))
+    pieces.extend(
+        _cylinder(radius, depth, (x + sx * (width / 2 - radius), y + sy * (height / 2 - radius), z), sections=64)
+        for sx in (-1, 1)
+        for sy in (-1, 1)
+    )
     return _union(pieces)
 
 
@@ -227,7 +235,7 @@ def _rounded_prism_xz(width: float, height_y: float, depth_z: float, radius: flo
                       center: tuple[float, float, float]) -> trimesh.Trimesh:
     """Create a rounded rectangle in X/Z and extrude it along Y."""
     mesh = _rounded_prism(width, depth_z, height_y, radius, (0, 0, 0))
-    mesh.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0]))
+    mesh.apply_transform(_rot_matrix(float(np.pi / 2), [1, 0, 0]))
     mesh.apply_translation(center)
     return mesh
 
@@ -240,7 +248,7 @@ def _union(meshes: Iterable[trimesh.Trimesh]) -> trimesh.Trimesh:
     if result is None or not len(result.faces):
         raise RuntimeError("manifold union returned an empty mesh")
     result.remove_unreferenced_vertices()
-    return result
+    return cast(trimesh.Trimesh, result)
 
 
 def _difference(mesh: trimesh.Trimesh, cutters: Iterable[trimesh.Trimesh]) -> trimesh.Trimesh:
@@ -248,7 +256,7 @@ def _difference(mesh: trimesh.Trimesh, cutters: Iterable[trimesh.Trimesh]) -> tr
     if result is None or not len(result.faces):
         raise RuntimeError("manifold difference returned an empty mesh")
     result.remove_unreferenced_vertices()
-    return result
+    return cast(trimesh.Trimesh, result)
 
 
 def _centered_shell(half: str) -> trimesh.Trimesh:
@@ -278,7 +286,7 @@ def _glyph_strokes(letter: str, y_center: float, side: int) -> list[trimesh.Trim
     def bar(y: float, z: float, h: float, w: float, angle: float = 0.0) -> None:
         mesh = _box((depth, h, w), (cutter_x, y_center + y, z))
         if angle:
-            matrix = trimesh.transformations.rotation_matrix(np.radians(angle), [1, 0, 0], point=(cutter_x, y_center, 0))
+            matrix = _rot_matrix(float(np.radians(angle)), [1, 0, 0], point=(cutter_x, y_center, 0))
             mesh.apply_transform(matrix)
         out.append(mesh)
 
@@ -482,13 +490,14 @@ def _back_shell() -> trimesh.Trimesh:
             cutters.append(_cylinder(CONFIG["perfboard"]["screw_clearance_diameter"] / 2,
                                      CONFIG["perfboard"]["standoff_height"] + 0.4,
                                      (sx, sy, -BODY_D / 2 + WALL + CONFIG["perfboard"]["standoff_height"] / 2), sections=32))
-    battery_rails = []
     rail_width = CONFIG["battery"]["carrier_rail_width"]
     rail_height = CONFIG["battery"]["carrier_rail_height"]
     _, cell_height, _ = CONFIG["battery"]["cell_bay_envelope"]
-    for sx in (-CONFIG["battery"]["carrier_rail_x"], CONFIG["battery"]["carrier_rail_x"]):
-        battery_rails.append(_box((rail_width, cell_height, rail_height),
-                                  (sx, CONFIG["battery"]["door_center_y"], REAR_FACE_Z + WALL + rail_height / 2)))
+    battery_rails: list[trimesh.Trimesh] = [
+        _box((rail_width, cell_height, rail_height),
+             (sx, CONFIG["battery"]["door_center_y"], REAR_FACE_Z + WALL + rail_height / 2))
+        for sx in (-CONFIG["battery"]["carrier_rail_x"], CONFIG["battery"]["carrier_rail_x"])
+    ]
     shell = _union([shell, *bosses, *standoffs, *battery_rails, *door_posts])
     return _difference(shell, cutters)
 
@@ -560,7 +569,7 @@ def _battery_door() -> trimesh.Trimesh:
     return _difference(door, holes)
 
 
-def build_parts(profile: str | None = None, config: dict | None = None) -> dict[str, trimesh.Trimesh]:
+def build_parts(profile: str | None = None, config: dict[str, Any] | None = None) -> dict[str, trimesh.Trimesh]:
     """Construct all printable bodies in the assembled console coordinates."""
     effective_cfg = config if config is not None else (make_config(profile) if profile is not None else None)
     with _active_config(effective_cfg):
@@ -623,7 +632,7 @@ def validate_mesh(mesh: trimesh.Trimesh, name: str) -> None:
         raise ValueError(f"{name}: manifold validation failed: {solid.status()}")
 
 
-def export_all(output_dir: Path, profile: str | None = None, config: dict | None = None) -> dict[str, Path]:
+def export_all(output_dir: Path, profile: str | None = None, config: dict[str, Any] | None = None) -> dict[str, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     effective_cfg = config if config is not None else (make_config(profile) if profile is not None else None)
     with _active_config(effective_cfg):
@@ -637,7 +646,7 @@ def export_all(output_dir: Path, profile: str | None = None, config: dict | None
             mesh.export(stl_path, file_type="stl")
             exported[name] = stl_path
             preview_mesh = mesh.copy()
-            preview_mesh.apply_scale(0.001)  # glTF/GLB uses metres; STL files are millimetres by convention.
+            cast(Any, preview_mesh).apply_scale(0.001)  # glTF/GLB uses metres; STL files are millimetres by convention.
             scene.add_geometry(preview_mesh, geom_name=name, node_name=name)
         display_width, display_height = CONFIG["display"]["active_window_profiles"][CONFIG["display"]["profile"]]
         lens_border = CONFIG["display"]["lens_border_xy"]
@@ -645,10 +654,10 @@ def export_all(output_dir: Path, profile: str | None = None, config: dict | None
                               CONFIG["display"]["lens_thickness"], CONFIG["display"]["lens_corner_radius"],
                               (0, CONFIG["display"]["center_y"], FRONT_FACE_Z - CONFIG["display"]["lens_thickness"] / 2))
         lens.visual.vertex_colors = np.tile(np.asarray([7, 8, 10, 255], dtype=np.uint8), (len(lens.vertices), 1))
-        lens.apply_scale(0.001)
+        cast(Any, lens).apply_scale(0.001)
         scene.add_geometry(lens, geom_name="bmo_display_lens_preview", node_name="bmo_display_lens_preview")
         glb_path = output_dir / "bmo_enclosure_assembly.glb"
-        scene.export(glb_path, file_type="glb")
+        cast(Any, scene).export(glb_path, file_type="glb")
         exported["bmo_enclosure_assembly"] = glb_path
         return exported
 
@@ -661,7 +670,7 @@ def main() -> int:
     cfg = make_config(args.profile)
     paths = export_all(args.output, config=cfg)
     print(f"Enclosure profile: {args.profile} | Physical fit status: {cfg['physical_fit_status']}")
-    for name, path in paths.items():
+    for path in paths.values():
         print(f"{path.name}: {path.stat().st_size} bytes")
     return 0
 

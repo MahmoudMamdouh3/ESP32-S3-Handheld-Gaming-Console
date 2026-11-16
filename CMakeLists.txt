@@ -74,6 +74,36 @@ target_compile_definitions(peanut_opcode_test PRIVATE BMO_REPO_ROOT_DIR="${CMAKE
 bmo_add_host_exec(walnut_opcode_test tests/host/walnut_opcode_test.cpp)
 bmo_add_host_exec(doom_palette_test tests/host/doom_palette_test.cpp)
 
+bmo_add_host_exec(gb_error_and_bmp_test
+  tests/host/gb_error_and_bmp_test.cpp
+  firmware/BmoGameboy/src/cores/gb_common.cpp
+)
+target_include_directories(gb_error_and_bmp_test BEFORE PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/tests/host/fakes/runtime"
+)
+
+bmo_add_host_exec(save_manager_behavior_test
+  tests/host/save_manager_behavior_test.cpp
+  firmware/BmoGameboy/src/storage/save_manager.cpp
+  firmware/BmoGameboy/src/hal/spi_arbiter.cpp
+)
+target_include_directories(save_manager_behavior_test BEFORE PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/tests/host/fakes/runtime"
+)
+
+bmo_add_host_exec(app_behavior_test
+  tests/host/app_behavior_test.cpp
+  firmware/BmoGameboy/src/app/app_diagnostics.cpp
+  firmware/BmoGameboy/src/app/app_menus.cpp
+  firmware/BmoGameboy/src/hal/buttons.cpp
+  firmware/BmoGameboy/src/hal/profiler.cpp
+  firmware/BmoGameboy/src/hal/spi_arbiter.cpp
+)
+target_include_directories(app_behavior_test BEFORE PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/tests/host/fakes/runtime"
+)
+target_compile_definitions(app_behavior_test PRIVATE FEATURE_PROFILER=1)
+
 option(BMO_BUILD_BENCHMARKS "Build native host performance benchmark executable" ON)
 if(BMO_BUILD_BENCHMARKS)
   add_executable(bmo_bench_host

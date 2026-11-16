@@ -2,6 +2,7 @@
 #include "save_manager.h"
 #include "sd_card.h"
 #include "atomic_fs.h"
+#include "bmp_header.h"
 #include "sd_atomic_ops.h"
 #include "../hal/config.h"
 #include "../hal/spi_arbiter.h"
@@ -348,6 +349,76 @@ bool saveState(const char* romFilename, int slot, uint32_t coreId, const void* s
 #endif
 }
 
+#if FEATURE_SD_CARD
+namespace {
+bool resolveStateLoadPath(const char* romFilename, int slot, char* path, size_t pathCap, bool* outUsedLegacy) {
+  getSaveStatePath(romFilename, slot, path, pathCap);
+  if (path[0] == '\0') return false;
+  char legacyPath[80];
+  const bool hasLegacyPath = makeLegacySaveStatePath(romFilename, slot, legacyPath, sizeof(legacyPath));
+  if (!recoverAtomicWrite(path)) return false;
+  if (hasLegacyPath && !recoverAtomicWrite(legacyPath)) return false;
+  if (SD.exists(path)) {
+    *outUsedLegacy = false;
+    return true;
+  }
+  if (!hasLegacyPath || !SD.exists(legacyPath)) return false;
+  strncpy(path, legacyPath, pathCap - 1);
+  path[pathCap - 1] = '\0';
+  *outUsedLegacy = true;
+  return true;
+}
+
+bool readStageStatePayload(const char* romFilename, int slot, uint32_t expectedCoreId, size_t maxStateSize,
+                           size_t maxRamSize, uint32_t expectedRomSize, char* outPath, size_t outPathCap,
+                           bool* outUsedLegacy, SaveStateFormat::DecodedHeader* outDecoded, uint8_t** outStateBuf,
+                           uint8_t** outRamBuf, size_t* outStateRead, size_t* outRamRead) {
+  const uint32_t expectedPathKeyHash = RomKey::crc32RelativePath(romFilename);
+  const uint32_t resolvedRomSize = (expectedRomSize != 0U) ? expectedRomSize : SDCard::findRomFileSize(romFilename);
+  DisplayEmu::waitForDisplay();
+  SpiArbiter::ScopedLock spiLock;
+  if (!resolveStateLoadPath(romFilename, slot, outPath, outPathCap, outUsedLegacy)) return false;
+
+  File f = SD.open(outPath, FILE_READ);
+  if (!f) {
+    LOG_WARN("SaveManager: Failed to open %s for read", outPath);
+    return false;
+  }
+  uint8_t rawHeader[sizeof(SaveStateHeader)] = {};
+  const size_t totalFileSize = f.size();
+  const size_t headerReadBytes = f.read(rawHeader, sizeof(rawHeader));
+  if (!SaveStateFormat::decodeHeader(rawHeader, headerReadBytes, totalFileSize, expectedCoreId, expectedPathKeyHash,
+                                     resolvedRomSize, maxStateSize, maxRamSize, outDecoded) ||
+      !f.seek(outDecoded->payloadOffset)) {
+    f.close();
+    LOG_ERROR("SaveManager: Invalid or mismatched BSS1/BSS2 header in %s", outPath);
+    return false;
+  }
+  const SaveStateHeader& header = outDecoded->header;
+  *outStateBuf = static_cast<uint8_t*>(heap_caps_malloc(header.stateSize, MALLOC_CAP_SPIRAM));
+  if (!*outStateBuf) {
+    f.close();
+    LOG_ERROR("SaveManager: Out of PSRAM staging state load (%u B)", (unsigned int)header.stateSize);
+    return false;
+  }
+  if (header.ramSize > 0) {
+    *outRamBuf = static_cast<uint8_t*>(heap_caps_malloc(header.ramSize, MALLOC_CAP_SPIRAM));
+    if (!*outRamBuf) {
+      heap_caps_free(*outStateBuf);
+      *outStateBuf = nullptr;
+      f.close();
+      LOG_ERROR("SaveManager: Out of PSRAM staging RAM load (%u B)", (unsigned int)header.ramSize);
+      return false;
+    }
+  }
+  *outStateRead = f.read(*outStateBuf, header.stateSize);
+  *outRamRead = (header.ramSize > 0 && *outRamBuf) ? f.read(*outRamBuf, header.ramSize) : 0U;
+  f.close();
+  return true;
+}
+} // namespace
+#endif
+
 bool loadState(const char* romFilename, int slot, uint32_t expectedCoreId, void* stateData, size_t maxStateSize,
                size_t* outStateSize, uint8_t* ramData, size_t maxRamSize, size_t* outRamSize,
                uint32_t expectedRomSize) {
@@ -357,122 +428,40 @@ bool loadState(const char* romFilename, int slot, uint32_t expectedCoreId, void*
 #if FEATURE_SD_CARD
   if (!SDCard::isMounted()) return false;
 
-  char path[80];
-  getSaveStatePath(romFilename, slot, path, sizeof(path));
-  if (path[0] == '\0') return false;
-  char legacyPath[80];
-  const bool hasLegacyPath = makeLegacySaveStatePath(romFilename, slot, legacyPath, sizeof(legacyPath));
+  char path[80] = {};
   bool usedLegacyPath = false;
-
-  const uint32_t expectedPathKeyHash = RomKey::crc32RelativePath(romFilename);
-  const uint32_t resolvedRomSize = (expectedRomSize != 0U) ? expectedRomSize : SDCard::findRomFileSize(romFilename);
-
-  DisplayEmu::waitForDisplay();
-  SaveStateFormat::DecodedHeader decoded;
-  memset(&decoded, 0, sizeof(decoded));
+  SaveStateFormat::DecodedHeader decoded{};
   uint8_t* tempState = nullptr;
   uint8_t* tempRam = nullptr;
   size_t stateRead = 0;
   size_t ramRead = 0;
-  {
-    SpiArbiter::ScopedLock spiLock;
-
-    if (!recoverAtomicWrite(path)) {
-      return false;
-    }
-    if (hasLegacyPath && !recoverAtomicWrite(legacyPath)) {
-      return false;
-    }
-
-    if (!SD.exists(path)) {
-      if (!hasLegacyPath || !SD.exists(legacyPath)) {
-        return false;
-      }
-      strncpy(path, legacyPath, sizeof(path) - 1);
-      path[sizeof(path) - 1] = '\0';
-      usedLegacyPath = true;
-    }
-
-    File f = SD.open(path, FILE_READ);
-    if (!f) {
-      LOG_WARN("SaveManager: Failed to open %s for read", path);
-      return false;
-    }
-
-    const size_t totalFileSize = f.size();
-    uint8_t rawHeader[sizeof(SaveStateHeader)];
-    memset(rawHeader, 0, sizeof(rawHeader));
-    const size_t headerReadBytes = f.read(rawHeader, sizeof(rawHeader));
-    if (!SaveStateFormat::decodeHeader(rawHeader, headerReadBytes, totalFileSize, expectedCoreId, expectedPathKeyHash,
-                                       resolvedRomSize, maxStateSize, ramData ? maxRamSize : 0U, &decoded)) {
-      f.close();
-      LOG_ERROR("SaveManager: Invalid or mismatched BSS1/BSS2 header in %s", path);
-      return false;
-    }
-
-    if (!f.seek(decoded.payloadOffset)) {
-      f.close();
-      return false;
-    }
-
-    const SaveStateHeader& header = decoded.header;
-    tempState = (uint8_t*)heap_caps_malloc(header.stateSize, MALLOC_CAP_SPIRAM);
-    if (!tempState) {
-      f.close();
-      LOG_ERROR("SaveManager: Out of PSRAM staging state load (%u B)", (unsigned int)header.stateSize);
-      return false;
-    }
-
-    if (header.ramSize > 0) {
-      tempRam = (uint8_t*)heap_caps_malloc(header.ramSize, MALLOC_CAP_SPIRAM);
-      if (!tempRam) {
-        heap_caps_free(tempState);
-        f.close();
-        LOG_ERROR("SaveManager: Out of PSRAM staging RAM load (%u B)", (unsigned int)header.ramSize);
-        return false;
-      }
-    }
-
-    stateRead = f.read(tempState, header.stateSize);
-    if (header.ramSize > 0) {
-      ramRead = f.read(tempRam, header.ramSize);
-    }
-
-    f.close();
-  }
-
-  const SaveStateHeader& header = decoded.header;
-  if (stateRead != header.stateSize || (header.ramSize > 0 && ramRead != header.ramSize)) {
-    heap_caps_free(tempState);
-    if (tempRam) heap_caps_free(tempRam);
-    LOG_ERROR("SaveManager: Truncated state data in %s", path);
+  if (!readStageStatePayload(romFilename, slot, expectedCoreId, maxStateSize, ramData ? maxRamSize : 0U,
+                             expectedRomSize, path, sizeof(path), &usedLegacyPath, &decoded, &tempState, &tempRam,
+                             &stateRead, &ramRead)) {
     return false;
   }
 
-  // Verify CRC32 before modifying caller's live emulator state or RAM buffers
+  const SaveStateHeader& header = decoded.header;
   uint32_t calcCrc = computeCRC32(tempState, header.stateSize, 0xFFFFFFFF);
   if (tempRam && header.ramSize > 0) {
     calcCrc = computeCRC32(tempRam, header.ramSize, calcCrc);
   }
   calcCrc ^= 0xFFFFFFFF;
-
-  if (calcCrc != header.crc32) {
+  const bool validPayload =
+      stateRead == header.stateSize && (header.ramSize == 0 || ramRead == header.ramSize) && calcCrc == header.crc32;
+  if (!validPayload) {
+    LOG_ERROR("SaveManager: Truncated or CRC-mismatched state data in %s", path);
     heap_caps_free(tempState);
     if (tempRam) heap_caps_free(tempRam);
-    LOG_ERROR("SaveManager: CRC32 mismatch in %s (calc 0x%08X != hdr 0x%08X)", path, (unsigned int)calcCrc,
-              (unsigned int)header.crc32);
     return false;
   }
 
   memcpy(stateData, tempState, header.stateSize);
   heap_caps_free(tempState);
   if (tempRam) {
-    if (ramData && header.ramSize > 0) {
-      memcpy(ramData, tempRam, header.ramSize);
-    }
+    if (ramData && header.ramSize > 0) memcpy(ramData, tempRam, header.ramSize);
     heap_caps_free(tempRam);
   }
-
   if (outStateSize) *outStateSize = stateRead;
   if (outRamSize) *outRamSize = ramRead;
 
@@ -480,7 +469,7 @@ bool loadState(const char* romFilename, int slot, uint32_t expectedCoreId, void*
            decoded.isLegacyV1 ? "legacy BSS1" : "BSS2", path, slot, (unsigned int)expectedCoreId,
            (unsigned int)stateRead, (unsigned int)ramRead);
   if (usedLegacyPath || decoded.isLegacyV1) {
-    saveState(romFilename, slot, expectedCoreId, stateData, stateRead, ramData, ramRead, resolvedRomSize);
+    LOG_INFO_STR("SaveManager: Legacy state restored read-only; save manually to write BSS2 format.");
   }
   return true;
 #else
@@ -588,25 +577,7 @@ bool saveScreenshotBmp(const char* romFilename, const uint16_t* bgr565Buffer, in
   const uint32_t fileSize = 54U + dataSize;
 
   uint8_t header[54];
-  memset(header, 0, sizeof(header));
-  header[0] = 'B';
-  header[1] = 'M';
-  header[2] = (uint8_t)(fileSize & 0xFF);
-  header[3] = (uint8_t)((fileSize >> 8) & 0xFF);
-  header[4] = (uint8_t)((fileSize >> 16) & 0xFF);
-  header[5] = (uint8_t)((fileSize >> 24) & 0xFF);
-  header[10] = 54;
-  header[14] = 40;
-  header[18] = (uint8_t)(width & 0xFF);
-  header[19] = (uint8_t)((width >> 8) & 0xFF);
-  header[22] = (uint8_t)(height & 0xFF);
-  header[23] = (uint8_t)((height >> 8) & 0xFF);
-  header[26] = 1;
-  header[28] = 24;
-  header[34] = (uint8_t)(dataSize & 0xFF);
-  header[35] = (uint8_t)((dataSize >> 8) & 0xFF);
-  header[36] = (uint8_t)((dataSize >> 16) & 0xFF);
-  header[37] = (uint8_t)((dataSize >> 24) & 0xFF);
+  BmpHeader::write24BppHeader(header, static_cast<int32_t>(width), static_cast<int32_t>(height), dataSize);
 
   uint32_t screenshotCrc = computeCRC32(header, sizeof(header), 0xFFFFFFFFU);
   if (f.write(header, sizeof(header)) != sizeof(header)) {

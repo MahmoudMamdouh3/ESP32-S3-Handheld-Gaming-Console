@@ -13,13 +13,15 @@ export const webserialMethods = {
         return false;
       }
       try {
-        this.serialPort = await navigator.serial.requestPort();
+        const navSerial = /** @type {any} */ (navigator).serial;
+        this.serialPort = await navSerial.requestPort();
         await this.serialPort.open({ baudRate: 115200 });
         if (statusEl) statusEl.textContent = "Connected";
         if (logEl) logEl.textContent = "ESP32-S3 serial port opened. This page does not send firmware commands or parse telemetry.";
         return true;
       } catch (err) {
-        if (logEl) logEl.textContent = `Serial connection cancelled: ${err.message || err}`;
+        const message = err instanceof Error ? err.message : String(err);
+        if (logEl) logEl.textContent = `Serial connection cancelled: ${message}`;
         return false;
       }
     },
@@ -60,7 +62,8 @@ export const webserialMethods = {
           this.gameLibrary[systemId].unshift(entry);
           added.push(entry);
         } catch (error) {
-          rejected.push(`${file.name}: ${error.message}`);
+          const message = error instanceof Error ? error.message : String(error);
+          rejected.push(`${file.name}: ${message}`);
         }
       }
 

@@ -24,6 +24,10 @@ inline int clampInt(int v, int lo, int hi) {
   return (v < lo) ? lo : ((v > hi) ? hi : v);
 }
 
+inline uint8_t floatToByte(float v) {
+  return static_cast<uint8_t>(lroundf(v * 255.0f));
+}
+
 inline int minInt(int a, int b) {
   return (a < b) ? a : b;
 }
@@ -217,8 +221,7 @@ void renderParticlesOverlay(uint16_t* dst, int stride, int destX, int destY, int
         r = lerpf(r, sparkle ? 1.0f : 0.85f, pAlpha);
         g = lerpf(g, sparkle ? 0.88f : 0.96f, pAlpha);
         b = lerpf(b, sparkle ? 0.40f : 0.93f, pAlpha);
-        row[x] = packBGR565(static_cast<uint8_t>(r * 255.0f + 0.5f), static_cast<uint8_t>(g * 255.0f + 0.5f),
-                            static_cast<uint8_t>(b * 255.0f + 0.5f));
+        row[x] = packBGR565(floatToByte(r), floatToByte(g), floatToByte(b));
       }
     }
   }
@@ -273,8 +276,7 @@ void shadeFacePixel(int px, int py, float nx, float ny, const FaceFrameParams& p
     BmoFaceSdf::shadeMouthPixel(nx, ny - p.mouthOffY, p.mouthW, p.mouthCrv, p.mouthOpen, s_face.activeMouthStyle,
                                 p.aaBand, cr, cg, cb);
   }
-  outPixel = packBGR565(static_cast<uint8_t>(cr * 255.0f + 0.5f), static_cast<uint8_t>(cg * 255.0f + 0.5f),
-                        static_cast<uint8_t>(cb * 255.0f + 0.5f));
+  outPixel = packBGR565(floatToByte(cr), floatToByte(cg), floatToByte(cb));
 }
 
 void renderMascotInternal(uint16_t* dst, int stride, int destX, int destY, int destW, int destH) {
