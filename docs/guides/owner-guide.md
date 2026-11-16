@@ -12,22 +12,23 @@ Welcome! This guide is written specifically for a first-time hardware builder wi
   - A complete **31 × 46 hole (`7.87 × 11.68 cm`) perfboard placement map** ([`docs/wiring/perfboard-layout.md`](../wiring/perfboard-layout.md)) and **point-to-point soldering table** ([`docs/wiring/wire_list.csv`](../wiring/wire_list.csv)) have been generated for an **`8.80 × 12.40 × 3.20 cm`** pocketable shell.
 - **What has NOT been tested yet (`0 HARDWARE_TESTED` records):**
   - The software has **never** run on your physical soldered board yet. Computer tests prove the code compiles and its math works, but only plugging in and testing your real board proves the wires, solder joints, and screen speed work physically.
-- **Important Note About Old Notes Outside This Folder:**
-  - If you have an old file named `hardware-notes.md` saved on your computer, uploaded to another chat, or stored in AI memory that says `"FlashMode=opi"` or `"TP4056 LiPo charger"`, **delete it**. Your `ESP32-S3-WROOM-1-N16R8` chip uses **Quad SPI Flash (`FlashMode=qio`) + Octal SPI PSRAM (`PSRAM=opi`)**, and a `TP4056` LiPo charger must **never** be connected to rechargeable AA NiMH batteries.
+- **Important Note About Your `hardware-notes.md` File:**
+  - **Keep your `hardware-notes.md` note** — do **not** delete it. Your note recorded a real boot loop under `FlashMode=qio` while `opi` booted. That conflicts with Espressif's *ESP32-S3-WROOM-1 Datasheet* (`v1.4` Table 1, [`espressif.com`](https://www.espressif.com/documentation/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf), accessed `2026-11-15`), which specifies `16 MB` **Quad SPI** flash (`QIO`) + `8 MB` **Octal SPI** PSRAM (`OPI`). Let the read-only `esptool flash-id` / `chip-id` check in [`bringup.md` Step 3](bringup.md#step-3-read-only-esptool-v531-chip--flash-verification-before-flashing-anything) settle what is physically on your board before changing any build setting. (One rule is already certain: never connect a `TP4056` Li-ion charger to rechargeable AA NiMH cells.)
 
 ---
 
 ## 2. Your Next 10 Physical Steps (In Order)
 
-Do not skip ahead to 3D printing the case or loading hundreds of games until Steps 1–6 pass on your desk!
+Do not skip ahead to 3D printing the case or loading hundreds of games until Steps 1–7 pass on your desk!
 
-1. **Read the 1-Page Safety Rules ([`docs/guides/safety.md`](safety.md)):**
+1. **Read the 1-Page Safety Rules ([`docs/guides/safety.md`](safety.md)) & Install the Two `10 kΩ` SPI Pull-Up Resistors FIRST:**
    - Unplug USB-C and remove AA batteries before soldering or probing continuity.
-2. **Do the 5-Minute Power-Off Multimeter Check ([`docs/guides/bringup.md` Step 1](bringup.md)):**
-   - Put your multimeter in Continuity (beep) mode and make sure `3V3` and `GND` do **not** beep (no short circuit).
+   - Before starting Step 1, solder the two `10 kΩ` pull-up resistors (`GPIO 10` `TFT_CS` -> `3V3` and `GPIO 13` `SD_CS` -> `3V3`; [`docs/wiring/02-sd-card.md`](../wiring/02-sd-card.md)) so both SPI devices stay idle during reset.
+2. **Do the Power-Off Continuity, Polarity & Pull-Up Checks ([`docs/guides/bringup.md` Step 1](bringup.md)):**
+   - Put your multimeter in Continuity (beep) mode and make sure `3V3` and `GND` do **not** beep, `VCC`/`GND` on every module are **not** swapped, both `10 kΩ` pull-ups read `~10 kΩ`, and all 8 buttons beep only when held down.
    - **Disconnect** the SD module's `MISO` wire from ESP32 `GPIO 15` before turning power on for the first time.
 3. **Check Your Standalone MicroSD Module `MISO` Voltage BEFORE Connecting `GPIO 15` ([`docs/guides/bringup.md` Step 2](bringup.md)):**
-   - Power on via USB with the SD module's `MISO` wire disconnected, and measure the standalone SD module's `MISO` output. Connect it to `GPIO 15` **only** after it measures `<= 3.35 V` (`3.30 V` nominal), and add the two `10 kΩ` pull-up resistors from `TFT_CS` (`GPIO 10`) and `SD_CS` (`GPIO 13`) to `3V3` ([`docs/wiring/02-sd-card.md`](../wiring/02-sd-card.md)).
+   - Power the SD module **on the exact rail it will use permanently** (`3V3` if it is a `3.3 V`-only board without an `AMS1117` chip; **`5V`** if it is the blue 6-pin module with a black 3-pin `AMS1117` regulator). Measure `MISO` -> `GND` while still disconnected from `GPIO 15` **both with no card and with a FAT32 card inserted**. Connect `MISO` to `GPIO 15` **only** if both read **`<= 3.35 V`**. (If yours is a blue 5 V module, consider ordering a `3.3 V`-only [Adafruit #4682](https://www.adafruit.com/product/4682), accessed `2026-11-15`.)
 4. **Run the Read-Only Chip Check, Then Flash `bringup.ino` First ([`firmware/bringup/bringup.ino`](../../firmware/bringup/bringup.ino)):**
    - Run the read-only `esptool flash-id` / `chip-id` check first (`docs/guides/bringup.md` Step 3) so you know the exact flash and PSRAM wiring on your physical board before uploading any code.
    - Start with `bringup.ino` to verify buttons, SD, and LCD, and follow [`docs/decisions/0006-portable-power.md`](../decisions/0006-portable-power.md) and [`docs/bom.md`](../bom.md) (datasheets accessed `2026-11-15`) before adding a `2×AA` (`Adafruit #2030`/`TPS61022` + `MF-R300` + `DMP2035U`) or `3×AA` (`Pololu U3V70F5`/`U3V40F5` + `MF-R250`, taller shell) NiMH boost pack; old `S7V7F5` advice is withdrawn.
@@ -76,8 +77,14 @@ Do not skip ahead to 3D printing the case or loading hundreds of games until Ste
 2. Open PowerShell in the repository root (`BMO Gameboy`).
 3. **First Run Read-Only `esptool v5.3.1` Check Before Flashing ([`docs/guides/bringup.md` Step 3](bringup.md)):**
    ```powershell
-   & "$env:LOCALAPPDATA\Arduino15\packages\esp32\tools\esptool_py\5.3.1\esptool.exe" --chip esp32s3 --port COM3 flash-id
-   & "$env:LOCALAPPDATA\Arduino15\packages\esp32\tools\esptool_py\5.3.1\esptool.exe" --chip esp32s3 --port COM3 chip-id
+   $ESPTOOL = "$env:LOCALAPPDATA\Arduino15\packages\esp32\tools\esptool_py\5.3.1\esptool.exe"
+   if (-not (Test-Path $ESPTOOL)) {
+       python -m esptool --chip esp32s3 --port COM3 flash-id
+       python -m esptool --chip esp32s3 --port COM3 chip-id
+   } else {
+       & $ESPTOOL --chip esp32s3 --port COM3 flash-id
+       & $ESPTOOL --chip esp32s3 --port COM3 chip-id
+   }
    ```
 4. **Step A — Flash the First-Power-On Bring-Up Sketch first:**
    ```powershell
@@ -118,7 +125,7 @@ Do not skip ahead to 3D printing the case or loading hundreds of games until Ste
 - **DRAM (Internal Dynamic RAM, `320 KiB`):** The fast, small memory built directly inside the ESP32-S3 processor chip.
 - **Emulator Core:** A software program (like `Peanut-GB` for Game Boy or `agnes` for NES) that imitates a classic video game console.
 - **FAT32:** The standard file system format required on your MicroSD card so the ESP32-S3 can read files.
-- **Flash (`16 MB` Quad SPI / `QIO`):** The permanent storage chip on your board that holds the compiled BMO firmware when power is off.
+- **Flash (`16 MB`):** Permanent storage chip on your board. The `ESP32-S3-WROOM-1-N16R8` datasheet lists **Quad SPI (`QIO`)** flash, whereas your earlier `hardware-notes.md` recorded a **`QIO` boot loop (`OPI` worked)** — the read-only `esptool flash-id` check determines which flash mode your physical chip uses before changing build settings.
 - **GPIO (General-Purpose Input/Output):** The numbered metal pins (`GPIO 4`, `GPIO 12`, etc.) on the ESP32-S3 board that connect to buttons, the screen, and the SD card.
 - **I2C / I2S:** Standard 2-wire (`I2C`) and 3-wire (`I2S`, for audio) communication connections between chips.
 - **LDO (Low-Dropout Regulator):** The tiny voltage regulator on the ESP32-S3 board that turns `5.0 V` USB/boost power into `3.3 V` for the chip.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT OR GPL-2.0-or-later
-"""Validate every BOM component has a datasheet URL and meets worst-case electrical ratings."""
+"""Validate every BOM component has an MPN/manufacturer datasheet URL and meets worst-case electrical ratings."""
 
 from __future__ import annotations
 
@@ -17,6 +17,8 @@ BANNED_UNSAFE_PARTS = (
     "FQP27P06",
     "TPS61023",
     "EVQ-P1D05M",
+    "2.80 V rising",
+    "2.40 V falling",
 )
 
 BANNED_ACTIVE_SPECS = (
@@ -24,6 +26,32 @@ BANNED_ACTIVE_SPECS = (
     "MF-R150",
     "1N5819",
 )
+
+# Every BOM row's datasheet URL must identify its MPN or OEM/vendor datasheet path (never an unrelated part/retail page).
+EXPECTED_URL_TOKENS: dict[str, tuple[str, ...]] = {
+    "U1": ("espressif.com", "devkitc-1"),
+    "DISP1": ("st7789",),
+    "SD1": ("adafruit.com", "4682"),
+    "SW_DPAD": ("omron", "b3f"),
+    "SW_AB": ("omron", "b3f"),
+    "SW_SYS": ("omron", "b3f"),
+    "SW_LR": ("omron", "b3f"),
+    "R_CS1, R_CS2": ("yageo.com", "mfr"),
+    "R_SCK, R_MOSI": ("yageo.com", "mfr"),
+    "C_DEC1, C_DEC2": ("murata.com", "rder7"),
+    "PCB1": ("busboard.com", "pad3u"),
+    "BAT1": ("eneloop", "bk-3mccf"),
+    "BH1": ("2462",),
+    "F1": ("bourns.com", "mfr"),
+    "SW_PWR": ("littelfuse.com", "ck-slides"),
+    "Q1": ("diodes.com", "dmp2035u"),
+    "U2A": ("adafruit.com", "2030"),
+    "U2B": ("ti.com", "tps61022"),
+    "U2C": ("pololu.com", "4012"),
+    "U2D": ("pololu.com", "2891"),
+    "D1": ("st.com", "1n582x"),
+    "R_BAT1, R_BAT2, C_BAT": ("yageo.com", "mfr"),
+}
 
 
 def parse_bom_tables(markdown: str) -> list[dict[str, str]]:
@@ -56,15 +84,30 @@ def _extract_first_float(pattern: str, text: str, label: str) -> float:
     return float(match.group(1))
 
 
+def _get_url_column(row: dict[str, str]) -> str:
+    for key, val in row.items():
+        if key.startswith("Datasheet URL"):
+            return val
+    return ""
+
+
 def validate_bom_row(row: dict[str, str]) -> None:
-    """Assert datasheet URL presence and rating >= worst-case requirement for a single BOM row."""
+    """Assert MPN/manufacturer datasheet URL and rating >= worst-case requirement for a single BOM row."""
     ref = row["Ref"]
     spec_col = row.get("Vetted Part / Spec") or row.get("Vetted Part / Options") or ""
     margin_col = row.get("Worst-Case Requirement vs. Part Rating", "")
-    url_col = row.get("Datasheet URL (Accessed `2026-11-15`)", "")
+    url_col = _get_url_column(row)
 
     if not url_col.startswith("https://"):
         raise AssertionError(f"{ref}: invalid or missing datasheet URL: {url_col!r}")
+    expected_tokens = EXPECTED_URL_TOKENS.get(ref)
+    if expected_tokens is None:
+        raise AssertionError(f"{ref}: missing EXPECTED_URL_TOKENS entry in tests/test_bom_ratings.py")
+    url_lower = url_col.lower()
+    for token in expected_tokens:
+        if token not in url_lower:
+            raise AssertionError(f"{ref}: datasheet URL {url_col!r} must include MPN/manufacturer token {token!r}")
+
     if " vs. Part " not in margin_col:
         raise AssertionError(f"{ref}: must state 'Req ... vs. Part ...' in margin column, got: {margin_col!r}")
 
@@ -80,6 +123,8 @@ def validate_bom_row(row: dict[str, str]) -> None:
         if part_ma < req_ma:
             raise AssertionError(f"{ref}: LDO rating {part_ma} mA < req {req_ma} mA")
     elif ref == "DISP1":
+        if "adafruit.com/product/4311" in url_lower:
+            raise AssertionError(f"{ref}: must cite Sitronix ST7789 datasheet, not Adafruit retail page")
         req_v = _extract_first_float(r"(\d+(?:\.\d+)?)\s*V", req_text, "DISP1 req V")
         max_io_v = _extract_first_float(r"\d+(?:\.\d+)?–(\d+(?:\.\d+)?)\s*V\s*IO", part_text, "DISP1 part IO V")
         if max_io_v < req_v:
@@ -108,6 +153,8 @@ def validate_bom_row(row: dict[str, str]) -> None:
         if part_v < req_v * 2:
             raise AssertionError(f"{ref}: capacitor voltage {part_v} V needs >= 2x {req_v} V margin")
     elif ref == "PCB1":
+        if "2462" in url_lower:
+            raise AssertionError(f"{ref}: perfboard URL must not point to battery holder datasheet 2462")
         if "0.254 cm" not in req_text or "FR-4" not in part_text:
             raise AssertionError(f"{ref}: missing 0.254 cm grid or FR-4 rating")
     elif ref == "BAT1":
@@ -156,18 +203,17 @@ def validate_bom_row(row: dict[str, str]) -> None:
     elif ref in ("U2C", "U2D"):
         req_start = _extract_first_float(r"start\s*<\s*(\d+(?:\.\d+)?)\s*V", req_text, f"{ref} req start V")
         req_out = _extract_first_float(r"I_out\s*>=\s*(\d+(?:\.\d+)?)\s*A", req_text, f"{ref} req I_out A")
-        part_start = _extract_first_float(r"(\d+(?:\.\d+)?)\s*V\s*(?:start|rising)", part_text, f"{ref} part start V")
+        part_start = _extract_first_float(r"(\d+(?:\.\d+)?)\s*V\s*(?:start|min input)", part_text, f"{ref} part min V")
         part_out = _extract_first_float(r"(\d+(?:\.\d+)?)\s*A\+?\s*@\s*3\.0\s*V", part_text, f"{ref} part I_out @ 3.0 V")
         if part_start >= req_start:
-            raise AssertionError(f"{ref}: startup {part_start} V >= 3xAA cutoff {req_start} V")
+            raise AssertionError(f"{ref}: min input {part_start} V >= 3xAA cutoff {req_start} V")
         if part_out < req_out:
             raise AssertionError(f"{ref}: output {part_out} A < req {req_out} A")
-    elif ref == "D1, D2":
-        req_a = _extract_first_float(r">=\s*(\d+(?:\.\d+)?)\s*A", req_text, "D1/D2 req A")
-        d1_a = _extract_first_float(r"LM66100\s*(\d+(?:\.\d+)?)\s*A", part_text, "LM66100 A")
-        d2_a = _extract_first_float(r"1N5822\s*(\d+(?:\.\d+)?)\s*A", part_text, "1N5822 A")
-        if d1_a < req_a or d2_a < req_a:
-            raise AssertionError(f"{ref}: diode rating ({d1_a} A / {d2_a} A) < req {req_a} A")
+    elif ref == "D1":
+        req_a = _extract_first_float(r">=\s*(\d+(?:\.\d+)?)\s*A", req_text, "D1 req A")
+        d1_a = _extract_first_float(r"1N5822\s*(\d+(?:\.\d+)?)\s*A", part_text, "1N5822 A")
+        if d1_a < req_a:
+            raise AssertionError(f"{ref}: diode rating {d1_a} A < req {req_a} A")
     elif ref == "R_BAT1, R_BAT2, C_BAT":
         req_mw = _extract_first_float(r"<=\s*(\d+(?:\.\d+)?)\s*mW", req_text, "R_BAT req mW")
         part_mw = _extract_first_float(r"(\d+(?:\.\d+)?)\s*mW", part_text, "R_BAT part mW")
@@ -182,10 +228,10 @@ class BomRatingsTests(unittest.TestCase):
     def test_all_bom_rows_have_datasheets_and_valid_margins(self) -> None:
         markdown = BOM_PATH.read_text(encoding="utf-8")
         for forbidden in BANNED_UNSAFE_PARTS:
-            self.assertNotIn(forbidden, markdown, msg=f"Unsafe part {forbidden!r} must not appear in docs/bom.md")
+            self.assertNotIn(forbidden, markdown, msg=f"Forbidden string {forbidden!r} must not appear in docs/bom.md")
 
         rows = parse_bom_tables(markdown)
-        self.assertGreaterEqual(len(rows), 18)
+        self.assertEqual(len(rows), len(EXPECTED_URL_TOKENS))
         for row in rows:
             validate_bom_row(row)
 
@@ -194,21 +240,38 @@ class BomRatingsTests(unittest.TestCase):
             "Ref": "SW_PWR",
             "Vetted Part / Options": "OS102011MA1QN1",
             "Worst-Case Requirement vs. Part Rating": "Req >= 2.94 A (2xAA) vs. Part 0.1 A @ 12 VDC",
-            "Datasheet URL (Accessed `2026-11-15`)": "https://example.com/sw",
+            "Datasheet URL (Accessed `2026-11-15..16`)": "https://www.littelfuse.com/ck-slides-os.pdf",
         }
         bad_boost = {
             "Ref": "U2A",
             "Vetted Part / Options": "Wrong Boost",
             "Worst-Case Requirement vs. Part Rating": "Req start <= 1.80 V, I_out >= 1.00 A vs. Part 2.70 V start, >= 0.50 A @ 2.0 V",
-            "Datasheet URL (Accessed `2026-11-15`)": "https://example.com/boost",
+            "Datasheet URL (Accessed `2026-11-15..16`)": "https://www.adafruit.com/product/2030",
         }
         bad_pfet = {
             "Ref": "Q1",
             "Vetted Part / Options": "High-Vgs PFET",
             "Worst-Case Requirement vs. Part Rating": "Req >= 2.94 A (2xAA) vs. Part -20 V, -4.0 A, <= 100 mOhm @ -10.0 V",
-            "Datasheet URL (Accessed `2026-11-15`)": "https://example.com/pfet",
+            "Datasheet URL (Accessed `2026-11-15..16`)": "https://www.diodes.com/assets/Datasheets/DMP2035U.pdf",
         }
         for bad in (bad_switch, bad_boost, bad_pfet):
+            with self.assertRaises(AssertionError):
+                validate_bom_row(bad)
+
+    def test_negative_cases_catch_mismatched_urls(self) -> None:
+        wrong_disp_url = {
+            "Ref": "DISP1",
+            "Vetted Part / Spec": "ST7789VW",
+            "Worst-Case Requirement vs. Part Rating": "Req 3.3 V logic/VCC vs. Part 2.4–3.3 V IO (3.3 V module)",
+            "Datasheet URL (Accessed `2026-11-15..16`)": "https://www.adafruit.com/product/4311",
+        }
+        wrong_pcb_url = {
+            "Ref": "PCB1",
+            "Vetted Part / Spec": "Perfboard",
+            "Worst-Case Requirement vs. Part Rating": "Req 0.254 cm grid vs. Part 1.6 mm FR-4 PTH",
+            "Datasheet URL (Accessed `2026-11-15..16`)": "https://www.mouser.com/datasheet/2/215/2462-739343.pdf",
+        }
+        for bad in (wrong_disp_url, wrong_pcb_url):
             with self.assertRaises(AssertionError):
                 validate_bom_row(bad)
 
