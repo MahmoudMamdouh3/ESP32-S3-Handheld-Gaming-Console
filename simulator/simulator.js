@@ -32,8 +32,13 @@ export class BmoSimulator {
     this._rafId = null;
     /** @type {FrameRequestCallback} */
     this._boundRenderLoop = (ts) => this.renderLoop(ts);
-    /** @type {Record<string, any>} */
-    this.coverImages = {};
+    /** @type {Array<() => void>} */
+    this._cleanupFns = [];
+    /** @type {string | null} */
+    this._lastRenderSig = null;
+    this._screenTextureDirty = true;
+    /** @type {Map<string, any>} */
+    this.coverImages = new Map();
     /** @type {Record<string, any>} */
     this.gameLibrary = this.createGameLibrary();
     /** @type {WasmPlaytestEngine | null} */
@@ -47,6 +52,7 @@ export class BmoSimulator {
     this.bmoLastGazeX = 0;
     this.bmoLastInputMs = 0;
     this.lastInputActivityMs = 0;
+    this.bootTimer = 0;
     this.topPicksFilter = false;
     /** @type {string | number} */
     this.currentState = STATE.BOOT_SPLASH;
@@ -66,7 +72,9 @@ export class BmoSimulator {
     this.selectedGameIndex = 0;
     this.gameListScrollOffset = 0;
     this.topPicksFilter = false;
-    this.coverImages = {};
+    this.coverImages = new Map();
+    this._lastRenderSig = null;
+    this._screenTextureDirty = true;
     this.lastHdCoverSlug = "";
     this.bootTimer = 0;
     this.lastFrameTime = performance.now();
@@ -160,6 +168,11 @@ export class BmoSimulator {
       );
       this.bmo3D.setOnInternalSelect((meta) => this.handleInternalPartSelected(meta));
       this.bmo3D.onExplosionChange = (t) => this.syncExplosionReadout(t);
+      this.bmo3D.shouldUpdateScreenTexture = () => {
+        if (!this._screenTextureDirty) return false;
+        this._screenTextureDirty = false;
+        return true;
+      };
       if (this.pendingInternalsPreset) this.applyInternalsPresetUI(this.pendingInternalsPreset);
     } catch (err) {
       console.warn("Failed to initialize 3D console view:", err);
@@ -167,10 +180,38 @@ export class BmoSimulator {
     }
   }
 
+  trackListener(target, type, handler, options) {
+    if (!target || typeof target.addEventListener !== "function") return;
+    target.addEventListener(type, handler, options);
+    this._cleanupFns.push(() => target.removeEventListener(type, handler, options));
+  }
+
+  markRenderDirty() {
+    this._lastRenderSig = null;
+    this._screenTextureDirty = true;
+  }
+
   dispose() {
     if (this._rafId !== null) {
       cancelAnimationFrame(this._rafId);
       this._rafId = null;
+    }
+    while (this._cleanupFns.length > 0) {
+      const cleanup = this._cleanupFns.pop();
+      if (cleanup) cleanup();
+    }
+    if (this.coverImages instanceof Map) {
+      for (const entry of this.coverImages.values()) {
+        if (entry && entry.img) {
+          entry.img.onload = null;
+          entry.img.onerror = null;
+        }
+      }
+      this.coverImages.clear();
+    }
+    if (this.serialPort && typeof this.serialPort.close === "function") {
+      Promise.resolve(this.serialPort.close()).catch(() => {});
+      this.serialPort = null;
     }
     if (this.bmo3D && typeof this.bmo3D.dispose === "function") {
       this.bmo3D.dispose();
@@ -306,6 +347,52 @@ export class BmoSimulator {
     this.updateViewMode();
   }
 
+  _getFaceBlinkKey() {
+    return this.bmo.isBlinking ? Math.round(this.bmo.blinkState * 12) : -1;
+  }
+
+  /** @param {number} cIdx */
+  _computeGameSelectSignature(cIdx) {
+    const c = CONSOLES_LIST[cIdx];
+    const games = c ? this.getVisibleGames(c.id) : [];
+    const rawIdx = this.selectedGameIndex ?? 0;
+    const idx = games.length > 0 ? Math.min(Math.max(rawIdx, 0), games.length - 1) : -1;
+    const game = idx >= 0 ? games[idx] : null;
+    const title = typeof game === "string" ? game : (game?.title || "");
+    const isFav = Boolean(game && typeof game === "object" && game.isFav);
+    const cover = title ? this.getCoverImage(title) : null;
+    let coverFlag = "N";
+    if (cover) coverFlag = cover.ready ? "R" : (cover.failed ? "F" : "L");
+    return `GAME|${cIdx}|${idx}|${games.length}|${this.topPicksFilter}|${isFav}|${coverFlag}|${this._getFaceBlinkKey()}`;
+  }
+
+  /** @param {number} cIdx */
+  _computeEmuSignature(cIdx) {
+    const eng = this.wasmEngine;
+    if (eng?.ready && eng?.loaded && !this.isPausedInGame) return null;
+    const flags = eng ? `${eng.ready}|${eng.loaded}|${eng.frameCount}|${eng.swapAB}|${eng.bezelEnabled}|${eng.runtimeError}` : "none";
+    return `EMU|${cIdx}|${this.activePalette}|${this.isPausedInGame}|${this.pauseMenuIndex}|${flags}`;
+  }
+
+  /** @param {number} dt */
+  _computeRenderSignature(dt) {
+    if (this.currentState === STATE.IDLE_MASCOT) return null;
+    if (this.currentState === STATE.BOOT_SPLASH) {
+      this.bootTimer += dt;
+      const blink = Math.floor(this.bootTimer * 2) % 2;
+      return `BOOT|${blink}|${this._getFaceBlinkKey()}`;
+    }
+    const cIdx = this.selectedConsoleIndex ?? 0;
+    if (this.currentState === STATE.CONSOLE_MUSEUM) return `MUSEUM|${cIdx}`;
+    if (this.currentState === STATE.CONSOLE_SELECT) {
+      const c = CONSOLES_LIST[cIdx];
+      return `CONS|${cIdx}|${c ? c.count : 0}|${this._getFaceBlinkKey()}`;
+    }
+    if (this.currentState === STATE.GAME_SELECT) return this._computeGameSelectSignature(cIdx);
+    if (this.currentState === STATE.EMULATION_VIEW) return this._computeEmuSignature(cIdx);
+    return null;
+  }
+
   renderLoop(timestamp) {
     const dt = (timestamp - this.lastFrameTime) / 1000;
     this.lastFrameTime = timestamp;
@@ -314,24 +401,31 @@ export class BmoSimulator {
       this.enterBmoCompanion(false);
     }
     this.updateBmoAnimation(dt);
-    if (this.ctx) {
-      this.ctx.fillStyle = "#0a0e17";
-      this.ctx.fillRect(0, 0, 320, 240);
-    }
 
-    /** @type {Record<string | number, () => void>} */
-    const screenPainters = {
-      [STATE.BOOT_SPLASH]: () => this.renderBootSplash(dt),
-      [STATE.CONSOLE_SELECT]: () => this.renderConsoleSelectMenu(),
-      [STATE.GAME_SELECT]: () => this.renderGameSelectMenu(),
-      [STATE.CONSOLE_MUSEUM]: () => this.renderConsoleMuseumModal(),
-      [STATE.EMULATION_VIEW]: () => this.renderEmulationView(),
-      [STATE.IDLE_MASCOT]: () => this.renderIdleMascotScreen(timestamp),
-    };
-    const painter = screenPainters[this.currentState];
-    if (painter) painter();
+    const sig = this._computeRenderSignature(dt);
+    const shouldDraw = (sig === null || sig !== this._lastRenderSig);
+    if (shouldDraw) {
+      this._lastRenderSig = sig;
+      if (this.ctx) {
+        this.ctx.fillStyle = "#0a0e17";
+        this.ctx.fillRect(0, 0, 320, 240);
+      }
+
+      /** @type {Record<string | number, () => void>} */
+      const screenPainters = {
+        [STATE.BOOT_SPLASH]: () => this.renderBootSplash(this.bootTimer === dt ? dt : 0),
+        [STATE.CONSOLE_SELECT]: () => this.renderConsoleSelectMenu(),
+        [STATE.GAME_SELECT]: () => this.renderGameSelectMenu(),
+        [STATE.CONSOLE_MUSEUM]: () => this.renderConsoleMuseumModal(),
+        [STATE.EMULATION_VIEW]: () => this.renderEmulationView(),
+        [STATE.IDLE_MASCOT]: () => this.renderIdleMascotScreen(timestamp),
+      };
+      const painter = screenPainters[this.currentState];
+      if (painter) painter();
+      this._screenTextureDirty = true;
+    }
     this.updateTelemetryHud();
-    requestAnimationFrame(this._boundRenderLoop);
+    this._rafId = requestAnimationFrame(this._boundRenderLoop);
   }
 
   updateTelemetryHud() {
@@ -402,14 +496,37 @@ export class BmoSimulator {
 
   getCoverImage(title) {
     const slug = this.slugifyTitle(title);
-    let entry = this.coverImages[slug];
-    if (!entry) {
-      entry = { img: new Image(), ready: false, failed: false, slug };
-      entry.img.onload = () => { entry.ready = true; };
-      entry.img.onerror = () => { entry.failed = true; };
-      entry.img.src = `covers/${slug}.png`;
-      this.coverImages[slug] = entry;
+    const cache = this.coverImages instanceof Map ? this.coverImages : new Map();
+    if (!(this.coverImages instanceof Map)) this.coverImages = cache;
+    let entry = cache.get(slug);
+    if (entry) {
+      cache.delete(slug);
+      cache.set(slug, entry);
+      return entry;
     }
+    if (cache.size >= 32) {
+      const oldestKey = cache.keys().next().value;
+      if (oldestKey !== undefined) {
+        const victim = cache.get(oldestKey);
+        if (victim && victim.img) {
+          victim.img.onload = null;
+          victim.img.onerror = null;
+          victim.img.src = "";
+        }
+        cache.delete(oldestKey);
+      }
+    }
+    entry = { img: new Image(), ready: false, failed: false, slug };
+    entry.img.onload = () => {
+      entry.ready = true;
+      this.markRenderDirty();
+    };
+    entry.img.onerror = () => {
+      entry.failed = true;
+      this.markRenderDirty();
+    };
+    entry.img.src = `covers/${slug}.png`;
+    cache.set(slug, entry);
     return entry;
   }
 
@@ -477,14 +594,16 @@ if (typeof window !== "undefined") {
     const sim = new BmoSimulator();
     /** @type {any} */ (window).simulator = sim;
     const btnSerial = document.getElementById("btn-webserial-connect");
-    if (btnSerial) btnSerial.addEventListener("click", () => sim.connectWebSerial());
+    if (btnSerial) sim.trackListener(btnSerial, "click", () => sim.connectWebSerial());
     const fileInput = document.getElementById("rom-file-upload");
-    if (fileInput) fileInput.addEventListener("change", (e) => {
-      const target = /** @type {HTMLInputElement | null} */ (e.target);
-      if (target?.files) sim.ingestUploadedRoms(target.files).catch((error) => sim.showSimulatorMessage(error.message, true));
-    });
-    window.addEventListener("dragover", (e) => e.preventDefault());
-    window.addEventListener("drop", (e) => {
+    if (fileInput) {
+      sim.trackListener(fileInput, "change", (/** @type {Event} */ e) => {
+        const target = /** @type {HTMLInputElement | null} */ (e.target);
+        if (target?.files) sim.ingestUploadedRoms(target.files).catch((error) => sim.showSimulatorMessage(error.message, true));
+      });
+    }
+    sim.trackListener(window, "dragover", (/** @type {Event} */ e) => e.preventDefault());
+    sim.trackListener(window, "drop", (/** @type {any} */ e) => {
       e.preventDefault();
       if (e.dataTransfer && e.dataTransfer.files) {
         sim.ingestUploadedRoms(e.dataTransfer.files).catch((error) => sim.showSimulatorMessage(error.message, true));

@@ -6,6 +6,8 @@
 #include <ctype.h>
 #include <esp_attr.h>
 #include <esp_heap_caps.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include <limits.h>
 #include <string.h>
 
@@ -62,9 +64,17 @@ RuntimeState& state() {
 }
 
 void updateBootBreadcrumb() {
+  static uint8_t s_lastState = 0xFFU;
+  static int8_t s_lastEmu = -2;
   const RuntimeState& rt = mutableState();
-  s_bootBreadcrumb =
-      BmoApp::makeBootBreadcrumb(static_cast<uint8_t>(rt.currentState), static_cast<int8_t>(rt.selectedEmulatorIndex));
+  const uint8_t curState = static_cast<uint8_t>(rt.currentState);
+  const int8_t curEmu = static_cast<int8_t>(rt.selectedEmulatorIndex);
+  if (s_bootBreadcrumb.magic == BmoApp::kBreadcrumbMagic && curState == s_lastState && curEmu == s_lastEmu) {
+    return;
+  }
+  s_lastState = curState;
+  s_lastEmu = curEmu;
+  s_bootBreadcrumb = BmoApp::makeBootBreadcrumb(curState, curEmu);
 }
 
 BmoApp::BootBreadcrumb readBootBreadcrumb() {
@@ -244,7 +254,14 @@ char romInitialLetter(const RomFile* rf) {
 
 void paceMenuFrame(unsigned long frameStartMs, unsigned long targetMs) {
   const unsigned long elapsed = millis() - frameStartMs;
-  if (elapsed < targetMs) delay(targetMs - elapsed);
+  if (elapsed < targetMs) {
+    const TickType_t ticks = pdMS_TO_TICKS(targetMs - elapsed);
+    if (ticks > 0U) {
+      vTaskDelay(ticks);
+    } else {
+      taskYIELD();
+    }
+  }
 }
 
 } // namespace BmoAppRuntime

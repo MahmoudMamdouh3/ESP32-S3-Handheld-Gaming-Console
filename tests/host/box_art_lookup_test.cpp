@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "box_art_lookup.h"
+#include "rom_catalog_lookup.h"
 #include "test_check.h"
 
 int main() {
@@ -51,6 +52,23 @@ int main() {
   snprintf(keyedFilename, sizeof(keyedFilename), "/boxart/%s.bmp", bakedKey);
   matcher.markArtFile(keyedFilename);
   assert(roms[4].hasBoxArt == 1);
+
+  // StemBaseIndex O(log N) uniqueness matches linear stem comparison across collisions and unique names.
+  RomPathMatch::CatalogHashEntry stemEntries[5] = {};
+  RomPathMatch::StemBaseIndex stemIndex;
+  static const char* kTestPaths[5] = {
+      "gb/Mario.gb",
+      "nes/Mario.nes",
+      "gbc/Zelda.gbc",
+      "snes/Chrono Trigger (USA).sfc",
+      "Virtual BMO (Official Game).gb",
+  };
+  auto staticPathAt = [](int idx) -> const char* { return (idx >= 0 && idx < 5) ? kTestPaths[idx] : nullptr; };
+  BMO_CHECK(stemIndex.init(5, staticPathAt, stemEntries));
+  BMO_CHECK(!stemIndex.isUniqueForRom(kTestPaths[0], "Mario", staticPathAt));
+  BMO_CHECK(!stemIndex.isUniqueForRom(kTestPaths[1], "mario", staticPathAt));
+  BMO_CHECK(stemIndex.isUniqueForRom(kTestPaths[2], "zelda", staticPathAt));
+  BMO_CHECK(stemIndex.isUniqueForRom(kTestPaths[3], "Chrono Trigger (USA)", staticPathAt));
 
   printf("BOX_ART_LOOKUP_OK\n");
   return 0;

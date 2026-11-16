@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 #include "display_internal.h"
+#include "text_fit.h"
 #include "../hal/spi_arbiter.h"
 #include <Fonts/FreeSans9pt7b.h>
 #include <cstdio>
@@ -49,19 +50,14 @@ void BmoDisplayInternal::drawCentered(const char* text, int y, uint16_t color) {
 
 void BmoDisplayInternal::drawFittedCentered(const char* source, int y, int maxWidth, uint16_t color) {
   char fitted[64];
-  int len = snprintf(fitted, sizeof(fitted), "%s", source ? source : "Unknown game");
-  if (len >= (int)sizeof(fitted)) len = (int)sizeof(fitted) - 1;
-  int16_t x1, y1;
-  uint16_t width, height;
-  menuCanvas->getTextBounds(fitted, 0, 0, &x1, &y1, &width, &height);
-  while ((int)width > maxWidth && len > 4) {
-    len--;
-    fitted[len - 3] = '.';
-    fitted[len - 2] = '.';
-    fitted[len - 1] = '.';
-    fitted[len] = '\0';
-    menuCanvas->getTextBounds(fitted, 0, 0, &x1, &y1, &width, &height);
-  }
+  BmoTextFit::fitCenteredWithEllipsis(source, maxWidth, fitted, sizeof(fitted), [](const char* candidate) -> int {
+    int16_t x1 = 0;
+    int16_t y1 = 0;
+    uint16_t width = 0;
+    uint16_t height = 0;
+    menuCanvas->getTextBounds(candidate, 0, 0, &x1, &y1, &width, &height);
+    return static_cast<int>(width);
+  });
   drawCentered(fitted, y, color);
 }
 

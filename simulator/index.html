@@ -587,10 +587,10 @@
   </main>
 
   <link rel="modulepreload" href="bmo_internals_3d.js">
-  <script src="three.min.js"></script>
-  <script src="OrbitControls.js"></script>
-  <script src="bmo_enclosure_meshes.js"></script>
-  <script src="bmo_playtest_cores.b64.js"></script>
+  <link rel="prefetch" as="script" href="bmo_playtest_cores.b64.js">
+  <script defer src="three.min.js"></script>
+  <script defer src="OrbitControls.js"></script>
+  <script defer src="bmo_enclosure_meshes.js"></script>
   <script type="module" src="simulator.js"></script>
 </body>
 </html>

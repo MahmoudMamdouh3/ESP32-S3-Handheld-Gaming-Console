@@ -2,7 +2,8 @@
 #include "app_emulator_loop.h"
 
 #include <Arduino.h>
-#include <rom/ets_sys.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include <stdio.h>
 
 #include "../cores/core_registry.h"
@@ -23,7 +24,7 @@ bool processLaunchCelebration(BmoAppRuntime::RuntimeState& rt) {
   if (!rt.launchCelebrationPending) return false;
   Buttons::update(false);
   if (static_cast<unsigned long>(millis() - rt.launchCelebrationStartMs) < 400UL) {
-    delay(16);
+    vTaskDelay(pdMS_TO_TICKS(16));
     return true;
   }
   rt.launchCelebrationPending = false;
@@ -89,12 +90,14 @@ void enforceEmulatorPacing(BmoAppRuntime::RuntimeState& rt, unsigned long frameS
   unsigned long elapsed = micros() - frameStart;
   if (elapsed < targetFrameUs) {
     const unsigned long remaining = targetFrameUs - elapsed;
-    if (remaining > 1000UL) {
-      delay((remaining - 800UL) / 1000UL);
+    if (remaining > 1500UL) {
+      const TickType_t sleepTicks = pdMS_TO_TICKS((remaining - 800UL) / 1000UL);
+      if (sleepTicks > 0U) {
+        vTaskDelay(sleepTicks);
+      }
     }
-    elapsed = micros() - frameStart;
-    if (elapsed < targetFrameUs) {
-      ets_delay_us(targetFrameUs - elapsed);
+    while (static_cast<unsigned long>(micros() - frameStart) < targetFrameUs) {
+      taskYIELD();
     }
   } else {
     rt.droppedFrames++;

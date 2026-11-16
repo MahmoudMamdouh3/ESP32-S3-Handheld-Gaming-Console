@@ -225,7 +225,16 @@ bool syncFinalTimestampOnDisk(BmoIndexHeader& header, uint64_t totalFileBytes, s
     finalFile.flush();
     finalFile.close();
   }
-  return synced && verifyIndexV3File(BMO_INDEX_PATH, expectedFileSize, header.crc32);
+  if (!synced) return false;
+  File verifyFile = SD.open(BMO_INDEX_PATH, FILE_READ);
+  if (!verifyFile) return false;
+  const size_t diskSize = static_cast<size_t>(verifyFile.size());
+  BmoIndexHeader diskHeader{};
+  const size_t got = (diskSize == expectedFileSize)
+                         ? verifyFile.read(reinterpret_cast<uint8_t*>(&diskHeader), sizeof(BmoIndexHeader))
+                         : 0U;
+  verifyFile.close();
+  return got == sizeof(BmoIndexHeader) && memcmp(&diskHeader, &header, sizeof(BmoIndexHeader)) == 0;
 }
 
 bool writeAndCommitIndexFile(BmoIndexHeader& header, const BmoIndexEntry* entries, size_t entriesBytes,
@@ -256,7 +265,6 @@ bool writeAndCommitIndexFile(BmoIndexHeader& header, const BmoIndexEntry* entrie
     ok = SD.rename(BMO_INDEX_TEMP_PATH, BMO_INDEX_PATH);
     if (!ok && hadBackup) SD.rename(BMO_INDEX_BACKUP_PATH, BMO_INDEX_PATH);
   }
-  if (ok) ok = syncFinalTimestampOnDisk(header, totalFileBytes, expectedSize);
   if (ok) {
     if (hadBackup) SD.remove(BMO_INDEX_BACKUP_PATH);
     return syncFinalTimestampOnDisk(header, totalFileBytes, expectedSize);
@@ -296,7 +304,7 @@ bool verifyIndexV3File(const char* path, size_t expectedSize, uint32_t expectedC
     file.close();
     return false;
   }
-  uint8_t buffer[256];
+  uint8_t buffer[768];
   uint32_t crc = 0xFFFFFFFFU;
   while (remaining > 0U) {
     const size_t request = remaining < sizeof(buffer) ? remaining : sizeof(buffer);
@@ -369,7 +377,11 @@ bool SDCard::loadIndex() {
   const bool loaded = readOk && BmoSdIndexIo::validateAndApplyLoadedCatalog(
                                     header, entries, entriesBytes, arena, stringBytes, hostUnstamped, expectedFileSize);
   if (entries) heap_caps_free(entries);
-  if (!loaded) resetPathArena();
+  if (!loaded) {
+    resetPathArena();
+  } else {
+    bumpCatalogGeneration();
+  }
   return loaded;
 #else
   return false;

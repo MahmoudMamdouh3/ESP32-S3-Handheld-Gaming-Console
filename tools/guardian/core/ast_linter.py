@@ -466,12 +466,79 @@ class FirmwareAstLinter:
                 cur_fn = None
         return findings
 
+    def _check_hot_cpp_safety(
+        self, path: Path, rel_path_str: str, lines: list[str], idx: int, raw_line: str
+    ) -> list[LintFinding]:
+        findings: list[LintFinding] = []
+        is_hot_cpp = any(seg in rel_path_str for seg in ("src/app/", "src/ui/", "src/cores/")) and rel_path_str.endswith(".cpp")
+        stripped_code = raw_line.split("//", 1)[0].strip()
+        if not is_hot_cpp or not stripped_code or stripped_code.startswith(("/*", "*", "#")):
+            return findings
+        if re.search(r"\b(?:delay|ets_delay_us)\s*\(", stripped_code):
+            findings.append(
+                LintFinding(
+                    rule_id="BLOCKING_DELAY_IN_FIRMWARE",
+                    severity="CRITICAL",
+                    file_path=path,
+                    line_number=idx,
+                    line_content=stripped_code,
+                    message="Blocking delay() / ets_delay_us() stalls Core 1 / RTOS responsiveness.",
+                    suggested_fix="Replace with non-blocking deadline timers or vTaskDelayUntil.",
+                )
+            )
+        sig_window = " ".join(lines[max(0, idx - 5) : idx])
+        in_fake08_host_sig = "Host::" in sig_window and ("Host::" in stripped_code or "{" in stripped_code or stripped_code.endswith(","))
+        if "src/cores/" in rel_path_str and re.search(r"\bstd::(?:string|vector)\b", stripped_code) and not in_fake08_host_sig:
+            findings.append(
+                LintFinding(
+                    rule_id="INTERNAL_DRAM_STL_IN_CORE",
+                    severity="CRITICAL",
+                    file_path=path,
+                    line_number=idx,
+                    line_content=stripped_code,
+                    message="std::string / std::vector allocates from internal DRAM instead of fixed/PSRAM pools.",
+                    suggested_fix="Use fixed char/struct buffers or explicit bmo_psram_malloc buffers.",
+                )
+            )
+        return findings
+
+    def _check_exit_and_ierror(
+        self, path: Path, lines: list[str], idx: int, clean: str, alloc_err_re: re.Pattern[str]
+    ) -> list[LintFinding]:
+        findings: list[LintFinding] = []
+        if re.search(r"\bexit\s*\(", clean):
+            findings.append(
+                LintFinding(
+                    rule_id="EXIT_OR_ERROR_ON_ALLOC_FAILURE",
+                    severity="CRITICAL",
+                    file_path=path,
+                    line_number=idx,
+                    line_content=clean,
+                    message="Reachable exit() call in embedded firmware terminates RTOS execution.",
+                    suggested_fix="Return false or unwind via Doom_Bailout / setjmp recovery.",
+                )
+            )
+        if re.search(r"\bI_Error\s*\(", clean):
+            window = " ".join(src_line.strip() for src_line in lines[max(0, idx - 5) : idx])
+            if alloc_err_re.search(window + " " + clean):
+                findings.append(
+                    LintFinding(
+                        rule_id="EXIT_OR_ERROR_ON_ALLOC_FAILURE",
+                        severity="CRITICAL",
+                        file_path=path,
+                        line_number=idx,
+                        line_content=clean,
+                        message="Reachable I_Error() on memory allocation failure instead of non-fatal recovery.",
+                        suggested_fix="Return NULL/false or unwind via Doom_Bailout so begin() returns false cleanly.",
+                    )
+                )
+        return findings
+
     def _check_misc_safety_rules(self, path: Path, rel_path_str: str, lines: list[str]) -> list[LintFinding]:
         findings: list[LintFinding] = []
         scanline_re = re.compile(r"uint16_t\s+[a-zA-Z0-9_]+\[\s*(240|256|320|480)\s*\]")
         unaligned_re = re.compile(r"\*\s*\(\s*uint16_t\s*\*\s*\)\s*&?[a-zA-Z0-9_]+\[")
         is_core_or_vendor = "src/cores/" in rel_path_str or "src/third_party/" in rel_path_str
-        is_hot_cpp = any(seg in rel_path_str for seg in ("src/app/", "src/ui/", "src/cores/")) and rel_path_str.endswith(".cpp")
         alloc_err_re = re.compile(
             r"(malloc|calloc|realloc|Doom_MallocPSRAM|heap_caps_malloc|default_ram\s*<\s*min_ram|newlumpinfo\s*==\s*NULL|new_open_wadfiles\s*==\s*NULL|rover\s*==\s*start|Unable to allocate|Z_Malloc:\s*failed|Couldn't realloc)"
         )
@@ -503,58 +570,8 @@ class FirmwareAstLinter:
                         suggested_fix="Use explicit byte-wise little-endian reconstruction: `b0 | (b1 << 8)`.",
                     )
                 )
-            stripped_code = raw_line.split("//", 1)[0].strip()
-            if is_hot_cpp and stripped_code and not stripped_code.startswith(("/*", "*", "#")):
-                if re.search(r"\b(?:delay|ets_delay_us)\s*\(", stripped_code):
-                    findings.append(
-                        LintFinding(
-                            rule_id="BLOCKING_DELAY_IN_FIRMWARE",
-                            severity="WARNING",
-                            file_path=path,
-                            line_number=idx,
-                            line_content=stripped_code,
-                            message="Blocking delay() / ets_delay_us() stalls Core 1 / RTOS responsiveness.",
-                            suggested_fix="Replace with non-blocking deadline timers or vTaskDelayUntil.",
-                        )
-                    )
-                if "src/cores/" in rel_path_str and re.search(r"\bstd::(?:string|vector)\b", stripped_code):
-                    findings.append(
-                        LintFinding(
-                            rule_id="INTERNAL_DRAM_STL_IN_CORE",
-                            severity="WARNING",
-                            file_path=path,
-                            line_number=idx,
-                            line_content=stripped_code,
-                            message="std::string / std::vector allocates from internal DRAM instead of fixed/PSRAM pools.",
-                            suggested_fix="Use fixed char/struct buffers or explicit bmo_psram_malloc buffers.",
-                        )
-                    )
-            if re.search(r"\bexit\s*\(", clean):
-                findings.append(
-                    LintFinding(
-                        rule_id="EXIT_OR_ERROR_ON_ALLOC_FAILURE",
-                        severity="CRITICAL",
-                        file_path=path,
-                        line_number=idx,
-                        line_content=clean,
-                        message="Reachable exit() call in embedded firmware terminates RTOS execution.",
-                        suggested_fix="Return false or unwind via Doom_Bailout / setjmp recovery.",
-                    )
-                )
-            if re.search(r"\bI_Error\s*\(", clean):
-                window = " ".join(src_line.strip() for src_line in lines[max(0, idx - 5) : idx])
-                if alloc_err_re.search(window + " " + clean):
-                    findings.append(
-                        LintFinding(
-                            rule_id="EXIT_OR_ERROR_ON_ALLOC_FAILURE",
-                            severity="CRITICAL",
-                            file_path=path,
-                            line_number=idx,
-                            line_content=clean,
-                            message="Reachable I_Error() on memory allocation failure instead of non-fatal recovery.",
-                            suggested_fix="Return NULL/false or unwind via Doom_Bailout so begin() returns false cleanly.",
-                        )
-                    )
+            findings.extend(self._check_hot_cpp_safety(path, rel_path_str, lines, idx, raw_line))
+            findings.extend(self._check_exit_and_ierror(path, lines, idx, clean, alloc_err_re))
         return findings
 
     def lint_file(self, path: Path) -> list[LintFinding]:

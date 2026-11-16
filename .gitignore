@@ -83,6 +83,7 @@ rom_*.h
 !firmware/BmoGameboy/src/storage/rom_index.h
 !firmware/BmoGameboy/src/storage/rom_file_filter.h
 !firmware/BmoGameboy/src/storage/rom_path_match.h
+!firmware/BmoGameboy/src/storage/rom_catalog_lookup.h
 cover_*.h
 
 tools/zig/

@@ -13,6 +13,7 @@
 #include "../hal/profiler.h"
 #include "../hal/spi_arbiter.h"
 #include <SPI.h>
+#include <atomic>
 #include <cstring>
 #include <new>
 
@@ -45,6 +46,7 @@ extern "C" struct color colors[256];
 
 uint16_t __attribute__((aligned(4))) s_doomLineBuf[320];
 uint16_t s_doomPalette[256];
+uint32_t s_doomPaletteSignature = 0U;
 #endif
 
 enum LastFrameFormat : uint8_t { FRAME_FMT_NONE = 0, FRAME_FMT_RAW16, FRAME_FMT_NES8, FRAME_FMT_DOOM8 };
@@ -80,19 +82,34 @@ struct DisplayTaskCmd {
 };
 
 QueueHandle_t s_displayQueue = nullptr;
-SemaphoreHandle_t s_displayDoneSem = nullptr;
 TaskHandle_t s_displayTaskHandle = nullptr;
-volatile bool s_displayBusy = false;
+std::atomic<bool> s_displayBusy{false};
+std::atomic<TaskHandle_t> s_waiterTask{nullptr};
 uint32_t s_displayQueueTimeouts = 0;
 
 bool enqueueDisplayCmd(const DisplayTaskCmd& cmd) {
   if (xQueueSend(s_displayQueue, &cmd, kDisplayCmdTimeoutTicks) != pdTRUE) {
     s_displayQueueTimeouts++;
     LOG_WARN("DisplayEmu: queue send timed out after 1000 ms (%lu)", (unsigned long)s_displayQueueTimeouts);
-    xSemaphoreGive(s_displayDoneSem);
     return false;
   }
   return true;
+}
+
+bool submitAsyncDisplayCmd(const DisplayTaskCmd& cmd) {
+  DisplayEmu::waitForDisplay();
+  s_displayBusy.store(true, std::memory_order_release);
+  if (!enqueueDisplayCmd(cmd)) {
+    s_displayBusy.store(false, std::memory_order_release);
+    return false;
+  }
+  return true;
+}
+
+void packGameGearWindow(const uint16_t* smsFramebuffer, uint16_t* dst) {
+  for (int r = 0; r < 144; ++r) {
+    memcpy(&dst[r * 160], &smsFramebuffer[(24 + r) * 256 + 48], 160U * sizeof(uint16_t));
+  }
 }
 
 void streamNesPixelsLocked(const uint8_t* nesFb) {
@@ -117,7 +134,7 @@ void streamNesPixelsLocked(const uint8_t* nesFb) {
 
 #if BMO_ENABLE_DOOM
 void streamDoomPixelsLocked(const uint8_t* cmap) {
-  Ui::rebuildDoomPalette(colors, s_doomPalette, 256U);
+  Ui::rebuildDoomPaletteIfChanged(colors, s_doomPalette, s_doomPaletteSignature, 256U);
   SpiArbiter::ScopedLock spiLock;
   tft.startWrite();
   tft.setAddrWindow(0, 20, 320, 200);
@@ -159,12 +176,13 @@ void displayWorkerTask(void* pvParameters) {
   DisplayTaskCmd cmd{};
   while (true) {
     if (xQueueReceive(s_displayQueue, &cmd, kDisplayIdlePollTicks) == pdTRUE) {
-      s_displayBusy = true;
       BMO_PROFILE_START(ZONE_SPI_STREAM);
       executeDisplayCmd(cmd);
       BMO_PROFILE_END(ZONE_SPI_STREAM);
-      s_displayBusy = false;
-      xSemaphoreGive(s_displayDoneSem);
+      s_displayBusy.store(false, std::memory_order_release);
+      if (TaskHandle_t waiter = s_waiterTask.exchange(nullptr, std::memory_order_acq_rel)) {
+        xTaskNotifyGive(waiter);
+      }
     }
   }
 }
@@ -184,10 +202,8 @@ void BmoDisplayInternal::writeMenuCanvas() {
 
   const uint16_t* drawnBuf = s_menuCanvasArr[s_activeDrawCanvas]->getBuffer();
   if (s_displayTaskHandle && s_displayQueue) {
-    DisplayEmu::waitForDisplay();
-    xSemaphoreTake(s_displayDoneSem, 0);
     const DisplayTaskCmd cmd = {CMD_PUSH_CANVAS, drawnBuf, 0, 0, 320, 240};
-    if (enqueueDisplayCmd(cmd)) {
+    if (submitAsyncDisplayCmd(cmd)) {
       s_activeDrawCanvas = 1 - s_activeDrawCanvas;
       menuCanvas = s_menuCanvasArr[s_activeDrawCanvas];
     }
@@ -216,10 +232,8 @@ void DisplayEmu::begin(uint32_t initialSpiHz) {
     s_activeEmuBuf = 0;
   }
   if (!s_displayQueue) s_displayQueue = xQueueCreate(1, sizeof(DisplayTaskCmd));
-  if (!s_displayDoneSem) {
-    s_displayDoneSem = xSemaphoreCreateBinary();
-    xSemaphoreGive(s_displayDoneSem);
-  }
+  s_displayBusy.store(false, std::memory_order_release);
+  s_waiterTask.store(nullptr, std::memory_order_release);
   if (!s_displayTaskHandle) {
     xTaskCreatePinnedToCore(displayWorkerTask, "BMO_Display", 4096, nullptr, configMAX_PRIORITIES - 2,
                             &s_displayTaskHandle, 0);
@@ -276,12 +290,10 @@ void DisplayEmu::submitAsyncFrameBuffer(uint16_t* fb, int x, int y, int w, int h
   s_lastFramePtr = fb;
 
   if (s_displayTaskHandle && s_displayQueue && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
-    waitForDisplay();
-    xSemaphoreTake(s_displayDoneSem, 0);
     const DisplayTaskCmd cmd = {CMD_STREAM_RAW16,        fb,
                                 static_cast<int16_t>(x), static_cast<int16_t>(y),
                                 static_cast<int16_t>(w), static_cast<int16_t>(h)};
-    if (enqueueDisplayCmd(cmd)) {
+    if (submitAsyncDisplayCmd(cmd)) {
       if (fb == reinterpret_cast<uint16_t*>(s_asyncEmuBuf[0]))
         s_activeEmuBuf = 1;
       else if (fb == reinterpret_cast<uint16_t*>(s_asyncEmuBuf[1]))
@@ -313,14 +325,13 @@ void DisplayEmu::streamRawFrameAsync(const uint16_t* fb, int x, int y, int w, in
 
   if (s_displayTaskHandle && s_displayQueue && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
     waitForDisplay();
-    xSemaphoreTake(s_displayDoneSem, 0);
     uint8_t* dst = s_asyncEmuBuf[s_activeEmuBuf];
     memcpy(dst, fb, byteCount);
     s_lastFramePtr = reinterpret_cast<const uint16_t*>(dst);
     const DisplayTaskCmd cmd = {CMD_STREAM_RAW16,        dst,
                                 static_cast<int16_t>(x), static_cast<int16_t>(y),
                                 static_cast<int16_t>(w), static_cast<int16_t>(h)};
-    if (enqueueDisplayCmd(cmd)) s_activeEmuBuf = 1 - s_activeEmuBuf;
+    if (submitAsyncDisplayCmd(cmd)) s_activeEmuBuf = 1 - s_activeEmuBuf;
   } else {
     s_lastFramePtr = fb;
     waitForDisplay();
@@ -337,12 +348,11 @@ void DisplayEmu::streamNESFrame(const uint8_t* nes_framebuffer) {
 
   if (s_displayTaskHandle && s_displayQueue && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
     waitForDisplay();
-    xSemaphoreTake(s_displayDoneSem, 0);
     uint8_t* dst = s_asyncEmuBuf[s_activeEmuBuf];
     memcpy(dst, nes_framebuffer, 256 * 240);
     s_lastRaw8Ptr = dst;
     const DisplayTaskCmd cmd = {CMD_STREAM_NES, dst, 32, 0, 256, 240};
-    if (enqueueDisplayCmd(cmd)) s_activeEmuBuf = 1 - s_activeEmuBuf;
+    if (submitAsyncDisplayCmd(cmd)) s_activeEmuBuf = 1 - s_activeEmuBuf;
     return;
   }
   s_lastRaw8Ptr = nes_framebuffer;
@@ -360,12 +370,11 @@ void DisplayEmu::streamDoomFrame(const uint8_t* cmap) {
 
   if (s_displayTaskHandle && s_displayQueue && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
     waitForDisplay();
-    xSemaphoreTake(s_displayDoneSem, 0);
     uint8_t* dst = s_asyncEmuBuf[s_activeEmuBuf];
     memcpy(dst, cmap, 320 * 200);
     s_lastRaw8Ptr = dst;
     const DisplayTaskCmd cmd = {CMD_STREAM_DOOM, dst, 0, 20, 320, 200};
-    if (enqueueDisplayCmd(cmd)) s_activeEmuBuf = 1 - s_activeEmuBuf;
+    if (submitAsyncDisplayCmd(cmd)) s_activeEmuBuf = 1 - s_activeEmuBuf;
     return;
   }
   s_lastRaw8Ptr = cmap;
@@ -390,16 +399,21 @@ void DisplayEmu::streamSMSFrame(const uint16_t* sms_framebuffer, bool isGameGear
   s_lastRaw8Ptr = nullptr;
   if (s_displayTaskHandle && s_displayQueue && s_asyncEmuBuf[0] && s_asyncEmuBuf[1]) {
     waitForDisplay();
-    xSemaphoreTake(s_displayDoneSem, 0);
     uint16_t* dst = reinterpret_cast<uint16_t*>(s_asyncEmuBuf[s_activeEmuBuf]);
-    for (int r = 0; r < 144; ++r)
-      memcpy(&dst[r * 160], &sms_framebuffer[(24 + r) * 256 + 48], 160 * sizeof(uint16_t));
+    packGameGearWindow(sms_framebuffer, dst);
     s_lastFramePtr = dst;
     const DisplayTaskCmd cmd = {CMD_STREAM_RAW16, dst, 80, 48, 160, 144};
-    if (enqueueDisplayCmd(cmd)) s_activeEmuBuf = 1 - s_activeEmuBuf;
+    if (submitAsyncDisplayCmd(cmd)) s_activeEmuBuf = 1 - s_activeEmuBuf;
     return;
   }
   waitForDisplay();
+  if (s_asyncEmuBuf[0]) {
+    uint16_t* dst = reinterpret_cast<uint16_t*>(s_asyncEmuBuf[0]);
+    packGameGearWindow(sms_framebuffer, dst);
+    s_lastFramePtr = dst;
+    BmoDisplayDriver::pushWindowLocked(80, 48, 160, 144, dst, 160U * 144U * 2U);
+    return;
+  }
   SpiArbiter::ScopedLock spiLock;
   tft.startWrite();
   tft.setAddrWindow(80, 48, 160, 144);
@@ -477,17 +491,23 @@ void DisplayEmu::cleanupMenuUI() {
 }
 
 void DisplayEmu::waitForDisplay() {
-  if (s_displayTaskHandle && s_displayDoneSem) {
-    if (xSemaphoreTake(s_displayDoneSem, kDisplayWaitTimeoutTicks) == pdTRUE) {
-      xSemaphoreGive(s_displayDoneSem);
-    } else {
-      LOG_WARN("DisplayEmu: waitForDisplay timed out after 1000 ms");
-    }
+  if (!s_displayTaskHandle || !s_displayBusy.load(std::memory_order_acquire)) {
+    return;
   }
+  xTaskNotifyStateClear(nullptr);
+  s_waiterTask.store(xTaskGetCurrentTaskHandle(), std::memory_order_release);
+  if (!s_displayBusy.load(std::memory_order_acquire)) {
+    s_waiterTask.store(nullptr, std::memory_order_release);
+    return;
+  }
+  if (ulTaskNotifyTake(pdTRUE, kDisplayWaitTimeoutTicks) == 0 && s_displayBusy.load(std::memory_order_acquire)) {
+    LOG_WARN("DisplayEmu: waitForDisplay timed out after 1000 ms");
+  }
+  s_waiterTask.store(nullptr, std::memory_order_release);
 }
 
 bool DisplayEmu::isDisplayBusy() {
-  return s_displayBusy;
+  return s_displayBusy.load(std::memory_order_acquire);
 }
 void DisplayEmu::setBezelEnabled(bool enabled) {
   s_bezelEnabled = enabled;
@@ -537,6 +557,7 @@ void DisplayEmu::resetLastFramebuffer() {
 }
 
 void DisplayEmu::drawConsoleBezel(int consoleIndex) {
+  invalidateMenuRenderCache();
   if (!s_bezelEnabled || !menuCanvas) {
     clearScreen();
     return;

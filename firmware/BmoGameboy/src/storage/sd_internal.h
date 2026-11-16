@@ -29,4 +29,10 @@ void seedBakedRoms();
 const uint8_t* tryLoadBakedRom(const char* filename, size_t* outSize);
 bool isBakedRomPointer(const uint8_t* buffer);
 
+extern uint32_t catalogGeneration;
+uint32_t bumpCatalogGeneration();
+void invalidateCatalogLookup();
+int findRomIndexFast(const char* relativePath);
+int resolveRomIndexFast(const char* query, bool* outMigrated);
+
 } // namespace BmoSdInternal

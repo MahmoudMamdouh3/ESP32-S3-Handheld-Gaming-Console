@@ -298,64 +298,129 @@ inline void shadeMouthPixel(float mdx, float mdy, float mouthW, float mouthCrv, 
   }
 }
 
+struct SnapshotRegionBounds {
+  bool hasCheeks;
+  bool hasEyes;
+  bool hasMouth;
+  float eyeH;
+  float eyeW;
+  float leftEyeCx;
+  float rightEyeCx;
+  float eyeCy;
+  float blush;
+  float leftCheekCx;
+  float rightCheekCx;
+  float cheekCy;
+  float eyePadX;
+  float eyePadY;
+  float mouthPadX;
+  float mouthPadY;
+};
+
+inline SnapshotRegionBounds computeSnapshotBounds(const ExprTarget& target, float aaBand) {
+  SnapshotRegionBounds b{};
+  b.eyeH = target.eyeHeight * clampf(target.eyeOpenness, 0.005f, 1.2f);
+  b.eyeW = target.eyeWidth;
+  b.leftEyeCx = -target.eyeOffsetX;
+  b.rightEyeCx = target.eyeOffsetX;
+  b.eyeCy = target.eyeOffsetY;
+  b.blush = clampf(target.blushIntensity, 0.0f, 1.0f);
+  b.leftCheekCx = -target.eyeOffsetX * 1.52f;
+  b.rightCheekCx = target.eyeOffsetX * 1.52f;
+  b.cheekCy = b.eyeCy - b.eyeH * 0.82f;
+  b.hasCheeks = (b.blush > 0.05f);
+  b.hasEyes = (b.eyeW > 0.0f && b.eyeH > 0.0f);
+  b.hasMouth = (target.mouthWidth > 0.0f);
+  b.eyePadX = b.eyeW * 1.6f + 0.05f + aaBand;
+  b.eyePadY = fmaxf(b.eyeH * 0.55f + b.eyeW * 0.75f, fmaxf(b.eyeW * 1.6f, 2.0f * b.eyeW * b.eyeW)) + 0.05f + aaBand;
+  b.mouthPadX = (target.mouthStyle == MOUTH_ZIGZAG_ERROR) ? 2.5f : (target.mouthWidth + 0.06f + aaBand);
+  b.mouthPadY = fabsf(target.mouthCurve) * target.mouthWidth * target.mouthWidth +
+                fmaxf(target.mouthOpenness * 1.7f, target.mouthWidth * 0.6f) + 0.10f + aaBand;
+  return b;
+}
+
+inline uint8_t computeSnapshotRowMask(const ExprTarget& target, const SnapshotRegionBounds& b, float ny) {
+  constexpr float kCheekR = 0.13f;
+  uint8_t mask = 0;
+  if (b.hasCheeks && fabsf(ny - b.cheekCy) <= kCheekR) mask |= 0x01u;
+  if (b.hasEyes && fabsf(ny - b.eyeCy) <= b.eyePadY) mask |= 0x02u;
+  if (b.hasMouth && fabsf(ny - target.mouthOffsetY) <= b.mouthPadY) mask |= 0x04u;
+  return mask;
+}
+
+inline uint16_t shadeSnapshotHitPixel(const ExprTarget& target, const SnapshotRegionBounds& b, float nx, float ny,
+                                      float aaBand, uint8_t hitMask, float cr, float cg, float cb) {
+  constexpr float kCheekR = 0.13f;
+  if (hitMask & 0x01u) {
+    for (int side = 0; side < 2; ++side) {
+      const float dx = nx - ((side == 0) ? b.leftCheekCx : b.rightCheekCx);
+      const float dy = ny - b.cheekCy;
+      const float a = b.blush * smoothstepf(kCheekR, 0.0f, sqrtf(dx * dx + dy * dy)) * 0.75f;
+      if (a > 0.005f) {
+        cr = lerpf(cr, 1.0f, a);
+        cg = lerpf(cg, 139.0f / 255.0f, a);
+        cb = lerpf(cb, 167.0f / 255.0f, a);
+      }
+    }
+  }
+  if (hitMask & 0x02u) {
+    for (int side = 0; side < 2; ++side) {
+      const bool isLeft = (side == 0);
+      EyeStyle st = target.eyeStyle;
+      if (st == EYE_WINK_LEFT) st = isLeft ? EYE_CRESCENT_UP : EYE_CAPSULE;
+      shadeEyePixel(nx - (isLeft ? b.leftEyeCx : b.rightEyeCx), ny - b.eyeCy, b.eyeW, b.eyeH, 0.0f, 0.0f, st, aaBand,
+                    cr, cg, cb);
+    }
+  }
+  if (hitMask & 0x04u) {
+    shadeMouthPixel(nx, ny - target.mouthOffsetY, target.mouthWidth, target.mouthCurve, target.mouthOpenness,
+                    target.mouthStyle, aaBand, cr, cg, cb);
+  }
+  return packBGR565(static_cast<uint8_t>(cr * 255.0f + 0.5f), static_cast<uint8_t>(cg * 255.0f + 0.5f),
+                    static_cast<uint8_t>(cb * 255.0f + 0.5f));
+}
+
+inline void shadeSnapshotRow(const ExprTarget& target, const SnapshotRegionBounds& b, uint8_t rowMask, float ny,
+                             int destW, float aaBand, float baseBgR, float baseBgG, float baseBgB, uint16_t* row) {
+  constexpr float kCheekR = 0.13f;
+  for (int px = 0; px < destW; ++px) {
+    const float nx = -1.0f + 2.0f * ((float)px + 0.5f) / (float)destW;
+    uint8_t hitMask = 0;
+    if ((rowMask & 0x01u) && (fabsf(nx - b.leftCheekCx) <= kCheekR || fabsf(nx - b.rightCheekCx) <= kCheekR)) {
+      hitMask |= 0x01u;
+    }
+    if ((rowMask & 0x02u) && (fabsf(nx - b.leftEyeCx) <= b.eyePadX || fabsf(nx - b.rightEyeCx) <= b.eyePadX)) {
+      hitMask |= 0x02u;
+    }
+    if ((rowMask & 0x04u) && fabsf(nx) <= b.mouthPadX) {
+      hitMask |= 0x04u;
+    }
+    if (hitMask == 0) continue;
+    row[px] = shadeSnapshotHitPixel(target, b, nx, ny, aaBand, hitMask, baseBgR, baseBgG, baseBgB);
+  }
+}
+
 inline void renderTargetSnapshot(const ExprTarget& target, bool sleepingBg, uint16_t* dst, int destW, int destH) {
   if (!dst || destW <= 0 || destH <= 0) return;
   const float baseBgR = sleepingBg ? (111.0f / 255.0f) : (138.0f / 255.0f);
   const float baseBgG = sleepingBg ? (184.0f / 255.0f) : (213.0f / 255.0f);
   const float baseBgB = sleepingBg ? (167.0f / 255.0f) : (195.0f / 255.0f);
   const float aaBand = ((2.0f / (float)destW) * 1.25f + (2.0f / (float)destH) * 1.25f) * 0.5f;
+  const uint16_t bgPixel =
+      packBGR565(static_cast<uint8_t>(baseBgR * 255.0f + 0.5f), static_cast<uint8_t>(baseBgG * 255.0f + 0.5f),
+                 static_cast<uint8_t>(baseBgB * 255.0f + 0.5f));
+  const size_t totalPixels = static_cast<size_t>(destW) * static_cast<size_t>(destH);
+  for (size_t i = 0; i < totalPixels; ++i)
+    dst[i] = bgPixel;
 
-  const float eyeH = target.eyeHeight * clampf(target.eyeOpenness, 0.005f, 1.2f);
-  const float eyeW = target.eyeWidth;
-  const float leftEyeCx = -target.eyeOffsetX;
-  const float rightEyeCx = target.eyeOffsetX;
-  const float eyeCy = target.eyeOffsetY;
-  const float blush = clampf(target.blushIntensity, 0.0f, 1.0f);
-  const float leftCheekCx = -target.eyeOffsetX * 1.52f;
-  const float rightCheekCx = target.eyeOffsetX * 1.52f;
-  const float cheekCy = eyeCy - eyeH * 0.82f;
-  constexpr float cheekR = 0.13f;
+  const SnapshotRegionBounds b = computeSnapshotBounds(target, aaBand);
+  if (!b.hasCheeks && !b.hasEyes && !b.hasMouth) return;
 
   for (int py = 0; py < destH; ++py) {
     const float ny = 1.0f - 2.0f * ((float)py + 0.5f) / (float)destH;
-    uint16_t* row = &dst[py * destW];
-    for (int px = 0; px < destW; ++px) {
-      const float nx = -1.0f + 2.0f * ((float)px + 0.5f) / (float)destW;
-      float cr = baseBgR;
-      float cg = baseBgG;
-      float cb = baseBgB;
-
-      if (blush > 0.05f) {
-        for (int side = 0; side < 2; ++side) {
-          const float dx = nx - ((side == 0) ? leftCheekCx : rightCheekCx);
-          const float dy = ny - cheekCy;
-          const float a = blush * smoothstepf(cheekR, 0.0f, sqrtf(dx * dx + dy * dy)) * 0.75f;
-          if (a > 0.005f) {
-            cr = lerpf(cr, 1.0f, a);
-            cg = lerpf(cg, 139.0f / 255.0f, a);
-            cb = lerpf(cb, 167.0f / 255.0f, a);
-          }
-        }
-      }
-
-      if (target.eyeWidth > 0.0f && target.eyeHeight > 0.0f) {
-        for (int side = 0; side < 2; ++side) {
-          const bool isLeft = (side == 0);
-          EyeStyle st = target.eyeStyle;
-          if (st == EYE_WINK_LEFT) st = isLeft ? EYE_CRESCENT_UP : EYE_CAPSULE;
-          shadeEyePixel(nx - (isLeft ? leftEyeCx : rightEyeCx), ny - eyeCy, eyeW, eyeH, 0.0f, 0.0f, st, aaBand, cr, cg,
-                        cb);
-        }
-      }
-
-      if (target.mouthWidth > 0.0f) {
-        shadeMouthPixel(nx, ny - target.mouthOffsetY, target.mouthWidth, target.mouthCurve, target.mouthOpenness,
-                        target.mouthStyle, aaBand, cr, cg, cb);
-      }
-
-      row[px] = packBGR565(static_cast<uint8_t>(cr * 255.0f + 0.5f), static_cast<uint8_t>(cg * 255.0f + 0.5f),
-                           static_cast<uint8_t>(cb * 255.0f + 0.5f));
-    }
+    const uint8_t rowMask = computeSnapshotRowMask(target, b, ny);
+    if (rowMask == 0) continue;
+    shadeSnapshotRow(target, b, rowMask, ny, destW, aaBand, baseBgR, baseBgG, baseBgB, &dst[py * destW]);
   }
 }
 

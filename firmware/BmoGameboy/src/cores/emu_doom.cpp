@@ -8,6 +8,8 @@
 #include "../ui/theme.h"
 
 #include <Arduino.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include <string.h>
 
 #if BMO_ENABLE_DOOM
@@ -108,10 +110,17 @@ void DG_DrawFrame() {
 
 void DG_SleepMs(uint32_t ms) {
   // Warn if Doom's own pacing fires — it would fight the outer 16 742 µs frame pacer.
-  if (ms > 0) {
+  if (ms > 0U) {
     LOG_WARN("[DOOM] DG_SleepMs(%u ms) — engine pacing active", (unsigned)ms);
+    const TickType_t ticks = pdMS_TO_TICKS(ms);
+    if (ticks > 0U) {
+      vTaskDelay(ticks);
+    } else {
+      taskYIELD();
+    }
+  } else {
+    taskYIELD();
   }
-  delay(ms);
 }
 
 uint32_t DG_GetTicksMs() {

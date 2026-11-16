@@ -78,5 +78,20 @@ int main() {
   for (int idx = 0; idx < 256; ++idx) {
     BMO_CHECK(cachedRef.doomPalette[idx] == uncachedPalette[idx]);
   }
+
+  // Incremental signature-cached rebuild matches uncached output while skipping unchanged/alpha-only updates.
+  uint16_t sigPalette[256]{};
+  uint32_t palSig = 0U;
+  fillDeterministicPalette(activeColors, 0x12345678U, 0x00U);
+  BMO_CHECK(Ui::rebuildDoomPaletteIfChanged(activeColors, sigPalette, palSig, 256U));
+  Ui::rebuildDoomPalette(activeColors, uncachedPalette, 256U);
+  BMO_CHECK(memcmp(sigPalette, uncachedPalette, sizeof(sigPalette)) == 0);
+  BMO_CHECK(!Ui::rebuildDoomPaletteIfChanged(activeColors, sigPalette, palSig, 256U));
+  fillDeterministicPalette(activeColors, 0x12345678U, 0xFFU);
+  BMO_CHECK(!Ui::rebuildDoomPaletteIfChanged(activeColors, sigPalette, palSig, 256U));
+  fillDeterministicPalette(activeColors, 0xDEADBEEFU, 0x80U);
+  BMO_CHECK(Ui::rebuildDoomPaletteIfChanged(activeColors, sigPalette, palSig, 256U));
+  Ui::rebuildDoomPalette(activeColors, uncachedPalette, 256U);
+  BMO_CHECK(memcmp(sigPalette, uncachedPalette, sizeof(sigPalette)) == 0);
   return 0;
 }

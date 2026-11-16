@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 #include "rom_catalog_index.h"
+#include "rom_catalog_lookup.h"
 
 #include "../hal/config.h"
 #include "../hal/spi_arbiter.h"
@@ -55,13 +56,8 @@ int SDCard::getRomCountForType(RomType type) {
 
 const RomFile* SDCard::findRomByPath(const char* relativePath) {
   using namespace BmoSdInternal;
-  if (!relativePath || !relativePath[0]) return nullptr;
-  for (int i = 0; i < numRoms; ++i) {
-    if (romList[i].filename && RomPathMatch::equalsNormalized(romList[i].filename, relativePath)) {
-      return &romList[i];
-    }
-  }
-  return nullptr;
+  const int index = findRomIndexFast(relativePath);
+  return (index >= 0 && index < numRoms) ? &romList[index] : nullptr;
 }
 
 uint32_t SDCard::findRomFileSize(const char* relativePath) {
@@ -132,3 +128,57 @@ const RomFile* SDCard::getRomInfo(int index) {
   if (index < 0 || index >= numRoms) return nullptr;
   return &romList[index];
 }
+
+namespace BmoSdInternal {
+namespace {
+
+RomPathMatch::OwnedCatalogPathLookup& catalogLookupInstance() {
+  static RomPathMatch::OwnedCatalogPathLookup s_lookup;
+  return s_lookup;
+}
+
+const char* catalogPathAt(int index) {
+  if (index < 0 || index >= numRoms || !romList) return nullptr;
+  return romList[index].filename;
+}
+
+} // namespace
+
+uint32_t bumpCatalogGeneration() {
+  catalogGeneration++;
+  if (catalogGeneration == 0U) {
+    catalogGeneration = 1U;
+  }
+  return catalogGeneration;
+}
+
+void invalidateCatalogLookup() {
+  bumpCatalogGeneration();
+  catalogLookupInstance().invalidate();
+}
+
+int findRomIndexFast(const char* relativePath) {
+  if (!relativePath || !relativePath[0] || numRoms <= 0) return -1;
+  auto& lookup = catalogLookupInstance();
+  if (lookup.ensureBuilt(numRoms, romList, catalogGeneration, catalogPathAt)) {
+    return lookup.findExact(relativePath);
+  }
+  for (int i = 0; i < numRoms; ++i) {
+    if (romList[i].filename && RomPathMatch::equalsNormalized(romList[i].filename, relativePath)) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+int resolveRomIndexFast(const char* query, bool* outMigrated) {
+  if (outMigrated) *outMigrated = false;
+  if (!query || !query[0] || numRoms <= 0) return -1;
+  auto& lookup = catalogLookupInstance();
+  if (lookup.ensureBuilt(numRoms, romList, catalogGeneration, catalogPathAt)) {
+    return lookup.resolve(query, outMigrated);
+  }
+  return RomPathMatch::resolveCatalogIndex(query, numRoms, catalogPathAt, outMigrated);
+}
+
+} // namespace BmoSdInternal

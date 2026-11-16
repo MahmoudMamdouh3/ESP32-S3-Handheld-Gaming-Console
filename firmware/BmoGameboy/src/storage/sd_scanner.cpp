@@ -341,6 +341,7 @@ void SDCard::scanRoms(ScanCancelFn shouldCancel, ScanProgressFn onProgress) {
   }
 
   sortRoms();
+  bumpCatalogGeneration();
   BoxArt::populateCatalogAvailability(romList, numRoms);
 
   if (!scanStats.cancelled && skippedRomCount == 0) {
@@ -382,6 +383,7 @@ void SDCard::rebuildIndex() {
       if (romList[i].type <= ROM_COLEM) romCountsByType[romList[i].type]++;
       if (romList[i].isFavorite) favoritesCount++;
     }
+    invalidateCatalogLookup();
   }
   scanRoms();
   loadFavorites();

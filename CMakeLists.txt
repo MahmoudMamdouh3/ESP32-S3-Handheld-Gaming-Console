@@ -73,6 +73,7 @@ bmo_add_host_exec(peanut_opcode_test tests/host/peanut_opcode_test.cpp)
 target_compile_definitions(peanut_opcode_test PRIVATE BMO_REPO_ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 bmo_add_host_exec(walnut_opcode_test tests/host/walnut_opcode_test.cpp)
 bmo_add_host_exec(doom_palette_test tests/host/doom_palette_test.cpp)
+bmo_add_host_exec(pico_blit_test tests/host/pico_blit_test.cpp)
 
 bmo_add_host_exec(gb_error_and_bmp_test
   tests/host/gb_error_and_bmp_test.cpp

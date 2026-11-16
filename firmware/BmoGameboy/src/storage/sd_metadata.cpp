@@ -42,11 +42,6 @@ bool writeMetadataLine(File& file, const char* line, size_t& byteCount, uint32_t
   byteCount += length + sizeof(lineEnding);
   return true;
 }
-
-const char* catalogPathAt(int index) {
-  if (index < 0 || index >= BmoSdInternal::numRoms) return nullptr;
-  return BmoSdInternal::romList[index].filename;
-}
 #endif
 
 } // namespace
@@ -59,13 +54,8 @@ bool SDCard::isFavorite(int index) {
 
 bool SDCard::isFavorite(const char* filename) {
   using namespace BmoSdInternal;
-  if (!filename) return false;
-  for (int i = 0; i < numRoms; ++i) {
-    if (romList[i].filename && RomPathMatch::equalsNormalized(romList[i].filename, filename)) {
-      return romList[i].isFavorite != 0U;
-    }
-  }
-  return false;
+  const int index = findRomIndexFast(filename);
+  return (index >= 0 && index < numRoms) ? (romList[index].isFavorite != 0U) : false;
 }
 
 void SDCard::toggleFavorite(int index) {
@@ -181,7 +171,7 @@ void SDCard::loadRecentHistory() {
       const char* resolved = RomPathMatch::normalizeRelative(line);
       if (numRoms > 0) {
         bool migrated = false;
-        const int idx = RomPathMatch::resolveCatalogIndex(resolved, numRoms, catalogPathAt, &migrated);
+        const int idx = resolveRomIndexFast(resolved, &migrated);
         if (idx >= 0 && romList[idx].filename) {
           resolved = romList[idx].filename;
           if (migrated) migratedLegacy = true;
@@ -280,7 +270,7 @@ void SDCard::loadFavorites() {
       if (len <= 0) continue;
 
       bool migrated = false;
-      const int idx = RomPathMatch::resolveCatalogIndex(line, numRoms, catalogPathAt, &migrated);
+      const int idx = resolveRomIndexFast(line, &migrated);
       if (idx >= 0) {
         if (!romList[idx].isFavorite) {
           romList[idx].isFavorite = 1U;

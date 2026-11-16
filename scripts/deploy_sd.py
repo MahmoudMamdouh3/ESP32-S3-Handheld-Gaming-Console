@@ -60,9 +60,11 @@ EXT_MAP: dict[str, tuple[str, int]] = {
 def sha256_file(path: Path) -> bytes:
     """Return raw SHA-256 digest bytes for a file."""
     digest = hashlib.sha256()
+    buf = bytearray(min(BUFFER_SIZE, max(65536, path.stat().st_size or 65536)))
+    mv = memoryview(buf)
     with path.open("rb") as source:
-        while chunk := source.read(BUFFER_SIZE):
-            digest.update(chunk)
+        while n := source.readinto(buf):
+            digest.update(mv[:n])
     return digest.digest()
 
 
@@ -155,6 +157,16 @@ def deployment_tasks(src_games: Path, src_boxart: Path, dest_root: Path) -> list
     return tasks
 
 
+def _inspect_plan_task(pair: tuple[Path, Path]) -> tuple[bool, int]:
+    src, dst = pair
+    if dst.is_symlink() or (dst.exists() and not dst.is_file()):
+        raise OSError(f"Destination exists and is not a regular file: {dst}")
+    src_size = src.stat().st_size
+    if dst.is_file() and dst.stat().st_size == src_size and sha256_file(dst) == sha256_file(src):
+        return (False, src_size)
+    return (True, src_size)
+
+
 def deployment_plan(
     tasks: list[tuple[Path, Path]], report_progress: bool = False
 ) -> tuple[list[tuple[Path, Path]], int, int]:
@@ -162,15 +174,19 @@ def deployment_plan(
     updates: list[tuple[Path, Path]] = []
     unchanged = 0
     update_bytes = 0
-    for index, (src, dst) in enumerate(tasks, start=1):
-        if dst.is_symlink() or (dst.exists() and not dst.is_file()):
-            raise OSError(f"Destination exists and is not a regular file: {dst}")
-        src_size = src.stat().st_size
-        if dst.is_file() and dst.stat().st_size == src_size and sha256_file(dst) == sha256_file(src):
-            unchanged += 1
-        else:
+    if len(tasks) >= 16:
+        workers = min(8, os.cpu_count() or 4)
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            inspected = list(pool.map(_inspect_plan_task, tasks, chunksize=8))
+    else:
+        inspected = [_inspect_plan_task(pair) for pair in tasks]
+
+    for index, ((src, dst), (needs_update, src_size)) in enumerate(zip(tasks, inspected, strict=True), start=1):
+        if needs_update:
             updates.append((src, dst))
             update_bytes += src_size
+        else:
+            unchanged += 1
         if report_progress and (index % 500 == 0 or index == len(tasks)):
             print(f"Compared {index:,}/{len(tasks):,} files.", flush=True)
     return updates, unchanged, update_bytes
@@ -198,23 +214,28 @@ def verify_destination_root(root: Path) -> None:
 
 
 def copy_single_file(src: Path, dst: Path) -> tuple[bool, int]:
-    """Atomically stage, SHA-256 verify, and replace a single target file."""
+    """Atomically stage, SHA-256 verify, and replace a single target file in one source read pass."""
     size = src.stat().st_size
     if dst.is_symlink() or (dst.exists() and not dst.is_file()):
         raise OSError(f"Destination exists and is not a regular file: {dst}")
-    source_digest = sha256_file(src)
-    if dst.is_file() and dst.stat().st_size == size and sha256_file(dst) == source_digest:
+    if dst.is_file() and dst.stat().st_size == size and sha256_file(dst) == sha256_file(src):
         return False, size
 
     dst.parent.mkdir(parents=True, exist_ok=True)
     temporary_path: Path | None = None
+    digest = hashlib.sha256()
+    buf = bytearray(min(BUFFER_SIZE, max(65536, size or 65536)))
+    mv = memoryview(buf)
     try:
         with tempfile.NamedTemporaryFile(mode="wb", prefix=".bmo-copy-", suffix=".tmp", dir=dst.parent, delete=False) as staged:
             temporary_path = Path(staged.name)
             with src.open("rb") as source:
-                shutil.copyfileobj(source, staged, BUFFER_SIZE)
+                while n := source.readinto(buf):
+                    digest.update(mv[:n])
+                    staged.write(mv[:n])
             staged.flush()
             os.fsync(staged.fileno())
+        source_digest = digest.digest()
         if temporary_path.stat().st_size != size or sha256_file(temporary_path) != source_digest:
             raise OSError(f"Staged file verification failed: {src}")
         os.replace(temporary_path, dst)
@@ -227,17 +248,23 @@ def copy_single_file(src: Path, dst: Path) -> tuple[bool, int]:
 
 def _execute_mirror_updates(updates: list[tuple[Path, Path]]) -> int:
     copied = skipped = errors = copied_bytes = 0
-    for index, (src, dst) in enumerate(updates, start=1):
-        try:
-            was_copied, size = copy_single_file(src, dst)
-            if was_copied:
-                copied += 1
-                copied_bytes += size
-            else:
-                skipped += 1
-        except OSError as error:
+    results: list[tuple[bool, int, bool | str]]
+    if len(updates) >= 4:
+        workers = min(6, os.cpu_count() or 4)
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            results = list(pool.map(_copy_worker, updates, chunksize=8))
+    else:
+        results = [_copy_worker(pair) for pair in updates]
+
+    for index, ((src, _), (ok, size, written)) in enumerate(zip(updates, results, strict=True), start=1):
+        if not ok:
             errors += 1
-            print(f"[ERROR] {src.name}: {error}")
+            print(f"[ERROR] {src.name}: {written}")
+        elif written:
+            copied += 1
+            copied_bytes += size
+        else:
+            skipped += 1
         if index % 500 == 0 or index == len(updates):
             print(f"Processed {index:,}/{len(updates):,}: {copied:,} copied, {skipped:,} verified unchanged, {errors:,} errors.", flush=True)
     print(f"Finished: copied {copied:,} files ({copied_bytes:,} bytes), verified unchanged {skipped:,}, errors {errors:,}.")

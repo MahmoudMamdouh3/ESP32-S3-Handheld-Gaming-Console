@@ -203,11 +203,11 @@ def _svg_ruler_and_shell_lines(layout: dict[str, Any], ox: float, oy: float, sca
     )
     c1x, r1y = pb["hole_c01_r01_cm"]
     pitch = pb["pitch_cm"]
-    for col in range(pb["columns"]):
-        for row in range(pb["rows"]):
-            lines.append(
-                f'  <circle cx="{px(c1x + col * pitch)}" cy="{py(r1y + row * pitch)}" r="1.2" fill="#8AD5C3" fill-opacity="0.45"/>'
-            )
+    lines.extend(
+        f'  <circle cx="{px(c1x + col * pitch)}" cy="{py(r1y + row * pitch)}" r="1.2" fill="#8AD5C3" fill-opacity="0.45"/>'
+        for col in range(pb["columns"])
+        for row in range(pb["rows"])
+    )
     return lines
 
 

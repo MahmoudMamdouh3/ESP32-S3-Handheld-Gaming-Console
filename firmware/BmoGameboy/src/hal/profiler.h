@@ -118,6 +118,33 @@ inline void recordZoneElapsed(ProfilerState& state, ProfileZone zone, uint32_t e
   }
 }
 
+inline bool summarizeCopiedSamples(uint32_t n, uint32_t totalFrames, uint32_t* sortScratch, size_t scratchCap,
+                                   BmoProfilerTypes::FrameSummary& out) {
+  out = {};
+  if (n == 0U || !sortScratch || scratchCap < n) {
+    return false;
+  }
+  uint64_t sumUs = 0ULL;
+  uint32_t minVal = 0xFFFFFFFFU;
+  uint32_t maxVal = 0U;
+  for (uint32_t i = 0; i < n; ++i) {
+    const uint32_t v = sortScratch[i];
+    sumUs += v;
+    if (v < minVal) minVal = v;
+    if (v > maxVal) maxVal = v;
+  }
+  qsort(sortScratch, n, sizeof(uint32_t), compareU32);
+  out.sampleCount = n;
+  out.totalFrames = totalFrames;
+  out.minUs = minVal;
+  out.maxUs = maxVal;
+  out.avgUs = static_cast<uint32_t>(sumUs / n);
+  out.p50Us = sortScratch[((n - 1U) * 50U) / 100U];
+  out.p95Us = sortScratch[((n - 1U) * 95U) / 100U];
+  out.p99Us = sortScratch[((n - 1U) * 99U) / 100U];
+  return true;
+}
+
 inline bool summarizeFrames(const ProfilerState& state, BmoProfilerTypes::FrameSummary& out, uint32_t* sortScratch,
                             size_t scratchCap) {
   out = {};

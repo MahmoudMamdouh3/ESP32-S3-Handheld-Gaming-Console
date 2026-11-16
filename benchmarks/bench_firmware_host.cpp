@@ -6,12 +6,14 @@
 #include <string>
 #include <vector>
 
+#include "cores/pico_blit.h"
 #include "hal/panel_color.h"
 #include "hal/profiler.h"
 #include "storage/atomic_fs.h"
 #include "storage/bmp_header.h"
 #include "storage/box_art_lookup.h"
 #include "storage/rom_index.h"
+#include "storage/rom_catalog_lookup.h"
 #include "storage/rom_path_match.h"
 #include "storage/sd_card.h"
 #include "ui/bmo_face.h"
@@ -160,32 +162,38 @@ double benchMetadataResolve10k(const SyntheticCatalog& cat) {
     const int idx = (q * 97 + 13) % static_cast<int>(cat.roms.size());
     queries.emplace_back(cat.roms[static_cast<size_t>(idx)].filename);
   }
+  const int n = static_cast<int>(cat.roms.size());
+  std::vector<RomPathMatch::CatalogHashEntry> normBuf(static_cast<size_t>(n));
+  std::vector<RomPathMatch::CatalogHashEntry> baseBuf(static_cast<size_t>(n));
   return measureUsPerIter(1, 5, [&](int) {
+    RomPathMatch::CatalogPathLookup lookup;
+    lookup.init(n, getPath, normBuf.data(), baseBuf.data());
     int sum = 0;
     for (const auto& q : queries) {
       bool migrated = false;
-      sum += RomPathMatch::resolveCatalogIndex(q.c_str(), static_cast<int>(cat.roms.size()), getPath, &migrated);
+      sum += lookup.resolve(q.c_str(), getPath, &migrated);
     }
     g_sink ^= static_cast<uint64_t>(sum);
   });
 }
 
 double benchCatalogFindByPath10k(const SyntheticCatalog& cat) {
+  auto getPath = [&](int idx) -> const char* { return cat.roms[static_cast<size_t>(idx)].filename; };
   std::vector<std::string> queries;
   for (int q = 0; q < 500; ++q) {
     const int idx = (q * 19 + 7) % static_cast<int>(cat.roms.size());
     queries.emplace_back(cat.roms[static_cast<size_t>(idx)].filename);
   }
+  const int n = static_cast<int>(cat.roms.size());
+  std::vector<RomPathMatch::CatalogHashEntry> normBuf(static_cast<size_t>(n));
+  std::vector<RomPathMatch::CatalogHashEntry> baseBuf(static_cast<size_t>(n));
+  RomPathMatch::CatalogPathLookup lookup;
+  lookup.init(n, getPath, normBuf.data(), baseBuf.data());
   return measureUsPerIter(1, 5, [&](int) {
     int hits = 0;
-    const int n = static_cast<int>(cat.roms.size());
     for (const auto& q : queries) {
-      for (int i = 0; i < n; ++i) {
-        if (RomPathMatch::equalsNormalized(cat.roms[static_cast<size_t>(i)].filename, q.c_str())) {
-          hits += i;
-          break;
-        }
-      }
+      const int idx = lookup.findExact(q.c_str(), getPath);
+      if (idx >= 0) hits += idx;
     }
     g_sink ^= static_cast<uint64_t>(hits);
   });
@@ -193,22 +201,18 @@ double benchCatalogFindByPath10k(const SyntheticCatalog& cat) {
 
 double benchBoxArtLegacyUnique1k(const SyntheticCatalog& cat) {
   const int n = 1000;
+  auto getPath = [&](int idx) -> const char* { return cat.roms[static_cast<size_t>(idx)].filename; };
+  std::vector<RomPathMatch::CatalogHashEntry> stemBuf(static_cast<size_t>(n));
   return measureUsPerIter(1, 3, [&](int) {
+    RomPathMatch::StemBaseIndex stemIndex;
+    stemIndex.init(n, getPath, stemBuf.data());
     int uniqueCount = 0;
     char baseA[64];
-    char baseB[64];
     for (int i = 0; i < n; ++i) {
-      BoxArtLookup::getBaseName(cat.roms[static_cast<size_t>(i)].filename, baseA, sizeof(baseA));
-      bool unique = true;
-      for (int j = 0; j < n; ++j) {
-        if (i == j) continue;
-        BoxArtLookup::getBaseName(cat.roms[static_cast<size_t>(j)].filename, baseB, sizeof(baseB));
-        if (BoxArtLookup::sameNameIgnoreAsciiCase(baseA, baseB)) {
-          unique = false;
-          break;
-        }
+      RomPathMatch::extractStemBaseName(cat.roms[static_cast<size_t>(i)].filename, baseA, sizeof(baseA));
+      if (stemIndex.isUniqueForRom(cat.roms[static_cast<size_t>(i)].filename, baseA, getPath)) {
+        uniqueCount++;
       }
-      if (unique) uniqueCount++;
     }
     g_sink ^= static_cast<uint64_t>(uniqueCount);
   });
@@ -234,8 +238,8 @@ double benchRomIndexV3Verify10k(const SyntheticCatalog& cat) {
   const size_t entriesBytes = entries.size() * sizeof(BmoIndexEntry);
   return measureUsPerIter(2, 10, [&](int) {
     uint32_t totalCrc = 0;
-    // Baseline saveIndex computes CRC once on save and re-reads/re-CRCs 3 times in verifyIndexV3File.
-    for (int pass = 0; pass < 4; ++pass) {
+    // Save computes payload CRC once before write and verifies the temp index payload once before atomic promotion.
+    for (int pass = 0; pass < 2; ++pass) {
       uint32_t crc = AtomicFs::crc32Update(reinterpret_cast<const uint8_t*>(entries.data()), entriesBytes, 0xFFFFFFFFU);
       crc = AtomicFs::crc32Update(strTable.data(), strTable.size(), crc) ^ 0xFFFFFFFFU;
       totalCrc ^= crc;
@@ -286,28 +290,7 @@ double benchPicoNibble60Frames() {
   return measureUsPerIter(2, 10, [&](int iter) {
     const uint8_t drawMode = (iter & 1) ? 129U : 0U;
     for (int f = 0; f < 60; ++f) {
-      const int scaleX = (drawMode == 1 || drawMode == 3) ? 2 : 1;
-      const int scaleY = (drawMode == 2 || drawMode == 3) ? 2 : 1;
-      for (int y = 0; y < 128; ++y) {
-        for (int x = 0; x < 128; ++x) {
-          int sx = x;
-          int sy = y;
-          switch (drawMode) {
-          case 129: sx = 127 - x; break;
-          case 130: sy = 127 - y; break;
-          case 131: sx = 127 - x; sy = 127 - y; break;
-          case 133: sx = y; sy = 127 - x; break;
-          case 134: sx = 127 - x; sy = 127 - y; break;
-          case 135: sx = 127 - y; sy = x; break;
-          default: break;
-          }
-          const int picox = sx / scaleX;
-          const int picoy = sy / scaleY;
-          const uint8_t packed = picoFb[static_cast<size_t>(picoy * 64 + (picox >> 1))];
-          const uint8_t rawIdx = (picox & 1) ? (packed >> 4) : (packed & 0x0FU);
-          panelFb[static_cast<size_t>(y * 128 + x)] = pal[palMap[rawIdx] & 0x8FU];
-        }
-      }
+      PicoBlit::renderFrame(picoFb.data(), palMap, pal, drawMode, panelFb.data());
       g_sink ^= panelFb[static_cast<size_t>(f) * 19U];
     }
   });

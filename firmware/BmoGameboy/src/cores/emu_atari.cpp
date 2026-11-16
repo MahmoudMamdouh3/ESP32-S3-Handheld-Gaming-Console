@@ -67,7 +67,9 @@ void renderTiaToPanel() {
   if (!src || tiaW == 0 || tiaH == 0) return;
 
   const uint32_t copyW = (tiaW < (uint32_t)ATARI_W) ? tiaW : (uint32_t)ATARI_W;
-  memset(s_panelFb, 0, ATARI_W * ATARI_H * sizeof(uint16_t));
+  if (copyW < (uint32_t)ATARI_W || tiaH < (uint32_t)ATARI_H) {
+    memset(s_panelFb, 0, ATARI_W * ATARI_H * sizeof(uint16_t));
+  }
 
   if (tiaH <= (uint32_t)ATARI_H) {
     const int yPad = (ATARI_H - (int)tiaH) / 2;

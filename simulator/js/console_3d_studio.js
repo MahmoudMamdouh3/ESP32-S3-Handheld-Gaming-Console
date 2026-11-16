@@ -14,13 +14,14 @@ export function setupStudioEnvironment(scene, renderer) {
     const pmrem = new THREE.PMREMGenerator(renderer);
     const envScene = new THREE.Scene();
     envScene.background = new THREE.Color(0x1b232e);
+    const tempPanels = [];
     const addPanel = (colorHex, w, h, d, x, y, z) => {
-      const panel = new THREE.Mesh(
-        new THREE.BoxGeometry(w, h, d),
-        new THREE.MeshBasicMaterial({ color: colorHex })
-      );
+      const geom = new THREE.BoxGeometry(w, h, d);
+      const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+      const panel = new THREE.Mesh(geom, mat);
       panel.position.set(x, y, z);
       envScene.add(panel);
+      tempPanels.push([geom, mat]);
     };
     addPanel(0xffffff, 18, 12, 0.5, 0, 12, 8);
     addPanel(0xdbeeff, 14, 10, 0.5, -14, 4, 4);
@@ -28,6 +29,10 @@ export function setupStudioEnvironment(scene, renderer) {
     addPanel(0x528294, 24, 24, 0.5, 0, -14, 0);
     const rt = pmrem.fromScene(envScene, 0.04);
     scene.environment = rt.texture;
+    for (const [geom, mat] of tempPanels) {
+      geom.dispose();
+      mat.dispose();
+    }
     pmrem.dispose();
   } catch (_err) {
     // Fallback safely to direct lighting if PMREM is unavailable

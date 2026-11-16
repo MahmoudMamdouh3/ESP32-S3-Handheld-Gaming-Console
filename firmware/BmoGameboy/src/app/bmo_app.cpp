@@ -5,6 +5,8 @@
 #include <SPI.h>
 #include <esp_heap_caps.h>
 #include <esp_system.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 #include "../hal/battery.h"
 #include "../hal/board_timing.h"
@@ -96,12 +98,6 @@ void BmoApp::setup() {
   Serial.begin(115200);
   Serial.setTxTimeoutMs(0);
 
-#if defined(CORE_DEBUG_LEVEL) && CORE_DEBUG_LEVEL > 0
-  delay(3000);
-#else
-  delay(500);
-#endif
-
   int resetReason = 0;
   bool abnormalReset = false;
   logBootBannerAndResetReason(&resetReason, &abnormalReset);
@@ -114,7 +110,7 @@ void BmoApp::setup() {
   const bool allPassed = runAllTests();
   LOG_INFO_STR(allPassed ? "TESTS SUCCESS" : "TESTS FAILED");
   while (true)
-    delay(100);
+    vTaskDelay(pdMS_TO_TICKS(100));
 #endif
 
   initDisplayAndSafeMode(resetReason, abnormalReset);
@@ -123,6 +119,8 @@ void BmoApp::setup() {
   BmoFace::begin();
   BmoFace::setExpression(BmoFace::IDLE);
   BmoAppRuntime::state().bootSplashStartMs = millis();
+  DisplayEmu::initMenuUI();
+  DisplayEmu::drawBootSplash(true);
 
   mountStorageAndLogMemory();
   BmoAppRuntime::state().lastFpsLogMs = millis();

@@ -54,7 +54,7 @@ def resolve_static_path(url_path: str) -> Path | None:
 class Handler(http.server.SimpleHTTPRequestHandler):
     server_version = "BmoSimulator/1"
     sys_version = ""
-    extensions_map = {
+    extensions_map = {  # noqa: RUF012
         **http.server.SimpleHTTPRequestHandler.extensions_map,
         ".wasm": "application/wasm",
         ".js": "application/javascript; charset=utf-8",
@@ -145,7 +145,7 @@ def ensure_wasm_artifacts() -> None:
 
         wasm_bytes = build_wasm_module(output_path=wasm_path)
         print(f"[+] Built {wasm_path.name} ({len(wasm_bytes)} bytes)")
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         print(
             f"[!] Could not auto-build WASM cores: {exc}\n"
             "    Install WASI SDK or set WASI_SDK_PATH, then run: "

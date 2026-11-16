@@ -11,6 +11,7 @@ void DisplayEmu::drawDiagnosticsDashboard(unsigned long uptimeMs, uint32_t freeD
                                           uint32_t skippedRomCount, uint32_t loopStackHighWaterWords,
                                           uint32_t displayStackHighWaterWords, bool sdMounted, uint32_t sdClockHz) {
   using namespace BmoDisplayInternal;
+  invalidateMenuRenderCache();
   if (!menuCanvas) return;
 #if defined(ESP32) || defined(ARDUINO)
   if (largestPsramBlock == 0) {

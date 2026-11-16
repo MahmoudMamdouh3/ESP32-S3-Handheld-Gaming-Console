@@ -9,9 +9,94 @@
 #include <cstdio>
 #include <cstring>
 
+namespace {
+
+enum UiMenuScreenKind : uint8_t {
+  SCREEN_NONE = 0,
+  SCREEN_BOOT,
+  SCREEN_CONSOLE,
+  SCREEN_MUSEUM,
+  SCREEN_GAME,
+  SCREEN_PAUSE,
+  SCREEN_IDLE,
+};
+
+UiMenuScreenKind s_lastRenderedScreen = SCREEN_NONE;
+uint32_t s_lastRenderedSig = 0U;
+
+uint32_t mixHashU32(uint32_t h, uint32_t val) {
+  h ^= val;
+  h *= 16777619U;
+  return h;
+}
+
+uint32_t hashStr(uint32_t h, const char* s) {
+  if (!s) return mixHashU32(h, 0xFF00U);
+  while (*s) {
+    h ^= static_cast<uint8_t>(*s++);
+    h *= 16777619U;
+  }
+  return h;
+}
+
+bool menuFrameUnchanged(UiMenuScreenKind kind, uint32_t sig) {
+  if (s_lastRenderedScreen == kind && s_lastRenderedSig == sig) {
+    return true;
+  }
+  s_lastRenderedScreen = kind;
+  s_lastRenderedSig = sig;
+  return false;
+}
+
+uint32_t computeGameSelectSignature(const RomFile* selectedRom, int count, int selectedIndex, RomType console,
+                                    bool sdMounted, bool alphaActive, bool toastActive) {
+  uint32_t sig = 2166136261U;
+  sig = mixHashU32(sig, static_cast<uint32_t>(count));
+  sig = mixHashU32(sig, static_cast<uint32_t>(selectedIndex));
+  sig = mixHashU32(sig, static_cast<uint32_t>(console));
+  sig = mixHashU32(sig, sdMounted ? 1U : 0U);
+  sig = mixHashU32(sig, BmoDisplayInternal::topPicksFilter ? 1U : 0U);
+  sig = mixHashU32(sig, BoxArt::hasArt() ? 1U : 0U);
+  sig = mixHashU32(sig, static_cast<uint32_t>(SDCard::getSkippedRomCount()));
+  sig = mixHashU32(sig, alphaActive ? static_cast<uint32_t>(BmoDisplayInternal::alphaBadgeLetter) : 0U);
+  sig = mixHashU32(sig, toastActive ? 1U : 0U);
+  if (selectedRom) {
+    sig = hashStr(sig, selectedRom->filename);
+    sig = mixHashU32(sig, selectedRom->isFavorite ? 2U : (selectedRom->isPopular ? 1U : 0U));
+  }
+  return sig;
+}
+
+uint32_t computePauseMenuSignature(const char* romTitle, int currentSlot, bool hasSaveState, bool hasBatterySave,
+                                   bool batterySaveSupported, int selectedOption, bool toastActive,
+                                   bool hasStatusToast) {
+  uint32_t sig = hashStr(2166136261U, romTitle);
+  sig = mixHashU32(sig, static_cast<uint32_t>(currentSlot));
+  sig = mixHashU32(sig, static_cast<uint32_t>(selectedOption));
+  sig = mixHashU32(sig, (hasSaveState ? 1U : 0U) | (hasBatterySave ? 2U : 0U) | (batterySaveSupported ? 4U : 0U) |
+                            (toastActive ? 8U : 0U) | (hasStatusToast ? 16U : 0U));
+  return sig;
+}
+
+} // namespace
+
+void BmoDisplayInternal::invalidateMenuRenderCache() {
+  s_lastRenderedScreen = SCREEN_NONE;
+  s_lastRenderedSig = 0U;
+}
+
 void DisplayEmu::drawBootSplash(bool pressAnyButtonBlink) {
   using namespace BmoDisplayInternal;
   if (!menuCanvas) return;
+  const bool toastActive = internalHasActiveToast();
+  const bool faceDirty = BmoFace::isDirty();
+  uint32_t sig = 2166136261U;
+  sig = mixHashU32(sig, pressAnyButtonBlink ? 1U : 0U);
+  sig = mixHashU32(sig, toastActive ? 1U : 0U);
+  if (!faceDirty && !toastActive && menuFrameUnchanged(SCREEN_BOOT, sig)) {
+    return;
+  }
+  menuFrameUnchanged(SCREEN_BOOT, sig);
   menuCanvas->fillScreen(UI_BLACK);
 
   constexpr int cx = 160;
@@ -200,6 +285,20 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
   if (selectedIndex < 0) selectedIndex = 0;
   if (selectedIndex >= consoleCount) selectedIndex = consoleCount - 1;
 
+  const bool springMoving = (fabsf(carouselOffset) > 0.05f || fabsf(carouselVel) > 0.5f);
+  const bool toastActive = internalHasActiveToast();
+  const bool faceDirty = BmoFace::isDirty();
+  uint32_t sig = 2166136261U;
+  sig = mixHashU32(sig, static_cast<uint32_t>(selectedIndex));
+  sig = mixHashU32(sig, static_cast<uint32_t>(gameCounts[selectedIndex]));
+  sig = mixHashU32(sig, sdMounted ? 1U : 0U);
+  sig = mixHashU32(sig, toastActive ? 1U : 0U);
+  if (!springMoving && !faceDirty && !toastActive && menuFrameUnchanged(SCREEN_CONSOLE, sig)) {
+    return;
+  }
+  s_lastRenderedScreen = SCREEN_CONSOLE;
+  s_lastRenderedSig = sig;
+
   const RomType currentConsole = ConsoleCatalog::CONSOLES[selectedIndex];
   menuCanvas->fillScreen(UI_BLACK);
   menuCanvas->fillRect(0, 0, 320, 42, UI_DEEP_TEAL);
@@ -246,6 +345,14 @@ void DisplayEmu::drawConsoleSelectMenu(int selectedIndex, const int* gameCounts,
 void DisplayEmu::drawConsoleMuseumModal(RomType console) {
   using namespace BmoDisplayInternal;
   if (!menuCanvas) return;
+  const bool toastActive = internalHasActiveToast();
+  uint32_t sig = mixHashU32(2166136261U, static_cast<uint32_t>(console));
+  sig = mixHashU32(sig, toastActive ? 1U : 0U);
+  if (!toastActive && menuFrameUnchanged(SCREEN_MUSEUM, sig)) {
+    return;
+  }
+  s_lastRenderedScreen = SCREEN_MUSEUM;
+  s_lastRenderedSig = sig;
   menuCanvas->fillScreen(UI_BLACK);
   menuCanvas->drawRoundRect(8, 8, 304, 224, 8, UI_YELLOW);
   menuCanvas->fillRect(0, 0, 320, 36, UI_DEEP_TEAL);
@@ -281,28 +388,9 @@ void DisplayEmu::drawConsoleMuseumModal(RomType console) {
   writeMenuCanvas();
 }
 
-void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int selectedIndex, RomType console,
-                                    bool sdMounted) {
+namespace DisplayEmu {
+static void drawGameSelectArtAndTag(bool isFav, bool isPop, RomType actualType) {
   using namespace BmoDisplayInternal;
-  if (!menuCanvas) return;
-  if (count < 0) count = 0;
-  if (count > 0 && (selectedIndex < 0 || selectedIndex >= count)) selectedIndex = 0;
-
-  drawGameMenuHeaderAndBattery(console);
-  if (count == 0) {
-    drawEmptyGameLibraryScreen(console, sdMounted);
-    writeMenuCanvas();
-    return;
-  }
-
-  const RomFile* game = games[selectedIndex];
-  const bool isFav = game ? game->isFavorite : false;
-  const bool isPop = game ? game->isPopular : false;
-  const RomType actualType = game ? game->type : console;
-
-  char title[64];
-  sanitizeRomTitle(game ? game->filename : nullptr, title, sizeof(title));
-
   menuCanvas->fillRoundRect(81, 46, 158, 114, 12, UI_DEEP_TEAL);
   menuCanvas->drawRoundRect(81, 46, 158, 114, 12, isFav ? UI_YELLOW : UI_TEAL);
   if (BoxArt::hasArt()) {
@@ -328,15 +416,10 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
     menuCanvas->setCursor(126, 132);
     menuCanvas->print(ConsoleCatalog::consoleBadge(actualType));
   }
+}
 
-  menuCanvas->setFont(&FreeSans9pt7b);
-  drawFittedCentered(title, 180, 290, UI_WHITE);
-  menuCanvas->setFont();
-  char position[36];
-  snprintf(position, sizeof(position), "%d / %d  [%s%s]", selectedIndex + 1, count,
-           ConsoleCatalog::consoleBadge(actualType), topPicksFilter ? " TOP" : "");
-  drawCentered(position, 198, UI_MINT);
-
+static void drawGameSelectScrollbarAndFooter(int count, int selectedIndex, bool isFav) {
+  using namespace BmoDisplayInternal;
   if (SDCard::getSkippedRomCount() > 0) {
     char skipped[40];
     snprintf(skipped, sizeof(skipped), "SKIP %d", SDCard::getSkippedRomCount());
@@ -362,6 +445,54 @@ void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int 
   drawButtonPill(106, 220, "SEL", isFav ? "UNSTAR" : "STAR", UI_YELLOW, UI_BLACK, UI_WHITE);
   drawButtonPill(180, 220, "ST", topPicksFilter ? "ALL" : "TOP", UI_BLUE, UI_WHITE, UI_WHITE);
   drawButtonPill(236, 220, "<>", "A-Z", UI_TEAL, UI_BLACK, UI_WHITE);
+}
+} // namespace DisplayEmu
+
+void DisplayEmu::drawGameSelectMenu(const RomFile* const* games, int count, int selectedIndex, RomType console,
+                                    bool sdMounted) {
+  using namespace BmoDisplayInternal;
+  if (!menuCanvas) return;
+  if (count < 0) count = 0;
+  if (count > 0 && (selectedIndex < 0 || selectedIndex >= count)) selectedIndex = 0;
+
+  const RomFile* selectedRom = (count > 0) ? games[selectedIndex] : nullptr;
+  const bool alphaActive = (alphaBadgeLetter != '\0' && millis() < alphaBadgeExpireMs);
+  const bool toastActive = internalHasActiveToast();
+  const bool faceDirty = BmoFace::isDirty();
+  const uint32_t sig =
+      computeGameSelectSignature(selectedRom, count, selectedIndex, console, sdMounted, alphaActive, toastActive);
+  if (!faceDirty && !toastActive && menuFrameUnchanged(SCREEN_GAME, sig)) {
+    return;
+  }
+  s_lastRenderedScreen = SCREEN_GAME;
+  s_lastRenderedSig = sig;
+
+  drawGameMenuHeaderAndBattery(console);
+  if (count == 0) {
+    drawEmptyGameLibraryScreen(console, sdMounted);
+    writeMenuCanvas();
+    return;
+  }
+
+  const RomFile* game = games[selectedIndex];
+  const bool isFav = game ? game->isFavorite : false;
+  const bool isPop = game ? game->isPopular : false;
+  const RomType actualType = game ? game->type : console;
+
+  char title[64];
+  sanitizeRomTitle(game ? game->filename : nullptr, title, sizeof(title));
+
+  drawGameSelectArtAndTag(isFav, isPop, actualType);
+
+  menuCanvas->setFont(&FreeSans9pt7b);
+  drawFittedCentered(title, 180, 290, UI_WHITE);
+  menuCanvas->setFont();
+  char position[36];
+  snprintf(position, sizeof(position), "%d / %d  [%s%s]", selectedIndex + 1, count,
+           ConsoleCatalog::consoleBadge(actualType), topPicksFilter ? " TOP" : "");
+  drawCentered(position, 198, UI_MINT);
+
+  drawGameSelectScrollbarAndFooter(count, selectedIndex, isFav);
   drawAlphaJumpOverlayIfActive();
   writeMenuCanvas();
 }
@@ -370,6 +501,15 @@ void DisplayEmu::drawPauseMenu(const char* romTitle, int currentSlot, bool hasSa
                                bool batterySaveSupported, int selectedOption, const char* statusToast) {
   using namespace BmoDisplayInternal;
   if (!menuCanvas) return;
+  const bool toastActive = internalHasActiveToast();
+  const bool hasStatusToast = (statusToast && statusToast[0] != '\0');
+  const uint32_t sig = computePauseMenuSignature(romTitle, currentSlot, hasSaveState, hasBatterySave,
+                                                 batterySaveSupported, selectedOption, toastActive, hasStatusToast);
+  if (!hasStatusToast && !toastActive && menuFrameUnchanged(SCREEN_PAUSE, sig)) {
+    return;
+  }
+  s_lastRenderedScreen = SCREEN_PAUSE;
+  s_lastRenderedSig = sig;
 
   menuCanvas->fillScreen(UI_BLACK);
 
@@ -451,6 +591,20 @@ void DisplayEmu::drawPauseMenu(const char* romTitle, int currentSlot, bool hasSa
 void DisplayEmu::drawIdleMascotScreen(unsigned long idleSeconds, const char* stateMessage) {
   using namespace BmoDisplayInternal;
   if (!menuCanvas) return;
+  const bool toastActive = internalHasActiveToast();
+  const bool faceDirty = BmoFace::isDirty();
+  const uint32_t idleBucket = (idleSeconds > 40UL) ? 2U : ((idleSeconds > 20UL) ? 1U : 0U);
+  uint32_t sig = hashStr(2166136261U, stateMessage);
+  sig = mixHashU32(sig, idleBucket);
+  sig = mixHashU32(sig, BmoFace::isDancing() ? 1U : 0U);
+  sig = mixHashU32(sig, BmoFace::hasSpeech() ? 1U : 0U);
+  sig = mixHashU32(sig, static_cast<uint32_t>(BmoFace::getVisibleChars()));
+  sig = mixHashU32(sig, toastActive ? 1U : 0U);
+  if (!faceDirty && !toastActive && menuFrameUnchanged(SCREEN_IDLE, sig)) {
+    return;
+  }
+  s_lastRenderedScreen = SCREEN_IDLE;
+  s_lastRenderedSig = sig;
 
   BmoFace::renderFullScreen(menuCanvas->getBuffer(), 320, 240);
 

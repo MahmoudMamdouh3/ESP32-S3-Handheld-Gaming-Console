@@ -27,6 +27,7 @@ namespace BmoSdInternal {
 
 bool mounted = false;
 uint32_t mountedClockHz = 0;
+uint32_t catalogGeneration = 1U;
 
 static RomFile fallbackRomList[32];
 RomFile* romList = fallbackRomList;
@@ -201,6 +202,7 @@ SDCard::ScanStats SDCard::getScanStats() {
 bool SDCard::begin() {
   using namespace BmoSdInternal;
   numRoms = 0;
+  invalidateCatalogLookup();
   skippedRomCount = 0;
   scanStats = ScanStats{};
   poolGrowthFailed = false;

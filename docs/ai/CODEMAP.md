@@ -25,11 +25,11 @@ Compact structural map for AI agents and contributors. Regenerate via `python sc
 | [`firmware/BmoGameboy/BmoGameboy.ino`](../../firmware/BmoGameboy/BmoGameboy.ino) | `12` | Arduino entry sketch delegating setup() and loop() to BmoApp |
 | [`firmware/bringup/bringup.ino`](../../firmware/bringup/bringup.ino) | `229` | Standalone first-power-on bring-up sketch (PSRAM, TFT, SD, 8 buttons) |
 | [`firmware/BmoGameboy/src/app/app_diagnostics.cpp`](../../firmware/BmoGameboy/src/app/app_diagnostics.cpp) | `108` | Diagnostics dashboard, SPI stress pattern, and profiler toggle |
-| [`firmware/BmoGameboy/src/app/app_emulator_loop.cpp`](../../firmware/BmoGameboy/src/app/app_emulator_loop.cpp) | `318` | Emulator step loop, frame pacing, pause menu, and quit policy |
+| [`firmware/BmoGameboy/src/app/app_emulator_loop.cpp`](../../firmware/BmoGameboy/src/app/app_emulator_loop.cpp) | `321` | Emulator step loop, frame pacing, pause menu, and quit policy |
 | [`firmware/BmoGameboy/src/app/app_launcher.cpp`](../../firmware/BmoGameboy/src/app/app_launcher.cpp) | `138` | ROM loader, identity check, and core launch/teardown |
 | [`firmware/BmoGameboy/src/app/app_menus.cpp`](../../firmware/BmoGameboy/src/app/app_menus.cpp) | `348` | Console carousel, game list, museum modal, and idle mascot handlers |
-| [`firmware/BmoGameboy/src/app/app_state.cpp`](../../firmware/BmoGameboy/src/app/app_state.cpp) | `250` | Application FSM state, boot recovery, and Konami state machine |
-| [`firmware/BmoGameboy/src/app/bmo_app.cpp`](../../firmware/BmoGameboy/src/app/bmo_app.cpp) | `168` | Top-level coordinator, setup(), and loop() dispatcher |
+| [`firmware/BmoGameboy/src/app/app_state.cpp`](../../firmware/BmoGameboy/src/app/app_state.cpp) | `267` | Application FSM state, boot recovery, and Konami state machine |
+| [`firmware/BmoGameboy/src/app/bmo_app.cpp`](../../firmware/BmoGameboy/src/app/bmo_app.cpp) | `166` | Top-level coordinator, setup(), and loop() dispatcher |
 | [`firmware/BmoGameboy/src/app/boot_safe_mode.h`](../../firmware/BmoGameboy/src/app/boot_safe_mode.h) | `131` | 40 MHz SPI Safe Mode decision helper and reset-reason classifier |
 | [`firmware/BmoGameboy/src/hal/audio_i2s.cpp`](../../firmware/BmoGameboy/src/hal/audio_i2s.cpp) | `71` | Dormant I2S DAC audio driver (gated off by FEATURE_AUDIO=0) |
 | [`firmware/BmoGameboy/src/hal/battery.cpp`](../../firmware/BmoGameboy/src/hal/battery.cpp) | `101` | Dormant ADC battery monitor (gated off by FEATURE_BATTERY_MONITOR=0) |
@@ -39,48 +39,48 @@ Compact structural map for AI agents and contributors. Regenerate via `python sc
 | [`firmware/BmoGameboy/src/hal/feature_flags.h`](../../firmware/BmoGameboy/src/hal/feature_flags.h) | `89` | Hardware hard-stop flags and optional core compile switches |
 | [`firmware/BmoGameboy/src/hal/pin_map.h`](../../firmware/BmoGameboy/src/hal/pin_map.h) | `48` | Authoritative soldered GPIO pin assignments |
 | [`firmware/BmoGameboy/src/hal/pins_check.h`](../../firmware/BmoGameboy/src/hal/pins_check.h) | `68` | Compile-time static_assert checks for GPIO uniqueness and reserved pins |
-| [`firmware/BmoGameboy/src/hal/profiler.cpp`](../../firmware/BmoGameboy/src/hal/profiler.cpp) | `145` | PSRAM-backed frame ring profiler and summary snapshotter |
+| [`firmware/BmoGameboy/src/hal/profiler.cpp`](../../firmware/BmoGameboy/src/hal/profiler.cpp) | `193` | PSRAM-backed frame ring profiler and summary snapshotter |
 | [`firmware/BmoGameboy/src/hal/psram_alloc.h`](../../firmware/BmoGameboy/src/hal/psram_alloc.h) | `90` | Octal PSRAM allocation wrappers with overflow and DRAM guards |
 | [`firmware/BmoGameboy/src/hal/spi_arbiter.cpp`](../../firmware/BmoGameboy/src/hal/spi_arbiter.cpp) | `26` | FreeRTOS recursive mutex serializing shared FSPI (ST7789 + MicroSD) |
 | [`firmware/BmoGameboy/src/storage/atomic_fs.h`](../../firmware/BmoGameboy/src/storage/atomic_fs.h) | `147` | Write-temp-verify-rename atomic SD file transaction engine |
-| [`firmware/BmoGameboy/src/storage/box_art.cpp`](../../firmware/BmoGameboy/src/storage/box_art.cpp) | `380` | #include "box_art.h" |
+| [`firmware/BmoGameboy/src/storage/box_art.cpp`](../../firmware/BmoGameboy/src/storage/box_art.cpp) | `390` | #include "box_art.h" |
 | [`firmware/BmoGameboy/src/storage/fram_save.cpp`](../../firmware/BmoGameboy/src/storage/fram_save.cpp) | `80` | #include "../hal/config.h" |
 | [`firmware/BmoGameboy/src/storage/path_key.h`](../../firmware/BmoGameboy/src/storage/path_key.h) | `91` | Deterministic <stem>_<8hex_crc32> sidecar key generator |
 | [`firmware/BmoGameboy/src/storage/popular_games_table.h`](../../firmware/BmoGameboy/src/storage/popular_games_table.h) | `109` | Per-platform curated Top Picks keyword matching table |
-| [`firmware/BmoGameboy/src/storage/rom_catalog_index.cpp`](../../firmware/BmoGameboy/src/storage/rom_catalog_index.cpp) | `134` | In-memory PSRAM catalog storage and indexed path lookup |
+| [`firmware/BmoGameboy/src/storage/rom_catalog_index.cpp`](../../firmware/BmoGameboy/src/storage/rom_catalog_index.cpp) | `184` | In-memory PSRAM catalog storage and indexed path lookup |
 | [`firmware/BmoGameboy/src/storage/rom_index.h`](../../firmware/BmoGameboy/src/storage/rom_index.h) | `106` | BMOIDX03 44-byte header and 20-byte entry binary catalog schema |
-| [`firmware/BmoGameboy/src/storage/save_manager.cpp`](../../firmware/BmoGameboy/src/storage/save_manager.cpp) | `633` | Multi-slot BSS2 save-state and buffered BMP screenshot manager |
+| [`firmware/BmoGameboy/src/storage/save_manager.cpp`](../../firmware/BmoGameboy/src/storage/save_manager.cpp) | `634` | Multi-slot BSS2 save-state and buffered BMP screenshot manager |
 | [`firmware/BmoGameboy/src/storage/save_state_format.h`](../../firmware/BmoGameboy/src/storage/save_state_format.h) | `168` | BSS2 72-byte versioned save-state header and CRC32 validator |
-| [`firmware/BmoGameboy/src/storage/sd_index_io.cpp`](../../firmware/BmoGameboy/src/storage/sd_index_io.cpp) | `403` | BMOIDX03 binary serialization, streaming CRC verify, and atomic save |
-| [`firmware/BmoGameboy/src/storage/sd_metadata.cpp`](../../firmware/BmoGameboy/src/storage/sd_metadata.cpp) | `367` | Atomic favorites.txt and history.txt persistence (PSRAM-backed) |
-| [`firmware/BmoGameboy/src/storage/sd_mount.cpp`](../../firmware/BmoGameboy/src/storage/sd_mount.cpp) | `264` | MicroSD mount, directory scaffolding, and PSRAM catalog pool sizing |
-| [`firmware/BmoGameboy/src/storage/sd_scanner.cpp`](../../firmware/BmoGameboy/src/storage/sd_scanner.cpp) | `389` | Recursive FAT32 ROM scanner and file filter pipeline |
+| [`firmware/BmoGameboy/src/storage/sd_index_io.cpp`](../../firmware/BmoGameboy/src/storage/sd_index_io.cpp) | `415` | BMOIDX03 binary serialization, streaming CRC verify, and atomic save |
+| [`firmware/BmoGameboy/src/storage/sd_metadata.cpp`](../../firmware/BmoGameboy/src/storage/sd_metadata.cpp) | `357` | Atomic favorites.txt and history.txt persistence (PSRAM-backed) |
+| [`firmware/BmoGameboy/src/storage/sd_mount.cpp`](../../firmware/BmoGameboy/src/storage/sd_mount.cpp) | `266` | MicroSD mount, directory scaffolding, and PSRAM catalog pool sizing |
+| [`firmware/BmoGameboy/src/storage/sd_scanner.cpp`](../../firmware/BmoGameboy/src/storage/sd_scanner.cpp) | `391` | Recursive FAT32 ROM scanner and file filter pipeline |
 | [`firmware/BmoGameboy/src/ui/bmo_face_anim.cpp`](../../firmware/BmoGameboy/src/ui/bmo_face_anim.cpp) | `416` | Mascot spring dynamics, gaze/blink timers, speech, and dance state |
 | [`firmware/BmoGameboy/src/ui/bmo_face_renderer.cpp`](../../firmware/BmoGameboy/src/ui/bmo_face_renderer.cpp) | `344` | Scanline SDF rasterizer, AABB culling, and particle compositing |
 | [`firmware/BmoGameboy/src/ui/bmo_face_sdf.cpp`](../../firmware/BmoGameboy/src/ui/bmo_face_sdf.cpp) | `11` | SDF primitive evaluation and expression target tables |
 | [`firmware/BmoGameboy/src/ui/console_catalog.h`](../../firmware/BmoGameboy/src/ui/console_catalog.h) | `167` | 15-platform metadata catalog, file extensions, and badge themes |
-| [`firmware/BmoGameboy/src/ui/display_driver.cpp`](../../firmware/BmoGameboy/src/ui/display_driver.cpp) | `112` | ST7789 SPI initialization and internal-DRAM DMA bounce strip blitter |
-| [`firmware/BmoGameboy/src/ui/display_pipeline.cpp`](../../firmware/BmoGameboy/src/ui/display_pipeline.cpp) | `586` | Core 0/1 atomic display worker queue, palette cache, and scalers |
+| [`firmware/BmoGameboy/src/ui/display_driver.cpp`](../../firmware/BmoGameboy/src/ui/display_driver.cpp) | `149` | ST7789 SPI initialization and internal-DRAM DMA bounce strip blitter |
+| [`firmware/BmoGameboy/src/ui/display_pipeline.cpp`](../../firmware/BmoGameboy/src/ui/display_pipeline.cpp) | `607` | Core 0/1 atomic display worker queue, palette cache, and scalers |
 | [`firmware/BmoGameboy/src/ui/theme.h`](../../firmware/BmoGameboy/src/ui/theme.h) | `129` | Canonical BGR565 wire-swapped color tokens and spacing constants |
-| [`firmware/BmoGameboy/src/ui/ui_diagnostics.cpp`](../../firmware/BmoGameboy/src/ui/ui_diagnostics.cpp) | `197` | #include "display_internal.h" |
-| [`firmware/BmoGameboy/src/ui/ui_menus.cpp`](../../firmware/BmoGameboy/src/ui/ui_menus.cpp) | `494` | #include "display_internal.h" |
-| [`firmware/BmoGameboy/src/ui/ui_widgets.cpp`](../../firmware/BmoGameboy/src/ui/ui_widgets.cpp) | `381` | #include "display_internal.h" |
+| [`firmware/BmoGameboy/src/ui/ui_diagnostics.cpp`](../../firmware/BmoGameboy/src/ui/ui_diagnostics.cpp) | `198` | #include "display_internal.h" |
+| [`firmware/BmoGameboy/src/ui/ui_menus.cpp`](../../firmware/BmoGameboy/src/ui/ui_menus.cpp) | `648` | #include "display_internal.h" |
+| [`firmware/BmoGameboy/src/ui/ui_widgets.cpp`](../../firmware/BmoGameboy/src/ui/ui_widgets.cpp) | `377` | #include "display_internal.h" |
 | [`firmware/BmoGameboy/src/cores/core_registry.h`](../../firmware/BmoGameboy/src/cores/core_registry.h) | `217` | Static dispatch table mapping emulator indices 0..14 to C++ wrappers |
 
 ## 3. Emulator Wrapper Files (`firmware/BmoGameboy/src/cores/`)
 
 | Wrapper File | Lines | Upstream Engine (`src/third_party/`) | Build Gate |
 | :--- | ---: | :--- | :--- |
-| [`emu_atari.cpp`](../../firmware/BmoGameboy/src/cores/emu_atari.cpp) | `295` | `stella2014` (Atari 2600) | `BMO_EXPERIMENTAL_CORES` |
+| [`emu_atari.cpp`](../../firmware/BmoGameboy/src/cores/emu_atari.cpp) | `297` | `stella2014` (Atari 2600) | `BMO_EXPERIMENTAL_CORES` |
 | [`emu_colem.cpp`](../../firmware/BmoGameboy/src/cores/emu_colem.cpp) | `191` | `smsplus` / `colem` (ColecoVision) | `BMO_EXPERIMENTAL_CORES` |
-| [`emu_doom.cpp`](../../firmware/BmoGameboy/src/cores/emu_doom.cpp) | `347` | `doom` (`doomgeneric`) | `BMO_ENABLE_DOOM` |
+| [`emu_doom.cpp`](../../firmware/BmoGameboy/src/cores/emu_doom.cpp) | `356` | `doom` (`doomgeneric`) | `BMO_ENABLE_DOOM` |
 | [`emu_genesis.cpp`](../../firmware/BmoGameboy/src/cores/emu_genesis.cpp) | `274` | `gwenesis` (Sega Genesis) | `BMO_EXPERIMENTAL_CORES` |
 | [`emu_lynx.cpp`](../../firmware/BmoGameboy/src/cores/emu_lynx.cpp) | `168` | `handy` (Atari Lynx) | `BMO_EXPERIMENTAL_CORES` |
 | [`emu_nes.cpp`](../../firmware/BmoGameboy/src/cores/emu_nes.cpp) | `121` | `agnes` (NES) | Always enabled (`mit` profile) |
 | [`emu_ngp.cpp`](../../firmware/BmoGameboy/src/cores/emu_ngp.cpp) | `331` | `race` (Neo Geo Pocket) | `BMO_EXPERIMENTAL_CORES` |
 | [`emu_pce.cpp`](../../firmware/BmoGameboy/src/cores/emu_pce.cpp) | `226` | `huexpress` (PC Engine) | `BMO_EXPERIMENTAL_CORES` |
 | [`emu_peanut.cpp`](../../firmware/BmoGameboy/src/cores/emu_peanut.cpp) | `189` | `peanut_gb` (GB DMG) | Always enabled (`mit` profile) |
-| [`emu_pico.cpp`](../../firmware/BmoGameboy/src/cores/emu_pico.cpp) | `637` | `fake08` + `z8lua` (PICO-8) | `BMO_EXPERIMENTAL_CORES` |
+| [`emu_pico.cpp`](../../firmware/BmoGameboy/src/cores/emu_pico.cpp) | `589` | `fake08` + `z8lua` (PICO-8) | `BMO_EXPERIMENTAL_CORES` |
 | [`emu_sms.cpp`](../../firmware/BmoGameboy/src/cores/emu_sms.cpp) | `145` | `smsplus` (SMS / GG) | `BMO_EXPERIMENTAL_CORES` |
 | [`emu_snes.cpp`](../../firmware/BmoGameboy/src/cores/emu_snes.cpp) | `296` | `snes9x` (SNES) | `BMO_EXPERIMENTAL_CORES` |
 | [`emu_walnut.cpp`](../../firmware/BmoGameboy/src/cores/emu_walnut.cpp) | `199` | `walnut_cgb` (GBC) | Always enabled (`mit` profile) |
@@ -91,11 +91,11 @@ Compact structural map for AI agents and contributors. Regenerate via `python sc
 
 | Script | Lines | Purpose |
 | :--- | ---: | :--- |
-| [`scripts/build_wasm_cores.py`](../../scripts/build_wasm_cores.py) | `231` | Compile firmware emulator sources used by browser gameplay to WebAssembly. |
+| [`scripts/build_wasm_cores.py`](../../scripts/build_wasm_cores.py) | `287` | Compile firmware emulator sources used by browser gameplay to WebAssembly. |
 | [`scripts/check_markdown_links.py`](../../scripts/check_markdown_links.py) | `87` | Verify local Markdown links and reject file:// URIs. |
 | [`scripts/color_calc.py`](../../scripts/color_calc.py) | `52` | scripts/color_calc.py — RGB888 <-> Byte-Swapped BGR565 ST7789 Wire Format Calculator |
-| [`scripts/convert_covers.py`](../../scripts/convert_covers.py) | `280` | scripts/convert_covers.py — Local Box Art Resampler & Multi-Target BGR565 Converter |
-| [`scripts/deploy_sd.py`](../../scripts/deploy_sd.py) | `422` | Canonical BMO Handheld SD card deployer & binary ROM index builder (BMOIDX03). |
+| [`scripts/convert_covers.py`](../../scripts/convert_covers.py) | `309` | scripts/convert_covers.py — Local Box Art Resampler & Multi-Target BGR565 Converter |
+| [`scripts/deploy_sd.py`](../../scripts/deploy_sd.py) | `449` | Canonical BMO Handheld SD card deployer & binary ROM index builder (BMOIDX03). |
 | [`scripts/export_enclosure_web_meshes.py`](../../scripts/export_enclosure_web_meshes.py) | `254` | Export manifold CAD enclosure shells to deterministic Three.js mesh data. |
 | [`scripts/extract_claims.py`](../../scripts/extract_claims.py) | `596` | scripts/extract_claims.py — Extract and verify numeric & factual claims across the repos |
 | [`scripts/fetch_covers.py`](../../scripts/fetch_covers.py) | `84` | scripts/fetch_covers.py — Backward-compatible alias for scripts/convert_covers.py. |

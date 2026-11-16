@@ -6,6 +6,26 @@
 import { BMO_EXPRESSION_NAMES } from "../wasm_playtest_engine.js";
 import { CONSOLES_LIST } from "./constants.js";
 
+/** @type {Map<string, string>} */
+const TRUNCATED_TITLE_CACHE = new Map();
+const MAX_TITLE_CACHE_ENTRIES = 256;
+
+function fitTitleCached(ctx, title, maxWidth) {
+  const key = `${title}|${maxWidth}`;
+  const cached = TRUNCATED_TITLE_CACHE.get(key);
+  if (cached !== undefined) return cached;
+  let shown = title;
+  while (ctx.measureText(shown).width > maxWidth && shown.length > 4) {
+    shown = shown.slice(0, shown.length - 4) + "...";
+  }
+  if (TRUNCATED_TITLE_CACHE.size >= MAX_TITLE_CACHE_ENTRIES) {
+    const oldest = TRUNCATED_TITLE_CACHE.keys().next().value;
+    if (oldest !== undefined) TRUNCATED_TITLE_CACHE.delete(oldest);
+  }
+  TRUNCATED_TITLE_CACHE.set(key, shown);
+  return shown;
+}
+
 export function renderBootSplashImpl(sim, dt) {
   const ctx = sim.ctx;
   sim.bootTimer += dt;
@@ -303,8 +323,7 @@ function renderGameCardDetails(sim, ctx, c, games, idx) {
 
   ctx.font = "12px 'Outfit', sans-serif";
   ctx.fillStyle = THEME_T.white;
-  let shown = title;
-  while (ctx.measureText(shown).width > 290 && shown.length > 4) shown = shown.slice(0, shown.length - 4) + "...";
+  const shown = fitTitleCached(ctx, title, 290);
   ctx.fillText(shown, 160, 184);
   ctx.font = "10px 'JetBrains Mono', monospace";
   ctx.fillStyle = THEME_T.mint;

@@ -10,6 +10,11 @@
 #include "../hal/config.h"
 #include "../hal/spi_arbiter.h"
 #include <SPI.h>
+#include <esp_heap_caps.h>
+#include <string.h>
+#if defined(ESP_PLATFORM)
+#include <esp_memory_utils.h>
+#endif
 
 namespace BmoDisplayInternal {
 
@@ -24,11 +29,30 @@ namespace {
 constexpr uint8_t MADCTL_MY = 0x80;
 constexpr uint8_t MADCTL_MV = 0x20;
 constexpr uint8_t MADCTL_BGR = 0x08;
+constexpr size_t kDmaBounceStripBytes = 320U * 16U * sizeof(uint16_t); // 10,240 B DMA-capable internal DRAM strip
+uint8_t* s_dmaBounceStrip = nullptr;
+
+void ensureDmaBounceStrip() {
+  if (!s_dmaBounceStrip) {
+    s_dmaBounceStrip =
+        static_cast<uint8_t*>(heap_caps_malloc(kDmaBounceStripBytes, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL));
+  }
+}
+
+bool needsDmaBounce(const void* ptr) {
+#if defined(ESP_PLATFORM)
+  return ptr != nullptr && esp_ptr_external_ram(ptr);
+#else
+  (void)ptr;
+  return false;
+#endif
+}
 
 } // namespace
 
 void initPanelHardware(uint32_t spiClockHz) {
   using namespace BmoDisplayInternal;
+  ensureDmaBounceStrip();
   SpiArbiter::ScopedLock spiLock;
   tft.init(TFT_WIDTH, TFT_HEIGHT);
   tft.setSPISpeed(spiClockHz);
@@ -46,6 +70,7 @@ void applySpiClock(uint32_t spiClockHz) {
 }
 
 void fillPanelBlack() {
+  BmoDisplayInternal::invalidateMenuRenderCache();
   SpiArbiter::ScopedLock spiLock;
   BmoDisplayInternal::tft.fillScreen(ST77XX_BLACK);
 }
@@ -55,7 +80,19 @@ void pushWindowLocked(int x, int y, int w, int h, const uint16_t* data, size_t b
   SpiArbiter::ScopedLock spiLock;
   BmoDisplayInternal::tft.startWrite();
   BmoDisplayInternal::tft.setAddrWindow(x, y, w, h);
-  SPI.writeBytes(reinterpret_cast<const uint8_t*>(data), byteCount);
+  const uint8_t* src = reinterpret_cast<const uint8_t*>(data);
+  if (s_dmaBounceStrip && needsDmaBounce(src)) {
+    size_t offset = 0;
+    while (offset < byteCount) {
+      const size_t remaining = byteCount - offset;
+      const size_t chunk = (remaining > kDmaBounceStripBytes) ? kDmaBounceStripBytes : remaining;
+      memcpy(s_dmaBounceStrip, src + offset, chunk);
+      SPI.writeBytes(s_dmaBounceStrip, chunk);
+      offset += chunk;
+    }
+  } else {
+    SPI.writeBytes(src, byteCount);
+  }
   BmoDisplayInternal::tft.endWrite();
 }
 

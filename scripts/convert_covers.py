@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import re
 import shutil
 import struct
 from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -87,9 +89,11 @@ def encode_raw_bgr565(
 ) -> bytes:
     """Encodes RGB888 pixels into little-endian uint16_t swapped BGR565."""
     out = bytearray()
+    append = out.append
     for r, g, b in pixels_rgb:
-        val = rgb888_to_bgr565_swapped(r, g, b)
-        out.extend(struct.pack("<H", val))
+        val = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | ((b & 0xF8) >> 3)
+        append((val >> 8) & 0xFF)
+        append(val & 0xFF)
     if expected_bytes is not None and len(out) != expected_bytes:
         raise ValueError(f"Expected {expected_bytes} bytes, got {len(out)}")
     return bytes(out)
@@ -185,6 +189,18 @@ def _find_local_source_image(stem: str, search_dirs: Iterable[Path]) -> Path | N
     return None
 
 
+def _index_local_source_images(search_dirs: Iterable[Path]) -> dict[str, Path]:
+    allowed_exts = {".png", ".jpg", ".jpeg", ".bmp"}
+    found: dict[str, Path] = {}
+    for directory in search_dirs:
+        if not directory.is_dir():
+            continue
+        for entry in sorted(directory.iterdir()):
+            if entry.is_file() and entry.suffix.lower() in allowed_exts and entry.stem not in found:
+                found[entry.stem] = entry
+    return found
+
+
 def sync_all_covers(
     rom_dir: Path | None = None,
     sd_boxart_dir: Path | None = None,
@@ -208,19 +224,22 @@ def sync_all_covers(
     if not resolved_rom_dir.exists():
         return manifest
 
+    rom_jobs: list[tuple[str, str, Path | None]] = []
+    local_images = _index_local_source_images(search_dirs)
     for rom_path in sorted(resolved_rom_dir.rglob("*")):
         if not rom_path.is_file() or "boxart" in rom_path.parts:
             continue
         if rom_path.suffix.lower() not in SUPPORTED_ROM_EXTENSIONS:
             continue
-
-        stem = rom_path.stem
-        local_img = _find_local_source_image(stem, search_dirs)
-        px = image_to_pixels_rgb(local_img, target_width, target_height) if local_img else None
         relative_path = rom_path.relative_to(resolved_rom_dir).as_posix()
         if len(relative_path.encode("utf-8")) > 255:
             raise ValueError(f"ROM path is too long for firmware index: {relative_path}")
+        stem = rom_path.stem
+        rom_jobs.append((stem, relative_path, local_images.get(stem)))
 
+    def _process_job(job: tuple[str, str, Path | None]) -> tuple[str, str | None]:
+        stem, relative_path, local_img = job
+        px = image_to_pixels_rgb(local_img, target_width, target_height) if local_img else None
         write_cover_files(
             stem,
             resolved_boxart_dir,
@@ -234,7 +253,17 @@ def sync_all_covers(
             sim_dest = sim_covers_dir / f"{slug}{local_img.suffix.lower()}"
             if not sim_dest.exists():
                 shutil.copy2(local_img, sim_dest)
-            manifest[stem] = f"covers/{sim_dest.name}"
+            return (stem, f"covers/{sim_dest.name}")
+        return (stem, None)
+
+    if len(rom_jobs) >= 4:
+        workers = min(8, os.cpu_count() or 4)
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            results = list(pool.map(_process_job, rom_jobs))
+    else:
+        results = [_process_job(job) for job in rom_jobs]
+
+    manifest = {stem: cover_rel for stem, cover_rel in results if cover_rel is not None}
 
     return manifest
 

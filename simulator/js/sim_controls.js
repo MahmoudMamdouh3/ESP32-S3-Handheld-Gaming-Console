@@ -100,22 +100,34 @@ function isEditableTarget(target) {
   return Boolean(target.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT");
 }
 
+function addListener(sim, target, type, handler, options) {
+  if (typeof sim.trackListener === "function") {
+    sim.trackListener(target, type, handler, options);
+  } else if (target && typeof target.addEventListener === "function") {
+    target.addEventListener(type, handler, options);
+  }
+}
+
 function bindKeyboardHandlers(sim) {
-  window.addEventListener("keydown", (e) => {
+  addListener(sim, window, "keydown", (e) => {
     if (isEditableTarget(e.target)) return;
     if (e.repeat && sim.currentState === STATE.IDLE_MASCOT) return;
     if (sim.wasmEngine && KEY_BIT_MAP[e.key]) sim.wasmEngine.setButtonBit(KEY_BIT_MAP[e.key], true);
     const button = KEY_TO_BUTTON[e.key];
     if (!button) return;
     sim.handleButtonPress(button);
+    if (typeof sim.markRenderDirty === "function") sim.markRenderDirty();
     if (e.key.startsWith("Arrow")) e.preventDefault();
   });
 
-  window.addEventListener("keyup", (e) => {
+  addListener(sim, window, "keyup", (e) => {
     if (isEditableTarget(e.target)) return;
     if (sim.wasmEngine && KEY_BIT_MAP[e.key]) sim.wasmEngine.setButtonBit(KEY_BIT_MAP[e.key], false);
     const releasedKey = RELEASE_KEY_MAP[e.key];
-    if (releasedKey) sim.handleButtonRelease(releasedKey);
+    if (releasedKey) {
+      sim.handleButtonRelease(releasedKey);
+      if (typeof sim.markRenderDirty === "function") sim.markRenderDirty();
+    }
   });
 }
 
@@ -123,32 +135,36 @@ function bindPhysicalButtonHandlers(sim) {
   PHYSICAL_BUTTONS.forEach((b) => {
     const el = document.getElementById(b.id);
     if (!el) return;
-    el.addEventListener("mousedown", () => {
+    addListener(sim, el, "mousedown", () => {
       el.classList.add("pressed");
       sim._activeMouseButton = { el, b };
       if (sim.wasmEngine) sim.wasmEngine.setButtonBit(b.bit, true);
       sim.handleButtonPress(b.key);
+      if (typeof sim.markRenderDirty === "function") sim.markRenderDirty();
     });
-    el.addEventListener("touchstart", (e) => {
+    addListener(sim, el, "touchstart", (e) => {
       e.preventDefault();
       el.classList.add("pressed");
       if (sim.wasmEngine) sim.wasmEngine.setButtonBit(b.bit, true);
       sim.handleButtonPress(b.key);
+      if (typeof sim.markRenderDirty === "function") sim.markRenderDirty();
     });
-    el.addEventListener("touchend", () => {
+    addListener(sim, el, "touchend", () => {
       el.classList.remove("pressed");
       if (sim.wasmEngine) sim.wasmEngine.setButtonBit(b.bit, false);
       sim.handleButtonRelease(b.key);
+      if (typeof sim.markRenderDirty === "function") sim.markRenderDirty();
     });
   });
 
-  window.addEventListener("mouseup", () => {
+  addListener(sim, window, "mouseup", () => {
     if (!sim._activeMouseButton) return;
     const { el, b } = sim._activeMouseButton;
     sim._activeMouseButton = null;
     el.classList.remove("pressed");
     if (sim.wasmEngine) sim.wasmEngine.setButtonBit(b.bit, false);
     sim.handleButtonRelease(b.key);
+    if (typeof sim.markRenderDirty === "function") sim.markRenderDirty();
   });
 }
 
@@ -163,7 +179,7 @@ function bindScreenPointerEvents(sim) {
     if (!rect.width || !rect.height) return;
     sim.setBmoModeGaze(((e.clientX - rect.left) / rect.width) * 2 - 1, 1 - ((e.clientY - rect.top) / rect.height) * 2);
   };
-  sim.canvas.addEventListener("pointerdown", (e) => {
+  addListener(sim, sim.canvas, "pointerdown", (e) => {
     if (sim.currentState !== STATE.IDLE_MASCOT) return;
     draggingScreen = true;
     screenMoved = false;
@@ -171,12 +187,12 @@ function bindScreenPointerEvents(sim) {
     startY = e.clientY;
     aimFromCanvasEvent(e);
   });
-  window.addEventListener("pointermove", (e) => {
+  addListener(sim, window, "pointermove", (e) => {
     if (!draggingScreen || sim.currentState !== STATE.IDLE_MASCOT) return;
     if (Math.hypot(e.clientX - startX, e.clientY - startY) > 4) screenMoved = true;
     aimFromCanvasEvent(e);
   });
-  window.addEventListener("pointerup", () => {
+  addListener(sim, window, "pointerup", () => {
     if (!draggingScreen) return;
     draggingScreen = false;
     if (!screenMoved && sim.currentState === STATE.IDLE_MASCOT) {
@@ -186,6 +202,7 @@ function bindScreenPointerEvents(sim) {
 }
 
 export function setupInputHandlersImpl(sim) {
+  if (!Array.isArray(sim._cleanupFns)) sim._cleanupFns = [];
   bindKeyboardHandlers(sim);
   bindPhysicalButtonHandlers(sim);
   bindScreenPointerEvents(sim);

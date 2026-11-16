@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 #pragma GCC optimize("O3,unroll-loops")
 #include "emu_pico.h"
+#include "pico_blit.h"
 #include "../hal/config.h"
 
 #include "../third_party/fake08/src/host.h"
@@ -74,50 +75,7 @@ void renderPicoToPanel() {
   uint8_t* screenPaletteMap = s_vm->GetScreenPaletteMap();
   if (!picoFb || !screenPaletteMap) return;
 
-  const uint8_t drawMode = s_memory->drawState.drawMode;
-  int scaleX = 1;
-  int scaleY = 1;
-  if (drawMode == 1 || drawMode == 3) scaleX = 2;
-  if (drawMode == 2 || drawMode == 3) scaleY = 2;
-
-  for (int y = 0; y < PICO_H; ++y) {
-    for (int x = 0; x < PICO_W; ++x) {
-      int sx = x;
-      int sy = y;
-      switch (drawMode) {
-      case 129:
-        sx = (PICO_W - 1) - x;
-        break;
-      case 130:
-        sy = (PICO_H - 1) - y;
-        break;
-      case 131:
-        sx = (PICO_W - 1) - x;
-        sy = (PICO_H - 1) - y;
-        break;
-      case 133:
-        sx = y;
-        sy = (PICO_W - 1) - x;
-        break;
-      case 134:
-        sx = (PICO_W - 1) - x;
-        sy = (PICO_H - 1) - y;
-        break;
-      case 135:
-        sx = (PICO_H - 1) - y;
-        sy = x;
-        break;
-      default:
-        break;
-      }
-      const int picox = sx / scaleX;
-      const int picoy = sy / scaleY;
-      const uint8_t rawIdx = getPixelNibble(picox, picoy, picoFb);
-      const uint8_t palIdx = screenPaletteMap[rawIdx] & 0x8FU;
-      s_panelFb[y * PICO_W + x] = s_panelPalette[palIdx];
-    }
-  }
-
+  PicoBlit::renderFrame(picoFb, screenPaletteMap, s_panelPalette, s_memory->drawState.drawMode, s_panelFb);
   DisplayEmu::streamPicoFrame(s_panelFb);
 }
 } // namespace
@@ -424,32 +382,27 @@ bool PicoEmu::loadBatteryRam(const char* romFilename) {
 bool PicoEmu::saveState(const char* romFilename, int slot) {
   if (!s_running || !s_vm || !s_memory || !s_audio || !romFilename) return false;
 
-  char* luaBuf = (char*)bmo_psram_malloc(PICO_LUA_STATE_MAX);
   uint8_t* stateBuf = (uint8_t*)bmo_psram_malloc(PICO_SAVE_STATE_MAX);
-  if (!luaBuf || !stateBuf) {
-    if (luaBuf) bmo_psram_free(luaBuf);
-    if (stateBuf) bmo_psram_free(stateBuf);
+  if (!stateBuf) {
     return false;
   }
 
-  const size_t luaLen = s_vm->serializeLuaState(luaBuf);
+  constexpr size_t kLuaLenOff = 4U;
+  constexpr size_t kLuaPayloadOff = kLuaLenOff + sizeof(size_t);
+  const size_t luaLen = s_vm->serializeLuaState(reinterpret_cast<char*>(stateBuf + kLuaPayloadOff));
   bool ok = false;
   if (luaLen > 0 && luaLen <= PICO_LUA_STATE_MAX) {
     const size_t ramSize = sizeof(PicoRam);
     const size_t musicSize = sizeof(musicChannel);
-    const size_t totalSize = 4U + sizeof(size_t) + luaLen + sizeof(size_t) + ramSize + sizeof(size_t) + musicSize;
+    const size_t totalSize = kLuaPayloadOff + luaLen + sizeof(size_t) + ramSize + sizeof(size_t) + musicSize;
     if (totalSize <= PICO_SAVE_STATE_MAX) {
-      size_t off = 0;
-      stateBuf[off++] = 'f';
-      stateBuf[off++] = '8';
-      stateBuf[off++] = 0;
-      stateBuf[off++] = 1;
+      stateBuf[0] = 'f';
+      stateBuf[1] = '8';
+      stateBuf[2] = 0;
+      stateBuf[3] = 1;
+      memcpy(stateBuf + kLuaLenOff, &luaLen, sizeof(size_t));
 
-      memcpy(stateBuf + off, &luaLen, sizeof(size_t));
-      off += sizeof(size_t);
-      memcpy(stateBuf + off, luaBuf, luaLen);
-      off += luaLen;
-
+      size_t off = kLuaPayloadOff + luaLen;
       memcpy(stateBuf + off, &ramSize, sizeof(size_t));
       off += sizeof(size_t);
       memcpy(stateBuf + off, s_memory, ramSize);
@@ -465,7 +418,6 @@ bool PicoEmu::saveState(const char* romFilename, int slot) {
   }
 
   bmo_psram_free(stateBuf);
-  bmo_psram_free(luaBuf);
   return ok;
 }
 

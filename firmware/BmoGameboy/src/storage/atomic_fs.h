@@ -90,7 +90,7 @@ inline bool verifyFilePayloadCrc(const FsOps& ops, const char* path, size_t expe
     return false;
   }
 
-  uint8_t buf[256];
+  uint8_t buf[768];
   size_t remaining = payloadSize;
   uint32_t crc = 0xFFFFFFFFU;
   while (remaining > 0) {

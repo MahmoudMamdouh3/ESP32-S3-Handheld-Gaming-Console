@@ -90,6 +90,10 @@ export class Bmo3DConsole {
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
     this.activePointerButton = null;
+    this._tmpColor = new THREE.Color();
+    this._lastHoverRaycastMs = 0;
+    /** @type {(() => boolean) | null} */
+    this.shouldUpdateScreenTexture = null;
 
     this.init();
   }
@@ -272,6 +276,9 @@ export class Bmo3DConsole {
     window.addEventListener("pointerup", this._onPointerUpBound);
 
     this._onPointerMoveBound = (e) => {
+      const nowMs = performance.now();
+      if (nowMs - this._lastHoverRaycastMs < 32) return;
+      this._lastHoverRaycastMs = nowMs;
       const btn = this.getIntersectedButton(e);
       if (btn) {
         dom.style.cursor = "pointer";
@@ -435,23 +442,25 @@ export class Bmo3DConsole {
         break;
     }
 
-    this.materials.chassis.color.copy(new THREE.Color(chassisHex).convertSRGBToLinear());
+    this._tmpColor.setHex(chassisHex).convertSRGBToLinear();
+    this.materials.chassis.color.copy(this._tmpColor);
     this.materials.chassis.roughness = roughness;
     this.materials.chassis.transmission = transmission;
     this.materials.chassis.transparent = transparent;
     this.materials.chassis.opacity = opacity;
     if (this.materials.backShell) {
-      this.materials.backShell.color.copy(new THREE.Color(chassisHex).convertSRGBToLinear());
+      this.materials.backShell.color.copy(this._tmpColor);
       this.materials.backShell.roughness = roughness + 0.04;
       this.materials.backShell.transmission = transmission;
       this.materials.backShell.transparent = transparent;
       this.materials.backShell.opacity = opacity;
     }
     if (this.materials.batteryDoor) {
-      this.materials.batteryDoor.color.copy(new THREE.Color(chassisHex).convertSRGBToLinear());
+      this.materials.batteryDoor.color.copy(this._tmpColor);
     }
 
-    this.materials.bezel.color.copy(new THREE.Color(bezelHex).convertSRGBToLinear());
+    this._tmpColor.setHex(bezelHex).convertSRGBToLinear();
+    this.materials.bezel.color.copy(this._tmpColor);
   }
 
   setCameraPreset(presetName) {
@@ -668,8 +677,8 @@ export class Bmo3DConsole {
       this.dpadPivotGroup.position.z += (targetZ - this.dpadPivotGroup.position.z) * 0.35;
     }
 
-    // Live update screen texture from the 2D canvas buffer
-    if (this.screenTexture) {
+    // Live update screen texture only when the 2D canvas painted new pixels
+    if (this.screenTexture && (!this.shouldUpdateScreenTexture || this.shouldUpdateScreenTexture())) {
       this.screenTexture.needsUpdate = true;
     }
 

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 #include "box_art.h"
+#include "rom_catalog_lookup.h"
+#include "sd_internal.h"
 #include "bmp_header.h"
 #include "box_art_lookup.h"
 #include "sd_card.h"
@@ -28,6 +30,7 @@ bool sameNameIgnoreAsciiCase(const char* left, const char* right) {
 }
 
 void markArtDirectory(const char* folderPath, BoxArtLookup::CatalogMatcher& matcher) {
+  SpiArbiter::ScopedLock spiLock;
   File dir = SD.open(folderPath);
   if (!dir || !dir.isDirectory()) {
     if (dir) dir.close();
@@ -47,6 +50,15 @@ void markArtDirectory(const char* folderPath, BoxArtLookup::CatalogMatcher& matc
 bool legacyBaseIsUnique(const char* romFilename, const char* legacyBase) {
   if (!romFilename || !legacyBase || legacyBase[0] == '\0') return false;
   const int romCount = SDCard::getRomCount();
+  if (romCount <= 0) return false;
+  static RomPathMatch::OwnedStemBaseIndex s_stemIndex;
+  const RomFile* baseList = SDCard::getRomInfo(0);
+  if (s_stemIndex.ensureBuilt(romCount, baseList, BmoSdInternal::catalogGeneration, [](int index) -> const char* {
+        const RomFile* info = SDCard::getRomInfo(index);
+        return info ? info->filename : nullptr;
+      })) {
+    return s_stemIndex.isUniqueForRom(romFilename, legacyBase);
+  }
   for (int i = 0; i < romCount; ++i) {
     const RomFile* other = SDCard::getRomInfo(i);
     if (!other || strcmp(other->filename, romFilename) == 0) continue;
@@ -58,7 +70,9 @@ bool legacyBaseIsUnique(const char* romFilename, const char* legacyBase) {
 }
 
 bool migrateLegacyArt(const char* sourcePath, const char* destinationPath) {
-  if (!sourcePath || !destinationPath || SD.exists(destinationPath)) return false;
+  if (!sourcePath || !destinationPath) return false;
+  SpiArbiter::ScopedLock spiLock;
+  if (SD.exists(destinationPath)) return false;
   char temporaryPath[144];
   const int pathLength = snprintf(temporaryPath, sizeof(temporaryPath), "%s.tmp", destinationPath);
   if (pathLength <= 0 || static_cast<size_t>(pathLength) >= sizeof(temporaryPath)) return false;
@@ -73,7 +87,7 @@ bool migrateLegacyArt(const char* sourcePath, const char* destinationPath) {
     return false;
   }
 
-  uint8_t buffer[256];
+  uint8_t buffer[768];
   size_t copied = 0;
   bool writeOk = true;
   while (source.available()) {
@@ -114,12 +128,8 @@ bool BoxArt::init() {
 }
 
 void BoxArt::unload() {
-  const bool hadArt = s_hasArt;
   s_cachedRomName[0] = '\0';
   s_hasArt = false;
-  if (hadArt && s_boxArtBuf) {
-    memset(s_boxArtBuf, 0, BUFFER_SIZE);
-  }
 }
 
 bool BoxArt::hasArt() {

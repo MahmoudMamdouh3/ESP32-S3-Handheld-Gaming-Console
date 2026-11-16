@@ -352,6 +352,7 @@ bool saveState(const char* romFilename, int slot, uint32_t coreId, const void* s
 #if FEATURE_SD_CARD
 namespace {
 bool resolveStateLoadPath(const char* romFilename, int slot, char* path, size_t pathCap, bool* outUsedLegacy) {
+  SpiArbiter::ScopedLock spiLock;
   getSaveStatePath(romFilename, slot, path, pathCap);
   if (path[0] == '\0') return false;
   char legacyPath[80];

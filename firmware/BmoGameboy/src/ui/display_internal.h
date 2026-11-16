@@ -8,7 +8,6 @@
 #include <esp_heap_caps.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
-#include <freertos/semphr.h>
 #include <freertos/task.h>
 
 class PSRAMCanvas : public GFXcanvas16 {
@@ -50,6 +49,7 @@ extern char alphaBadgeLetter;
 extern unsigned long alphaBadgeExpireMs;
 
 void writeMenuCanvas();
+void invalidateMenuRenderCache();
 int centeredX(const char* str, int displayWidth);
 void drawCentered(const char* text, int y, uint16_t color);
 void drawFittedCentered(const char* source, int y, int maxWidth, uint16_t color);

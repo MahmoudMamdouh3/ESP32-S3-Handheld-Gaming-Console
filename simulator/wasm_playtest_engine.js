@@ -36,6 +36,34 @@ const CORE_CONFIG = {
   ROM_COLEM: { prefix: "bmo_colem", name: "ColecoVision", viewport: COLECO_VIEWPORT, frameRate: 60 },
 };
 
+const IS_LITTLE_ENDIAN = (new Uint8Array(new Uint32Array([0x04030201]).buffer))[0] === 1;
+const RGBA_ALPHA = IS_LITTLE_ENDIAN ? (255 << 24) >>> 0 : 255;
+const R5_CHANNEL_LUT = new Uint32Array(32);
+const G6_CHANNEL_LUT = new Uint32Array(64);
+const B5_CHANNEL_LUT = new Uint32Array(32);
+for (let i = 0; i < 32; i++) {
+  const c = Math.round((i * 255) / 31);
+  R5_CHANNEL_LUT[i] = IS_LITTLE_ENDIAN ? c >>> 0 : (c << 24) >>> 0;
+  B5_CHANNEL_LUT[i] = IS_LITTLE_ENDIAN ? (c << 16) >>> 0 : (c << 8) >>> 0;
+}
+for (let i = 0; i < 64; i++) {
+  const g = Math.round((i * 255) / 63);
+  G6_CHANNEL_LUT[i] = IS_LITTLE_ENDIAN ? (g << 8) >>> 0 : (g << 16) >>> 0;
+}
+
+function loadEmbeddedWasmScript() {
+  if (typeof document === "undefined" || typeof window === "undefined") return Promise.resolve();
+  if (typeof /** @type {any} */ (window).BMO_PLAYTEST_WASM_B64 === "string") return Promise.resolve();
+  /** @returns {Promise<void>} */
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "bmo_playtest_cores.b64.js";
+    script.onload = () => resolve(undefined);
+    script.onerror = () => resolve(undefined);
+    document.head.appendChild(script);
+  });
+}
+
 export class WasmPlaytestEngine {
   constructor() {
     /** @type {WebAssembly.Instance | null} */
@@ -64,6 +92,26 @@ export class WasmPlaytestEngine {
     this.frameAccumulator = 0;
     this.offscreenCanvas = typeof document !== "undefined" ? document.createElement("canvas") : null;
     this.offscreenCtx = this.offscreenCanvas ? this.offscreenCanvas.getContext("2d") : null;
+    /** @type {any} */
+    this._bmoImageData = null;
+    /** @type {Uint32Array | null} */
+    this._bmoPixels32 = null;
+    /** @type {any} */
+    this._bmoImageCtx = null;
+    /** @type {any} */
+    this._offImageData = null;
+    /** @type {Uint32Array | null} */
+    this._offPixels32 = null;
+    /** @type {any} */
+    this._offImageCtx = null;
+    this._offImageW = 0;
+    this._offImageH = 0;
+    /** @type {ArrayBuffer | null} */
+    this._cachedMemBuf = null;
+    /** @type {Uint16Array | null} */
+    this._cachedFbView = null;
+    this._cachedFbPtr = -1;
+    this._cachedFbLen = -1;
   }
 
   decodeEmbeddedWasm() {
@@ -102,6 +150,7 @@ export class WasmPlaytestEngine {
         }
       }
       if (!wasmBytes) {
+        await loadEmbeddedWasmScript();
         wasmBytes = this.decodeEmbeddedWasm();
       }
       if (!wasmBytes) {
@@ -175,24 +224,49 @@ export class WasmPlaytestEngine {
     this.exports.bmo_face_set_clock(this.bmoTimeUs(performance.now()));
   }
 
+  _getFb16View(fbPtr, pixelCount) {
+    const memBuf = this.exports.memory.buffer;
+    if (
+      this._cachedFbView &&
+      this._cachedMemBuf === memBuf &&
+      this._cachedFbPtr === fbPtr &&
+      this._cachedFbLen === pixelCount
+    ) {
+      return this._cachedFbView;
+    }
+    this._cachedMemBuf = memBuf;
+    this._cachedFbPtr = fbPtr;
+    this._cachedFbLen = pixelCount;
+    this._cachedFbView = new Uint16Array(memBuf, fbPtr, pixelCount);
+    return this._cachedFbView;
+  }
+
   renderBmoFrame(ctx, now = performance.now()) {
     if (!this.bmoReady || !this.exports) throw new Error("The firmware BMO companion is not ready.");
     const fbPtr = this.exports.bmo_face_step(this.bmoTimeUs(now));
     if (!fbPtr) throw new Error("The firmware BMO companion did not return a framebuffer.");
-    const pixels = new Uint16Array(this.exports.memory.buffer, fbPtr, 320 * 240);
-    const image = ctx.createImageData(320, 240);
-    const rgba = image.data;
-    // BmoFace::packBGR565 stores byte-swapped BGR565 for ST7789 SPI order.
-    for (let i = 0; i < pixels.length; i++) {
-      const pixel = pixels[i];
-      const bgr = ((pixel & 0xFF) << 8) | ((pixel >> 8) & 0xFF);
-      const index = i * 4;
-      rgba[index] = (bgr & 0x1F) * 255 / 31;
-      rgba[index + 1] = ((bgr >> 5) & 0x3F) * 255 / 63;
-      rgba[index + 2] = ((bgr >> 11) & 0x1F) * 255 / 31;
-      rgba[index + 3] = 255;
+    const pixelCount = 320 * 240;
+    const pixels = this._getFb16View(fbPtr, pixelCount);
+    if (!this._bmoImageData || this._bmoImageCtx !== ctx) {
+      this._bmoImageData = ctx.createImageData(320, 240);
+      this._bmoPixels32 = new Uint32Array(
+        this._bmoImageData.data.buffer,
+        this._bmoImageData.data.byteOffset,
+        pixelCount
+      );
+      this._bmoImageCtx = ctx;
     }
-    ctx.putImageData(image, 0, 0);
+    const out32 = /** @type {Uint32Array} */ (this._bmoPixels32);
+    const rLut = R5_CHANNEL_LUT;
+    const gLut = G6_CHANNEL_LUT;
+    const bLut = B5_CHANNEL_LUT;
+    const alpha = RGBA_ALPHA;
+    for (let i = 0; i < pixelCount; i++) {
+      const p = pixels[i];
+      const bgr = ((p & 0xFF) << 8) | (p >> 8);
+      out32[i] = alpha | rLut[bgr & 0x1F] | gLut[(bgr >> 5) & 0x3F] | bLut[bgr >> 11];
+    }
+    ctx.putImageData(this._bmoImageData, 0, 0);
   }
 
   readCString(pointer, maxLen = 128) {
@@ -408,12 +482,35 @@ export class WasmPlaytestEngine {
     return this.romChecksum;
   }
 
+  _resolveCoreFns() {
+    if (!this.exports) return false;
+    if (this._fnExports === this.exports && this._fnPrefix === this.corePrefix) return true;
+    const p = this.corePrefix;
+    this._fnSetButtons = this.exports[`${p}_set_buttons`];
+    this._fnRunFrame = this.exports[`${p}_run_frame`];
+    this._fnLastError = this.exports[`${p}_last_error`];
+    this._fnFramebuffer = this.exports[`${p}_framebuffer`];
+    this._fnExports = this.exports;
+    this._fnPrefix = p;
+    return true;
+  }
+
   setPalette(colors) {
     if (!Array.isArray(colors) || colors.length !== 4) return;
-    this.paletteColors = colors.slice();
+    const cur = this.paletteColors;
+    const sameColors = cur && cur.length === 4 &&
+      cur[0] === colors[0] && cur[1] === colors[1] && cur[2] === colors[2] && cur[3] === colors[3];
+    if (sameColors && this._paletteExports === this.exports && this._palettePrefix === this.corePrefix) return;
+    if (!sameColors) this.paletteColors = colors.slice();
     if (!this.exports) return;
-    const packed = colors.map((hex) => Number.parseInt(hex.replace("#", ""), 16));
-    if (this.corePrefix === "bmo_emu") this.exports.bmo_emu_set_palette(...packed);
+    this._paletteExports = this.exports;
+    this._palettePrefix = this.corePrefix;
+    if (this.corePrefix !== "bmo_emu") return;
+    const p0 = Number.parseInt(colors[0].charCodeAt(0) === 35 ? colors[0].slice(1) : colors[0], 16);
+    const p1 = Number.parseInt(colors[1].charCodeAt(0) === 35 ? colors[1].slice(1) : colors[1], 16);
+    const p2 = Number.parseInt(colors[2].charCodeAt(0) === 35 ? colors[2].slice(1) : colors[2], 16);
+    const p3 = Number.parseInt(colors[3].charCodeAt(0) === 35 ? colors[3].slice(1) : colors[3], 16);
+    this.exports.bmo_emu_set_palette(p0, p1, p2, p3);
   }
 
   setButtonBit(bit, pressed) {
@@ -432,10 +529,10 @@ export class WasmPlaytestEngine {
   }
 
   stepFrame() {
-    if (!this.ready || !this.exports || !this.loaded) return this.frameCount;
-    this.exports[`${this.corePrefix}_set_buttons`](this._mappedButtons());
-    this.frameCount = this.exports[`${this.corePrefix}_run_frame`]() >>> 0;
-    const error = this.exports[`${this.corePrefix}_last_error`]();
+    if (!this.ready || !this._resolveCoreFns() || !this.loaded) return this.frameCount;
+    this._fnSetButtons(this._mappedButtons());
+    this.frameCount = this._fnRunFrame() >>> 0;
+    const error = this._fnLastError();
     if (error !== 0) {
       this.runtimeError = `${this.coreName} runtime error ${error}.`;
       this.loaded = false;
@@ -457,7 +554,7 @@ export class WasmPlaytestEngine {
   }
 
   renderToCanvas(ctx, paletteColors, paused = false, now = performance.now()) {
-    if (!this.ready || !this.exports || !this.offscreenCtx) return;
+    if (!this.ready || !this._resolveCoreFns() || !this.offscreenCtx) return;
     this.setPalette(paletteColors);
 
     if (this.loaded && !paused) {
@@ -473,30 +570,54 @@ export class WasmPlaytestEngine {
       this.frameAccumulator = 0;
     }
 
-    const fbPtr = this.exports[`${this.corePrefix}_framebuffer`]();
-    const fb16 = new Uint16Array(this.exports.memory.buffer, fbPtr, this.viewport.w * this.viewport.h);
-    const imgData = this.offscreenCtx.createImageData(this.viewport.w, this.viewport.h);
-    const out = imgData.data;
-    for (let i = 0; i < fb16.length; i++) {
-      const pixel = fb16[i];
-      const index = i * 4;
-      out[index] = ((pixel >> 11) & 0x1F) * 255 / 31;
-      out[index + 1] = ((pixel >> 5) & 0x3F) * 255 / 63;
-      out[index + 2] = (pixel & 0x1F) * 255 / 31;
-      out[index + 3] = 255;
+    const fbPtr = this._fnFramebuffer();
+    const w = this.viewport.w;
+    const h = this.viewport.h;
+    const pixelCount = w * h;
+    const fb16 = this._getFb16View(fbPtr, pixelCount);
+    if (
+      !this._offImageData ||
+      this._offImageCtx !== this.offscreenCtx ||
+      this._offImageW !== w ||
+      this._offImageH !== h
+    ) {
+      this._offImageData = this.offscreenCtx.createImageData(w, h);
+      this._offPixels32 = new Uint32Array(
+        this._offImageData.data.buffer,
+        this._offImageData.data.byteOffset,
+        pixelCount
+      );
+      this._offImageCtx = this.offscreenCtx;
+      this._offImageW = w;
+      this._offImageH = h;
     }
-    this.offscreenCtx.putImageData(imgData, 0, 0);
+    const out32 = /** @type {Uint32Array} */ (this._offPixels32);
+    const rLut = R5_CHANNEL_LUT;
+    const gLut = G6_CHANNEL_LUT;
+    const bLut = B5_CHANNEL_LUT;
+    const alpha = RGBA_ALPHA;
+    for (let i = 0; i < pixelCount; i++) {
+      const p = fb16[i];
+      out32[i] = alpha | rLut[p >> 11] | gLut[(p >> 5) & 0x3F] | bLut[p & 0x1F];
+    }
+    this.offscreenCtx.putImageData(this._offImageData, 0, 0);
 
     ctx.fillStyle = "#0a1214";
     ctx.fillRect(0, 0, 320, 240);
     if (this.bezelEnabled) {
+      if (this._bezelPrefix !== this.coreName || this._bezelW !== w || this._bezelH !== h) {
+        this._bezelPrefix = this.coreName;
+        this._bezelW = w;
+        this._bezelH = h;
+        this._bezelText = `${this.coreName.toUpperCase()} • ${w}x${h}`;
+      }
       ctx.strokeStyle = "#5fb49c";
       ctx.lineWidth = 2;
       ctx.strokeRect(this.viewport.ox - 2, this.viewport.oy - 2, this.viewport.w + 4, this.viewport.h + 4);
       ctx.fillStyle = "#8cd7c2";
       ctx.font = "bold 9px 'JetBrains Mono', monospace";
       ctx.textAlign = "left";
-      ctx.fillText(`${this.coreName.toUpperCase()} • ${this.viewport.w}x${this.viewport.h}`, 6, 10);
+      ctx.fillText(this._bezelText, 6, 10);
       ctx.textAlign = "right";
       ctx.fillText(`F:${this.frameCount}`, 314, 10);
     }
