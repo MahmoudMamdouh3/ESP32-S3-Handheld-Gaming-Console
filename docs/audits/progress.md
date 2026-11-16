@@ -10,7 +10,7 @@
   - Recorded git object counts (`382` loose / `3,215` packed, `0` blobs `>= 1 MiB` across all refs), secret scan (`0` secrets), and baseline timings (`check` `82.56 s`, `test` `631.71 s`).
   - Authored [docs/audits/audit-plan.md](audit-plan.md) and [docs/audits/findings-register.md](findings-register.md).
 - [x] **Phase 1 — Truth Reconciliation (`C1–C11`) (`HOST_TESTED`):** Complete with `2` deferrals (`1 DEFERRED` [`C1` `OWNER-OBSERVED` `qio` conflict], `1 OWNER_DECISION` [`C9`]).
-  - Authored [docs/audits/claims-inventory.md](claims-inventory.md) via [`scripts/extract_claims.py`](../../scripts/extract_claims.py) (`deep-verified` vs `pattern-checked` tiers, `0` `FALSE` / `0` `STALE`).
+  - Authored [docs/audits/claims-inventory.md](claims-inventory.md) via [`scripts/extract_claims.py`](../../scripts/extract_claims.py) (`TRUE` reserved for `deep-verified` checks against `MEASURED_VALUES`/constants; shallow scans relabeled `pattern-checked`; `0` `FALSE` / `0` `STALE`).
   - Reconciled [ROADMAP.md](../../ROADMAP.md), ADRs [`0003`](../decisions/0003-rom-keys-and-index-v2.md), [`0011`](../decisions/0011-index-path-storage.md), [`0012`](../decisions/0012-save-state-schema.md), [`0013`](../decisions/0013-partition-layout.md), `C1` conflict note, [docs/performance.md](../performance.md), [docs/hardware.md](../hardware.md), [hardware/diagram.json](../../hardware/diagram.json), and [scripts/convert_covers.py](../../scripts/convert_covers.py).
 - [x] **Phase 2 — Licensing and Legal Hygiene (`L1–L5`) (`HOST_TESTED`):** Complete with `3` deferrals (`OWNER_DECISION`: `L1`, `L3`, `L4`).
   - Built the 16-component license compatibility matrix in [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) and [ADR 0008](../decisions/0008-rom-policy-and-licensing.md).

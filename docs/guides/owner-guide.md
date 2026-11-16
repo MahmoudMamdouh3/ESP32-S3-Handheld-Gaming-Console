@@ -23,14 +23,14 @@ Do not skip ahead to 3D printing the case or loading hundreds of games until Ste
 
 1. **Read the 1-Page Safety Rules ([`docs/guides/safety.md`](safety.md)):**
    - Unplug USB-C and remove AA batteries before soldering or probing continuity.
-2. **Do the 5-Minute Power-Off Multimeter Check ([`docs/guides/bringup.md` Stage 1](bringup.md)):**
+2. **Do the 5-Minute Power-Off Multimeter Check ([`docs/guides/bringup.md` Step 1](bringup.md)):**
    - Put your multimeter in Continuity (beep) mode and make sure `3V3` and `GND` do **not** beep (no short circuit).
    - **Disconnect** the SD module's `MISO` wire from ESP32 `GPIO 15` before turning power on for the first time.
-3. **Check Your Standalone MicroSD Module `MISO` Voltage BEFORE Connecting `GPIO 15` ([`docs/guides/bringup.md` Stage 2](bringup.md)):**
+3. **Check Your Standalone MicroSD Module `MISO` Voltage BEFORE Connecting `GPIO 15` ([`docs/guides/bringup.md` Step 2](bringup.md)):**
    - Power on via USB with the SD module's `MISO` wire disconnected, and measure the standalone SD module's `MISO` output. Connect it to `GPIO 15` **only** after it measures `<= 3.35 V` (`3.30 V` nominal), and add the two `10 kΩ` pull-up resistors from `TFT_CS` (`GPIO 10`) and `SD_CS` (`GPIO 13`) to `3V3` ([`docs/wiring/02-sd-card.md`](../wiring/02-sd-card.md)).
 4. **Run the Read-Only Chip Check, Then Flash `bringup.ino` First ([`firmware/bringup/bringup.ino`](../../firmware/bringup/bringup.ino)):**
-   - Run the read-only `esptool flash-id` / `chip-id` check first (`docs/guides/bringup.md` Stage 3) so you know the exact flash and PSRAM wiring on your physical board before uploading any code.
-   - Start with `bringup.ino` to verify buttons, SD, and LCD, and follow [`docs/decisions/0006-portable-power.md`](../decisions/0006-portable-power.md) before adding a `2×AA` or `3×AA` NiMH boost pack (`Adafruit #2030`/`TPS61022` for `2×AA`, or `Pololu U3V70F5`/`U3V40F5` for `3×AA` in a taller shell; old `S7V7F5` advice is withdrawn).
+   - Run the read-only `esptool flash-id` / `chip-id` check first (`docs/guides/bringup.md` Step 3) so you know the exact flash and PSRAM wiring on your physical board before uploading any code.
+   - Start with `bringup.ino` to verify buttons, SD, and LCD, and follow [`docs/decisions/0006-portable-power.md`](../decisions/0006-portable-power.md) and [`docs/bom.md`](../bom.md) (datasheets accessed `2026-11-15`) before adding a `2×AA` (`Adafruit #2030`/`TPS61022` + `MF-R300` + `DMP2035U`) or `3×AA` (`Pololu U3V70F5`/`U3V40F5` + `MF-R250`, taller shell) NiMH boost pack; old `S7V7F5` advice is withdrawn.
    - Before flashing the huge 3.3 MB emulator firmware, flash the small bring-up test sketch (instructions in Section 4 below). It checks your 8 MB memory (`PSRAM`), draws color bars on the `2.4"` screen at a safe `40 MHz` speed, checks the SD card, and lights up each of your 8 buttons on screen as you press them.
 5. **Prepare Your MicroSD Card (Section 3 below):**
    - Format a MicroSD card (`<= 32 GB`) as **FAT32** and create the ROM folders.
@@ -73,8 +73,8 @@ Do not skip ahead to 3D printing the case or loading hundreds of games until Ste
 ## 4. How to Flash Your Board (Step-by-Step)
 
 1. Plug your USB-C data cable into the port labeled **`UART` / `COM`** on your `ESP32-S3-DevKitC-1-N16R8` board.
-2. Open PowerShell in `E:\BMO Gameboy`.
-3. **First Run Read-Only `esptool v5.3.1` Check Before Flashing ([`docs/guides/bringup.md` Stage 3](bringup.md)):**
+2. Open PowerShell in the repository root (`BMO Gameboy`).
+3. **First Run Read-Only `esptool v5.3.1` Check Before Flashing ([`docs/guides/bringup.md` Step 3](bringup.md)):**
    ```powershell
    & "$env:LOCALAPPDATA\Arduino15\packages\esp32\tools\esptool_py\5.3.1\esptool.exe" --chip esp32s3 --port COM3 flash-id
    & "$env:LOCALAPPDATA\Arduino15\packages\esp32\tools\esptool_py\5.3.1\esptool.exe" --chip esp32s3 --port COM3 chip-id
@@ -112,7 +112,7 @@ Do not skip ahead to 3D printing the case or loading hundreds of games until Ste
 
 - **ADC (Analog-to-Digital Converter):** A pin on the chip (`GPIO 1`) that measures battery voltage like a tiny built-in voltmeter.
 - **Baud Rate (`115200`):** The speed (in bits per second) at which text messages travel over the USB cable to your computer's Serial Monitor.
-- **Boost Converter:** A small circuit board that steps up the `2.0–2.8 V` from two AA batteries to a steady `5.0 V` for the ESP32-S3 board.
+- **Boost Converter:** A small circuit board that steps up `2.0–2.9 V` (`2×AA`) or `3.0–4.35 V` (`3×AA`) from rechargeable AA NiMH batteries to a steady `5.0 V` for the ESP32-S3 board ([ADR 0006](../decisions/0006-portable-power.md)).
 - **Brownout (`ESP_RST_BROWNOUT`):** When the battery or USB voltage dips too low under heavy load, causing the chip to safely restart itself.
 - **CPU Core 0 / CPU Core 1:** Your ESP32-S3 chip has two processor brains ("cores"). **CPU Core 1** runs the game emulator and reads buttons; **CPU Core 0** pushes pixels to the screen in the background.
 - **DRAM (Internal Dynamic RAM, `320 KiB`):** The fast, small memory built directly inside the ESP32-S3 processor chip.

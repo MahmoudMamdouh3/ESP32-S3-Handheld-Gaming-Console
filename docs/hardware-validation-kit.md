@@ -84,7 +84,7 @@ python tasks.py build --profile default --warnings strict --fail-on-warnings
 .\arduino-cli.exe monitor -p COM3 -c baudrate=115200
 ```
 
-1. **Default `80 MHz` Boot:** Observe display stability, menu transitions, and SD loads at default `TFT_SPI_HZ = 80000000UL` ([ADR 0014](decisions/0014-display-spi-clock.md)). Note `ST7789VW` datasheet lists `62.5 MHz` write max, so physical signal integrity must be observed.
+1. **Default `80 MHz` Boot:** Observe display stability, menu transitions, and SD loads at default `TFT_SPI_HZ = 80000000UL` ([ADR 0014](decisions/0014-display-spi-clock.md)). Note [Adafruit #4311](https://www.adafruit.com/product/4311) (`ST7789VW` `62.5 MHz` / `16 ns` max write clock, accessed `2026-11-15`), so physical signal integrity must be observed.
 2. **Safe-Mode `40 MHz` Comparison:** Hold **`SELECT`** or **`B`** during boot until Serial Monitor prints `[SAFE_MODE] SELECT/B held at boot; forced display SPI clock to 40 MHz`. Compare frame pacing and display clarity (`40 MHz` vs `80 MHz`).
 
 ---

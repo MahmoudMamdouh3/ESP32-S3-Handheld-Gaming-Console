@@ -19,7 +19,7 @@ The soldered unit uses a **44-pin `ESP32-S3-DevKitC-1-N16R8` development carrier
 | `FEATURE_SD_CARD` | `1` | Shared FSPI bus with ST7789 via `SpiArbiter::ScopedLock` |
 | `FEATURE_BATTERY_MONITOR` | `0` (Hard Stop) | No voltage divider soldered on `BATTERY_ADC_PIN` (`GPIO 1`); do not read |
 | `FEATURE_AUDIO` | `0` (Hard Stop) | No I2S DAC soldered (`GPIO 38/39/40`); do not enable |
-| `TFT_SPI_HZ` / Fallback | `80 MHz` default / `40 MHz` Safe Mode & Diagnostics fallback | Sitronix ST7789VW datasheet specifies `62.5 MHz` max write cycle (`16 ns`); `80 MHz` is unmeasured on physical perfboard ([ADR 0014](decisions/0014-display-spi-clock.md)) |
+| `TFT_SPI_HZ` / Fallback | `80 MHz` default / `40 MHz` Safe Mode & Diagnostics fallback | Display breakout ([Adafruit #4311](https://www.adafruit.com/product/4311), accessed `2026-11-15`; Sitronix `ST7789VW` `62.5 MHz` / `16 ns` max serial write) — `80 MHz` is unmeasured on physical perfboard ([ADR 0014](decisions/0014-display-spi-clock.md)) |
 | `SD_SPI_HZ` | `25 MHz` | Configured nominal SD mount rate |
 | Power Input | USB-C (`5 V`) only on current board | Planned `2×AA` (`2.0–2.9 V`, start `<= 1.8 V`: [Adafruit #2030](https://www.adafruit.com/product/2030) / [TI TPS61022](https://www.ti.com/lit/ds/symlink/tps61022.pdf)) or `3×AA` (`3.0–4.35 V`: [Pololu U3V40F5](https://www.pololu.com/product/4012) / [Pololu U3V70F5](https://www.pololu.com/product/2891)), sized `>= 1.0 A @ 5 V` (datasheets accessed `2026-11-15`; [ADR 0006](decisions/0006-portable-power.md)) |
 
