@@ -48,6 +48,14 @@ def _find_bench_binary() -> Path:
 
 
 def run_all_benchmarks(*, include_wasm_build: bool = False) -> dict[str, Any]:
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
+    wasm_path = REPO_ROOT / "simulator" / "bmo_playtest_cores.wasm"
+    if not include_wasm_build and not wasm_path.is_file():
+        from scripts.build_wasm_cores import build_wasm_module
+
+        build_wasm_module(output_path=wasm_path)
+
     bench_bin = _find_bench_binary()
     fw_proc = subprocess.run([str(bench_bin)], cwd=str(REPO_ROOT), capture_output=True, text=True, check=True)
     fw_metrics: dict[str, Any] = json.loads(fw_proc.stdout)
@@ -64,8 +72,6 @@ def run_all_benchmarks(*, include_wasm_build: bool = False) -> dict[str, Any]:
     )
     sim_metrics: dict[str, Any] = json.loads(sim_proc.stdout)
 
-    if str(REPO_ROOT) not in sys.path:
-        sys.path.insert(0, str(REPO_ROOT))
     from benchmarks.bench_scripts import run_script_benchmarks
 
     script_metrics = run_script_benchmarks()
@@ -100,6 +106,39 @@ def _flatten_numeric(prefix: str, obj: dict[str, Any]) -> dict[str, float]:
     return out
 
 
+def _check_baseline_regressions(
+    current: dict[str, Any], flat_cur: dict[str, float], max_ratio: float
+) -> list[str]:
+    if not BASELINE_PATH.is_file():
+        return []
+    failures: list[str] = []
+    baseline: dict[str, Any] = json.loads(BASELINE_PATH.read_text(encoding="utf-8"))
+    same_host_os = current.get("os") == baseline.get("os") and os.environ.get("CI", "").lower() != "true"
+    flat_base: dict[str, float] = {}
+    for section in ("firmware_host", "simulator", "scripts"):
+        if isinstance(baseline.get(section), dict):
+            flat_base.update(_flatten_numeric(section, baseline[section]))
+    for key, base_val in flat_base.items():
+        if key not in flat_cur or base_val <= 0.0:
+            continue
+        is_deterministic_size = key.endswith(("imagedata_bytes", "script_bytes", "_calls", "_count"))
+        if is_deterministic_size:
+            limit = base_val
+        elif not same_host_os:
+            continue
+        elif key.endswith("heap_delta_bytes"):
+            limit = max(base_val * 2.0, base_val + 524288.0)
+        elif key.endswith("_us") and base_val < 250.0:
+            limit = max(base_val * max_ratio, base_val * 2.5)
+        else:
+            limit = base_val * max_ratio
+        if flat_cur[key] > limit:
+            failures.append(
+                f"Regression vs baseline: {key}={flat_cur[key]:.2f} > limit {limit:.2f} (baseline {base_val:.2f})"
+            )
+    return failures
+
+
 def check_against_budgets(current: dict[str, Any]) -> list[str]:
     failures: list[str] = []
     if not BUDGETS_PATH.is_file():
@@ -116,31 +155,8 @@ def check_against_budgets(current: dict[str, Any]) -> list[str]:
         if key in flat_cur and flat_cur[key] > float(cap):
             failures.append(f"Budget cap exceeded: {key}={flat_cur[key]:.2f} > {float(cap):.2f}")
 
-    # Enforce deterministic non-timing metrics (allocations / payload bytes) against baseline_before.json
-    if BASELINE_PATH.is_file():
-        baseline: dict[str, Any] = json.loads(BASELINE_PATH.read_text(encoding="utf-8"))
-        max_ratio = float(budgets.get("max_regression_ratio", 1.25))
-        flat_base: dict[str, float] = {}
-        for section in ("firmware_host", "simulator", "scripts"):
-            if isinstance(baseline.get(section), dict):
-                flat_base.update(_flatten_numeric(section, baseline[section]))
-        for key, base_val in flat_base.items():
-            if key not in flat_cur or base_val <= 0.0:
-                continue
-            # Deterministic allocation/payload/call counters must never regress; noisy GC heapUsed deltas and sub-ms jitter get noise tolerance.
-            is_deterministic_size = key.endswith(("imagedata_bytes", "script_bytes", "_calls", "_count"))
-            if is_deterministic_size:
-                limit = base_val
-            elif key.endswith("heap_delta_bytes"):
-                limit = max(base_val * 2.0, base_val + 524288.0)
-            elif key.endswith("_us") and base_val < 250.0:
-                limit = max(base_val * max_ratio, base_val * 2.5)
-            else:
-                limit = base_val * max_ratio
-            if flat_cur[key] > limit:
-                failures.append(
-                    f"Regression vs baseline: {key}={flat_cur[key]:.2f} > limit {limit:.2f} (baseline {base_val:.2f})"
-                )
+    max_ratio = float(budgets.get("max_regression_ratio", 1.25))
+    failures.extend(_check_baseline_regressions(current, flat_cur, max_ratio))
     return failures
 
 

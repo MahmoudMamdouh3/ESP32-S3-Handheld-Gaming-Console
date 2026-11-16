@@ -95,7 +95,7 @@ Compact structural map for AI agents and contributors. Regenerate via `python sc
 | [`scripts/check_markdown_links.py`](../../scripts/check_markdown_links.py) | `87` | Verify local Markdown links and reject file:// URIs. |
 | [`scripts/color_calc.py`](../../scripts/color_calc.py) | `52` | scripts/color_calc.py — RGB888 <-> Byte-Swapped BGR565 ST7789 Wire Format Calculator |
 | [`scripts/convert_covers.py`](../../scripts/convert_covers.py) | `309` | scripts/convert_covers.py — Local Box Art Resampler & Multi-Target BGR565 Converter |
-| [`scripts/deploy_sd.py`](../../scripts/deploy_sd.py) | `458` | Canonical BMO Handheld SD card deployer & binary ROM index builder (BMOIDX03). |
+| [`scripts/deploy_sd.py`](../../scripts/deploy_sd.py) | `460` | Canonical BMO Handheld SD card deployer & binary ROM index builder (BMOIDX03). |
 | [`scripts/export_enclosure_web_meshes.py`](../../scripts/export_enclosure_web_meshes.py) | `254` | Export manifold CAD enclosure shells to deterministic Three.js mesh data. |
 | [`scripts/extract_claims.py`](../../scripts/extract_claims.py) | `596` | scripts/extract_claims.py — Extract and verify numeric & factual claims across the repos |
 | [`scripts/fetch_covers.py`](../../scripts/fetch_covers.py) | `84` | scripts/fetch_covers.py — Backward-compatible alias for scripts/convert_covers.py. |
@@ -105,6 +105,6 @@ Compact structural map for AI agents and contributors. Regenerate via `python sc
 | [`scripts/repo_tools.py`](../../scripts/repo_tools.py) | `48` | Local ROM path discovery and Game Boy header checksum helpers. |
 | [`scripts/rom_key.py`](../../scripts/rom_key.py) | `39` | Path-key helpers shared by firmware deployment and cover generation. |
 | [`scripts/run_mutation_sanity.py`](../../scripts/run_mutation_sanity.py) | `254` | Verify that host C++17 and Python test suites catch 10 isolated single-line mutations. |
-| [`scripts/sync_ai_codemap.py`](../../scripts/sync_ai_codemap.py) | `295` | Generate and verify docs/ai/CODEMAP.md (<= 200 lines) and docs/ai/STATE.md (<= 60 lines) |
+| [`scripts/sync_ai_codemap.py`](../../scripts/sync_ai_codemap.py) | `280` | Generate and verify docs/ai/CODEMAP.md (<= 200 lines) and docs/ai/STATE.md (<= 60 lines) |
 | [`scripts/validate_repo.py`](../../scripts/validate_repo.py) | `523` | Repository validator covering compile, syntax, safety guardrails, layout, and local ROM  |
 | [`scripts/verify_color_tokens.py`](../../scripts/verify_color_tokens.py) | `240` | Verify firmware, simulator CSS, DESIGN.md, and face-renderer color tokens. |

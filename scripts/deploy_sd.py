@@ -203,15 +203,17 @@ def deployment_plan(
 
 def verify_volume_label(root: Path, expected_label: str) -> None:
     """Verify Windows SD card root anchor and FAT volume label before writes."""
-    if os.name != "nt":
+    windll = getattr(ctypes, "windll", None)
+    win_error = getattr(ctypes, "WinError", OSError)
+    if os.name != "nt" or windll is None:
         raise OSError("SD deployment is supported only on Windows.")
     resolved_root = root.resolve()
     drive_root = resolved_root.anchor
     if resolved_root != Path(drive_root):
         raise ValueError(f"Destination must be the SD-card root, not a subdirectory: {root}")
     volume_name = ctypes.create_unicode_buffer(261)
-    if not ctypes.windll.kernel32.GetVolumeInformationW(drive_root, volume_name, len(volume_name), None, None, None, None, 0):
-        raise ctypes.WinError()
+    if not windll.kernel32.GetVolumeInformationW(drive_root, volume_name, len(volume_name), None, None, None, None, 0):
+        raise win_error()
     if volume_name.value.casefold() != expected_label.casefold():
         raise ValueError(f"Refusing to write to {drive_root}: expected volume label {expected_label!r}, found {volume_name.value!r}.")
 

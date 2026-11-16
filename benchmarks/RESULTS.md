@@ -58,7 +58,7 @@ Captured on `2026-11-16` from [`benchmarks/baseline_before.json`](baseline_befor
 
 ## 2. Phase 5 Post-Overhaul BEFORE vs AFTER Comparison
 
-Captured on `2026-11-16` (`refactor/principal-overhaul`) comparing [`benchmarks/baseline_before.json`](baseline_before.json) against [`benchmarks/latest_results.json`](latest_results.json) (hardware device remains **`HARDWARE_TESTED: 0` records**).
+Captured on `2026-11-16` (`refactor/principal-overhaul`) comparing [`benchmarks/baseline_before.json`](baseline_before.json) against `benchmarks/latest_results.json` (generated locally by `python tasks.py bench`; hardware device remains **`HARDWARE_TESTED: 0` records**).
 
 ### 2.1 Firmware Host Benchmarks (`HOST_TESTED`, `bmo_bench_host.exe`)
 

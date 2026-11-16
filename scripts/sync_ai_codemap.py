@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import argparse
 import re
-import subprocess
 import sys
 from pathlib import Path
 
@@ -194,20 +193,6 @@ def build_codemap() -> str:
     return "\n".join(lines)
 
 
-def _current_branch_name() -> str:
-    try:
-        proc = subprocess.run(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            cwd=str(REPO_ROOT),
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return proc.stdout.strip() or "unknown"
-    except Exception:
-        return "unknown"
-
-
 def _compute_state_sync_line() -> str:
     fw_files: list[tuple[Path, int]] = []
     for folder in ("app", "hal", "storage", "ui", "cores", "tests"):
@@ -223,7 +208,7 @@ def _compute_state_sync_line() -> str:
     script_count = len(list((REPO_ROOT / "scripts").glob("*.py")))
     ctest_count = len(list((REPO_ROOT / "tests" / "host").glob("*_test.cpp")))
     return (
-        f"- **Synced Metrics (`sync_ai_codemap.py`):** branch `{_current_branch_name()}`, "
+        "- **Synced Metrics (`sync_ai_codemap.py`):** "
         f"`{len(fw_files)}` first-party firmware C/C++ files (`{total_fw_lines:,}` lines, max `{max_file.name}`=`{max_lines}`), "
         f"`{script_count}` scripts, `{ctest_count}` C++ host test suites."
     )
