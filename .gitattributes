@@ -22,6 +22,7 @@
 
 # Generated files hidden from diffs and language stats
 simulator/bmo_enclosure_meshes.js linguist-generated=true
+simulator/bmo_simulator_app.js linguist-generated=true
 docs/assets/layout_top_view.svg linguist-generated=true
 docs/assets/layout_side_section.svg linguist-generated=true
 docs/wiring/perfboard-layout.md linguist-generated=true

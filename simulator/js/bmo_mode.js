@@ -184,9 +184,9 @@ export const bmoModeMethods = {
         if (el) el.addEventListener("click", handler);
         return el;
       };
-      this.bindBmoActionButtons(bindClick);
-      this.bindBmoTogglesAndSlider();
-      this.bindBmoGazeAndSpeech(bindClick);
+      bmoModeMethods.bindBmoActionButtons.call(this, bindClick);
+      bmoModeMethods.bindBmoTogglesAndSlider.call(this);
+      bmoModeMethods.bindBmoGazeAndSpeech.call(this, bindClick);
       this.populateBmoQuotes();
       this.syncBmoModeUI();
     },

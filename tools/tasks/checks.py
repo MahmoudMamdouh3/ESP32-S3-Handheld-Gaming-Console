@@ -137,9 +137,11 @@ def _run_static_analyzers(args: argparse.Namespace, failures: list[str]) -> None
         if run_checked([str(tsc_bin), "--noEmit", "-p", "jsconfig.json"]).returncode != 0:
             failures.append("tsc --noEmit -p jsconfig.json failed")
 
-    print("[5c] AI codemap & state sync check...")
+    print("[5c] AI codemap & simulator bundle sync check...")
     if run_checked([sys.executable, str(REPO_ROOT / "scripts" / "sync_ai_codemap.py"), "--check"]).returncode != 0:
         failures.append("scripts/sync_ai_codemap.py --check failed (run --write)")
+    if run_checked([sys.executable, str(REPO_ROOT / "scripts" / "bundle_simulator.py"), "--check"]).returncode != 0:
+        failures.append("scripts/bundle_simulator.py --check failed (run --write)")
 
 
 def _run_check_unit_tests(args: argparse.Namespace, failures: list[str]) -> None:

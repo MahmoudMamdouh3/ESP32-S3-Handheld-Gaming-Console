@@ -590,7 +590,8 @@ export class BmoSimulator {
 }
 
 if (typeof window !== "undefined") {
-  window.addEventListener("DOMContentLoaded", () => {
+  const startSimulator = () => {
+    if (/** @type {any} */ (window).simulator) return;
     const sim = new BmoSimulator();
     /** @type {any} */ (window).simulator = sim;
     const btnSerial = document.getElementById("btn-webserial-connect");
@@ -609,5 +610,11 @@ if (typeof window !== "undefined") {
         sim.ingestUploadedRoms(e.dataTransfer.files).catch((error) => sim.showSimulatorMessage(error.message, true));
       }
     });
-  });
+  };
+  const ready = typeof document !== "undefined" ? document.readyState : undefined;
+  if (ready === "interactive" || ready === "complete") {
+    startSimulator();
+  } else {
+    window.addEventListener("DOMContentLoaded", startSimulator);
+  }
 }

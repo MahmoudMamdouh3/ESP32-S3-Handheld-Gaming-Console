@@ -154,7 +154,9 @@ export class WasmPlaytestEngine {
         wasmBytes = this.decodeEmbeddedWasm();
       }
       if (!wasmBytes) {
-        throw new Error("Open the simulator through run_simulator.py so the WebAssembly core can load.");
+        throw new Error(
+          "WebAssembly core unavailable. Start via python tasks.py sim or run python scripts/build_wasm_cores.py for file:// mode."
+        );
       }
     }
     const writeU32 = (ptr, val) => {

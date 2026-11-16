@@ -21,6 +21,7 @@
     "simulator/OrbitControls.js",
     "simulator/bmo_enclosure_meshes.js",
     "simulator/bmo_playtest_cores.b64.js",
+    "simulator/bmo_simulator_app.js",
     "build",
     ".tools",
     "node_modules"

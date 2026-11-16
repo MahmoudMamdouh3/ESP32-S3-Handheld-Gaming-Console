@@ -26,5 +26,5 @@
 - Step-by-step physical bring-up instructions for the owner are in [`docs/guides/owner-guide.md`](../guides/owner-guide.md) and [`docs/guides/bringup.md`](../guides/bringup.md).
 
 <!-- SYNC:BEGIN -->
-- **Synced Metrics (`sync_ai_codemap.py`):** `121` first-party firmware C/C++ files (`17,047` lines, max `ui_menus.cpp`=`648`), `17` scripts, `31` C++ host test suites.
+- **Synced Metrics (`sync_ai_codemap.py`):** `121` first-party firmware C/C++ files (`17,047` lines, max `ui_menus.cpp`=`648`), `18` scripts, `31` C++ host test suites.
 <!-- SYNC:END -->

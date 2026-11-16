@@ -77,7 +77,7 @@ for rel in paths:
     if (
         norm_rel.endswith((".py", ".c", ".cpp", ".h", ".hpp", ".js", ".mjs"))
         and "/third_party/" not in f"/{norm_rel}"
-        and not norm_rel.endswith((".min.js", "bmo_enclosure_meshes.js", "bmo_playtest_cores.b64.js"))
+        and not norm_rel.endswith((".min.js", "bmo_enclosure_meshes.js", "bmo_playtest_cores.b64.js", "bmo_simulator_app.js"))
         and Path(rel).is_file()
     ):
         staged_lizard.append(rel)

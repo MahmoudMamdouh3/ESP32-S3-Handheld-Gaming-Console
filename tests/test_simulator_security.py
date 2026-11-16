@@ -4,6 +4,7 @@ import io
 import re
 import shutil
 import subprocess
+import sys
 import threading
 import unittest
 from pathlib import Path
@@ -221,6 +222,209 @@ if (!logText.includes("<img src=x onerror=alert(1)>.exe")) {
   throw new Error("Rejected filename missing from status log: " + logText);
 }
 console.log("SIMULATOR_XSS_DEFENSE_PASS");
+"""
+
+    def test_classic_bundle_boots_and_handles_controls_on_file_and_http(self):
+        bundle_check = subprocess.run(
+            [sys.executable, str(REPO_ROOT / "scripts" / "bundle_simulator.py"), "--check"],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        self.assertEqual(bundle_check.returncode, 0, msg=bundle_check.stdout + bundle_check.stderr)
+
+        index_html = (SIM_DIR / "index.html").read_text(encoding="utf-8")
+        self.assertIn('<script defer src="bmo_simulator_app.js"></script>', index_html)
+        self.assertNotIn('<script type="module"', index_html)
+
+        node_bin = shutil.which("node")
+        if not node_bin:
+            self.skipTest("Node.js not installed")
+
+        proc = subprocess.run(
+            [node_bin, "--input-type=module", "-e", self._CLASSIC_BUNDLE_BOOT_JS],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+        self.assertEqual(proc.returncode, 0, msg=f"{proc.stderr}\n{proc.stdout}")
+        self.assertIn("CLASSIC_BUNDLE_CONTROLS_PASS", proc.stdout)
+
+    _CLASSIC_BUNDLE_BOOT_JS = r"""
+import fs from "node:fs";
+import vm from "node:vm";
+
+function makeClassList(el) {
+  const set = new Set(String(el.className || "").split(/\s+/).filter(Boolean));
+  return {
+    add(...names) { names.forEach((n) => set.add(n)); },
+    remove(...names) { names.forEach((n) => set.delete(n)); },
+    contains(n) { return set.has(n); },
+    toggle(n, force) {
+      if (force === undefined) force = !set.has(n);
+      if (force) set.add(n); else set.delete(n);
+      return force;
+    },
+  };
+}
+
+function makeEl(id, cls = "", attrs = {}) {
+  const listeners = new Map();
+  const ctx2d = {
+    fillRect() {}, clearRect() {}, strokeRect() {}, beginPath() {}, closePath() {},
+    moveTo() {}, lineTo() {}, quadraticCurveTo() {}, arc() {}, ellipse() {}, fill() {}, stroke() {},
+    save() {}, restore() {}, translate() {}, scale() {}, rotate() {}, roundRect() {},
+    fillText() {}, drawImage() {}, measureText: (s) => ({ width: String(s).length * 6 }),
+    createRadialGradient: () => ({ addColorStop() {} }),
+    createLinearGradient: () => ({ addColorStop() {} }),
+    fillStyle: "", strokeStyle: "", lineWidth: 1, font: "", textAlign: "", textBaseline: "",
+  };
+  const el = {
+    id, className: cls, children: [], dataset: {}, style: { setProperty() {} },
+    value: attrs.value ?? "100", checked: Boolean(attrs.checked), clientWidth: 480, clientHeight: 660,
+    width: 320, height: 240, textContent: "", innerText: "", options: [],
+    classList: null,
+    getAttribute: (k) => (k in attrs ? attrs[k] : null),
+    setAttribute: (k, v) => { attrs[k] = String(v); },
+    addEventListener: (t, fn) => {
+      if (!listeners.has(t)) listeners.set(t, []);
+      listeners.get(t).push(fn);
+    },
+    removeEventListener() {},
+    dispatchEvent: (ev) => {
+      const e = ev && typeof ev === "object" ? ev : { type: String(ev) };
+      if (!e.target) e.target = el;
+      (listeners.get(e.type) || []).forEach((fn) => fn(e));
+      return true;
+    },
+    click() { this.dispatchEvent({ type: "click", target: this }); },
+    append(...nodes) { this.children.push(...nodes); },
+    appendChild(n) { this.children.push(n); return n; },
+    replaceChildren(...nodes) { this.children = [...nodes]; },
+    querySelector: () => makeEl("sub"),
+    scrollIntoView() {},
+    getBoundingClientRect: () => ({ left: 0, top: 0, width: 320, height: 240 }),
+    getContext: () => ctx2d,
+  };
+  el.classList = makeClassList(el);
+  return el;
+}
+
+const byId = new Map();
+for (const id of [
+  "stage-container", "three-viewport-container", "tft-display", "gameboy-chassis",
+  "btn-toggle-viewmode", "btn-internals-mode", "btn-bmo-mode", "btn-internals-play",
+  "btn-internals-assemble", "btn-internals-allwires", "btn-internals-next-step",
+  "internals-panel", "internals-status-badge", "internals-guide-heading", "internals-guide-body",
+  "internals-guide-tip", "bmo-mode-panel", "bmo-mode-status", "val-explode",
+  "slider-lighting", "slider-saturation", "slider-temperature", "val-lighting", "val-saturation",
+  "val-temperature", "btn-reset-studio", "palette-select", "theme-select", "filter-select",
+  "wasm-engine-status", "playtest-engine-log", "museum-sidebar-title", "museum-sidebar-tagline",
+  "museum-sidebar-cpu", "museum-sidebar-ram", "museum-sidebar-res", "museum-sidebar-history",
+  "museum-sidebar-games",
+]) {
+  byId.set(id, makeEl(id, id === "stage-container" ? "view-3d" : ""));
+}
+const sliderExplode = makeEl("slider-explode", "", { value: "0" });
+byId.set("slider-explode", sliderExplode);
+
+const selectors = {
+  ".cam-preset-btn": [makeEl("", "cam-preset-btn", { "data-cam": "front" }), makeEl("", "cam-preset-btn", { "data-cam": "iso" })],
+  ".internals-preset-btn": [makeEl("", "internals-preset-btn", { "data-preset": "assembled" }), makeEl("", "internals-preset-btn", { "data-preset": "core" })],
+  ".internals-step-btn": [makeEl("", "internals-step-btn", { "data-step": "0" }), makeEl("", "internals-step-btn", { "data-step": "1" })],
+  ".internals-filter-btn": [makeEl("", "internals-filter-btn", { "data-highlight": "all" })],
+  ".internals-layer-chk": [makeEl("", "internals-layer-chk", { "data-layer": "frontShell", checked: true })],
+  ".scale-btn": [],
+  ".state-nav-btn": [],
+  ".bmo-expr-btn": [],
+  ".bmo-gaze-btn": [],
+};
+
+const winListeners = new Map();
+const docObj = {
+  readyState: "loading",
+  documentElement: { style: { setProperty() {} } },
+  body: makeEl("body"),
+  head: { appendChild(node) { if (typeof node?.onerror === "function") node.onerror(); } },
+  getElementById: (id) => byId.get(id) || null,
+  querySelectorAll: (sel) => selectors[sel] || [],
+  createElement: (tag) => makeEl(tag),
+  addEventListener() {}, removeEventListener() {},
+};
+const sandbox = {
+  console, Math, Number, String, Boolean, Array, Object, Map, Set, Uint8Array, Uint16Array, Uint32Array, Int16Array, Float32Array, DataView, ArrayBuffer, Promise, Error, URLSearchParams,
+  Event: class { constructor(t) { this.type = t; } },
+  parseInt, parseFloat, isNaN, setTimeout: () => 0, clearTimeout() {},
+  requestAnimationFrame: () => 1, cancelAnimationFrame() {},
+  performance: { now: () => 100 }, navigator: { userAgent: "node" }, devicePixelRatio: 1,
+  Image: class {}, atob: (s) => Buffer.from(s, "base64").toString("binary"),
+  location: { protocol: "file:", search: "" },
+  document: docObj,
+  addEventListener: (t, fn) => { if (!winListeners.has(t)) winListeners.set(t, []); winListeners.get(t).push(fn); },
+  removeEventListener() {},
+};
+sandbox.window = sandbox;
+sandbox.self = sandbox;
+sandbox.globalThis = sandbox;
+const ctx = vm.createContext(sandbox);
+for (const file of [
+  "simulator/three.min.js",
+  "simulator/OrbitControls.js",
+  "simulator/bmo_enclosure_meshes.js",
+]) {
+  vm.runInContext(fs.readFileSync(file, "utf8"), ctx);
+}
+sandbox.THREE.WebGLRenderer = class {
+  constructor() { this.domElement = makeEl("webgl"); this.shadowMap = {}; }
+  setSize() {} setPixelRatio() {} render() {} dispose() {}
+};
+sandbox.THREE.PMREMGenerator = class {
+  fromScene() { return { texture: new sandbox.THREE.Texture() }; }
+  dispose() {}
+};
+vm.runInContext(fs.readFileSync("simulator/bmo_simulator_app.js", "utf8"), ctx);
+docObj.readyState = "interactive";
+(winListeners.get("DOMContentLoaded") || []).forEach((fn) => fn({ type: "DOMContentLoaded" }));
+
+const sim = sandbox.simulator;
+if (!sim || !sim.bmo3D) throw new Error("Expected BmoSimulator and Bmo3DConsole to initialize cleanly");
+selectors[".cam-preset-btn"][1].click();
+const camPos = sim.bmo3D.camera.position;
+if (Math.abs(camPos.x - 11.5) > 0.01 || Math.abs(camPos.y - 8.5) > 0.01 || Math.abs(camPos.z - 20) > 0.01) {
+  throw new Error(`3D Iso preset button failed to reposition camera: ${camPos.x}, ${camPos.y}, ${camPos.z}`);
+}
+byId.get("btn-toggle-viewmode").click();
+if (sim.is3DView !== false || !byId.get("stage-container").classList.contains("view-2d")) {
+  throw new Error("2D Flat View toggle failed");
+}
+byId.get("btn-toggle-viewmode").click();
+if (sim.is3DView !== true || !byId.get("stage-container").classList.contains("view-3d")) {
+  throw new Error("3D Console View toggle back failed");
+}
+byId.get("btn-internals-mode").click();
+if (!sim.internalsModeActive || !byId.get("internals-panel").classList.contains("is-active")) {
+  throw new Error("Dissect / Internals button failed");
+}
+selectors[".internals-preset-btn"][1].click();
+if (sim.internalsPreset !== "core" || byId.get("internals-status-badge").textContent !== "Core PCB Open") {
+  throw new Error("Core PCB + MCU preset button failed");
+}
+sliderExplode.value = "50";
+sliderExplode.dispatchEvent({ type: "input" });
+if (sim.bmo3D.explodeTarget !== 0.5 || byId.get("val-explode").textContent !== "50%") {
+  throw new Error("Explode Z-Stack slider failed");
+}
+byId.get("btn-internals-next-step").click();
+if (!byId.get("internals-guide-heading").textContent.startsWith("2.")) {
+  throw new Error("Beginner Solder Guide Next Step button failed");
+}
+byId.get("btn-bmo-mode").click();
+if (sim.currentState !== 5 || !sim.bmoModeActive || !byId.get("bmo-mode-panel").classList.contains("is-active")) {
+  throw new Error(`BMO Mode toolbar toggle failed: state=${sim.currentState}`);
+}
+console.log("CLASSIC_BUNDLE_CONTROLS_PASS");
 """
 
     def test_live_loopback_server_ephemeral_port_http_contracts(self):

@@ -539,7 +539,7 @@ class TestNativeCoresExecutionAndPhaseD(unittest.TestCase):
         index_html = (REPO_ROOT / "simulator" / "index.html").read_text(encoding="utf-8")
         for token in (
             "bmo_enclosure_meshes.js",
-            "bmo_internals_3d.js",
+            "bmo_simulator_app.js",
             "id=\"btn-internals-mode\"",
             "id=\"internals-panel\"",
             "id=\"slider-explode\"",

@@ -24,9 +24,9 @@ export const internalsMethods = {
         if (el) el.addEventListener("click", handler);
         return el;
       };
-      this.bindInternalsModeButtons(bindClick);
-      this.bindInternalsSliderAndLayers();
-      this.bindInternalsFiltersAndSteps(bindClick);
+      internalsMethods.bindInternalsModeButtons.call(this, bindClick);
+      internalsMethods.bindInternalsSliderAndLayers.call(this);
+      internalsMethods.bindInternalsFiltersAndSteps.call(this, bindClick);
       this.syncInternalsLayoutSpec(this.hardwareLayout || DEFAULT_HARDWARE_LAYOUT);
       this.selectBeginnerGuideStep(0, false);
       this.syncInternalsBadge();
