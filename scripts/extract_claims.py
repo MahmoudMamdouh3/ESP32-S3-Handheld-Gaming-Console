@@ -52,10 +52,10 @@ MEASURED_VALUES: dict[str, dict[str, int]] = {
         "check_fast_typical_s": 30,
     },
     "binaries": {
-        "default_flash_b": 3_275_312,
+        "default_flash_b": 3_275_568,
         "default_dram_b": 185_456,
         "default_iram_b": 87_552,
-        "no_doom_flash_b": 2_999_568,
+        "no_doom_flash_b": 2_999_840,
         "no_doom_dram_b": 95_136,
         "mit_flash_b": 878_688,
         "mit_dram_b": 69_504,
